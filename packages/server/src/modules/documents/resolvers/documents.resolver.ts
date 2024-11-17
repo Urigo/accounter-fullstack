@@ -8,7 +8,7 @@ import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -63,11 +63,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
-        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+        let charge: ChargesTypes.IGetMainChargesByIdsResult | undefined;
 
         if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
           // case new charge ID
-          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
+          charge = await injector
+            .get(MainChargesProvider)
+            .getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
           }
@@ -84,7 +86,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           }
           if (document.charge_id) {
             const charge = await injector
-              .get(ChargesProvider)
+              .get(MainChargesProvider)
               .getChargeByIdLoader.load(document.charge_id);
             if (!charge) {
               throw new GraphQLError(
@@ -93,7 +95,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(MainChargesProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Document unlinked from charge',
             });
@@ -170,7 +172,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (res.length === 1) {
         if (document.charge_id) {
           const charge = await injector
-            .get(ChargesProvider)
+            .get(MainChargesProvider)
             .getChargeByIdLoader.load(document.charge_id);
           if (charge && !charge.documents_count && !charge.transactions_count) {
             await deleteCharges([charge.id], injector);
@@ -188,7 +190,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         if (record.chargeId) {
           const charge = await injector
-            .get(ChargesProvider)
+            .get(MainChargesProvider)
             .getChargeByIdLoader.load(record.chargeId);
 
           if (!charge) {
@@ -279,7 +281,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
 
             // Generate parent charge
-            const chargePromise = injector.get(ChargesProvider).generateCharge({
+            const chargePromise = injector.get(MainChargesProvider).generateCharge({
               ownerId,
               userDescription:
                 greenInvoiceDoc.description && greenInvoiceDoc.description !== ''
@@ -344,7 +346,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
                 .join(', ');
 
               injector
-                .get(ChargesProvider)
+                .get(MainChargesProvider)
                 .updateCharge({
                   chargeId: charge.id,
                   userDescription,

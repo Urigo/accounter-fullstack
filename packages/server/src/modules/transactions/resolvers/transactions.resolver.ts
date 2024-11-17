@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
@@ -55,7 +55,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         const existingChargePromise = async () => {
           const charge = await injector
-            .get(ChargesProvider)
+            .get(MainChargesProvider)
             .getChargeByIdLoader.load(fields.chargeId ?? '');
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
@@ -71,14 +71,14 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           }
           if (transaction.charge_id) {
             const charge = await injector
-              .get(ChargesProvider)
+              .get(MainChargesProvider)
               .getChargeByIdLoader.load(transaction.charge_id);
             if (!charge) {
               throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(MainChargesProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Transaction unlinked from charge',
             });

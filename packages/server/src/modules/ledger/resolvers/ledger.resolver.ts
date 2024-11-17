@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
@@ -132,7 +133,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const charge = await injector.get(MainChargesProvider).getChargeByIdLoader.load(chargeId);
       if (!charge) {
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }

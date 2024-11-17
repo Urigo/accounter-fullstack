@@ -4,11 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
-  accountant_status,
-  IDeleteChargesByIdsParams,
-  IDeleteChargesByIdsQuery,
-  IGenerateChargeParams,
-  IGenerateChargeQuery,
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
@@ -22,12 +17,6 @@ import type {
   IGetChargesByIdsResult,
   IGetChargesByTransactionIdsQuery,
   IGetChargesByTransactionIdsResult,
-  IUpdateAccountantApprovalParams,
-  IUpdateAccountantApprovalQuery,
-  IUpdateAccountantApprovalResult,
-  IUpdateChargeParams,
-  IUpdateChargeQuery,
-  IUpdateChargeResult,
 } from '../types.js';
 
 export type ChargeRequiredWrapper<
@@ -84,61 +73,6 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY c.transactions_min_event_date DESC;`;
 
-const updateCharge = sql<IUpdateChargeQuery>`
-  UPDATE accounter_schema.charges
-  SET
-  owner_id = COALESCE(
-    $ownerId,
-    owner_id
-  ),
-  user_description = COALESCE(
-    $userDescription,
-    user_description
-  ),
-  type = COALESCE(
-    $type,
-    type
-  ),
-  is_property = COALESCE(
-    $isProperty,
-    is_property
-  ),
-  invoice_payment_currency_diff = COALESCE(
-    $isInvoicePaymentDifferentCurrency,
-    invoice_payment_currency_diff
-  ),
-  accountant_status = COALESCE(
-    $accountantStatus,
-    accountant_status
-  ),
-  tax_category_id = COALESCE(
-    $taxCategoryId,
-    tax_category_id
-  ),
-  optional_vat = COALESCE(
-    $optionalVAT,
-    optional_vat
-  )
-  WHERE
-    id = $chargeId
-  RETURNING *;
-`;
-
-const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
-  UPDATE accounter_schema.charges
-  SET
-    accountant_status = $accountantStatus
-  WHERE
-    id = $chargeId
-  RETURNING *;
-`;
-
-const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_status, user_description, tax_category_id, optional_vat)
-  VALUES ($ownerId, $type, $isProperty, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT)
-  RETURNING *;
-`;
-
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   SELECT
     ec.*,
@@ -181,10 +115,6 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   tags?: readonly string[] | null;
   businessIds?: readonly string[] | null;
 };
-
-const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
-    DELETE FROM accounter_schema.charges
-    WHERE id IN $$chargeIds;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -275,29 +205,6 @@ export class ChargesProvider {
     },
   );
 
-  public updateCharge(params: IUpdateChargeParams) {
-    return updateCharge.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IUpdateChargeResult>[]
-    >;
-  }
-
-  public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
-    return updateAccountantApproval.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IUpdateAccountantApprovalResult>[]
-    >;
-  }
-
-  public generateCharge(params: IGenerateChargeParams) {
-    const fullParams = {
-      isProperty: false,
-      userDescription: null,
-      optionalVAT: false,
-      accountantStatus: 'UNAPPROVED' as accountant_status,
-      ...params,
-    };
-    return generateCharge.run(fullParams, this.dbProvider);
-  }
-
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
     const isOwnerIds = !!params?.ownerIds?.filter(Boolean).length;
     const isBusinessIds = !!params?.businessIds?.filter(Boolean).length;
@@ -333,9 +240,5 @@ export class ChargesProvider {
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetChargesByFiltersResult[]
     >;
-  }
-
-  public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
-    return deleteChargesByIds.run(params, this.dbProvider);
   }
 }

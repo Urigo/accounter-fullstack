@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
@@ -67,7 +67,7 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     chargeId: dbExpense => dbExpense.charge_id,
     charge: async (dbExpense, _, { injector }) =>
       injector
-        .get(ChargesProvider)
+        .get(MainChargesProvider)
         .getChargeByIdLoader.load(dbExpense.charge_id)
         .then(charge => {
           if (!charge) {

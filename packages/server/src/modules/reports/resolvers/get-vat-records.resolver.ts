@@ -2,7 +2,7 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
+import { IGetMainChargesByIdsResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -177,7 +177,7 @@ export const getVatRecords: ResolverFn<
 
     // validate charges for missing info
     const validatedCharges = await Promise.all<{
-      charge: IGetChargesByFiltersResult;
+      charge: IGetMainChargesByIdsResult;
       isValid: boolean;
     }>(
       charges.map(

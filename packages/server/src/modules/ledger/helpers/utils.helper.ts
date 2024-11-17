@@ -1,5 +1,5 @@
 import { Injector } from 'graphql-modules';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { IGetMainChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
@@ -336,7 +336,7 @@ export async function getFinancialAccountTaxCategoryId(
 export function multipleForeignCurrenciesBalanceEntries(
   documentEntries: LedgerProto[],
   transactionEntries: LedgerProto[],
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
   balanceAgainstLocal?: boolean,
 ): LedgerProto[] {

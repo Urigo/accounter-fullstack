@@ -80,9 +80,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const transactionsPromise = injector
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
-    const documentsPromise = gotRelevantDocuments
-      ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
-      : Promise.resolve([]);
+    const documentsPromise = injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId);
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
       if (charge.tax_category_id) {
         resolve(charge.tax_category_id);
@@ -150,15 +150,17 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     let transactionsTotalLocalAmount = 0;
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance);
-        dates.add(entry.valueDate.getTime());
-        currencies.add(entry.currency);
-      });
-    });
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, injector).then(
+      entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+      },
+    );
 
     // for each transaction, create a ledger record
     const mainTransactionsPromises = mainTransactions.map(async preValidatedTransaction => {

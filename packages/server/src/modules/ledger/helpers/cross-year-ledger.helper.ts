@@ -1,6 +1,6 @@
 import { Injector } from 'graphql-modules';
 import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
+import type { IGetMainChargesByIdsResult } from '@modules/charges/types';
 import {
   DEFAULT_LOCAL_CURRENCY,
   EXPENSES_IN_ADVANCE_TAX_CATEGORY,
@@ -89,7 +89,7 @@ function getPartialEntryAmounts(
 }
 
 export async function handleCrossYearLedgerEntries(
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   injector: Injector,
   accountingLedgerEntries: LedgerProto[],
 ): Promise<LedgerProto[] | null> {

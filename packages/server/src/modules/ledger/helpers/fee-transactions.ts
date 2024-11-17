@@ -1,5 +1,5 @@
 import { Injector } from 'graphql-modules';
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
+import type { IGetMainChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
@@ -56,7 +56,7 @@ export function isSupplementalFeeTransaction(
 
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   injector: Injector,
 ): Promise<Array<LedgerProto>> {
   const ledgerEntries: Array<LedgerProto> = [];

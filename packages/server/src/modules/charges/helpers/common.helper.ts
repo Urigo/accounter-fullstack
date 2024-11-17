@@ -1,9 +1,9 @@
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import type { IGetChargesByIdsResult } from '../types.js';
+import type { IGetMainChargesByIdsResult } from '../types.js';
 
-export function calculateTotalAmount(charge: IGetChargesByIdsResult): FinancialAmount | null {
+export function calculateTotalAmount(charge: IGetMainChargesByIdsResult): FinancialAmount | null {
   if (charge.type === 'PAYROLL' && charge.transactions_event_amount != null) {
     return formatFinancialAmount(charge.transactions_event_amount, DEFAULT_LOCAL_CURRENCY);
   }

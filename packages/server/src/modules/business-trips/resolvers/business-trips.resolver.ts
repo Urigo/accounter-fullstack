@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
@@ -11,7 +11,7 @@ import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-e
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
-import type { BusinessTripsModule } from '../types.js';
+import type { BusinessTripProto, BusinessTripsModule } from '../types.js';
 import { businessTripSummary } from './business-trip-summary.resolver.js';
 
 export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
@@ -44,7 +44,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
           .updateChargeBusinessTrip(chargeId, businessTripId);
         if (updatedChargeId) {
           return injector
-            .get(ChargesProvider)
+            .get(MainChargesProvider)
             .getChargeByIdLoader.load(updatedChargeId.charge_id)
             .then(charge => {
               if (charge) {
@@ -166,15 +166,15 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
   },
   BusinessTripCharge: {
-    businessTrip: (dbCharge, _, { injector }) => {
-      if (!dbCharge.business_trip_id) {
-        return null;
-      }
+    businessTrip: async (dbCharge, _, { injector }) => {
       try {
-        return injector
+        const businessTrip = await injector
           .get(BusinessTripsProvider)
-          .getBusinessTripsByIdLoader.load(dbCharge.business_trip_id)
-          .then(businessTrip => businessTrip ?? null);
+          .getBusinessTripsByChargeIdLoader.load(dbCharge.id);
+        if (!businessTrip?.id) {
+          return null;
+        }
+        return businessTrip as BusinessTripProto;
       } catch (e) {
         console.error(`Error finding business trip for charge id ${dbCharge.id}:`, e);
         throw new GraphQLError(`Error finding business trip for charge id ${dbCharge.id}`);

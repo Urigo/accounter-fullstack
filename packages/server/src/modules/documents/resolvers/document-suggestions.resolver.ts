@@ -1,4 +1,4 @@
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
@@ -25,7 +25,7 @@ const missingInfoSuggestions: Resolver<
   const response: DocumentSuggestionsProto = {};
   if (RawDocument.charge_id) {
     const charge = await injector
-      .get(ChargesProvider)
+      .get(MainChargesProvider)
       .getChargeByIdLoader.load(RawDocument.charge_id);
     if (charge?.business_id) {
       response.counterpartyId = charge.business_id;

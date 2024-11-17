@@ -6,9 +6,9 @@ import {
   VAT_BUSINESS_ID,
 } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
-import type { IGetChargesByIdsResult } from '../types.js';
+import type { IGetMainChargesByIdsResult } from '../types.js';
 
-export function getChargeType(charge: IGetChargesByIdsResult): ChargeTypeEnum {
+export function getChargeType(charge: IGetMainChargesByIdsResult): ChargeTypeEnum {
   switch (charge.type) {
     case 'CONVERSION':
       return ChargeTypeEnum.Conversion;

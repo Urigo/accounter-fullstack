@@ -3,7 +3,8 @@ import { calculateTotalAmount } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
+import { MainChargesProvider } from '../providers/main-charges.provider.js';
+import type { ChargesModule, IGetMainChargesByIdsResult } from '../types.js';
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
   id: DbCharge => DbCharge.id,
@@ -70,10 +71,10 @@ export const commonFinancialEntityFields:
   | ChargesModule.LtdFinancialEntityResolvers
   | ChargesModule.PersonalFinancialEntityResolvers = {
   charges: async (DbBusiness, { filter, page, limit }, { injector }) => {
-    const charges: ChargeRequiredWrapper<IGetChargesByIdsResult>[] = [];
+    const charges: ChargeRequiredWrapper<IGetMainChargesByIdsResult>[] = [];
     if (!filter || Object.keys(filter).length === 0) {
       const newCharges = await injector
-        .get(ChargesProvider)
+        .get(MainChargesProvider)
         .getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
       charges.push(...newCharges);
     } else {

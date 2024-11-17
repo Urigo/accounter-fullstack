@@ -230,7 +230,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         }
       }
     });
-    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge, injector).then(
+    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge.id, injector).then(
       entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;

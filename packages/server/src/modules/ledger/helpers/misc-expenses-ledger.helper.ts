@@ -1,5 +1,4 @@
 import type { Injector } from 'graphql-modules';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
@@ -7,12 +6,12 @@ import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 
 export async function generateMiscExpensesLedger(
-  charge: IGetChargesByIdsResult,
+  chargeId: string,
   injector: Injector,
 ): Promise<LedgerProto[]> {
   const expenses = await injector
     .get(MiscExpensesProvider)
-    .getExpensesByChargeIdLoader.load(charge.id);
+    .getExpensesByChargeIdLoader.load(chargeId);
   if (!expenses.length) {
     return [];
   }

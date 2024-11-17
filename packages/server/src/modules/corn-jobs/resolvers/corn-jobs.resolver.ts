@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
+import type { IGetMainChargesByIdsResult } from '@modules/charges/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
@@ -21,13 +21,15 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
 
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
         const charges = await injector
-          .get(ChargesProvider)
+          .get(MainChargesProvider)
           .getChargeByIdLoader.loadMany(Array.from(chargeIds))
-          .then(res => res.filter(charge => charge && 'id' in charge) as IGetChargesByIdsResult[]);
+          .then(
+            res => res.filter(charge => charge && 'id' in charge) as IGetMainChargesByIdsResult[],
+          );
 
         const referenceMap = new Map<
           string,
-          { transaction: IGetTransactionsByChargeIdsResult; charge: IGetChargesByIdsResult }[]
+          { transaction: IGetTransactionsByChargeIdsResult; charge: IGetMainChargesByIdsResult }[]
         >();
         candidates.map(candidate => {
           const reference = candidate.source_reference;
@@ -99,7 +101,10 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
             // preparation for merge: rearrange based on charge
             const chargesWithTransactions = new Map<
               string,
-              { transactions: IGetTransactionsByChargeIdsResult[]; charge: IGetChargesByIdsResult }
+              {
+                transactions: IGetTransactionsByChargeIdsResult[];
+                charge: IGetMainChargesByIdsResult;
+              }
             >();
             matches.map(({ transaction, charge }) => {
               if (!chargesWithTransactions.has(charge.id)) {
@@ -155,7 +160,7 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
           success: true,
           charges: Object.keys(mergableMathces)
             .map(id => charges.find(charge => charge.id === id))
-            .filter(charge => charge) as IGetChargesByIdsResult[],
+            .filter(charge => charge) as IGetMainChargesByIdsResult[],
         };
       } catch (e) {
         return {
@@ -189,8 +194,11 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
 };
 
 function logMatch(
-  main: { transactions: IGetTransactionsByChargeIdsResult[]; charge: IGetChargesByIdsResult },
-  others: { transactions: IGetTransactionsByChargeIdsResult[]; charge: IGetChargesByIdsResult }[],
+  main: { transactions: IGetTransactionsByChargeIdsResult[]; charge: IGetMainChargesByIdsResult },
+  others: {
+    transactions: IGetTransactionsByChargeIdsResult[];
+    charge: IGetMainChargesByIdsResult;
+  }[],
 ) {
   console.log('\n\n\n');
   for (const { charge, transactions } of [main, ...others]) {

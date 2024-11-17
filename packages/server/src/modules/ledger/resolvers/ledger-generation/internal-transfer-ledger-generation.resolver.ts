@@ -170,15 +170,17 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     });
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance);
-        dates.add(entry.valueDate.getTime());
-        currencies.add(entry.currency);
-      });
-    });
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, injector).then(
+      entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+      },
+    );
 
     await Promise.all([
       ...feeFinancialAccountLedgerEntriesPromises,

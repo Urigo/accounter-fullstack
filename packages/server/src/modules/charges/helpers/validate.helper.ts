@@ -4,11 +4,11 @@ import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider
 import { GENERAL_FEE_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
-import { IGetChargesByIdsResult } from '../types.js';
+import { IGetMainChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
 
 export const validateCharge = async (
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   injector: Injector,
 ): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];

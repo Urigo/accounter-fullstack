@@ -66,16 +66,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    const gotRelevantDocuments =
-      Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
-    const gotTransactions = !!charge.transactions_count;
-
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
       if (charge.tax_category_id) {
         resolve(charge.tax_category_id);
-      }
-      if (!gotRelevantDocuments) {
-        resolve(undefined);
       }
       return injector
         .get(TaxCategoriesProvider)
@@ -92,13 +85,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         .catch(reject);
     });
 
-    const documentsPromise = gotRelevantDocuments
-      ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
-      : Promise.resolve([]);
+    const documentsPromise = injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId);
 
-    const transactionsPromise = gotTransactions
-      ? injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(chargeId)
-      : Promise.resolve([]);
+    const transactionsPromise = injector
+      .get(TransactionsProvider)
+      .getTransactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
@@ -121,6 +114,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       unbalancedBusinessesPromise,
       chargeBallanceCancellationsPromise,
     ]);
+
+    const gotRelevantDocuments =
+      documents.filter(doc =>
+        ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE', 'RECEIPT'].includes(doc.type),
+      ).length > 0;
 
     const entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
@@ -171,67 +169,63 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
 
     // generate ledger from transactions
-    if (gotTransactions) {
-      const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
+    const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
-      // for each transaction, create a ledger record
-      const mainTransactionsPromises = mainTransactions.map(async transaction => {
-        const ledgerEntry = await ledgerEntryFromMainTransaction(
-          transaction,
-          injector,
-          chargeId,
-          charge.owner_id,
-          charge.business_id ?? undefined,
-          gotRelevantDocuments,
-        ).catch(e => {
+    // for each transaction, create a ledger record
+    const mainTransactionsPromises = mainTransactions.map(async transaction => {
+      const ledgerEntry = await ledgerEntryFromMainTransaction(
+        transaction,
+        injector,
+        chargeId,
+        charge.owner_id,
+        charge.business_id ?? undefined,
+        gotRelevantDocuments,
+      ).catch(e => {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
+      });
+
+      if (!ledgerEntry) {
+        return;
+      }
+
+      financialAccountLedgerEntries.push(ledgerEntry);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      dates.add(ledgerEntry.valueDate.getTime());
+      currencies.add(ledgerEntry.currency);
+    });
+
+    // create a ledger record for fee transactions
+    const feeTransactionsPromises = feeTransactions.map(async transaction => {
+      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, injector).catch(
+        e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
           } else {
             throw e;
           }
-        });
+        },
+      );
 
-        if (!ledgerEntry) {
-          return;
-        }
+      if (!ledgerEntries) {
+        return;
+      }
 
-        financialAccountLedgerEntries.push(ledgerEntry);
+      feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+      ledgerEntries.map(ledgerEntry => {
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       });
+    });
 
-      // create a ledger record for fee transactions
-      const feeTransactionsPromises = feeTransactions.map(async transaction => {
-        const ledgerEntries = await getEntriesFromFeeTransaction(
-          transaction,
-          charge,
-          injector,
-        ).catch(e => {
-          if (e instanceof LedgerError) {
-            errors.add(e.message);
-          } else {
-            throw e;
-          }
-        });
-
-        if (!ledgerEntries) {
-          return;
-        }
-
-        feeFinancialAccountLedgerEntries.push(...ledgerEntries);
-        ledgerEntries.map(ledgerEntry => {
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
-          dates.add(ledgerEntry.valueDate.getTime());
-          currencies.add(ledgerEntry.currency);
-        });
-      });
-
-      entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
-    }
+    entriesPromises.push(...mainTransactionsPromises, ...feeTransactionsPromises);
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);

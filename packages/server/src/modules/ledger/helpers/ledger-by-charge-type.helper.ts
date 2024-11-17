@@ -1,7 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import type { IGetMainChargesByIdsResult } from '@modules/charges/types.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForBankDeposit } from '../resolvers/ledger-generation/bank-deposit-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBusinessTrip } from '../resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
@@ -13,7 +13,7 @@ import { generateLedgerRecordsForInternalTransfer } from '../resolvers/ledger-ge
 import { generateLedgerRecordsForMonthlyVat } from '../resolvers/ledger-generation/monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/ledger-generation/salary-ledger-generation.resolver.js';
 
-export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
+export function ledgerGenerationByCharge(charge: IGetMainChargesByIdsResult) {
   const chargeType = getChargeType(charge);
   switch (chargeType) {
     case 'CommonCharge':
@@ -42,7 +42,7 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
 }
 
 export async function ledgerUnbalancedBusinessesByCharge(
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   injector: Injector,
 ): Promise<Set<string> | undefined> {
   const chargeType = getChargeType(charge);

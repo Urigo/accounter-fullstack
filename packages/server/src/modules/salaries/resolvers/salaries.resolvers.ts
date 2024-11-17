@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { MainChargesProvider } from '@modules/charges/providers/main-charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
@@ -225,7 +225,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
         return null;
       }
       return injector
-        .get(ChargesProvider)
+        .get(MainChargesProvider)
         .getChargeByIdLoader.load(DbSalary.charge_id)
         .then(res => res ?? null);
     },

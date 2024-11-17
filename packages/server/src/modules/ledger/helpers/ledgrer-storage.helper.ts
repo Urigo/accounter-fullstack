@@ -1,6 +1,6 @@
 import { startOfDay } from 'date-fns';
 import { Injector } from 'graphql-modules';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import type { IGetMainChargesByIdsResult } from '@modules/charges/types.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -257,11 +257,14 @@ export function convertLedgerRecordToInput(
 }
 
 export async function storeInitialGeneratedRecords(
-  charge: IGetChargesByIdsResult,
+  charge: IGetMainChargesByIdsResult,
   records: LedgerProto[],
   injector: Injector,
 ) {
-  if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
+  const ledger = await injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByChargesIdLoader.load(charge.id);
+  if (ledger.length === 0) {
     const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(
       convertToStorageInputRecord,
     );

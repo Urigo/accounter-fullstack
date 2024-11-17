@@ -21,10 +21,11 @@ import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { MainChargesProvider } from '../providers/main-charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
-  IGetChargesByIdsResult,
+  IGetMainChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
 import {
@@ -42,7 +43,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
         return [];
       }
 
-      const dbCharges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIDs);
+      const dbCharges = await injector
+        .get(MainChargesProvider)
+        .getChargeByIdLoader.loadMany(chargeIDs);
       if (!dbCharges) {
         if (chargeIDs.length === 1) {
           throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
@@ -56,7 +59,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (!charge) {
           throw new GraphQLError(`Charge ID="${id}" not found`);
         }
-        return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
+        return charge as ChargeRequiredWrapper<IGetMainChargesByIdsResult>;
       });
       return charges;
     },
@@ -122,16 +125,16 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeId,
       };
       try {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
+        injector.get(MainChargesProvider).getChargeByIdLoader.clear(chargeId);
         const res = await injector
-          .get(ChargesProvider)
+          .get(MainChargesProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charge ID="${chargeId}"`);
           });
         const updatedCharge = await injector
-          .get(ChargesProvider)
+          .get(MainChargesProvider)
           .getChargeByIdLoader.load(res[0].id)
           .catch(e => {
             console.error(e);
@@ -248,7 +251,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     mergeCharges: async (_, { baseChargeID, chargeIdsToMerge, fields }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID);
+        const charge = await injector
+          .get(MainChargesProvider)
+          .getChargeByIdLoader.load(baseChargeID);
         if (!charge) {
           throw new Error(`Charge not found`);
         }
@@ -266,7 +271,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           };
           injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
-            .get(ChargesProvider)
+            .get(MainChargesProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
               throw new Error(
@@ -292,7 +297,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const charge = await injector.get(MainChargesProvider).getChargeByIdLoader.load(chargeId);
       if (!charge) {
         throw new GraphQLError(`Charge ID="${chargeId}" not found`);
       }
@@ -306,7 +311,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(MainChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
           type: 'FINANCIAL',
@@ -317,22 +322,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        const newExtendedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(charge.id);
-
-        if (!newExtendedCharge) {
-          throw new Error('Error creating new charge');
-        }
-
         await generateLedgerRecordsForFinancialCharge(
-          newExtendedCharge,
+          charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return newExtendedCharge;
+        return charge;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating revaluation charge');
@@ -341,7 +338,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(MainChargesProvider).generateCharge({
           ownerId,
           userDescription: `Tax expenses charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -352,14 +349,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        const newExtendedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(charge.id);
-
-        if (!newExtendedCharge) {
-          throw new Error('Error creating new charge');
-        }
-
         const tagName = 'financial';
 
         const addTagPromise = async () => {
@@ -376,16 +365,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
           await injector
             .get(ChargeTagsProvider)
-            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .insertChargeTag({ chargeId: charge.id, tagId: tag.id })
             .catch(() => {
-              throw new GraphQLError(
-                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
-              );
+              throw new GraphQLError(`Error adding "${tagName}" tag to charge ID="${charge.id}"`);
             });
         };
 
         const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
-          newExtendedCharge,
+          charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
@@ -393,7 +380,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all([addTagPromise(), generateLedgerPromise]);
 
-        return newExtendedCharge;
+        return charge;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating tax expenses charge');
@@ -402,7 +389,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(MainChargesProvider).generateCharge({
           ownerId,
           userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -413,14 +400,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        const newExtendedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(charge.id);
-
-        if (!newExtendedCharge) {
-          throw new Error('Error creating new charge');
-        }
-
         const tagName = 'financial';
 
         const addTagPromise = async () => {
@@ -437,16 +416,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
           await injector
             .get(ChargeTagsProvider)
-            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .insertChargeTag({ chargeId: charge.id, tagId: tag.id })
             .catch(() => {
-              throw new GraphQLError(
-                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
-              );
+              throw new GraphQLError(`Error adding "${tagName}" tag to charge ID="${charge.id}"`);
             });
         };
 
         const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
-          newExtendedCharge,
+          charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
@@ -454,7 +431,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all([addTagPromise(), generateLedgerPromise]);
 
-        return newExtendedCharge;
+        return charge;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating depreciation charge');
@@ -463,7 +440,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(MainChargesProvider).generateCharge({
           ownerId,
           userDescription: `Recovery reserve charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -474,14 +451,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        const newExtendedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(charge.id);
-
-        if (!newExtendedCharge) {
-          throw new Error('Error creating new charge');
-        }
-
         const tagName = 'financial';
 
         const addTagPromise = async () => {
@@ -498,16 +467,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
           await injector
             .get(ChargeTagsProvider)
-            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .insertChargeTag({ chargeId: charge.id, tagId: tag.id })
             .catch(() => {
-              throw new GraphQLError(
-                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
-              );
+              throw new GraphQLError(`Error adding "${tagName}" tag to charge ID="${charge.id}"`);
             });
         };
 
         const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
-          newExtendedCharge,
+          charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
@@ -515,7 +482,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all([addTagPromise(), generateLedgerPromise]);
 
-        return newExtendedCharge;
+        return charge;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating recovery reserve charge');
@@ -524,7 +491,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(MainChargesProvider).generateCharge({
           ownerId,
           userDescription: `Vacation reserves charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -535,14 +502,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new Error('Error creating new charge');
         }
 
-        const newExtendedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(charge.id);
-
-        if (!newExtendedCharge) {
-          throw new Error('Error creating new charge');
-        }
-
         const tagName = 'financial';
 
         const addTagPromise = async () => {
@@ -559,16 +518,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
           await injector
             .get(ChargeTagsProvider)
-            .insertChargeTag({ chargeId: newExtendedCharge.id, tagId: tag.id })
+            .insertChargeTag({ chargeId: charge.id, tagId: tag.id })
             .catch(() => {
-              throw new GraphQLError(
-                `Error adding "${tagName}" tag to charge ID="${newExtendedCharge.id}"`,
-              );
+              throw new GraphQLError(`Error adding "${tagName}" tag to charge ID="${charge.id}"`);
             });
         };
 
         const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
-          newExtendedCharge,
+          charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
@@ -576,7 +533,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all([addTagPromise(), generateLedgerPromise]);
 
-        return newExtendedCharge;
+        return charge;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating vacation reserves charge');
