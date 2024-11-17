@@ -20,12 +20,14 @@ export default gql`
     businessTripRndExpenses: FinancialAmount!
   }
 
+  " Corporate tax rule "
   type CorporateTaxRule {
     rule: String!
     isCompliant: Boolean!
     percentage: CorporateTaxRulePercentage!
   }
 
+  " Corporate tax rule percentage "
   type CorporateTaxRulePercentage {
     value: Float!
     formatted: String!
