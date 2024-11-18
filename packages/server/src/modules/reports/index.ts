@@ -1,3 +1,4 @@
+import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
 import taxReport from './typeDefs/tax-report.graphql.js';
@@ -10,7 +11,7 @@ const __dirname = new URL('.', import.meta.url).pathname;
 export const reportsModule = createModule({
   id: 'reports',
   dirname: __dirname,
-  typeDefs: [vatReport, pcn, profitAndLoss, taxReport],
+  typeDefs: [vatReport, pcn, profitAndLoss, taxReport, corporateTaxRulingComplianceReport],
   resolvers: [reportsResolvers],
   providers: () => [],
 });

@@ -208,3 +208,15 @@ export function optionalDateToTimelessDateString(date?: Date | null): TimelessDa
   }
   return dateToTimelessDateString(date) as TimelessDateString;
 }
+
+// Convert to 32bit integer
+export function hashStringToInt(text: string): number {
+  let hash = 0;
+  if (text.length === 0) return hash;
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0;
+  }
+  return hash;
+}

@@ -13,6 +13,7 @@ import { MonthlyIncomeExpenseChart } from './components/charts/monthly-income-ex
 import { DocumentsReport } from './components/documents/index.js';
 import { DashboardLayout } from './components/layout/dashboard-layout.js';
 import { AccountantApprovals } from './components/reports/accountant-approvals.js';
+import { CorporateTaxRulingComplianceReport } from './components/reports/corporate-tax-ruling-compliance-report/index.js';
 import { ProfitAndLossReport } from './components/reports/profit-and-loss-report/index.js';
 import { TaxReport } from './components/reports/tax-report/index.js';
 import { TrialBalanceReport } from './components/reports/trial-balance-report/index.js';
@@ -54,6 +55,14 @@ export function App(): ReactElement {
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
             <Route path="tax" element={<TaxReport />} />
             <Route path="tax/:year" element={<TaxReport />} />
+            <Route
+              path="corporate-tax-ruling-compliance"
+              element={<CorporateTaxRulingComplianceReport />}
+            />
+            <Route
+              path="corporate-tax-ruling-compliance/:year"
+              element={<CorporateTaxRulingComplianceReport />}
+            />
           </Route>
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />
