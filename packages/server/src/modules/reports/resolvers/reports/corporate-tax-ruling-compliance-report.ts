@@ -12,7 +12,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
+import { formatFinancialAmount, hashStringToInt } from '@shared/helpers';
 
 type ReportAmounts = {
   totalIncome: number;
@@ -98,6 +98,7 @@ function validateCorporateTaxRule(
   validationFunc: (input: number) => boolean,
 ): CorporateTaxRule {
   return {
+    id: `corporate-tax-rule-${hashStringToInt(ruleDescription)}`,
     rule: ruleDescription,
     isCompliant: validationFunc(percentage),
     percentage: {
@@ -198,8 +199,8 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   const yearlyReports: CorporateTaxRulingComplianceReport[] = [];
   for (const [year, reportAmounts] of reportAmountsByYear) {
     yearlyReports.push({
+      id: `corporate-tax-ruling-compliant-report-${year}`,
       year,
-
       totalIncome: formatFinancialAmount(reportAmounts.totalIncome, DEFAULT_LOCAL_CURRENCY),
       businessTripRndExpenses: formatFinancialAmount(
         reportAmounts.businessTripRndExpenses,

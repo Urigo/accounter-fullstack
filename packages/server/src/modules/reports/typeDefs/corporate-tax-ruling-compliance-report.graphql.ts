@@ -9,6 +9,7 @@ export default gql`
 
   " result type for corporateTaxReport "
   type CorporateTaxRulingComplianceReport {
+    id: ID!
     year: Int!
     totalIncome: FinancialAmount!
     researchAndDevelopmentExpenses: FinancialAmount!
@@ -22,12 +23,13 @@ export default gql`
 
   " Corporate tax rule "
   type CorporateTaxRule {
+    id: ID!
     rule: String!
     isCompliant: Boolean!
     percentage: CorporateTaxRulePercentage!
   }
 
-  " Corporate tax rule percentage "
+  " Corporate tax rule percentage " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type CorporateTaxRulePercentage {
     value: Float!
     formatted: String!
