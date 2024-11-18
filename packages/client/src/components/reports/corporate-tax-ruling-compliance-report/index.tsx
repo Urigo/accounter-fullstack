@@ -13,6 +13,7 @@ import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling
 /* GraphQL */ `
   query CorporateTaxRulingComplianceReport($years: [Int!]!) {
     corporateTaxRulingComplianceReport(years: $years) {
+      id
       year
       totalIncome {
         formatted
@@ -21,6 +22,7 @@ import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling
         formatted
       }
       rndRelativeToIncome {
+        id
         rule
         percentage {
           formatted
@@ -31,6 +33,7 @@ import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling
         formatted
       }
       localDevelopmentRelativeToRnd {
+        id
         rule
         percentage {
           formatted
@@ -41,6 +44,7 @@ import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling
         formatted
       }
       foreignDevelopmentRelativeToRnd {
+        id
         rule
         percentage {
           formatted
