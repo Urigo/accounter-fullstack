@@ -27,9 +27,10 @@ const headerPropsFromTransactions = (
   let totalVat = 0;
 
   for (const t of transactions) {
+    const invoiceSumFactor = t.invoiceSum >= 0 ? 1 : -1;
     switch (t.entryType) {
       case EntryType.SALE_REGULAR: {
-        taxableSalesVat += t.totalVat;
+        taxableSalesVat += t.totalVat * invoiceSumFactor;
         taxableSalesAmount += t.invoiceSum;
         salesRecordCount += 1;
         break;
@@ -41,18 +42,18 @@ const headerPropsFromTransactions = (
       }
       case EntryType.INPUT_REGULAR: {
         if (t.isProperty) {
-          equipmentInputsVat += t.totalVat;
+          equipmentInputsVat += t.totalVat * invoiceSumFactor;
         } else {
-          otherInputsVat += t.totalVat;
+          otherInputsVat += t.totalVat * invoiceSumFactor;
         }
         inputsCount += 1;
         break;
       }
       case EntryType.INPUT_PETTY_CASH: {
         if (t.isProperty) {
-          equipmentInputsVat += t.totalVat;
+          equipmentInputsVat += t.totalVat * invoiceSumFactor;
         } else {
-          otherInputsVat += t.totalVat;
+          otherInputsVat += t.totalVat * invoiceSumFactor;
         }
         inputsCount += 1;
         break;
