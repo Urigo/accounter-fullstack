@@ -2,7 +2,11 @@ import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID } from '@shared/constants';
+import {
+  DEFAULT_LOCAL_CURRENCY,
+  DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID,
+  DEVELOPMENT_LOCAL_TAX_CATEGORY_ID,
+} from '@shared/constants';
 import {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReport,
@@ -24,7 +28,7 @@ type ReportAmounts = {
 
 enum ExpenseType {
   Operating = 'OPERATING',
-  DevLocal = 'DEV_LOCAL',
+  DevOps = 'DEV_OPS',
   RndTrips = 'RND_TRIPS',
   Salaries = 'SALARIES',
 }
@@ -33,13 +37,9 @@ function rndTaxCategoryType(sortCode?: number | null): ExpenseType | null {
   if (!sortCode) {
     return null;
   }
-  if (sortCode === 910) {
-    // operating expenses
-    return ExpenseType.Operating;
-  }
   if (sortCode === 920) {
     // R&D expenses
-    return ExpenseType.DevLocal;
+    return ExpenseType.DevOps;
   }
   if (sortCode === 921) {
     // R&D expenses
@@ -75,19 +75,16 @@ function handleLedgerSingleSide(
     // if R&D expense
     reportAmounts.researchAndDevelopmentExpenses -= amount;
 
-    if (rndType === ExpenseType.DevLocal) {
-      reportAmounts.localDevelopmentExpenses -= amount;
+    if (rndType === ExpenseType.DevOps) {
+      if (financialEntityId === DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID) {
+        reportAmounts.foreignDevelopmentExpenses -= amount;
+      } else if (financialEntityId === DEVELOPMENT_LOCAL_TAX_CATEGORY_ID) {
+        reportAmounts.localDevelopmentExpenses -= amount;
+      }
     }
 
     if (rndType === ExpenseType.RndTrips) {
       reportAmounts.businessTripRndExpenses -= amount;
-    }
-
-    if (
-      rndType === ExpenseType.Operating &&
-      financialEntityId === DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID
-    ) {
-      reportAmounts.foreignDevelopmentExpenses -= amount;
     }
   }
 }
