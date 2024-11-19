@@ -353,9 +353,6 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
           account.accountNumber,
           'business',
           null,
-          null,
-          null,
-          null,
           account.bankNumber,
           account.branchNumber,
           account.extendedBankNumber,
@@ -370,6 +367,8 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
           account.serviceAuthorizationDesc,
           account.branchTypeCode,
           account.mymailEntitlementSwitch,
+          null,
+          null,
         ];
 
         const res = await pool.query(text, values);
