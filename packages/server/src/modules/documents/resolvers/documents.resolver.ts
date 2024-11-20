@@ -9,6 +9,7 @@ import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -93,7 +94,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(TempChargesProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Document unlinked from charge',
             });
@@ -279,7 +280,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
 
             // Generate parent charge
-            const chargePromise = injector.get(ChargesProvider).generateCharge({
+            const chargePromise = injector.get(TempChargesProvider).generateCharge({
               ownerId,
               userDescription:
                 greenInvoiceDoc.description && greenInvoiceDoc.description !== ''
@@ -344,7 +345,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
                 .join(', ');
 
               injector
-                .get(ChargesProvider)
+                .get(TempChargesProvider)
                 .updateCharge({
                   chargeId: charge.id,
                   userDescription,

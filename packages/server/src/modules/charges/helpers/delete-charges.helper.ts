@@ -5,7 +5,7 @@ import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanc
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargesProvider } from '../providers/charges.provider.js';
+import { TempChargesProvider } from '../providers/temp-charges.provider.js';
 
 export async function deleteCharges(chargeIds: string[], injector: Injector): Promise<void> {
   for (const chargeId of chargeIds) {
@@ -68,7 +68,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
   }
 
   try {
-    await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds });
+    await injector.get(TempChargesProvider).deleteChargesByIds({ chargeIds });
   } catch (e) {
     console.error(`Failed to delete charge IDs="${chargeIds}"`, e);
     throw new GraphQLError(`Failed to delete charge IDs=[${chargeIds}]`);

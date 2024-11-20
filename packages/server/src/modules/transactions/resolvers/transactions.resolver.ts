@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
@@ -78,7 +79,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(TempChargesProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Transaction unlinked from charge',
             });

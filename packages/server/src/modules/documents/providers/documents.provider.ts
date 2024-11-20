@@ -221,9 +221,8 @@ export class DocumentsProvider {
   }
 
   private async batchDocumentsByChargeIds(chargeIds: readonly string[]) {
-    const uniqueIDs = [...new Set(chargeIds)];
     try {
-      const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.dbProvider);
+      const docs = await getDocumentsByChargeId.run({ chargeIds }, this.dbProvider);
 
       return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
     } catch (e) {
@@ -236,6 +235,37 @@ export class DocumentsProvider {
     (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
     {
       cacheKeyFn: key => `document-by-charge-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  public getInvoicesByChargeIdLoader = new DataLoader(
+    (keys: readonly string[]) =>
+      this.batchDocumentsByChargeIds(keys).then(res =>
+        res.map(docs =>
+          docs.filter(
+            doc =>
+              doc.type === 'INVOICE' ||
+              doc.type === 'INVOICE_RECEIPT' ||
+              doc.type === 'CREDIT_INVOICE',
+          ),
+        ),
+      ),
+    {
+      cacheKeyFn: key => `invoices-by-charge-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  public getReceiptsByChargeIdLoader = new DataLoader(
+    (keys: readonly string[]) =>
+      this.batchDocumentsByChargeIds(keys).then(res =>
+        res.map(docs =>
+          docs.filter(doc => doc.type === 'RECEIPT' || doc.type === 'INVOICE_RECEIPT'),
+        ),
+      ),
+    {
+      cacheKeyFn: key => `receipts-by-charge-${key}`,
       cacheMap: this.cache,
     },
   );

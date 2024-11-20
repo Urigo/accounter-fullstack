@@ -21,6 +21,7 @@ import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { TempChargesProvider } from '../providers/temp-charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
@@ -124,7 +125,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       try {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
         const res = await injector
-          .get(ChargesProvider)
+          .get(TempChargesProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
@@ -266,7 +267,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           };
           injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
-            .get(ChargesProvider)
+            .get(TempChargesProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
               throw new Error(
@@ -306,7 +307,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
           type: 'FINANCIAL',
@@ -341,7 +342,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Tax expenses charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -402,7 +403,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -463,7 +464,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Recovery reserve charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -524,7 +525,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Vacation reserves charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',

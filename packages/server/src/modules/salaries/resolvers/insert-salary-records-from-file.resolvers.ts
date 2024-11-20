@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import xlsx from 'node-xlsx';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { EmployeesProvider } from '../providers/employees.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { IInsertSalaryRecordsParams, SalariesModule } from '../types.js';
@@ -93,7 +93,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
       const salaryChargePromise = chargeId
         ? Promise.resolve(chargeId)
         : injector
-            .get(ChargesProvider)
+            .get(TempChargesProvider)
             .generateCharge({
               type: 'PAYROLL',
               ownerId: currentUser.userId,
