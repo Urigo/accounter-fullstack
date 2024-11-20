@@ -62,7 +62,7 @@
     "@graphql-hive/cli": "0.44.3",
     "@graphql-inspector/cli": "5.0.7",
     "@parcel/watcher": "^2.4.1",
-    "@theguild/eslint-config": "0.13.0",
+    "@theguild/eslint-config": "0.13.1",
     "@theguild/prettier-config": "3.0.0",
     "@types/node": "22.9.0",
     "bob-the-bundler": "^7.0.1",
