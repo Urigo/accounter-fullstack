@@ -356,9 +356,7 @@ export default gql`
     invoicesCount: Int!
     receiptsCount: Int!
     documentsCount: Int!
-    invalidDocuments: Boolean!
     transactionsCount: Int!
-    invalidTransactions: Boolean!
     optionalBusinesses: [String!]!
     isSalary: Boolean!
     ledgerCount: Int!
@@ -406,22 +404,6 @@ export default gql`
 
   extend type OtherDocument {
     charge: Charge
-  }
-
-  extend interface FinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type BankFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type CardFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type CryptoWalletFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
   }
 
   extend type LtdFinancialEntity {

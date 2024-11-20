@@ -1,8 +1,10 @@
+import { GraphQLError } from 'graphql';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { calculateTotalAmount } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { TempChargesProvider } from '../providers/temp-charges.provider.js';
 import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
@@ -21,7 +23,16 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
   validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
-  metadata: DbCharge => DbCharge,
+  metadata: (DbCharge, _, { injector }) =>
+    injector
+      .get(TempChargesProvider)
+      .getChargeByIdLoader.load(DbCharge.id)
+      .then(charge => {
+        if (!charge) {
+          throw new GraphQLError(`Charge id=${DbCharge.id} cannot be found`);
+        }
+        return charge;
+      }), // TODO: TempCharge
   yearsOfRelevance: async (DbCharge, _, { injector }) => {
     const spreadRecords = await injector
       .get(ChargeSpreadProvider)
@@ -44,25 +55,6 @@ export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
       .get(ChargesProvider)
       .getChargeByIdLoader.load(documentRoot.charge_id);
     return charge ?? null;
-  },
-};
-
-export const commonFinancialAccountFields:
-  | ChargesModule.CardFinancialAccountResolvers
-  | ChargesModule.BankFinancialAccountResolvers = {
-  charges: async (DbAccount, { filter }, { injector }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await injector
-        .get(ChargesProvider)
-        .getChargeByFinancialAccountIDsLoader.load(DbAccount.id);
-      return charges;
-    }
-    const charges = await injector.get(ChargesProvider).getChargesByFinancialAccountIds({
-      financialAccountIDs: [DbAccount.id],
-      fromDate: filter?.fromDate,
-      toDate: filter?.toDate,
-    });
-    return charges;
   },
 };
 
