@@ -1,5 +1,5 @@
 import { Injector } from 'graphql-modules';
-import type { IGetChargesByFiltersResult } from '@modules/charges/types';
+import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
@@ -13,7 +13,7 @@ import type { AccountantStatus } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
-  charge: IGetChargesByFiltersResult;
+  charge: IGetChargesByIdsResult;
   doc: IGetDocumentsByFiltersResult;
   business: IGetBusinessesByIdsResult;
 };

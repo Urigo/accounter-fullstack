@@ -23,7 +23,7 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
         const charges = await injector
           .get(TempChargesProvider)
-          .getChargeByIdLoader.loadMany(Array.from(chargeIds))
+          .getTempChargeByIdLoader.loadMany(Array.from(chargeIds))
           .then(
             res => res.filter(charge => charge && 'id' in charge) as IGetTempChargesByIdsResult[],
           );

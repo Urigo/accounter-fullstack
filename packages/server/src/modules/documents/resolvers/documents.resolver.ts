@@ -8,10 +8,10 @@ import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import type { ChargesTypes } from '@modules/charges';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
 import { Resolvers } from '@shared/gql-types';
@@ -64,11 +64,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
-        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+        let charge: ChargesTypes.IGetTempChargesByIdsResult | undefined;
 
         if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
           // case new charge ID
-          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
+          charge = await injector
+            .get(TempChargesProvider)
+            .getTempChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
           }
@@ -85,8 +87,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           }
           if (document.charge_id) {
             const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id);
+              .get(TempChargesProvider)
+              .getTempChargeByIdLoader.load(document.charge_id);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -105,10 +107,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             }
             chargeId = newCharge?.[0]?.id;
 
-            if (
-              Number(charge.documents_count ?? 1) === 1 &&
-              Number(charge.transactions_count ?? 0) === 0
-            ) {
+            const [transactions, documents] = await Promise.all([
+              injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(charge.id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
+            ]);
+
+            if (documents.length === 1 && transactions.length === 0) {
               postUpdateActions = async () => {
                 try {
                   await deleteCharges([charge.id], injector);
@@ -170,11 +174,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
       if (res.length === 1) {
         if (document.charge_id) {
-          const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(document.charge_id);
-          if (charge && !charge.documents_count && !charge.transactions_count) {
-            await deleteCharges([charge.id], injector);
+          const [transactions, documents] = await Promise.all([
+            injector
+              .get(TransactionsProvider)
+              .getTransactionsByChargeIDLoader.load(document.charge_id),
+            injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
+          ]);
+          if (!transactions.length && !documents.length) {
+            await deleteCharges([document.charge_id], injector);
           }
         }
         return true;
@@ -189,8 +196,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         if (record.chargeId) {
           const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(record.chargeId);
+            .get(TempChargesProvider)
+            .getTempChargeByIdLoader.load(record.chargeId);
 
           if (!charge) {
             throw new Error(`Charge ID='${record.chargeId}' not found`);

@@ -406,18 +406,6 @@ export default gql`
     charge: Charge
   }
 
-  extend type LtdFinancialEntity {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
-  extend type PersonalFinancialEntity {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
-  extend interface Business {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
   " charge spread type "
   type YearOfRelevance {
     year: String!

@@ -32,11 +32,7 @@ import type {
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import {
-  commonChargeFields,
-  commonDocumentsFields,
-  commonFinancialEntityFields,
-} from './common.js';
+import { commonChargeFields, commonDocumentsFields } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
@@ -294,7 +290,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
-      const chargePromise = injector.get(TempChargesProvider).getChargeByIdLoader.load(chargeId);
+      const chargePromise = injector
+        .get(TempChargesProvider)
+        .getTempChargeByIdLoader.load(chargeId);
       const transactionsProvider = injector
         .get(TransactionsProvider)
         .getTransactionsByChargeIDLoader.load(chargeId);
@@ -682,12 +680,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Receipt: {
     ...commonDocumentsFields,
-  },
-  LtdFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
-  PersonalFinancialEntity: {
-    ...commonFinancialEntityFields,
   },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
