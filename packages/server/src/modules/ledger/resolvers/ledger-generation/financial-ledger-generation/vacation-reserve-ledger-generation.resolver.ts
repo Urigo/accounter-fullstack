@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateVacationReserveAmount } from '@modules/ledger/helpers/vacation-reserve.helper.js';
 import {
@@ -23,6 +25,13 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
         __typename: 'CommonError',
         message: `Vacation reserves charge must include user description with designated year`,
       };
+    }
+
+    const tempCharge = await injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(charge.id);
+    if (!tempCharge) {
+      throw new GraphQLError(`Charge ID="${charge.id}" not found`);
     }
 
     // look for revaluation year in the description
@@ -70,7 +79,7 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      charge: tempCharge,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],

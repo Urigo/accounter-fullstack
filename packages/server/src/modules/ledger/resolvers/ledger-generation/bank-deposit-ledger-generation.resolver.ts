@@ -1,3 +1,4 @@
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -59,10 +60,19 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       .get(BankDepositTransactionsProvider)
       .getDepositTransactionsByChargeId(chargeId);
 
-    const [transactions, bankDepositTransactions] = await Promise.all([
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
+
+    const [transactions, bankDepositTransactions, tempCharge] = await Promise.all([
       transactionsPromise,
       bankDepositTransactionsPromise,
+      tempChargePromise,
     ]);
+
+    if (!tempCharge) {
+      throw new Error(`Charge ID="${chargeId}" not found`);
+    }
 
     const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
@@ -329,7 +339,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     );
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

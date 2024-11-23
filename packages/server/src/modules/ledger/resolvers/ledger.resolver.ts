@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
@@ -132,8 +133,14 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
+      const chargePromise = injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const tempChargePromise = injector
+        .get(TempChargesProvider)
+        .getTempChargeByIdLoader.load(chargeId);
+
+      const [charge, tempCharge] = await Promise.all([chargePromise, tempChargePromise]);
+
+      if (!charge || !tempCharge) {
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }
       try {
@@ -162,7 +169,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         if (fullMatching.isFullyMatched) {
           return {
             records: storageLedgerRecords,
-            charge,
+            charge: tempCharge,
             errors: generated.errors,
           };
         }
@@ -237,7 +244,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         return {
           records: toUpdate,
-          charge,
+          charge: tempCharge,
           errors: generated.errors,
         };
       } catch (e) {
@@ -306,6 +313,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         }
       });
 
+      const enrichedCharge = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(parent.charge.id);
+      if (!enrichedCharge) {
+        throw new GraphQLError(`Charge with id ${parent.charge.id} not found`);
+      }
+
       const financialEntitiesPromise = await injector
         .get(FinancialEntitiesProvider)
         .getFinancialEntityByIdLoader.loadMany(Array.from(financialEntitiesIds))
@@ -314,7 +328,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             res.filter(e => !!e && !(e instanceof Error)) as IGetFinancialEntitiesByIdsResult[],
         );
       const allowedUnbalancedBusinessesPromise = ledgerUnbalancedBusinessesByCharge(
-        parent.charge,
+        enrichedCharge,
         injector,
       );
 
@@ -342,8 +356,15 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       const insertLedgerRecordsIfNotExists =
         shouldInsertLedgerInNew == null ? true : shouldInsertLedgerInNew;
       try {
-        const generated = await ledgerGenerationByCharge(charge)(
-          charge,
+        const enrichedCharge = await context.injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+        if (!enrichedCharge) {
+          throw new GraphQLError(`Charge with id ${charge.id} not found`);
+        }
+
+        const generated = await ledgerGenerationByCharge(enrichedCharge)(
+          enrichedCharge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,

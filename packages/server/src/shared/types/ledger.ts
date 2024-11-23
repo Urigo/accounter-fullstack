@@ -1,4 +1,4 @@
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import type { IGetTempChargesByIdsResult } from '@modules/charges/types.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types.js';
 import type { Currency, FinancialAmount } from '@shared/gql-types';
 
@@ -58,7 +58,7 @@ export interface LedgerProto {
 
 export interface LedgerRecordsProto {
   records: IGetLedgerRecordsByChargesIdsResult[];
-  charge: IGetChargesByIdsResult;
+  charge: IGetTempChargesByIdsResult;
   balance?: LedgerBalanceInfoType;
   errors: string[];
 }

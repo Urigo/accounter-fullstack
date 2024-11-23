@@ -2,6 +2,8 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import type { ChargesTypes } from '@modules/charges';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import type {
@@ -40,7 +42,11 @@ export class FiatExchangeProvider {
     stdTTL: 60 * 60 * 24, // 24 hours
   });
 
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private transactionsProvider: TransactionsProvider,
+    private DocumentsProvider: DocumentsProvider,
+  ) {}
 
   public async getExchangeRates(date: Date) {
     const formattedDate = dateToTimelessDateString(date);
@@ -84,16 +90,20 @@ export class FiatExchangeProvider {
     },
   );
 
-  public async getChargeExchangeRates(charge: ChargesTypes.IGetChargesByIdsResult) {
-    if (!charge.transactions_min_debit_date) {
+  public async getChargeExchangeRates(charge: ChargesTypes.IGetTempChargesByIdsResult) {
+    const [transactionsSummary, documentsSummary] = await Promise.all([
+      this.transactionsProvider.getTransactionsSummaryByChargeIDLoader.load(charge.id),
+      this.DocumentsProvider.getDocumentSummaryByChargeIdLoader.load(charge.id),
+    ]);
+    if (!transactionsSummary?.min_debit_date) {
       throw new Error(`Charge ID=${charge.id} has no debit date`);
     }
-    if (!charge.documents_min_date) {
+    if (!documentsSummary?.min_event_date) {
       throw new Error(`Charge ID=${charge.id} has no tax invoice date`);
     }
     const results = await Promise.all([
-      this.getExchangeRatesByDatesLoader.load(charge.transactions_min_debit_date),
-      this.getExchangeRatesByDatesLoader.load(charge.documents_min_date),
+      this.getExchangeRatesByDatesLoader.load(transactionsSummary.min_debit_date),
+      this.getExchangeRatesByDatesLoader.load(documentsSummary.min_event_date),
     ]);
     return {
       debitExchangeRates: results[0],

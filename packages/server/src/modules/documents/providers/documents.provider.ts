@@ -15,6 +15,7 @@ import type {
   IGetDocumentsByFinancialEntityIdsParams,
   IGetDocumentsByFinancialEntityIdsQuery,
   IGetDocumentsByIdsQuery,
+  IGetDocumentsSummaryByChargeIdsQuery,
   IInsertDocumentsParams,
   IInsertDocumentsQuery,
   IReplaceDocumentsChargeIdParams,
@@ -51,6 +52,70 @@ const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE id IN $$Ids;
+`;
+
+const getDocumentsSummaryByChargeIds = sql<IGetDocumentsSummaryByChargeIdsQuery>`
+  SELECT d.charge_id,
+        min(d.date) FILTER (WHERE d.type = ANY
+                                  (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type])) AS min_event_date,
+        max(d.date) FILTER (WHERE d.type = ANY
+                                  (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type])) AS max_event_date,
+        sum(d.total_amount *
+            CASE
+                WHEN d.creditor_id = c.owner_id THEN 1
+                ELSE '-1'::integer
+                END::double precision)
+        FILTER (WHERE b.can_settle_with_receipt = true AND (d.type = ANY
+                                                            (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])))                                                                   AS receipt_event_amount,
+        sum(d.total_amount *
+            CASE
+                WHEN d.creditor_id = c.owner_id THEN 1
+                ELSE '-1'::integer
+                END::double precision) FILTER (WHERE d.type = ANY
+                                                      (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type]))                         AS invoice_event_amount,
+        sum(d.vat_amount *
+            CASE
+                WHEN d.creditor_id = c.owner_id THEN 1
+                ELSE '-1'::integer
+                END::double precision)
+        FILTER (WHERE b.can_settle_with_receipt = true AND (d.type = ANY
+                                                            (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])))                                                                   AS receipt_vat_amount,
+        sum(d.vat_amount *
+            CASE
+                WHEN d.creditor_id = c.owner_id THEN 1
+                ELSE '-1'::integer
+                END::double precision) FILTER (WHERE d.type = ANY
+                                                      (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type]))                         AS invoice_vat_amount,
+        count(*) FILTER (WHERE d.type = ANY
+                                (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type]))                                               AS invoices_count,
+        count(*) FILTER (WHERE d.type = ANY
+                                (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type]))                                                                                                 AS receipts_count,
+        count(*)                                                                                                                                                                                                                       AS documents_count,
+        count(*) FILTER (WHERE (d.type = ANY
+                                (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type])) AND
+                                (d.debtor_id IS NULL OR
+                                d.creditor_id IS NULL OR d.date IS NULL OR
+                                d.serial_number IS NULL OR
+                                d.vat_amount IS NULL OR
+                                d.total_amount IS NULL OR
+                                d.charge_id IS NULL OR
+                                d.currency_code IS NULL) OR d.type =
+                                                            'UNPROCESSED'::accounter_schema.document_type) >
+        0                                                                                                                                                                                                                              AS invalid_documents,
+        array_agg(d.currency_code) FILTER (WHERE
+            b.can_settle_with_receipt = true AND (d.type = ANY
+                                                  (ARRAY ['RECEIPT'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type])) OR
+            (d.type = ANY
+              (ARRAY ['INVOICE'::accounter_schema.document_type, 'INVOICE_RECEIPT'::accounter_schema.document_type, 'CREDIT_INVOICE'::accounter_schema.document_type])))                                                                AS currency_array
+  FROM accounter_schema.documents d
+          LEFT JOIN accounter_schema.charges c ON d.charge_id = c.id
+          LEFT JOIN accounter_schema.businesses b
+                    ON d.creditor_id = c.owner_id AND
+                        d.debtor_id = b.id OR
+                        d.creditor_id = b.id AND
+                        d.debtor_id = c.owner_id
+  WHERE d.charge_id IN $$chargeIds
+  GROUP BY d.charge_id;
 `;
 
 const updateDocument = sql<IUpdateDocumentQuery>`
@@ -131,8 +196,7 @@ const updateDocument = sql<IUpdateDocumentQuery>`
   )
   WHERE
     id = $documentId
-  RETURNING *;
-`;
+  RETURNING *;`;
 
 const deleteDocument = sql<IDeleteDocumentQuery>`
   DELETE FROM accounter_schema.documents
@@ -274,18 +338,55 @@ export class DocumentsProvider {
     return getDocumentsByFinancialEntityIds.run(params, this.dbProvider);
   }
 
+  private async batchDocumentsSummaryByChargeIds(chargeIds: readonly string[]) {
+    try {
+      const docsSummaries = await getDocumentsSummaryByChargeIds.run(
+        { chargeIds },
+        this.dbProvider,
+      );
+
+      return chargeIds.map(id => docsSummaries.find(summary => summary.charge_id === id));
+    } catch (e) {
+      console.error(e);
+      return chargeIds.map(() => undefined);
+    }
+  }
+
+  public getDocumentSummaryByChargeIdLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchDocumentsSummaryByChargeIds(keys),
+    {
+      cacheKeyFn: key => `document-summary-by-charge-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
   public async updateDocument(params: IUpdateDocumentParams) {
-    this.clearCache();
+    if (params.documentId) {
+      const document = await this.getDocumentsByIdLoader.load(params.documentId);
+      if (document?.charge_id) {
+        this.clearCacheByChargeId(document.charge_id);
+      }
+      if (params.chargeId) {
+        this.clearCacheByChargeId(params.chargeId);
+      }
+      this.clearCacheById(params.documentId);
+    }
     return updateDocument.run(params, this.dbProvider);
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {
-    this.clearCache();
+    if (params.documentId) {
+      const document = await this.getDocumentsByIdLoader.load(params.documentId);
+      if (document?.charge_id) {
+        this.clearCacheByChargeId(document.charge_id);
+      }
+      this.clearCacheById(params.documentId);
+    }
     return deleteDocument.run(params, this.dbProvider);
   }
 
   public async insertDocuments(params: IInsertDocumentsParams) {
-    this.clearCache();
+    params.document.map(({ chargeId }) => (chargeId ? this.clearCacheByChargeId(chargeId) : null));
     return insertDocuments.run(params, this.dbProvider);
   }
 
@@ -312,8 +413,12 @@ export class DocumentsProvider {
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
-    this.clearCache();
-    return replaceDocumentsChargeId.run(params, this.dbProvider);
+    if (params.assertChargeID) this.clearCacheByChargeId(params.assertChargeID);
+    if (params.replaceChargeID) this.clearCacheByChargeId(params.replaceChargeID);
+    return replaceDocumentsChargeId.run(params, this.dbProvider).then(docs => {
+      docs.map(({ id }) => this.clearCacheById(id));
+      return docs;
+    });
   }
 
   private async batchDocumentsByIds(ids: readonly string[]) {
@@ -338,5 +443,16 @@ export class DocumentsProvider {
 
   public clearCache() {
     this.cache.clear();
+  }
+
+  public clearCacheById(id: string) {
+    this.cache.delete(`document-${id}`);
+  }
+
+  public clearCacheByChargeId(chargeId: string) {
+    this.cache.delete(`document-by-charge-${chargeId}`);
+    this.cache.delete(`invoices-by-charge-${chargeId}`);
+    this.cache.delete(`receipts-by-charge-${chargeId}`);
+    this.cache.delete(`document-summary-by-charge-${chargeId}`);
   }
 }
