@@ -1,8 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "github>the-guild-org/shared-config:renovate"
-  ],
+  "extends": ["github>the-guild-org/shared-config:renovate"],
   "automerge": false,
   "patch": {
     "automerge": true
@@ -14,33 +12,19 @@
   "prConcurrentLimit": 10,
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "patch"
-      ],
+      "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
       "groupSlug": "all-patch",
-      "matchPackageNames": [
-        "!/@changesets/*/",
-        "!/typescript/",
-        "!/^@theguild//",
-        "*"
-      ]
+      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//", "*"]
     },
     {
       "groupName": "Yoga/Envelop",
-      "matchPackageNames": [
-        "@envelop/{/,}**",
-        "graphql-yoga{/,}**",
-        "@graphql-yoga/{/,}**"
-      ]
+      "matchPackageNames": ["@envelop/{/,}**", "graphql-yoga{/,}**", "@graphql-yoga/{/,}**"]
     },
     {
       "groupName": "urql",
       "recreateWhen": "auto",
-      "matchPackageNames": [
-        "@urql/{/,}**",
-        "urql{/,}**"
-      ]
+      "matchPackageNames": ["@urql/{/,}**", "urql{/,}**"]
     }
   ]
 }
