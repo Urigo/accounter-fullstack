@@ -12,20 +12,19 @@
   "prConcurrentLimit": 10,
   "packageRules": [
     {
-      "excludePackagePatterns": ["@changesets/*", "typescript", "^@theguild/"],
-      "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
-      "groupSlug": "all-patch"
+      "groupSlug": "all-patch",
+      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//", "*"]
     },
     {
       "groupName": "Yoga/Envelop",
-      "matchPackagePrefixes": ["@envelop/", "graphql-yoga", "@graphql-yoga/"]
+      "matchPackageNames": ["@envelop/{/,}**", "graphql-yoga{/,}**", "@graphql-yoga/{/,}**"]
     },
     {
       "groupName": "urql",
-      "matchPackagePrefixes": ["@urql/", "urql"],
-      "recreateClosed": false
+      "recreateWhen": "auto",
+      "matchPackageNames": ["@urql/{/,}**", "urql{/,}**"]
     }
   ]
 }
