@@ -7,7 +7,6 @@
   "main": "./src/index.mts",
   "scripts": {
     "build": "tsc && tsc-alias",
-    "build2": "tsc --project tsconfig.json && tscpaths -p tsconfig.json -s ./src -o ./dist",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn --cwd ../.. generate",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
@@ -24,7 +23,6 @@
     "@envelop/generic-auth": "8.0.0",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-hive/yoga": "^0.39.0",
-    "@graphql-yoga/node": "3.9.1",
     "@graphql-yoga/plugin-defer-stream": "3.10.3",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
