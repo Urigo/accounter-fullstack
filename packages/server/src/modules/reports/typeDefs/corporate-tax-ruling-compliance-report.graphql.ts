@@ -22,6 +22,7 @@ export default gql`
     differences: CorporateTaxRulingComplianceReportDifferences!
   }
 
+  " Differences between the report info and the generated ledger suggested info "
   type CorporateTaxRulingComplianceReportDifferences {
     id: ID!
     totalIncome: FinancialAmount
