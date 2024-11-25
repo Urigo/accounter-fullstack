@@ -19,6 +19,19 @@ export default gql`
     foreignDevelopmentExpenses: FinancialAmount!
     foreignDevelopmentRelativeToRnd: CorporateTaxRule!
     businessTripRndExpenses: FinancialAmount!
+    differences: CorporateTaxRulingComplianceReportDifferences!
+  }
+
+  type CorporateTaxRulingComplianceReportDifferences {
+    id: ID!
+    totalIncome: FinancialAmount
+    researchAndDevelopmentExpenses: FinancialAmount
+    rndRelativeToIncome: CorporateTaxRule
+    localDevelopmentExpenses: FinancialAmount
+    localDevelopmentRelativeToRnd: CorporateTaxRule
+    foreignDevelopmentExpenses: FinancialAmount
+    foreignDevelopmentRelativeToRnd: CorporateTaxRule
+    businessTripRndExpenses: FinancialAmount
   }
 
   " Corporate tax rule "

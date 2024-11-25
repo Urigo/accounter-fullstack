@@ -12,7 +12,10 @@ import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
 import type { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
-import { corporateTaxRulingComplianceReport } from './reports/corporate-tax-ruling-compliance-report.js';
+import {
+  corporateTaxRulingComplianceReport,
+  corporateTaxRulingComplianceReportDifferences,
+} from './reports/corporate-tax-ruling-compliance-report.js';
 import { profitAndLossReport } from './reports/profit-and-loss-report.resolver.js';
 import { taxReport } from './reports/tax-report.js';
 
@@ -97,5 +100,18 @@ export const reportsResolvers: ReportsModule.Resolvers = {
             .getBusinessByIdLoader.load(raw.businessId)
             .then(entity => entity?.vat_number ?? null)
         : null,
+  },
+  CorporateTaxRulingComplianceReport: {
+    id: report => report.id,
+    year: report => report.year,
+    totalIncome: report => report.totalIncome,
+    businessTripRndExpenses: report => report.businessTripRndExpenses,
+    foreignDevelopmentExpenses: report => report.foreignDevelopmentExpenses,
+    foreignDevelopmentRelativeToRnd: report => report.foreignDevelopmentRelativeToRnd,
+    localDevelopmentExpenses: report => report.localDevelopmentExpenses,
+    localDevelopmentRelativeToRnd: report => report.localDevelopmentRelativeToRnd,
+    researchAndDevelopmentExpenses: report => report.researchAndDevelopmentExpenses,
+    rndRelativeToIncome: report => report.rndRelativeToIncome,
+    differences: corporateTaxRulingComplianceReportDifferences,
   },
 };

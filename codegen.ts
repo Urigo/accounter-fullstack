@@ -89,6 +89,8 @@ const config: CodegenConfig = {
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           CorporateTax: '@modules/corporate-taxes/types.js#IGetAllCorporateTaxesResult',
+          CorporateTaxRulingComplianceReport:
+            '@shared/types#CorporateTaxRulingComplianceReportProto',
           CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
