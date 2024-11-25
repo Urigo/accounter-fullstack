@@ -2,12 +2,14 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Table, Tooltip } from '@mantine/core';
+import { Indicator, Table, Tooltip } from '@mantine/core';
 import { CorporateTaxRulingComplianceReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
+import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
+import { RuleCell } from './rule-cell.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -16,43 +18,60 @@ import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling
       id
       year
       totalIncome {
-        formatted
+        ...CorporateTaxRulingReportAmountCellFields
       }
       researchAndDevelopmentExpenses {
-        formatted
+        ...CorporateTaxRulingReportAmountCellFields
       }
       rndRelativeToIncome {
-        id
         rule
-        percentage {
-          formatted
-        }
-        isCompliant
+        ...CorporateTaxRulingReportRuleCellFields
       }
       localDevelopmentExpenses {
-        formatted
+        ...CorporateTaxRulingReportAmountCellFields
       }
       localDevelopmentRelativeToRnd {
-        id
         rule
-        percentage {
-          formatted
-        }
-        isCompliant
+        ...CorporateTaxRulingReportRuleCellFields
       }
       foreignDevelopmentExpenses {
-        formatted
+        ...CorporateTaxRulingReportAmountCellFields
       }
       foreignDevelopmentRelativeToRnd {
-        id
         rule
-        percentage {
-          formatted
-        }
-        isCompliant
+        ...CorporateTaxRulingReportRuleCellFields
       }
       businessTripRndExpenses {
-        formatted
+        ...CorporateTaxRulingReportAmountCellFields
+      }
+      ... on CorporateTaxRulingComplianceReport @defer {
+        differences {
+          id
+          totalIncome {
+            ...CorporateTaxRulingReportAmountCellFields
+          }
+          researchAndDevelopmentExpenses {
+            ...CorporateTaxRulingReportAmountCellFields
+          }
+          rndRelativeToIncome {
+            ...CorporateTaxRulingReportRuleCellFields
+          }
+          localDevelopmentExpenses {
+            ...CorporateTaxRulingReportAmountCellFields
+          }
+          localDevelopmentRelativeToRnd {
+            ...CorporateTaxRulingReportRuleCellFields
+          }
+          foreignDevelopmentExpenses {
+            ...CorporateTaxRulingReportAmountCellFields
+          }
+          foreignDevelopmentRelativeToRnd {
+            ...CorporateTaxRulingReportRuleCellFields
+          }
+          businessTripRndExpenses {
+            ...CorporateTaxRulingReportAmountCellFields
+          }
+        }
       }
     }
   }
@@ -95,7 +114,20 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                 <tr>
                   <th />
                   {years.map(year => (
-                    <th key={year}>{year}</th>
+                    <th key={year}>
+                      <Indicator
+                        inline
+                        size={12}
+                        processing={
+                          !yearlyReports.find(report => report.year === year)?.differences
+                        }
+                        disabled={!!yearlyReports.find(report => report.year === year)?.differences}
+                        color="orange"
+                        zIndex="auto"
+                      >
+                        {year}
+                      </Indicator>
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -103,13 +135,23 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                 <tr>
                   <td>Total Income</td>
                   {yearlyReports.map(report => (
-                    <td key={report.year}>{report.totalIncome.formatted}</td>
+                    <AmountCell
+                      key={report.year}
+                      originalAmountData={report.totalIncome}
+                      diffAmountData={report.differences?.totalIncome ?? undefined}
+                    />
                   ))}
                 </tr>
                 <tr>
                   <td>Total R&D Expensess</td>
                   {yearlyReports.map(report => (
-                    <td key={report.year}>{report.researchAndDevelopmentExpenses.formatted}</td>
+                    <AmountCell
+                      key={report.year}
+                      originalAmountData={report.researchAndDevelopmentExpenses}
+                      diffAmountData={
+                        report.differences?.researchAndDevelopmentExpenses ?? undefined
+                      }
+                    />
                   ))}
                 </tr>
                 <tr>
@@ -124,20 +166,21 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                     </Tooltip>
                   </th>
                   {yearlyReports.map(report => (
-                    <td
+                    <RuleCell
                       key={report.year}
-                      className={
-                        report.rndRelativeToIncome.isCompliant ? 'text-green-500' : 'text-red-500'
-                      }
-                    >
-                      {report.rndRelativeToIncome.percentage.formatted}
-                    </td>
+                      originalRuleData={report.rndRelativeToIncome}
+                      diffRuleData={report.differences?.rndRelativeToIncome ?? undefined}
+                    />
                   ))}
                 </tr>
                 <tr>
                   <td>Local Development Expenses</td>
                   {yearlyReports.map(report => (
-                    <td key={report.year}>{report.localDevelopmentExpenses.formatted}</td>
+                    <AmountCell
+                      key={report.year}
+                      originalAmountData={report.localDevelopmentExpenses}
+                      diffAmountData={report.differences?.localDevelopmentExpenses ?? undefined}
+                    />
                   ))}
                 </tr>
                 <tr>
@@ -152,22 +195,21 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                     </Tooltip>
                   </th>
                   {yearlyReports.map(report => (
-                    <td
+                    <RuleCell
                       key={report.year}
-                      className={
-                        report.localDevelopmentRelativeToRnd.isCompliant
-                          ? 'text-green-500'
-                          : 'text-red-500'
-                      }
-                    >
-                      {report.localDevelopmentRelativeToRnd.percentage.formatted}
-                    </td>
+                      originalRuleData={report.localDevelopmentRelativeToRnd}
+                      diffRuleData={report.differences?.localDevelopmentRelativeToRnd ?? undefined}
+                    />
                   ))}
                 </tr>
                 <tr>
                   <td>Foreign Development Expenses</td>
                   {yearlyReports.map(report => (
-                    <td key={report.year}>{report.foreignDevelopmentExpenses.formatted}</td>
+                    <AmountCell
+                      key={report.year}
+                      originalAmountData={report.foreignDevelopmentExpenses}
+                      diffAmountData={report.differences?.foreignDevelopmentExpenses ?? undefined}
+                    />
                   ))}
                 </tr>
                 <tr>
@@ -182,22 +224,23 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                     </Tooltip>
                   </th>
                   {yearlyReports.map(report => (
-                    <td
+                    <RuleCell
                       key={report.year}
-                      className={
-                        report.foreignDevelopmentRelativeToRnd.isCompliant
-                          ? 'text-green-500'
-                          : 'text-red-500'
+                      originalRuleData={report.foreignDevelopmentRelativeToRnd}
+                      diffRuleData={
+                        report.differences?.foreignDevelopmentRelativeToRnd ?? undefined
                       }
-                    >
-                      {report.foreignDevelopmentRelativeToRnd.percentage.formatted}
-                    </td>
+                    />
                   ))}
                 </tr>
                 <tr>
                   <td>R&D Business Trips Expenses</td>
                   {yearlyReports.map(report => (
-                    <td key={report.year}>{report.businessTripRndExpenses.formatted}</td>
+                    <AmountCell
+                      key={report.year}
+                      originalAmountData={report.businessTripRndExpenses}
+                      diffAmountData={report.differences?.businessTripRndExpenses ?? undefined}
+                    />
                   ))}
                 </tr>
               </tbody>

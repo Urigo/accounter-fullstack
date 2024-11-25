@@ -1,6 +1,6 @@
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import type { Currency, Role } from '@shared/gql-types';
+import type { CorporateTaxRulingComplianceReport, Currency, Role } from '@shared/gql-types';
 import type { env } from '../../environment.js';
 
 export type Environment = typeof env;
@@ -19,6 +19,13 @@ export type VatExtendedCharge = IGetChargesByIdsResult & {
   vatAfterDeduction: number;
   amountBeforeVAT: number;
   amountBeforeFullVAT: number;
+};
+
+export type CorporateTaxRulingComplianceReportProto = Omit<
+  CorporateTaxRulingComplianceReport,
+  'differences'
+> & {
+  chargeIds: Set<string>;
 };
 
 export interface DocumentSuggestionsProto {
