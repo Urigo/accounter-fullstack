@@ -43,6 +43,7 @@ export function convertSummaryCategoryDataToRow(
   category: BusinessTripSummaryCategories,
   data: SummaryCategoryData,
 ): BusinessTripSummaryRow {
+  const excessExpenditure = (data[Currency.Ils]?.taxable ?? 0) - (data[Currency.Ils]?.total ?? 0);
   return {
     type: category,
     totalForeignCurrency: formatFinancialAmount(data[Currency.Usd]?.total ?? 0, Currency.Usd),
@@ -57,7 +58,7 @@ export function convertSummaryCategoryDataToRow(
       data[Currency.Ils]?.maxTaxable ?? 0,
       Currency.Ils,
     ),
-    excessExpenditure: formatFinancialAmount(0, Currency.Ils),
+    excessExpenditure: formatFinancialAmount(Math.max(excessExpenditure, 0), Currency.Ils),
   };
 }
 
