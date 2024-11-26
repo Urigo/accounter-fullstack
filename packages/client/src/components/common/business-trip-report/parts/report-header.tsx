@@ -63,7 +63,7 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>
         Total Days:
-        <Text fz="lg">{dates ? differenceInDays(dates.end, dates.start) : 'Missing'}</Text>
+        <Text fz="lg">{dates ? differenceInDays(dates.end, dates.start) + 1 : 'Missing'}</Text>
       </Grid.Col>
     </Grid>
   );
