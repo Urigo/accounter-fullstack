@@ -1,7 +1,7 @@
 const { dirname } = require('node:path');
 
 const MODULES_PATH = 'packages/server/src/modules/*/typeDefs/*.graphql.ts';
-const OPERATIONS_PATH = 'packages/client/**/*.{,c,m}{j,t}s{,x}';
+const OPERATIONS_PATH = 'packages/client/src/**/*.{,c,m}{j,t}s{,x}';
 
 module.exports = {
   extends: ['@theguild'],
@@ -18,8 +18,10 @@ module.exports = {
       parser: '@graphql-eslint/eslint-plugin',
       plugins: ['@graphql-eslint'],
       parserOptions: {
-        schema: MODULES_PATH,
-        documents: OPERATIONS_PATH,
+        graphQLConfig: {
+          schema: MODULES_PATH,
+          documents: OPERATIONS_PATH,
+        },
       },
     },
     {
