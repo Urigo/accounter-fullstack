@@ -110,5 +110,5 @@ export const authPlugin = () =>
     resolveUserFn,
     validateUser,
     mode: 'protect-granular',
-    extractScopes: user => getAcceptableRoles(user.role),
+    extractScopes: user => getAcceptableRoles(user?.role),
   });
