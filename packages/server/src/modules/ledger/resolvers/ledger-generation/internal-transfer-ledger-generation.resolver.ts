@@ -1,4 +1,6 @@
+import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -45,9 +47,20 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     let destinationEntry: LedgerProto | undefined = undefined;
 
     // Get all transactions
-    const transactions = await injector
+    const transactionsPromise = injector
       .get(TransactionsProvider)
       .getTransactionsByChargeIDLoader.load(chargeId);
+
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
+
+    const [transactions, tempCharge] = await Promise.all([transactionsPromise, tempChargePromise]);
+
+    if (!tempCharge) {
+      throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+    }
+
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
@@ -253,7 +266,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

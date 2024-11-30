@@ -47,10 +47,10 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
             .get(ChargesProvider)
             .getChargeByIdLoader.load(updatedChargeId.charge_id)
             .then(charge => {
-              if (charge) {
-                return charge;
+              if (!charge) {
+                throw new Error(`Updated charge with id ${updatedChargeId} not found`);
               }
-              throw new Error(`Updated charge with id ${updatedChargeId} not found`);
+              return charge;
             });
         }
         throw new Error();

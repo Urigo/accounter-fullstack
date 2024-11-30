@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -30,6 +32,13 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
         __typename: 'CommonError',
         message: `Tax expenses charge must include user description with designated year`,
       };
+    }
+
+    const tempCharge = await injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(charge.id);
+    if (!tempCharge) {
+      throw new GraphQLError(`Charge ID="${charge.id}" not found`);
     }
 
     // get revaluation date - search for "yyyy-mm-dd" in description
@@ -121,7 +130,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      charge: tempCharge,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],

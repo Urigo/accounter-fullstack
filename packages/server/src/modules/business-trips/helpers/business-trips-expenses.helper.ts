@@ -1,6 +1,7 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
@@ -182,7 +183,7 @@ export async function generateChargeForEmployeePayment(
   description?: string,
 ) {
   try {
-    const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
+    const [{ id: chargeId }] = await injector.get(TempChargesProvider).generateCharge({
       ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
       taxCategoryId: BUSINESS_TRIP_TAX_CATEGORY_ID,
       userDescription: description || 'Employee payment charge',

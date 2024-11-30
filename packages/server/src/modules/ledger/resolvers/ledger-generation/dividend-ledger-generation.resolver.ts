@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -54,10 +56,19 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       .get(BalanceCancellationProvider)
       .getBalanceCancellationByChargesIdLoader.load(chargeId);
 
-    const [transactions, balanceCancellations] = await Promise.all([
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
+
+    const [transactions, balanceCancellations, tempCharge] = await Promise.all([
       transactionsPromise,
       chargeBallanceCancellationsPromise,
+      tempChargePromise,
     ]);
+
+    if (!tempCharge) {
+      throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+    }
 
     const {
       withholdingTaxTransactions,
@@ -330,7 +341,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
@@ -55,8 +56,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         const existingChargePromise = async () => {
           const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(fields.chargeId ?? '');
+            .get(TempChargesProvider)
+            .getTempChargeByIdLoader.load(fields.chargeId ?? '');
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
           }
@@ -71,14 +72,14 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           }
           if (transaction.charge_id) {
             const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(transaction.charge_id);
+              .get(TempChargesProvider)
+              .getTempChargeByIdLoader.load(transaction.charge_id);
             if (!charge) {
               throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(TempChargesProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Transaction unlinked from charge',
             });
@@ -89,10 +90,12 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             }
             chargeId = newCharge?.[0]?.id;
 
-            if (
-              Number(charge.documents_count ?? 0) === 0 &&
-              Number(charge.transactions_count ?? 1) === 1
-            ) {
+            const [transactions, documents] = await Promise.all([
+              injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(charge.id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
+            ]);
+
+            if (documents.length === 0 && transactions.length === 1) {
               postUpdateActions = async () =>
                 deleteCharges([charge.id], injector)
                   .catch(e => {

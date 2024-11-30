@@ -83,7 +83,7 @@ const config: CodegenConfig = {
             '@modules/business-trips/types.js#IGetAllBusinessTripsCarRentalExpensesResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
-          ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
+          ChargeMetadata: '@modules/charges/types.js#IGetTempChargesByIdsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',

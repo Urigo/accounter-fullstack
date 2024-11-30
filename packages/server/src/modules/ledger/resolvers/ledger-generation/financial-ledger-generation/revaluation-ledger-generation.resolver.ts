@@ -1,5 +1,6 @@
 import { sub } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
@@ -53,7 +54,18 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       .get(TaxCategoriesProvider)
       .taxCategoryByFinancialAccountOwnerIdsLoader.load(charge.owner_id);
 
-    const [accountTaxCategories] = await Promise.all([foreignAccountsPromise]);
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(charge.id);
+
+    const [accountTaxCategories, tempCharge] = await Promise.all([
+      foreignAccountsPromise,
+      tempChargePromise,
+    ]);
+
+    if (!tempCharge) {
+      throw new GraphQLError(`Temp charge with ID="${charge.id}" not found`);
+    }
 
     if (accountTaxCategories.length === 0) {
       throw new Error('No accounts found');
@@ -168,7 +180,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      charge: tempCharge,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],

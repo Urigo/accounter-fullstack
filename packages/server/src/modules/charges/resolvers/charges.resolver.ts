@@ -1,11 +1,14 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { isValidFinancialDoc } from '@modules/documents/helpers/misc.helper.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
@@ -17,22 +20,19 @@ import {
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
+import { getChargeBusinessArray } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { TempChargesProvider } from '../providers/temp-charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import {
-  commonChargeFields,
-  commonDocumentsFields,
-  commonFinancialAccountFields,
-  commonFinancialEntityFields,
-} from './common.js';
+import { commonChargeFields, commonDocumentsFields } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
@@ -122,9 +122,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeId,
       };
       try {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
         const res = await injector
-          .get(ChargesProvider)
+          .get(TempChargesProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
@@ -264,9 +263,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
           };
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
-            .get(ChargesProvider)
+            .get(TempChargesProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
               throw new Error(
@@ -292,11 +290,24 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const chargePromise = injector
+        .get(TempChargesProvider)
+        .getTempChargeByIdLoader.load(chargeId);
+      const transactionsProvider = injector
+        .get(TransactionsProvider)
+        .getTransactionsByChargeIDLoader.load(chargeId);
+      const documentsProvider = injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const [charge, transactions, documents] = await Promise.all([
+        chargePromise,
+        transactionsProvider,
+        documentsProvider,
+      ]);
       if (!charge) {
         throw new GraphQLError(`Charge ID="${chargeId}" not found`);
       }
-      if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+      if (Number(documents.length ?? 0) > 0 || Number(transactions.length ?? 0) > 0) {
         throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
       }
 
@@ -306,7 +317,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
           type: 'FINANCIAL',
@@ -341,7 +352,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Tax expenses charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -402,7 +413,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -463,7 +474,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Recovery reserve charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -524,7 +535,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
       const { injector } = context;
       try {
-        const [charge] = await injector.get(ChargesProvider).generateCharge({
+        const [charge] = await injector.get(TempChargesProvider).generateCharge({
           ownerId,
           userDescription: `Vacation reserves charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
@@ -670,34 +681,47 @@ export const chargesResolvers: ChargesModule.Resolvers &
   Receipt: {
     ...commonDocumentsFields,
   },
-  BankFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  CardFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  LtdFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
-  PersonalFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
     updatedAt: DbCharge => DbCharge.updated_at,
-    invoicesCount: DbCharge => Number(DbCharge.invoices_count) ?? 0,
-    receiptsCount: DbCharge => Number(DbCharge.receipts_count) ?? 0,
-    documentsCount: DbCharge => Number(DbCharge.documents_count) ?? 0,
-    invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
-    transactionsCount: DbCharge => {
-      return Number(DbCharge.transactions_count) ?? 0;
-    },
-    invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
-    ledgerCount: DbCharge => Number(DbCharge.ledger_count) ?? 0,
+    invoicesCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(DocumentsProvider)
+        .getInvoicesByChargeIdLoader.load(DbCharge.id)
+        .then(res => res.length),
+    receiptsCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(DocumentsProvider)
+        .getReceiptsByChargeIdLoader.load(DbCharge.id)
+        .then(res => res.length),
+    documentsCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(DbCharge.id)
+        .then(
+          res => res.filter(doc => doc.type === 'UNPROCESSED' || isValidFinancialDoc(doc)).length,
+        ),
+    transactionsCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(TransactionsProvider)
+        .getTransactionsByChargeIDLoader.load(DbCharge.id)
+        .then(res => res.length),
+    ledgerCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id)
+        .then(res => res.length),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
-        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge)(
-          DbCharge,
+        // TODO: TempCharge
+        const charge = await context.injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(DbCharge.id);
+        if (!charge) {
+          throw new Error(`Charge id=${DbCharge.id} cannot be found`);
+        }
+        const generatedLedgerPromise = ledgerGenerationByCharge(charge)(
+          charge,
           { insertLedgerRecordsIfNotExists: false },
           context,
           info,
@@ -732,8 +756,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         return 'INVALID';
       }
     },
-    optionalBusinesses: DbCharge =>
-      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
+    optionalBusinesses: getChargeBusinessArray,
     isSalary: DbCharge => DbCharge.type === 'PAYROLL',
   },
 };

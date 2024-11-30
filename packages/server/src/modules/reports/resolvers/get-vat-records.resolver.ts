@@ -2,7 +2,7 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -82,18 +82,33 @@ export const getVatRecords: ResolverFn<
       chargeType: filters?.chargesType,
     });
 
-    const [relevantDocuments, businesses, charges] = await Promise.all([
+    const [relevantDocuments, businesses, filteredCharges] = await Promise.all([
       relevantDocumentsPromise,
       businessesPromise,
       chargesPromise,
     ]);
 
+    const charges: IGetChargesByIdsResult[] = [...filteredCharges];
+
     let docsCharges = charges.filter(charge => docsChargesIDs.has(charge.id));
     if (docsCharges.length < docsChargesIDs.size) {
-      const moreDocsCharges = await injector.get(ChargesProvider).getChargesByFilters({
-        IDs: Array.from(docsChargesIDs).filter(id => !docsCharges.find(charge => charge.id === id)),
-        ownerIds: [reportIssuerId],
-      });
+      const moreDocsCharges = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.loadMany(
+          Array.from(docsChargesIDs).filter(id => !docsCharges.find(charge => charge.id === id)),
+        )
+        .then(
+          charges =>
+            charges.filter(charge => {
+              if (!charge) {
+                throw new GraphQLError('No charge ');
+              }
+              if (charge instanceof Error) {
+                throw charge;
+              }
+              return charge;
+            }) as IGetChargesByIdsResult[],
+        );
 
       charges.push(...moreDocsCharges);
       docsCharges.push(...moreDocsCharges);
@@ -177,7 +192,7 @@ export const getVatRecords: ResolverFn<
 
     // validate charges for missing info
     const validatedCharges = await Promise.all<{
-      charge: IGetChargesByFiltersResult;
+      charge: IGetChargesByIdsResult;
       isValid: boolean;
     }>(
       charges.map(

@@ -1,3 +1,4 @@
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -108,19 +109,29 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       .get(BalanceCancellationProvider)
       .getBalanceCancellationByChargesIdLoader.load(chargeId);
 
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
+
     const [
       documentsTaxCategoryId,
       documents,
       transactions,
       unbalancedBusinesses,
       balanceCancellations,
+      tempCharge,
     ] = await Promise.all([
       documentsTaxCategoryIdPromise,
       documentsPromise,
       transactionsPromise,
       unbalancedBusinessesPromise,
       chargeBallanceCancellationsPromise,
+      tempChargePromise,
     ]);
+
+    if (!tempCharge) {
+      throw new Error(`Charge ID=${chargeId} not found`);
+    }
 
     const entriesPromises: Array<Promise<void>> = [];
     const accountingLedgerEntries: LedgerProto[] = [];
@@ -324,7 +335,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
       return {
         records: ledgerProtoToRecordsConverter(records),
-        charge,
+        charge: tempCharge,
         balance: { balanceSum, isBalanced, unbalancedEntities },
         errors: Array.from(errors),
       };
@@ -354,7 +365,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
           return {
             records: ledgerProtoToRecordsConverter(records),
-            charge,
+            charge: tempCharge,
             balance: { balanceSum, isBalanced, unbalancedEntities },
             errors: Array.from(errors),
           };
@@ -471,7 +482,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

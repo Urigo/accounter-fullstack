@@ -1,4 +1,5 @@
 import { lastDayOfMonth } from 'date-fns';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
@@ -81,13 +82,22 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       .get(BalanceCancellationProvider)
       .getBalanceCancellationByChargesIdLoader.load(chargeId);
 
-    const [salaryRecords, transactions, unbalancedBusinesses, balanceCancellations] =
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
+
+    const [salaryRecords, transactions, unbalancedBusinesses, balanceCancellations, tempCharge] =
       await Promise.all([
         salaryRecordsPromise,
         transactionsPromise,
         unbalancedBusinessesPromise,
         chargeBallanceCancellationsPromise,
+        tempChargePromise,
       ]);
+
+    if (!tempCharge) {
+      throw new LedgerError(`Temp charge with ID="${chargeId}" not found`);
+    }
 
     // generate ledger from salary records
     try {
@@ -520,7 +530,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

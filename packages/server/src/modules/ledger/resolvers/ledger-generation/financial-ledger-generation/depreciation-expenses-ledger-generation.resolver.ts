@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateDepreciationAmount } from '@modules/reports/helpers/tax.helper.js';
 import {
@@ -44,7 +46,14 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       };
     }
 
-    const { depreciationYearlyAmount } = await calculateDepreciationAmount(injector, year);
+    const [{ depreciationYearlyAmount }, tempCharge] = await Promise.all([
+      calculateDepreciationAmount(injector, year),
+      injector.get(TempChargesProvider).getTempChargeByIdLoader.load(charge.id),
+    ]);
+
+    if (!tempCharge) {
+      throw new GraphQLError(`Charge ID="${charge.id}" not found`);
+    }
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
@@ -70,7 +79,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      charge: tempCharge,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],
