@@ -20,7 +20,7 @@
     "@mantine/dropzone": "6.0.22",
     "@mantine/hooks": "6.0.22",
     "@mantine/notifications": "6.0.22",
-    "@mui/material": "6.1.8",
+    "@mui/material": "6.1.9",
     "@mui/x-charts": "7.22.3",
     "@radix-ui/react-avatar": "1.1.1",
     "@radix-ui/react-collapsible": "^1.1.0",
