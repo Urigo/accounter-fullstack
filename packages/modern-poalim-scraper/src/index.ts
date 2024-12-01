@@ -37,7 +37,6 @@ export async function init(headless = true) {
       return amex(page, credentials, options);
     },
     cal: async (credentials: CalCredentials, options?: CalOptions) => {
-      // return cal.init
       const page = await newPage(browser);
       return cal(page, credentials, options);
     },

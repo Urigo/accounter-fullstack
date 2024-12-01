@@ -1,9 +1,11 @@
 // temporary script to test out cal scraping
 
 // tsx packages/modern-poalim-scraper/src/scrape.ts
-
+import dotenv from 'dotenv';
 import { init } from './index.js';
 import { CalOptions } from './scrapers/cal.js';
+
+dotenv.config();
 
 async function main() {
   if (!process.env['CAL_USERNAME'] || !process.env['CAL_PASSWORD']) {
