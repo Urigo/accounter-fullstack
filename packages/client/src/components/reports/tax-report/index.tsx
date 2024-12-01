@@ -11,27 +11,56 @@ import { TaxReportFilter } from './tax-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query TaxReport($years: [Int!]!) {
-    taxReport(years: $years) {
-      year
-      profitBeforeTax {
-        formatted
+  query TaxReport($reportYear: Int!, $referenceYears: [Int!]!) {
+    taxReport(reportYear: $reportYear, referenceYears: $referenceYears) {
+      id
+      report {
+        id
+        year
+        profitBeforeTax {
+          amount {
+            formatted
+          }
+        }
+        researchAndDevelopmentExpensesByRecords {
+          amount {
+            formatted
+          }
+        }
+        researchAndDevelopmentExpensesForTax {
+          formatted
+        }
+        taxableIncome {
+          formatted
+        }
+        taxRate
+        annualTaxExpense {
+          formatted
+        }
       }
-      researchAndDevelopmentExpensesByRecords {
-        formatted
-      }
-      researchAndDevelopmentExpensesForTax {
-        formatted
-      }
-      depreciationForTax {
-        formatted
-      }
-      taxableIncome {
-        formatted
-      }
-      taxRate
-      annualTaxExpense {
-        formatted
+      reference {
+        id
+        year
+        profitBeforeTax {
+          amount {
+            formatted
+          }
+        }
+        researchAndDevelopmentExpensesByRecords {
+          amount {
+            formatted
+          }
+        }
+        researchAndDevelopmentExpensesForTax {
+          formatted
+        }
+        taxableIncome {
+          formatted
+        }
+        taxRate
+        annualTaxExpense {
+          formatted
+        }
       }
     }
   }
@@ -40,27 +69,36 @@ import { TaxReportFilter } from './tax-report-filters.js';
 export const TaxReport = (): ReactElement => {
   const match = useMatch('/reports/tax/:year');
   const { setFiltersContext } = useContext(FiltersContext);
-  const [years, setYears] = useState<number[]>(
-    (match ? [Number(match.params.year)] : undefined) ?? [new Date().getFullYear()],
+  const [year, setYear] = useState<number>(
+    (match ? Number(match.params.year) : undefined) ?? new Date().getFullYear(),
   );
+  const [referenceYears, setReferenceYears] = useState<number[]>([]);
 
   // fetch data
   const [{ data, fetching }] = useQuery({
     query: dedupeFragments(TaxReportDocument),
     variables: {
-      years,
+      reportYear: year,
+      referenceYears,
     },
   });
 
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
-        <TaxReportFilter years={years} setYears={setYears} />
+        <TaxReportFilter
+          year={year}
+          setYear={setYear}
+          referenceYears={referenceYears}
+          setReferenceYears={setReferenceYears}
+        />
       </div>,
     );
-  }, [years, fetching, setFiltersContext]);
+  }, [year, fetching, setFiltersContext, referenceYears, setReferenceYears]);
 
-  const yearlyReports = data?.taxReport ?? [];
+  const yearlyReports = data?.taxReport;
+  const report = yearlyReports?.report;
+  const referenceYearsData = yearlyReports?.reference ?? [];
 
   return (
     <PageLayout title="Tax Report">
@@ -68,54 +106,54 @@ export const TaxReport = (): ReactElement => {
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <div className="flex flex-col gap-4">
-          {yearlyReports && (
+          {report && (
             <Table highlightOnHover fontSize="md">
               <thead>
                 <tr>
                   <th />
-                  {years.map(year => (
-                    <th key={year}>{year}</th>
+                  <th key={year}>{year}</th>
+                  {referenceYearsData.map(report => (
+                    <th key={report.year}>{report.year}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <th>Profit Before Tax</th>
-                  {yearlyReports.map(report => (
-                    <th key={report.year}>{report.profitBeforeTax.formatted}</th>
+                  <th>{report.profitBeforeTax.amount.formatted}</th>
+                  {referenceYearsData.map(report => (
+                    <th key={report.year}>{report.profitBeforeTax.amount.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>R&D Expenses By Records</td>
-                  {yearlyReports.map(report => (
+                  <td>{report.researchAndDevelopmentExpensesByRecords.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
                     <td key={report.year}>
-                      {report.researchAndDevelopmentExpensesByRecords.formatted}
+                      {report.researchAndDevelopmentExpensesByRecords.amount.formatted}
                     </td>
                   ))}
                 </tr>
                 <tr>
                   <td>R&D Expenses For Tax</td>
-                  {yearlyReports.map(report => (
+                  <td>{report.researchAndDevelopmentExpensesForTax.formatted}</td>
+                  {referenceYearsData.map(report => (
                     <td key={report.year}>
                       {report.researchAndDevelopmentExpensesForTax.formatted}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td>Depreciations For Tax</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.depreciationForTax.formatted}</td>
-                  ))}
-                </tr>
-                <tr>
                   <th>Taxable Income</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.taxableIncome.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.taxableIncome.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>Tax Rate</td>
-                  {yearlyReports.map(report => (
+                  <td>{(report.taxRate * 100).toFixed(1)}%</td>
+                  {referenceYearsData.map(report => (
                     <td key={report.year}>{(report.taxRate * 100).toFixed(1)}%</td>
                   ))}
                 </tr>
@@ -123,7 +161,8 @@ export const TaxReport = (): ReactElement => {
               <tfoot>
                 <tr>
                   <th>Annual Tax Expense</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.annualTaxExpense.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.annualTaxExpense.formatted}</th>
                   ))}
                 </tr>

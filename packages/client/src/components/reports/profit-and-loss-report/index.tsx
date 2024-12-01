@@ -11,44 +11,116 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ProfitAndLossReport($years: [Int!]!) {
-    profitAndLossReport(years: $years) {
-      year
-      revenue {
-        formatted
+  query ProfitAndLossReport($reportYear: Int!, $referenceYears: [Int!]!) {
+    profitAndLossReport(reportYear: $reportYear, referenceYears: $referenceYears) {
+      id
+      report {
+        id
+        year
+        revenue {
+          amount {
+            formatted
+          }
+        }
+        costOfSales {
+          amount {
+            formatted
+          }
+        }
+        grossProfit {
+          formatted
+        }
+        researchAndDevelopmentExpenses {
+          amount {
+            formatted
+          }
+        }
+        marketingExpenses {
+          amount {
+            formatted
+          }
+        }
+        managementAndGeneralExpenses {
+          amount {
+            formatted
+          }
+        }
+        operatingProfit {
+          formatted
+        }
+        financialExpenses {
+          amount {
+            formatted
+          }
+        }
+        otherIncome {
+          amount {
+            formatted
+          }
+        }
+        profitBeforeTax {
+          formatted
+        }
+        tax {
+          formatted
+        }
+        netProfit {
+          formatted
+        }
       }
-      costOfSales {
-        formatted
-      }
-      grossProfit {
-        formatted
-      }
-      researchAndDevelopmentExpenses {
-        formatted
-      }
-      marketingExpenses {
-        formatted
-      }
-      managementAndGeneralExpenses {
-        formatted
-      }
-      operatingProfit {
-        formatted
-      }
-      financialExpenses {
-        formatted
-      }
-      otherIncome {
-        formatted
-      }
-      profitBeforeTax {
-        formatted
-      }
-      tax {
-        formatted
-      }
-      netProfit {
-        formatted
+      reference {
+        id
+        year
+        revenue {
+          amount {
+            formatted
+          }
+        }
+        costOfSales {
+          amount {
+            formatted
+          }
+        }
+        grossProfit {
+          formatted
+        }
+        researchAndDevelopmentExpenses {
+          amount {
+            formatted
+          }
+        }
+        marketingExpenses {
+          amount {
+            formatted
+          }
+        }
+        managementAndGeneralExpenses {
+          amount {
+            formatted
+          }
+        }
+        operatingProfit {
+          formatted
+        }
+        financialExpenses {
+          amount {
+            formatted
+          }
+        }
+        otherIncome {
+          amount {
+            formatted
+          }
+        }
+        profitBeforeTax {
+          formatted
+        }
+        tax {
+          formatted
+        }
+        netProfit {
+          formatted
+        }
       }
     }
   }
@@ -57,27 +129,36 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 export const ProfitAndLossReport = (): ReactElement => {
   const match = useMatch('/reports/profit-and-loss/:year');
   const { setFiltersContext } = useContext(FiltersContext);
-  const [years, setYears] = useState<number[]>(
-    (match ? [Number(match.params.year)] : undefined) ?? [new Date().getFullYear()],
+  const [year, setYear] = useState<number>(
+    (match ? Number(match.params.year) : undefined) ?? new Date().getFullYear(),
   );
+  const [referenceYears, setReferenceYears] = useState<number[]>([]);
 
   // fetch data
   const [{ data, fetching }] = useQuery({
     query: dedupeFragments(ProfitAndLossReportDocument),
     variables: {
-      years,
+      reportYear: year,
+      referenceYears,
     },
   });
 
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
-        <ProfitAndLossReportFilter years={years} setYears={setYears} />
+        <ProfitAndLossReportFilter
+          year={year}
+          setYear={setYear}
+          referenceYears={referenceYears}
+          setReferenceYears={setReferenceYears}
+        />
       </div>,
     );
-  }, [years, fetching, setFiltersContext]);
+  }, [year, fetching, setFiltersContext, referenceYears, setReferenceYears]);
 
-  const yearlyReports = data?.profitAndLossReport ?? [];
+  const yearlyReports = data?.profitAndLossReport;
+  const report = yearlyReports?.report;
+  const referenceYearsData = yearlyReports?.reference ?? [];
 
   return (
     <PageLayout title="Profit and Loss Report">
@@ -85,80 +166,96 @@ export const ProfitAndLossReport = (): ReactElement => {
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <div className="flex flex-col gap-4">
-          {yearlyReports && (
+          {report && (
             <Table highlightOnHover fontSize="md">
               <thead>
                 <tr>
                   <th />
-                  {years.map(year => (
-                    <th key={year}>{year}</th>
+                  <th key={year}>{year}</th>
+                  {referenceYearsData.map(report => (
+                    <th key={report.year}>{report.year}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <th>Revenue</th>
-                  {yearlyReports.map(report => (
-                    <th key={report.year}>{report.revenue.formatted}</th>
+                  <th>{report.revenue.amount.formatted}</th>
+                  {referenceYearsData.map(report => (
+                    <th key={report.year}>{report.revenue.amount.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>Cost of Sales</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.costOfSales.formatted}</td>
+                  <td>{report.costOfSales.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.costOfSales.amount.formatted}</td>
                   ))}
                 </tr>
                 <tr>
                   <th>Gross Profit</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.grossProfit.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.grossProfit.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>R&D Expenses</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.researchAndDevelopmentExpenses.formatted}</td>
+                  <td>{report.researchAndDevelopmentExpenses.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>
+                      {report.researchAndDevelopmentExpenses.amount.formatted}
+                    </td>
                   ))}
                 </tr>
                 <tr>
                   <td>Marketing Expenses</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.marketingExpenses.formatted}</td>
+                  <td>{report.marketingExpenses.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.marketingExpenses.amount.formatted}</td>
                   ))}
                 </tr>
                 <tr>
                   <td>Management and General Expenses</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.managementAndGeneralExpenses.formatted}</td>
+                  <td>{report.managementAndGeneralExpenses.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>
+                      {report.managementAndGeneralExpenses.amount.formatted}
+                    </td>
                   ))}
                 </tr>
                 <tr>
                   <th>Operating Profit</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.operatingProfit.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.operatingProfit.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>Financial Expenses</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.financialExpenses.formatted}</td>
+                  <td>{report.financialExpenses.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.financialExpenses.amount.formatted}</td>
                   ))}
                 </tr>
                 <tr>
                   <td>Other Income</td>
-                  {yearlyReports.map(report => (
-                    <td key={report.year}>{report.otherIncome.formatted}</td>
+                  <td>{report.otherIncome.amount.formatted}</td>
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.otherIncome.amount.formatted}</td>
                   ))}
                 </tr>
                 <tr>
                   <th>Profit Before Tax</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.profitBeforeTax.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.profitBeforeTax.formatted}</th>
                   ))}
                 </tr>
                 <tr>
                   <td>Tax</td>
-                  {yearlyReports.map(report => (
+                  <td>{report.tax.formatted}</td>
+                  {referenceYearsData.map(report => (
                     <td key={report.year}>{report.tax.formatted}</td>
                   ))}
                 </tr>
@@ -166,7 +263,8 @@ export const ProfitAndLossReport = (): ReactElement => {
               <tfoot>
                 <tr>
                   <th>Net Profit</th>
-                  {yearlyReports.map(report => (
+                  <th>{report.netProfit.formatted}</th>
+                  {referenceYearsData.map(report => (
                     <th key={report.year}>{report.netProfit.formatted}</th>
                   ))}
                 </tr>

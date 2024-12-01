@@ -1,5 +1,4 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
@@ -57,31 +56,9 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       .get(LedgerProvider)
       .getLedgerRecordsByDates({ fromDate: from, toDate: to });
 
-    const financialEntitiesIds = new Set(
-      ledgerRecords
-        .map(record => [
-          record.credit_entity1,
-          record.credit_entity2,
-          record.debit_entity1,
-          record.debit_entity2,
-        ])
-        .flat()
-        .filter(Boolean) as string[],
-    );
-    const financialEntities = (await injector
+    const financialEntities = await injector
       .get(FinancialEntitiesProvider)
-      .getFinancialEntityByIdLoader.loadMany(Array.from(financialEntitiesIds))
-      .then(res =>
-        res.filter(entity => {
-          if (!entity) {
-            return false;
-          }
-          if (entity instanceof Error) {
-            throw entity;
-          }
-          return true;
-        }),
-      )) as IGetFinancialEntitiesByIdsResult[];
+      .getAllFinancialEntities();
 
     const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 
@@ -93,6 +70,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     const { annualTaxExpenseAmount } = await calculateTaxAmounts(
       injector,
       year,
+      decoratedLedgerRecords,
       researchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );

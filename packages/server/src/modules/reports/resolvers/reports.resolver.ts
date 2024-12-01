@@ -16,8 +16,11 @@ import {
   corporateTaxRulingComplianceReport,
   corporateTaxRulingComplianceReportDifferences,
 } from './reports/corporate-tax-ruling-compliance-report.js';
-import { profitAndLossReport } from './reports/profit-and-loss-report.resolver.js';
-import { taxReport } from './reports/tax-report.js';
+import {
+  profitAndLossReport,
+  profitAndLossReportYearMapper,
+} from './reports/profit-and-loss-report.resolver.js';
+import { taxReport, taxReportYearMapper } from './reports/tax-report.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
@@ -114,4 +117,6 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     rndRelativeToIncome: report => report.rndRelativeToIncome,
     differences: corporateTaxRulingComplianceReportDifferences,
   },
+  ProfitAndLossReportYear: profitAndLossReportYearMapper,
+  TaxReportYear: taxReportYearMapper,
 };
