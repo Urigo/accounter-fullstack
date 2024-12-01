@@ -3,6 +3,9 @@ import {
   amex,
   AmexCredentials,
   AmexOptions,
+  cal,
+  CalCredentials,
+  CalOptions,
   hapoalim,
   HapoalimCredentials,
   HapoalimOptions,
@@ -12,10 +15,10 @@ import {
 } from './scrapers/scrapers-index.js';
 import { newPage } from './utils/browser-util.js';
 
-export async function init() {
+export async function init(headless = true) {
   /* this initiates browser and returns every scraper as function */
   /* each scraper opens its own page                              */
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless });
 
   return {
     hapoalim: async (credentials: HapoalimCredentials, options?: HapoalimOptions) => {
@@ -32,6 +35,11 @@ export async function init() {
       //return isracard.init
       const page = await newPage(browser);
       return amex(page, credentials, options);
+    },
+    cal: async (credentials: CalCredentials, options?: CalOptions) => {
+      // return cal.init
+      const page = await newPage(browser);
+      return cal(page, credentials, options);
     },
     close: () => {
       return browser.close();
