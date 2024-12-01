@@ -59,7 +59,7 @@
     "@graphql-codegen/schema-ast": "4.1.0",
     "@graphql-codegen/typescript": "4.1.2",
     "@graphql-codegen/typescript-resolvers": "4.4.1",
-    "@graphql-eslint/eslint-plugin": "4.0.0",
+    "@graphql-eslint/eslint-plugin": "4.2.0",
     "@graphql-hive/cli": "0.44.3",
     "@graphql-inspector/cli": "5.0.7",
     "@parcel/watcher": "^2.4.1",
