@@ -56,12 +56,12 @@
     "tailwindcss-animate": "1.0.7",
     "urql": "4.2.1",
     "zod": "3.23.8",
-    "zustand": "5.0.1"
+    "zustand": "5.0.2"
   },
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.3.12",
+    "@types/react": "18.3.13",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
