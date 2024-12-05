@@ -40,6 +40,14 @@ jobs:
         run: echo "safeFlag=--forceSafe" >> $GITHUB_OUTPUT
         id: pr-label-check
 
+      - name: temp1
+        run: echo "${{steps.pr-label-check.outputs.safeFlag}}"
+        id: temp1
+
+      - name: temp2
+        run: echo "${{contains(github.event.pull_request.labels.*.name, 'non-breaking')}}"
+        id: temp2
+
       - name: schema check
         env:
           HIVE_TOKEN: ${{ secrets.hiveToken }}
