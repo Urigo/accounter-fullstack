@@ -17,7 +17,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: DbAccount => DbAccount.bank_number!.toString(),
-    branchNumber: DbAccount => DbAccount.branch_number!.toString(),
+    // branchNumber: DbAccount => DbAccount.branch_number!.toString(),
     name: DbAccount => `${DbAccount.bank_number}-${DbAccount.account_number}`,
   },
   CardFinancialAccount: {

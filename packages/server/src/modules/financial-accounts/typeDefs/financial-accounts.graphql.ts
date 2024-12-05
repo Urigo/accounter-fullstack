@@ -23,7 +23,6 @@ export default gql`
     " the external identifier of the bank account "
     accountNumber: String!
     bankNumber: String!
-    branchNumber: String!
   }
 
   " represent a single credit card "
