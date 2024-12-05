@@ -18,26 +18,20 @@ export default gql`
   type ProfitAndLossReportYear {
     id: ID!
     year: Int!
-    revenue: ProfitAndLossCommentary!
-    costOfSales: ProfitAndLossCommentary!
+    revenue: ReportCommentary!
+    costOfSales: ReportCommentary!
     grossProfit: FinancialAmount!
 
-    researchAndDevelopmentExpenses: ProfitAndLossCommentary!
-    marketingExpenses: ProfitAndLossCommentary!
-    managementAndGeneralExpenses: ProfitAndLossCommentary!
+    researchAndDevelopmentExpenses: ReportCommentary!
+    marketingExpenses: ReportCommentary!
+    managementAndGeneralExpenses: ReportCommentary!
     operatingProfit: FinancialAmount!
 
-    financialExpenses: ProfitAndLossCommentary!
-    otherIncome: ProfitAndLossCommentary!
+    financialExpenses: ReportCommentary!
+    otherIncome: ReportCommentary!
     profitBeforeTax: FinancialAmount!
 
     tax: FinancialAmount!
     netProfit: FinancialAmount!
-  }
-
-  " result type for profitAndLossReport "
-  type ProfitAndLossCommentary {
-    amount: FinancialAmount!
-    records: [LedgerRecord!]!
   }
 `;

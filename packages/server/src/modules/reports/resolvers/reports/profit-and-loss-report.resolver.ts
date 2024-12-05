@@ -2,10 +2,13 @@ import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
+import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   ProfitAndLossReportYearResolvers,
   QueryProfitAndLossReportArgs,
+  ReportCommentaryRecordResolvers,
+  ReportCommentarySubRecordResolvers,
   RequireFields,
   ResolverFn,
   ResolversParentTypes,
@@ -169,4 +172,34 @@ export const profitAndLossReportYearMapper: ProfitAndLossReportYearResolvers = {
   profitBeforeTax: parent => formatFinancialAmount(parent.profitBeforeTax, DEFAULT_LOCAL_CURRENCY),
   tax: parent => formatFinancialAmount(parent.tax, DEFAULT_LOCAL_CURRENCY),
   netProfit: parent => formatFinancialAmount(parent.netProfit, DEFAULT_LOCAL_CURRENCY),
+};
+
+export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
+  sortCode: (parent, _, { injector }) => {
+    return injector
+      .get(SortCodesProvider)
+      .getSortCodesByIdLoader.load(parent.sortCode)
+      .then(res => {
+        if (!res) {
+          throw new GraphQLError(`Sort code "${parent.sortCode}" not found`);
+        }
+        return res;
+      });
+  },
+  amount: parent => formatFinancialAmount(parent.amount, DEFAULT_LOCAL_CURRENCY),
+};
+
+export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers = {
+  financialEntity: (parent, _, { injector }) => {
+    return injector
+      .get(FinancialEntitiesProvider)
+      .getFinancialEntityByIdLoader.load(parent.financialEntityId)
+      .then(res => {
+        if (!res) {
+          throw new GraphQLError(`Financial entity ID="${parent.financialEntityId}" not found`);
+        }
+        return res;
+      });
+  },
+  amount: parent => formatFinancialAmount(parent.amount, DEFAULT_LOCAL_CURRENCY),
 };

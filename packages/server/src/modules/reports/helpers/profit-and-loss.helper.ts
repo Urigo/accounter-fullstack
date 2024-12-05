@@ -1,5 +1,6 @@
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
+import { CommentaryRecordProto } from '../types.js';
 
 export type LedgerRecordDecorations = Partial<{
   credit_entity_sort_code1: number;
@@ -51,41 +52,87 @@ export function decorateLedgerRecords(
   });
 }
 
+function updateRecords(
+  amountsByEntity: Map<number, { amount: number; records: Map<string, number> }>,
+  amount: number,
+  sortCode: number,
+  financialEntityId: string,
+) {
+  const currentRecord = amountsByEntity.get(sortCode);
+  if (currentRecord) {
+    currentRecord.amount += amount;
+    const record = currentRecord.records.get(financialEntityId);
+    if (record) {
+      currentRecord.records.set(financialEntityId, record + amount);
+    } else {
+      currentRecord.records.set(financialEntityId, amount);
+    }
+  } else {
+    amountsByEntity.set(sortCode, { amount, records: new Map([[financialEntityId, amount]]) });
+  }
+}
+
 export function amountBySortCodeValidation(
   unfilteredRecords: DecoratedLedgerRecord[],
   validation: (sortCode: number) => boolean,
-): { amount: number; records: DecoratedLedgerRecord[]; entityIds: string[] } {
+): { amount: number; records: CommentaryRecordProto[] } {
   let amount = 0;
-  const records: DecoratedLedgerRecord[] = [];
-  const entityIdsSet = new Set<string>();
+  const amountsByEntity = new Map<
+    number,
+    {
+      amount: number;
+      records: Map<string, number>;
+    }
+  >();
   unfilteredRecords.map(record => {
-    let shouldIncludeRecord = false;
     if (record.credit_entity1 && validation(record.credit_entity_sort_code1!)) {
-      shouldIncludeRecord = true;
-      entityIdsSet.add(record.credit_entity1);
+      updateRecords(
+        amountsByEntity,
+        Number(record.credit_local_amount1),
+        record.credit_entity_sort_code1!,
+        record.credit_entity1,
+      );
       amount += Number(record.credit_local_amount1);
     }
     if (record.credit_entity2 && validation(record.credit_entity_sort_code2!)) {
-      shouldIncludeRecord = true;
-      entityIdsSet.add(record.credit_entity2);
+      updateRecords(
+        amountsByEntity,
+        Number(record.credit_local_amount2),
+        record.credit_entity_sort_code2!,
+        record.credit_entity2,
+      );
       amount += Number(record.credit_local_amount2);
     }
     if (record.debit_entity1 && validation(record.debit_entity_sort_code1!)) {
-      shouldIncludeRecord = true;
-      entityIdsSet.add(record.debit_entity1);
+      updateRecords(
+        amountsByEntity,
+        -Number(record.debit_local_amount1),
+        record.debit_entity_sort_code1!,
+        record.debit_entity1,
+      );
       amount -= Number(record.debit_local_amount1);
     }
     if (record.debit_entity2 && validation(record.debit_entity_sort_code2!)) {
-      shouldIncludeRecord = true;
-      entityIdsSet.add(record.debit_entity2);
+      updateRecords(
+        amountsByEntity,
+        -Number(record.debit_local_amount2),
+        record.debit_entity_sort_code2!,
+        record.debit_entity2,
+      );
       amount -= Number(record.debit_local_amount2);
-    }
-    if (shouldIncludeRecord) {
-      records.push(record);
     }
   });
 
-  return { amount, records, entityIds: Array.from(entityIdsSet) };
+  const records = Array.from(amountsByEntity.entries()).map(([sortCode, data]) => ({
+    sortCode,
+    amount: data.amount,
+    records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
+      financialEntityId,
+      amount,
+    })),
+  }));
+
+  return { amount, records };
 }
 
 export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedgerRecord[]) {
@@ -131,7 +178,7 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
   );
 
   const profitBeforeTaxAmount = operatingProfitAmount + financialExpensesAmount + otherIncomeAmount;
-  const profitBeforeTaxRecordsWithDuplications = [
+  const profitBeforeTaxRecords = [
     ...revenueRecords,
     ...costOfSalesRecords,
     ...researchAndDevelopmentExpensesRecords,
@@ -140,10 +187,6 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     ...financialExpensesRecords,
     ...otherIncomeRecords,
   ];
-  const profitBeforeTaxRecordsSet = new Map<string, DecoratedLedgerRecord>(
-    profitBeforeTaxRecordsWithDuplications.map(record => [record.id, record]),
-  );
-  const profitBeforeTaxRecords = Array.from(profitBeforeTaxRecordsSet.values());
 
   return {
     revenueAmount,

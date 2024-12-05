@@ -19,6 +19,8 @@ import {
 import {
   profitAndLossReport,
   profitAndLossReportYearMapper,
+  reportCommentaryRecordMapper,
+  reportCommentarySubRecordMapper,
 } from './reports/profit-and-loss-report.resolver.js';
 import { taxReport, taxReportYearMapper } from './reports/tax-report.js';
 
@@ -119,4 +121,6 @@ export const reportsResolvers: ReportsModule.Resolvers = {
   },
   ProfitAndLossReportYear: profitAndLossReportYearMapper,
   TaxReportYear: taxReportYearMapper,
+  ReportCommentaryRecord: reportCommentaryRecordMapper,
+  ReportCommentarySubRecord: reportCommentarySubRecordMapper,
 };

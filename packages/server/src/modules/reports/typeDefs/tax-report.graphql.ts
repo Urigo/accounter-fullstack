@@ -17,17 +17,30 @@ export default gql`
   type TaxReportYear {
     id: ID!
     year: Int!
-    profitBeforeTax: TaxReportCommentary!
-    researchAndDevelopmentExpensesByRecords: TaxReportCommentary!
+    profitBeforeTax: ReportCommentary!
+    researchAndDevelopmentExpensesByRecords: ReportCommentary!
     researchAndDevelopmentExpensesForTax: FinancialAmount!
     taxableIncome: FinancialAmount!
     taxRate: Float!
     annualTaxExpense: FinancialAmount!
   }
 
-  " result type for profitAndLossReport "
-  type TaxReportCommentary {
+  " Tax report commentary summary "
+  type ReportCommentary {
     amount: FinancialAmount!
-    records: [LedgerRecord!]!
+    records: [ReportCommentaryRecord!]!
+  }
+
+  " Report commentary record "
+  type ReportCommentaryRecord {
+    sortCode: SortCode!
+    amount: FinancialAmount!
+    records: [ReportCommentarySubRecord!]!
+  }
+
+  " Report commentary sub-record "
+  type ReportCommentarySubRecord {
+    financialEntity: FinancialEntity!
+    amount: FinancialAmount!
   }
 `;

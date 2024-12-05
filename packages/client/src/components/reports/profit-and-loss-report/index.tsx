@@ -7,6 +7,7 @@ import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { ReportCommentaryRow } from '../shared/report-commentary-row.jsx';
 import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -21,11 +22,13 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         costOfSales {
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         grossProfit {
           formatted
@@ -34,16 +37,19 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         marketingExpenses {
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         managementAndGeneralExpenses {
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         operatingProfit {
           formatted
@@ -52,11 +58,13 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         otherIncome {
           amount {
             formatted
           }
+          ...ReportCommentaryTableFields
         }
         profitBeforeTax {
           formatted
@@ -172,82 +180,136 @@ export const ProfitAndLossReport = (): ReactElement => {
                 <tr>
                   <th />
                   <th key={year}>{year}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.year}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <th>Revenue</th>
-                  <th>{report.revenue.amount.formatted}</th>
-                  {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.revenue.amount.formatted}</th>
-                  ))}
-                </tr>
-                <tr>
-                  <td>Cost of Sales</td>
-                  <td>{report.costOfSales.amount.formatted}</td>
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>{report.costOfSales.amount.formatted}</td>
-                  ))}
-                </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <th>Revenue</th>
+                      <th>{report.revenue.amount.formatted}</th>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <th key={report.year}>{report.revenue.amount.formatted}</th>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.revenue}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Cost of Sales</td>
+                      <td>{report.costOfSales.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.costOfSales.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.costOfSales}
+                />
                 <tr>
                   <th>Gross Profit</th>
                   <th>{report.grossProfit.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.grossProfit.formatted}</th>
                   ))}
                 </tr>
-                <tr>
-                  <td>R&D Expenses</td>
-                  <td>{report.researchAndDevelopmentExpenses.amount.formatted}</td>
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>
-                      {report.researchAndDevelopmentExpenses.amount.formatted}
-                    </td>
-                  ))}
-                </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>R&D Expenses</td>
+                      <td>{report.researchAndDevelopmentExpenses.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>
+                          {report.researchAndDevelopmentExpenses.amount.formatted}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.researchAndDevelopmentExpenses}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Marketing Expenses</td>
+                      <td>{report.marketingExpenses.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.marketingExpenses.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.marketingExpenses}
+                />
                 <tr>
                   <td>Marketing Expenses</td>
                   <td>{report.marketingExpenses.amount.formatted}</td>
+                  <td />
                   {referenceYearsData.map(report => (
                     <td key={report.year}>{report.marketingExpenses.amount.formatted}</td>
                   ))}
                 </tr>
-                <tr>
-                  <td>Management and General Expenses</td>
-                  <td>{report.managementAndGeneralExpenses.amount.formatted}</td>
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>
-                      {report.managementAndGeneralExpenses.amount.formatted}
-                    </td>
-                  ))}
-                </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Management and General Expenses</td>
+                      <td>{report.managementAndGeneralExpenses.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>
+                          {report.managementAndGeneralExpenses.amount.formatted}
+                        </td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.managementAndGeneralExpenses}
+                />
                 <tr>
                   <th>Operating Profit</th>
                   <th>{report.operatingProfit.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.operatingProfit.formatted}</th>
                   ))}
                 </tr>
-                <tr>
-                  <td>Financial Expenses</td>
-                  <td>{report.financialExpenses.amount.formatted}</td>
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>{report.financialExpenses.amount.formatted}</td>
-                  ))}
-                </tr>
-                <tr>
-                  <td>Other Income</td>
-                  <td>{report.otherIncome.amount.formatted}</td>
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>{report.otherIncome.amount.formatted}</td>
-                  ))}
-                </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Financial Expenses</td>
+                      <td>{report.financialExpenses.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.financialExpenses.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.financialExpenses}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Other Income</td>
+                      <td>{report.otherIncome.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.otherIncome.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.otherIncome}
+                />
                 <tr>
                   <th>Profit Before Tax</th>
                   <th>{report.profitBeforeTax.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.profitBeforeTax.formatted}</th>
                   ))}
@@ -255,6 +317,7 @@ export const ProfitAndLossReport = (): ReactElement => {
                 <tr>
                   <td>Tax</td>
                   <td>{report.tax.formatted}</td>
+                  <td />
                   {referenceYearsData.map(report => (
                     <td key={report.year}>{report.tax.formatted}</td>
                   ))}
@@ -264,6 +327,7 @@ export const ProfitAndLossReport = (): ReactElement => {
                 <tr>
                   <th>Net Profit</th>
                   <th>{report.netProfit.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.netProfit.formatted}</th>
                   ))}

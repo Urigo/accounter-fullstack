@@ -1,10 +1,19 @@
-import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types.js';
-
 export * from './__generated__/types.js';
 
 type CommentaryProto = {
   amount: number;
-  records: IGetLedgerRecordsByChargesIdsResult[];
+  records: CommentaryRecordProto[];
+};
+
+export type CommentaryRecordProto = {
+  sortCode: number;
+  amount: number;
+  records: CommentarySubRecordProto[];
+};
+
+export type CommentarySubRecordProto = {
+  financialEntityId: string;
+  amount: number;
 };
 
 export type ProfitAndLossReportYearProto = {
