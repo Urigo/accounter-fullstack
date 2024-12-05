@@ -20,6 +20,13 @@ export default gql`
     profitBeforeTax: ReportCommentary!
     researchAndDevelopmentExpensesByRecords: ReportCommentary!
     researchAndDevelopmentExpensesForTax: FinancialAmount!
+
+    fines: ReportCommentary!
+    untaxableGifts: ReportCommentary!
+    businessTripsExcessExpensesAmount: FinancialAmount!
+    salaryExcessExpensesAmount: FinancialAmount!
+    reserves: ReportCommentary!
+
     taxableIncome: FinancialAmount!
     taxRate: Float!
     annualTaxExpense: FinancialAmount!

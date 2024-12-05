@@ -24,7 +24,7 @@ import { ReportSubCommentaryRow } from './report-sub-commentary-row.jsx';
 `;
 
 type Props = {
-  dataRow: (extendButton: ReactElement) => ReactElement;
+  dataRow: (extendButton: ReactElement | null) => ReactElement;
   commentaryData: FragmentType<typeof ReportCommentaryTableFieldsFragmentDoc>;
 };
 
@@ -32,7 +32,9 @@ export const ReportCommentaryRow = ({ commentaryData, dataRow }: Props): ReactEl
   const [opened, setOpened] = useState(false);
   const { records } = getFragmentData(ReportCommentaryTableFieldsFragmentDoc, commentaryData);
 
-  const button = <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />;
+  const button = records.length ? (
+    <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />
+  ) : null;
 
   return (
     <>

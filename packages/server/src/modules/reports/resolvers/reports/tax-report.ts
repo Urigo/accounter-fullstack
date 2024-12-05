@@ -63,15 +63,12 @@ export const taxReport: ResolverFn<
   for (const year of years) {
     const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
 
-    const profitLossReportAmounts =
-      profitLossByYear.get(year) ?? getProfitLossReportAmounts(decoratedLedgerRecords);
-
     const {
       profitBeforeTaxAmount,
       profitBeforeTaxRecords,
       researchAndDevelopmentExpensesAmount,
       researchAndDevelopmentExpensesRecords,
-    } = profitLossReportAmounts;
+    } = profitLossByYear.get(year) ?? getProfitLossReportAmounts(decoratedLedgerRecords);
 
     let cumulativeResearchAndDevelopmentExpensesAmount = 0;
     for (const rndYear of [year - 2, year - 1, year]) {
@@ -87,6 +84,11 @@ export const taxReport: ResolverFn<
 
     const {
       researchAndDevelopmentExpensesForTax,
+      fines,
+      untaxableGifts,
+      businessTripsExcessExpensesAmount,
+      salaryExcessExpensesAmount,
+      reserves,
       taxableIncomeAmount,
       taxRate,
       annualTaxExpenseAmount,
@@ -109,6 +111,11 @@ export const taxReport: ResolverFn<
         records: researchAndDevelopmentExpensesRecords,
       },
       researchAndDevelopmentExpensesForTax,
+      fines,
+      untaxableGifts,
+      businessTripsExcessExpensesAmount,
+      salaryExcessExpensesAmount,
+      reserves,
 
       taxableIncome: taxableIncomeAmount,
       taxRate,
@@ -139,6 +146,23 @@ export const taxReportYearMapper: TaxReportYearResolvers = {
   }),
   researchAndDevelopmentExpensesForTax: parent =>
     formatFinancialAmount(parent.researchAndDevelopmentExpensesForTax, DEFAULT_LOCAL_CURRENCY),
+
+  fines: parent => ({
+    amount: formatFinancialAmount(parent.fines.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.fines.records,
+  }),
+  untaxableGifts: parent => ({
+    amount: formatFinancialAmount(parent.untaxableGifts.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.untaxableGifts.records,
+  }),
+  businessTripsExcessExpensesAmount: parent =>
+    formatFinancialAmount(parent.businessTripsExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
+  salaryExcessExpensesAmount: parent =>
+    formatFinancialAmount(parent.salaryExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
+  reserves: parent => ({
+    amount: formatFinancialAmount(parent.reserves.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.reserves.records,
+  }),
   taxableIncome: parent => formatFinancialAmount(parent.taxableIncome, DEFAULT_LOCAL_CURRENCY),
   taxRate: parent => parent.taxRate,
   annualTaxExpense: parent =>
