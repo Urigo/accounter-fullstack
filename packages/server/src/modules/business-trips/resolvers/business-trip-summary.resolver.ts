@@ -1,7 +1,7 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import type { BusinessTripSummaryCategories, ResolversTypes } from '@shared/gql-types';
+import type { BusinessTripSummary, BusinessTripSummaryCategories } from '@shared/gql-types';
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
@@ -28,7 +28,7 @@ export class BusinessTripError extends Error {
 export async function businessTripSummary(
   injector: Injector,
   dbBusinessTrip: BusinessTripProto,
-): Promise<Awaited<ResolversTypes['BusinessTripSummary']>> {
+): Promise<BusinessTripSummary> {
   try {
     if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
       return {

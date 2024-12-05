@@ -11,6 +11,8 @@ import type {
   BusinessTripProto,
   IDeleteChargeBusinessTripQuery,
   IGetAllBusinessTripsQuery,
+  IGetBusinessTripsByDatesParams,
+  IGetBusinessTripsByDatesQuery,
   IGetBusinessTripsByIdsQuery,
   IInsertBusinessTripParams,
   IInsertBusinessTripQuery,
@@ -34,6 +36,11 @@ const getBusinessTripsByChargeIds = sql<IGetBusinessTripsByChargeIdsQuery>`
   LEFT JOIN accounter_schema.extended_business_trips bt
     ON btc.business_trip_id = bt.id
   WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
+
+const getBusinessTripsByDates = sql<IGetBusinessTripsByDatesQuery>`
+  SELECT bt.*
+  FROM accounter_schema.extended_business_trips bt
+  WHERE to_date >= $fromDate AND to_date < $toDate ;`;
 
 const updateChargeBusinessTrip = sql<IUpdateChargeBusinessTripQuery>`
   INSERT INTO accounter_schema.business_trip_charges (charge_id, business_trip_id)
@@ -132,6 +139,10 @@ export class BusinessTripsProvider {
       cache: false,
     },
   );
+
+  public getBusinessTripsByDates(params: IGetBusinessTripsByDatesParams) {
+    return getBusinessTripsByDates.run(params, this.dbProvider);
+  }
 
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
     if (businessTripId) {

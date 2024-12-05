@@ -2,7 +2,29 @@ import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.
 
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
-export * from './__generated__/business-trips-attendees.types.js';
+export type {
+  IGetAllBusinessTripsAttendeesParams,
+  IGetAllBusinessTripsAttendeesResult,
+  IGetAllBusinessTripsAttendeesQuery,
+  IGetBusinessTripsAttendeesByChargeIdsParams,
+  IGetBusinessTripsAttendeesByChargeIdsResult,
+  IGetBusinessTripsAttendeesByChargeIdsQuery,
+  IGetBusinessTripsAttendeesByBusinessTripIdsParams,
+  IGetBusinessTripsAttendeesByBusinessTripIdsResult,
+  IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
+  IGetBusinessTripsAttendeesByBusinessIdsParams,
+  IGetBusinessTripsAttendeesByBusinessIdsResult,
+  IGetBusinessTripsAttendeesByBusinessIdsQuery,
+  IAddBusinessTripAttendeesParams,
+  IAddBusinessTripAttendeesResult,
+  IAddBusinessTripAttendeesQuery,
+  IUpdateBusinessTripAttendeeParams,
+  IUpdateBusinessTripAttendeeResult,
+  IUpdateBusinessTripAttendeeQuery,
+  IRemoveBusinessTripAttendeesParams,
+  IRemoveBusinessTripAttendeesResult,
+  IRemoveBusinessTripAttendeesQuery,
+} from './__generated__/business-trips-attendees.types.js';
 export * from './__generated__/business-trips-tax-variables.types.js';
 export type {
   business_trip_transaction_type,
