@@ -1,6 +1,6 @@
 export * from './__generated__/types.js';
 
-type CommentaryProto = {
+export type CommentaryProto = {
   amount: number;
   records: CommentaryRecordProto[];
 };
@@ -40,6 +40,12 @@ export type TaxReportYearProto = {
   profitBeforeTax: CommentaryProto;
   researchAndDevelopmentExpensesByRecords: CommentaryProto;
   researchAndDevelopmentExpensesForTax: number;
+  fines: CommentaryProto;
+  untaxableGifts: CommentaryProto;
+  businessTripsExcessExpensesAmount: number;
+  salaryExcessExpensesAmount: number;
+  reserves: CommentaryProto;
+
   taxableIncome: number;
   taxRate: number;
   annualTaxExpense: number;

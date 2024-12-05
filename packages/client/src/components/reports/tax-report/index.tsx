@@ -33,6 +33,30 @@ import { TaxReportFilter } from './tax-report-filters.js';
         researchAndDevelopmentExpensesForTax {
           formatted
         }
+        fines {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
+        untaxableGifts {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
+        businessTripsExcessExpensesAmount {
+          formatted
+        }
+        salaryExcessExpensesAmount {
+          formatted
+        }
+        reserves {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
         taxableIncome {
           formatted
         }
@@ -56,6 +80,27 @@ import { TaxReportFilter } from './tax-report-filters.js';
         }
         researchAndDevelopmentExpensesForTax {
           formatted
+        }
+        fines {
+          amount {
+            formatted
+          }
+        }
+        untaxableGifts {
+          amount {
+            formatted
+          }
+        }
+        businessTripsExcessExpensesAmount {
+          formatted
+        }
+        salaryExcessExpensesAmount {
+          formatted
+        }
+        reserves {
+          amount {
+            formatted
+          }
         }
         taxableIncome {
           formatted
@@ -126,8 +171,8 @@ export const TaxReport = (): ReactElement => {
                   dataRow={button => (
                     <tr>
                       <th>Profit Before Tax</th>
-                      <th>{button}</th>
                       <th>{report.profitBeforeTax.amount.formatted}</th>
+                      <th>{button}</th>
                       {referenceYearsData.map(report => (
                         <th key={report.year}>{report.profitBeforeTax.amount.formatted}</th>
                       ))}
@@ -153,6 +198,7 @@ export const TaxReport = (): ReactElement => {
                 <tr>
                   <td>R&D Expenses For Tax</td>
                   <td>{report.researchAndDevelopmentExpensesForTax.formatted}</td>
+                  <td />
                   {referenceYearsData.map(report => (
                     <td key={report.year}>
                       {report.researchAndDevelopmentExpensesForTax.formatted}
@@ -160,9 +206,67 @@ export const TaxReport = (): ReactElement => {
                   ))}
                   <td />
                 </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Fines</td>
+                      <td>{report.fines.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.fines.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.fines}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Untaxable Gifts</td>
+                      <td>{report.untaxableGifts.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.untaxableGifts.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.untaxableGifts}
+                />
+                <tr>
+                  <td>Business Trips Excess Expenses</td>
+                  <td>{report.businessTripsExcessExpensesAmount.formatted}</td>
+                  <td />
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.businessTripsExcessExpensesAmount.formatted}</td>
+                  ))}
+                  <td />
+                </tr>
+                <tr>
+                  <td>Salary Excess Expenses</td>
+                  <td>{report.salaryExcessExpensesAmount.formatted}</td>
+                  <td />
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{report.salaryExcessExpensesAmount.formatted}</td>
+                  ))}
+                  <td />
+                </tr>
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Reserves</td>
+                      <td>{report.reserves.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.reserves.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.reserves}
+                />
                 <tr>
                   <th>Taxable Income</th>
                   <th>{report.taxableIncome.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.taxableIncome.formatted}</th>
                   ))}
@@ -171,6 +275,7 @@ export const TaxReport = (): ReactElement => {
                 <tr>
                   <td>Tax Rate</td>
                   <td>{(report.taxRate * 100).toFixed(1)}%</td>
+                  <td />
                   {referenceYearsData.map(report => (
                     <td key={report.year}>{(report.taxRate * 100).toFixed(1)}%</td>
                   ))}
@@ -181,6 +286,7 @@ export const TaxReport = (): ReactElement => {
                 <tr>
                   <th>Annual Tax Expense</th>
                   <th>{report.annualTaxExpense.formatted}</th>
+                  <th />
                   {referenceYearsData.map(report => (
                     <th key={report.year}>{report.annualTaxExpense.formatted}</th>
                   ))}

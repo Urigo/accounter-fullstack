@@ -1,6 +1,6 @@
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
-import { CommentaryRecordProto } from '../types.js';
+import type { CommentaryProto } from '../types.js';
 
 export type LedgerRecordDecorations = Partial<{
   credit_entity_sort_code1: number;
@@ -52,7 +52,7 @@ export function decorateLedgerRecords(
   });
 }
 
-function updateRecords(
+export function updateRecords(
   amountsByEntity: Map<number, { amount: number; records: Map<string, number> }>,
   amount: number,
   sortCode: number,
@@ -75,7 +75,7 @@ function updateRecords(
 export function amountBySortCodeValidation(
   unfilteredRecords: DecoratedLedgerRecord[],
   validation: (sortCode: number) => boolean,
-): { amount: number; records: CommentaryRecordProto[] } {
+): CommentaryProto {
   let amount = 0;
   const amountsByEntity = new Map<
     number,

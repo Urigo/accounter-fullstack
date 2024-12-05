@@ -9,7 +9,12 @@ import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { FINE_TAX_CATEGORY_ID, UNTAXABLE_GIFTS_TAX_CATEGORY_ID } from '@shared/constants';
 import { TimelessDateString } from '@shared/types';
-import { amountBySortCodeValidation, DecoratedLedgerRecord } from './profit-and-loss.helper.js';
+import { CommentaryProto } from '../types.js';
+import {
+  amountBySortCodeValidation,
+  DecoratedLedgerRecord,
+  updateRecords,
+} from './profit-and-loss.helper.js';
 
 export async function calculateTaxAmounts(
   injector: Injector,
@@ -44,71 +49,109 @@ export async function calculateTaxAmounts(
 
   const researchAndDevelopmentExpensesForTax = researchAndDevelopmentExpensesAmount / 3;
 
-  const fines: { amount: number; records: DecoratedLedgerRecord[]; entityIds: string[] } = {
-    amount: 0,
-    records: [],
-    entityIds: [],
-  };
-  const untaxableGifts: {
-    amount: number;
-    records: DecoratedLedgerRecord[];
-    entityIds: string[];
-  } = {
-    amount: 0,
-    records: [],
-    entityIds: [],
-  };
+  let finesAmount = 0;
+  const finesRecords = new Map<
+    number,
+    {
+      amount: number;
+      records: Map<string, number>;
+    }
+  >();
+  let untaxableGiftsAmount = 0;
+  const untaxableGiftsRecords = new Map<
+    number,
+    {
+      amount: number;
+      records: Map<string, number>;
+    }
+  >();
   decoratedLedgerRecords.map(record => {
-    let shouldIncludeRecord = false;
     if (record.credit_entity1 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      untaxableGifts.entityIds.push(record.credit_entity1);
-      untaxableGifts.amount += Number(record.credit_local_amount1);
+      const amount = Number(record.credit_local_amount1);
+      updateRecords(
+        untaxableGiftsRecords,
+        amount,
+        record.credit_entity_sort_code1!,
+        record.credit_entity1,
+      );
+      untaxableGiftsAmount += amount;
     }
     if (record.credit_entity2 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      untaxableGifts.entityIds.push(record.credit_entity2);
-      untaxableGifts.amount += Number(record.credit_local_amount2);
+      const amount = Number(record.credit_local_amount2);
+      updateRecords(
+        untaxableGiftsRecords,
+        amount,
+        record.credit_entity_sort_code2!,
+        record.credit_entity2,
+      );
+      untaxableGiftsAmount += amount;
     }
     if (record.debit_entity1 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      untaxableGifts.entityIds.push(record.debit_entity1);
-      untaxableGifts.amount -= Number(record.debit_local_amount1);
+      const amount = -Number(record.debit_local_amount1);
+      updateRecords(
+        untaxableGiftsRecords,
+        amount,
+        record.debit_entity_sort_code1!,
+        record.debit_entity1,
+      );
+      untaxableGiftsAmount += amount;
     }
     if (record.debit_entity2 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      untaxableGifts.entityIds.push(record.debit_entity2);
-      untaxableGifts.amount -= Number(record.debit_local_amount2);
-    }
-    if (shouldIncludeRecord) {
-      untaxableGifts.records.push(record);
+      const amount = -Number(record.debit_local_amount2);
+      updateRecords(
+        untaxableGiftsRecords,
+        amount,
+        record.debit_entity_sort_code2!,
+        record.debit_entity2,
+      );
+      untaxableGiftsAmount += amount;
     }
 
-    shouldIncludeRecord = false;
     if (record.credit_entity1 === FINE_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      fines.entityIds.push(record.credit_entity1);
-      fines.amount += Number(record.credit_local_amount1);
+      const amount = Number(record.credit_local_amount1);
+      updateRecords(finesRecords, amount, record.credit_entity_sort_code1!, record.credit_entity1);
+      finesAmount += amount;
     }
     if (record.credit_entity2 === FINE_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      fines.entityIds.push(record.credit_entity2);
-      fines.amount += Number(record.credit_local_amount2);
+      const amount = Number(record.credit_local_amount2);
+      updateRecords(finesRecords, amount, record.credit_entity_sort_code2!, record.credit_entity2);
+      finesAmount += amount;
     }
     if (record.debit_entity1 === FINE_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      fines.entityIds.push(record.debit_entity1);
-      fines.amount -= Number(record.debit_local_amount1);
+      const amount = -Number(record.debit_local_amount1);
+      updateRecords(finesRecords, amount, record.debit_entity_sort_code1!, record.debit_entity1);
+      finesAmount += amount;
     }
     if (record.debit_entity2 === FINE_TAX_CATEGORY_ID) {
-      shouldIncludeRecord = true;
-      fines.entityIds.push(record.debit_entity2);
-      fines.amount -= Number(record.debit_local_amount2);
-    }
-    if (shouldIncludeRecord) {
-      fines.records.push(record);
+      const amount = -Number(record.debit_local_amount2);
+      updateRecords(finesRecords, amount, record.debit_entity_sort_code2!, record.debit_entity2);
+      finesAmount += amount;
     }
   });
+
+  const untaxableGifts: CommentaryProto = {
+    amount: untaxableGiftsAmount,
+    records: Array.from(untaxableGiftsRecords.entries()).map(([sortCode, data]) => ({
+      sortCode,
+      amount: data.amount,
+      records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
+        financialEntityId,
+        amount,
+      })),
+    })),
+  };
+
+  const fines: CommentaryProto = {
+    amount: finesAmount,
+    records: Array.from(finesRecords.entries()).map(([sortCode, data]) => ({
+      sortCode,
+      amount: data.amount,
+      records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
+        financialEntityId,
+        amount,
+      })),
+    })),
+  };
 
   let businessTripsExcessExpensesAmount = 0;
   businessTrips.map(summary => {
