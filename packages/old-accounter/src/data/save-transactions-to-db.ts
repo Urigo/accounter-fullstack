@@ -17,7 +17,8 @@ export type AccountTypes =
   | 'deposits'
   | 'foreign_deposits'
   | 'isracard'
-  | 'amex';
+  | 'amex'
+  | 'cal';
 
 type TransactionTypeSelector<T extends AccountTypes> = T extends 'isracard' | 'amex'
   ? DecoratedTransaction

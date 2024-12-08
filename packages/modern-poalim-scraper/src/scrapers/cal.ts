@@ -6,7 +6,6 @@ import { fetchPostWithinPage } from '../utils/fetch.js';
 
 // TODO:
 // Clean up file
-// Pending transactions? Think we can delete this, but double check
 // Hide promo without click
 // Make more consistent. It sometimes errors on log in
 // Unified interface for exported data?
@@ -14,13 +13,20 @@ import { fetchPostWithinPage } from '../utils/fetch.js';
 // Constants
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
-// const PENDING_TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/approvals/getClearanceRequests';
-
 
 // Main scraper functions
 export async function cal(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
   await login(credentials, page);
-  return fetchTransactions(page, credentials, options);
+
+  return {
+    // getMonthTransactions: async (RequestedMonthDate: Date) => {
+    //   const xSiteId = await getXSiteId();
+    //   return fetchMonthCompletedTransactions(page, credentials, options, xSiteId, RequestedMonthDate);
+    // },
+    getTransactions: async () => {
+      return fetchTransactions(page, credentials, options);
+    },
+  }
 }
 
 async function login(credentials: CalCredentials, page: Page) {
@@ -98,13 +104,6 @@ async function fetchTransactions(page: Page, credentials: CalCredentials, option
   const transactions: CalTransaction[] = [];
 
   for (const card of cards) {
-    // Fetch pending transactions
-    // const pendingTxns = await fetchPendingTransactions(page, card.cardUniqueId, authToken, xSiteId);
-    // console.debug(`Found ${pendingTxns.length} pending transactions`);
-    // if (pendingTxns) {
-    //   transactions.push(...pendingTxns);
-    // }
-
     // Fetch completed transactions
     const completedTxns = await fetchCompletedTransactions(page, card.cardUniqueId, authToken, xSiteId, startDate, options.futureMonthsToScrape);
     console.debug(`Found ${completedTxns.length} completed transactions`);
@@ -116,26 +115,6 @@ async function fetchTransactions(page: Page, credentials: CalCredentials, option
 
   return transactions;
 }
-
-// async function fetchPendingTransactions(page: Page, cardId: string, authToken: string, xSiteId: string): Promise<Array<CalTransaction>> {
-//   const response = await fetchPostWithinPage<CalApiResponse>(
-//     page,
-//     PENDING_TRANSACTIONS_REQUEST_ENDPOINT,
-//     { cardUniqueIDArray: [cardId] },
-//     {
-//       Authorization: authToken,
-//       'X-Site-Id': xSiteId,
-//       'Content-Type': 'application/json',
-//     }
-//   );
-
-//   if (!response || response.statusCode !== 1) {
-//     console.debug(`Failed to fetch pending transactions: ${response?.title || 'Unknown error'}`);
-//     return [];
-//   }
-
-//   return response.result?.clearanceRequests || [];
-// }
 
 async function fetchCompletedTransactions(
   page: Page, 
@@ -152,41 +131,54 @@ async function fetchCompletedTransactions(
   const currentDate = new Date(endDate);
 
   while (currentDate >= startDate) {
-    const response = await fetchPostWithinPage<CalGetCardTransactionsDetailsResponse>(
+    const monthTransactions = await fetchMonthCompletedTransactions(
       page,
-      TRANSACTIONS_REQUEST_ENDPOINT,
-      { 
-        cardUniqueId: cardId,
-        month: (currentDate.getMonth() + 1).toString(),
-        year: currentDate.getFullYear().toString()
-      },
-      {
-        Authorization: authToken,
-        'X-Site-Id': xSiteId,
-        'Content-Type': 'application/json',
-      }
+      cardId,
+      authToken,
+      xSiteId,
+      currentDate
     );
-
-    if (response?.statusCode === 1) {
-      const bankAccounts = response.result?.bankAccounts || [];
-      const regularDebitDays = bankAccounts.flatMap((accounts) => accounts.debitDates);
-      const immediateDebitDays = bankAccounts.flatMap((accounts) => accounts.immidiateDebits.debitDays);
-      const completedTransactions = [...regularDebitDays, ...immediateDebitDays].flatMap((debitDate) => debitDate.transactions);
-      console.log("🚀 ~ completedTransactions:", completedTransactions.length)
-      console.log("🚀 ~ completedTransactions:", completedTransactions)
-      
-      transactions.push(...completedTransactions);
-    } else {
-      console.error(`Failed to fetch completed transactions: ${response?.statusDescription || 'Unknown error'}`);
-    }
-
+    
+    transactions.push(...monthTransactions);
     currentDate.setMonth(currentDate.getMonth() - 1);
   }
 
-  console.log("🚀 ~ transactions:", transactions.length)
-
   return transactions;
 }
+
+async function fetchMonthCompletedTransactions(
+  page: Page,
+  cardId: string,
+  authToken: string,
+  xSiteId: string,
+  date: Date
+): Promise<CalTransaction[]> {
+  const response = await fetchPostWithinPage<CalGetCardTransactionsDetailsResponse>(
+    page,
+    TRANSACTIONS_REQUEST_ENDPOINT,
+    { 
+      cardUniqueId: cardId,
+      month: (date.getMonth() + 1).toString(),
+      year: date.getFullYear().toString()
+    },
+    {
+      Authorization: authToken,
+      'X-Site-Id': xSiteId,
+      'Content-Type': 'application/json',
+    }
+  );
+
+  if (response?.statusCode === 1) {
+    const bankAccounts = response.result?.bankAccounts || [];
+    const regularDebitDays = bankAccounts.flatMap((accounts) => accounts.debitDates);
+    const immediateDebitDays = bankAccounts.flatMap((accounts) => accounts.immidiateDebits.debitDays);
+    return [...regularDebitDays, ...immediateDebitDays].flatMap((debitDate) => debitDate.transactions);
+  }
+  
+  console.error(`Failed to fetch completed transactions: ${response?.statusDescription || 'Unknown error'}`);
+  return [];
+}
+
 
 // Helper functions
 async function getLoginFrame(page: Page) {
