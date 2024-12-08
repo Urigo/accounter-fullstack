@@ -15,10 +15,7 @@ import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
-import type {
-  BusinessTripsModule,
-  IGetBusinessTripsAttendeesByBusinessIdsResult,
-} from '../types.js';
+import type { BusinessTripsModule } from '../types.js';
 import { commonBusinessTripExpenseFields } from './common.js';
 import { creditShareholdersBusinessTripTravelAndSubsistence } from './credit-shareholders-business-trip-travel-and-subsistence.resolver.js';
 
