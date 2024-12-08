@@ -3,18 +3,12 @@ import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.
 export * from './__generated__/types.js';
 export * from './__generated__/business-trips.types.js';
 export type {
-  IGetAllBusinessTripsAttendeesParams,
-  IGetAllBusinessTripsAttendeesResult,
-  IGetAllBusinessTripsAttendeesQuery,
-  IGetBusinessTripsAttendeesByChargeIdsParams,
-  IGetBusinessTripsAttendeesByChargeIdsResult,
-  IGetBusinessTripsAttendeesByChargeIdsQuery,
+  IGetBusinessTripsIDsByChargeIdsParams,
+  IGetBusinessTripsIDsByChargeIdsResult,
+  IGetBusinessTripsIDsByChargeIdsQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsParams,
   IGetBusinessTripsAttendeesByBusinessTripIdsResult,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
-  IGetBusinessTripsAttendeesByBusinessIdsParams,
-  IGetBusinessTripsAttendeesByBusinessIdsResult,
-  IGetBusinessTripsAttendeesByBusinessIdsQuery,
   IAddBusinessTripAttendeesParams,
   IAddBusinessTripAttendeesResult,
   IAddBusinessTripAttendeesQuery,
