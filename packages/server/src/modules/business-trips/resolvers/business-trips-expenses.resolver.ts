@@ -472,32 +472,18 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       const attendeesStay = dbExpense.attendees_stay.filter(
         Boolean,
       ) as BusinessTripAttendeeStayInput[];
+      const attendeesStayIds = attendeesStay.map(({ attendeeId }) => attendeeId);
       const attendees = await injector
         .get(BusinessTripAttendeesProvider)
-        .getBusinessTripsAttendeesByBusinessIdLoader.loadMany(
-          attendeesStay.map(({ attendeeId }) => ({
-            businessId: attendeeId,
-            businessTripId: dbExpense.business_trip_id!,
-          })),
-        )
-        .then(
-          res =>
-            res.filter(r => {
-              if (!r) {
-                return false;
-              }
-              if (r instanceof Error) {
-                throw r;
-              }
-              return true;
-            }) as IGetBusinessTripsAttendeesByBusinessIdsResult[],
-        );
-      return attendees.map(attendee => ({
-        id: attendee.id,
-        attendee,
-        nightsCount:
-          attendeesStay.find(({ attendeeId }) => attendeeId === attendee.id)?.nightsCount ?? 0,
-      }));
+        .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbExpense.business_trip_id);
+      return attendees
+        .filter(attendee => attendeesStayIds.includes(attendee.id))
+        .map(attendee => ({
+          id: attendee.id,
+          attendee,
+          nightsCount:
+            attendeesStay.find(({ attendeeId }) => attendeeId === attendee.id)?.nightsCount ?? 0,
+        }));
     },
   },
   BusinessTripFlightExpense: {
@@ -512,25 +498,8 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       }
       const attendees = await injector
         .get(BusinessTripAttendeesProvider)
-        .getBusinessTripsAttendeesByBusinessIdLoader.loadMany(
-          dbExpense.attendees.map(attendee => ({
-            businessId: attendee,
-            businessTripId: dbExpense.business_trip_id!,
-          })),
-        )
-        .then(
-          res =>
-            res.filter(r => {
-              if (!r) {
-                return false;
-              }
-              if (r instanceof Error) {
-                throw r;
-              }
-              return true;
-            }) as IGetBusinessTripsAttendeesByBusinessIdsResult[],
-        );
-      return attendees;
+        .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbExpense.business_trip_id);
+      return attendees.filter(attendee => dbExpense.attendees.includes(attendee.id));
     },
   },
   BusinessTripTravelAndSubsistenceExpense: {
