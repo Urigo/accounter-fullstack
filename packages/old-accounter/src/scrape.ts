@@ -5,9 +5,10 @@ import lodash from 'lodash';
 import pg from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/__generated__/isracardCardsTransactionsList.js';
+import type { CalCredentials } from '../../modern-poalim-scraper/src/scrapers/cal.js';
 import type { IsracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
 import { getCurrencyRates } from './data/currency.js';
-import { saveTransactionsToDB } from './data/save-transactions-to-db.js';
+import { saveCalTransactionsToDB, saveTransactionsToDB } from './data/save-transactions-to-db.js';
 
 dotenv.config({ path: '../../.env' });
 
@@ -593,6 +594,20 @@ async function getCreditCardTransactionsAndSave(
   }
 }
 
+async function getCalCreditCardTransactionsAndSave(
+  month: Date,
+  pool: pg.Pool,
+  newCardInstance: CalScraper,
+  id: string,
+  type: 'cal',
+) {
+  console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  const transactions = await newCardInstance.getTransactions();
+  console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  await saveCalTransactionsToDB(transactions, pool);
+  console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+}
+
 async function getAmexCreditCardData(
   pool: pg.Pool,
   scraper: Scraper,
@@ -638,6 +653,49 @@ async function getAmexCreditCardData(
     }),
   );
   console.log(`after all amex creditcard months - ${credentials.ID}`);
+}
+
+async function getVisaCalCreditCardData(
+  pool: pg.Pool,
+  scraper: Scraper,
+  credentials: Partial<CalCredentials>,
+) {
+  console.log('start getVisaCalCreditCardData');
+  const { username, password } = credentials;
+  if (!username || !password) {
+    console.error('Missing credentials for visa cal creditcard');
+    return;
+  }
+
+  console.log('Visa Cal Creditcard Login');
+  const newCalInstance = await scraper.cal(
+    { username, password },
+    // {
+    //   validateSchema: true,
+    // },
+  );
+
+  let monthToFetch = subYears(new Date(), 2);
+  const allMonthsToFetch = [];
+  const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
+
+  while (isBefore(monthToFetch, lastMonthToFetch)) {
+    allMonthsToFetch.push(monthToFetch);
+    monthToFetch = addMonths(monthToFetch, 1);
+  }
+
+  await Promise.allSettled(
+    allMonthsToFetch.map(async currentMonthToFetch => {
+      await getCalCreditCardTransactionsAndSave(
+        currentMonthToFetch,
+        pool,
+        newCalInstance,
+        username,
+        'cal',
+      );
+    }),
+  );
+  console.log(`after all cal creditcard months - ${username}`);
 }
 
 async function getIsracardData(
@@ -1284,6 +1342,10 @@ async function getForeignSwiftTransactionsfromBankAndSave(
       password: process.env.AMEX_PASSWORD,
       card6Digits: process.env.AMEX_6_DIGITS,
     }),
+    getVisaCalCreditCardData(pool, thirdScraperInstance, {
+      username: process.env.VISA_CAL_USERNAME,
+      password: process.env.VISA_CAL_PASSWORD,
+    }),
     getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),
   ]);
@@ -1302,4 +1364,5 @@ async function getForeignSwiftTransactionsfromBankAndSave(
 type Scraper = Awaited<ReturnType<typeof init>>;
 type IsracardScraper = Awaited<ReturnType<Scraper['isracard']>>;
 type AmexScraper = Awaited<ReturnType<Scraper['amex']>>;
+type CalScraper = Awaited<ReturnType<Scraper['cal']>>;
 type PoalimScraper = Exclude<Awaited<ReturnType<Scraper['hapoalim']>>, 'Unknown Error'>;
