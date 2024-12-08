@@ -21,7 +21,7 @@
     "@mantine/hooks": "6.0.22",
     "@mantine/notifications": "6.0.22",
     "@mui/material": "6.1.10",
-    "@mui/x-charts": "7.23.0",
+    "@mui/x-charts": "7.23.1",
     "@radix-ui/react-avatar": "1.1.1",
     "@radix-ui/react-collapsible": "^1.1.0",
     "@radix-ui/react-dialog": "1.1.2",
@@ -34,7 +34,7 @@
     "@radix-ui/react-slot": "1.1.0",
     "@radix-ui/react-toast": "1.2.2",
     "@radix-ui/react-tooltip": "1.1.4",
-    "@tanstack/react-query": "5.62.2",
+    "@tanstack/react-query": "5.62.3",
     "@tanstack/react-table": "8.20.5",
     "@urql/exchange-auth": "2.2.0",
     "chart.js": "4.4.7",
@@ -46,7 +46,7 @@
     "deep-equal": "2.2.3",
     "embla-carousel-react": "8.5.1",
     "lucide-react": "0.468.0",
-    "next": "15.0.3",
+    "next": "15.0.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "7.54.0",
@@ -61,13 +61,13 @@
   "devDependencies": {
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "18.3.13",
-    "@types/react-dom": "18.3.1",
+    "@types/react": "18.3.14",
+    "@types/react-dom": "18.3.2",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.16",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
