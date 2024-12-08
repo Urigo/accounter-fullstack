@@ -594,18 +594,12 @@ async function getCreditCardTransactionsAndSave(
   }
 }
 
-async function getCalCreditCardTransactionsAndSave(
-  month: Date,
-  pool: pg.Pool,
-  newCardInstance: CalScraper,
-  id: string,
-  type: 'cal',
-) {
-  console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+async function getCalCreditCardTransactionsAndSave(pool: pg.Pool, newCardInstance: CalScraper) {
+  // console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   const transactions = await newCardInstance.getTransactions();
-  console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  // console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   await saveCalTransactionsToDB(transactions, pool);
-  console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  // console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
 }
 
 async function getAmexCreditCardData(
@@ -675,26 +669,28 @@ async function getVisaCalCreditCardData(
     // },
   );
 
-  let monthToFetch = subYears(new Date(), 2);
-  const allMonthsToFetch = [];
-  const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
+  await getCalCreditCardTransactionsAndSave(pool, newCalInstance);
 
-  while (isBefore(monthToFetch, lastMonthToFetch)) {
-    allMonthsToFetch.push(monthToFetch);
-    monthToFetch = addMonths(monthToFetch, 1);
-  }
+  // let monthToFetch = subYears(new Date(), 2);
+  // const allMonthsToFetch = [];
+  // const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
 
-  await Promise.allSettled(
-    allMonthsToFetch.map(async currentMonthToFetch => {
-      await getCalCreditCardTransactionsAndSave(
-        currentMonthToFetch,
-        pool,
-        newCalInstance,
-        username,
-        'cal',
-      );
-    }),
-  );
+  // while (isBefore(monthToFetch, lastMonthToFetch)) {
+  //   allMonthsToFetch.push(monthToFetch);
+  //   monthToFetch = addMonths(monthToFetch, 1);
+  // }
+
+  // await Promise.allSettled(
+  //   allMonthsToFetch.map(async currentMonthToFetch => {
+  //     await getCalCreditCardTransactionsAndSave(
+  //       currentMonthToFetch,
+  //       pool,
+  //       newCalInstance,
+  //       username,
+  //       'cal',
+  //     );
+  //   }),
+  // );
   console.log(`after all cal creditcard months - ${username}`);
 }
 
