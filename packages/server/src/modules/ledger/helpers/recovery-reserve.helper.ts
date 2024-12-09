@@ -174,9 +174,15 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
       throw new GraphQLError(`Month is not valid, got ${monthString}`);
     }
 
-    const dayValue = recoveryDayValueByYear.get(year);
+    const yearForRecoveryValue = month >= 7 ? year + 1 : year;
+
+    let dayValue = recoveryDayValueByYear.get(yearForRecoveryValue);
+    // in case of no recovery day value for the year, try to get it from the previous year (yearly value is published in delay)
+    if (!dayValue && yearForRecoveryValue >= new Date().getFullYear()) {
+      dayValue = recoveryDayValueByYear.get(year);
+    }
     if (!dayValue) {
-      throw new GraphQLError(`No recovery day value for year ${year}`);
+      throw new GraphQLError(`No recovery day value for year ${yearForRecoveryValue}`);
     }
 
     const isAnniversaryMonth = employee.startDate.getMonth() + 1 === month;
