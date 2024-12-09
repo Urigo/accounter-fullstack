@@ -19,6 +19,8 @@ export default gql`
     deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
+    generateBankDepositsRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
+      @auth(role: ACCOUNTANT)
     generateTaxExpensesCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
     generateDepreciationCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
