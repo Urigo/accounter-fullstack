@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { Link, useResolvedPath } from 'react-router-dom';
 import { cn } from '../../lib/utils.js';
 import { MobileSidebar } from './mobile-sidebar.js';

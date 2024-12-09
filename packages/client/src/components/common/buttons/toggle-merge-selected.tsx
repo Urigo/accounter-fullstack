@@ -20,7 +20,7 @@ export function ToggleMergeSelected(props: {
   return (
     <Tooltip label="Select for merge">
       <ActionIcon
-        onClick={(event): void => {
+        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
           event.stopPropagation();
           toggleMergeSelected();
         }}

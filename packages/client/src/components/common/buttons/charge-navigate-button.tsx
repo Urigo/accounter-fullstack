@@ -9,7 +9,7 @@ export function ChargeNavigateButton(
   return (
     <Tooltip label="To Charge">
       <ActionIcon
-        onClick={event => {
+        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
           event.stopPropagation();
           window.open(`/charges/${props.chargeId}`, '_blank', 'noreferrer');
         }}

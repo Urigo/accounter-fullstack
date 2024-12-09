@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { Heading } from '../ui/heading.js';
 import { Separator } from '../ui/separator.js';
 

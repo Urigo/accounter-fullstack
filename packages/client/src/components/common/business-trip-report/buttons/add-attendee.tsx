@@ -20,7 +20,7 @@ export function AddAttendee(props: { businessTripId: string; onAdd?: () => void 
       <Tooltip label="Add Attendee">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}

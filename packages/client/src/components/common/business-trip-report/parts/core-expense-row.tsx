@@ -249,7 +249,7 @@ export const CoreExpenseRow = ({
                           key={id}
                           label="To Charge"
                           className="[&>*>.mantine-NavLink-label]:font-semibold"
-                          onClick={event => {
+                          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
                             event.stopPropagation();
                             window.open(`/charges/${id}`, '_blank', 'noreferrer');
                           }}

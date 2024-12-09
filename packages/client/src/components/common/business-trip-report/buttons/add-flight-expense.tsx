@@ -33,7 +33,7 @@ export function AddFlightExpense(props: {
       <Tooltip label="Add Flight Expense">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}
