@@ -6,10 +6,21 @@ import { showNotification } from '@mantine/notifications';
 import {
   AllSortCodesDocument,
   AllTaxCategoriesDocument,
+  Country,
   InsertNewBusinessInput,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
+import { capitalizeFirstLetter } from '../../../helpers/index.js';
 import { PhrasesInput, TagsInput } from '../index.js';
+
+const countries = Object.values(Country).map(country => {
+  const label =
+    country === 'USA' ? 'United States' : country.split('_').map(capitalizeFirstLetter).join(' ');
+  return {
+    value: country,
+    label,
+  };
+});
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -143,42 +154,6 @@ export function ModifyBusinessFields({
           )}
         />
         <Controller
-          name="taxCategory"
-          control={control}
-          render={({ field, fieldState }): ReactElement => (
-            <Select
-              {...field}
-              data={taxCategories}
-              value={field.value}
-              disabled={fetchingTaxCategories}
-              label="Tax Category"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="sortCode"
-          control={control}
-          render={({ field, fieldState }): ReactElement => {
-            return (
-              <Select
-                {...field}
-                data={sortCodes}
-                value={field.value?.toString()}
-                disabled={fetchingSortCodes}
-                label="Sort Code"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
-            );
-          }}
-        />
-        <Controller
           name="address"
           control={control}
           rules={{
@@ -190,6 +165,23 @@ export function ModifyBusinessFields({
               value={field.value ?? undefined}
               error={fieldState.error?.message}
               label="Address"
+            />
+          )}
+        />
+        <Controller
+          name="country"
+          control={control}
+          defaultValue={Country.Israel}
+          render={({ field, fieldState }): ReactElement => (
+            <Select
+              {...field}
+              data={countries}
+              value={field.value}
+              label="Country"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
             />
           )}
         />
@@ -237,6 +229,46 @@ export function ModifyBusinessFields({
               label="Phone Number"
             />
           )}
+        />
+      </SimpleGrid>
+      <Divider my="sm" />
+      <Title order={5}>Classification</Title>
+      <SimpleGrid cols={3}>
+        <Controller
+          name="taxCategory"
+          control={control}
+          render={({ field, fieldState }): ReactElement => (
+            <Select
+              {...field}
+              data={taxCategories}
+              value={field.value}
+              disabled={fetchingTaxCategories}
+              label="Tax Category"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          name="sortCode"
+          control={control}
+          render={({ field, fieldState }): ReactElement => {
+            return (
+              <Select
+                {...field}
+                data={sortCodes}
+                value={field.value?.toString()}
+                disabled={fetchingSortCodes}
+                label="Sort Code"
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+              />
+            );
+          }}
         />
         <Controller
           name="exemptDealer"

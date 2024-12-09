@@ -1,10 +1,12 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 import {
   ArrayPath,
   Controller,
+  FieldArray,
   FieldValues,
   Path,
   PathValue,
+  useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
@@ -21,51 +23,33 @@ export function PhrasesInput<T extends FieldValues>({
   phrasesPath,
   defaultPhrases,
 }: Props<T>): ReactElement {
-  const { control, setValue } = formManager;
-  const [phrases, setPhrases] = useState<{ ''?: string }[]>(
-    defaultPhrases ? defaultPhrases.map(phrase => ({ '': phrase })) : [],
-  );
+  const { control } = formManager;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: phrasesPath,
+    keyName: 'phrase',
+  });
 
-  const change = (phrase: string, index: number): void => {
-    const list = [...phrases];
-    list[index][''] = phrase;
-    setPhrases(list);
-  };
-  const add = (): void => {
-    setPhrases([...phrases, {}]);
-  };
-  const remove = (index: number): void => {
-    const list = [...phrases];
-    list.splice(index, 1);
-    setValue(phrasesPath as Path<T>, list.map(item => item['']) as PathValue<T, Path<T>>);
-    setPhrases(list);
-  };
+  // insert predefined default phrases
+  defaultPhrases?.map(phrase => append({ phrase } as FieldArray<T, ArrayPath<T>>));
 
   return (
     <div>
       <span className="mantine-InputWrapper-label mantine-Select-label">Phrases</span>
       <div className="h-full flex flex-col overflow-hidden">
-        {phrases.map((phrase, index) => (
-          <div key={index} className=" flex items-center gap-2 text-gray-600 mb-2">
+        {fields?.map((phrase, index) => (
+          <div key={phrase.phrase} className=" flex items-center gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-sm">
               <Controller
                 control={control}
-                name={`${phrasesPath}.${index}` as Path<T>}
+                defaultValue={defaultPhrases?.map(phrase => ({ phrase })) as PathValue<T, Path<T>>}
+                name={`${phrasesPath}.${index}.phrase` as Path<T>}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <TextInput
-                    className="w-full"
-                    {...field}
-                    value={phrase['']}
-                    onChange={(event): void => {
-                      change(event.target.value, index);
-                      field.onChange(event.target.value);
-                    }}
-                    error={fieldState.error?.message}
-                  />
+                  <TextInput className="w-full" {...field} error={fieldState.error?.message} />
                 )}
               />
             </div>
@@ -75,7 +59,7 @@ export function PhrasesInput<T extends FieldValues>({
           </div>
         ))}
         <ActionIcon>
-          <PlaylistAdd size={20} onClick={add} />
+          <PlaylistAdd size={20} onClick={(): void => append({} as FieldArray<T, ArrayPath<T>>)} />
         </ActionIcon>
       </div>
     </div>
