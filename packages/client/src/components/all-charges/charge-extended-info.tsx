@@ -274,7 +274,7 @@ export function ChargeExtendedInfo({
                     {hasDocs && (
                       <Tooltip label="Documents Gallery">
                         <ActionIcon
-                          onClick={event => {
+                          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
                             event.stopPropagation();
                             toggle();
                           }}

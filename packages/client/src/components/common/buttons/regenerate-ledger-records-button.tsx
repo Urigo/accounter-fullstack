@@ -34,7 +34,7 @@ export function RegenerateLedgerRecordsButton({
       />
       <Tooltip label="Regenerate Ledger">
         <ActionIcon
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             setOpened(true);
           }}

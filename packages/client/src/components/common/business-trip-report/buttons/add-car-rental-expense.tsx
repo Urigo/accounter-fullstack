@@ -19,7 +19,7 @@ export function AddCarRentalExpense(props: {
       <Tooltip label="Add Car Rental Expense">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebar } from '../../hooks/use-sidebar.js';
 import { cn } from '../../lib/utils.js';

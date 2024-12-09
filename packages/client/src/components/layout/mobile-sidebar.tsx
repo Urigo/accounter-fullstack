@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import { MenuIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet.js';
 import { Nav } from './nav.js';

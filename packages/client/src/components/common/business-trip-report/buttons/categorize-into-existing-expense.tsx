@@ -60,7 +60,7 @@ export function CategorizeIntoExistingExpense(props: {
       <Tooltip label="Attach Uncategorized Transaction">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}
