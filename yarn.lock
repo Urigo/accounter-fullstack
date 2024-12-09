@@ -2008,41 +2008,41 @@
     "@graphql-yoga/plugin-persisted-operations" "^3.9.0"
     tiny-lru "8.0.2"
 
-"@graphql-inspector/audit-command@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/audit-command/-/audit-command-5.0.7.tgz#8ca7b54e4712cbb9e609ed8c131a6c0f6f7aeb0b"
-  integrity sha512-/pRpUgOW+WHDmj1iszZxkpjZwgOZ0QWhk4hmlqxty9mXkAFl8K/+X4aolGpEbOrkfEl7xy4I+Fv7CJzzbsSj5A==
+"@graphql-inspector/audit-command@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/audit-command/-/audit-command-5.0.8.tgz#10941bb53c26668b07d35c41bdc31fd473792667"
+  integrity sha512-Oiu1Gk/8jg9WpoAzM99ziKjJ8JJcDgE3wbDguEN6MlRj8L0BJOZPHVVNsKzyK4xUGMuewbGDsHg2JIx8uJhyBQ==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     "@graphql-tools/utils" "10.2.1"
     cli-table3 "0.6.3"
     tslib "2.6.2"
 
-"@graphql-inspector/cli@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/cli/-/cli-5.0.7.tgz#25f80c905926077b7ab54ac8339b7add3c590e21"
-  integrity sha512-kkUb2LK2Sprhl6vrLA7rzrCHrJ+HdOTbgS/G5FJZNHjKaU0P3wwAAdinGntY8JUXlkn5KewBNBeChtTG6Fterg==
+"@graphql-inspector/cli@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/cli/-/cli-5.0.8.tgz#de2b10b8413047fb13df0fadfc39ad18ec97947e"
+  integrity sha512-ZWj4UWBW82ZomYOHoim5Whsa46HhOE3/uZ+lD6+yclwa+PPfdX/E0nFWS9qQkEuCfu3q1JmlL+1MHJ9MI+Wveg==
   dependencies:
     "@babel/core" "7.24.6"
-    "@graphql-inspector/audit-command" "5.0.7"
+    "@graphql-inspector/audit-command" "5.0.8"
     "@graphql-inspector/code-loader" "5.0.1"
     "@graphql-inspector/commands" "5.0.4"
     "@graphql-inspector/config" "4.0.2"
-    "@graphql-inspector/coverage-command" "6.1.1"
-    "@graphql-inspector/diff-command" "5.0.7"
+    "@graphql-inspector/coverage-command" "6.1.2"
+    "@graphql-inspector/diff-command" "5.0.8"
     "@graphql-inspector/docs-command" "5.0.4"
     "@graphql-inspector/git-loader" "5.0.1"
     "@graphql-inspector/github-loader" "5.0.1"
     "@graphql-inspector/graphql-loader" "5.0.1"
-    "@graphql-inspector/introspect-command" "5.0.7"
+    "@graphql-inspector/introspect-command" "5.0.8"
     "@graphql-inspector/json-loader" "5.0.1"
     "@graphql-inspector/loaders" "4.0.5"
     "@graphql-inspector/serve-command" "5.0.6"
-    "@graphql-inspector/similar-command" "5.0.7"
+    "@graphql-inspector/similar-command" "5.0.8"
     "@graphql-inspector/url-loader" "5.0.1"
-    "@graphql-inspector/validate-command" "5.0.7"
+    "@graphql-inspector/validate-command" "5.0.8"
     tslib "2.6.2"
     yargs "17.7.2"
 
@@ -2086,24 +2086,33 @@
     object-inspect "1.13.2"
     tslib "2.6.2"
 
-"@graphql-inspector/coverage-command@6.1.1":
-  version "6.1.1"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/coverage-command/-/coverage-command-6.1.1.tgz#1ef6ddac623d1a8599ac34a1838cbcbc2c2f34cd"
-  integrity sha512-DUumb17zTWXQeWmXFbi2QmTxuU1GdCk6dgL24NiX37qiWEpyQMj7YBaa8R0Dy9YADxpj7AyJasSOrefJ5g6lFw==
+"@graphql-inspector/core@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/core/-/core-6.2.1.tgz#da727dcb573ea5fdc6cb45248770292e8c142d69"
+  integrity sha512-PxL3fNblfKx/h/B4MIXN1yGHsGdY+uuySz8MAy/ogDk7eU1+va2zDZicLMEBHf7nsKfHWCAN1WFtD1GQP824NQ==
+  dependencies:
+    dependency-graph "1.0.0"
+    object-inspect "1.13.2"
+    tslib "2.6.2"
+
+"@graphql-inspector/coverage-command@6.1.2":
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/coverage-command/-/coverage-command-6.1.2.tgz#37369864a3045f37bb140daf9c457f7c432e25f8"
+  integrity sha512-hy2Iy7LYNfTb4PDzfI9apvJ9fGpOmVJShDZ8HQi1+HOx7xGTJI7bWmNvll8+enW7MWDxCiVYCojPKeuD1BEC7g==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     "@graphql-tools/utils" "10.2.1"
     tslib "2.6.2"
 
-"@graphql-inspector/diff-command@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/diff-command/-/diff-command-5.0.7.tgz#d744d330d7d51f08a0d942af52abb3185e0d21b1"
-  integrity sha512-yhTgQIgQClkgmVkdvWMpDLWMwXcwTagZIt9KDE0QlJH1dL4XP/Q7mVlhnay5bJKMVVKPPqNIAlUNcP6lm8UODA==
+"@graphql-inspector/diff-command@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/diff-command/-/diff-command-5.0.8.tgz#2d78b79070bbbf787014ec7e0f23d7cee6a3351c"
+  integrity sha512-WMkPcUuvQgoMo8opXGsu7O0jElYBdSyLHTzEhXMUvaXzkQAr3MPW4u5yBIPTthiYEtRgcefXqZulkwZ9ezLDRg==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     tslib "2.6.2"
 
@@ -2140,13 +2149,13 @@
     "@graphql-tools/graphql-file-loader" "8.0.1"
     tslib "2.6.2"
 
-"@graphql-inspector/introspect-command@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/introspect-command/-/introspect-command-5.0.7.tgz#be2efa04c15f4f08020ae92ab1a5a38d33d4b280"
-  integrity sha512-qWTtLfs25p+jjVz2uLV5358SXFs83lxDHfDuSeTC074MEATBH3v8BDyB1ai3m3rNlkojqf1AKnG8oc09P0Px0w==
+"@graphql-inspector/introspect-command@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/introspect-command/-/introspect-command-5.0.8.tgz#9bad2b271dfb716aa6ca286d03d9304028a8bbfb"
+  integrity sha512-iJB5jkw/0VZBzwvu+7vrXbrqgqEltYVIMKrmGvjEs8tXkETS35WpzG85Fp3PwyI/0h7lIS0D6WDXk4Un3t3GeQ==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     tslib "2.6.2"
 
@@ -2190,13 +2199,13 @@
     open "8.4.2"
     tslib "2.6.2"
 
-"@graphql-inspector/similar-command@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/similar-command/-/similar-command-5.0.7.tgz#e473d396b01fd44ada4d6d3338895c27956399cb"
-  integrity sha512-xIHl6wQEjeWb5p2KttDabSxtw7I8QcCIZkRCqtqDi+8hPvL36KZsZyLNfEEeeRejigxfw19D1N9NTAmk5W66jA==
+"@graphql-inspector/similar-command@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/similar-command/-/similar-command-5.0.8.tgz#019585c4174ec2e9df890f242df7c63e69210c0c"
+  integrity sha512-zah7bu9OgjV8rhDH/JNhRUxypcdKs4vuQIy6tXheK1CHNwkocJ2p7e0nYgK/qD3RAJ7Acq6jpOKjLp7UZ2bPIQ==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     tslib "2.6.2"
 
@@ -2208,13 +2217,13 @@
     "@graphql-tools/url-loader" "8.0.2"
     tslib "2.6.2"
 
-"@graphql-inspector/validate-command@5.0.7":
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/@graphql-inspector/validate-command/-/validate-command-5.0.7.tgz#6ab22e1bd37034b6d3850f2c37900e5879529830"
-  integrity sha512-+cHfdI+HNMGsbDI5RLMMBWF+LeWXIkkCw2DA8ReqeZorPw6SBQNFOtcjP8U26Mau22e5PU2dTAMSwbf1nd9R1Q==
+"@graphql-inspector/validate-command@5.0.8":
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/@graphql-inspector/validate-command/-/validate-command-5.0.8.tgz#cc3d704a61b0112a006f15882085c251e359fae9"
+  integrity sha512-CAVGS2+w7IghMhCyZLwMqCNPa3goujemFDmoekgjMpns/hYPcVUQi9DTzX5X6F8d2AxBgo438G7UAWGmAGAPqg==
   dependencies:
     "@graphql-inspector/commands" "5.0.4"
-    "@graphql-inspector/core" "6.2.0"
+    "@graphql-inspector/core" "6.2.1"
     "@graphql-inspector/logger" "5.0.1"
     "@graphql-tools/utils" "10.2.1"
     tslib "2.6.2"
