@@ -1,4 +1,6 @@
 import { format } from 'date-fns';
+import { GraphQLError } from 'graphql';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -35,6 +37,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, __) => {
   const { injector } = context;
   const chargeId = charge.id;
+
+  const tempCharge = await injector.get(TempChargesProvider).getTempChargeByIdLoader.load(chargeId);
+  if (!tempCharge) {
+    throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+  }
 
   const errors: Set<string> = new Set();
 
@@ -255,7 +262,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

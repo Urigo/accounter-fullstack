@@ -11,6 +11,7 @@ import type {
   IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
   IGetTransactionsByIdsResult,
+  IGetTransactionsSummaryByChargeIdsQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
@@ -65,6 +66,23 @@ const getTransactionsByChargeIds = sql<IGetTransactionsByChargeIdsQuery>`
     FROM accounter_schema.extended_transactions
     WHERE charge_id IN $$chargeIds
     ORDER BY event_date DESC;`;
+
+const getTransactionsSummaryByChargeIds = sql<IGetTransactionsSummaryByChargeIdsQuery>`
+  SELECT charge_id,
+        min(event_date)              AS min_event_date,
+        max(event_date)              AS max_event_date,
+        min(debit_date)              AS min_debit_date,
+        max(debit_date)              AS max_debit_date,
+        sum(amount)                  AS event_amount,
+        count(*)                     AS transactions_count,
+        count(*) FILTER (WHERE business_id IS NULL OR
+                                debit_date IS NULL) >
+        0                            AS invalid_transactions,
+        array_agg(DISTINCT currency) AS currency_array,
+        array_agg(account_id)        AS account
+  FROM accounter_schema.extended_transactions
+  WHERE charge_id IN $$chargeIds
+  GROUP BY charge_id;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -168,6 +186,23 @@ export class TransactionsProvider {
 
   public getTransactionsByChargeIDLoader = new DataLoader(
     (keys: readonly string[]) => this.batchTransactionsByChargeIDs(keys),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchTransactionsSummaryByChargeIds(chargeIds: readonly string[]) {
+    const transactionsSummaries = await getTransactionsSummaryByChargeIds.run(
+      {
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(id => transactionsSummaries.find(summary => summary.charge_id === id));
+  }
+
+  public getTransactionsSummaryByChargeIDLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchTransactionsSummaryByChargeIds(keys),
     {
       cache: false,
     },

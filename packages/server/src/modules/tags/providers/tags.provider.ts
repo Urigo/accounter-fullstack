@@ -67,37 +67,59 @@ export class TagsProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 5,
   });
+  private ALL_TAGS_KEY = 'all-tags';
 
   constructor(private dbProvider: DBProvider) {}
 
   public getAllTags() {
-    const data = this.cache.get('all-tags');
+    const data = this.cache.get(this.ALL_TAGS_KEY);
     if (data) {
       return data as Array<IGetAllTagsResult>;
     }
     return getAllTags.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-tags', data, 60 * 5);
+      this.cache.set(this.ALL_TAGS_KEY, data);
       return data;
     });
   }
 
   public addNewTag(params: IAddNewTagParams) {
-    this.clearCache();
+    this.cache.delete(this.ALL_TAGS_KEY);
     return addNewTag.run(params, this.dbProvider);
   }
 
-  public renameTag(params: IRenameTagParams) {
-    this.clearCache();
+  public async renameTag(params: IRenameTagParams) {
+    if (params.id) {
+      const tag = await this.getTagByIDLoader.load(params.id);
+      if (tag) {
+        this.clearTagCacheByName(tag.name!);
+        this.clearTagCacheById(tag.id!);
+      }
+    }
+    if (params.newName) {
+      this.clearTagCacheByName(params.newName);
+    }
     return renameTag.run(params, this.dbProvider);
   }
 
-  public deleteTag(params: IDeleteTagParams) {
-    this.clearCache();
+  public async deleteTag(params: IDeleteTagParams) {
+    if (params.id) {
+      const tag = await this.getTagByIDLoader.load(params.id);
+      if (tag) {
+        this.clearTagCacheByName(tag.name!);
+        this.clearTagCacheById(tag.id!);
+      }
+    }
     return deleteTag.run(params, this.dbProvider);
   }
 
-  public updateTagParent(params: IUpdateTagParentParams) {
-    this.clearCache();
+  public async updateTagParent(params: IUpdateTagParentParams) {
+    if (params.id) {
+      const tag = await this.getTagByIDLoader.load(params.id);
+      if (tag) {
+        this.clearTagCacheByName(tag.name!);
+        this.clearTagCacheById(tag.id!);
+      }
+    }
     return updateTagParent.run(params, this.dbProvider);
   }
 
@@ -126,5 +148,15 @@ export class TagsProvider {
 
   public clearCache() {
     this.cache.clear();
+  }
+
+  public clearTagCacheByName(name: string) {
+    this.cache.delete(this.ALL_TAGS_KEY);
+    this.cache.delete(`tag-name-${name}`);
+  }
+
+  public clearTagCacheById(id: string) {
+    this.cache.delete(this.ALL_TAGS_KEY);
+    this.cache.delete(`tag-id-${id}`);
   }
 }

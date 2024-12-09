@@ -3,6 +3,7 @@ import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
+import { TempChargesProvider } from '@modules/charges/providers/temp-charges.provider.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -116,6 +117,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
+    const tempChargePromise = injector
+      .get(TempChargesProvider)
+      .getTempChargeByIdLoader.load(chargeId);
     const [
       transactions,
       documents,
@@ -124,6 +128,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripsEmployeePayments,
       businessTripAttendees,
       chargeUnbalancedBusinesses,
+      tempCharge,
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
@@ -132,7 +137,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,
       unbalancedBusinessesPromise,
+      tempChargePromise,
     ]);
+
+    if (!tempCharge) {
+      throw new Error(`Charge ID="${chargeId}" not found`);
+    }
 
     // generate ledger from transactions
     const entriesPromises: Array<Promise<void>> = [];
@@ -586,7 +596,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      charge: tempCharge,
       balance: updatedLedgerBalanceInfo,
       errors: Array.from(errors),
     };
