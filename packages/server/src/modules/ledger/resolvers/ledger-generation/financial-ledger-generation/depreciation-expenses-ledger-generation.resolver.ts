@@ -3,8 +3,10 @@ import { calculateDepreciationAmount } from '@modules/reports/helpers/tax.helper
 import {
   ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
-  DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
+  GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+  MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+  RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
@@ -44,25 +46,67 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       };
     }
 
-    const { depreciationYearlyAmount } = await calculateDepreciationAmount(injector, year);
+    const {
+      rndDepreciationYearlyAmount,
+      gnmDepreciationYearlyAmount,
+      marketingDepreciationYearlyAmount,
+      totalDepreciationYearlyAmount,
+    } = await calculateDepreciationAmount(injector, year);
+    const ledgerEntries: LedgerProto[] = [];
 
-    const ledgerEntry: LedgerProto = {
-      id: EMPTY_UUID,
-      invoiceDate: new Date(year, 11, 31),
-      valueDate: new Date(year, 11, 31),
-      currency: DEFAULT_LOCAL_CURRENCY,
-      isCreditorCounterparty: true,
-      creditAccountID1: ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
-      debitAccountID1: DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-      localCurrencyCreditAmount1: Math.abs(depreciationYearlyAmount),
-      localCurrencyDebitAmount1: Math.abs(depreciationYearlyAmount),
-      description: `Depreciation expenses for ${year}`,
-      ownerId: charge.owner_id,
-      chargeId: charge.id,
-      currencyRate: 1,
-    };
+    // eslint-disable-next-line no-inner-declarations
+    function addLedgerEntry(
+      amount: number,
+      description: string,
+      creditor?: string,
+      debtor?: string,
+    ) {
+      if (amount === 0) {
+        return;
+      }
 
-    const ledgerEntries = [ledgerEntry];
+      const ledgerEntry: LedgerProto = {
+        id: EMPTY_UUID,
+        invoiceDate: new Date(year, 11, 31),
+        valueDate: new Date(year, 11, 31),
+        currency: DEFAULT_LOCAL_CURRENCY,
+        isCreditorCounterparty: true,
+        creditAccountID1: creditor,
+        debitAccountID1: debtor,
+        localCurrencyCreditAmount1: Math.abs(amount),
+        localCurrencyDebitAmount1: Math.abs(amount),
+        description: `${description} depreciation expenses for ${year}`,
+        ownerId: charge.owner_id,
+        chargeId: charge.id,
+        currencyRate: 1,
+      };
+
+      ledgerEntries.push(ledgerEntry);
+    }
+
+    addLedgerEntry(
+      rndDepreciationYearlyAmount,
+      'R&D',
+      undefined,
+      RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+    );
+    addLedgerEntry(
+      gnmDepreciationYearlyAmount,
+      'G&M',
+      undefined,
+      GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+    );
+    addLedgerEntry(
+      marketingDepreciationYearlyAmount,
+      'Marketing',
+      undefined,
+      MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+    );
+    addLedgerEntry(
+      totalDepreciationYearlyAmount,
+      'Accumulated',
+      ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
+    );
 
     if (insertLedgerRecordsIfNotExists) {
       await storeInitialGeneratedRecords(charge, ledgerEntries, injector);

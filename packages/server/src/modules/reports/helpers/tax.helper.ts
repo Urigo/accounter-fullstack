@@ -198,7 +198,9 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
       toDate: yearEnd,
     });
 
-  let depreciationYearlyAmount = 0;
+  let rndDepreciationYearlyAmount = 0;
+  let gnmDepreciationYearlyAmount = 0;
+  let marketingDepreciationYearlyAmount = 0;
 
   await Promise.all(
     depreciationRecords.map(async record => {
@@ -230,9 +232,29 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
 
       const part = daysOfRelevance / yearDays;
       const yearlyPercent = Number(depreciationCategory.percentage) / 100;
-      depreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+      switch (record.type) {
+        case 'RESEARCH_AND_DEVELOPMENT':
+          rndDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+          break;
+        case 'GENERAL_AND_MANAGEMENT':
+          gnmDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+          break;
+        case 'MARKETING':
+          marketingDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
+          break;
+        default:
+          throw new GraphQLError(`Unknown depreciation record type ${record.type}`);
+      }
     }),
   );
 
-  return { depreciationYearlyAmount };
+  const totalDepreciationYearlyAmount =
+    rndDepreciationYearlyAmount + gnmDepreciationYearlyAmount + marketingDepreciationYearlyAmount;
+
+  return {
+    rndDepreciationYearlyAmount,
+    gnmDepreciationYearlyAmount,
+    marketingDepreciationYearlyAmount,
+    totalDepreciationYearlyAmount,
+  };
 }

@@ -7,8 +7,8 @@ import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolve
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import {
+  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
   BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
-  DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
@@ -442,7 +442,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           ownerId,
           userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
-          taxCategoryId: DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+          taxCategoryId: ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
         });
 
         if (!charge) {
