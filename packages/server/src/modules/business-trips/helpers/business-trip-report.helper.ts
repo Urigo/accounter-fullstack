@@ -328,11 +328,6 @@ export async function accommodationExpenseDataCollector(
 
   // set taxable amounts
   for (const [attendeeId, { nightsCount: totalNights }] of Array.from(attendeesMap.entries())) {
-    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(totalNights, accommodationTaxVariables);
-
-    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
-
     if (!attendeesAccommodationMap.has(attendeeId)) {
       unAccommodatedDays += totalNights + 1;
       continue;
@@ -352,6 +347,14 @@ export async function accommodationExpenseDataCollector(
         'Accommodation expenses: accommodated nights exceed total nights stay',
       );
     }
+
+    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(
+      accommodationNights,
+      accommodationTaxVariables,
+    );
+
+    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
 
     if (totalNights > accommodationNights) {
       unAccommodatedDays += totalNights - accommodationNights;
