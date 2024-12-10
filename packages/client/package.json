@@ -62,7 +62,7 @@
     "@types/chart.js": "2.9.41",
     "@types/deep-equal": "1.0.4",
     "@types/react": "19.0.1",
-    "@types/react-dom": "19.0.1",
+    "@types/react-dom": "19.0.2",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
