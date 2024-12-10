@@ -451,6 +451,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         await injector
           .get(GreenInvoiceProvider)
           .addDocuments({ input })
+          .then(res => {
+            if (res && 'errorMessage' in res) {
+              errors.push(`${businessName}: ${res.errorMessage}`);
+            }
+          })
           .catch(e => {
             console.error(e);
             errors.push(`${businessName}: ${e.message}`);
