@@ -1,4 +1,5 @@
 import {
+  BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
   DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
@@ -6,6 +7,7 @@ import {
   VACATION_RESERVE_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
 import { generateLedgerRecordsForRecoveryReserveExpenses } from './financial-ledger-generation/recovery-reserve-ledger-generation.resolver.js';
 import { generateLedgerRecordsForExchangeRevaluation } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
@@ -58,6 +60,13 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
         );
       case VACATION_RESERVE_TAX_CATEGORY_ID:
         return generateLedgerRecordsForVacationReserveExpenses(
+          charge,
+          { insertLedgerRecordsIfNotExists },
+          context,
+          info,
+        );
+      case BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID:
+        return generateLedgerRecordsForBankDepositsRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,

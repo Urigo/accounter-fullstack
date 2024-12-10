@@ -1,5 +1,6 @@
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import {
   Currency,
@@ -101,7 +102,8 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
       // if shouldn't include revaluation ledger, skip records of toDate filter (/today)
       if (
         !includeRevaluation &&
-        ledger.description?.includes(REVALUATION_LEDGER_DESCRIPTION) &&
+        (ledger.description?.includes(REVALUATION_LEDGER_DESCRIPTION) ||
+          ledger.description?.includes(BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION)) &&
         (toDate || dateToTimelessDateString(new Date())) ===
           dateToTimelessDateString(ledger.invoice_date)
       ) {

@@ -7,6 +7,7 @@ import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolve
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import {
+  BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
   DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EMPTY_UUID,
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
@@ -336,6 +337,41 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating revaluation charge');
+      }
+    },
+    generateBankDepositsRevaluationCharge: async (_, { date, ownerId }, context, info) => {
+      const { injector } = context;
+      try {
+        const [charge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: `Bank deposits revaluation charge for ${date}`,
+          type: 'FINANCIAL',
+          taxCategoryId: BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
+        });
+
+        if (!charge) {
+          throw new Error('Error creating new charge');
+        }
+
+        const newExtendedCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(charge.id);
+
+        if (!newExtendedCharge) {
+          throw new Error('Error creating new charge');
+        }
+
+        await generateLedgerRecordsForFinancialCharge(
+          newExtendedCharge,
+          { insertLedgerRecordsIfNotExists: true },
+          context,
+          info,
+        );
+
+        return newExtendedCharge;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Error generating bank deposits revaluation charge');
       }
     },
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {

@@ -533,9 +533,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     ...commonFinancialDocumentsFields,
   },
   CommonCharge: commonChargeFields,
-  FinancialCharge: {
-    additionalDocuments: () => [],
-  },
+  FinancialCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,

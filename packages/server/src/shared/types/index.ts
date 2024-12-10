@@ -5,7 +5,7 @@ import type { env } from '../../environment.js';
 
 export type Environment = typeof env;
 
-type CurrencySum = {
+export type CurrencySum = {
   credit: number;
   debit: number;
   total: number;
