@@ -334,7 +334,7 @@ export async function accommodationExpenseDataCollector(
     category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
 
     if (!attendeesAccommodationMap.has(attendeeId)) {
-      unAccommodatedDays += totalNights;
+      unAccommodatedDays += totalNights + 1;
       continue;
     }
 
