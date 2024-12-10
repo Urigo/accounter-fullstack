@@ -1,6 +1,6 @@
 import {
+  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
   BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
-  DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
   EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
   RECOVERY_RESERVE_TAX_CATEGORY_ID,
   TAX_EXPENSES_TAX_CATEGORY_ID,
@@ -44,7 +44,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
           context,
           info,
         );
-      case DEPRECIATION_EXPENSES_TAX_CATEGORY_ID:
+      case ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID:
         return generateLedgerRecordsForDepreciationExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
