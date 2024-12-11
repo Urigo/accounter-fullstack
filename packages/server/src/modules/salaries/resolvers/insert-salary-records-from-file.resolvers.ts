@@ -199,11 +199,11 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
           chargeId: salaryChargeId,
           employeeId: employee.business_id,
           employer: employee.employer,
-          // employee: nationalId,
+          employee: employee.national_id,
 
           baseSalary: validateNumericCellWrapper('שכר יסוד'),
           globalAdditionalHours: validateNumericCellWrapper('שעות נוספות גלובליות', true),
-          hourlyRate: null, // TODO: data missing from file format
+          hourlyRate: validateNumericCellWrapper('Hourly rate', true),
 
           bonus: validateNumericCellWrapper('בונוס', true),
           gift: validateNumericCellWrapper('מתנות', true),
@@ -236,7 +236,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
 
           workDays: validateNumericCellWrapper('ימי עבודה'),
           hours: validateNumericCellWrapper('שעות עבודה'),
-          jobPercentage: null, // TODO: data missing from file format
+          jobPercentage: validateNumericCellWrapper('Job percentage') * 100,
           vacationDaysBalance: -1 * validateNumericCellWrapper('ניצול חופשה', true),
           sicknessDaysBalance: -1 * validateNumericCellWrapper('ניצול מחלה', true),
 
