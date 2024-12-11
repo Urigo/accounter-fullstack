@@ -2,47 +2,33 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IDeleteBusinessTripAccommodationsExpenseParams,
   IDeleteBusinessTripAccommodationsExpenseQuery,
-  IGetAllBusinessTripsAccommodationsExpensesQuery,
   IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsAccommodationsExpensesByChargeIdsQuery,
+  IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsAccommodationsExpensesByIdsQuery,
+  IGetBusinessTripsAccommodationsExpensesByIdsResult,
   IInsertBusinessTripAccommodationsExpenseParams,
   IInsertBusinessTripAccommodationsExpenseQuery,
   IUpdateBusinessTripAccommodationsExpenseParams,
   IUpdateBusinessTripAccommodationsExpenseQuery,
 } from '../types.js';
 
-const getAllBusinessTripsAccommodationsExpenses = sql<IGetAllBusinessTripsAccommodationsExpensesQuery>`
-  SELECT *
-  FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.extended_business_trip_transactions t
-    USING (id);`;
-
-const getBusinessTripsAccommodationsExpensesByChargeIds = sql<IGetBusinessTripsAccommodationsExpensesByChargeIdsQuery>`
-  SELECT btc.charge_id, a.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_ids
-  FROM accounter_schema.business_trips_transactions_accommodations a
-  LEFT JOIN accounter_schema.extended_business_trip_transactions t
-    USING (id)
-  LEFT JOIN accounter_schema.business_trip_charges btc
-    ON t.business_trip_id = btc.business_trip_id
-  WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
-
 const getBusinessTripsAccommodationsExpensesByBusinessTripIds = sql<IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsQuery>`
   SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
   LEFT JOIN accounter_schema.extended_business_trip_transactions t
     USING (id)
-  WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
+  WHERE t.business_trip_id IN $$businessTripIds;`;
 
 const getBusinessTripsAccommodationsExpensesByIds = sql<IGetBusinessTripsAccommodationsExpensesByIdsQuery>`
   SELECT *
   FROM accounter_schema.business_trips_transactions_accommodations a
   LEFT JOIN accounter_schema.extended_business_trip_transactions t
     USING (id)
-  WHERE ($isIds = 0 OR t.id IN $$expenseIds);`;
+  WHERE a.id IN $$expenseIds;`;
 
 const updateBusinessTripAccommodationsExpense = sql<IUpdateBusinessTripAccommodationsExpenseQuery>`
   UPDATE accounter_schema.business_trips_transactions_accommodations
@@ -80,42 +66,19 @@ const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommoda
   global: true,
 })
 export class BusinessTripAccommodationsExpensesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
-
-  public getAllBusinessTripsAccommodationsExpenses() {
-    return getAllBusinessTripsAccommodationsExpenses.run(undefined, this.dbProvider);
-  }
-
-  private async batchBusinessTripsAccommodationsExpensesByChargeIds(chargeIds: readonly string[]) {
-    const businessTripsAccommodationsExpenses =
-      await getBusinessTripsAccommodationsExpensesByChargeIds.run(
-        {
-          isChargeIds: chargeIds.length > 0 ? 1 : 0,
-          chargeIds,
-        },
-        this.dbProvider,
-      );
-    return chargeIds.map(id =>
-      businessTripsAccommodationsExpenses.filter(record => record.charge_id === id),
-    );
-  }
-
-  public getBusinessTripsAccommodationsExpensesByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByChargeIds(ids),
-    {
-      cache: false,
-    },
-  );
 
   private async batchBusinessTripsAccommodationsExpensesByBusinessTripIds(
     businessTripIds: readonly string[],
   ) {
-    const uniqueIds = Array.from(new Set(businessTripIds));
     const businessTripsAccommodationsExpenses =
       await getBusinessTripsAccommodationsExpensesByBusinessTripIds.run(
         {
-          isBusinessTripIds: uniqueIds.length > 0 ? 1 : 0,
-          businessTripIds: uniqueIds,
+          businessTripIds,
         },
         this.dbProvider,
       );
@@ -127,7 +90,8 @@ export class BusinessTripAccommodationsExpensesProvider {
   public getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByBusinessTripIds(ids),
     {
-      cache: false,
+      cacheKeyFn: key => `business-trip-accommodation-expense-trip-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -135,26 +99,29 @@ export class BusinessTripAccommodationsExpensesProvider {
     const businessTripsAccommodationsExpenses =
       await getBusinessTripsAccommodationsExpensesByIds.run(
         {
-          isIds: expenseIds.length > 0 ? 1 : 0,
           expenseIds,
         },
         this.dbProvider,
       );
     return expenseIds.map(id =>
-      businessTripsAccommodationsExpenses.filter(record => record.id === id),
+      businessTripsAccommodationsExpenses.find(record => record.id === id),
     );
   }
 
   public getBusinessTripsAccommodationsExpensesByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByIds(ids),
     {
-      cache: false,
+      cacheKeyFn: key => `business-trip-accommodation-expense-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public updateBusinessTripAccommodationsExpense(
     params: IUpdateBusinessTripAccommodationsExpenseParams,
   ) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return updateBusinessTripAccommodationsExpense.run(params, this.dbProvider);
   }
 
@@ -168,6 +135,33 @@ export class BusinessTripAccommodationsExpensesProvider {
   public deleteBusinessTripAccommodationsExpense(
     params: IDeleteBusinessTripAccommodationsExpenseParams,
   ) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return deleteBusinessTripAccommodationsExpense.run(params, this.dbProvider);
+  }
+
+  public invalidateById(expenseId: string) {
+    const expense = this.cache.get<IGetBusinessTripsAccommodationsExpensesByIdsResult>(
+      `business-trip-accommodation-expense-${expenseId}`,
+    );
+    if (expense) {
+      this.cache.delete(`business-trip-accommodation-expense-${expenseId}`);
+      this.cache.delete(`business-trip-accommodation-expense-trip-${expense.business_trip_id}`);
+    }
+  }
+
+  public invalidateByBusinessTripId(businessTripId: string) {
+    const expenses = this.cache.get<
+      IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[]
+    >(`business-trip-accommodation-expense-trip-${businessTripId}`);
+    for (const expense of expenses ?? []) {
+      this.cache.delete(`business-trip-accommodation-expense-${expense.id}`);
+    }
+    this.cache.delete(`business-trip-accommodation-expense-trip-${businessTripId}`);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

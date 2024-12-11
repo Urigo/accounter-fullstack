@@ -1,12 +1,18 @@
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion, Container, Indicator } from '@mantine/core';
-import { BusinessTripsScreenDocument, BusinessTripsScreenQuery } from '../../gql/graphql.js';
+import { Accordion, Container, Switch, Tooltip } from '@mantine/core';
+import {
+  BusinessTripsRowFieldsFragmentDoc,
+  BusinessTripsScreenDocument,
+  BusinessTripsScreenQuery,
+} from '../../gql/graphql.js';
+import { FragmentType } from '../../gql/index.js';
+import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusinessTripModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { EditableBusinessTrip } from './editable-business-trip.js';
+import { BusinessTripsRow } from './business-trips-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,29 +23,17 @@ import { EditableBusinessTrip } from './editable-business-trip.js';
       dates {
         start
       }
-      accountantApproval
-      ... on BusinessTrip @defer {
-        uncategorizedTransactions {
-          transaction {
-            ... on Transaction @defer {
-              id
-            }
-          }
-        }
-        summary {
-          ... on BusinessTripSummary @defer {
-            errors
-          }
-        }
-      }
+      ...BusinessTripsRowFields
     }
   }
 `;
 
 export const BusinessTrips = (): ReactElement => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const [businessTrips, setBusinessTrips] = useState<BusinessTripsScreenQuery['allBusinessTrips']>(
     [],
   );
+  const [shouldValidate, setShouldValidate] = useState(false);
   const [{ data, fetching }] = useQuery({
     query: BusinessTripsScreenDocument,
   });
@@ -64,9 +58,24 @@ export const BusinessTrips = (): ReactElement => {
 
   const [openedTrips, setOpenedTrips] = useState<string[]>([]);
 
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <InsertBusinessTripModal />
+        <Tooltip label="Toggle business trips validation">
+          <Switch
+            defaultChecked={shouldValidate ?? false}
+            onChange={(event): void => setShouldValidate(event.currentTarget.checked)}
+            label="Validate"
+          />
+        </Tooltip>
+      </div>,
+    );
+  }, [data, fetching, setFiltersContext, shouldValidate]);
+
   return (
     <PageLayout title="Business Trips" description="Manage business trips">
-      {fetching ? (
+      {businessTrips.length === 0 && fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <Container>
@@ -84,58 +93,23 @@ export const BusinessTrips = (): ReactElement => {
               },
             }}
           >
-            {businessTrips?.map(businessTrip => (
-              <BusinessTripWrapper
-                trip={businessTrip}
-                isFetching={fetching}
-                key={businessTrip.id}
-                isOpened={openedTrips.includes(businessTrip.id)}
-              />
-            ))}
+            {businessTrips?.map(businessTrip => {
+              return (
+                <BusinessTripsRow
+                  key={businessTrip.id}
+                  data={
+                    businessTrips.find(trip => trip.id === businessTrip.id) as FragmentType<
+                      typeof BusinessTripsRowFieldsFragmentDoc
+                    >
+                  }
+                  shouldValidate={shouldValidate}
+                  isOpened={openedTrips.includes(businessTrip.id)}
+                />
+              );
+            })}
           </Accordion>
-          <div className="flex justify-end mx-4">
-            <InsertBusinessTripModal />
-          </div>
         </Container>
       )}
     </PageLayout>
-  );
-};
-
-type BusinessTripWrapperProps = {
-  trip: BusinessTripsScreenQuery['allBusinessTrips'][number];
-  isFetching?: boolean;
-  isOpened: boolean;
-};
-
-const BusinessTripWrapper = ({
-  trip,
-  isFetching,
-  isOpened,
-}: BusinessTripWrapperProps): ReactElement => {
-  const isError = useMemo(() => {
-    return trip && (trip.uncategorizedTransactions?.length || trip.summary?.errors?.length);
-  }, [trip]);
-
-  const indicatorUp = isError || trip?.accountantApproval !== 'APPROVED';
-
-  return (
-    <Accordion.Item value={trip.id}>
-      <Accordion.Control>
-        <Indicator
-          inline
-          size={12}
-          processing={isFetching}
-          disabled={!indicatorUp}
-          color={isError ? 'red' : 'yellow'}
-          zIndex="auto"
-        >
-          {trip.name}
-        </Indicator>
-      </Accordion.Control>
-      <Accordion.Panel>
-        {isOpened && <EditableBusinessTrip tripId={trip.id} isExtended key={trip.id} />}
-      </Accordion.Panel>
-    </Accordion.Item>
   );
 };

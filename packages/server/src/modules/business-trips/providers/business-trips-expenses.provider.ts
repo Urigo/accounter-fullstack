@@ -1,27 +1,20 @@
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { stringArray } from '@modules/charges/types.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
-  IDeleteBusinessTripExpenseMatchParams,
-  IDeleteBusinessTripExpenseMatchQuery,
   IDeleteBusinessTripExpenseParams,
   IDeleteBusinessTripExpenseQuery,
-  IDeleteSpecificBusinessTripExpenseMatchParams,
-  IDeleteSpecificBusinessTripExpenseMatchQuery,
-  IGetAllBusinessTripsExpensesQuery,
-  IGetBusinessTripsExpenseMatchesByExpenseIdsQuery,
-  IGetBusinessTripsExpenseMatchesByTransactionIdsQuery,
   IGetBusinessTripsExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsExpensesByChargeIdsQuery,
+  IGetBusinessTripsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsExpensesByIdsQuery,
-  IGetTransactionsByBusinessTripIdParams,
-  IGetTransactionsByBusinessTripIdQuery,
+  IGetBusinessTripsExpensesByIdsResult,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
-  IInsertBusinessTripExpenseMatchParams,
-  IInsertBusinessTripExpenseMatchQuery,
   IInsertBusinessTripExpenseParams,
   IInsertBusinessTripExpenseQuery,
   IUpdateBusinessTripExpenseParams,
@@ -32,35 +25,17 @@ import { BusinessTripCarRentalExpensesProvider } from './business-trips-expenses
 import { BusinessTripFlightsExpensesProvider } from './business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from './business-trips-expenses-other.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from './business-trips-expenses-travel-and-subsistence.provider.js';
-
-const getAllBusinessTripsExpenses = sql<IGetAllBusinessTripsExpensesQuery>`
-  SELECT *
-  FROM accounter_schema.extended_business_trip_transactions`;
-
-const getBusinessTripsExpensesByChargeIds = sql<IGetBusinessTripsExpensesByChargeIdsQuery>`
-  SELECT *
-  FROM accounter_schema.extended_business_trip_transactions btt
-  WHERE ($isChargeIds = 0 OR btt.charge_ids && $chargeIds);`;
+import { BusinessTripsProvider } from './business-trips.provider.js';
 
 const getBusinessTripsExpensesByBusinessTripIds = sql<IGetBusinessTripsExpensesByBusinessTripIdsQuery>`
   SELECT *
   FROM accounter_schema.extended_business_trip_transactions
-  WHERE ($isBusinessTripIds = 0 OR business_trip_id IN $$businessTripIds);`;
-
-const getBusinessTripsExpenseMatchesByTransactionIds = sql<IGetBusinessTripsExpenseMatchesByTransactionIdsQuery>`
-  SELECT *
-  FROM accounter_schema.business_trips_transactions_match
-  WHERE transaction_id in $$transactionIds;`;
-
-const getBusinessTripsExpenseMatchesByExpenseIds = sql<IGetBusinessTripsExpenseMatchesByExpenseIdsQuery>`
-  SELECT *
-  FROM accounter_schema.business_trips_transactions_match
-  WHERE business_trip_transaction_id in $$expenseIds;`;
+  WHERE business_trip_id IN $$businessTripIds;`;
 
 const getBusinessTripsExpensesByIds = sql<IGetBusinessTripsExpensesByIdsQuery>`
   SELECT *
   FROM accounter_schema.extended_business_trip_transactions
-  WHERE ($isIds = 0 OR id IN $$expenseIds);`;
+  WHERE id IN $$expenseIds;`;
 
 const updateBusinessTripExpense = sql<IUpdateBusinessTripExpenseQuery>`
   UPDATE accounter_schema.business_trips_transactions
@@ -83,22 +58,6 @@ const insertBusinessTripExpense = sql<IInsertBusinessTripExpenseQuery>`
   VALUES($businessTripId, $category)
   RETURNING *;`;
 
-const insertBusinessTripExpenseMatch = sql<IInsertBusinessTripExpenseMatchQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_match (business_trip_transaction_id, transaction_id, amount)
-  VALUES($businessTripExpenseId, $transactionId, $amount)
-  RETURNING *;`;
-
-const deleteBusinessTripExpenseMatch = sql<IDeleteBusinessTripExpenseMatchQuery>`
-  DELETE FROM accounter_schema.business_trips_transactions_match
-  WHERE business_trip_transaction_id = $businessTripExpenseId
-  RETURNING *;`;
-
-const deleteSpecificBusinessTripExpenseMatch = sql<IDeleteSpecificBusinessTripExpenseMatchQuery>`
-  DELETE FROM accounter_schema.business_trips_transactions_match
-  WHERE business_trip_transaction_id = $businessTripExpenseId
-    AND transaction_id = $transactionId
-  RETURNING *;`;
-
 const deleteBusinessTripExpense = sql<IDeleteBusinessTripExpenseQuery>`
   DELETE FROM accounter_schema.business_trips_transactions
   WHERE id = $businessTripExpenseId
@@ -106,8 +65,8 @@ const deleteBusinessTripExpense = sql<IDeleteBusinessTripExpenseQuery>`
 `;
 
 const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransactionsByBusinessTripIdQuery>`
-  SELECT t.*
-  FROM accounter_schema.extended_transactions t
+  SELECT t.id
+  FROM accounter_schema.transactions t
   LEFT JOIN accounter_schema.business_trip_charges btc
     ON t.charge_id = btc.charge_id
       AND btc.business_trip_id = $businessTripId
@@ -117,54 +76,29 @@ const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransa
   WHERE btc.business_trip_id IS NOT NULL
     AND btt.id IS NULL;`;
 
-const getTransactionsByBusinessTripId = sql<IGetTransactionsByBusinessTripIdQuery>`
-  SELECT t.*
-  FROM accounter_schema.extended_transactions t
-  LEFT JOIN accounter_schema.business_trip_charges btc
-    ON t.charge_id = btc.charge_id
-      AND btc.business_trip_id = $businessTripId
-  WHERE btc.business_trip_id IS NOT NULL;`;
-
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class BusinessTripExpensesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(
     private dbProvider: DBProvider,
+    private businessTripsProvider: BusinessTripsProvider,
     private flightExpensesProvider: BusinessTripFlightsExpensesProvider,
     private accommodationsExpensesProvider: BusinessTripAccommodationsExpensesProvider,
     private travelAndSubsistenceExpensesProvider: BusinessTripTravelAndSubsistenceExpensesProvider,
     private otherExpensesProvider: BusinessTripOtherExpensesProvider,
     private carRentalExpensesProvider: BusinessTripCarRentalExpensesProvider,
+    private transactionsProvider: TransactionsProvider,
   ) {}
-
-  public getAllBusinessTripsExpenses() {
-    return getAllBusinessTripsExpenses.run(undefined, this.dbProvider);
-  }
-
-  private async batchBusinessTripsExpensesByChargeIds(chargeIds: readonly string[]) {
-    const businessTrips = await getBusinessTripsExpensesByChargeIds.run(
-      {
-        isChargeIds: chargeIds.length > 0 ? 1 : 0,
-        chargeIds: chargeIds as stringArray,
-      },
-      this.dbProvider,
-    );
-    return chargeIds.map(id => businessTrips.filter(record => record.charge_ids?.includes(id)));
-  }
-
-  public getBusinessTripsExpensesByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsExpensesByChargeIds(ids),
-    {
-      cache: false,
-    },
-  );
 
   private async batchBusinessTripsExpensesByBusinessTripIds(businessTripIds: readonly string[]) {
     const businessTrips = await getBusinessTripsExpensesByBusinessTripIds.run(
       {
-        isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
         businessTripIds,
       },
       this.dbProvider,
@@ -177,52 +111,14 @@ export class BusinessTripExpensesProvider {
   public getBusinessTripsExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsExpensesByBusinessTripIds(ids),
     {
-      cache: false,
-    },
-  );
-
-  private async batchBusinessTripsExpenseMatchesByTransactionIds(
-    transactionIds: readonly string[],
-  ) {
-    const businessTrips = await getBusinessTripsExpenseMatchesByTransactionIds.run(
-      {
-        transactionIds: transactionIds as stringArray,
-      },
-      this.dbProvider,
-    );
-    return transactionIds.map(id => businessTrips.filter(record => record.transaction_id === id));
-  }
-
-  public getBusinessTripsExpenseMatchesByTransactionIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByTransactionIds(ids),
-    {
-      cache: false,
-    },
-  );
-
-  private async batchBusinessTripsExpenseMatchesByExpenseIds(expenseIds: readonly string[]) {
-    const businessTrips = await getBusinessTripsExpenseMatchesByExpenseIds.run(
-      {
-        expenseIds: expenseIds as stringArray,
-      },
-      this.dbProvider,
-    );
-    return expenseIds.map(id =>
-      businessTrips.filter(record => record.business_trip_transaction_id === id),
-    );
-  }
-
-  public getBusinessTripsExpenseMatchesByExpenseIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByExpenseIds(ids),
-    {
-      cache: false,
+      cacheKeyFn: key => `business-trip-expenses-trip-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   private async batchBusinessTripsExpenseMatchesByIds(expenseIds: readonly string[]) {
     const businessTripsExpenses = await getBusinessTripsExpensesByIds.run(
       {
-        isIds: expenseIds.length > 0 ? 1 : 0,
         expenseIds,
       },
       this.dbProvider,
@@ -233,7 +129,8 @@ export class BusinessTripExpensesProvider {
   public getBusinessTripsExpensesByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByIds(ids),
     {
-      cache: false,
+      cacheKeyFn: key => `business-trip-expense-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -245,27 +142,36 @@ export class BusinessTripExpensesProvider {
     return insertBusinessTripExpense.run(params, this.dbProvider);
   }
 
-  public insertBusinessTripExpenseMatch(params: IInsertBusinessTripExpenseMatchParams) {
-    return insertBusinessTripExpenseMatch.run(params, this.dbProvider);
-  }
-
   public async getBusinessTripExtendedExpensesByChargeId(chargeId: string) {
+    const businessTrip =
+      await this.businessTripsProvider.getBusinessTripsByChargeIdLoader.load(chargeId);
+    if (!businessTrip) {
+      throw new GraphQLError(`Business trip not found for charge id ${chargeId}`);
+    }
     const [
       allExpenses,
       flightExpenses,
       accommodationsExpenses,
       travelAndSubsistenceExpenses,
       otherExpenses,
+      carRentalExpenses,
     ] = await Promise.all([
-      this.getBusinessTripsExpensesByChargeIdLoader.load(chargeId),
-      this.flightExpensesProvider.getBusinessTripsFlightsExpensesByChargeIdLoader.load(chargeId),
-      this.accommodationsExpensesProvider.getBusinessTripsAccommodationsExpensesByChargeIdLoader.load(
-        chargeId,
+      this.getBusinessTripsExpensesByBusinessTripIdLoader.load(businessTrip.id),
+      this.flightExpensesProvider.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(
+        businessTrip.id,
       ),
-      this.travelAndSubsistenceExpensesProvider.getBusinessTripsTravelAndSubsistenceExpensesByChargeIdLoader.load(
-        chargeId,
+      this.accommodationsExpensesProvider.getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.load(
+        businessTrip.id,
       ),
-      this.otherExpensesProvider.getBusinessTripsOtherExpensesByChargeIdLoader.load(chargeId),
+      this.travelAndSubsistenceExpensesProvider.getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.load(
+        businessTrip.id,
+      ),
+      this.otherExpensesProvider.getBusinessTripsOtherExpensesByBusinessTripIdLoader.load(
+        businessTrip.id,
+      ),
+      this.carRentalExpensesProvider.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(
+        businessTrip.id,
+      ),
     ]);
 
     const extendedIds = new Set<string>(
@@ -274,6 +180,7 @@ export class BusinessTripExpensesProvider {
         ...accommodationsExpenses,
         ...travelAndSubsistenceExpenses,
         ...otherExpenses,
+        ...carRentalExpenses,
       ].map(t => t.id),
     );
 
@@ -333,27 +240,75 @@ export class BusinessTripExpensesProvider {
     };
   }
 
-  public getUncategorizedTransactionsByBusinessTripId(
+  public async getUncategorizedTransactionsByBusinessTripId(
     params: IGetUncategorizedTransactionsByBusinessTripIdParams,
   ) {
-    return getUncategorizedTransactionsByBusinessTripId.run(params, this.dbProvider);
+    const transactionIDs = await getUncategorizedTransactionsByBusinessTripId.run(
+      params,
+      this.dbProvider,
+    );
+    return this.transactionsProvider.getTransactionByIdLoader.loadMany(
+      transactionIDs.map(t => t.id),
+    );
   }
 
-  public getTransactionsByBusinessTripId(params: IGetTransactionsByBusinessTripIdParams) {
-    return getTransactionsByBusinessTripId.run(params, this.dbProvider);
+  public async getTransactionsByBusinessTripId(businessTripId: string) {
+    const chargeIds =
+      await this.businessTripsProvider.getChargeIdsByBusinessTripIdLoader.load(businessTripId);
+    return this.transactionsProvider.getTransactionsByChargeIDLoader
+      .loadMany(chargeIds)
+      .then(
+        res => res.filter(r => !(r instanceof Error)).flat() as IGetTransactionsByChargeIdsResult[],
+      );
   }
 
   public deleteBusinessTripExpense(params: IDeleteBusinessTripExpenseParams) {
     return deleteBusinessTripExpense.run(params, this.dbProvider);
   }
 
-  public deleteBusinessTripExpenseMatch(params: IDeleteBusinessTripExpenseMatchParams) {
-    return deleteBusinessTripExpenseMatch.run(params, this.dbProvider);
+  private invalidateExpenseExtensionsById(expenseId: string) {
+    this.flightExpensesProvider.invalidateById(expenseId);
+    this.accommodationsExpensesProvider.invalidateById(expenseId);
+    this.travelAndSubsistenceExpensesProvider.invalidateById(expenseId);
+    this.otherExpensesProvider.invalidateById(expenseId);
+    this.carRentalExpensesProvider.invalidateById(expenseId);
   }
 
-  public deleteSpecificBusinessTripExpenseMatch(
-    params: IDeleteSpecificBusinessTripExpenseMatchParams,
-  ) {
-    return deleteSpecificBusinessTripExpenseMatch.run(params, this.dbProvider);
+  private invalidateExpenseExtensionsByBusinessTripId(businessTripId: string) {
+    this.flightExpensesProvider.invalidateByBusinessTripId(businessTripId);
+    this.accommodationsExpensesProvider.invalidateByBusinessTripId(businessTripId);
+    this.travelAndSubsistenceExpensesProvider.invalidateByBusinessTripId(businessTripId);
+    this.otherExpensesProvider.invalidateByBusinessTripId(businessTripId);
+    this.carRentalExpensesProvider.invalidateByBusinessTripId(businessTripId);
+  }
+
+  public invalidateById(expenseId: string) {
+    const expense = this.cache.get<IGetBusinessTripsExpensesByIdsResult>(
+      `business-trip-expense-${expenseId}`,
+    );
+    if (expense?.business_trip_id) {
+      this.cache.delete(`business-trip-expenses-trip-${expense.business_trip_id}`);
+      this.invalidateExpenseExtensionsByBusinessTripId(expense.business_trip_id);
+    }
+    this.cache.delete(`business-trip-expense-${expenseId}`);
+    this.invalidateExpenseExtensionsById(expenseId);
+  }
+
+  public invalidateByBusinessTripId(businessTripId: string) {
+    const expenses = this.cache.get<IGetBusinessTripsExpensesByBusinessTripIdsResult[]>(
+      `business-trip-expenses-trip-${businessTripId}`,
+    );
+    for (const expense of expenses ?? []) {
+      if (expense.id) {
+        this.cache.delete(`business-trip-expense-${expense.id}`);
+        this.invalidateExpenseExtensionsById(expense.id);
+      }
+    }
+    this.cache.delete(`business-trip-expenses-trip-${businessTripId}`);
+    this.invalidateExpenseExtensionsByBusinessTripId(businessTripId);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

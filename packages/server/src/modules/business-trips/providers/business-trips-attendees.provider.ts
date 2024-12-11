@@ -8,17 +8,13 @@ import type {
   IAddBusinessTripAttendeesQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsResult,
-  IGetBusinessTripsIDsByChargeIdsQuery,
+  IGetBusinessTripsByChargeIdsResult,
   IRemoveBusinessTripAttendeesParams,
   IRemoveBusinessTripAttendeesQuery,
   IUpdateBusinessTripAttendeeParams,
   IUpdateBusinessTripAttendeeQuery,
 } from '../types.js';
-
-const getBusinessTripsIDsByChargeIds = sql<IGetBusinessTripsIDsByChargeIdsQuery>`
-  SELECT *
-  FROM accounter_schema.business_trip_charges
-  WHERE charge_id IN $$chargeIds;`;
+import { BusinessTripsProvider } from './business-trips.provider.js';
 
 const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendeesByBusinessTripIdsQuery>`
   SELECT bta.business_trip_id, bta.arrival, bta.departure, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at
@@ -67,21 +63,22 @@ export class BusinessTripAttendeesProvider {
     stdTTL: 60 * 5,
   });
 
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private businessTripsProvider: BusinessTripsProvider,
+  ) {}
 
   private async batchBusinessTripsAttendeesByChargeIds(chargeIds: readonly string[]) {
-    const businessTripsMatches = await getBusinessTripsIDsByChargeIds.run(
-      {
-        chargeIds,
-      },
-      this.dbProvider,
-    );
+    const businessTripsMatches = await this.businessTripsProvider.getBusinessTripsByChargeIdLoader
+      .loadMany(chargeIds)
+      .then(
+        res =>
+          res.filter(
+            item => item && !(item instanceof Error),
+          ) as IGetBusinessTripsByChargeIdsResult[],
+      );
     const businessTripsAttendees = await this.getBusinessTripsAttendeesByBusinessTripIdLoader
-      .loadMany(
-        businessTripsMatches
-          .filter(record => record.business_trip_id)
-          .map(record => record.business_trip_id!),
-      )
+      .loadMany(businessTripsMatches.filter(record => record.id).map(record => record.id))
       .then(
         records =>
           records
@@ -94,9 +91,7 @@ export class BusinessTripAttendeesProvider {
       businessTripsMatches
         .filter(record => record.charge_id === id)
         .map(match =>
-          businessTripsAttendees.filter(
-            attendee => attendee.business_trip_id === match.business_trip_id,
-          ),
+          businessTripsAttendees.filter(attendee => attendee.business_trip_id === match.id),
         )
         .flat(),
     );

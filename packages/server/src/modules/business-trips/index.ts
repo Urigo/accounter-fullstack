@@ -8,6 +8,7 @@ import { BusinessTripAccommodationsExpensesProvider } from './providers/business
 import { BusinessTripCarRentalExpensesProvider } from './providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from './providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from './providers/business-trips-expenses-other.provider.js';
+import { BusinessTripExpensesTransactionsMatchProvider } from './providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from './providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from './providers/business-trips-expenses.provider.js';
 import { BusinessTripTaxVariablesProvider } from './providers/business-trips-tax-variables.provider.js';
@@ -34,6 +35,7 @@ export const businessTripsModule = createModule({
     BusinessTripAccommodationsExpensesProvider,
     BusinessTripTravelAndSubsistenceExpensesProvider,
     BusinessTripOtherExpensesProvider,
+    BusinessTripExpensesTransactionsMatchProvider,
     BusinessTripAttendeesProvider,
     BusinessTripEmployeePaymentsProvider,
     BusinessTripTaxVariablesProvider,

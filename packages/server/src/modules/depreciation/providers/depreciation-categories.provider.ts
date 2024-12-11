@@ -56,7 +56,7 @@ const deleteDepreciationCategory = sql<IDeleteDepreciationCategoryQuery>`
 })
 export class DepreciationCategoriesProvider {
   cache = getCacheInstance({
-    stdTTL: 60 * 60 * 24,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
 
   constructor(private dbProvider: DBProvider) {}
