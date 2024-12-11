@@ -1366,12 +1366,13 @@
     "@graphql-tools/utils" "^10.0.0"
     tslib "^2.5.0"
 
-"@envelop/generic-auth@8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@envelop/generic-auth/-/generic-auth-8.0.0.tgz#c8a8735b93fe297721a0a455a8742fed6e70f654"
-  integrity sha512-a2VN2Ej3Ur9t4pQiDedwfzkMJ03b3sNJNAsAkHvl3/YazV6T+veX21Lwc52MabyeXt+CEMP4Q6pVB0gCLZ6ZPg==
+"@envelop/generic-auth@8.0.1":
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/@envelop/generic-auth/-/generic-auth-8.0.1.tgz#7b863e1c6dec59bef51c63e7903051eac87cfcf2"
+  integrity sha512-QznhYwj1Ri8Afkc6djtBTWI28xMdmKUxyqLc85XfpjxVnKrGcd8jdgV08SKiRQC29AH/rhSZprt6vXAXIsqRJA==
   dependencies:
     "@envelop/extended-validation" "^4.1.0"
+    "@graphql-tools/executor" "^1.3.6"
     "@graphql-tools/utils" "^10.5.1"
     tslib "^2.5.0"
 
