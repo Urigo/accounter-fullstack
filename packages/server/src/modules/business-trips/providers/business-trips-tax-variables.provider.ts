@@ -21,10 +21,6 @@ export class BusinessTripTaxVariablesProvider {
 
   constructor(private dbProvider: DBProvider) {}
 
-  public getTaxVariablesByDate() {
-    return getAllTaxVariables.run(undefined, this.dbProvider);
-  }
-
   private async batchTaxVariablesByDates(dates: readonly Date[]) {
     const taxVariables = await getAllTaxVariables.run(undefined, this.dbProvider);
     return dates.map(date => taxVariables.find(record => date.getTime() >= record.date.getTime()));
@@ -34,7 +30,7 @@ export class BusinessTripTaxVariablesProvider {
     (dates: readonly Date[]) => this.batchTaxVariablesByDates(dates),
     {
       cacheKeyFn: date => date.getTime(),
-      cache: false,
+      cacheMap: this.cache,
     },
   );
 

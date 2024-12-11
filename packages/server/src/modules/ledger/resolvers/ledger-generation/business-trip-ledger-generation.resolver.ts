@@ -3,6 +3,7 @@ import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -105,8 +106,16 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         .catch(reject);
     });
     const businessTripExpensesPromise = injector
-      .get(BusinessTripExpensesProvider)
-      .getBusinessTripsExpensesByChargeIdLoader.load(chargeId);
+      .get(BusinessTripsProvider)
+      .getBusinessTripsByChargeIdLoader.load(chargeId)
+      .then(businessTrip => {
+        if (businessTrip) {
+          return injector
+            .get(BusinessTripExpensesProvider)
+            .getBusinessTripsExpensesByBusinessTripIdLoader.load(businessTrip.id);
+        }
+        return [];
+      });
     const businessTripsEmployeePaymentsPromise = injector
       .get(BusinessTripEmployeePaymentsProvider)
       .getBusinessTripEmployeePaymentsByChargeIdLoader.load(chargeId);

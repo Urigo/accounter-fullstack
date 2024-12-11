@@ -29,7 +29,7 @@ import type {
   BusinessTripProto,
   IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsAttendeesByBusinessTripIdsResult,
-  IGetBusinessTripsTravelAndSubsistenceExpensesByChargeIdsResult,
+  IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult,
 } from '../types.js';
 import { businessTripSummary } from './business-trip-summary.resolver.js';
 
@@ -48,13 +48,29 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
       throw new GraphQLError(`Business trip with id ${businessTripId} not found`);
     }
 
-    if (!businessTrip.to_date) {
+    const attendees = await injector
+      .get(BusinessTripAttendeesProvider)
+      .getBusinessTripsAttendeesByBusinessTripIdLoader.load(businessTripId);
+
+    if (!attendees?.length) {
+      throw new GraphQLError(`Business trip with id ${businessTripId} is missing attendees`);
+    }
+
+    let toDate: Date | undefined;
+
+    attendees.map(({ departure }) => {
+      if (departure && (!toDate || departure > toDate)) {
+        toDate = departure;
+      }
+    });
+
+    if (!toDate) {
       throw new GraphQLError(`Business trip with id ${businessTripId} is missing end date`);
     }
 
     const summaryData = await businessTripSummary(injector, businessTrip);
 
-    return { businessTrip, summaryData };
+    return { businessTrip: { ...businessTrip, toDate }, summaryData };
   }
 
   const accommodationExpensesPromise = injector
@@ -63,7 +79,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
 
   const attendeePayedTnSExpensesPromise = injector
     .get(BusinessTripTravelAndSubsistenceExpensesProvider)
-    .getBusinessTripsTravelAndSubsistenceExpensesByChargeIdLoader.load(businessTripId)
+    .getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.load(businessTripId)
     .then(expenses => expenses.filter(expense => expense.payed_by_employee));
 
   const [
@@ -78,7 +94,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
     shareholdersMapPromise(injector, businessTripId),
   ]);
 
-  if (!businessTrip.to_date) {
+  if (!businessTrip.toDate) {
     throw new GraphQLError(`Business trip with id ${businessTripId} is missing end date`);
   }
 
@@ -126,8 +142,8 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
   const commonFields: AddBusinessTripTravelAndSubsistenceExpenseInput = {
     businessTripId,
     currency: Currency.Usd,
-    date: dateToTimelessDateString(businessTrip.to_date!),
-    valueDate: dateToTimelessDateString(businessTrip.to_date!),
+    date: dateToTimelessDateString(businessTrip.toDate!),
+    valueDate: dateToTimelessDateString(businessTrip.toDate!),
   };
 
   const totalPotentialAmountToDistribute = Object.values(
@@ -193,8 +209,8 @@ async function shareholdersPotentialAmountToDistributePromise(
   accommodationExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   shareholdersMap: Map<string, IGetEmployeesByIdResult>,
   attendeesMap: Map<string, IGetBusinessTripsAttendeesByBusinessTripIdsResult>,
-  attendeePayedTnSExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByChargeIdsResult[],
-  businessTrip: BusinessTripProto,
+  attendeePayedTnSExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
+  businessTrip: BusinessTripProto & { toDate: Date },
 ) {
   const shareholdersPotentialAmountToDistribute: Record<string, number> = {};
   const shareholdersAccommodatedNightsMap = new Map<string, number>();
@@ -232,10 +248,10 @@ async function shareholdersPotentialAmountToDistributePromise(
 
       const taxVariables = await injector
         .get(BusinessTripTaxVariablesProvider)
-        .getTaxVariablesByDateLoader.load(businessTrip.to_date!);
+        .getTaxVariablesByDateLoader.load(businessTrip.toDate);
 
       if (!taxVariables) {
-        throw new GraphQLError(`Tax variables are not set for date ${businessTrip.to_date}`);
+        throw new GraphQLError(`Tax variables are not set for date ${businessTrip.toDate}`);
       }
 
       const totalDays = differenceInDays(attendee.departure, attendee.arrival) + 1;

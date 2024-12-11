@@ -13,6 +13,7 @@ import { BusinessTripAccommodationsExpensesProvider } from '../providers/busines
 import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
+import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import type { BusinessTripsModule } from '../types.js';
@@ -76,11 +77,13 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           );
         }
 
-        await injector.get(BusinessTripExpensesProvider).insertBusinessTripExpenseMatch({
-          businessTripExpenseId,
-          transactionId,
-          amount,
-        });
+        await injector
+          .get(BusinessTripExpensesTransactionsMatchProvider)
+          .insertBusinessTripExpenseMatch({
+            businessTripExpenseId,
+            transactionId,
+            amount,
+          });
 
         return businessTripExpense.id!;
       } catch (e) {
@@ -227,7 +230,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
             businessTripExpenseId,
           }),
           injector
-            .get(BusinessTripExpensesProvider)
+            .get(BusinessTripExpensesTransactionsMatchProvider)
             .deleteBusinessTripExpenseMatch({ businessTripExpenseId }),
         ]);
 
@@ -264,10 +267,12 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           injector.get(BusinessTripEmployeePaymentsProvider).deleteBusinessTripEmployeePayment({
             businessTripExpenseId,
           }),
-          injector.get(BusinessTripExpensesProvider).deleteSpecificBusinessTripExpenseMatch({
-            businessTripExpenseId,
-            transactionId,
-          }),
+          injector
+            .get(BusinessTripExpensesTransactionsMatchProvider)
+            .deleteSpecificBusinessTripExpenseMatch({
+              businessTripExpenseId,
+              transactionId,
+            }),
         ]);
 
         return true;

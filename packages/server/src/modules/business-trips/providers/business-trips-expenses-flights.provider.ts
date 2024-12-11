@@ -2,33 +2,19 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IDeleteBusinessTripFlightsExpenseParams,
   IDeleteBusinessTripFlightsExpenseQuery,
-  IGetAllBusinessTripsFlightsExpensesQuery,
   IGetBusinessTripsFlightsExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsFlightsExpensesByChargeIdsQuery,
+  IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsFlightsExpensesByIdsQuery,
+  IGetBusinessTripsFlightsExpensesByIdsResult,
   IInsertBusinessTripFlightsExpenseParams,
   IInsertBusinessTripFlightsExpenseQuery,
   IUpdateBusinessTripFlightsExpenseParams,
   IUpdateBusinessTripFlightsExpenseQuery,
 } from '../types.js';
-
-const getAllBusinessTripsFlightsExpenses = sql<IGetAllBusinessTripsFlightsExpensesQuery>`
-  SELECT *
-  FROM accounter_schema.business_trips_transactions_flights
-  LEFT JOIN accounter_schema.extended_business_trip_transactions
-  USING (id);`;
-
-const getBusinessTripsFlightsExpensesByChargeIds = sql<IGetBusinessTripsFlightsExpensesByChargeIdsQuery>`
-  SELECT btc.charge_id, f.*, t.business_trip_id, t.category, t.date, t.value_date, t.amount, t.currency, t.employee_business_id, t.payed_by_employee, t.transaction_ids
-  FROM accounter_schema.business_trips_transactions_flights f
-  LEFT JOIN accounter_schema.extended_business_trip_transactions t
-    USING (id)
-  LEFT JOIN accounter_schema.business_trip_charges btc
-    ON t.business_trip_id = btc.business_trip_id
-  WHERE ($isChargeIds = 0 OR btc.charge_id IN $$chargeIds);`;
 
 const getBusinessTripsFlightsExpensesByBusinessTripIds = sql<IGetBusinessTripsFlightsExpensesByBusinessTripIdsQuery>`
   SELECT *
@@ -84,31 +70,11 @@ const deleteBusinessTripFlightsExpense = sql<IDeleteBusinessTripFlightsExpenseQu
   global: true,
 })
 export class BusinessTripFlightsExpensesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
-
-  public getAllBusinessTripsFlightsExpenses() {
-    return getAllBusinessTripsFlightsExpenses.run(undefined, this.dbProvider);
-  }
-
-  private async batchBusinessTripsFlightsExpensesByChargeIds(chargeIds: readonly string[]) {
-    const businessTripsFlightsExpenses = await getBusinessTripsFlightsExpensesByChargeIds.run(
-      {
-        isChargeIds: chargeIds.length > 0 ? 1 : 0,
-        chargeIds,
-      },
-      this.dbProvider,
-    );
-    return chargeIds.map(id =>
-      businessTripsFlightsExpenses.filter(record => record.charge_id === id),
-    );
-  }
-
-  public getBusinessTripsFlightsExpensesByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsFlightsExpensesByChargeIds(ids),
-    {
-      cache: false,
-    },
-  );
 
   private async batchBusinessTripsFlightsExpensesByBusinessTripIds(
     businessTripIds: readonly string[],
@@ -128,7 +94,8 @@ export class BusinessTripFlightsExpensesProvider {
   public getBusinessTripsFlightsExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsFlightsExpensesByBusinessTripIds(ids),
     {
-      cache: false,
+      cacheKeyFn: key => `business-trip-flights-expense-trip-${key}`,
+      cacheMap: this.cache,
     },
   );
 
@@ -140,17 +107,21 @@ export class BusinessTripFlightsExpensesProvider {
       },
       this.dbProvider,
     );
-    return expenseIds.map(id => businessTripsFlightsExpenses.filter(record => record.id === id));
+    return expenseIds.map(id => businessTripsFlightsExpenses.find(record => record.id === id));
   }
 
   public getBusinessTripsFlightsExpensesByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsFlightsExpensesByIds(ids),
     {
-      cache: false,
+      cacheKeyFn: key => `business-trip-flights-expense-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public updateBusinessTripFlightsExpense(params: IUpdateBusinessTripFlightsExpenseParams) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return updateBusinessTripFlightsExpense.run(params, this.dbProvider);
   }
 
@@ -160,6 +131,33 @@ export class BusinessTripFlightsExpensesProvider {
   }
 
   public deleteBusinessTripFlightsExpense(params: IDeleteBusinessTripFlightsExpenseParams) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return deleteBusinessTripFlightsExpense.run(params, this.dbProvider);
+  }
+
+  public invalidateById(expenseId: string) {
+    const expense = this.cache.get<IGetBusinessTripsFlightsExpensesByIdsResult>(
+      `business-trip-flights-expense-${expenseId}`,
+    );
+    if (expense) {
+      this.cache.delete(`business-trip-flights-expense-${expenseId}`);
+      this.cache.delete(`business-trip-flights-expense-trip-${expense.business_trip_id}`);
+    }
+  }
+
+  public invalidateByBusinessTripId(businessTripId: string) {
+    const expenses = this.cache.get<IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult[]>(
+      `business-trip-flights-expense-trip-${businessTripId}`,
+    );
+    for (const expense of expenses ?? []) {
+      this.cache.delete(`business-trip-flights-expense-${expense.id}`);
+    }
+    this.cache.delete(`business-trip-flights-expense-trip-${businessTripId}`);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

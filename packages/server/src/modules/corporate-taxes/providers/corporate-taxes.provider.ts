@@ -58,7 +58,7 @@ const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`
 })
 export class CorporateTaxesProvider {
   cache = getCacheInstance({
-    stdTTL: 60 * 60 * 5,
+    stdTTL: 60 * 5,
   });
 
   constructor(

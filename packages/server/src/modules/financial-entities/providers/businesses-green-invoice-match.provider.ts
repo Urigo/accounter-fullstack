@@ -72,7 +72,7 @@ const insertBusinessMatch = sql<IInsertBusinessMatchQuery>`
 })
 export class BusinessesGreenInvoiceMatcherProvider {
   cache = getCacheInstance({
-    stdTTL: 24 * 60 * 60 * 5,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
 
   constructor(private dbProvider: DBProvider) {}

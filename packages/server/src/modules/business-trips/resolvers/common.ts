@@ -7,7 +7,7 @@ import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
-import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
+import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
@@ -97,7 +97,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
     }
 
     const transactionMatchesPromise = injector
-      .get(BusinessTripExpensesProvider)
+      .get(BusinessTripExpensesTransactionsMatchProvider)
       .getBusinessTripsExpenseMatchesByExpenseIdLoader.load(DbTripExpense.id);
     const transactionsPromise = injector
       .get(TransactionsProvider)
