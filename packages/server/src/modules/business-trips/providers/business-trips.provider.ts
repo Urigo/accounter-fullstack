@@ -189,12 +189,11 @@ export class BusinessTripsProvider {
 
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
     const trip = await this.getBusinessTripsByChargeIdLoader.load(chargeId);
-    if (!trip) {
-      throw new Error(`Business trip not found for chare id ${chargeId}`);
+    if (trip) {
+      this.cache.delete(`business-trip-${trip.id}`);
+      this.cache.delete(`business-trips-${trip.id}-charges`);
     }
     this.cache.delete(`business-trips-charge-${chargeId}`);
-    this.cache.delete(`business-trip-${trip.id}`);
-    this.cache.delete(`business-trips-${trip.id}-charges`);
     if (businessTripId) {
       this.cache.delete(`business-trip-${businessTripId}`);
       this.cache.delete(`business-trips-${businessTripId}-charges`);

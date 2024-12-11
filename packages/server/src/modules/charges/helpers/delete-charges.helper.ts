@@ -34,7 +34,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .deleteLedgerRecordsByChargeIdLoader.load(chargeId)
         .catch(e => {
           console.error(e);
-          throw new Error(`Failed to clear business trip`);
+          throw new Error(`Failed to clear ledger records`);
         });
 
       // clear charge spread
@@ -43,7 +43,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .deleteAllChargeSpreadByChargeIds({ chargeIds: [chargeId] })
         .catch(e => {
           console.error(e);
-          throw new Error(`Failed to clear business trip`);
+          throw new Error(`Failed to clear spread info`);
         });
 
       // clear unbalanced businesses
