@@ -95,13 +95,12 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       try {
         const coreExpenseUpdatePromise = coreExpenseUpdate(injector, fields, 'FLIGHT');
 
-        const { id, origin, destination, flightClass, attendeeIds } = fields;
-        const hasFlightFieldsToUpdate = origin || destination || flightClass || attendeeIds?.length;
+        const { id, path, flightClass, attendeeIds } = fields;
+        const hasFlightFieldsToUpdate = path || flightClass || attendeeIds?.length;
         const flightExpenseUpdate = hasFlightFieldsToUpdate
           ? injector.get(BusinessTripFlightsExpensesProvider).updateBusinessTripFlightsExpense({
               businessTripExpenseId: id,
-              origin,
-              destination,
+              path: path ? [...path] : undefined,
               class: flightClass,
               attendeeIds: fields.attendeeIds as string[] | undefined,
             })
@@ -304,8 +303,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         await Promise.all([
           injector.get(BusinessTripFlightsExpensesProvider).insertBusinessTripFlightsExpense({
             id: coreExpense.id,
-            origin: fields.origin,
-            destination: fields.destination,
+            path: fields.path ? [...fields.path] : undefined,
             class: fields.flightClass,
             attendeeIds: fields.attendeeIds as string[] | undefined,
           }),
@@ -491,8 +489,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripFlightExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'FLIGHT',
     ...commonBusinessTripExpenseFields,
-    origin: dbExpense => dbExpense.origin,
-    destination: dbExpense => dbExpense.destination,
+    path: dbExpense => dbExpense.path,
     class: dbExpense => dbExpense.class,
     attendees: async (dbExpense, _, { injector }) => {
       if (dbExpense.attendees.length === 0 || !dbExpense.business_trip_id) {

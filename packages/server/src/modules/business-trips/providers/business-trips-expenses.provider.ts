@@ -10,9 +10,7 @@ import type {
   IDeleteBusinessTripExpenseParams,
   IDeleteBusinessTripExpenseQuery,
   IGetBusinessTripsExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsExpensesByIdsQuery,
-  IGetBusinessTripsExpensesByIdsResult,
   IGetUncategorizedTransactionsByBusinessTripIdParams,
   IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripExpenseParams,
@@ -282,10 +280,8 @@ export class BusinessTripExpensesProvider {
     this.carRentalExpensesProvider.invalidateByBusinessTripId(businessTripId);
   }
 
-  public invalidateById(expenseId: string) {
-    const expense = this.cache.get<IGetBusinessTripsExpensesByIdsResult>(
-      `business-trip-expense-${expenseId}`,
-    );
+  public async invalidateById(expenseId: string) {
+    const expense = await this.getBusinessTripsExpensesByIdLoader.load(expenseId);
     if (expense?.business_trip_id) {
       this.cache.delete(`business-trip-expenses-trip-${expense.business_trip_id}`);
       this.invalidateExpenseExtensionsByBusinessTripId(expense.business_trip_id);
@@ -294,10 +290,8 @@ export class BusinessTripExpensesProvider {
     this.invalidateExpenseExtensionsById(expenseId);
   }
 
-  public invalidateByBusinessTripId(businessTripId: string) {
-    const expenses = this.cache.get<IGetBusinessTripsExpensesByBusinessTripIdsResult[]>(
-      `business-trip-expenses-trip-${businessTripId}`,
-    );
+  public async invalidateByBusinessTripId(businessTripId: string) {
+    const expenses = await this.getBusinessTripsExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
       if (expense.id) {
         this.cache.delete(`business-trip-expense-${expense.id}`);

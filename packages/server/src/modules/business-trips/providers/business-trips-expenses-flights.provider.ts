@@ -7,9 +7,7 @@ import type {
   IDeleteBusinessTripFlightsExpenseParams,
   IDeleteBusinessTripFlightsExpenseQuery,
   IGetBusinessTripsFlightsExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsFlightsExpensesByIdsQuery,
-  IGetBusinessTripsFlightsExpensesByIdsResult,
   IInsertBusinessTripFlightsExpenseParams,
   IInsertBusinessTripFlightsExpenseQuery,
   IUpdateBusinessTripFlightsExpenseParams,
@@ -21,25 +19,21 @@ const getBusinessTripsFlightsExpensesByBusinessTripIds = sql<IGetBusinessTripsFl
   FROM accounter_schema.business_trips_transactions_flights f
   LEFT JOIN accounter_schema.extended_business_trip_transactions t
     USING (id)
-  WHERE ($isBusinessTripIds = 0 OR t.business_trip_id IN $$businessTripIds);`;
+  WHERE t.business_trip_id IN $$businessTripIds;`;
 
 const getBusinessTripsFlightsExpensesByIds = sql<IGetBusinessTripsFlightsExpensesByIdsQuery>`
   SELECT *
   FROM accounter_schema.business_trips_transactions_flights f
   LEFT JOIN accounter_schema.extended_business_trip_transactions t
     USING (id)
-  WHERE ($isIds = 0 OR t.id IN $$expenseIds);`;
+  WHERE t.id IN $$expenseIds;`;
 
 const updateBusinessTripFlightsExpense = sql<IUpdateBusinessTripFlightsExpenseQuery>`
   UPDATE accounter_schema.business_trips_transactions_flights
   SET
-  origin = COALESCE(
-    $origin,
-    origin
-  ),
-  destination = COALESCE(
-    $destination,
-    destination
+  path = COALESCE(
+    $path,
+    path
   ),
   class = COALESCE(
     $class,
@@ -55,8 +49,8 @@ const updateBusinessTripFlightsExpense = sql<IUpdateBusinessTripFlightsExpenseQu
 `;
 
 const insertBusinessTripFlightsExpense = sql<IInsertBusinessTripFlightsExpenseQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_flights (id, origin, destination, class, attendees)
-  VALUES($id, $origin, $destination, $class, $attendeeIds)
+  INSERT INTO accounter_schema.business_trips_transactions_flights (id, path, class, attendees)
+  VALUES($id, $path, $class, $attendeeIds)
   RETURNING *;`;
 
 const deleteBusinessTripFlightsExpense = sql<IDeleteBusinessTripFlightsExpenseQuery>`
@@ -81,7 +75,6 @@ export class BusinessTripFlightsExpensesProvider {
   ) {
     const businessTripsFlightsExpenses = await getBusinessTripsFlightsExpensesByBusinessTripIds.run(
       {
-        isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
         businessTripIds,
       },
       this.dbProvider,
@@ -102,7 +95,6 @@ export class BusinessTripFlightsExpensesProvider {
   private async batchBusinessTripsFlightsExpensesByIds(expenseIds: readonly string[]) {
     const businessTripsFlightsExpenses = await getBusinessTripsFlightsExpensesByIds.run(
       {
-        isIds: expenseIds.length > 0 ? 1 : 0,
         expenseIds,
       },
       this.dbProvider,
@@ -137,20 +129,17 @@ export class BusinessTripFlightsExpensesProvider {
     return deleteBusinessTripFlightsExpense.run(params, this.dbProvider);
   }
 
-  public invalidateById(expenseId: string) {
-    const expense = this.cache.get<IGetBusinessTripsFlightsExpensesByIdsResult>(
-      `business-trip-flights-expense-${expenseId}`,
-    );
+  public async invalidateById(expenseId: string) {
+    const expense = await this.getBusinessTripsFlightsExpensesByIdLoader.load(expenseId);
     if (expense) {
-      this.cache.delete(`business-trip-flights-expense-${expenseId}`);
       this.cache.delete(`business-trip-flights-expense-trip-${expense.business_trip_id}`);
     }
+    this.cache.delete(`business-trip-flights-expense-${expenseId}`);
   }
 
-  public invalidateByBusinessTripId(businessTripId: string) {
-    const expenses = this.cache.get<IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult[]>(
-      `business-trip-flights-expense-trip-${businessTripId}`,
-    );
+  public async invalidateByBusinessTripId(businessTripId: string) {
+    const expenses =
+      await this.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
       this.cache.delete(`business-trip-flights-expense-${expense.id}`);
     }

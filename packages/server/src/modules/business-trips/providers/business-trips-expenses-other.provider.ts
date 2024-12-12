@@ -7,9 +7,7 @@ import type {
   IDeleteBusinessTripOtherExpenseParams,
   IDeleteBusinessTripOtherExpenseQuery,
   IGetBusinessTripsOtherExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsOtherExpensesByBusinessTripIdsResult,
   IGetBusinessTripsOtherExpensesByIdsQuery,
-  IGetBusinessTripsOtherExpensesByIdsResult,
   IInsertBusinessTripOtherExpenseParams,
   IInsertBusinessTripOtherExpenseQuery,
   IUpdateBusinessTripOtherExpenseParams,
@@ -111,6 +109,9 @@ export class BusinessTripOtherExpensesProvider {
   );
 
   public updateBusinessTripOtherExpense(params: IUpdateBusinessTripOtherExpenseParams) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return updateBusinessTripOtherExpense.run(params, this.dbProvider);
   }
 
@@ -119,23 +120,23 @@ export class BusinessTripOtherExpensesProvider {
   }
 
   public deleteBusinessTripOtherExpense(params: IDeleteBusinessTripOtherExpenseParams) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return deleteBusinessTripOtherExpense.run(params, this.dbProvider);
   }
 
-  public invalidateById(expenseId: string) {
-    const expense = this.cache.get<IGetBusinessTripsOtherExpensesByIdsResult>(
-      `business-trip-other-expense-${expenseId}`,
-    );
+  public async invalidateById(expenseId: string) {
+    const expense = await this.getBusinessTripsOtherExpensesByIdLoader.load(expenseId);
     if (expense) {
-      this.cache.delete(`business-trip-other-expense-${expenseId}`);
       this.cache.delete(`business-trip-other-expense-trip-${expense.business_trip_id}`);
     }
+    this.cache.delete(`business-trip-other-expense-${expenseId}`);
   }
 
-  public invalidateByBusinessTripId(businessTripId: string) {
-    const expenses = this.cache.get<IGetBusinessTripsOtherExpensesByBusinessTripIdsResult[]>(
-      `business-trip-other-expense-trip-${businessTripId}`,
-    );
+  public async invalidateByBusinessTripId(businessTripId: string) {
+    const expenses =
+      await this.getBusinessTripsOtherExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
       this.cache.delete(`business-trip-other-expense-${expense.id}`);
     }

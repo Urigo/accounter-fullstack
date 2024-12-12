@@ -7,9 +7,7 @@ import type {
   IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
   IDeleteBusinessTripTravelAndSubsistenceExpenseQuery,
   IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsQuery,
-  IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult,
   IGetBusinessTripsTravelAndSubsistenceExpensesByIdsQuery,
-  IGetBusinessTripsTravelAndSubsistenceExpensesByIdsResult,
   IInsertBusinessTripTravelAndSubsistenceExpenseParams,
   IInsertBusinessTripTravelAndSubsistenceExpenseQuery,
   IUpdateBusinessTripTravelAndSubsistenceExpenseParams,
@@ -114,6 +112,9 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
   public updateBusinessTripTravelAndSubsistenceExpense(
     params: IUpdateBusinessTripTravelAndSubsistenceExpenseParams,
   ) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return updateBusinessTripTravelAndSubsistenceExpense.run(params, this.dbProvider);
   }
 
@@ -126,23 +127,26 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
   public deleteBusinessTripTravelAndSubsistenceExpense(
     params: IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
   ) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return deleteBusinessTripTravelAndSubsistenceExpense.run(params, this.dbProvider);
   }
 
-  public invalidateById(expenseId: string) {
-    const expense = this.cache.get<IGetBusinessTripsTravelAndSubsistenceExpensesByIdsResult>(
-      `business-trip-tns-expense-${expenseId}`,
-    );
+  public async invalidateById(expenseId: string) {
+    const expense =
+      await this.getBusinessTripsTravelAndSubsistenceExpensesByIdLoader.load(expenseId);
     if (expense) {
       this.cache.delete(`business-trip-tns-expense-${expenseId}`);
       this.cache.delete(`business-trip-tns-expense-trip-${expense.business_trip_id}`);
     }
   }
 
-  public invalidateByBusinessTripId(businessTripId: string) {
-    const expenses = this.cache.get<
-      IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[]
-    >(`business-trip-tns-expense-trip-${businessTripId}`);
+  public async invalidateByBusinessTripId(businessTripId: string) {
+    const expenses =
+      await this.getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.load(
+        businessTripId,
+      );
     for (const expense of expenses ?? []) {
       this.cache.delete(`business-trip-tns-expense-${expense.id}`);
     }
