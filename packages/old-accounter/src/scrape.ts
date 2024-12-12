@@ -1339,8 +1339,8 @@ async function getForeignSwiftTransactionsfromBankAndSave(
       card6Digits: process.env.AMEX_6_DIGITS,
     }),
     getVisaCalCreditCardData(pool, thirdScraperInstance, {
-      username: process.env.VISA_CAL_USERNAME,
-      password: process.env.VISA_CAL_PASSWORD,
+      username: process.env.CAL_USERNAME,
+      password: process.env.CAL_PASSWORD,
     }),
     getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),

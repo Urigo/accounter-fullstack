@@ -47,8 +47,6 @@ yarn server:dev
 8. Load your data into the database (first set correct env vars):
 
 ```sh
-cd packages/old-accounter/
-yarn build
 yarn scrape
 ```
 
