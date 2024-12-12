@@ -42,8 +42,7 @@ export default gql`
     transactions: [Transaction!]
     payedByEmployee: Boolean
 
-    origin: String
-    destination: String
+    path: [String!]
     class: String
     attendees: [BusinessTripAttendee!]!
   }
@@ -178,8 +177,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    origin: String
-    destination: String
+    path: [String!]
     flightClass: FlightClass
     attendeeIds: [UUID!]
   }
@@ -262,8 +260,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    origin: String
-    destination: String
+    path: [String!]
     flightClass: FlightClass
     attendeeIds: [UUID!]
   }
