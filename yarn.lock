@@ -2220,31 +2220,31 @@
     "@graphql-tools/utils" "10.2.1"
     tslib "2.6.2"
 
-"@graphql-mesh/cache-inmemory-lru@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cache-inmemory-lru/-/cache-inmemory-lru-0.0.3.tgz#2d0ae1b9d16dbe44f169414470d64fd84e6b3033"
-  integrity sha512-jDnsjmRfd4gmMZZjkuUhQ5pxTURX/nAM+hKvI7Fi8P6eDAoYrDfBP7NKLSnRn9YSyK97eY9oIcKcOJ0sHGgW1A==
+"@graphql-mesh/cache-inmemory-lru@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cache-inmemory-lru/-/cache-inmemory-lru-0.0.4.tgz#3d84d7426233d84c528fdf9cf74d9fa1d02650a7"
+  integrity sha512-4ngIxjIETkKZD8yrzkqBIjlVvNYpbWXizyCMnTMt6QMdwoVfkK5eQ7Ovz+IUFtubjbGm9XiqXv83SJsO7UFp9Q==
   dependencies:
     "@graphql-mesh/types" "^0.103.8"
     "@graphql-mesh/utils" "^0.103.8"
     "@whatwg-node/disposablestack" "^0.0.5"
     tslib "^2.4.0"
 
-"@graphql-mesh/cache-localforage@^0.103.8":
-  version "0.103.8"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cache-localforage/-/cache-localforage-0.103.8.tgz#50603da8686dd01a17b096278c18065e86629574"
-  integrity sha512-b+7Kbcc3y9ASBLSXzl1Sc+AcySCGp4rX1tARmFO2+vbS1M8CiNNOQ3oqlZ/r7MX1PWy71Kyln+4iQWf1k3uEAg==
+"@graphql-mesh/cache-localforage@^0.103.9":
+  version "0.103.9"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cache-localforage/-/cache-localforage-0.103.9.tgz#5bd5c8a41739e543ae6b26edf5a40b43d5c192ac"
+  integrity sha512-TeCS1fS/zt8qwQOhb0vjW2zebwXt+Hbn5HXg4mW8ep2WjPR6UI0khgWVgvLQroQMyn4uVOiJbAryD4pOdBr0Sg==
   dependencies:
-    "@graphql-mesh/cache-inmemory-lru" "^0.0.3"
+    "@graphql-mesh/cache-inmemory-lru" "^0.0.4"
     "@graphql-mesh/types" "^0.103.8"
     "@graphql-mesh/utils" "^0.103.8"
     localforage "1.10.0"
     tslib "^2.4.0"
 
-"@graphql-mesh/cli@0.98.9":
-  version "0.98.9"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.98.9.tgz#1bd69ab2d44e7c02d64795d81d3d4cbce789359a"
-  integrity sha512-1u3JYtVw9WulurNubGrTLIsBMy6VJVMuf01ua8tl64LqH8jmO0pESea0qSJosiRhPrpy+l2oWtmLm5uhvglYfQ==
+"@graphql-mesh/cli@0.98.10":
+  version "0.98.10"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.98.10.tgz#aa9ddd6172706eebfe8db5a083c6a45dece4c5d8"
+  integrity sha512-YR6Wokq6fHWk86xy/nR0WOB1HTIM6sYpZjebcTWTBMurCuCrBP0i5NGzNAFInN32CZs82i/TEsWyuNxvcbhVJw==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
@@ -2252,7 +2252,7 @@
     "@graphql-codegen/typescript-generic-sdk" "^3.1.0"
     "@graphql-codegen/typescript-operations" "^4.0.0"
     "@graphql-codegen/typescript-resolvers" "^4.0.0"
-    "@graphql-mesh/config" "^0.106.9"
+    "@graphql-mesh/config" "^0.106.10"
     "@graphql-mesh/cross-helpers" "^0.4.9"
     "@graphql-mesh/http" "^0.105.8"
     "@graphql-mesh/include" "^0.2.7"
@@ -2278,13 +2278,13 @@
     ws "^8.17.1"
     yargs "^17.7.1"
 
-"@graphql-mesh/config@0.106.9", "@graphql-mesh/config@^0.106.9":
-  version "0.106.9"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.106.9.tgz#f6b47db6e7f997e565c4dee567b35860857eb809"
-  integrity sha512-4Pz+oTZjrDgefe5oaaBf4FDyvjNSw1hV1+6X1XKl14K4KN5UlKiWq0lYKxzkUq+dcpH4BbIfm93t5N7dlltmCA==
+"@graphql-mesh/config@0.106.10", "@graphql-mesh/config@^0.106.10":
+  version "0.106.10"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.106.10.tgz#5ceed2b93e2ff6c93fe5fdf63ff7a655efe3b4bf"
+  integrity sha512-6nb9T/9jEzT1AHeTXADVzYGN3rY2fzp3bew/RZW0bcKgYnsG1hsJbzEf/Fhj9A/WRiqT7a8E3oRCJLTzjvKQYA==
   dependencies:
     "@envelop/core" "^5.0.0"
-    "@graphql-mesh/cache-localforage" "^0.103.8"
+    "@graphql-mesh/cache-localforage" "^0.103.9"
     "@graphql-mesh/cross-helpers" "^0.4.9"
     "@graphql-mesh/merger-bare" "^0.104.9"
     "@graphql-mesh/merger-stitching" "^0.104.8"
@@ -2421,10 +2421,10 @@
     lodash.get "4.4.2"
     tslib "^2.4.0"
 
-"@graphql-mesh/transform-rename@0.103.8":
-  version "0.103.8"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/transform-rename/-/transform-rename-0.103.8.tgz#40d66ebf328280b23369ac38e27afce2c27fb0c7"
-  integrity sha512-2tEDt6ouS11DxY/J80C/6+gG/U9sXe+mJhcFG5nWoH1WvonmI46wjNKQ2amNtm4zWEzO4H+8YTfh7h/mHWTeAA==
+"@graphql-mesh/transform-rename@0.103.9":
+  version "0.103.9"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/transform-rename/-/transform-rename-0.103.9.tgz#2671dda5929d506a2c1d478615cce16cd9e91c68"
+  integrity sha512-OPH+coRDFQUw/+lQMumiJeQiUrUmCO7/uBhi8ETlJzdhYoFn6AMFm0dDRSrr7AS0Qu0YPb/uSeoFyIPFkK+2ZA==
   dependencies:
     "@graphql-mesh/types" "^0.103.8"
     "@graphql-mesh/utils" "^0.103.8"
@@ -3497,10 +3497,10 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.23.1":
-  version "7.23.1"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.23.1.tgz#27a7f7ade9bb88bc0a6280282f34409ece9fcba6"
-  integrity sha512-hIVRitRSFxf60BHDr+T7Tarj4lLwOV8flebeIsyEPJJHvSlaFNFwr6rqYFb8SGULYU7ppKMhiESD1+YqgJSU1Q==
+"@mui/x-charts@7.23.2":
+  version "7.23.2"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.23.2.tgz#261f60b0d66855c2b4c7e70ae9ffc5d3a80b62c4"
+  integrity sha512-wLeogvQZZtyrAOdG06mDzIQSHBSAB09Uy16AYRUcMxVObi7Fs0i3TJUMpQHMYz1/1DvE1u8zstDgVpVfk8/iCA==
   dependencies:
     "@babel/runtime" "^7.25.7"
     "@mui/utils" "^5.16.6 || ^6.0.0"
@@ -11776,10 +11776,10 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-puppeteer-core@23.10.3:
-  version "23.10.3"
-  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-23.10.3.tgz#0ebab29a40c8401c8a851c794489e3196bb57486"
-  integrity sha512-7JG8klL2qHLyH8t2pOmM9zgykhaulUf7cxnmmqupjdwGfNMiGaYehQka20iUB9R/fwVyG8mFMZcsmw1FHrgKVw==
+puppeteer-core@23.10.4:
+  version "23.10.4"
+  resolved "https://registry.yarnpkg.com/puppeteer-core/-/puppeteer-core-23.10.4.tgz#f0a70a0df6a0afd43e787b658064ddb062c07b5a"
+  integrity sha512-pQAY7+IFAndWDkDodsQGguW1/ifV5OMlGXJDspwtK49Asb7poJZ/V5rXJxVSpq57bWrJasjQBZ1X27z1oWVq4Q==
   dependencies:
     "@puppeteer/browsers" "2.6.1"
     chromium-bidi "0.8.0"
@@ -11788,16 +11788,16 @@ puppeteer-core@23.10.3:
     typed-query-selector "^2.12.0"
     ws "^8.18.0"
 
-puppeteer@*, puppeteer@23.10.3:
-  version "23.10.3"
-  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-23.10.3.tgz#126617da061d4fee24d794c1f89a8e42706d9dfb"
-  integrity sha512-ODG+L9vCSPkQ1j+yDtNDdkSsWt2NXNrQO5C8MlwkYgE2hYnXdqVRbBpsHnoP7+EULJJKbWyR2Q4BdfohjQor3A==
+puppeteer@*, puppeteer@23.10.4:
+  version "23.10.4"
+  resolved "https://registry.yarnpkg.com/puppeteer/-/puppeteer-23.10.4.tgz#398ff9f04924c05334514d73b61a03a7a36ad101"
+  integrity sha512-i0sYIAIjdO9MoRfFqbkoWFnQYZVmNp8msbztTgG46KbOdoYAv4f56MFzdFwtC0lyZHtkP+yl0H7tP0dNg3RQYA==
   dependencies:
     "@puppeteer/browsers" "2.6.1"
     chromium-bidi "0.8.0"
     cosmiconfig "^9.0.0"
     devtools-protocol "0.0.1367902"
-    puppeteer-core "23.10.3"
+    puppeteer-core "23.10.4"
     typed-query-selector "^2.12.0"
 
 q@^1.5.1:
