@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IDeleteChargeUnbalancedBusinessesByChargeIdParams,
   IDeleteChargeUnbalancedBusinessesByChargeIdQuery,
@@ -47,6 +48,10 @@ const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>
   global: true,
 })
 export class UnbalancedBusinessesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargeUnbalancedBusinessesByChargeIds(chargeIds: readonly string[]) {
@@ -65,25 +70,48 @@ export class UnbalancedBusinessesProvider {
   public getChargeUnbalancedBusinessesByChargeIds = new DataLoader(
     (keys: readonly string[]) => this.batchChargeUnbalancedBusinessesByChargeIds(keys),
     {
-      cache: false,
+      cacheKeyFn: key => `unbalanced-businesses-charge-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public insertChargeUnbalancedBusinesses(params: IInsertChargeUnbalancedBusinessesParams) {
+    if (params.unbalancedBusinesses.length) {
+      params.unbalancedBusinesses.map(({ chargeId }) => {
+        if (chargeId) this.invalidateByChargeId(chargeId);
+      });
+    }
     return insertChargeUnbalancedBusinesses.run(params, this.dbProvider);
   }
 
   public deleteChargeUnbalancedBusinesses(params: IDeleteChargeUnbalancedBusinessesParams) {
+    if (params.chargeId) {
+      this.invalidateByChargeId(params.chargeId);
+    }
     return deleteChargeUnbalancedBusinesses.run(params, this.dbProvider);
   }
 
   public deleteChargeUnbalancedBusinessesByChargeId(
     params: IDeleteChargeUnbalancedBusinessesByChargeIdParams,
   ) {
+    if (params.chargeId) {
+      this.invalidateByChargeId(params.chargeId);
+    }
     return deleteChargeUnbalancedBusinessesByChargeId.run(params, this.dbProvider);
   }
 
   public updateChargeUnbalancedBusiness(params: IUpdateChargeUnbalancedBusinessParams) {
+    if (params.chargeId) {
+      this.invalidateByChargeId(params.chargeId);
+    }
     return updateChargeUnbalancedBusiness.run(params, this.dbProvider);
+  }
+
+  public async invalidateByChargeId(chargeId: string) {
+    this.cache.delete(`unbalanced-businesses-charge-${chargeId}`);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

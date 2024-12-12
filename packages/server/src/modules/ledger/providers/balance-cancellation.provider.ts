@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { IGetBalanceCancellationByChargesIdsQuery } from '../types.js';
 
 const getBalanceCancellationByChargesIds = sql<IGetBalanceCancellationByChargesIdsQuery>`
@@ -14,6 +15,10 @@ const getBalanceCancellationByChargesIds = sql<IGetBalanceCancellationByChargesI
   global: true,
 })
 export class BalanceCancellationProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBalanceCancellationByChargesIds(ids: readonly string[]) {
@@ -28,6 +33,13 @@ export class BalanceCancellationProvider {
 
   public getBalanceCancellationByChargesIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchBalanceCancellationByChargesIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: key => `balance-cancellation-charge-${key}`,
+      cacheMap: this.cache,
+    },
   );
+
+  public clearCache() {
+    this.cache.clear();
+  }
 }

@@ -9,11 +9,12 @@ import type {
   IDeleteDocumentQuery,
   IGetAllDocumentsParams,
   IGetAllDocumentsQuery,
+  IGetAllDocumentsResult,
   IGetDocumentsByChargeIdQuery,
+  IGetDocumentsByExtendedFiltersParams,
+  IGetDocumentsByExtendedFiltersQuery,
   IGetDocumentsByFiltersParams,
   IGetDocumentsByFiltersQuery,
-  IGetDocumentsByFinancialEntityIdsParams,
-  IGetDocumentsByFinancialEntityIdsQuery,
   IGetDocumentsByIdsQuery,
   IInsertDocumentsParams,
   IInsertDocumentsQuery,
@@ -33,17 +34,6 @@ const getDocumentsByChargeId = sql<IGetDocumentsByChargeIdQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE charge_id in $$chargeIds
-  ORDER BY created_at DESC;
-`;
-
-const getDocumentsByFinancialEntityIds = sql<IGetDocumentsByFinancialEntityIdsQuery>`
-  SELECT *
-  FROM accounter_schema.documents
-  WHERE charge_id IN(
-    SELECT c.id as financial_entity_id
-    FROM accounter_schema.charges c
-    WHERE c.owner_id IN $$ownerIds
-  )
   ORDER BY created_at DESC;
 `;
 
@@ -174,13 +164,22 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
     RETURNING *;`;
 
 const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
+  SELECT *
+  FROM accounter_schema.documents
+  WHERE
+    ($isIDs = 0 OR id IN $$IDs)
+    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
+    AND ($toVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE <= date_trunc('day', $toVatDate ::DATE))
+    AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
+  ORDER BY created_at DESC;
+`;
+
+const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
   SELECT d.*
   FROM accounter_schema.documents d
   LEFT JOIN accounter_schema.extended_charges c ON c.id = d.charge_id
   WHERE
     ($isIDs = 0 OR d.id IN $$IDs)
-    AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($fromVatDate ::TEXT IS NULL OR COALESCE(d.vat_report_date_override ,d.date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
     AND ($toVatDate ::TEXT IS NULL OR COALESCE(d.vat_report_date_override ,d.date)::TEXT::DATE <= date_trunc('day', $toVatDate ::DATE))
     AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
@@ -190,7 +189,12 @@ const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
 `;
 
 type IGetAdjustedDocumentsByFiltersParams = Optional<
-  Omit<IGetDocumentsByFiltersParams, 'isIDs' | 'fromDate' | 'toDate' | 'isUnmatched'>,
+  Omit<IGetDocumentsByFiltersParams, 'isIDs'>,
+  'IDs' | 'businessIDs'
+>;
+
+type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
+  Omit<IGetDocumentsByExtendedFiltersParams, 'isIDs' | 'fromDate' | 'toDate' | 'isUnmatched'>,
   'IDs' | 'businessIDs' | 'ownerIDs'
 > & {
   fromDate?: TimelessDateString | null;
@@ -217,7 +221,20 @@ export class DocumentsProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public async getAllDocuments(params: IGetAllDocumentsParams) {
-    return getAllDocuments.run(params, this.dbProvider);
+    const cached = this.cache.get<IGetAllDocumentsResult[]>('all-documents');
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    return getAllDocuments.run(params, this.dbProvider).then(res => {
+      if (res) {
+        this.cache.set('all-documents', res);
+        res.map(doc => {
+          this.cache.set(`document-${doc.id}`, doc);
+          this.cache.delete(`document-by-charge-${doc.charge_id}`);
+        });
+      }
+      return res;
+    });
   }
 
   private async batchDocumentsByChargeIds(chargeIds: readonly string[]) {
@@ -225,7 +242,12 @@ export class DocumentsProvider {
     try {
       const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.dbProvider);
 
-      return chargeIds.map(id => docs.filter(doc => doc.charge_id === id));
+      return chargeIds.map(id =>
+        docs.filter(doc => {
+          this.cache.set(`document-${doc.id}`, doc);
+          return doc.charge_id === id;
+        }),
+      );
     } catch (e) {
       console.error(e);
       return chargeIds.map(() => []);
@@ -240,36 +262,37 @@ export class DocumentsProvider {
     },
   );
 
-  public async getDocumentsByFinancialEntityIds(params: IGetDocumentsByFinancialEntityIdsParams) {
-    return getDocumentsByFinancialEntityIds.run(params, this.dbProvider);
-  }
-
-  public async updateDocument(params: IUpdateDocumentParams) {
-    this.clearCache();
-    return updateDocument.run(params, this.dbProvider);
-  }
-
-  public async deleteDocument(params: IDeleteDocumentParams) {
-    this.clearCache();
-    return deleteDocument.run(params, this.dbProvider);
-  }
-
-  public async insertDocuments(params: IInsertDocumentsParams) {
-    this.clearCache();
-    return insertDocuments.run(params, this.dbProvider);
-  }
-
   public getDocumentsByFilters(params: IGetAdjustedDocumentsByFiltersParams) {
     const isIDs = !!params?.IDs?.filter(Boolean).length;
     const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
-    const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByFiltersParams = {
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
+      fromVatDate: null,
+      toVatDate: null,
+      ...params,
+      IDs: isIDs ? params.IDs! : [null],
+      businessIDs: isBusinessIDs ? params.businessIDs! : [null],
+    };
+    return getDocumentsByFilters.run(fullParams, this.dbProvider).then(res => {
+      res.map(doc => {
+        this.cache.set(`document-${doc.id}`, doc);
+        this.cache.delete(`document-by-charge-${doc.charge_id}`);
+      });
+      return res;
+    });
+  }
+
+  public getDocumentsByExtendedFilters(params: IGetAdjustedDocumentsByExtendedFiltersParams) {
+    const isIDs = !!params?.IDs?.filter(Boolean).length;
+    const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
+    const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
+
+    const fullParams: IGetDocumentsByExtendedFiltersParams = {
+      isIDs: isIDs ? 1 : 0,
+      isBusinessIDs: isBusinessIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
-      fromDate: null,
-      toDate: null,
       fromVatDate: null,
       toVatDate: null,
       ...params,
@@ -278,12 +301,13 @@ export class DocumentsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getDocumentsByFilters.run(fullParams, this.dbProvider);
-  }
-
-  public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
-    this.clearCache();
-    return replaceDocumentsChargeId.run(params, this.dbProvider);
+    return getDocumentsByExtendedFilters.run(fullParams, this.dbProvider).then(res => {
+      res.map(doc => {
+        this.cache.set(`document-${doc.id}`, doc);
+        this.cache.delete(`document-by-charge-${doc.charge_id}`);
+      });
+      return res;
+    });
   }
 
   private async batchDocumentsByIds(ids: readonly string[]) {
@@ -305,6 +329,63 @@ export class DocumentsProvider {
       cacheMap: this.cache,
     },
   );
+
+  public async updateDocument(params: IUpdateDocumentParams) {
+    if (params.documentId) {
+      const document = await this.getDocumentsByIdLoader.load(params.documentId);
+      if (document) {
+        this.cache.delete(`document-by-charge-${document.charge_id}`);
+      }
+      this.invalidateById(params.documentId);
+    }
+    return updateDocument.run(params, this.dbProvider);
+  }
+
+  public async deleteDocument(params: IDeleteDocumentParams) {
+    if (params.documentId) {
+      const document = await this.getDocumentsByIdLoader.load(params.documentId);
+      if (document) {
+        this.cache.delete(`document-by-charge-${document.charge_id}`);
+      }
+      this.invalidateById(params.documentId);
+    }
+    return deleteDocument.run(params, this.dbProvider);
+  }
+
+  public async insertDocuments(params: IInsertDocumentsParams) {
+    if (params.document.length) {
+      params.document.map(doc => {
+        if (doc.chargeId) this.invalidateByChargeId(doc.chargeId);
+      });
+    }
+    return insertDocuments.run(params, this.dbProvider);
+  }
+
+  public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
+    if (params.assertChargeID) {
+      this.invalidateByChargeId(params.assertChargeID);
+    }
+    if (params.replaceChargeID) {
+      this.invalidateByChargeId(params.replaceChargeID);
+    }
+    return replaceDocumentsChargeId.run(params, this.dbProvider);
+  }
+
+  public async invalidateById(id: string) {
+    const document = await this.getDocumentsByIdLoader.load(id);
+    if (document) {
+      this.cache.delete(`document-by-charge-${document.charge_id}`);
+    }
+    this.cache.delete(`document-${id}`);
+    this.cache.delete('all-documents');
+  }
+
+  public async invalidateByChargeId(chargeId: string) {
+    const documents = await this.getDocumentsByChargeIdLoader.load(chargeId);
+    documents.map(doc => this.cache.delete(`document-${doc.id}`));
+    this.cache.delete(`document-by-charge-${chargeId}`);
+    this.cache.delete('all-documents');
+  }
 
   public clearCache() {
     this.cache.clear();

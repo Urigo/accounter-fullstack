@@ -154,12 +154,12 @@ export class DepreciationProvider {
   }
 
   public deleteDepreciationRecord(params: IDeleteDepreciationRecordParams) {
-    this.cache.clear();
+    this.clearCache();
     return deleteDepreciationRecord.run(params, this.dbProvider);
   }
 
   public deleteDepreciationRecordByChargeId(params: IDeleteDepreciationRecordByChargeIdParams) {
-    this.cache.clear();
+    this.clearCache();
     return deleteDepreciationRecordByChargeId.run(params, this.dbProvider);
   }
 
