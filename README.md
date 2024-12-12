@@ -44,6 +44,14 @@ yarn server:dev
 7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
    `yarn seed`.
 
+8. Load your data into the database (first set correct env vars):
+
+```sh
+cd packages/old-accounter/
+yarn build
+yarn scrape
+```
+
 ## Node ES Modules with TypeScript
 
 Latest Typescript and Node - as bare-bone as possible example app
