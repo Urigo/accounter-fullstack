@@ -4,17 +4,9 @@ import { waitUntil } from '../helpers/waiting.js';
 import type { CalGetCardTransactionsDetailsResponse, CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
 
-// TODO:
-// Clean up file
-// Hide promo without click
-// Make more consistent. It sometimes errors on log in
-// Unified interface for exported data?
-
-// Constants
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
-// Main scraper functions
 export async function cal(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
   await login(credentials, page);
 
@@ -192,8 +184,6 @@ async function fetchMonthCompletedTransactions(
   return [];
 }
 
-
-// Helper functions
 async function getLoginFrame(page: Page) {
   let frame: Frame | null = null;
   console.debug('wait until login frame found');
@@ -277,7 +267,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Classes
 export class CalCredentials {
   username: string = '';
   password: string = '';
