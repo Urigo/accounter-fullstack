@@ -91,6 +91,7 @@ const config: CodegenConfig = {
           CorporateTax: '@modules/corporate-taxes/types.js#IGetAllCorporateTaxesResult',
           CorporateTaxRulingComplianceReport:
             '@shared/types#CorporateTaxRulingComplianceReportProto',
+          Country: '@modules/countries/types.js#IGetAllCountriesResult',
           CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:

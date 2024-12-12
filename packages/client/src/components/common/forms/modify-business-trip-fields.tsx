@@ -1,16 +1,19 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
+import { Select, TextInput } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
-import { TextInput } from '../index.js';
+import { useAllCountries } from '../../../hooks/use-get-countries.js';
 
 interface Props {
   control: Control<InsertBusinessTripInput, object>;
 }
 
 export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
+  const { countries, fetching: fetchingCountries } = useAllCountries();
+
   return (
     <>
       <Controller
@@ -18,12 +21,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         control={control}
         rules={{ required: 'Required' }}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            {...field}
-            error={fieldState.error?.message}
-            isDirty={fieldState.isDirty}
-            label="Name"
-          />
+          <TextInput {...field} error={fieldState.error?.message} label="Name" />
         )}
       />
       <Controller
@@ -85,15 +83,21 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         }}
       />
       <Controller
-        name="destination"
+        name="destinationCode"
         control={control}
         render={({ field, fieldState }): ReactElement => (
-          <TextInput
+          <Select
             {...field}
+            data={countries.map(country => ({
+              value: country.code,
+              label: country.name,
+            }))}
             value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            isDirty={fieldState.isDirty}
+            disabled={fetchingCountries}
             label="Destination"
+            maxDropdownHeight={160}
+            searchable
+            error={fieldState.error?.message}
           />
         )}
       />
@@ -105,7 +109,6 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
             {...field}
             value={field.value ?? undefined}
             error={fieldState.error?.message}
-            isDirty={fieldState.isDirty}
             label="Trip Purpose"
           />
         )}
