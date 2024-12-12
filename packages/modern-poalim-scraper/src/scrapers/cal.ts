@@ -24,7 +24,7 @@ export async function cal(page: Page, credentials: CalCredentials, options: CalO
     //   return fetchMonthCompletedTransactions(page, credentials, options, xSiteId, RequestedMonthDate);
     // },
     getTransactions: async () => {
-      return fetchTransactions(page, credentials, options);
+      return fetchTransactions(page, options);
     },
   }
 }
@@ -94,20 +94,33 @@ async function login(credentials: CalCredentials, page: Page) {
   }
 }
 
-async function fetchTransactions(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
+async function fetchTransactions(page: Page, options: CalOptions = {}) {
   const startDate = options.startDate || subYears(new Date(), 1);
   const authToken = await getAuthorizationHeader(page);
   const cards = await getCards(page);
   console.debug(`Found ${cards.length} cards`);
+  console.debug(cards.map((c) => c.last4Digits).join(', '));
   const xSiteId = await getXSiteId();
 
   const transactions: CalTransaction[] = [];
 
+  // hide marketing
+  try {
+    await page.click('button.btn-close');
+  } catch {
+    console.debug('No marketing popup to close');
+  }
+
   for (const card of cards) {
-    // Fetch completed transactions
-    const completedTxns = await fetchCompletedTransactions(page, card.cardUniqueId, authToken, xSiteId, startDate, options.futureMonthsToScrape);
-    console.debug(`Found ${completedTxns.length} completed transactions`);
-    transactions.push(...completedTxns);
+    try {
+      console.debug(`Fetching completed transactions for card ${card.last4Digits}`);
+      // Fetch completed transactions
+      const completedTxns = await fetchCompletedTransactions(page, card.cardUniqueId, authToken, xSiteId, startDate, options.futureMonthsToScrape);
+      console.debug(`Found ${completedTxns.length} completed transactions`);
+      transactions.push(...completedTxns);
+    } catch (error) {
+      console.error(`Failed to fetch completed transactions: ${card.last4Digits} ${error}`);
+    }
   }
 
   console.debug(`Found ${transactions.length} transactions in total`);
@@ -122,7 +135,7 @@ async function fetchCompletedTransactions(
   authToken: string, 
   xSiteId: string,
   startDate: Date,
-  futureMonthsToScrape: number = 1
+  futureMonthsToScrape: number = 0
 ) {
   const endDate = new Date();
   endDate.setMonth(endDate.getMonth() + (futureMonthsToScrape || 1));
