@@ -17,7 +17,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
       name
       id
     }
-    ... on Charge {
+    ... on Charge @defer {
       validationData {
         missingInfo
       }
