@@ -7,7 +7,6 @@ import { TimelessDateString } from '@shared/types';
 import type {
   IDeleteCorporateTaxParams,
   IDeleteCorporateTaxQuery,
-  IGetAllCorporateTaxesQuery,
   IGetCorporateTaxesByCorporateIdsQuery,
   IGetCorporateTaxesByCorporateIdsResult,
   IInsertCorporateTaxParams,
@@ -15,10 +14,6 @@ import type {
   IUpdateCorporateTaxParams,
   IUpdateCorporateTaxQuery,
 } from '../types.js';
-
-const getAllCorporateTaxes = sql<IGetAllCorporateTaxesQuery>`
-  SELECT * FROM accounter_schema.corporate_tax_variables
-  ORDER BY date DESC;`;
 
 const getCorporateTaxesByCorporateIds = sql<IGetCorporateTaxesByCorporateIdsQuery>`
   SELECT *

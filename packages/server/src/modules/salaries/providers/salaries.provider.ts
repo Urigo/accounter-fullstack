@@ -9,7 +9,6 @@ import type {
   IGetSalaryRecordsByChargeIdsQuery,
   IGetSalaryRecordsByDatesParams,
   IGetSalaryRecordsByDatesQuery,
-  IGetSalaryRecordsByMonthParams,
   IGetSalaryRecordsByMonthQuery,
   IInsertSalaryRecordsParams,
   IInsertSalaryRecordsQuery,
