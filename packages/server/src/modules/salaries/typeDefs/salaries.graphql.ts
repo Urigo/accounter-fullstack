@@ -31,6 +31,7 @@ export default gql`
     compensationsEmployerAmount: Float
     compensationsEmployerPercentage: Float
     directPaymentAmount: Float!
+    employee: String
     employeeId: UUID!
     employer: UUID!
     gift: Float

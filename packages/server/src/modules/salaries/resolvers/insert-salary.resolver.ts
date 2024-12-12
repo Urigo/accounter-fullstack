@@ -10,6 +10,7 @@ export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalary
   try {
     const salaryRecords = params.salaryRecords.map(salaryRecord => ({
       ...salaryRecord,
+      employee: salaryRecord.employee ?? null,
       addedVacationDays: salaryRecord.addedVacationDays ?? null,
       baseSalary: salaryRecord.baseSalary ?? null,
       bonus: salaryRecord.bonus ?? null,
