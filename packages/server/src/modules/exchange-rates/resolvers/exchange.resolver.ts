@@ -119,12 +119,6 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
-  // WireTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  // FeeTransaction: {
-  //   ...commonTransactionFields,
-  // },
   ConversionTransaction: {
     ...commonTransactionFields,
   },

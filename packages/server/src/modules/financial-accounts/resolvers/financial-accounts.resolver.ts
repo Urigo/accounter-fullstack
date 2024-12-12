@@ -36,12 +36,6 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
         ? DbAccount.account_number.slice(-8)
         : DbAccount.account_number,
   },
-  // WireTransaction: {
-  //   ...commonTransactionFields,
-  // },
-  // FeeTransaction: {
-  //   ...commonTransactionFields,
-  // },
   ConversionTransaction: {
     ...commonTransactionFields,
   },

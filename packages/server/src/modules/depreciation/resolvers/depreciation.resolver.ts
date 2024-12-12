@@ -68,17 +68,6 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
         return false;
       }
     },
-    deleteDepreciationRecordsByCharge: (_, { chargeId }, { injector }) => {
-      try {
-        return injector
-          .get(DepreciationProvider)
-          .deleteDepreciationRecordByChargeId({ chargeId })
-          .then(() => true);
-      } catch (e) {
-        console.error(e);
-        return false;
-      }
-    },
     insertDepreciationRecord: async (_, { input }, { injector }) => {
       try {
         const depreciationRecords = await injector

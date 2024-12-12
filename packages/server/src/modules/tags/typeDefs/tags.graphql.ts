@@ -9,7 +9,6 @@ export default gql`
   extend type Mutation {
     addTag(name: String!, parentId: UUID): Boolean! @auth(role: ADMIN)
     deleteTag(id: UUID!): Boolean! @auth(role: ADMIN)
-    renameTag(id: UUID!, newName: String!): Boolean! @auth(role: ADMIN)
     updateTagParent(id: UUID!, parentId: UUID): Boolean! @auth(role: ADMIN)
     updateTagPart(tagId: UUID!, chargeId: UUID!, part: Float!): Boolean! @auth(role: ADMIN)
     updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean! @auth(role: ADMIN)

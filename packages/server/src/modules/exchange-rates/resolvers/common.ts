@@ -6,8 +6,6 @@ import { ExchangeRatesModule } from '../types.js';
 
 export const commonTransactionFields:
   | ExchangeRatesModule.ConversionTransactionResolvers
-  | ExchangeRatesModule.FeeTransactionResolvers
-  | ExchangeRatesModule.WireTransactionResolvers
   | ExchangeRatesModule.CommonTransactionResolvers = {
   debitExchangeRates: DbTransaction => {
     if (!DbTransaction.debit_date) {

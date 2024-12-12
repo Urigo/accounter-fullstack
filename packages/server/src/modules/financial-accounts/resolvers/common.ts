@@ -8,8 +8,6 @@ export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAcco
 
 export const commonTransactionFields:
   | FinancialAccountsModule.ConversionTransactionResolvers
-  | FinancialAccountsModule.FeeTransactionResolvers
-  | FinancialAccountsModule.WireTransactionResolvers
   | FinancialAccountsModule.CommonTransactionResolvers = {
   account: async (DbTransaction, _, { injector }) => {
     if (!DbTransaction.account_id) {
