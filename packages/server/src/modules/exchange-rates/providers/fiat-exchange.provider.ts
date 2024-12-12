@@ -6,7 +6,7 @@ import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import type {
   IGetExchangeRatesByDateQuery,
-  IGetExchangeRatesByDatesParams,
+  IGetExchangeRatesByDateResult,
   IGetExchangeRatesByDatesQuery,
   IGetExchangeRatesByDatesResult,
 } from '../types.js';
@@ -45,15 +45,16 @@ export class FiatExchangeProvider {
   public async getExchangeRates(date: Date) {
     const formattedDate = dateToTimelessDateString(date);
     try {
-      const result = await getExchangeRatesByDate.run({ date: formattedDate }, this.dbProvider);
-      return result[0];
+      const cached = this.cache.get<IGetExchangeRatesByDateResult[]>(`exchange-${formattedDate}`);
+      if (cached) {
+        return Promise.resolve(cached);
+      }
+      const [result] = await getExchangeRatesByDate.run({ date: formattedDate }, this.dbProvider);
+      this.cache.set(`exchange-${formattedDate}`, result);
+      return result;
     } catch (error) {
       throw new Error(`error in DB - ${error}`);
     }
-  }
-
-  public getExchangeRatesByDates(params: IGetExchangeRatesByDatesParams) {
-    return getExchangeRatesByDates.run(params, this.dbProvider);
   }
 
   private async batchExchangeRatesByDates(dates: readonly Date[]) {
@@ -79,7 +80,7 @@ export class FiatExchangeProvider {
   public getExchangeRatesByDatesLoader = new DataLoader(
     (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
     {
-      cacheKeyFn: key => `exchange-${key}`,
+      cacheKeyFn: key => `exchange-${dateToTimelessDateString(key)}`,
       cacheMap: this.cache,
     },
   );

@@ -88,7 +88,7 @@ const config: CodegenConfig = {
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
-          CorporateTax: '@modules/corporate-taxes/types.js#IGetAllCorporateTaxesResult',
+          CorporateTax: '@modules/corporate-taxes/types.js#IGetCorporateTaxesByCorporateIdsResult',
           CorporateTaxRulingComplianceReport:
             '@shared/types#CorporateTaxRulingComplianceReportProto',
           Country: '@modules/countries/types.js#IGetAllCountriesResult',

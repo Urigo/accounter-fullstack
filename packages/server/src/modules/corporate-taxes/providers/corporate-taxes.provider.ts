@@ -7,17 +7,13 @@ import { TimelessDateString } from '@shared/types';
 import type {
   IDeleteCorporateTaxParams,
   IDeleteCorporateTaxQuery,
-  IGetAllCorporateTaxesQuery,
   IGetCorporateTaxesByCorporateIdsQuery,
+  IGetCorporateTaxesByCorporateIdsResult,
   IInsertCorporateTaxParams,
   IInsertCorporateTaxQuery,
   IUpdateCorporateTaxParams,
   IUpdateCorporateTaxQuery,
 } from '../types.js';
-
-const getAllCorporateTaxes = sql<IGetAllCorporateTaxesQuery>`
-  SELECT * FROM accounter_schema.corporate_tax_variables
-  ORDER BY date DESC;`;
 
 const getCorporateTaxesByCorporateIds = sql<IGetCorporateTaxesByCorporateIdsQuery>`
   SELECT *
@@ -67,6 +63,12 @@ export class CorporateTaxesProvider {
   ) {}
 
   public getAllCorporateTaxes() {
+    const cached = this.cache.get<IGetCorporateTaxesByCorporateIdsResult[]>(
+      `corporate-taxes-${this.context.currentUser.userId}`,
+    );
+    if (cached) {
+      return Promise.resolve(cached);
+    }
     return getCorporateTaxesByCorporateIds
       .run({ corporateIds: [this.context.currentUser.userId] }, this.dbProvider)
       .then(res => {
@@ -78,12 +80,12 @@ export class CorporateTaxesProvider {
   private async batchCorporateTaxesByDates(
     taxRates: readonly { date: TimelessDateString; corporateId: string }[],
   ) {
-    const rates = await getAllCorporateTaxes.run(undefined, this.dbProvider);
-    this.cache.set('corporate-taxes', rates);
+    const rates = await this.getAllCorporateTaxes();
     return taxRates.map(({ date, corporateId }) => {
       const time = new Date(date).getTime();
       return rates
         .filter(rate => rate.corporate_id === corporateId)
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
         .find(rate => rate.date.getTime() <= time);
     });
   }

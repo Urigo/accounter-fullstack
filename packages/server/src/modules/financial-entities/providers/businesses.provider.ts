@@ -2,12 +2,11 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllBusinessesQuery,
-  IGetBusinessesByChargeIdsParams,
-  IGetBusinessesByChargeIdsQuery,
+  IGetAllBusinessesResult,
   IGetBusinessesByIdsQuery,
-  IGetBusinessesByNamesQuery,
   IInsertBusinessParams,
   IInsertBusinessQuery,
   IUpdateBusinessParams,
@@ -21,61 +20,11 @@ const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
       USING (id)
     WHERE b.id IN $$ids;`;
 
-const getBusinessesByNames = sql<IGetBusinessesByNamesQuery>`
-    SELECT *
-    FROM accounter_schema.businesses b
-    INNER JOIN accounter_schema.financial_entities fe
-      USING (id)
-    WHERE fe.name IN $$names;`;
-
 const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     SELECT *
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
-
-const getBusinessesByChargeIds = sql<IGetBusinessesByChargeIdsQuery>`
-    SELECT c.id as charge_id, fe.*,
-      b.address,
-      b.address_hebrew,
-      b.advance_tax_rate,
-      b.bank_account_account_number,
-      b.bank_account_bank_number,
-      b.bank_account_branch_number,
-      b."bank_account_IBAN",
-      b.bank_account_swift,
-      b.can_settle_with_receipt,
-      b.contract,
-      b.country,
-      b.email,
-      b.exempt_dealer,
-      b.hebrew_name,
-      b.nikuim,
-      b.no_invoices_required,
-      b.password,
-      b.phone_number,
-      b.pinkas_social_security_2021,
-      b.pinkas_social_security_2022,
-      b.registration_date,
-      b.suggestion_data,
-      b.tax_nikuim_pinkas_number,
-      b.tax_pinkas_number_2020,
-      b.tax_siduri_number_2021,
-      b.tax_siduri_number_2022,
-      b.username_vat_website,
-      b.vat_number,
-      b.vat_report_cadence,
-      b.website,
-      b.website_login_screenshot,
-      b.wizcloud_company_id,
-      b.wizcloud_token,
-      b.optional_vat
-    FROM accounter_schema.charges c
-    LEFT JOIN accounter_schema.businesses b
-      ON  c.owner_id = b.id
-    LEFT JOIN accounter_schema.financial_entities fe
-      ON b.id = fe.id
-    WHERE c.id IN $$chargeIds;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
   UPDATE accounter_schema.businesses
@@ -231,6 +180,10 @@ const insertBusiness = sql<IInsertBusinessQuery>`
   global: true,
 })
 export class BusinessesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
@@ -245,57 +198,37 @@ export class BusinessesProvider {
   }
 
   public getBusinessByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchBusinessesByIds(keys),
+    (ids: readonly string[]) => this.batchBusinessesByIds(ids),
     {
-      cache: false,
-    },
-  );
-
-  private async batchBusinessesByNames(names: readonly string[]) {
-    const businesses = await getBusinessesByNames.run(
-      {
-        names,
-      },
-      this.dbProvider,
-    );
-    return names.map(name => businesses.find(fe => fe.name === name));
-  }
-
-  public getBusinessByNameLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchBusinessesByNames(keys),
-    {
-      cache: false,
+      cacheKeyFn: id => `business-${id}`,
+      cacheMap: this.cache,
     },
   );
 
   public getAllBusinesses() {
+    const data = this.cache.get<IGetAllBusinessesResult[]>('all-businesses');
+    if (data) {
+      return Promise.resolve(data);
+    }
     return getAllBusinesses.run(undefined, this.dbProvider);
   }
 
-  public getBusinessesByChargeIds(params: IGetBusinessesByChargeIdsParams) {
-    return getBusinessesByChargeIds.run(params, this.dbProvider);
-  }
-
-  private async batchBusinessesByChargeIds(chargeIds: readonly string[]) {
-    const businesses = await getBusinessesByChargeIds.run(
-      {
-        chargeIds,
-      },
-      this.dbProvider,
-    );
-    return chargeIds.map(chargeId => businesses.find(fe => fe.charge_id === chargeId) ?? null);
-  }
-
-  public getBusinessByChargeIdsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchBusinessesByChargeIds(keys),
-    { cache: false },
-  );
-
-  public updateBusiness(params: IUpdateBusinessParams) {
+  public async updateBusiness(params: IUpdateBusinessParams) {
+    if (params.businessId) await this.invalidateBusinessById(params.businessId);
     return updateBusiness.run(params, this.dbProvider);
   }
 
   public insertBusiness(params: IInsertBusinessParams) {
+    this.cache.delete('all-businesses');
     return insertBusiness.run(params, this.dbProvider);
+  }
+
+  public async invalidateBusinessById(businessId: string) {
+    this.cache.delete('all-businesses');
+    this.cache.delete(`business-${businessId}`);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

@@ -2,25 +2,25 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IClearAllChargeTagsParams,
   IClearAllChargeTagsQuery,
   IClearChargeTagsParams,
   IClearChargeTagsQuery,
-  IGetTagsByChargeIDsQuery,
-  IGetTagsByChargeIDsResult,
+  IGetTagIdsByChargeIDsQuery,
+  IGetTagsByIDsResult,
   IInsertChargeTagParams,
   IInsertChargeTagQuery,
   IUpdateChargeTagPartParams,
   IUpdateChargeTagPartQuery,
 } from '../types.js';
+import { TagsProvider } from './tags.provider.js';
 
-const getTagsByChargeIDs = sql<IGetTagsByChargeIDsQuery>`
-    SELECT ct.charge_id, ct.part, t.*
-    FROM accounter_schema.charge_tags ct
-    LEFT JOIN accounter_schema.extended_tags t
-    ON ct.tag_id = t.id
-    WHERE ct.charge_id IN $$chargeIDs;`;
+const getTagIdsByChargeIDs = sql<IGetTagIdsByChargeIDsQuery>`
+    SELECT *
+    FROM accounter_schema.charge_tags
+    WHERE charge_id IN $$chargeIDs;`;
 
 const clearChargeTags = sql<IClearChargeTagsQuery>`
     DELETE FROM accounter_schema.charge_tags
@@ -49,39 +49,74 @@ const updateChargeTagPart = sql<IUpdateChargeTagPartQuery>`
   global: true,
 })
 export class ChargeTagsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
+  constructor(
+    private dbProvider: DBProvider,
+    private tagsProvider: TagsProvider,
+  ) {}
 
   private async batchTagsByChargeID(chargeIDs: readonly string[]) {
-    const tagsArray = await getTagsByChargeIDs.run({ chargeIDs }, this.dbProvider);
-    const tagsByChargeId = new Map<string, IGetTagsByChargeIDsResult[]>();
-    tagsArray.map(tag => {
-      if (tagsByChargeId.has(tag.charge_id)) {
-        tagsByChargeId.get(tag.charge_id)!.push(tag);
+    const tagsMatches = await getTagIdsByChargeIDs.run({ chargeIDs }, this.dbProvider);
+    const tags = await this.tagsProvider.getTagByIDLoader
+      .loadMany(tagsMatches.map(tag => tag.tag_id))
+      .then(tags => tags.filter(tag => tag && !(tag instanceof Error)) as IGetTagsByIDsResult[]);
+    const tagsByChargeId = new Map<string, IGetTagsByIDsResult[]>();
+    tagsMatches.map(match => {
+      const tag = tags.find(tag => tag.id === match.tag_id);
+      if (!tag) return;
+      if (tagsByChargeId.has(match.charge_id)) {
+        tagsByChargeId.get(match.charge_id)!.push(tag);
       } else {
-        tagsByChargeId.set(tag.charge_id, [tag]);
+        tagsByChargeId.set(match.charge_id, [tag]);
       }
     });
     return chargeIDs.map(id => tagsByChargeId.get(id) ?? []);
   }
 
   public getTagsByChargeIDLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTagsByChargeID(keys),
-    { cache: false },
+    (chargeIds: readonly string[]) => this.batchTagsByChargeID(chargeIds),
+    {
+      cacheKeyFn: chargeId => `tags-charge-${chargeId}`,
+      cacheMap: this.cache,
+    },
   );
 
   public async clearChargeTags(params: IClearChargeTagsParams) {
+    if (params.chargeId) {
+      this.invalidateTagsByChargeID(params.chargeId);
+    }
     return clearChargeTags.run(params, this.dbProvider);
   }
 
   public async clearAllChargeTags(params: IClearAllChargeTagsParams) {
+    if (params.chargeId) {
+      this.invalidateTagsByChargeID(params.chargeId);
+    }
     return clearAllChargeTags.run(params, this.dbProvider);
   }
 
   public async insertChargeTag(params: IInsertChargeTagParams) {
+    if (params.chargeId) {
+      this.invalidateTagsByChargeID(params.chargeId);
+    }
     return insertChargeTag.run(params, this.dbProvider);
   }
 
   public async updateChargeTagPart(params: IUpdateChargeTagPartParams) {
+    if (params.chargeId) {
+      this.invalidateTagsByChargeID(params.chargeId);
+    }
     return updateChargeTagPart.run(params, this.dbProvider);
+  }
+
+  public async invalidateTagsByChargeID(chargeId: string) {
+    this.cache.delete(`tags-charge-${chargeId}`);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

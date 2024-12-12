@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
-import type { IGetAllCountriesQuery } from '../types.js';
+import type { IGetAllCountriesQuery, IGetAllCountriesResult } from '../types.js';
 
 const getAllCountries = sql<IGetAllCountriesQuery>`
     SELECT *
@@ -21,6 +21,10 @@ export class CountriesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   public getAllCountries() {
+    const cached = this.cache.get<IGetAllCountriesResult[]>('all-countries');
+    if (cached) {
+      return Promise.resolve(cached);
+    }
     return getAllCountries.run(undefined, this.dbProvider).then(countries => {
       if (countries) {
         this.cache.set('all-countries', countries);

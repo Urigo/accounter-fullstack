@@ -52,17 +52,6 @@ export const commonFinancialDocumentsFields:
     documentRoot.no_vat_amount ? Number(documentRoot.no_vat_amount) : null,
 };
 
-export const commonFinancialEntityFields:
-  | DocumentsModule.LtdFinancialEntityResolvers
-  | DocumentsModule.PersonalFinancialEntityResolvers = {
-  documents: async (DbBusiness, _, { injector }) => {
-    const documents = await injector
-      .get(DocumentsProvider)
-      .getDocumentsByFinancialEntityIds({ ownerIds: [DbBusiness.id] });
-    return documents;
-  },
-};
-
 export const commonChargeFields: DocumentsModule.ChargeResolvers = {
   additionalDocuments: async (DbCharge, _, { injector }) => {
     if (!DbCharge.id) {

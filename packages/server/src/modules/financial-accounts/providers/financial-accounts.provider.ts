@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllFinancialAccountsQuery,
+  IGetAllFinancialAccountsResult,
   IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByOwnerIdsQuery,
@@ -97,7 +98,19 @@ export class FinancialAccountsProvider {
   );
 
   public getAllFinancialAccounts() {
-    return getAllFinancialAccounts.run(undefined, this.dbProvider);
+    const cached = this.cache.get<IGetAllFinancialAccountsResult[]>('all-accounts');
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    return getAllFinancialAccounts.run(undefined, this.dbProvider).then(res => {
+      this.cache.set('all-accounts', res);
+      res.map(account => {
+        this.cache.set(`account-number-${account.account_number}`, account);
+        this.cache.set(`account-id-${account.id}`, account);
+        if (account.owner) this.cache.set(`account-by-owner-id-${account.owner}`, account);
+      });
+      return res;
+    });
   }
 
   public clearCache() {

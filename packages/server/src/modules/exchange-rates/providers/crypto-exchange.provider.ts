@@ -51,7 +51,7 @@ export class CryptoExchangeProvider {
     private coinMarketCap: CoinMarketCapProvider,
   ) {}
 
-  public async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
+  private async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
     return getRateByCurrencyAndDate.run({ currency, date }, this.dbProvider);
   }
 
@@ -60,7 +60,7 @@ export class CryptoExchangeProvider {
     return insertRates.run({ rates }, this.dbProvider);
   }
 
-  public addCryptoRateLoader = new DataLoader(
+  private addCryptoRateLoader = new DataLoader(
     (
       keys: readonly {
         date: Date;
@@ -87,7 +87,7 @@ export class CryptoExchangeProvider {
     return symbols.map(symbol => currencies.find(currency => currency.symbol === symbol));
   }
 
-  public getCryptoCurrenciesBySymbolLoader = new DataLoader(
+  private getCryptoCurrenciesBySymbolLoader = new DataLoader(
     (symbols: readonly string[]) => this.getCryptoCurrenciesBySymbol(symbols),
     {
       cacheKeyFn: key => `crypto-currencies-by-symbol-${key}`,
@@ -95,7 +95,7 @@ export class CryptoExchangeProvider {
     },
   );
 
-  public async getCryptoExchangeRatesFromAPI(currencySymbol: string, date: Date) {
+  private async getCryptoExchangeRatesFromAPI(currencySymbol: string, date: Date) {
     // Fetch CoinMarketCap id from DB
     const currencyInfo = await this.getCryptoCurrenciesBySymbolLoader.load(currencySymbol);
     if (!currencyInfo) {
