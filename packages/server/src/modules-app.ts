@@ -2,6 +2,7 @@ import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
 import type { UserType } from 'plugins/auth-plugin.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
+import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
@@ -63,6 +64,7 @@ export async function createGraphQLApp(env: Environment) {
       transactionsModule,
       chartsModule,
       corporateTaxesModule,
+      countriesModule,
     ],
     providers: [
       {

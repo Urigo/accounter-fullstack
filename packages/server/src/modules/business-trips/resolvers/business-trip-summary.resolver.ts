@@ -164,7 +164,7 @@ export async function businessTripSummary(
       summaryData,
       taxVariables,
       {
-        destination: dbBusinessTrip.destination,
+        destinationCode: dbBusinessTrip.destination,
         attendees: attendeesMap,
         unAccommodatedDays: unAccommodatedDays ?? 0,
       },

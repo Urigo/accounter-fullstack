@@ -79,7 +79,7 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
     name
   ),
   destination = COALESCE(
-    $destination,
+    $destinationCode,
     destination
   ),
   trip_purpose = COALESCE(
@@ -97,7 +97,7 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
 
 const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
   INSERT INTO accounter_schema.business_trips (name, destination, trip_purpose)
-  VALUES($name, $destination, $tripPurpose)
+  VALUES($name, $destinationCode, $tripPurpose)
   RETURNING id;`;
 
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`

@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
@@ -123,7 +124,13 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,
-    destination: dbBusinessTrip => dbBusinessTrip.destination,
+    destination: async (dbBusinessTrip, _, { injector }) =>
+      dbBusinessTrip.destination
+        ? injector
+            .get(CountriesProvider)
+            .getCountryByCodeLoader.load(dbBusinessTrip.destination)
+            .then(res => res ?? null)
+        : null,
     attendees: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripAttendeesProvider)
