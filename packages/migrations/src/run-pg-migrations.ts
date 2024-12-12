@@ -56,6 +56,7 @@ import migration_2024_10_10T15_56_41_recovery_reserve from './actions/2024-10-10
 import migration_2024_11_03T14_42_42_green_invoice_business_match from './actions/2024-11-03T14-42-42.green-invoice-business-match.js';
 import migration_2024_11_11T09_54_23_financial_accounts_enum_type from './actions/2024-11-11T09-54-23.financial-accounts-enum-type.js';
 import migration_2024_11_14T17_52_14_add_job_percentage_to_salaries from './actions/2024-11-14T17-52-14.add-job-percentage-to-salaries.js';
+import migration_2024_11_145T12_15_43_origin_scraper_tables_adjustments from './actions/2024-11-145T12-15-43.origin-scraper-tables-adjustments.js';
 import migration_2024_12_10T10_07_15_business_trips_cleanups from './actions/2024-12-10T10-07-15.business-trips-cleanups.js';
 import migration_2024_12_12T12_48_58_add_countries_table from './actions/2024-12-12T12-48-58.add-countries-table.js';
 import { runMigrations } from './pg-migrator.js';
@@ -121,6 +122,7 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_11_03T14_42_42_green_invoice_business_match,
       migration_2024_11_11T09_54_23_financial_accounts_enum_type,
       migration_2024_11_14T17_52_14_add_job_percentage_to_salaries,
+      migration_2024_11_145T12_15_43_origin_scraper_tables_adjustments,
       migration_2024_12_10T10_07_15_business_trips_cleanups,
       migration_2024_12_12T12_48_58_add_countries_table,
     ],
