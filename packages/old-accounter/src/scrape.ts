@@ -595,10 +595,13 @@ async function getCreditCardTransactionsAndSave(
 }
 
 async function getCalCreditCardTransactionsAndSave(pool: pg.Pool, newCardInstance: CalScraper) {
+  console.log('start getCalCreditCardTransactionsAndSave');
   // console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   const transactions = await newCardInstance.getTransactions();
+  console.log(`got ${transactions.length} transactions`);
   // console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${id}`);
   await saveCalTransactionsToDB(transactions, pool);
+  console.log('finished saving cal transactions');
   // console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
 }
 
@@ -668,6 +671,8 @@ async function getVisaCalCreditCardData(
     //   validateSchema: true,
     // },
   );
+
+  console.log('got cal instance');
 
   await getCalCreditCardTransactionsAndSave(pool, newCalInstance);
 
@@ -1321,6 +1326,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const newScraperInstance = await init();
   const secondScraperInstance = await init();
   const thirdScraperInstance = await init();
+  const fourthScraperInstance = await init(false);
   console.log('After Init scraper');
   await Promise.allSettled([
     getIsracardData(pool, newScraperInstance, {
@@ -1338,7 +1344,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
       password: process.env.AMEX_PASSWORD,
       card6Digits: process.env.AMEX_6_DIGITS,
     }),
-    getVisaCalCreditCardData(pool, thirdScraperInstance, {
+    getVisaCalCreditCardData(pool, fourthScraperInstance, {
       username: process.env.CAL_USERNAME,
       password: process.env.CAL_PASSWORD,
     }),

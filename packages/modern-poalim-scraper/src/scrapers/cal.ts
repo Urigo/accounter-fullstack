@@ -106,8 +106,7 @@ async function fetchTransactions(page: Page, options: CalOptions = {}) {
   for (const card of cards) {
     try {
       console.debug(`Fetching completed transactions for card ${card.last4Digits}`);
-      // Fetch completed transactions
-      const completedTxns = await fetchCompletedTransactions(page, card.cardUniqueId, authToken, xSiteId, startDate, options.futureMonthsToScrape);
+      const completedTxns = await fetchCompletedTransactions(page, card.cardUniqueId, authToken, xSiteId, startDate);
       console.debug(`Found ${completedTxns.length} completed transactions`);
       transactions.push(...completedTxns);
     } catch (error) {
@@ -127,10 +126,10 @@ async function fetchCompletedTransactions(
   authToken: string, 
   xSiteId: string,
   startDate: Date,
-  futureMonthsToScrape: number = 0
 ) {
+  console.debug("fetchCompletedTransactions", {cardId, startDate });
+
   const endDate = new Date();
-  endDate.setMonth(endDate.getMonth() + (futureMonthsToScrape || 1));
   
   const transactions: CalTransaction[] = [];
   const currentDate = new Date(endDate);
@@ -143,6 +142,12 @@ async function fetchCompletedTransactions(
       xSiteId,
       currentDate
     );
+
+    console.debug("Found transactions for month", {
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+      transactions: monthTransactions.length,
+    });
     
     transactions.push(...monthTransactions);
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -274,5 +279,4 @@ export class CalCredentials {
 
 export class CalOptions {
   startDate?: Date;
-  futureMonthsToScrape?: number = 1;
 }
