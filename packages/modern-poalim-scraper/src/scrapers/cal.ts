@@ -7,16 +7,34 @@ import { fetchPostWithinPage } from '../utils/fetch.js';
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
 
+const last4DigitsToCardIds: Record<string, string> = {}; // last4Digits -> cardId
+
 export async function cal(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
   await login(credentials, page);
 
+  const authToken = await getAuthorizationHeader(page);
+  const xSiteId = await getXSiteId();
+
+  const cards = await getCards(page);
+  for (const card of cards) {
+    last4DigitsToCardIds[card.last4Digits] = card.cardUniqueId;
+  }
+
   return {
-    // getMonthTransactions: async (RequestedMonthDate: Date) => {
-    //   const xSiteId = await getXSiteId();
-    //   return fetchMonthCompletedTransactions(page, credentials, options, xSiteId, RequestedMonthDate);
-    // },
+    getMonthTransactions: async (last4Digits: string, month: Date) => {
+      const cardId = last4DigitsToCardIds[last4Digits];
+      if (!cardId) 
+        throw new Error(`Card ID not found for last 4 digits: ${last4Digits}`);
+      return fetchMonthCompletedTransactions(
+        page,
+        cardId,
+        authToken,
+        xSiteId,
+        month
+      );
+    },
     getTransactions: async () => {
-      return fetchTransactions(page, options);
+      return fetchTransactions(page, options, authToken, xSiteId);
     },
   }
 }
@@ -61,6 +79,8 @@ async function login(credentials: CalCredentials, page: Page) {
       page.waitForNavigation(),
       page.waitForSelector('button.btn-close'),
     ]);
+
+    await hideMarketingPopup(page);
     
     // Check if we're on the tutorial page and close it if needed
     const currentUrl = page.url();
@@ -86,22 +106,21 @@ async function login(credentials: CalCredentials, page: Page) {
   }
 }
 
-async function fetchTransactions(page: Page, options: CalOptions = {}) {
-  const startDate = options.startDate || subYears(new Date(), 1);
-  const authToken = await getAuthorizationHeader(page);
-  const cards = await getCards(page);
-  console.debug(`Found ${cards.length} cards`);
-  console.debug(cards.map((c) => c.last4Digits).join(', '));
-  const xSiteId = await getXSiteId();
-
-  const transactions: CalTransaction[] = [];
-
-  // hide marketing
+async function hideMarketingPopup(page: Page) {
   try {
     await page.click('button.btn-close');
   } catch {
     console.debug('No marketing popup to close');
   }
+}
+
+async function fetchTransactions(page: Page, options: CalOptions = {}, authToken: string, xSiteId: string) {
+  const startDate = options.startDate || subYears(new Date(), 1);
+  const cards = await getCards(page);
+  console.debug(`Found ${cards.length} cards`);
+  console.debug(cards.map((c) => c.last4Digits).join(', '));
+
+  const transactions: CalTransaction[] = [];
 
   for (const card of cards) {
     try {
@@ -127,7 +146,7 @@ async function fetchCompletedTransactions(
   xSiteId: string,
   startDate: Date,
 ) {
-  console.debug("fetchCompletedTransactions", {cardId, startDate });
+  console.debug("fetchCompletedTransactions", { cardId, startDate });
 
   const endDate = new Date();
   
@@ -275,6 +294,7 @@ function sleep(ms: number): Promise<void> {
 export class CalCredentials {
   username: string = '';
   password: string = '';
+  last4Digits: string = '';
 }
 
 export class CalOptions {

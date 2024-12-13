@@ -7,7 +7,11 @@ import { CalOptions } from './scrapers/cal.js';
 dotenv.config();
 
 async function main() {
-  if (!process.env['CAL_USERNAME'] || !process.env['CAL_PASSWORD'])
+  if (
+    !process.env['CAL_USERNAME'] ||
+    !process.env['CAL_PASSWORD'] ||
+    !process.env['CAL_LAST4DIGITS']
+  )
     throw new Error('CAL_USERNAME and CAL_PASSWORD must be set');
 
   const { cal, close } = await init(false);
@@ -17,6 +21,7 @@ async function main() {
       {
         username: process.env['CAL_USERNAME'],
         password: process.env['CAL_PASSWORD'],
+        last4Digits: process.env['CAL_LAST4DIGITS'],
       },
       new CalOptions(),
     );

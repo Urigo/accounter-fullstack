@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { addMonths, isBefore, startOfMonth, subYears } from 'date-fns';
+import { addMonths, isBefore, startOfMonth, subMonths, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import lodash from 'lodash';
 import pg from 'pg';
@@ -594,15 +594,18 @@ async function getCreditCardTransactionsAndSave(
   }
 }
 
-async function getCalCreditCardTransactionsAndSave(pool: pg.Pool, newCardInstance: CalScraper) {
-  console.log('start getCalCreditCardTransactionsAndSave');
-  // console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
-  const transactions = await newCardInstance.getTransactions();
+async function getCalCreditCardTransactionsAndSave(
+  pool: pg.Pool,
+  newCardInstance: CalScraper,
+  month: Date,
+  last4Digits: string,
+) {
+  console.log(`Getting from cal ${month.getMonth()}:${month.getFullYear()}`);
+  const transactions = await newCardInstance.getMonthTransactions(last4Digits, month);
   console.log(`got ${transactions.length} transactions`);
-  // console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${last4Digits}`);
   await saveCalTransactionsToDB(transactions, pool);
-  console.log('finished saving cal transactions');
-  // console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  console.log(`finished saving cal ${month.getMonth()}:${month.getFullYear()} - ${last4Digits}`);
 }
 
 async function getAmexCreditCardData(
@@ -658,44 +661,28 @@ async function getVisaCalCreditCardData(
   credentials: Partial<CalCredentials>,
 ) {
   console.log('start getVisaCalCreditCardData');
-  const { username, password } = credentials;
-  if (!username || !password) {
+  const { username, password, last4Digits } = credentials;
+  if (!username || !password || !last4Digits) {
     console.error('Missing credentials for visa cal creditcard');
     return;
   }
 
   console.log('Visa Cal Creditcard Login');
-  const newCalInstance = await scraper.cal(
-    { username, password },
-    // {
-    //   validateSchema: true,
-    // },
-  );
-
+  const newCalInstance = await scraper.cal({
+    username,
+    password,
+    last4Digits,
+  });
   console.log('got cal instance');
 
-  await getCalCreditCardTransactionsAndSave(pool, newCalInstance);
+  // fetch for every month in the last 24 months
+  const monthsToFetch = 24;
+  const start = subMonths(new Date(), monthsToFetch);
+  const end = addMonths(start, 1);
+  for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {
+    await getCalCreditCardTransactionsAndSave(pool, newCalInstance, month, last4Digits);
+  }
 
-  // let monthToFetch = subYears(new Date(), 2);
-  // const allMonthsToFetch = [];
-  // const lastMonthToFetch = addMonths(startOfMonth(new Date()), 2);
-
-  // while (isBefore(monthToFetch, lastMonthToFetch)) {
-  //   allMonthsToFetch.push(monthToFetch);
-  //   monthToFetch = addMonths(monthToFetch, 1);
-  // }
-
-  // await Promise.allSettled(
-  //   allMonthsToFetch.map(async currentMonthToFetch => {
-  //     await getCalCreditCardTransactionsAndSave(
-  //       currentMonthToFetch,
-  //       pool,
-  //       newCalInstance,
-  //       username,
-  //       'cal',
-  //     );
-  //   }),
-  // );
   console.log(`after all cal creditcard months - ${username}`);
 }
 
@@ -1326,8 +1313,10 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const newScraperInstance = await init();
   const secondScraperInstance = await init();
   const thirdScraperInstance = await init();
-  const fourthScraperInstance = await init(false);
   console.log('After Init scraper');
+
+  const calCards = process.env.CAL_LAST4DIGITS?.split(',') || [];
+
   await Promise.allSettled([
     getIsracardData(pool, newScraperInstance, {
       ID: process.env.ISRACARD_ID,
@@ -1344,10 +1333,13 @@ async function getForeignSwiftTransactionsfromBankAndSave(
       password: process.env.AMEX_PASSWORD,
       card6Digits: process.env.AMEX_6_DIGITS,
     }),
-    getVisaCalCreditCardData(pool, fourthScraperInstance, {
-      username: process.env.CAL_USERNAME,
-      password: process.env.CAL_PASSWORD,
-    }),
+    ...calCards.map(async last4Digits =>
+      getVisaCalCreditCardData(pool, await init(false), {
+        username: process.env.CAL_USERNAME,
+        password: process.env.CAL_PASSWORD,
+        last4Digits,
+      }),
+    ),
     getBankData(pool, secondScraperInstance),
     getCurrencyRates(pool),
   ]);
