@@ -60,22 +60,31 @@ async function seed() {
       owner: string;
       bank_number?: number;
       branch_number?: number;
-    }[] = [
-      {
-        account_number: 123_456,
+    }[] = [];
+
+    if (
+      process.env.SEED_BANK_ACCOUNT_NUMBER &&
+      process.env.SEED_BANK_NUMBER &&
+      process.env.SEED_BRANCH_NUMBER
+    ) {
+      accountsToCreate.push({
+        account_number: parseInt(process.env.SEED_BANK_ACCOUNT_NUMBER),
+        bank_number: parseInt(process.env.SEED_BANK_NUMBER),
+        branch_number: parseInt(process.env.SEED_BRANCH_NUMBER),
         type: 'BANK_ACCOUNT',
         private_business: 'business',
         owner: adminEntityId,
-        bank_number: 12,
-        branch_number: 123,
-      },
-      {
-        account_number: 123_457,
+      });
+    }
+
+    if (process.env.SEED_CREDIT_CARD_NUMBER) {
+      accountsToCreate.push({
+        account_number: parseInt(process.env.SEED_CREDIT_CARD_NUMBER),
         type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
-      },
-    ];
+      });
+    }
 
     for (const account of accountsToCreate) {
       await client.query(
