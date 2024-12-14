@@ -71,6 +71,8 @@ async function login(credentials: CalCredentials, page: Page) {
   await frame.click('button[type="submit"]');
 
   console.debug('Clicked sign in');
+
+  await sleep(1000);
   
   // Handle post-login scenarios
   try {
@@ -80,11 +82,13 @@ async function login(credentials: CalCredentials, page: Page) {
       page.waitForSelector('button.btn-close'),
     ]);
 
-    await hideMarketingPopup(page);
+    console.debug('Navigated');
     
     // Check if we're on the tutorial page and close it if needed
     const currentUrl = page.url();
+    console.log("🚀 ~ login ~ currentUrl:", currentUrl)
     if (currentUrl.endsWith('site-tutorial')) {
+      console.debug('Found tutorial page');
       await page.click('button.btn-close');
     }
     

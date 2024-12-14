@@ -280,101 +280,123 @@ export async function saveTransactionsToDB<
 }
 
 export async function saveCalTransactionsToDB(transactions: CalTransaction[], pool: pg.Pool) {
-  const tableName = 'accounter_schema.cal_creditcard_transactions';
-
   for (const transaction of transactions) {
-    const text = `
-      INSERT INTO ${tableName} (
-        trn_int_id,
-        trn_numaretor,
-        merchant_name,
-        trn_purchase_date,
-        trn_amt,
-        trn_currency_symbol,
-        trn_type,
-        trn_type_code,
-        deb_crd_date,
-        amt_before_conv_and_index,
-        deb_crd_currency_symbol,
-        merchant_address,
-        merchant_phone_no,
-        branch_code_desc,
-        trans_card_present_ind,
-        cur_payment_num,
-        num_of_payments,
-        token_ind,
-        wallet_provider_code,
-        wallet_provider_desc,
-        token_number_part4,
-        cash_account_trn_amt,
-        charge_external_to_card_comment,
-        refund_ind,
-        is_immediate_comment_ind,
-        is_immediate_hhk_ind,
-        is_margarita,
-        is_spread_paymenst_abroad,
-        trn_exac_way,
-        debit_spread_ind,
-        on_going_transactions_comment,
-        early_payment_ind,
-        merchant_id,
-        crd_ext_id_num_type_code,
-        trans_source,
-        is_abroad_transaction
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35, $36, $37, $38
-      ) RETURNING *`;
+    await saveCalTransaction(transaction, pool);
+  }
+}
 
-    const values = [
-      transaction.trnIntId,
-      transaction.trnNumaretor,
-      transaction.merchantName,
-      transaction.trnPurchaseDate,
-      transaction.trnAmt,
-      transaction.trnCurrencySymbol,
-      transaction.trnType,
-      transaction.trnTypeCode,
-      transaction.debCrdDate,
-      transaction.amtBeforeConvAndIndex,
-      transaction.debCrdCurrencySymbol,
-      transaction.merchantAddress,
-      transaction.merchantPhoneNo,
-      transaction.branchCodeDesc,
-      transaction.transCardPresentInd,
-      transaction.curPaymentNum,
-      transaction.numOfPayments,
-      transaction.tokenInd,
-      transaction.walletProviderCode,
-      transaction.walletProviderDesc,
-      transaction.tokenNumberPart4,
-      transaction.cashAccountTrnAmt,
-      transaction.chargeExternalToCardComment,
-      transaction.refundInd,
-      transaction.isImmediateCommentInd,
-      transaction.isImmediateHHKInd,
-      transaction.isMargarita,
-      transaction.isSpreadPaymenstAbroad,
-      transaction.trnExacWay,
-      transaction.debitSpreadInd,
-      transaction.onGoingTransactionsComment,
-      transaction.earlyPaymentInd,
-      transaction.merchantId,
-      transaction.crdExtIdNumTypeCode,
-      transaction.transSource,
-      transaction.isAbroadTransaction,
-    ];
+async function saveCalTransaction(transaction: CalTransaction, pool: pg.Pool) {
+  const tableName = 'accounter_schema.cal_transactions';
+  const text = `INSERT INTO ${tableName} (
+    trn_int_id,
+    trn_numaretor,
+    merchant_name,
+    trn_purchase_date,
+    trn_amt,
+    trn_currency_symbol,
+    trn_type,
+    trn_type_code,
+    deb_crd_date,
+    amt_before_conv_and_index,
+    deb_crd_currency_symbol,
+    merchant_address,
+    merchant_phone_no,
+    branch_code_desc,
+    trans_card_present_ind,
+    cur_payment_num,
+    num_of_payments,
+    token_ind,
+    wallet_provider_code,
+    wallet_provider_desc,
+    token_number_part4,
+    cash_account_trn_amt,
+    charge_external_to_card_comment,
+    refund_ind,
+    is_immediate_comment_ind,
+    is_immediate_hhk_ind,
+    is_margarita,
+    is_spread_paymenst_abroad,
+    trn_exac_way,
+    debit_spread_ind,
+    on_going_transactions_comment,
+    early_payment_ind,
+    merchant_id,
+    crd_ext_id_num_type_code,
+    trans_source,
+    is_abroad_transaction
+  ) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
+    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+    $31, $32, $33, $34, $35, $36
+  ) RETURNING *`;
 
-    try {
-      const res = await pool.query(text, values);
-      console.log(
-        `Success in insert to CAL - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
-      );
-    } catch (error) {
-      console.log(`Error in CAL insert - ${error}`);
-    }
+  const values = [
+    transaction.trnIntId,
+    transaction.trnNumaretor,
+    transaction.merchantName,
+    transaction.trnPurchaseDate,
+    transaction.trnAmt,
+    transaction.trnCurrencySymbol,
+    transaction.trnType,
+    transaction.trnTypeCode,
+    transaction.debCrdDate,
+    transaction.amtBeforeConvAndIndex,
+    transaction.debCrdCurrencySymbol,
+    transaction.merchantAddress,
+    transaction.merchantPhoneNo,
+    transaction.branchCodeDesc,
+    transaction.transCardPresentInd,
+    transaction.curPaymentNum,
+    transaction.numOfPayments,
+    transaction.tokenInd,
+    transaction.walletProviderCode,
+    transaction.walletProviderDesc,
+    transaction.tokenNumberPart4,
+    transaction.cashAccountTrnAmt,
+    transaction.chargeExternalToCardComment,
+    transaction.refundInd,
+    transaction.isImmediateCommentInd,
+    transaction.isImmediateHHKInd,
+    transaction.isMargarita,
+    transaction.isSpreadPaymenstAbroad,
+    transaction.trnExacWay,
+    transaction.debitSpreadInd,
+    transaction.onGoingTransactionsComment,
+    transaction.earlyPaymentInd,
+    transaction.merchantId,
+    transaction.crdExtIdNumTypeCode,
+    transaction.transSource,
+    transaction.isAbroadTransaction,
+  ];
+
+  try {
+    await pool.query(text, values);
+    console.log(
+      `Success in insert to CAL - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
+    );
+  } catch (error) {
+    console.error('Error in CAL insert:', {
+      error:
+        error instanceof Error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              cause: error.cause,
+            }
+          : error,
+      // transaction: {
+      //   merchantName: transaction.merchantName,
+      //   trnAmt: transaction.trnAmt,
+      //   trnCurrencySymbol: transaction.trnCurrencySymbol,
+      //   trnIntId: transaction.trnIntId,
+      //   debCrdDate: transaction.debCrdDate,
+      // },
+      // query: {
+      //   text,
+      //   values: values.map((v, i) => `$${i + 1}: ${v}`),
+      // },
+    });
   }
 }
 
