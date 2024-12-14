@@ -5,8 +5,10 @@ export default {
   run: ({ sql }) => sql`
     BEGIN;
 
-    CREATE TABLE IF NOT EXISTS accounter_schema.cal_transactions (
-        id SERIAL PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS accounter_schema.cal_creditcard_transactions (
+        id uuid default gen_random_uuid() not null
+            constraint cal_creditcard_transactions_pk
+                primary key,
         trn_int_id VARCHAR(255),
         trn_numaretor INTEGER,
         merchant_name VARCHAR(255),
@@ -45,10 +47,10 @@ export default {
         is_abroad_transaction BOOLEAN,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT cal_transactions_trn_int_id_idx UNIQUE (trn_int_id)
+        CONSTRAINT cal_creditcard_transactions_trn_int_id_idx UNIQUE (trn_int_id)
     );
 
-    CREATE INDEX cal_transactions_trn_int_id ON accounter_schema.cal_transactions(trn_int_id);
+    CREATE INDEX cal_creditcard_transactions_trn_int_id ON accounter_schema.cal_creditcard_transactions(trn_int_id);
 
     ALTER TABLE accounter_schema.transactions_raw_list ADD cal_id uuid;
 
@@ -69,7 +71,7 @@ export default {
             (cal_id IS NOT NULL)::integer = 1
         );
 
-    CREATE OR REPLACE FUNCTION accounter_schema.insert_cal_transaction_handler() 
+    CREATE OR REPLACE FUNCTION accounter_schema.insert_cal_creditcard_transaction_handler() 
         RETURNS trigger
         LANGUAGE plpgsql
     AS 
@@ -122,10 +124,10 @@ export default {
     END;
     $func$;
 
-    CREATE TRIGGER cal_transaction_insert_trigger
-        AFTER INSERT ON accounter_schema.cal_transactions
+    CREATE TRIGGER cal_creditcard_transaction_insert_trigger
+        AFTER INSERT ON accounter_schema.cal_creditcard_transactions
         FOR EACH ROW
-        EXECUTE FUNCTION accounter_schema.insert_cal_transaction_handler();
+        EXECUTE FUNCTION accounter_schema.insert_cal_creditcard_transaction_handler();
 
     DROP VIEW accounter_schema.extended_business_trip_transactions;
     DROP VIEW accounter_schema.extended_charges;
@@ -224,14 +226,14 @@ export default {
                                         NULL::character varying           AS source_details
                                   FROM accounter_schema.etherscan_transactions
                                   UNION
-                                  SELECT cal_transactions.id::text AS id,
-                                         cal_transactions.trn_int_id AS reference_number,
+                                  SELECT cal_creditcard_transactions.id::text AS id,
+                                         cal_creditcard_transactions.trn_int_id AS reference_number,
                                          0 AS currency_rate,
                                          NULL::timestamp without time zone AS debit_timestamp,
                                          'CAL'::text AS origin,
                                          NULL::integer AS card_number,
-                                         cal_transactions.merchant_name AS source_details
-                                  FROM accounter_schema.cal_transactions)
+                                         cal_creditcard_transactions.merchant_name AS source_details
+                                  FROM accounter_schema.cal_creditcard_transactions)
         alt_debit_date AS (SELECT p.event_date,
                                   p.reference_number
                             FROM accounter_schema.poalim_ils_account_transactions p

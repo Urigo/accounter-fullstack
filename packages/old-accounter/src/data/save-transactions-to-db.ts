@@ -286,7 +286,7 @@ export async function saveCalTransactionsToDB(transactions: CalTransaction[], po
 }
 
 async function saveCalTransaction(transaction: CalTransaction, pool: pg.Pool) {
-  const tableName = 'accounter_schema.cal_transactions';
+  const tableName = 'accounter_schema.cal_creditcard_transactions';
   const text = `INSERT INTO ${tableName} (
     trn_int_id,
     trn_numaretor,
