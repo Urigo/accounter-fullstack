@@ -233,7 +233,7 @@ export default {
                                          'CAL'::text AS origin,
                                          NULL::integer AS card_number,
                                          cal_creditcard_transactions.merchant_name AS source_details
-                                  FROM accounter_schema.cal_creditcard_transactions)
+                                  FROM accounter_schema.cal_creditcard_transactions),
         alt_debit_date AS (SELECT p.event_date,
                                   p.reference_number
                             FROM accounter_schema.poalim_ils_account_transactions p
