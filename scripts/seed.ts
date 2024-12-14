@@ -3,6 +3,8 @@ import pg from 'pg';
 
 config();
 
+type FinancialAccountType = 'BANK_ACCOUNT' | 'CREDIT_CARD' | 'CRYPTO_WALLET';
+
 async function seed() {
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
@@ -53,7 +55,7 @@ async function seed() {
     // Create bank accounts and credit cards
     const accountsToCreate: {
       account_number: number;
-      type: 'bank' | 'creditcard' | 'crypto';
+      type: FinancialAccountType;
       private_business: string;
       owner: string;
       bank_number?: number;
@@ -61,7 +63,7 @@ async function seed() {
     }[] = [
       {
         account_number: 123_456,
-        type: 'bank',
+        type: 'BANK_ACCOUNT',
         private_business: 'business',
         owner: adminEntityId,
         bank_number: 12,
@@ -69,7 +71,7 @@ async function seed() {
       },
       {
         account_number: 123_457,
-        type: 'creditcard',
+        type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
       },
