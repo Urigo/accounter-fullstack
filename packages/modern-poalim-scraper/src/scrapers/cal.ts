@@ -36,6 +36,9 @@ export async function cal(page: Page, credentials: CalCredentials, options: CalO
     getTransactions: async () => {
       return fetchTransactions(page, options, authToken, xSiteId);
     },
+    getCardId: (last4Digits: string) => {
+      return last4DigitsToCardIds[last4Digits];
+    },
   }
 }
 

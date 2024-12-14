@@ -279,15 +279,20 @@ export async function saveTransactionsToDB<
   }
 }
 
-export async function saveCalTransactionsToDB(transactions: CalTransaction[], pool: pg.Pool) {
+export async function saveCalTransactionsToDB(
+  card: string,
+  transactions: CalTransaction[],
+  pool: pg.Pool,
+) {
   for (const transaction of transactions) {
-    await saveCalTransaction(transaction, pool);
+    await saveCalTransaction(card, transaction, pool);
   }
 }
 
-async function saveCalTransaction(transaction: CalTransaction, pool: pg.Pool) {
+async function saveCalTransaction(card: string, transaction: CalTransaction, pool: pg.Pool) {
   const tableName = 'accounter_schema.cal_creditcard_transactions';
   const text = `INSERT INTO ${tableName} (
+    card,
     trn_int_id,
     trn_numaretor,
     merchant_name,
@@ -328,10 +333,11 @@ async function saveCalTransaction(transaction: CalTransaction, pool: pg.Pool) {
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
     $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
     $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-    $31, $32, $33, $34, $35, $36
+    $31, $32, $33, $34, $35, $36, $37
   ) RETURNING *`;
 
   const values = [
+    card,
     transaction.trnIntId,
     transaction.trnNumaretor,
     transaction.merchantName,

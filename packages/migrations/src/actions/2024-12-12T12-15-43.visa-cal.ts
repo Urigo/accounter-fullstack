@@ -9,6 +9,7 @@ export default {
         id uuid default gen_random_uuid() not null
             constraint cal_creditcard_transactions_pk
                 primary key,
+        card INTEGER NOT NULL,
         trn_int_id VARCHAR(255),
         trn_numaretor INTEGER,
         merchant_name VARCHAR(255),
@@ -91,7 +92,7 @@ export default {
         SELECT INTO account_id_var, owner_id_var
             id, owner
         FROM accounter_schema.financial_accounts 
-        WHERE account_number = NEW.trn_int_id::TEXT;
+        WHERE account_number = NEW.card::TEXT;
 
         -- check if matching charge exists:
         -- TBD

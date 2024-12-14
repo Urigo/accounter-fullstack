@@ -599,12 +599,14 @@ async function getCalCreditCardTransactionsAndSave(
   newCardInstance: CalScraper,
   month: Date,
   last4Digits: string,
+  cardId: string,
 ) {
   console.log(`Getting from cal ${month.getMonth()}:${month.getFullYear()}`);
   const transactions = await newCardInstance.getMonthTransactions(last4Digits, month);
+  console.debug(JSON.stringify(transactions, null, 2));
   console.log(`got ${transactions.length} transactions`);
   console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${last4Digits}`);
-  await saveCalTransactionsToDB(transactions, pool);
+  await saveCalTransactionsToDB(cardId, transactions, pool);
   console.log(`finished saving cal ${month.getMonth()}:${month.getFullYear()} - ${last4Digits}`);
 }
 
@@ -675,12 +677,14 @@ async function getVisaCalCreditCardData(
   });
   console.log('got cal instance');
 
+  const cardId = newCalInstance.getCardId(last4Digits);
+
   // fetch for every month in the last 24 months
-  const monthsToFetch = 24;
+  const monthsToFetch = 1;
   const start = subMonths(new Date(), monthsToFetch);
   const end = addMonths(start, 1);
   for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {
-    await getCalCreditCardTransactionsAndSave(pool, newCalInstance, month, last4Digits);
+    await getCalCreditCardTransactionsAndSave(pool, newCalInstance, month, last4Digits, cardId);
   }
 
   console.log(`after all cal creditcard months - ${username}`);
