@@ -83,6 +83,8 @@ async function login(credentials: CalCredentials, page: Page) {
     ]);
 
     console.debug('Navigated');
+
+    await sleep(1000);
     
     // Check if we're on the tutorial page and close it if needed
     const currentUrl = page.url();
@@ -109,14 +111,6 @@ async function login(credentials: CalCredentials, page: Page) {
     }
   }
 }
-
-// async function hideMarketingPopup(page: Page) {
-//   try {
-//     await page.click('button.btn-close');
-//   } catch {
-//     console.debug('No marketing popup to close');
-//   }
-// }
 
 async function fetchTransactions(page: Page, options: CalOptions = {}, authToken: string, xSiteId: string) {
   const startDate = options.startDate || subYears(new Date(), 1);
