@@ -82,21 +82,34 @@ export default {
         owner_id_var UUID;
         charge_id_var UUID = NULL;
     BEGIN
+        -- Create merged raw transactions record:
         INSERT INTO accounter_schema.transactions_raw_list (cal_id)
         VALUES (NEW.id)
         RETURNING id INTO merged_id;
 
+        -- get account and owner IDs
         SELECT INTO account_id_var, owner_id_var
             id, owner
         FROM accounter_schema.financial_accounts 
         WHERE account_number = NEW.trn_int_id::TEXT;
 
+        -- check if matching charge exists:
+        -- TBD
+
+        -- create new charge
         IF (charge_id_var IS NULL) THEN
             INSERT INTO accounter_schema.charges (owner_id)
             VALUES (owner_id_var)
             RETURNING id INTO charge_id_var;
         END IF;
 
+        -- check if new record is fee
+        -- TBD
+
+        -- check if new record contains fees  
+        -- TBD
+
+        -- create new transaction
         INSERT INTO accounter_schema.transactions (
             account_id, 
             charge_id,
