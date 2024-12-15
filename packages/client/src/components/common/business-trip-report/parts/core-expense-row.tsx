@@ -1,9 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-import { Check, X } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { NavLink, Select, Text, ThemeIcon } from '@mantine/core';
+import { NavLink, Select, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
