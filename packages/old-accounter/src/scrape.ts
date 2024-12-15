@@ -544,7 +544,7 @@ async function getCreditCardTransactionsAndSave(
   id: string,
   type: 'isracard' | 'amex',
 ) {
-  console.log(`Getting from ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+  console.log(`Getting from ${type} ${month.getMonth() + 1}:${month.getFullYear()} - ${id}`);
   const monthTransactions = await newCardInstance.getMonthTransactions(month);
   console.log(monthTransactions.isValid);
   if (!monthTransactions.isValid) {
@@ -559,7 +559,7 @@ async function getCreditCardTransactionsAndSave(
   }
 
   if (!monthTransactions.data) {
-    console.log(`No data for ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    console.log(`No data for ${type} ${month.getMonth() + 1}:${month.getFullYear()} - ${id}`);
     return;
   }
 
@@ -587,9 +587,9 @@ async function getCreditCardTransactionsAndSave(
   );
 
   if (onlyWantedCreditCardsTransactions.length > 0) {
-    console.log(`saving isracard ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    console.log(`saving isracard ${month.getMonth() + 1}:${month.getFullYear()} - ${id}`);
     await saveTransactionsToDB(onlyWantedCreditCardsTransactions, type, null, pool);
-    console.log(`finished saving ${type} ${month.getMonth()}:${month.getFullYear()} - ${id}`);
+    console.log(`finished saving ${type} ${month.getMonth() + 1}:${month.getFullYear()} - ${id}`);
   }
 }
 
