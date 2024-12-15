@@ -57,7 +57,7 @@ async function login(credentials: CalCredentials, page: Page) {
   await waitUntilElementFound(frame, '#regular-login');
   // Need small delay after element appears before it becomes clickable
   // Couldn't find a better way to handle this
-  await sleep(500);
+  await sleep(1000);
   await frame.click('#regular-login');
 
   console.debug('clicked regular login');

@@ -15,10 +15,19 @@ import {
 } from './scrapers/scrapers-index.js';
 import { newPage } from './utils/browser-util.js';
 
-export async function init(headless = true) {
+export async function init({
+  headless = true,
+  userAgent,
+}: {
+  headless?: boolean;
+  userAgent?: string;
+} = {}) {
   /* this initiates browser and returns every scraper as function */
   /* each scraper opens its own page                              */
-  const browser = await puppeteer.launch({ headless });
+  const browser = await puppeteer.launch({
+    headless,
+    args: userAgent ? [`--user-agent=${userAgent}`] : [],
+  });
 
   return {
     hapoalim: async (credentials: HapoalimCredentials, options?: HapoalimOptions) => {

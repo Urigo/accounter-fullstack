@@ -1313,7 +1313,10 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const newScraperInstance = await init();
   const secondScraperInstance = await init();
   const thirdScraperInstance = await init();
-  const fourthScraperInstance = await init(false);
+  const fourthScraperInstance = await init({
+    userAgent:
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+  });
   console.log('After Init scraper');
 
   const calCards = process.env.CAL_LAST4DIGITS?.split(',') || [];

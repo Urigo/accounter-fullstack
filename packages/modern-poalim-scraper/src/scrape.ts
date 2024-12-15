@@ -14,7 +14,11 @@ async function main() {
   )
     throw new Error('CAL_USERNAME and CAL_PASSWORD must be set');
 
-  const { cal, close } = await init(false);
+  const { cal, close } = await init({
+    headless: false,
+    userAgent:
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
+  });
 
   try {
     const scraper = await cal(
