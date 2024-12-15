@@ -9,6 +9,10 @@ const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions
 
 const last4DigitsToCardIds: Record<string, string> = {}; // last4Digits -> cardId
 
+function getCardId(last4Digits: string) {
+  return last4DigitsToCardIds[last4Digits];
+}
+
 export async function cal(page: Page, credentials: CalCredentials, options: CalOptions = {}) {
   await login(credentials, page);
 
@@ -22,7 +26,7 @@ export async function cal(page: Page, credentials: CalCredentials, options: CalO
 
   return {
     getMonthTransactions: async (last4Digits: string, month: Date) => {
-      const cardId = last4DigitsToCardIds[last4Digits];
+      const cardId = getCardId(last4Digits);
       if (!cardId) 
         throw new Error(`Card ID not found for last 4 digits: ${last4Digits}`);
       return fetchMonthCompletedTransactions(
@@ -35,9 +39,6 @@ export async function cal(page: Page, credentials: CalCredentials, options: CalO
     },
     getTransactions: async () => {
       return fetchTransactions(page, options, authToken, xSiteId);
-    },
-    getCardId: (last4Digits: string) => {
-      return last4DigitsToCardIds[last4Digits];
     },
   }
 }
