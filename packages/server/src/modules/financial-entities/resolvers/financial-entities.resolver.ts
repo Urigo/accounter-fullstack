@@ -113,12 +113,6 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
       throw new Error(`Unknown financial entity type: ${parent}`);
     },
   },
-  WireTransaction: {
-    ...commonTransactionFields,
-  },
-  FeeTransaction: {
-    ...commonTransactionFields,
-  },
   ConversionTransaction: {
     ...commonTransactionFields,
   },

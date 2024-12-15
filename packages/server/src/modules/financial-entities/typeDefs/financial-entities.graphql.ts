@@ -78,14 +78,6 @@ export default gql`
     counterparty: FinancialEntity
   }
 
-  extend type WireTransaction {
-    counterparty: FinancialEntity
-  }
-
-  extend type FeeTransaction {
-    counterparty: FinancialEntity
-  }
-
   extend type ConversionTransaction {
     counterparty: FinancialEntity
   }

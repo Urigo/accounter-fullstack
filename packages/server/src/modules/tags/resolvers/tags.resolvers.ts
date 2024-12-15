@@ -30,16 +30,6 @@ export const tagsResolvers: TagsModule.Resolvers = {
         })
         .then(() => true);
     },
-    renameTag: (_, { id, newName }, { injector }) => {
-      return injector
-        .get(TagsProvider)
-        .renameTag({ id, newName })
-        .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
-          throw new GraphQLError(`Error renaming tag id "${id}"`);
-        })
-        .then(() => true);
-    },
     updateTagParent: (_, { id, parentId }, { injector }) => {
       return injector
         .get(TagsProvider)

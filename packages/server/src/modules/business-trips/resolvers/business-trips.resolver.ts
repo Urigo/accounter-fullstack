@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
@@ -90,17 +90,47 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   BusinessTrip: {
     id: dbBusinessTrip => dbBusinessTrip.id,
     name: dbBusinessTrip => dbBusinessTrip.name,
-    dates: dbBusinessTrip => {
-      if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
+    dates: async (dbBusinessTrip, _, { injector }) => {
+      const attendees = await injector
+        .get(BusinessTripAttendeesProvider)
+        .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
+
+      if (!attendees?.length) {
         return null;
       }
+
+      let fromDate: Date | undefined;
+      let toDate: Date | undefined;
+
+      attendees.map(attendee => {
+        const { arrival, departure } = attendee;
+
+        if (arrival && (!fromDate || arrival < fromDate)) {
+          fromDate = arrival;
+        }
+
+        if (departure && (!toDate || departure > toDate)) {
+          toDate = departure;
+        }
+      });
+
+      if (!fromDate || !toDate) {
+        return null;
+      }
+
       return {
-        start: dateToTimelessDateString(dbBusinessTrip.from_date),
-        end: dateToTimelessDateString(dbBusinessTrip.to_date),
+        start: dateToTimelessDateString(fromDate),
+        end: dateToTimelessDateString(toDate),
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,
-    destination: dbBusinessTrip => dbBusinessTrip.destination,
+    destination: async (dbBusinessTrip, _, { injector }) =>
+      dbBusinessTrip.destination
+        ? injector
+            .get(CountriesProvider)
+            .getCountryByCodeLoader.load(dbBusinessTrip.destination)
+            .then(res => res ?? null)
+        : null,
     attendees: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripAttendeesProvider)
@@ -134,11 +164,9 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     summary: async (dbBusinessTrip, _, { injector }) =>
       businessTripSummary(injector, dbBusinessTrip),
     uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
-      const transactions = (await injector
+      const transactions = await injector
         .get(BusinessTripExpensesProvider)
-        .getTransactionsByBusinessTripId({
-          businessTripId: dbBusinessTrip.id,
-        })) as IGetTransactionsByChargeIdsResult[];
+        .getTransactionsByBusinessTripId(dbBusinessTrip.id);
 
       const transactionCategorizeInfo = await Promise.all(
         transactions.map(async transaction => {

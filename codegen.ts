@@ -69,18 +69,18 @@ const config: CodegenConfig = {
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
           BusinessTrip: '@modules/business-trips/types.js#BusinessTripProto',
           BusinessTripAccommodationExpense:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsAccommodationsExpensesResult',
+            '@modules/business-trips/types.js#IGetBusinessTripsAccommodationsExpensesByIdsResult',
           BusinessTripAttendee:
             '@modules/business-trips/types.js#IGetBusinessTripsAttendeesByBusinessTripIdsResult',
           BusinessTripCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BusinessTripFlightExpense:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsFlightsExpensesResult',
+            '@modules/business-trips/types.js#IGetBusinessTripsFlightsExpensesByIdsResult',
           BusinessTripOtherExpense:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsOtherExpensesResult',
+            '@modules/business-trips/types.js#IGetBusinessTripsOtherExpensesByIdsResult',
           BusinessTripTravelAndSubsistenceExpense:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsTravelAndSubsistenceExpensesResult',
+            '@modules/business-trips/types.js#IGetBusinessTripsTravelAndSubsistenceExpensesByIdsResult',
           BusinessTripCarRentalExpense:
-            '@modules/business-trips/types.js#IGetAllBusinessTripsCarRentalExpensesResult',
+            '@modules/business-trips/types.js#IGetBusinessTripsCarRentalExpensesByIdsResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
@@ -88,9 +88,10 @@ const config: CodegenConfig = {
           CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
-          CorporateTax: '@modules/corporate-taxes/types.js#IGetAllCorporateTaxesResult',
+          CorporateTax: '@modules/corporate-taxes/types.js#IGetCorporateTaxesByCorporateIdsResult',
           CorporateTaxRulingComplianceReport:
             '@shared/types#CorporateTaxRulingComplianceReportProto',
+          Country: '@modules/countries/types.js#IGetAllCountriesResult',
           CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
@@ -101,8 +102,8 @@ const config: CodegenConfig = {
           DividendCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
           ExchangeRates: 'TimelessDateString',
-          FeeTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
           FinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
+          IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult',
@@ -113,18 +114,20 @@ const config: CodegenConfig = {
           MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           OtherDocument: '@modules/documents/types.js#IGetAllDocumentsResult',
           PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
+          ProfitAndLossReportYear: '@modules/reports/types.js#ProfitAndLossReportYearProto',
           Proforma: '@modules/documents/types.js#IGetAllDocumentsResult',
           Receipt: '@modules/documents/types.js#IGetAllDocumentsResult',
+          ReportCommentaryRecord: '@modules/reports/types.js#CommentaryRecordProto',
+          ReportCommentarySubRecord: '@modules/reports/types.js#CommentarySubRecordProto',
           FinancialCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult',
           Tag: '@modules/tags/types.js#IGetAllTagsResult',
           TaxCategory: '@modules/financial-entities/types.js#IGetAllTaxCategoriesResult',
+          TaxReportYear: '@modules/reports/types.js#TaxReportYearProto',
           Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
-          WireTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
-          IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],

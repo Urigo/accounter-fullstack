@@ -1,8 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
 import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   QueryTaxReportArgs,
@@ -10,108 +8,163 @@ import {
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-  TaxReport,
+  TaxReportYearResolvers,
 } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
+  DecoratedLedgerRecord,
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
 import { calculateTaxAmounts } from '../../helpers/tax.helper.js';
 
 export const taxReport: ResolverFn<
-  ReadonlyArray<ResolversTypes['TaxReport']>,
+  ResolversTypes['TaxReport'],
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
-  RequireFields<QueryTaxReportArgs, 'years'>
-> = async (_, { years }, { injector }) => {
+  RequireFields<QueryTaxReportArgs, 'referenceYears' | 'reportYear'>
+> = async (_, { reportYear, referenceYears }, { injector }) => {
+  referenceYears = referenceYears.filter(year => year !== reportYear);
+  const years = [reportYear, ...referenceYears];
   years.map(year => {
     if (year < 2000 || year > new Date().getFullYear()) {
       throw new GraphQLError('Invalid year');
     }
   });
 
-  const from = new Date(Math.min(...years), 0, 1);
+  const from = new Date(Math.min(...years) - 2, 0, 1, 0, 0, 0, 1); // Note: take 2 years before the earliest year requested, to calculate R&D spread over 3 years
   const to = new Date(Math.max(...years) + 1, 0, 0);
   const ledgerRecords = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ fromDate: from, toDate: to });
 
-  const financialEntitiesIds = new Set(
-    ledgerRecords
-      .map(record => [
-        record.credit_entity1,
-        record.credit_entity2,
-        record.debit_entity1,
-        record.debit_entity2,
-      ])
-      .flat()
-      .filter(Boolean) as string[],
-  );
-  const financialEntities = (await injector
-    .get(FinancialEntitiesProvider)
-    .getFinancialEntityByIdLoader.loadMany(Array.from(financialEntitiesIds))
-    .then(res =>
-      res.filter(entity => {
-        if (!entity) {
-          return false;
-        }
-        if (entity instanceof Error) {
-          throw entity;
-        }
-        return true;
-      }),
-    )) as IGetFinancialEntitiesByIdsResult[];
+  const financialEntities = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
 
   const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 
-  const ledgerByYear = new Map<number, IGetLedgerRecordsByDatesResult[]>(
-    years.map(year => [year, []]),
-  );
+  const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
+  for (let year = from.getFullYear(); year <= to.getFullYear(); year++) {
+    if (from.getFullYear() > to.getFullYear()) {
+      break;
+    }
+
+    decoratedLedgerByYear.set(year, []);
+  }
 
   ledgerRecords.map(record => {
     const year = record.invoice_date.getFullYear();
-    ledgerByYear.get(year)?.push(record);
+    const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
+    decoratedLedgerByYear.get(year)?.push(decoratedRecord);
   });
 
-  const yearlyReports: TaxReport[] = [];
-  for (const [year, ledgerRecords] of ledgerByYear) {
-    const decoratedLedgerRecords = decorateLedgerRecords(ledgerRecords, financialEntitiesDict);
+  const profitLossByYear = new Map<number, ReturnType<typeof getProfitLossReportAmounts>>();
 
-    const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
-      getProfitLossReportAmounts(decoratedLedgerRecords);
+  const yearlyReports: ResolversParentTypes['TaxReportYear'][] = [];
+  for (const year of years) {
+    const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
+
+    const {
+      profitBeforeTaxAmount,
+      profitBeforeTaxRecords,
+      researchAndDevelopmentExpensesAmount,
+      researchAndDevelopmentExpensesRecords,
+    } = profitLossByYear.get(year) ?? getProfitLossReportAmounts(decoratedLedgerRecords);
+
+    let cumulativeResearchAndDevelopmentExpensesAmount = 0;
+    for (const rndYear of [year - 2, year - 1, year]) {
+      let profitLossHelperReportAmounts = profitLossByYear.get(rndYear);
+      if (!profitLossHelperReportAmounts) {
+        const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
+        profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
+      }
+
+      cumulativeResearchAndDevelopmentExpensesAmount +=
+        profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
+    }
 
     const {
       researchAndDevelopmentExpensesForTax,
-      depreciationForTax,
+      fines,
+      untaxableGifts,
+      businessTripsExcessExpensesAmount,
+      salaryExcessExpensesAmount,
+      reserves,
       taxableIncomeAmount,
       taxRate,
       annualTaxExpenseAmount,
     } = await calculateTaxAmounts(
       injector,
       year,
-      researchAndDevelopmentExpensesAmount,
+      decoratedLedgerRecords,
+      cumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );
 
     yearlyReports.push({
       year,
-      profitBeforeTax: formatFinancialAmount(profitBeforeTaxAmount, DEFAULT_LOCAL_CURRENCY),
-      researchAndDevelopmentExpensesByRecords: formatFinancialAmount(
-        researchAndDevelopmentExpensesAmount,
-        DEFAULT_LOCAL_CURRENCY,
-      ),
-      researchAndDevelopmentExpensesForTax: formatFinancialAmount(
-        researchAndDevelopmentExpensesForTax,
-        DEFAULT_LOCAL_CURRENCY,
-      ),
+      profitBeforeTax: {
+        amount: profitBeforeTaxAmount,
+        records: profitBeforeTaxRecords,
+      },
+      researchAndDevelopmentExpensesByRecords: {
+        amount: researchAndDevelopmentExpensesAmount,
+        records: researchAndDevelopmentExpensesRecords,
+      },
+      researchAndDevelopmentExpensesForTax,
+      fines,
+      untaxableGifts,
+      businessTripsExcessExpensesAmount,
+      salaryExcessExpensesAmount,
+      reserves,
 
-      depreciationForTax: formatFinancialAmount(depreciationForTax, DEFAULT_LOCAL_CURRENCY),
-      taxableIncome: formatFinancialAmount(taxableIncomeAmount, DEFAULT_LOCAL_CURRENCY),
+      taxableIncome: taxableIncomeAmount,
       taxRate,
-      annualTaxExpense: formatFinancialAmount(annualTaxExpenseAmount, DEFAULT_LOCAL_CURRENCY),
+      annualTaxExpense: annualTaxExpenseAmount,
     });
   }
 
-  return yearlyReports.sort((a, b) => a.year - b.year);
+  return {
+    id: `tax-report-${reportYear}`,
+    report: yearlyReports.find(report => report.year === reportYear)!,
+    reference: yearlyReports.filter(report => report.year !== reportYear),
+  };
+};
+
+export const taxReportYearMapper: TaxReportYearResolvers = {
+  id: parent => `profit-and-loss-year-${parent.year}`,
+  year: parent => parent.year,
+  profitBeforeTax: parent => ({
+    amount: formatFinancialAmount(parent.profitBeforeTax.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.profitBeforeTax.records,
+  }),
+  researchAndDevelopmentExpensesByRecords: parent => ({
+    amount: formatFinancialAmount(
+      parent.researchAndDevelopmentExpensesByRecords.amount,
+      DEFAULT_LOCAL_CURRENCY,
+    ),
+    records: parent.researchAndDevelopmentExpensesByRecords.records,
+  }),
+  researchAndDevelopmentExpensesForTax: parent =>
+    formatFinancialAmount(parent.researchAndDevelopmentExpensesForTax, DEFAULT_LOCAL_CURRENCY),
+
+  fines: parent => ({
+    amount: formatFinancialAmount(parent.fines.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.fines.records,
+  }),
+  untaxableGifts: parent => ({
+    amount: formatFinancialAmount(parent.untaxableGifts.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.untaxableGifts.records,
+  }),
+  businessTripsExcessExpensesAmount: parent =>
+    formatFinancialAmount(parent.businessTripsExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
+  salaryExcessExpensesAmount: parent =>
+    formatFinancialAmount(parent.salaryExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
+  reserves: parent => ({
+    amount: formatFinancialAmount(parent.reserves.amount, DEFAULT_LOCAL_CURRENCY),
+    records: parent.reserves.records,
+  }),
+  taxableIncome: parent => formatFinancialAmount(parent.taxableIncome, DEFAULT_LOCAL_CURRENCY),
+  taxRate: parent => parent.taxRate,
+  annualTaxExpense: parent =>
+    formatFinancialAmount(parent.annualTaxExpense, DEFAULT_LOCAL_CURRENCY),
 };

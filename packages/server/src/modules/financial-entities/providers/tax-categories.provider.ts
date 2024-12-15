@@ -3,6 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { Currency } from '@shared/gql-types';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
@@ -11,7 +12,6 @@ import type {
   IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
   IGetTaxCategoryByFinancialAccountOwnerIdsQuery,
   IGetTaxCategoryByIDsQuery,
-  IGetTaxCategoryByNamesQuery,
   IInsertBusinessTaxCategoryParams,
   IInsertBusinessTaxCategoryQuery,
   IUpdateBusinessTaxCategoryParams,
@@ -67,13 +67,6 @@ LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id
 WHERE tc.id IN $$Ids;`;
 
-const getTaxCategoryByNames = sql<IGetTaxCategoryByNamesQuery>`
-SELECT fe.*, tc.hashavshevet_name
-FROM accounter_schema.tax_categories tc
-LEFT JOIN accounter_schema.financial_entities fe
-  ON fe.id = tc.id
-WHERE fe.name IN $$names;`;
-
 const getAllTaxCategories = sql<IGetAllTaxCategoriesQuery>`
 SELECT fe.*, tc.hashavshevet_name
 FROM accounter_schema.tax_categories tc
@@ -114,6 +107,10 @@ const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
   global: true,
 })
 export class TaxCategoriesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
@@ -188,6 +185,16 @@ export class TaxCategoriesProvider {
     },
   );
 
+  private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
+    const taxCategories = await getTaxCategoryByChargeIDs.run(
+      {
+        chargeIds,
+      },
+      this.dbProvider,
+    );
+    return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
+  }
+
   public taxCategoryByChargeIDsLoader = new DataLoader(
     (chargeIDs: readonly string[]) => this.batchTaxCategoryByChargeIDs(chargeIDs),
     {
@@ -208,50 +215,46 @@ export class TaxCategoriesProvider {
   public taxCategoryByIDsLoader = new DataLoader(
     (IDs: readonly string[]) => this.batchTaxCategoryByIDs(IDs),
     {
-      cache: false,
+      cacheKeyFn: id => `tax-category-${id}`,
+      cacheMap: this.cache,
     },
   );
 
   public getAllTaxCategories() {
-    return getAllTaxCategories.run(undefined, this.dbProvider);
+    const data = this.cache.get<IGetAllTaxCategoriesResult[]>('all-tax-categories');
+    if (data) {
+      return Promise.resolve(data);
+    }
+    return getAllTaxCategories.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-tax-categories', data);
+      data.map(taxCategory => {
+        this.cache.set(`tax-category-${taxCategory.id}`, taxCategory);
+      });
+      return data;
+    });
   }
-
-  private async batchTaxCategoryByNames(names: readonly string[]) {
-    const taxCategories = await getTaxCategoryByNames.run(
-      {
-        names,
-      },
-      this.dbProvider,
-    );
-    return names.map(name => taxCategories.find(tc => tc.name === name));
-  }
-
-  public taxCategoryByNamesLoader = new DataLoader(
-    (names: readonly string[]) => this.batchTaxCategoryByNames(names),
-    {
-      cache: false,
-    },
-  );
 
   public updateTaxCategory(params: IUpdateTaxCategoryParams) {
+    if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
     return updateTaxCategory.run(params, this.dbProvider);
   }
 
   public updateBusinessTaxCategory(params: IUpdateBusinessTaxCategoryParams) {
+    if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
     return updateBusinessTaxCategory.run(params, this.dbProvider);
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
+    this.cache.delete('all-tax-categories');
     return insertBusinessTaxCategory.run(params, this.dbProvider);
   }
 
-  private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
-    const taxCategories = await getTaxCategoryByChargeIDs.run(
-      {
-        chargeIds,
-      },
-      this.dbProvider,
-    );
-    return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
+  public invalidateTaxCategoryById(taxCategoryId: string) {
+    this.cache.delete(`tax-category-${taxCategoryId}`);
+    this.cache.delete('all-tax-categories');
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

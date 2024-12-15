@@ -56,15 +56,17 @@ const deleteDepreciationCategory = sql<IDeleteDepreciationCategoryQuery>`
 })
 export class DepreciationCategoriesProvider {
   cache = getCacheInstance({
-    stdTTL: 60 * 60 * 24,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
 
   constructor(private dbProvider: DBProvider) {}
 
   public getAllDepreciationCategories() {
-    const data = this.cache.get('all-depreciation-categories');
+    const data = this.cache.get<Array<IGetAllDepreciationCategoriesResult>>(
+      'all-depreciation-categories',
+    );
     if (data) {
-      return data as Array<IGetAllDepreciationCategoriesResult>;
+      return Promise.resolve(data);
     }
     return getAllDepreciationCategories.run(undefined, this.dbProvider).then(data => {
       this.cache.set('all-depreciation-categories', data, 60 * 60 * 24);

@@ -20,7 +20,7 @@ export function AddAccommodationExpense(props: {
       <Tooltip label="Add Accommodations Expense">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}

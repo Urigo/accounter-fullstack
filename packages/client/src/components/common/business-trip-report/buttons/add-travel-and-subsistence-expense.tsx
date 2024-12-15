@@ -19,7 +19,7 @@ export function AddTravelAndSubsistenceExpense(props: {
       <Tooltip label="Add T&S Expense">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}

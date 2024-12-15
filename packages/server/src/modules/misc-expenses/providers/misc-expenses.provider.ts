@@ -2,11 +2,13 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type {
   IDeleteExpenseParams,
   IDeleteExpenseQuery,
   IGetExpensesByChargeIdsQuery,
   IGetExpensesByChargeIdsResult,
+  IGetExpensesByIdQuery,
   IInsertExpenseParams,
   IInsertExpenseQuery,
   IUpdateExpenseParams,
@@ -14,9 +16,14 @@ import type {
 } from '../types.js';
 
 const getExpensesByChargeIds = sql<IGetExpensesByChargeIdsQuery>`
-  SELECT e.*
-  FROM accounter_schema.misc_expenses e
-  WHERE e.charge_id IN $$chargeIds;`;
+  SELECT *
+  FROM accounter_schema.misc_expenses
+  WHERE charge_id IN $$chargeIds;`;
+
+const getExpensesById = sql<IGetExpensesByIdQuery>`
+  SELECT *
+  FROM accounter_schema.misc_expenses
+  WHERE id = $id;`;
 
 const updateExpense = sql<IUpdateExpenseQuery>`
   UPDATE accounter_schema.misc_expenses
@@ -72,6 +79,10 @@ const deleteExpense = sql<IDeleteExpenseQuery>`
   global: true,
 })
 export class MiscExpensesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
@@ -90,19 +101,37 @@ export class MiscExpensesProvider {
   public getExpensesByChargeIdLoader = new DataLoader(
     (chargeIds: readonly string[]) => this.batchExpensesByChargeIds(chargeIds),
     {
-      cache: false,
+      cacheKeyFn: key => `misc-expenses-charge-${key}`,
+      cacheMap: this.cache,
     },
   );
 
   public updateExpense(params: IUpdateExpenseParams) {
+    if (params.miscExpenseId) this.invalidateById(params.miscExpenseId);
+    if (params.chargeId) this.invalidateByChargeId(params.chargeId);
     return updateExpense.run(params, this.dbProvider);
   }
 
   public insertExpense(params: IInsertExpenseParams) {
+    if (params.chargeId) this.invalidateByChargeId(params.chargeId);
     return insertExpense.run(params, this.dbProvider);
   }
 
   public deleteMiscExpense(params: IDeleteExpenseParams) {
+    if (params.id) this.invalidateById(params.id);
     return deleteExpense.run(params, this.dbProvider);
+  }
+
+  public async invalidateByChargeId(chargeId: string) {
+    this.cache.delete(`misc-expenses-charge-${chargeId}`);
+  }
+
+  public async invalidateById(id: string) {
+    const [expense] = await getExpensesById.run({ id }, this.dbProvider);
+    if (expense) this.invalidateByChargeId(expense.charge_id);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

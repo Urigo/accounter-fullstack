@@ -21,6 +21,7 @@ import { BusinessTripAccommodationsExpensesProvider } from '../providers/busines
 import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';
 import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import { BusinessTripOtherExpensesProvider } from '../providers/business-trips-expenses-other.provider.js';
+import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../providers/business-trips-expenses-travel-and-subsistence.provider.js';
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
@@ -68,7 +69,7 @@ export const validateTransactionAgainstBusinessTrips = async (
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<boolean> => {
   const transactionMatchingExpenses = await injector
-    .get(BusinessTripExpensesProvider)
+    .get(BusinessTripExpensesTransactionsMatchProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
   return validateTransactionAgainstBusinessTripsExpenses(
@@ -83,7 +84,7 @@ export const getTransactionMatchedAmount = async (
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
   const transactionMatchingExpensesPromise = injector
-    .get(BusinessTripExpensesProvider)
+    .get(BusinessTripExpensesTransactionsMatchProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
   const [transactionMatchingExpenses] = await Promise.all([transactionMatchingExpensesPromise]);
@@ -209,7 +210,7 @@ export const updateExistingTripExpense = async (
   amount?: number | null,
 ) => {
   const updateTransactionMatchPromise = injector
-    .get(BusinessTripExpensesProvider)
+    .get(BusinessTripExpensesTransactionsMatchProvider)
     .insertBusinessTripExpenseMatch({
       businessTripExpenseId,
       transactionId,

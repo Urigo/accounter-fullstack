@@ -276,16 +276,4 @@ export default gql`
   extend type CreditcardBankCharge {
     additionalDocuments: [Document!]!
   }
-
-  extend type LtdFinancialEntity {
-    documents: [Document]
-  }
-
-  extend type PersonalFinancialEntity {
-    documents: [Document]
-  }
-
-  extend interface Business {
-    documents: [Document]
-  }
 `;

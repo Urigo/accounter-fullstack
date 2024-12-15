@@ -5,10 +5,10 @@ import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
   IGetAllSalaryRecordsQuery,
+  IGetAllSalaryRecordsResult,
   IGetSalaryRecordsByChargeIdsQuery,
   IGetSalaryRecordsByDatesParams,
   IGetSalaryRecordsByDatesQuery,
-  IGetSalaryRecordsByMonthParams,
   IGetSalaryRecordsByMonthQuery,
   IInsertSalaryRecordsParams,
   IInsertSalaryRecordsQuery,
@@ -47,6 +47,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     compensations_employer_amount,
     compensations_employer_percentage,
     direct_payment_amount,
+    employee,
     employee_id,
     employer,
     gift,
@@ -83,6 +84,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     compensationsEmployerAmount,
     compensationsEmployerPercentage,
     directPaymentAmount,
+    employee,
     employeeId,
     employer,
     gift,
@@ -264,16 +266,9 @@ export class SalariesProvider {
 
   constructor(private dbProvider: DBProvider) {}
 
-  public getSalaryRecordsByMonth(params: IGetSalaryRecordsByMonthParams) {
-    if (!params.month) {
-      return Promise.resolve([]);
-    }
-    return getSalaryRecordsByMonth.run(params, this.dbProvider);
-  }
-
   private async batchSalaryRecordsByMonths(months: readonly string[]) {
     if (months.length === 1) {
-      return [await this.getSalaryRecordsByMonth({ month: months[0] })];
+      return [await getSalaryRecordsByMonth.run({ month: months[0] }, this.dbProvider)];
     }
     const sortedMonths = [...months].sort();
     const salaries = await getSalaryRecordsByDates.run(
@@ -310,7 +305,14 @@ export class SalariesProvider {
   );
 
   public getAllSalaryRecords() {
-    return getAllSalaryRecords.run(undefined, this.dbProvider);
+    const cached = this.cache.get<IGetAllSalaryRecordsResult[]>('all-salaries');
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    return getAllSalaryRecords.run(undefined, this.dbProvider).then(res => {
+      if (res) this.cache.set('all-salaries', res);
+      return res;
+    });
   }
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {

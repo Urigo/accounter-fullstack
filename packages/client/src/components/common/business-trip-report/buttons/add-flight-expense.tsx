@@ -2,16 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import {
-  ActionIcon,
-  Loader,
-  Modal,
-  MultiSelect,
-  Overlay,
-  Select,
-  TextInput,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AddBusinessTripFlightsExpenseInput,
@@ -19,6 +10,7 @@ import {
   FlightClass,
 } from '../../../../gql/graphql.js';
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
+import { FlightPathInput } from '../parts/flight-path-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddFlightExpense(props: {
@@ -33,7 +25,7 @@ export function AddFlightExpense(props: {
       <Tooltip label="Add Flight Expense">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}
@@ -62,9 +54,10 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripFlightsExpenseInput>({
+  const formManager = useForm<AddBusinessTripFlightsExpenseInput>({
     defaultValues: { businessTripId },
   });
+  const { control, handleSubmit } = formManager;
   const [fetching, setFetching] = useState(false);
 
   const [{ data, fetching: fetchingAttendees }] = useQuery({
@@ -101,30 +94,7 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
             setFetching={setFetching}
           />
 
-          <Controller
-            name="origin"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                label="Origin"
-              />
-            )}
-          />
-          <Controller
-            name="destination"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                label="Destination"
-              />
-            )}
-          />
+          <FlightPathInput formManager={formManager} flightPathPath="path" />
           <Controller
             name="flightClass"
             control={control}

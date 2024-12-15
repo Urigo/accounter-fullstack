@@ -1,3 +1,4 @@
+import { type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'tabler-icons-react';
 import { cn } from '../../lib/utils.js';

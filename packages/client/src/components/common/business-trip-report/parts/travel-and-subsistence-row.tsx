@@ -95,7 +95,7 @@ export const TravelAndSubsistenceRow = ({
           <ActionIcon
             loading={updatingInProcess}
             variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event): void => {
+            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}

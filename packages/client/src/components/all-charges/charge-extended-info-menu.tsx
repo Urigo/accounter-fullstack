@@ -17,6 +17,8 @@ interface ChargeExtendedInfoMenuProps {
   onChange?: () => void;
 }
 
+type ClickEvent = React.MouseEvent<HTMLAnchorElement, MouseEvent>;
+
 export function ChargeExtendedInfoMenu({
   chargeId,
   chargeType,
@@ -70,7 +72,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Label>Charge</Menu.Label>
           <Menu.Item
             icon={<Trash size={14} />}
-            onClick={(event): void => {
+            onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               setModalOpened(true);
               closeMenu();
@@ -82,7 +84,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Label>Documents</Menu.Label>
           <Menu.Item
             icon={<ListPlus size={14} />}
-            onClick={(event): void => {
+            onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               setInsertDocument();
               closeMenu();
@@ -92,7 +94,7 @@ export function ChargeExtendedInfoMenu({
           </Menu.Item>
           <Menu.Item
             icon={<FilePlus2 size={14} />}
-            onClick={(event): void => {
+            onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               setUploadDocument();
               closeMenu();
@@ -113,7 +115,7 @@ export function ChargeExtendedInfoMenu({
           <Menu.Label>Misc Expenses</Menu.Label>
           <Menu.Item
             icon={<ListPlus size={14} />}
-            onClick={(event): void => {
+            onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               closeMenu();
               openMiscExpenses();
@@ -127,7 +129,7 @@ export function ChargeExtendedInfoMenu({
               <Menu.Label>Depreciation</Menu.Label>
               <Menu.Item
                 icon={<ArrowDownWideNarrow size={14} />}
-                onClick={(event): void => {
+                onClick={(event: ClickEvent): void => {
                   event.stopPropagation();
                   openDepreciation();
                   closeMenu();
@@ -143,7 +145,7 @@ export function ChargeExtendedInfoMenu({
               <Menu.Label>Salaries</Menu.Label>
               <Menu.Item
                 icon={<FilePlus2 size={14} />}
-                onClick={(event): void => {
+                onClick={(event: ClickEvent): void => {
                   event.stopPropagation();
                   closeMenu();
                   openUploadSalaries();

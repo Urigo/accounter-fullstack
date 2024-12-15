@@ -11,14 +11,6 @@ export default gql`
     missingInfoSuggestions: TransactionSuggestions
   }
 
-  extend type WireTransaction {
-    missingInfoSuggestions: TransactionSuggestions
-  }
-
-  extend type FeeTransaction {
-    missingInfoSuggestions: TransactionSuggestions
-  }
-
   extend type ConversionTransaction {
     missingInfoSuggestions: TransactionSuggestions
   }

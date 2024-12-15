@@ -4,7 +4,9 @@ import { ActionIcon, ActionIconProps } from '@mantine/core';
 import { PolymorphicComponentProps } from '@mantine/utils';
 
 export function ConfirmMiniButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps>,
+  props: PolymorphicComponentProps<'button', ActionIconProps> & {
+    onClick: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  },
 ): ReactElement {
   return (
     <ActionIcon color="green" {...props}>

@@ -54,14 +54,6 @@ export default gql`
     account: FinancialAccount!
   }
 
-  extend type WireTransaction {
-    account: FinancialAccount!
-  }
-
-  extend type FeeTransaction {
-    account: FinancialAccount!
-  }
-
   extend type ConversionTransaction {
     account: FinancialAccount!
   }

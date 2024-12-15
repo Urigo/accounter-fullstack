@@ -3,23 +3,32 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    profitAndLossReport(years: [Int!]!): [ProfitAndLossReport!]! @auth(role: ACCOUNTANT)
+    profitAndLossReport(reportYear: Int!, referenceYears: [Int!]!): ProfitAndLossReport!
+      @auth(role: ACCOUNTANT)
   }
 
   " result type for profitAndLossReport "
   type ProfitAndLossReport {
+    id: ID!
+    report: ProfitAndLossReportYear!
+    reference: [ProfitAndLossReportYear!]!
+  }
+
+  " profit and loss data for a single year "
+  type ProfitAndLossReportYear {
+    id: ID!
     year: Int!
-    revenue: FinancialAmount!
-    costOfSales: FinancialAmount!
+    revenue: ReportCommentary!
+    costOfSales: ReportCommentary!
     grossProfit: FinancialAmount!
 
-    researchAndDevelopmentExpenses: FinancialAmount!
-    marketingExpenses: FinancialAmount!
-    managementAndGeneralExpenses: FinancialAmount!
+    researchAndDevelopmentExpenses: ReportCommentary!
+    marketingExpenses: ReportCommentary!
+    managementAndGeneralExpenses: ReportCommentary!
     operatingProfit: FinancialAmount!
 
-    financialExpenses: FinancialAmount!
-    otherIncome: FinancialAmount!
+    financialExpenses: ReportCommentary!
+    otherIncome: ReportCommentary!
     profitBeforeTax: FinancialAmount!
 
     tax: FinancialAmount!

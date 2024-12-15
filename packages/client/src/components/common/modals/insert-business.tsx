@@ -19,7 +19,7 @@ export function InsertBusiness(props: {
       <Tooltip label="Create New Business">
         <ActionIcon
           variant="default"
-          onClick={(event): void => {
+          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
             event.stopPropagation();
             open();
           }}

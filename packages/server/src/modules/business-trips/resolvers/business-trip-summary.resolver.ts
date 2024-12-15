@@ -1,7 +1,7 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import type { BusinessTripSummaryCategories, ResolversTypes } from '@shared/gql-types';
+import type { BusinessTripSummary, BusinessTripSummaryCategories } from '@shared/gql-types';
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
@@ -28,9 +28,35 @@ export class BusinessTripError extends Error {
 export async function businessTripSummary(
   injector: Injector,
   dbBusinessTrip: BusinessTripProto,
-): Promise<Awaited<ResolversTypes['BusinessTripSummary']>> {
+): Promise<BusinessTripSummary> {
   try {
-    if (!dbBusinessTrip.from_date || !dbBusinessTrip.to_date) {
+    const attendees = await injector
+      .get(BusinessTripAttendeesProvider)
+      .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
+
+    if (!attendees?.length) {
+      return {
+        rows: [],
+        errors: ['Attendees are not set'],
+      };
+    }
+
+    let fromDate: Date | undefined;
+    let toDate: Date | undefined;
+
+    attendees.map(attendee => {
+      const { arrival, departure } = attendee;
+
+      if (arrival && (!fromDate || arrival < fromDate)) {
+        fromDate = arrival;
+      }
+
+      if (departure && (!toDate || departure > toDate)) {
+        toDate = departure;
+      }
+    });
+
+    if (!fromDate || !toDate) {
       return {
         rows: [],
         errors: ['Business trip dates are not set'],
@@ -42,10 +68,7 @@ export async function businessTripSummary(
       .getBusinessTripExtendedExpensesByBusinessTripId(dbBusinessTrip.id);
     const taxVariablesPromise = injector
       .get(BusinessTripTaxVariablesProvider)
-      .getTaxVariablesByDateLoader.load(dbBusinessTrip.to_date);
-    const attendeesPromise = injector
-      .get(BusinessTripAttendeesProvider)
-      .getBusinessTripsAttendeesByBusinessTripIdLoader.load(dbBusinessTrip.id);
+      .getTaxVariablesByDateLoader.load(toDate);
 
     const [
       {
@@ -56,20 +79,12 @@ export async function businessTripSummary(
         carRentalExpenses,
       },
       taxVariables,
-      attendees,
-    ] = await Promise.all([expensesPromise, taxVariablesPromise, attendeesPromise]);
+    ] = await Promise.all([expensesPromise, taxVariablesPromise]);
 
     if (!taxVariables) {
       return {
         rows: [],
         errors: ['Tax variables are not set'],
-      };
-    }
-
-    if (!attendees?.length) {
-      return {
-        rows: [],
-        errors: ['Attendees are not set'],
       };
     }
 
@@ -149,7 +164,7 @@ export async function businessTripSummary(
       summaryData,
       taxVariables,
       {
-        destination: dbBusinessTrip.destination,
+        destinationCode: dbBusinessTrip.destination,
         attendees: attendeesMap,
         unAccommodatedDays: unAccommodatedDays ?? 0,
       },

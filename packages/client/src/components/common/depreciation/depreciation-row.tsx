@@ -233,7 +233,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
           <ActionIcon
             loading={updatingInProcess || fetchingCategories}
             variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event): void => {
+            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}

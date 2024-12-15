@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, List, MultiSelect, Select, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, List, MultiSelect, Select, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
@@ -12,6 +12,7 @@ import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-updat
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
+import { FlightPathInput } from './flight-path-input.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,8 +20,7 @@ import { CoreExpenseRow } from './core-expense-row.js';
     id
     payedByEmployee
     ...BusinessTripReportCoreExpenseRowFields
-    origin
-    destination
+    path
     class
     attendees {
       id
@@ -45,13 +45,15 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
   const flightExpense = getFragmentData(BusinessTripReportFlightsRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripFlightsExpenseInput>({
+  const formManager = useForm<UpdateBusinessTripFlightsExpenseInput>({
     defaultValues: {
       id: flightExpense.id,
       businessTripId,
       attendeeIds: flightExpense.attendees?.map(attendee => attendee.id) ?? [],
+      path: flightExpense.path ?? [],
     },
   });
+  const { control, handleSubmit } = formManager;
 
   const { updateBusinessTripFlightsExpense, fetching: updatingInProcess } =
     useUpdateBusinessTripFlightsExpense();
@@ -81,49 +83,28 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
         <form id={`form ${flightExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-2 justify-center">
             {isEditMode ? (
-              <div className="flex gap-2 items-center">
-                <Controller
-                  name="origin"
-                  control={control}
-                  defaultValue={flightExpense.origin}
-                  render={({ field, fieldState }): ReactElement => (
-                    <TextInput
-                      data-autofocus={flightExpense.payedByEmployee ? undefined : true}
-                      form={`form ${flightExpense.id}`}
-                      {...field}
-                      value={field.value ?? undefined}
-                      error={fieldState.error?.message}
-                      label="Origin"
-                    />
-                  )}
-                />
-                {' → '}
-                <Controller
-                  name="destination"
-                  control={control}
-                  defaultValue={flightExpense.destination}
-                  render={({ field, fieldState }): ReactElement => (
-                    <TextInput
-                      form={`form ${flightExpense.id}`}
-                      {...field}
-                      value={field.value ?? undefined}
-                      error={fieldState.error?.message}
-                      label="Destination"
-                    />
-                  )}
-                />
-              </div>
+              <FlightPathInput
+                formManager={formManager}
+                flightPathPath="path"
+                flightPathData={flightExpense.path ?? undefined}
+              />
             ) : (
-              <div>
-                <Text fw={700} className="flex gap-2 items-center">
-                  <Text c={flightExpense.origin ? undefined : 'red'}>
-                    {flightExpense.origin ?? 'Missing'}
+              <div className="flex gap-2 items-center">
+                {flightExpense.path?.length ? (
+                  flightExpense.path.map((destination, i) => (
+                    <>
+                      <Text fw={700} key={i}>
+                        {destination}
+                      </Text>
+                      {i < flightExpense.path!.length - 1 &&
+                        (destination === flightExpense.path![i + 1] ? ' | ' : ' → ')}
+                    </>
+                  ))
+                ) : (
+                  <Text fw={700} className="flex gap-2 items-center" c="red">
+                    Missing
                   </Text>
-                  {' → '}
-                  <Text c={flightExpense.destination ? undefined : 'red'}>
-                    {flightExpense.destination ?? 'Missing'}
-                  </Text>
-                </Text>
+                )}
               </div>
             )}
             {isEditMode ? (
@@ -196,7 +177,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
           <ActionIcon
             loading={updatingInProcess}
             variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event): void => {
+            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}

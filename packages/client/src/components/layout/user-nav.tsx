@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { User2Icon } from 'lucide-react';
 import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';

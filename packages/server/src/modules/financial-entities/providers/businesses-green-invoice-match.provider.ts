@@ -7,6 +7,7 @@ import type {
   IDeleteBusinessMatchParams,
   IDeleteBusinessMatchQuery,
   IGetAllBusinessMatchesQuery,
+  IGetAllBusinessMatchesResult,
   IGetBusinessesMatchesByGreenInvoiceIdsQuery,
   IGetBusinessesMatchesByIdsQuery,
   IInsertBusinessMatchParams,
@@ -72,13 +73,27 @@ const insertBusinessMatch = sql<IInsertBusinessMatchQuery>`
 })
 export class BusinessesGreenInvoiceMatcherProvider {
   cache = getCacheInstance({
-    stdTTL: 24 * 60 * 60 * 5,
+    stdTTL: 60 * 60 * 24, // 24 hours
   });
 
   constructor(private dbProvider: DBProvider) {}
 
   public async getAllBusinessMatches() {
-    return getAllBusinessMatches.run(undefined, this.dbProvider);
+    const cache = this.cache.get<IGetAllBusinessMatchesResult[]>('all-business-matches');
+    if (cache) {
+      return Promise.resolve(cache);
+    }
+    return getAllBusinessMatches.run(undefined, this.dbProvider).then(data => {
+      this.cache.set('all-business-matches', data);
+      data.map(businessMatch => {
+        this.cache.set(`business-match-id-${businessMatch.business_id}`, businessMatch);
+        this.cache.set(
+          `business-match-green-invoice-id-${businessMatch.green_invoice_id}`,
+          businessMatch,
+        );
+      });
+      return data;
+    });
   }
 
   private async batchBusinessesMatchByIds(ids: readonly string[]) {

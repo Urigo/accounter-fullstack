@@ -2,20 +2,13 @@ import { ReactElement, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Paper } from '@mantine/core';
 import {
-  AllChargesAccountantApprovalFieldsFragmentDoc,
-  AllChargesAmountFieldsFragmentDoc,
   AllChargesBusinessTripFieldsFragmentDoc,
-  AllChargesDateFieldsFragmentDoc,
-  AllChargesDescriptionFieldsFragmentDoc,
   AllChargesEntityFieldsFragmentDoc,
-  AllChargesMoreInfoFieldsFragmentDoc,
   AllChargesRowFieldsFragment,
   AllChargesRowFieldsFragmentDoc,
   AllChargesTableFieldsFragment,
   AllChargesTagsFieldsFragmentDoc,
   AllChargesTaxCategoryFieldsFragmentDoc,
-  AllChargesTypeFieldsFragmentDoc,
-  AllChargesVatFieldsFragmentDoc,
   ChargeForRowDocument,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady } from '../../gql/index.js';
@@ -48,17 +41,17 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
         transactionsCount
       }
     }
-    ...AllChargesAccountantApprovalFields @defer
-    ...AllChargesAmountFields @defer
+    ...AllChargesAccountantApprovalFields
+    ...AllChargesAmountFields
     ...AllChargesBusinessTripFields @defer
-    ...AllChargesDateFields @defer
-    ...AllChargesDescriptionFields @defer
+    ...AllChargesDateFields
+    ...AllChargesDescriptionFields
     ...AllChargesEntityFields @defer
-    ...AllChargesMoreInfoFields @defer
+    ...AllChargesMoreInfoFields
     ...AllChargesTagsFields @defer
     ...AllChargesTaxCategoryFields @defer
-    ...AllChargesTypeFields @defer
-    ...AllChargesVatFields @defer
+    ...AllChargesTypeFields
+    ...AllChargesVatFields
   }
 `;
 
@@ -146,41 +139,10 @@ export const AllChargesRow = ({
           }
         }}
       >
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesTypeFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <TypeCell data={charge} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesDateFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <DateCell data={charge} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesAmountFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <Amount data={charge} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(AllChargesRowFieldsFragmentDoc, AllChargesVatFieldsFragmentDoc, charge) ? (
-          <Vat data={charge} />
-        ) : (
-          <td />
-        )}
+        <TypeCell data={charge} />
+        <DateCell data={charge} />
+        <Amount data={charge} />
+        <Vat data={charge} />
 
         {isFragmentReady(
           AllChargesRowFieldsFragmentDoc,
@@ -192,15 +154,7 @@ export const AllChargesRow = ({
           <td />
         )}
 
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesDescriptionFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <Description data={charge} onChange={onChange} />
-        ) : (
-          <td />
-        )}
+        <Description data={charge} onChange={onChange} />
 
         {isFragmentReady(
           AllChargesRowFieldsFragmentDoc,
@@ -232,25 +186,8 @@ export const AllChargesRow = ({
           <td />
         )}
 
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesMoreInfoFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <MoreInfo data={charge} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(
-          AllChargesRowFieldsFragmentDoc,
-          AllChargesAccountantApprovalFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <AccountantApproval data={charge} onChange={onChange} />
-        ) : (
-          <td />
-        )}
+        <MoreInfo data={charge} />
+        <AccountantApproval data={charge} onChange={onChange} />
 
         <td>
           <div className="flex flex-col gap-2">

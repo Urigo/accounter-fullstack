@@ -242,7 +242,7 @@ export async function accommodationExpenseDataCollector(
   injector: Injector,
   businessTripExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
-  destination: string | null,
+  destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
   attendeesMap: Map<string, AttendeeInfo>,
 ): Promise<number> {
@@ -322,19 +322,14 @@ export async function accommodationExpenseDataCollector(
   );
 
   // calculate taxable amount
-  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destination, taxVariables);
+  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destinationCode, taxVariables);
 
   let unAccommodatedDays = 0;
 
   // set taxable amounts
   for (const [attendeeId, { nightsCount: totalNights }] of Array.from(attendeesMap.entries())) {
-    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(totalNights, accommodationTaxVariables);
-
-    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
-
     if (!attendeesAccommodationMap.has(attendeeId)) {
-      unAccommodatedDays += totalNights;
+      unAccommodatedDays += totalNights + 1;
       continue;
     }
 
@@ -352,6 +347,14 @@ export async function accommodationExpenseDataCollector(
         'Accommodation expenses: accommodated nights exceed total nights stay',
       );
     }
+
+    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(
+      accommodationNights,
+      accommodationTaxVariables,
+    );
+
+    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
+    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
 
     if (totalNights > accommodationNights) {
       unAccommodatedDays += totalNights - accommodationNights;
@@ -403,7 +406,7 @@ export async function otherExpensesDataCollector(
 }
 
 type ReportMetaData = {
-  destination: string | null;
+  destinationCode: string | null;
   unAccommodatedDays: number;
   attendees: Map<string, AttendeeInfo>;
 };
@@ -413,7 +416,7 @@ export async function travelAndSubsistenceExpensesDataCollector(
   businessTripExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
-  { destination, unAccommodatedDays, attendees }: ReportMetaData,
+  { destinationCode, unAccommodatedDays, attendees }: ReportMetaData,
 ): Promise<void> {
   // populate category
   partialSummaryData['TRAVEL_AND_SUBSISTENCE'] ??= {};
@@ -429,7 +432,7 @@ export async function travelAndSubsistenceExpensesDataCollector(
   const maxTaxableUsd = getAttendeeTravelAndSubsistenceMaxTax(
     totalBusinessDays,
     unAccommodatedDays,
-    destination,
+    destinationCode,
     taxVariables,
   );
 
@@ -471,7 +474,7 @@ export async function carRentalExpensesDataCollector(
   businessTripExpenses: IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
-  destination: string | null,
+  destinationCode: string | null,
 ): Promise<void> {
   // populate category
   partialSummaryData['CAR_RENTAL'] ??= {};
@@ -506,7 +509,7 @@ export async function carRentalExpensesDataCollector(
     throw new BusinessTripError('Tax variables are not set');
   }
 
-  const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+  const increasedLimitDestination = isIncreasedLimitDestination(destinationCode) ? 1.25 : 1;
 
   const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination * -1;
 
@@ -530,50 +533,51 @@ export async function carRentalExpensesDataCollector(
   return void 0;
 }
 
-function isIncreasedLimitDestination(destination: string | null) {
-  if (!destination) {
+function isIncreasedLimitDestination(destinationCode: string | null) {
+  if (!destinationCode) {
     return false;
   }
   const increasedLimitDestinations = [
-    'angola',
-    'australia',
-    'austria',
-    'belgium',
-    'cameroon',
-    'canada',
-    'denmark',
-    'dubai',
-    'finland',
-    'france',
-    'germany',
-    'greece',
-    'hong kong',
-    'iceland',
-    'ireland',
-    'italy',
-    'japan',
-    'korea',
-    'luxembourg',
-    'netherlands',
-    'norway',
-    'oman',
-    'qatar',
-    'spain',
-    'sweden',
-    'switzerland',
-    'taiwan',
-    'united kingdom',
+    'AGO', // angola
+    'AUS', // australia
+    'AUT', // austria
+    'BEL', // belgium
+    'CMR', // cameroon
+    'CAN', // canada
+    'DNK', // denmark
+    'ARE', // dubai
+    'FIN', // finland
+    'FRA', // france
+    'DEU', // germany
+    'GRC', // greece
+    'HKG', // hong kong
+    'ISL', // iceland
+    'IRL', // ireland
+    'ITA', // italy
+    'JPN', // japan
+    'KOR', // south korea
+    'PRK', // north korea
+    'LUX', // luxembourg
+    'NLD', // netherlands
+    'NOR', // norway
+    'OMN', // oman
+    'QAT', // qatar
+    'ESP', // spain
+    'SWE', // sweden
+    'CHE', // switzerland
+    'TWN', // taiwan
+    'GBR', // united kingdom
   ];
-  return increasedLimitDestinations.includes(destination.toLowerCase());
+  return increasedLimitDestinations.includes(destinationCode.toLocaleUpperCase());
 }
 
 function getAccommodationTaxVariablesUSD(
-  destination: string | null,
+  destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
 ): AccommodationTaxVariables {
   const { max_accommodation_per_night_first_7_nights, max_accommodation_per_night_nights_8_to_90 } =
     taxVariables;
-  const increasedLimitDestination = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+  const increasedLimitDestination = isIncreasedLimitDestination(destinationCode) ? 1.25 : 1;
 
   const upToSevenNights =
     Number(max_accommodation_per_night_first_7_nights) * increasedLimitDestination;
@@ -619,10 +623,10 @@ function calculateMaxTaxableAttendeeAmount(
 
 export function getAttendeeAccommodationMaxTax(
   totalAttendeeNights: number,
-  destination: string | null,
+  destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
 ): number {
-  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destination, taxVariables);
+  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destinationCode, taxVariables);
 
   return calculateMaxTaxableAttendeeAmount(totalAttendeeNights, accommodationTaxVariables);
 }
@@ -630,7 +634,7 @@ export function getAttendeeAccommodationMaxTax(
 export function getAttendeeTravelAndSubsistenceMaxTax(
   totalBusinessDays: number,
   unAccommodatedDays: number,
-  destination: string | null,
+  destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
 ): number {
   const { max_tns_with_accommodation, max_tns_without_accommodation } = taxVariables;
@@ -643,7 +647,7 @@ export function getAttendeeTravelAndSubsistenceMaxTax(
 
   const accommodatedDays = totalBusinessDays - unAccommodatedDays;
 
-  const increasedLimitFactor = isIncreasedLimitDestination(destination) ? 1.25 : 1;
+  const increasedLimitFactor = isIncreasedLimitDestination(destinationCode) ? 1.25 : 1;
 
   const maxTaxableUsd =
     (maxExpenseWithAccommodation * accommodatedDays +

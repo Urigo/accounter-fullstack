@@ -6,8 +6,6 @@ import type { TransactionsModule } from '../types.js';
 
 export const commonTransactionFields:
   | TransactionsModule.ConversionTransactionResolvers
-  | TransactionsModule.FeeTransactionResolvers
-  | TransactionsModule.WireTransactionResolvers
   | TransactionsModule.CommonTransactionResolvers = {
   id: DbTransaction => DbTransaction.id,
   referenceId: DbTransaction => DbTransaction.source_id,

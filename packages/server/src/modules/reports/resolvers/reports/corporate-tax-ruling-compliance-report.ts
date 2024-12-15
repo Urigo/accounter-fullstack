@@ -13,7 +13,7 @@ import {
 import {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReportDifferences,
-  QueryTaxReportArgs,
+  QueryCorporateTaxRulingComplianceReportArgs,
   RequireFields,
   ResolverFn,
   ResolversParentTypes,
@@ -145,7 +145,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   ReadonlyArray<ResolversTypes['CorporateTaxRulingComplianceReport']>,
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
-  RequireFields<QueryTaxReportArgs, 'years'>
+  RequireFields<QueryCorporateTaxRulingComplianceReportArgs, 'years'>
 > = async (_, { years }, { injector }) => {
   years.map(year => {
     if (year < 2000 || year > new Date().getFullYear()) {

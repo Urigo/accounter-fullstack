@@ -44,7 +44,6 @@ export const getVatRecords: ResolverFn<
       .getDocumentsByFilters({
         fromVatDate: filters?.fromDate,
         toVatDate: filters?.toDate,
-        ownerIDs: [reportIssuerId],
       })
       .then(documents =>
         documents.filter(doc => {

@@ -34,7 +34,6 @@ import {
   commonChargeFields,
   commonDocumentsFields,
   commonFinancialDocumentsFields,
-  commonFinancialEntityFields,
 } from './common.js';
 import { uploadDocument } from './document-handling.js';
 
@@ -49,7 +48,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return dbDocs;
     },
     documentsByFilters: async (_, { filters }, { injector }) => {
-      const dbDocs = await injector.get(DocumentsProvider).getDocumentsByFilters(filters);
+      const dbDocs = await injector.get(DocumentsProvider).getDocumentsByExtendedFilters(filters);
       return dbDocs;
     },
     documentById: async (_, { documentId }, { injector }) => {
@@ -451,6 +450,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         await injector
           .get(GreenInvoiceProvider)
           .addDocuments({ input })
+          .then(res => {
+            if (res && 'errorMessage' in res) {
+              errors.push(`${businessName}: ${res.errorMessage}`);
+            }
+          })
           .catch(e => {
             console.error(e);
             errors.push(`${businessName}: ${e.message}`);
@@ -533,9 +537,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     ...commonFinancialDocumentsFields,
   },
   CommonCharge: commonChargeFields,
-  FinancialCharge: {
-    additionalDocuments: () => [],
-  },
+  FinancialCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
@@ -544,10 +546,4 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
-  LtdFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
-  PersonalFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
 };

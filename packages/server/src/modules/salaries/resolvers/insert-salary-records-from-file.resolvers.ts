@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import xlsx from 'node-xlsx';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { EmployeesProvider } from '../providers/employees.provider.js';
+import { FundsProvider } from '../providers/funds.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { IInsertSalaryRecordsParams, SalariesModule } from '../types.js';
 
@@ -16,7 +17,7 @@ function getFormattedSalaryMonth(rawDate: string) {
   return `${dateParts[1]}-${dateParts[0]}`;
 }
 
-function getEmployeeIdsFromSheet(dataArray: string[]): Array<[string, number]> {
+function getEmployeeIdsFromSheet(dataArray: unknown[]): Array<[string, number]> {
   return dataArray
     .map((data, index) => [data, index] as [string | null | undefined, number])
     .filter(([data, index]) => {
@@ -33,35 +34,72 @@ function normalizeNationalId(nationalId: number): string {
     : '0'.repeat(9 - stringNationalId.length) + stringNationalId;
 }
 
+function validateGenericSalaryData(
+  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] | undefined,
+): ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] {
+  if (!salaryData) {
+    throw new SalaryError('Missing salary data sheet');
+  }
+  return salaryData;
+}
+
+function validateRowByCategory(
+  data: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'],
+  category: string,
+): { row: unknown[]; rowNum: number } {
+  const rowNum = data.findIndex(row => Array.isArray(row) && row[1] === category);
+  if (!data[rowNum]) {
+    throw new SalaryError(`Missing ${category} in row ${rowNum + 1}`);
+  }
+  if (!Array.isArray(data[rowNum])) {
+    throw new SalaryError(`Invalid row for ${category} in row ${rowNum + 1}`);
+  }
+  if (!data[rowNum][1] || data[rowNum][1] !== category) {
+    throw new SalaryError(`Invalid category for ${category} in row ${rowNum + 1}`);
+  }
+  return { row: data[rowNum], rowNum };
+}
+
+function validateColumn(
+  row: unknown[],
+  columnNum: number,
+  category: string,
+  rowNum: number,
+  nullable = false,
+): { cell: unknown; colLetter: string } {
+  const columns = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if (!nullable && !row[columnNum]) {
+    throw new SalaryError(
+      `Missing column ${columns[columnNum]} for ${category} in row ${rowNum + 1}`,
+    );
+  }
+
+  return { cell: row[columnNum], colLetter: columns[columnNum] };
+}
+
+function validateCell(
+  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] | undefined,
+  category: string,
+  columnNum: number,
+  nullable = false,
+): { cell: unknown; colLetter: string; rowNum: number } {
+  const data = validateGenericSalaryData(salaryData);
+  const { row, rowNum } = validateRowByCategory(data, category);
+  const { cell, colLetter } = validateColumn(row, columnNum, category, rowNum, nullable);
+  return { cell, colLetter, rowNum };
+}
+
 function validateNumericCell(
   salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] | undefined,
   category: string,
   columnNum: number,
   nullable = false,
 ): number {
-  if (!salaryData) {
-    throw new SalaryError('Missing salary data sheet');
+  const { cell, colLetter, rowNum } = validateCell(salaryData, category, columnNum, nullable);
+  if (typeof cell !== 'number') {
+    throw new SalaryError(`Invalid ${category} in row ${rowNum + 1}, column ${colLetter}: ${cell}`);
   }
-  const columns = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const rowNum = salaryData.findIndex(row => Array.isArray(row) && row[1] === category);
-  if (!salaryData[rowNum]) {
-    throw new SalaryError(`Missing ${category} in row ${rowNum + 1}`);
-  }
-  if (!Array.isArray(salaryData[rowNum])) {
-    throw new SalaryError(`Invalid row for ${category} in row ${rowNum + 1}`);
-  }
-  if (!salaryData[rowNum][1] || salaryData[rowNum][1] !== category) {
-    throw new SalaryError(`Invalid category for ${category} in row ${rowNum + 1}`);
-  }
-  if (!nullable && !salaryData[rowNum][columnNum]) {
-    throw new SalaryError(
-      `Missing column ${columns[columnNum]} for ${category} in row ${rowNum + 1}`,
-    );
-  }
-  if (typeof salaryData[rowNum][columnNum] !== 'number') {
-    throw new SalaryError(`Invalid ${category} in row ${rowNum + 1}, column ${columns[columnNum]}`);
-  }
-  return salaryData[rowNum][columnNum];
+  return cell;
 }
 
 export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['insertSalaryRecordsFromFile'] =
@@ -80,7 +118,8 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
       const rawSalaryMonth = salaryData[1][3];
       const salaryMonth = getFormattedSalaryMonth(rawSalaryMonth);
 
-      const employeesNationalIds = getEmployeeIdsFromSheet(salaryData[6]);
+      const { row: employeesRow } = validateRowByCategory(salaryData, 'מספר זהות');
+      const employeesNationalIds = getEmployeeIdsFromSheet(employeesRow);
 
       const allEmployeesPromise = injector
         .get(EmployeesProvider)
@@ -105,9 +144,12 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
               throw new SalaryError('Failed to generate salary charge');
             });
 
-      const [allEmployees, salaryChargeId] = await Promise.all([
+      const allFundsPromise = injector.get(FundsProvider).getAllFunds();
+
+      const [allEmployees, salaryChargeId, allFunds] = await Promise.all([
         allEmployeesPromise,
         salaryChargePromise,
+        allFundsPromise,
       ]);
 
       const salaryRecords: Array<IInsertSalaryRecordsParams['salaryRecords'][0]> = [];
@@ -124,17 +166,44 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
         function validateNumericCellWrapper(category: string, nullable?: boolean) {
           return validateNumericCell(salaryData, category, employeeColumn, nullable);
         }
+        // eslint-disable-next-line no-inner-declarations
+        function validateFund(category: string, nullable?: boolean) {
+          const data = validateGenericSalaryData(salaryData);
+          const { rowNum: prevRowNum } = validateRowByCategory(data, category);
+          const rowNum = prevRowNum + 1;
+          const row = data[rowNum];
+          if (!Array.isArray(row)) {
+            throw new SalaryError(`Invalid row for ${category} in row ${rowNum + 2}`);
+          }
+          const { cell: fundKey, colLetter } = validateColumn(
+            row,
+            employeeColumn,
+            category,
+            rowNum,
+            nullable,
+          );
+          if (typeof fundKey !== 'number') {
+            throw new SalaryError(
+              `Invalid ${category} in row ${rowNum + 1}, column ${colLetter}: ${fundKey}`,
+            );
+          }
+          const fundId = allFunds.find(f => Number(f.otsar_id) === fundKey)?.id;
+          if (!fundId) {
+            throw new SalaryError(`Fund with key ${fundKey} not found`);
+          }
+          return fundId;
+        }
 
-        const record: IInsertSalaryRecordsParams['salaryRecords'][0] = {
+        const record: IInsertSalaryRecordsParams['salaryRecords'][number] = {
           month: salaryMonth,
           chargeId: salaryChargeId,
           employeeId: employee.business_id,
           employer: employee.employer,
-          // employee: nationalId,
+          employee: employee.national_id,
 
           baseSalary: validateNumericCellWrapper('שכר יסוד'),
           globalAdditionalHours: validateNumericCellWrapper('שעות נוספות גלובליות', true),
-          hourlyRate: null, // TODO: data missing from file format
+          hourlyRate: validateNumericCellWrapper('Hourly rate', true),
 
           bonus: validateNumericCellWrapper('בונוס', true),
           gift: validateNumericCellWrapper('מתנות', true),
@@ -151,13 +220,13 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
           healthPaymentAmount: validateNumericCellWrapper('דמי בריאות'),
           taxAmount: validateNumericCellWrapper('מס הכנסה'),
 
-          trainingFundId: null, // TODO: figure out how to add this. currently requires mapping by name.
+          trainingFundId: validateFund('קרן השתלמות'),
           trainingFundEmployeeAmount: validateNumericCellWrapper('ניכוי קה"ש עובד'),
           trainingFundEmployeePercentage: validateNumericCellWrapper('אחוז קה"ש עובד') * 100,
           trainingFundEmployerAmount: validateNumericCellWrapper('סכום קה"ש מעסיק'),
           trainingFundEmployerPercentage: validateNumericCellWrapper('אחוז קה"ש מעסיק') * 100,
 
-          pensionFundId: null, // TODO: figure out how to add this. currently requires mapping by name.
+          pensionFundId: validateFund('קרן פנסיה'),
           pensionEmployeeAmount: validateNumericCellWrapper('ניכוי פנסיה עובד'),
           pensionEmployeePercentage: validateNumericCellWrapper('אחוז פנסיה עובד') * 100,
           pensionEmployerAmount: validateNumericCellWrapper('סכום פנסיה מעסיק'),
@@ -167,7 +236,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
 
           workDays: validateNumericCellWrapper('ימי עבודה'),
           hours: validateNumericCellWrapper('שעות עבודה'),
-          jobPercentage: null, // TODO: data missing from file format
+          jobPercentage: validateNumericCellWrapper('Job percentage') * 100,
           vacationDaysBalance: -1 * validateNumericCellWrapper('ניצול חופשה', true),
           sicknessDaysBalance: -1 * validateNumericCellWrapper('ניצול מחלה', true),
 

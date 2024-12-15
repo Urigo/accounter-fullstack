@@ -76,29 +76,13 @@ export class TagsProvider {
       return data as Array<IGetAllTagsResult>;
     }
     return getAllTags.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-tags', data, 60 * 5);
+      this.cache.set('all-tags', data);
+      data.map(tag => {
+        if (tag.id) this.cache.set(`tag-id-${tag.id}`, tag);
+        if (tag.name) this.cache.set(`tag-name-${tag.name}`, tag);
+      });
       return data;
     });
-  }
-
-  public addNewTag(params: IAddNewTagParams) {
-    this.clearCache();
-    return addNewTag.run(params, this.dbProvider);
-  }
-
-  public renameTag(params: IRenameTagParams) {
-    this.clearCache();
-    return renameTag.run(params, this.dbProvider);
-  }
-
-  public deleteTag(params: IDeleteTagParams) {
-    this.clearCache();
-    return deleteTag.run(params, this.dbProvider);
-  }
-
-  public updateTagParent(params: IUpdateTagParentParams) {
-    this.clearCache();
-    return updateTagParent.run(params, this.dbProvider);
   }
 
   private async batchTagsByID(tagIDs: readonly string[]) {
@@ -123,6 +107,26 @@ export class TagsProvider {
       cacheMap: this.cache,
     },
   );
+
+  public addNewTag(params: IAddNewTagParams) {
+    this.clearCache();
+    return addNewTag.run(params, this.dbProvider);
+  }
+
+  public async renameTag(params: IRenameTagParams) {
+    this.clearCache();
+    return renameTag.run(params, this.dbProvider);
+  }
+
+  public async deleteTag(params: IDeleteTagParams) {
+    this.clearCache();
+    return deleteTag.run(params, this.dbProvider);
+  }
+
+  public updateTagParent(params: IUpdateTagParentParams) {
+    this.clearCache();
+    return updateTagParent.run(params, this.dbProvider);
+  }
 
   public clearCache() {
     this.cache.clear();

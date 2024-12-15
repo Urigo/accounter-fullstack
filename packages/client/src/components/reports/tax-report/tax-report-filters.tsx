@@ -5,11 +5,18 @@ import { YearPickerInput } from '@mantine/dates';
 import { PopUpModal } from '../../common/index.js';
 
 interface TaxReportFilterProps {
-  years: number[];
-  setYears: (years: number[]) => void;
+  year: number;
+  setYear: (year: number) => void;
+  referenceYears: number[];
+  setReferenceYears: (years: number[]) => void;
 }
 
-export function TaxReportFilter({ years, setYears }: TaxReportFilterProps): ReactElement {
+export function TaxReportFilter({
+  year,
+  setYear,
+  referenceYears,
+  setReferenceYears,
+}: TaxReportFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
 
   return (
@@ -19,15 +26,29 @@ export function TaxReportFilter({ years, setYears }: TaxReportFilterProps): Reac
         onClose={(): void => setOpened(false)}
         withCloseButton
         content={
-          <YearPickerInput
-            type="multiple"
-            label="Pick years"
-            value={years?.map(year => new Date(year, 0, 1))}
-            onChange={date => setYears(date.map(date => date.getFullYear()))}
-            popoverProps={{ withinPortal: true }}
-            minDate={new Date(2010, 0, 1)}
-            maxDate={new Date()}
-          />
+          <>
+            <YearPickerInput
+              label="Change report year"
+              value={new Date(year, 0, 1)}
+              onChange={date => date && setYear(date?.getFullYear())}
+              popoverProps={{ withinPortal: true }}
+              minDate={new Date(2010, 0, 1)}
+              maxDate={new Date()}
+            />
+            <YearPickerInput
+              type="multiple"
+              label="Pick reference years"
+              value={referenceYears?.map(year => new Date(year, 0, 1))}
+              onChange={date =>
+                setReferenceYears(
+                  date.map(date => date.getFullYear()).filter(refYear => year !== refYear),
+                )
+              }
+              popoverProps={{ withinPortal: true }}
+              minDate={new Date(2010, 0, 1)}
+              maxDate={new Date()}
+            />
+          </>
         }
       />
       <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>

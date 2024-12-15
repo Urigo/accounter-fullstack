@@ -13,7 +13,7 @@ export function ToggleExpansionButton(props: {
     <Tooltip label="Expand info">
       <ActionIcon
         variant="default"
-        onClick={(event): void => {
+        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
           event.stopPropagation();
           toggleExpansion(i => {
             if (onClickAction) {

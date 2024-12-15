@@ -17,7 +17,10 @@ import { BusinessTripToggleMenu } from './business-trip-toggle-menu.js';
       end
     }
     purpose
-    destination
+    destination {
+      id
+      name
+    }
     ...BusinessTripAccountantApprovalFields
   }
 `;
@@ -55,7 +58,7 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>
         Destination:
-        <Text fz="lg">{destination}</Text>
+        <Text fz="lg">{destination?.name}</Text>
       </Grid.Col>
       <Grid.Col xl={4} lg={6} md={12} orderMd={6}>
         Description:

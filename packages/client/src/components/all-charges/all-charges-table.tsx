@@ -9,9 +9,7 @@ import { AllChargesRow } from './all-charges-row.js';
   fragment AllChargesTableFields on Charge {
     id
     owner {
-      ... on Business @defer {
-        id
-      }
+      id
     }
     ...AllChargesRowFields
   }

@@ -295,6 +295,7 @@ export class LedgerProvider {
   );
 
   private async deleteLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
+    this.clearCache();
     await deleteLedgerRecordsByChargeIds.run(
       {
         chargeIds,
@@ -311,6 +312,7 @@ export class LedgerProvider {
   );
 
   public replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
+    this.clearCache();
     return replaceLedgerRecordsChargeId.run(params, this.dbProvider);
   }
 
