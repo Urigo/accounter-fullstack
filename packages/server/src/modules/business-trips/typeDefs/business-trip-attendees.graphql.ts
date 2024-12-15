@@ -40,5 +40,7 @@ export default gql`
     business: Business
     arrivalDate: TimelessDate
     departureDate: TimelessDate
+    flights: [BusinessTripFlightExpense!]!
+    accommodations: [BusinessTripAccommodationExpense!]!
   }
 `;

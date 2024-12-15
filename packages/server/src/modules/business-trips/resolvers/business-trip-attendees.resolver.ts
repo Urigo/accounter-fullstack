@@ -1,5 +1,8 @@
+import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import { optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
+import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripFlightsExpensesProvider } from '../providers/business-trips-expenses-flights.provider.js';
 import type { BusinessTripsModule } from '../types.js';
 
 export const businessTripAttendeesResolvers: BusinessTripsModule.Resolvers = {
@@ -44,5 +47,28 @@ export const businessTripAttendeesResolvers: BusinessTripsModule.Resolvers = {
       optionalDateToTimelessDateString(dbBusinessTripAttendee.arrival),
     departureDate: dbBusinessTripAttendee =>
       optionalDateToTimelessDateString(dbBusinessTripAttendee.departure),
+    flights: async (dbBusinessTripAttendee, _, { injector }) =>
+      injector
+        .get(BusinessTripFlightsExpensesProvider)
+        .getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(
+          dbBusinessTripAttendee.business_trip_id,
+        )
+        .then(res => res.filter(expense => expense.attendees.includes(dbBusinessTripAttendee.id))),
+    accommodations: async (dbBusinessTripAttendee, _, { injector }) =>
+      injector
+        .get(BusinessTripAccommodationsExpensesProvider)
+        .getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.load(
+          dbBusinessTripAttendee.business_trip_id,
+        )
+        .then(res => {
+          return res.filter(expense =>
+            expense.attendees_stay
+              .values()
+              .some(
+                stay =>
+                  (stay as BusinessTripAttendeeStayInput).attendeeId === dbBusinessTripAttendee.id,
+              ),
+          );
+        }),
   },
 };
