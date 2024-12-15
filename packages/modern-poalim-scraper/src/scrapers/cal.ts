@@ -1,7 +1,7 @@
 import { Frame, Page } from 'puppeteer';
 import { subYears } from 'date-fns';
 import { waitUntil } from '../helpers/waiting.js';
-import { calGetCardTransactionsDetailsResponseSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
+import { calTransactionsSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
@@ -52,50 +52,47 @@ async function login(credentials: CalCredentials, page: Page) {
   
   // Get the login frame using the proper frame detection
   const frame = await getLoginFrame(page);
-
-  await sleep(1000);
   
   // Switch to regular login tab
   await waitUntilElementFound(frame, '#regular-login');
   await frame.click('#regular-login');
   await waitUntilElementFound(frame, 'regular-login'); // Wait for tab to be active
   
-  await sleep(1000);
-
   // Fill login form within the frame
   await waitUntilElementFound(frame, '[formcontrolname="userName"]');
   await frame.type('[formcontrolname="userName"]', credentials.username);
-  await frame.type('[formcontrolname="password"]', credentials.password);
-
-  await sleep(1000);
   
-  // Submit the form
+  await waitUntilElementFound(frame, '[formcontrolname="password"]');
+  await frame.type('[formcontrolname="password"]', credentials.password);
+  
+  // Wait for submit button and click
   await waitUntilElementFound(frame, 'button[type="submit"]');
-  await sleep(500);
+  await frame.waitForSelector('button[type="submit"]:not([disabled])');
   await frame.click('button[type="submit"]');
 
   console.debug('Clicked sign in');
-
-  await sleep(1000);
   
   // Handle post-login scenarios
   try {
-    // Wait for navigation
+    // Wait for either navigation or close button
     await Promise.race([
-      page.waitForNavigation(),
-      page.waitForSelector('button.btn-close'),
+      page.waitForNavigation({ waitUntil: 'networkidle0' }),
+      page.waitForSelector('button.btn-close', { visible: true }),
     ]);
 
     console.debug('Navigated');
-
-    await sleep(1000);
     
     // Check if we're on the tutorial page and close it if needed
     const currentUrl = page.url();
     console.log("🚀 ~ login ~ currentUrl:", currentUrl)
     if (currentUrl.endsWith('site-tutorial')) {
       console.debug('Found tutorial page');
+      await page.waitForSelector('button.btn-close', { visible: true });
       await page.click('button.btn-close');
+      // Wait for tutorial to be dismissed
+      await page.waitForFunction(() => 
+        !document.querySelector('button.btn-close')
+      );
     }
     
     // Check for password change requirement
@@ -103,6 +100,12 @@ async function login(credentials: CalCredentials, page: Page) {
     if (passwordChangeForm) {
       throw new Error('Password change required');
     }
+
+    // Wait for dashboard to load
+    await page.waitForFunction(() => 
+      window.location.href.includes('dashboard')
+    );
+
   } catch (e) {
     if (e instanceof Error && e.message === 'Password change required') {
       throw e;
@@ -199,7 +202,7 @@ async function fetchMonthCompletedTransactions(
     }
   );
 
-  const parsedResponse = calGetCardTransactionsDetailsResponseSchema.safeParse(response);
+  const parsedResponse = calTransactionsSchema.safeParse(response);
   if (!parsedResponse.success) {
     throw new Error('Failed to parse response');
   }
@@ -294,10 +297,6 @@ async function getXSiteId() {
           this.xSiteId = "09031987-273E-2311-906C-8AF85B17C8D9",
   */
   return Promise.resolve('09031987-273E-2311-906C-8AF85B17C8D9');
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export class CalCredentials {

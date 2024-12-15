@@ -150,7 +150,7 @@ const resultSchema = z.object({
   bankAccounts: z.array(bankAccountSchema)
 })
 
-export const calGetCardTransactionsDetailsResponseSchema = z.object({
+export const calTransactionsSchema = z.object({
   result: resultSchema,
   statusDescription: z.string(),
   statusCode: z.number(),

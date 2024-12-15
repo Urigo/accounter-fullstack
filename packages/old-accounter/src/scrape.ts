@@ -1313,6 +1313,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   const newScraperInstance = await init();
   const secondScraperInstance = await init();
   const thirdScraperInstance = await init();
+  const fourthScraperInstance = await init(false);
   console.log('After Init scraper');
 
   const calCards = process.env.CAL_LAST4DIGITS?.split(',') || [];
@@ -1334,7 +1335,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
       card6Digits: process.env.AMEX_6_DIGITS,
     }),
     ...calCards.map(async last4Digits =>
-      getVisaCalCreditCardData(pool, await init(false), {
+      getVisaCalCreditCardData(pool, fourthScraperInstance, {
         username: process.env.CAL_USERNAME,
         password: process.env.CAL_PASSWORD,
         last4Digits,
@@ -1344,6 +1345,12 @@ async function getForeignSwiftTransactionsfromBankAndSave(
     getCurrencyRates(pool),
   ]);
   console.log('after all');
+
+  // close scraper instances
+  await newScraperInstance.close();
+  await secondScraperInstance.close();
+  await thirdScraperInstance.close();
+  await fourthScraperInstance.close();
 
   // await compareHashavshevetToDB(pool),
   //   console.log('after compareHashavshevetToDB');
