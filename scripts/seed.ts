@@ -77,9 +77,9 @@ async function seed() {
       });
     }
 
-    if (process.env.SEED_CREDIT_CARD_NUMBER) {
+    if (process.env.SEED_CREDIT_CARD_LAST4DIGITS) {
       accountsToCreate.push({
-        account_number: parseInt(process.env.SEED_CREDIT_CARD_NUMBER),
+        account_number: parseInt(process.env.SEED_CREDIT_CARD_LAST4DIGITS),
         type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
