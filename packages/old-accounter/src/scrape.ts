@@ -676,7 +676,7 @@ async function getVisaCalCreditCardData(
   console.log('got cal instance');
 
   // fetch for every month in the last 24 months
-  const monthsToFetch = 1;
+  const monthsToFetch = 24;
   const start = subMonths(new Date(), monthsToFetch);
   const end = addMonths(start, 1);
   for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {
