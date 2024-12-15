@@ -55,9 +55,13 @@ async function login(credentials: CalCredentials, page: Page) {
   
   // Switch to regular login tab
   await waitUntilElementFound(frame, '#regular-login');
+  // Need small delay after element appears before it becomes clickable
+  // Couldn't find a better way to handle this
+  await sleep(500);
   await frame.click('#regular-login');
-  await waitUntilElementFound(frame, 'regular-login'); // Wait for tab to be active
-  
+
+  console.debug('clicked regular login');
+
   // Fill login form within the frame
   await waitUntilElementFound(frame, '[formcontrolname="userName"]');
   await frame.type('[formcontrolname="userName"]', credentials.username);
@@ -84,7 +88,6 @@ async function login(credentials: CalCredentials, page: Page) {
     
     // Check if we're on the tutorial page and close it if needed
     const currentUrl = page.url();
-    console.log("🚀 ~ login ~ currentUrl:", currentUrl)
     if (currentUrl.endsWith('site-tutorial')) {
       console.debug('Found tutorial page');
       await page.waitForSelector('button.btn-close', { visible: true });
@@ -221,11 +224,18 @@ async function fetchMonthCompletedTransactions(
 }
 
 async function getLoginFrame(page: Page) {
-  let frame: Frame | null = null;
   console.debug('wait until login frame found');
+  
+  // First wait for the iframe element to exist in DOM
+  await page.waitForSelector('iframe[src*="connect"]');
+ 
+  console.debug('iframe found');
+  
+  // Then wait for the frame to be loaded and available
+  let frame: Frame | null = null;
   await waitUntil(() => {
-    // find iframe with src: https://connect.cal-online.co.il/index.html
     const frames = page.frames();
+    // find iframe with src: https://connect.cal-online.co.il/index.html
     frame = frames.find((f) => f.url().includes('connect')) || null;
     return Promise.resolve(!!frame);
   }, 'wait for iframe with login form', 10_000, 1000);
@@ -278,6 +288,7 @@ async function getAuthorizationHeader(page: Page) {
 }
 
 async function waitUntilElementFound(page: Page | Frame, elementSelector: string, onlyVisible = false, timeout = 10_000) {
+  // console.debug('waitUntilElementFound', { elementSelector, onlyVisible, timeout });
   await page.waitForSelector(elementSelector, { visible: onlyVisible, timeout });
 }
 
@@ -297,6 +308,11 @@ async function getXSiteId() {
           this.xSiteId = "09031987-273E-2311-906C-8AF85B17C8D9",
   */
   return Promise.resolve('09031987-273E-2311-906C-8AF85B17C8D9');
+}
+
+async function sleep(ms: number) {
+  console.debug('sleep', ms);
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class CalCredentials {
