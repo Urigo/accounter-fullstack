@@ -135,7 +135,7 @@ async function seed() {
         console.log(`✅ Created tax category with ID: ${taxCategoryId}`);
 
         await client.query(
-          `INSERT INTO accounter_schema.financial_accounts_tax_categories (account_id, tax_category_id, currency)
+          `INSERT INTO accounter_schema.financial_accounts_tax_categories (financial_account_id, tax_category_id, currency)
           VALUES ($1, $2, $3)`,
           [accountId, taxCategoryId, currency],
         );
