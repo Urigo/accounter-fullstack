@@ -341,12 +341,12 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     transaction.trnIntId,
     transaction.trnNumaretor,
     transaction.merchantName,
-    transaction.trnPurchaseDate,
+    formatDate(transaction.trnPurchaseDate),
     transaction.trnAmt,
     normalizeCurrencySymbol(transaction.trnCurrencySymbol),
     transaction.trnType,
     transaction.trnTypeCode,
-    transaction.debCrdDate,
+    formatDate(transaction.debCrdDate),
     transaction.amtBeforeConvAndIndex,
     normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
     transaction.merchantAddress,
@@ -398,10 +398,10 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
       //   trnIntId: transaction.trnIntId,
       //   debCrdDate: transaction.debCrdDate,
       // },
-      // query: {
-      //   text,
-      //   values: values.map((v, i) => `$${i + 1}: ${v}`),
-      // },
+      query: {
+        text,
+        values: values.map((v, i) => `$${i + 1}: ${v}`),
+      },
     });
   }
 }
@@ -423,9 +423,17 @@ function normalizeCurrencySymbol(currencySymbol: string): string {
     case 'GBP':
       return 'GBP';
     default:
-      // Default to ILS as shown in the migration file
       return 'ILS';
   }
+}
+
+function formatDate(dateString: string): string {
+  // Convert ISO date string to DD/MM/YYYY format for to_date() function
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function normalizeBeneficiaryDetailsData<Type extends AccountTypes>(
