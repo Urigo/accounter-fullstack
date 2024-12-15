@@ -87,7 +87,7 @@ async function seed() {
     }
 
     for (const account of accountsToCreate) {
-      await client.query(
+      const financialAccountResult = await client.query(
         `
         INSERT INTO accounter_schema.financial_accounts 
         (account_number, type, private_business, owner, bank_number, branch_number)
@@ -102,6 +102,40 @@ async function seed() {
           account.branch_number || null,
         ],
       );
+
+      const accountId = financialAccountResult.rows[0].id;
+
+      const currencies = process.env.SEED_CURRENCIES?.split(',') || [];
+
+      for (const currency of currencies) {
+        console.log(
+          `Creating tax category for account ${account.account_number} in ${currency}...`,
+        );
+
+        const financialEntityResult = await client.query(
+          `INSERT INTO accounter_schema.financial_entities (name, owner_id, type) VALUES ($1, $2, $3)`,
+          [`${account.account_number} - ${currency}`, adminEntityId, 'TAX_CATEGORY'],
+        );
+
+        const financialEntityId = financialEntityResult.rows[0].id;
+        console.log(`✅ Created financial entity with ID: ${financialEntityId}`);
+
+        const taxCategoryResult = await client.query(
+          `INSERT INTO accounter_schema.tax_categories (id) VALUES ($1)`,
+          [financialEntityId],
+        );
+
+        const taxCategoryId = taxCategoryResult.rows[0].id;
+        console.log(`✅ Created tax category with ID: ${taxCategoryId}`);
+
+        await client.query(
+          `INSERT INTO accounter_schema.financial_accounts_tax_categories (account_id, tax_category_id, currency) VALUES ($1, $2, $3)`,
+          [accountId, taxCategoryId, currency],
+        );
+        console.log(
+          `✅ Linked account ${accountId} with tax category ${taxCategoryId} for currency ${currency}`,
+        );
+      }
 
       console.log(`✅ Created financial account ${account.account_number}`);
     }
