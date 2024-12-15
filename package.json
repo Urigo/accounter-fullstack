@@ -47,7 +47,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "graphql": "16.9.0",
+    "graphql": "16.10.0",
     "graphql-scalars": "1.24.0"
   },
   "devDependencies": {
@@ -80,7 +80,7 @@
     "vitest": "2.1.8"
   },
   "resolutions": {
-    "graphql": "16.9.0"
+    "graphql": "16.10.0"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
