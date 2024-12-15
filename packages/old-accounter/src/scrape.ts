@@ -677,8 +677,8 @@ async function getVisaCalCreditCardData(
 
   // fetch for every month in the last 24 months
   const monthsToFetch = 24;
-  const start = subMonths(new Date(), monthsToFetch);
-  const end = addMonths(start, 1);
+  const end = new Date();
+  const start = subMonths(end, monthsToFetch);
   for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {
     await getCalCreditCardTransactionsAndSave(pool, newCalInstance, month, last4Digits);
   }
@@ -1347,10 +1347,10 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   console.log('after all');
 
   // close scraper instances
-  await newScraperInstance.close();
-  await secondScraperInstance.close();
-  await thirdScraperInstance.close();
-  await fourthScraperInstance.close();
+  // await newScraperInstance.close();
+  // await secondScraperInstance.close();
+  // await thirdScraperInstance.close();
+  // await fourthScraperInstance.close();
 
   // await compareHashavshevetToDB(pool),
   //   console.log('after compareHashavshevetToDB');
