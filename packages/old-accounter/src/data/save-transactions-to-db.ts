@@ -382,7 +382,15 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
       `Success in insert to CAL - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
     );
   } catch (error) {
-    console.error('Error in CAL insert:', {
+    if (
+      error instanceof Error &&
+      error.message.includes('duplicate key value violates unique constraint')
+    ) {
+      console.log('Duplicate key violation, skipping insert', { id: transaction.trnIntId });
+      return;
+    }
+
+    console.error('Error in Cal insert:', {
       error:
         error instanceof Error
           ? {
@@ -391,13 +399,6 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
               cause: error.cause,
             }
           : error,
-      // transaction: {
-      //   merchantName: transaction.merchantName,
-      //   trnAmt: transaction.trnAmt,
-      //   trnCurrencySymbol: transaction.trnCurrencySymbol,
-      //   trnIntId: transaction.trnIntId,
-      //   debCrdDate: transaction.debCrdDate,
-      // },
       query: {
         text,
         values: values.map((v, i) => `$${i + 1}: ${v}`),
