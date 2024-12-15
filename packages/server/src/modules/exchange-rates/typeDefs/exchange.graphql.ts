@@ -80,18 +80,6 @@ export default gql`
     cryptoExchangeRate: ConversionRate
   }
 
-  extend type WireTransaction {
-    debitExchangeRates: ExchangeRates
-    eventExchangeRates: ExchangeRates
-    cryptoExchangeRate: ConversionRate
-  }
-
-  extend type FeeTransaction {
-    debitExchangeRates: ExchangeRates
-    eventExchangeRates: ExchangeRates
-    cryptoExchangeRate: ConversionRate
-  }
-
   extend type ConversionTransaction {
     debitExchangeRates: ExchangeRates
     eventExchangeRates: ExchangeRates

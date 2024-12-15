@@ -110,40 +110,6 @@ export default gql`
     chargeId: UUID!
   }
 
-  " העברה "
-  type WireTransaction implements Transaction {
-    id: UUID!
-    referenceId: String!
-    referenceKey: String
-    eventDate: TimelessDate!
-    effectiveDate: TimelessDate!
-    direction: TransactionDirection!
-    amount: FinancialAmount!
-    sourceDescription: String!
-    balance: FinancialAmount!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    isFee: Boolean
-    chargeId: UUID!
-  }
-
-  " עמלה "
-  type FeeTransaction implements Transaction {
-    id: UUID!
-    referenceId: String!
-    referenceKey: String
-    eventDate: TimelessDate!
-    effectiveDate: TimelessDate!
-    direction: TransactionDirection!
-    amount: FinancialAmount!
-    sourceDescription: String!
-    balance: FinancialAmount!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    isFee: Boolean
-    chargeId: UUID!
-  }
-
   " המרה "
   type ConversionTransaction implements Transaction {
     id: UUID!

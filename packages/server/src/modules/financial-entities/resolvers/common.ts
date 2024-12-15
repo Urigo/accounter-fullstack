@@ -45,8 +45,6 @@ export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
 
 export const commonTransactionFields:
   | FinancialEntitiesModule.ConversionTransactionResolvers
-  | FinancialEntitiesModule.FeeTransactionResolvers
-  | FinancialEntitiesModule.WireTransactionResolvers
   | FinancialEntitiesModule.CommonTransactionResolvers = {
   counterparty: (documentRoot, _, { injector }) =>
     documentRoot.business_id

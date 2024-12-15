@@ -38,7 +38,6 @@ export default gql`
       input: InsertDepreciationRecordInput!
     ): InsertDepreciationRecordResult! @auth(role: ACCOUNTANT)
     deleteDepreciationRecord(depreciationRecordId: UUID!): Boolean! @auth(role: ACCOUNTANT)
-    deleteDepreciationRecordsByCharge(chargeId: UUID!): Boolean! @auth(role: ACCOUNTANT)
     updateDepreciationCategory(
       input: UpdateDepreciationCategoryInput!
     ): UpdateDepreciationCategoryResult! @auth(role: ACCOUNTANT)
