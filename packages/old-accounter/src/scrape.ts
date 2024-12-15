@@ -602,7 +602,6 @@ async function getCalCreditCardTransactionsAndSave(
 ) {
   console.log(`Getting from cal ${month.getMonth()}:${month.getFullYear()}`);
   const transactions = await newCardInstance.getMonthTransactions(last4Digits, month);
-  console.debug(JSON.stringify(transactions, null, 2));
   console.log(`got ${transactions.length} transactions`);
   console.log(`saving cal ${month.getMonth()}:${month.getFullYear()} - ${last4Digits}`);
   await saveCalTransactionsToDB(last4Digits, transactions, pool);
