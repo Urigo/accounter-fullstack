@@ -92,6 +92,7 @@ async function seed() {
         INSERT INTO accounter_schema.financial_accounts 
         (account_number, type, private_business, owner, bank_number, branch_number)
         VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `,
         [
           account.account_number,
@@ -113,7 +114,10 @@ async function seed() {
         );
 
         const financialEntityResult = await client.query(
-          `INSERT INTO accounter_schema.financial_entities (name, owner_id, type) VALUES ($1, $2, $3)`,
+          `INSERT INTO accounter_schema.financial_entities (name, owner_id, type)
+          VALUES ($1, $2, $3)
+          RETURNING id
+          `,
           [`${account.account_number} - ${currency}`, adminEntityId, 'TAX_CATEGORY'],
         );
 
@@ -121,7 +125,9 @@ async function seed() {
         console.log(`✅ Created financial entity with ID: ${financialEntityId}`);
 
         const taxCategoryResult = await client.query(
-          `INSERT INTO accounter_schema.tax_categories (id) VALUES ($1)`,
+          `INSERT INTO accounter_schema.tax_categories (id)
+          VALUES ($1)
+          RETURNING id`,
           [financialEntityId],
         );
 
@@ -129,7 +135,8 @@ async function seed() {
         console.log(`✅ Created tax category with ID: ${taxCategoryId}`);
 
         await client.query(
-          `INSERT INTO accounter_schema.financial_accounts_tax_categories (account_id, tax_category_id, currency) VALUES ($1, $2, $3)`,
+          `INSERT INTO accounter_schema.financial_accounts_tax_categories (account_id, tax_category_id, currency)
+          VALUES ($1, $2, $3)`,
           [accountId, taxCategoryId, currency],
         );
         console.log(
