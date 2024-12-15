@@ -118,7 +118,7 @@ async function seed() {
           VALUES ($1, $2, $3)
           RETURNING id
           `,
-          [`${account.account_number} - ${currency}`, adminEntityId, 'TAX_CATEGORY'],
+          [`${account.account_number} - ${currency}`, adminEntityId, 'tax_category'],
         );
 
         const financialEntityId = financialEntityResult.rows[0].id;
