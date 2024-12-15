@@ -1,7 +1,7 @@
 import { Frame, Page } from 'puppeteer';
 import { subYears } from 'date-fns';
 import { waitUntil } from '../helpers/waiting.js';
-import type { CalGetCardTransactionsDetailsResponse, CalTransaction } from './types/cal/get-card-transactions-details.js';
+import { calGetCardTransactionsDetailsResponseSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
@@ -184,7 +184,7 @@ async function fetchMonthCompletedTransactions(
   xSiteId: string,
   date: Date
 ): Promise<CalTransaction[]> {
-  const response = await fetchPostWithinPage<CalGetCardTransactionsDetailsResponse>(
+  const response = await fetchPostWithinPage(
     page,
     TRANSACTIONS_REQUEST_ENDPOINT,
     { 
@@ -199,14 +199,21 @@ async function fetchMonthCompletedTransactions(
     }
   );
 
-  if (response?.statusCode === 1) {
-    const bankAccounts = response.result?.bankAccounts || [];
+  const parsedResponse = calGetCardTransactionsDetailsResponseSchema.safeParse(response);
+  if (!parsedResponse.success) {
+    throw new Error('Failed to parse response');
+  }
+
+  const { statusCode, result, statusDescription } = parsedResponse.data;
+
+  if (statusCode === 1) {
+    const bankAccounts = result?.bankAccounts || [];
     const regularDebitDays = bankAccounts.flatMap((accounts) => accounts.debitDates);
     const immediateDebitDays = bankAccounts.flatMap((accounts) => accounts.immidiateDebits.debitDays);
     return [...regularDebitDays, ...immediateDebitDays].flatMap((debitDate) => debitDate.transactions);
   }
   
-  console.error(`Failed to fetch completed transactions: ${response?.statusDescription || 'Unknown error'}`);
+  console.error(`Failed to fetch completed transactions: ${statusDescription || 'Unknown error'}`);
   return [];
 }
 

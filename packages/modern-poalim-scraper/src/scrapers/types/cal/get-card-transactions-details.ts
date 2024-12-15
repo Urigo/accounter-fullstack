@@ -1,155 +1,158 @@
-export interface CalGetCardTransactionsDetailsResponse {
-  result: Result
-  statusDescription: string
-  statusCode: number
-  groupPid: string
-}
+import { z } from "zod"
 
-interface Result {
-  blockedCardInd: boolean
-  bankAccounts: BankAccount[]
-}
+const totalDebitSchema = z.object({
+  currencySymbol: z.string(),
+  amount: z.number()
+})
 
-interface BankAccount {
-  bankName: string
-  bankAccountNum: string
-  currentBankAccountInd: boolean
-  debitDates: DebitDate[]
-  immidiateDebits: ImmidiateDebits
-}
+const commentSchema = z.object({
+  key: z.string(),
+  value: z.string()
+})
 
-interface DebitDate {
-  date: string
-  fromPurchaseDate: string
-  toPurchaseDate: string
-  choiceHHKDebit: number
-  totalBasketAmount: number
-  isChoiceRepaiment: boolean
-  fixDebitAmount: number
-  totalDebits: TotalDebit[]
-  transactions: CalTransaction[]
-}
+const totalDebit2Schema = z.object({
+  currencySymbol: z.string(),
+  amount: z.number()
+})
 
-interface TotalDebit {
-  currencySymbol: string
-  amount: number
-}
+const totalDailyDebitSchema = z.object({
+  currencySymbol: z.string(),
+  amount: z.number()
+})
 
-export interface CalTransaction {
-  trnIntId: string
-  trnNumaretor: number
-  merchantName: string
-  trnPurchaseDate: string
-  trnAmt: number
-  trnCurrencySymbol: string
-  trnType: string
-  trnTypeCode: string
-  debCrdDate: string
-  amtBeforeConvAndIndex: number
-  debCrdCurrencySymbol: string
-  merchantAddress: string
-  merchantPhoneNo: string
-  branchCodeDesc: string
-  transCardPresentInd: boolean
-  curPaymentNum: number
-  numOfPayments: number
-  tokenInd: number
-  walletProviderCode: number
-  walletProviderDesc: string
-  tokenNumberPart4: string
-  cashAccountTrnAmt: number
-  comments: Comment[]
-  chargeExternalToCardComment: string
-  transTypeCommentDetails: string[]
-  refundInd: boolean
-  isImmediateCommentInd: boolean
-  isImmediateHHKInd: boolean
-  isMargarita: boolean
-  isSpreadPaymenstAbroad: boolean
-  trnExacWay: number
-  debitSpreadInd: boolean
-  onGoingTransactionsComment: string
-  earlyPaymentInd: boolean
-  merchantId: string
-  crdExtIdNumTypeCode: string
-  transSource: string
-  isAbroadTransaction: boolean
-}
+const comment2Schema = z.object({
+  key: z.string(),
+  value: z.string()
+})
 
-interface Comment {
-  key: string
-  value: string
-}
+const immediateCommentSchema = z.object({
+  comment: z.string()
+})
 
-interface ImmidiateDebits {
-  totalDebits: TotalDebit2[]
-  debitDays: DebitDay[]
-}
+export const calTransactionSchema = z.object({
+  trnIntId: z.string(),
+  trnNumaretor: z.number(),
+  merchantName: z.string(),
+  trnPurchaseDate: z.string(),
+  trnAmt: z.number(),
+  trnCurrencySymbol: z.string(),
+  trnType: z.string(),
+  trnTypeCode: z.string(),
+  debCrdDate: z.string(),
+  amtBeforeConvAndIndex: z.number(),
+  debCrdCurrencySymbol: z.string(),
+  merchantAddress: z.string(),
+  merchantPhoneNo: z.string(),
+  branchCodeDesc: z.string(),
+  transCardPresentInd: z.boolean(),
+  curPaymentNum: z.number(),
+  numOfPayments: z.number(),
+  tokenInd: z.number(),
+  walletProviderCode: z.number(),
+  walletProviderDesc: z.string(),
+  tokenNumberPart4: z.string(),
+  cashAccountTrnAmt: z.number(),
+  comments: z.array(commentSchema),
+  chargeExternalToCardComment: z.string(),
+  transTypeCommentDetails: z.array(z.string()),
+  refundInd: z.boolean(),
+  isImmediateCommentInd: z.boolean(),
+  isImmediateHHKInd: z.boolean(),
+  isMargarita: z.boolean(),
+  isSpreadPaymenstAbroad: z.boolean(),
+  trnExacWay: z.number(),
+  debitSpreadInd: z.boolean(),
+  onGoingTransactionsComment: z.string(),
+  earlyPaymentInd: z.boolean(),
+  merchantId: z.string(),
+  crdExtIdNumTypeCode: z.string(),
+  transSource: z.string(),
+  isAbroadTransaction: z.boolean()
+})
+export type CalTransaction = z.infer<typeof calTransactionSchema>
 
-interface TotalDebit2 {
-  currencySymbol: string
-  amount: number
-}
+const transaction2Schema = z.object({
+  trnIntId: z.string(),
+  trnNumaretor: z.number(),
+  merchantName: z.string(),
+  trnPurchaseDate: z.string(),
+  trnAmt: z.number(),
+  trnCurrencySymbol: z.string(),
+  trnType: z.string(),
+  trnTypeCode: z.string(),
+  debCrdDate: z.string(),
+  amtBeforeConvAndIndex: z.number(),
+  debCrdCurrencySymbol: z.string(),
+  merchantAddress: z.string(),
+  merchantPhoneNo: z.string(),
+  branchCodeDesc: z.string(),
+  transCardPresentInd: z.boolean(),
+  curPaymentNum: z.number(),
+  numOfPayments: z.number(),
+  tokenInd: z.number(),
+  walletProviderCode: z.number(),
+  walletProviderDesc: z.string(),
+  tokenNumberPart4: z.string(),
+  cashAccountTrnAmt: z.number(),
+  comments: z.array(comment2Schema),
+  chargeExternalToCardComment: z.string(),
+  transTypeCommentDetails: z.array(z.string()),
+  refundInd: z.boolean(),
+  isImmediateCommentInd: z.boolean(),
+  isImmediateHHKInd: z.boolean(),
+  immediateComments: z.array(immediateCommentSchema),
+  isMargarita: z.boolean(),
+  isSpreadPaymenstAbroad: z.boolean(),
+  trnExacWay: z.number(),
+  debitSpreadInd: z.boolean(),
+  onGoingTransactionsComment: z.string(),
+  earlyPaymentInd: z.boolean(),
+  merchantId: z.string(),
+  crdExtIdNumTypeCode: z.string(),
+  transSource: z.string(),
+  isAbroadTransaction: z.boolean()
+})
 
-interface DebitDay {
-  date: string
-  numOfTransactions: number
-  totalDailyDebits: TotalDailyDebit[]
-  transactions: Transaction2[]
-}
+const debitDateSchema = z.object({
+  date: z.string(),
+  fromPurchaseDate: z.string(),
+  toPurchaseDate: z.string(),
+  choiceHHKDebit: z.number(),
+  totalBasketAmount: z.number(),
+  isChoiceRepaiment: z.boolean(),
+  fixDebitAmount: z.number(),
+  totalDebits: z.array(totalDebitSchema),
+  transactions: z.array(calTransactionSchema)
+})
 
-interface TotalDailyDebit {
-  currencySymbol: string
-  amount: number
-}
+const debitDaySchema = z.object({
+  date: z.string(),
+  numOfTransactions: z.number(),
+  totalDailyDebits: z.array(totalDailyDebitSchema),
+  transactions: z.array(transaction2Schema)
+})
 
-interface Transaction2 {
-  trnIntId: string
-  trnNumaretor: number
-  merchantName: string
-  trnPurchaseDate: string
-  trnAmt: number
-  trnCurrencySymbol: string
-  trnType: string
-  trnTypeCode: string
-  debCrdDate: string
-  amtBeforeConvAndIndex: number
-  debCrdCurrencySymbol: string
-  merchantAddress: string
-  merchantPhoneNo: string
-  branchCodeDesc: string
-  transCardPresentInd: boolean
-  curPaymentNum: number
-  numOfPayments: number
-  tokenInd: number
-  walletProviderCode: number
-  walletProviderDesc: string
-  tokenNumberPart4: string
-  cashAccountTrnAmt: number
-  comments: Comment2[]
-  chargeExternalToCardComment: string
-  transTypeCommentDetails: string[]
-  refundInd: boolean
-  isImmediateCommentInd: boolean
-  isImmediateHHKInd: boolean
-  immediateComments: ImmediateComment[]
-  isMargarita: boolean
-  isSpreadPaymenstAbroad: boolean
-  trnExacWay: number
-  debitSpreadInd: boolean
-  onGoingTransactionsComment: string
-  earlyPaymentInd: boolean
-  merchantId: string
-  crdExtIdNumTypeCode: string
-  transSource: string
-  isAbroadTransaction: boolean
-}
+const immidiateDebitsSchema = z.object({
+  totalDebits: z.array(totalDebit2Schema),
+  debitDays: z.array(debitDaySchema)
+})
 
-interface Comment2 {
-  key: string
-  value: string
-}
+const bankAccountSchema = z.object({
+  bankName: z.string(),
+  bankAccountNum: z.string(),
+  currentBankAccountInd: z.boolean(),
+  debitDates: z.array(debitDateSchema),
+  immidiateDebits: immidiateDebitsSchema
+})
 
-interface ImmediateComment {
-  comment: string
-}
+const resultSchema = z.object({
+  blockedCardInd: z.boolean(),
+  bankAccounts: z.array(bankAccountSchema)
+})
+
+export const calGetCardTransactionsDetailsResponseSchema = z.object({
+  result: resultSchema,
+  statusDescription: z.string(),
+  statusCode: z.number(),
+  groupPid: z.string()
+})
