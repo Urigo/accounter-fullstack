@@ -343,12 +343,12 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     transaction.merchantName,
     transaction.trnPurchaseDate,
     transaction.trnAmt,
-    transaction.trnCurrencySymbol,
+    normalizeCurrencySymbol(transaction.trnCurrencySymbol),
     transaction.trnType,
     transaction.trnTypeCode,
     transaction.debCrdDate,
     transaction.amtBeforeConvAndIndex,
-    transaction.debCrdCurrencySymbol,
+    normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
     transaction.merchantAddress,
     transaction.merchantPhoneNo,
     transaction.branchCodeDesc,
@@ -403,6 +403,28 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
       //   values: values.map((v, i) => `$${i + 1}: ${v}`),
       // },
     });
+  }
+}
+
+function normalizeCurrencySymbol(currencySymbol: string): string {
+  switch (currencySymbol) {
+    case '$':
+    case 'USD':
+    case 'דולר':
+      return 'USD';
+    case '₪':
+    case 'NIS':
+    case 'ש"ח':
+      return 'ILS';
+    case '€':
+    case 'EUR':
+      return 'EUR';
+    case '£':
+    case 'GBP':
+      return 'GBP';
+    default:
+      // Default to ILS as shown in the migration file
+      return 'ILS';
   }
 }
 
