@@ -11,6 +11,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     " שולם על ידי העובד "
     payedByEmployee: Boolean
   }
@@ -24,6 +25,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     payedByEmployee: Boolean
 
     country: String
@@ -40,6 +42,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     payedByEmployee: Boolean
 
     path: [String!]
@@ -56,6 +59,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     payedByEmployee: Boolean
 
     " סוג ההוצאה "
@@ -71,6 +75,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     payedByEmployee: Boolean
 
     " הוצאה מוכרת "
@@ -88,6 +93,7 @@ export default gql`
     amount: FinancialAmount
     employee: FinancialEntity
     transactions: [Transaction!]
+    charges: [Charge!]
     payedByEmployee: Boolean
 
     " הוצאה מוכרת "

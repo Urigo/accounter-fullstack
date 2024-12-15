@@ -32,9 +32,8 @@ import { CurrencyInput } from '../../index.js';
       name
     }
     payedByEmployee
-    transactions {
+    charges {
       id
-      chargeId
     }
   }
 `;
@@ -87,9 +86,7 @@ export const CoreExpenseRow = ({
     }
   }, [error]);
 
-  const linkedChargeIds = Array.from(
-    new Set(businessTripExpense.transactions?.map(t => t.chargeId)),
-  );
+  const linkedChargeIds = Array.from(new Set(businessTripExpense.charges?.map(c => c.id)));
 
   return (
     <>
@@ -228,38 +225,28 @@ export const CoreExpenseRow = ({
             />
           ) : (
             <div className="flex flex-row gap-2 items-center">
-              {businessTripExpense.payedByEmployee ? (
-                <>
-                  <ThemeIcon variant="default" radius="lg">
-                    <Check />
-                  </ThemeIcon>
-                  <Text c={businessTripExpense.employee?.name ? undefined : 'red'}>
-                    {businessTripExpense.employee?.name ?? 'Missing'}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <ThemeIcon variant="default" radius="lg">
-                    <X />
-                  </ThemeIcon>
-                  <div className="flex flex-col gap-2">
-                    {linkedChargeIds?.length &&
-                      linkedChargeIds.map(id => (
-                        <NavLink
-                          key={id}
-                          label="To Charge"
-                          className="[&>*>.mantine-NavLink-label]:font-semibold"
-                          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-                            event.stopPropagation();
-                            window.open(`/charges/${id}`, '_blank', 'noreferrer');
-                          }}
-                        />
-                      ))}
-                  </div>
-                </>
+              {businessTripExpense.payedByEmployee && (
+                <Text c={businessTripExpense.employee?.name ? undefined : 'red'}>
+                  {businessTripExpense.employee?.name ?? 'Missing'}
+                </Text>
               )}
             </div>
           )}
+        </div>
+      </td>
+      <td>
+        <div className="flex flex-col gap-2">
+          {linkedChargeIds.map(id => (
+            <NavLink
+              key={id}
+              label="To Charge"
+              className="[&>*>.mantine-NavLink-label]:font-semibold"
+              onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+                event.stopPropagation();
+                window.open(`/charges/${id}`, '_blank', 'noreferrer');
+              }}
+            />
+          ))}
         </div>
       </td>
     </>
@@ -272,6 +259,7 @@ export const CoreExpenseHeader = (): ReactElement => {
       <th>Date</th>
       <th>Amount</th>
       <th>Payed By Attendee</th>
+      <th>Charges</th>
     </>
   );
 };
