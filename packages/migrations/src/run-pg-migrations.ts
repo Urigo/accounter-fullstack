@@ -62,6 +62,7 @@ import migration_2024_12_12T12_15_43_visa_cal from './actions/2024-12-12T12-15-4
 import migration_2024_12_12T12_48_58_add_countries_table from './actions/2024-12-12T12-48-58.add-countries-table.js';
 import migration_2024_12_12T19_03_37_enhance_business_trips_flights_path from './actions/2024-12-12T19-03-37.enhance-business-trips-flights-path.js';
 import migration_2024_12_15T13_09_27_enhance_business_trips_transactions_view from './actions/2024-12-15T13-09-27.enhance-business-trips-transactions-view.js';
+import migration_2024_12_16T09_31_25_amex_scraper_completion from './actions/2024-12-16T09-31-25.amex-scraper-completion.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -131,5 +132,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2024_12_12T12_48_58_add_countries_table,
       migration_2024_12_12T19_03_37_enhance_business_trips_flights_path,
       migration_2024_12_15T13_09_27_enhance_business_trips_transactions_view,
+      migration_2024_12_16T09_31_25_amex_scraper_completion,
     ],
   });
