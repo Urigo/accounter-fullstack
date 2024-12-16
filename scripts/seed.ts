@@ -3,6 +3,8 @@ import pg from 'pg';
 
 config();
 
+type FinancialAccountType = 'BANK_ACCOUNT' | 'CREDIT_CARD' | 'CRYPTO_WALLET';
+
 async function seed() {
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
@@ -53,34 +55,44 @@ async function seed() {
     // Create bank accounts and credit cards
     const accountsToCreate: {
       account_number: number;
-      type: 'bank' | 'creditcard' | 'crypto';
+      type: FinancialAccountType;
       private_business: string;
       owner: string;
       bank_number?: number;
       branch_number?: number;
-    }[] = [
-      {
-        account_number: 123_456,
-        type: 'bank',
+    }[] = [];
+
+    if (
+      process.env.SEED_BANK_ACCOUNT_NUMBER &&
+      process.env.SEED_BANK_NUMBER &&
+      process.env.SEED_BRANCH_NUMBER
+    ) {
+      accountsToCreate.push({
+        account_number: parseInt(process.env.SEED_BANK_ACCOUNT_NUMBER),
+        bank_number: parseInt(process.env.SEED_BANK_NUMBER),
+        branch_number: parseInt(process.env.SEED_BRANCH_NUMBER),
+        type: 'BANK_ACCOUNT',
         private_business: 'business',
         owner: adminEntityId,
-        bank_number: 12,
-        branch_number: 123,
-      },
-      {
-        account_number: 123_457,
-        type: 'creditcard',
+      });
+    }
+
+    if (process.env.SEED_CREDIT_CARD_LAST4DIGITS) {
+      accountsToCreate.push({
+        account_number: parseInt(process.env.SEED_CREDIT_CARD_LAST4DIGITS),
+        type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
-      },
-    ];
+      });
+    }
 
     for (const account of accountsToCreate) {
-      await client.query(
+      const financialAccountResult = await client.query(
         `
         INSERT INTO accounter_schema.financial_accounts 
         (account_number, type, private_business, owner, bank_number, branch_number)
         VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
       `,
         [
           account.account_number,
@@ -91,6 +103,46 @@ async function seed() {
           account.branch_number || null,
         ],
       );
+
+      const accountId = financialAccountResult.rows[0].id;
+
+      const currencies = process.env.SEED_CURRENCIES?.split(',') || [];
+
+      for (const currency of currencies) {
+        console.log(
+          `Creating tax category for account ${account.account_number} in ${currency}...`,
+        );
+
+        const financialEntityResult = await client.query(
+          `INSERT INTO accounter_schema.financial_entities (name, owner_id, type)
+          VALUES ($1, $2, $3)
+          RETURNING id
+          `,
+          [`${account.account_number} - ${currency}`, adminEntityId, 'tax_category'],
+        );
+
+        const financialEntityId = financialEntityResult.rows[0].id;
+        console.log(`✅ Created financial entity with ID: ${financialEntityId}`);
+
+        const taxCategoryResult = await client.query(
+          `INSERT INTO accounter_schema.tax_categories (id)
+          VALUES ($1)
+          RETURNING id`,
+          [financialEntityId],
+        );
+
+        const taxCategoryId = taxCategoryResult.rows[0].id;
+        console.log(`✅ Created tax category with ID: ${taxCategoryId}`);
+
+        await client.query(
+          `INSERT INTO accounter_schema.financial_accounts_tax_categories (financial_account_id, tax_category_id, currency)
+          VALUES ($1, $2, $3)`,
+          [accountId, taxCategoryId, currency],
+        );
+        console.log(
+          `✅ Linked account ${accountId} with tax category ${taxCategoryId} for currency ${currency}`,
+        );
+      }
 
       console.log(`✅ Created financial account ${account.account_number}`);
 

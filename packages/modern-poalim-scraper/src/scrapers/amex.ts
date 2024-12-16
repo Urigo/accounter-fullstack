@@ -72,52 +72,51 @@ const getMonthsList = (options: AmexOptions): Date[] => {
 };
 
 export async function amex(
-    page: Page,
-    credentials: AmexCredentials,
-    options: AmexOptions = new AmexOptions(),
-  ) {
-    const BASE_URL = 'https://he.americanexpress.co.il';
-    await page.goto(`${BASE_URL}/personalarea/Login`, {
-      waitUntil: 'networkidle2',
-      timeout: 0,
-    });
-  
-    await login(credentials, page);
-  
-    return {
-      getMonthDashboard: async (RequestedMonthDate: Date) => {
-        return getMonthDashboard(page, RequestedMonthDate, options);
-      },
-      getDashboards: async () => {
-        return Promise.all(
-          /* get monthly results */
-          getMonthsList(options).map(async monthDate => {
-            return getMonthDashboard(page, monthDate, options);
-          }),
-        );
-      },
-      getMonthTransactions: async (RequestedMonthDate: Date) => {
-        return getMonthTransactions(page, RequestedMonthDate, options);
-      },
-      getTransactions: async () => {
-        return Promise.all(
-          /* get monthly results */
-          getMonthsList(options).map(async monthDate => {
-            return getMonthTransactions(page, monthDate, options);
-          }),
-        );
-      },
-    };
-  }
-  
-  export class AmexOptions {
-    validateSchema: boolean = false;
-    duration?: number;
-  }
-  
-  export class AmexCredentials {
-    ID: string = '';
-    password: string = '';
-    card6Digits: string = '';
-  }
-  
+  page: Page,
+  credentials: AmexCredentials,
+  options: AmexOptions = new AmexOptions(),
+) {
+  const BASE_URL = 'https://he.americanexpress.co.il';
+  await page.goto(`${BASE_URL}/personalarea/Login`, {
+    waitUntil: 'networkidle2',
+    timeout: 0,
+  });
+
+  await login(credentials, page);
+
+  return {
+    getMonthDashboard: async (RequestedMonthDate: Date) => {
+      return getMonthDashboard(page, RequestedMonthDate, options);
+    },
+    getDashboards: async () => {
+      return Promise.all(
+        /* get monthly results */
+        getMonthsList(options).map(async monthDate => {
+          return getMonthDashboard(page, monthDate, options);
+        }),
+      );
+    },
+    getMonthTransactions: async (RequestedMonthDate: Date) => {
+      return getMonthTransactions(page, RequestedMonthDate, options);
+    },
+    getTransactions: async () => {
+      return Promise.all(
+        /* get monthly results */
+        getMonthsList(options).map(async monthDate => {
+          return getMonthTransactions(page, monthDate, options);
+        }),
+      );
+    },
+  };
+}
+
+export class AmexOptions {
+  validateSchema: boolean = false;
+  duration?: number;
+}
+
+export class AmexCredentials {
+  ID: string = '';
+  password: string = '';
+  card6Digits: string = '';
+}
