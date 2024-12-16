@@ -36,7 +36,7 @@ import { CoreExpenseRow } from './core-expense-row.js';
 interface Props {
   data: FragmentType<typeof BusinessTripReportAccommodationsRowFieldsFragmentDoc>;
   businessTripId: string;
-  onChange: () => void;
+  onChange?: () => void;
 }
 
 export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
@@ -153,42 +153,46 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
         )}
       </td>
       <td>
-        <Tooltip label="Edit">
-          <ActionIcon
-            loading={updatingInProcess}
-            variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
-              event.stopPropagation();
-              setIsEditMode(curr => !curr);
-            }}
-            size={30}
-          >
-            <Edit size={20} />
-          </ActionIcon>
-        </Tooltip>
-        {isEditMode && (
-          <Tooltip label="Confirm Changes">
-            <ActionIcon
-              type="submit"
-              form={`form ${accommodationExpense.id}`}
-              variant="default"
-              size={30}
-            >
-              <Check size={20} color="green" />
-            </ActionIcon>
-          </Tooltip>
+        {onChange && (
+          <>
+            <Tooltip label="Edit">
+              <ActionIcon
+                loading={updatingInProcess}
+                variant={isEditMode ? 'filled' : 'default'}
+                onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+                  event.stopPropagation();
+                  setIsEditMode(curr => !curr);
+                }}
+                size={30}
+              >
+                <Edit size={20} />
+              </ActionIcon>
+            </Tooltip>
+            {isEditMode && (
+              <Tooltip label="Confirm Changes">
+                <ActionIcon
+                  type="submit"
+                  form={`form ${accommodationExpense.id}`}
+                  variant="default"
+                  size={30}
+                >
+                  <Check size={20} color="green" />
+                </ActionIcon>
+              </Tooltip>
+            )}
+
+            <CategorizeIntoExistingExpense
+              businessTripExpenseId={accommodationExpense.id}
+              businessTripId={businessTripId}
+              onChange={onChange}
+            />
+
+            <DeleteBusinessTripExpense
+              businessTripExpenseId={accommodationExpense.id}
+              onDelete={onChange}
+            />
+          </>
         )}
-
-        <CategorizeIntoExistingExpense
-          businessTripExpenseId={accommodationExpense.id}
-          businessTripId={businessTripId}
-          onChange={onChange}
-        />
-
-        <DeleteBusinessTripExpense
-          businessTripExpenseId={accommodationExpense.id}
-          onDelete={onChange}
-        />
       </td>
     </tr>
   );

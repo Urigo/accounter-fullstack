@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { ActionIcon, Card, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   BusinessTripAttendeeUpdateInput,
@@ -11,7 +11,10 @@ import {
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
+import { ToggleExpansionButton } from '../../index.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
+import { AccommodationsTable } from './accommodations-table.js';
+import { FlightsTable } from './flights-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,6 +23,14 @@ import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
     name
     arrivalDate
     departureDate
+    flights {
+      id
+      ...BusinessTripReportFlightsTableFields
+    }
+    accommodations {
+      id
+      ...BusinessTripReportAccommodationsTableFields
+    }
   }
 `;
 
@@ -32,6 +43,7 @@ interface Props {
 export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactElement => {
   const attendee = getFragmentData(BusinessTripReportAttendeeRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isExtended, setIsExtended] = useState(false);
 
   const { control, handleSubmit } = useForm<BusinessTripAttendeeUpdateInput>({
     defaultValues: {
@@ -53,15 +65,52 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
   };
 
   return (
-    <tr key={attendee.id}>
-      <td>{attendee.name}</td>
-      <td>
-        {isEditMode ? (
-          <form id={`form ${attendee.id}`} onSubmit={handleSubmit(onSubmit)}>
+    <>
+      <tr key={attendee.id}>
+        <td>{attendee.name}</td>
+        <td>
+          {isEditMode ? (
+            <form id={`form ${attendee.id}`} onSubmit={handleSubmit(onSubmit)}>
+              <Controller
+                name="arrivalDate"
+                control={control}
+                defaultValue={attendee.arrivalDate}
+                rules={{
+                  pattern: {
+                    value: TIMELESS_DATE_REGEX,
+                    message: 'Date must be im format yyyy-mm-dd',
+                  },
+                }}
+                render={({ field, fieldState }): ReactElement => (
+                  <DatePickerInput
+                    {...field}
+                    onChange={(date?: Date | string | null): void => {
+                      const newDate = date
+                        ? typeof date === 'string'
+                          ? date
+                          : format(date, 'yyyy-MM-dd')
+                        : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    data-autofocus
+                    value={field.value ? new Date(field.value) : undefined}
+                    error={fieldState.error?.message}
+                    label="Arrival"
+                    popoverProps={{ withinPortal: true }}
+                  />
+                )}
+              />
+            </form>
+          ) : (
+            attendee.arrivalDate
+          )}
+        </td>
+        <td>
+          {isEditMode ? (
             <Controller
-              name="arrivalDate"
+              name="departureDate"
               control={control}
-              defaultValue={attendee.arrivalDate}
+              defaultValue={attendee.departureDate}
               rules={{
                 pattern: {
                   value: TIMELESS_DATE_REGEX,
@@ -79,81 +128,77 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                       : undefined;
                     if (newDate !== field.value) field.onChange(newDate);
                   }}
-                  data-autofocus
                   value={field.value ? new Date(field.value) : undefined}
                   error={fieldState.error?.message}
-                  label="Arrival"
+                  label="Departure"
                   popoverProps={{ withinPortal: true }}
                 />
               )}
             />
-          </form>
-        ) : (
-          attendee.arrivalDate
-        )}
-      </td>
-      <td>
-        {isEditMode ? (
-          <Controller
-            name="departureDate"
-            control={control}
-            defaultValue={attendee.departureDate}
-            rules={{
-              pattern: {
-                value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
-              },
-            }}
-            render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                error={fieldState.error?.message}
-                label="Departure"
-                popoverProps={{ withinPortal: true }}
-              />
-            )}
-          />
-        ) : (
-          attendee.departureDate
-        )}
-      </td>
-      <td className="flex items-center gap-2">
-        <Tooltip label="Edit">
-          <ActionIcon
-            loading={updatingInProcess}
-            variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
-              event.stopPropagation();
-              setIsEditMode(curr => !curr);
-            }}
-            size={30}
-          >
-            <Edit size={20} />
-          </ActionIcon>
-        </Tooltip>
-        {isEditMode && (
-          <Tooltip label="Confirm Changes">
-            <ActionIcon type="submit" form={`form ${attendee.id}`} variant="default" size={30}>
-              <Check size={20} color="green" />
+          ) : (
+            attendee.departureDate
+          )}
+        </td>
+        <td className="flex items-center gap-2">
+          <Tooltip label="Edit">
+            <ActionIcon
+              loading={updatingInProcess}
+              variant={isEditMode ? 'filled' : 'default'}
+              onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+                event.stopPropagation();
+                setIsEditMode(curr => !curr);
+              }}
+              size={30}
+            >
+              <Edit size={20} />
             </ActionIcon>
           </Tooltip>
-        )}
+          {isEditMode && (
+            <Tooltip label="Confirm Changes">
+              <ActionIcon type="submit" form={`form ${attendee.id}`} variant="default" size={30}>
+                <Check size={20} color="green" />
+              </ActionIcon>
+            </Tooltip>
+          )}
 
-        <DeleteAttendee
-          businessTripId={businessTripId}
-          attendeeId={attendee.id}
-          onDelete={onChange}
-        />
-      </td>
-    </tr>
+          <DeleteAttendee
+            businessTripId={businessTripId}
+            attendeeId={attendee.id}
+            onDelete={onChange}
+          />
+
+          <ToggleExpansionButton toggleExpansion={setIsExtended} isExpanded={isExtended} />
+        </td>
+      </tr>
+      {isExtended && (
+        <tr key={`${attendee.id}-expension`}>
+          <td colSpan={4}>
+            <Card shadow="sm" withBorder>
+              <div className="flex flex-col gap-2">
+                {attendee.flights && (
+                  <>
+                    <div>Flights:</div>
+                    <FlightsTable
+                      businessTripId={businessTripId}
+                      attendees={[]}
+                      expenses={attendee.flights}
+                    />
+                  </>
+                )}
+                {attendee.accommodations && (
+                  <>
+                    <div>Accommodations:</div>
+                    <AccommodationsTable
+                      businessTripId={businessTripId}
+                      expenses={attendee.accommodations}
+                    />
+                  </>
+                )}
+              </div>
+            </Card>
+          </td>
+        </tr>
+      )}
+    </>
   );
 };
