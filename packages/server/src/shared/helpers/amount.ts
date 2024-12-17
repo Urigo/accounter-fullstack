@@ -8,7 +8,17 @@ export const addCommasToStringifiedInt = (rawAmount: string | number): string =>
 };
 
 export const formatStringifyAmount = (rawAmount: number): string => {
-  const formattedParts = rawAmount.toFixed(2).split('.');
+  let precision = 2;
+  const absAmount = Math.abs(rawAmount);
+  if (absAmount < 0.05) {
+    for (let i = 1; i < 10; i++) {
+      if (absAmount > 10 ** -i) {
+        precision = i + 1;
+        break;
+      }
+    }
+  }
+  const formattedParts = rawAmount.toFixed(precision).split('.');
   // add commas
   formattedParts[0] = addCommasToStringifiedInt(formattedParts[0]);
   return formattedParts.join('.');

@@ -18,6 +18,7 @@ import { InsertMiscExpense } from '../index.js';
       }
       eventDate
       effectiveDate
+      exactEffectiveDate
       counterparty {
         id
       }
@@ -65,12 +66,13 @@ export const InsertMiscExpenseModal = ({
             onDone={onInsertDone}
             chargeId={chargeId}
             defaultValues={{
-              amount: transaction?.amount.raw,
+              amount: transaction?.amount.raw ? Math.abs(transaction?.amount.raw) : undefined,
               currency: transaction?.amount.currency,
               invoiceDate: transaction?.eventDate,
-              valueDate: transaction?.effectiveDate
-                ? new Date(transaction?.effectiveDate)
-                : undefined,
+              valueDate:
+                transaction?.exactEffectiveDate || transaction?.effectiveDate
+                  ? new Date(transaction?.exactEffectiveDate || transaction?.effectiveDate)
+                  : undefined,
               creditorId:
                 (transaction?.amount.raw ?? 0) > 0 ? transaction?.counterparty?.id : undefined,
               debtorId:

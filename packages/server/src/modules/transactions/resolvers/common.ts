@@ -4,14 +4,13 @@ import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
-export const commonTransactionFields:
-  | TransactionsModule.ConversionTransactionResolvers
-  | TransactionsModule.CommonTransactionResolvers = {
+export const commonTransactionFields: TransactionsModule.TransactionResolvers = {
   id: DbTransaction => DbTransaction.id,
   referenceId: DbTransaction => DbTransaction.source_id,
   referenceKey: DbTransaction => DbTransaction.source_reference,
   eventDate: DbTransaction => dateToTimelessDateString(DbTransaction.event_date),
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
+  exactEffectiveDate: DbTransaction => DbTransaction.debit_timestamp,
   direction: DbTransaction =>
     parseFloat(DbTransaction.amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,
   amount: DbTransaction => formatFinancialAmount(DbTransaction.amount, DbTransaction.currency),

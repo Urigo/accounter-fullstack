@@ -45,13 +45,27 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
   error,
   ...props
 }) {
+  let { precision } = props;
+  const value = Math.abs(typeof props.value === 'number' ? props.value : 0);
+  if (value && !precision) {
+    if (value > 0.1) {
+      precision = 2;
+    } else {
+      for (let i = 1; i < 6; i++) {
+        if (value > 10 ** -i) {
+          precision = i + 1;
+          break;
+        }
+      }
+    }
+  }
   return (
     <div className="w-full flex flex-row ">
       <NumberInput
         className="w-full"
         {...props}
         hideControls
-        precision={props.precision ?? 2}
+        precision={precision ?? 2}
         error={error || currencyError}
       />
       <Select
