@@ -125,8 +125,6 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     isExtendAllCurrencies ||
     transactions.some(item => item.foreignAmount?.currency === Currency.Gbp);
 
-  console.log(extendedTransactions);
-
   return (
     <div className="flex flex-row gap-5">
       {fetching ? (
