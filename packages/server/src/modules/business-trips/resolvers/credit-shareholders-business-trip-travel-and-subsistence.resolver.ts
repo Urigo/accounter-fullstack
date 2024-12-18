@@ -241,9 +241,8 @@ async function shareholdersPotentialAmountToDistributePromise(
       }
 
       if (!attendee.arrival || !attendee.departure) {
-        throw new Error(
-          `Shareholder ${shareholder.first_name} is missing arrival or departure date`,
-        );
+        console.log(`Shareholder ${shareholder.first_name} is missing arrival or departure date`);
+        return;
       }
 
       const taxVariables = await injector

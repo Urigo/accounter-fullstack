@@ -137,6 +137,9 @@ export class BusinessTripExpensesProvider {
   }
 
   public insertBusinessTripExpense(params: IInsertBusinessTripExpenseParams) {
+    if (params.businessTripId) {
+      this.invalidateByBusinessTripId(params.businessTripId);
+    }
     return insertBusinessTripExpense.run(params, this.dbProvider);
   }
 
@@ -261,6 +264,9 @@ export class BusinessTripExpensesProvider {
   }
 
   public deleteBusinessTripExpense(params: IDeleteBusinessTripExpenseParams) {
+    if (params.businessTripExpenseId) {
+      this.invalidateById(params.businessTripExpenseId);
+    }
     return deleteBusinessTripExpense.run(params, this.dbProvider);
   }
 
