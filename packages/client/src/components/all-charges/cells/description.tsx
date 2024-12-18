@@ -37,10 +37,15 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
     [isError, charge.missingInfoSuggestions?.description],
   );
   const { userDescription, id: chargeId } = charge;
-  const cellText = useMemo(
-    () => userDescription?.trim() ?? charge.missingInfoSuggestions?.description ?? 'Missing',
-    [userDescription, charge.missingInfoSuggestions?.description],
-  );
+  const cellText = useMemo(() => {
+    if (userDescription && userDescription?.trim() !== '') {
+      return userDescription;
+    }
+    if (charge.missingInfoSuggestions?.description) {
+      return charge.missingInfoSuggestions.description;
+    }
+    return 'Missing';
+  }, [userDescription, charge.missingInfoSuggestions?.description]);
 
   const { updateCharge, fetching } = useUpdateCharge();
 
