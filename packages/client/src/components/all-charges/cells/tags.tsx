@@ -49,24 +49,14 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<typeof originalTags>(originalTags ?? []);
 
-  const isError = useMemo(
-    () => validationData?.missingInfo?.includes(MissingChargeInfo.Tags),
-    [validationData?.missingInfo],
-  );
-  const hasAlternative = useMemo(
-    () => isError && !!missingInfoSuggestions?.tags?.length,
-    [isError, missingInfoSuggestions?.tags?.length],
-  );
+  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
+  const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
   useEffect(() => {
     if (tags.length === 0 && hasAlternative) {
       setTags(missingInfoSuggestions?.tags ?? []);
     }
   }, [tags.length, hasAlternative, missingInfoSuggestions?.tags]);
-
-  useEffect(() => {
-    setTags(originalTags ?? []);
-  }, [originalTags]);
 
   const updateTag = useCallback(
     (tags?: Array<{ id: string }>) => {
