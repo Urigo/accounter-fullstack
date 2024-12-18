@@ -1,5 +1,6 @@
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
+import { NewDocumentsList } from '../components/common/new-documnts-list.js';
 import {
   FetchIncomeDocumentsDocument,
   FetchIncomeDocumentsMutation,
@@ -11,6 +12,7 @@ import {
   mutation FetchIncomeDocuments($ownerId: UUID!) {
     fetchIncomeDocuments(ownerId: $ownerId) {
       id
+      ...NewFetchedDocumentFields
     }
   }
 `;
@@ -24,6 +26,8 @@ type UseFetchIncomeDocuments = {
   ) => Promise<FetchIncomeDocuments>;
 };
 
+const NOTIFICATION_ID = 'fetchIncomeDocuments';
+
 export const useFetchIncomeDocuments = (): UseFetchIncomeDocuments => {
   // TODO: add authentication
   // TODO: add local data update method after change
@@ -35,35 +39,65 @@ export const useFetchIncomeDocuments = (): UseFetchIncomeDocuments => {
     fetchIncomeDocuments: (
       variables: FetchIncomeDocumentsMutationVariables,
     ): Promise<FetchIncomeDocuments> =>
-      new Promise<FetchIncomeDocuments>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error fetching documents owned by [${variables.ownerId}]: ${res.error}`);
-            showNotification({
+      new Promise<FetchIncomeDocuments>((resolve, reject) => {
+        notifications.show({
+          id: NOTIFICATION_ID,
+          loading: true,
+          title: 'Fetching Documents',
+          message: 'Please wait...',
+          autoClose: false,
+          withCloseButton: true,
+        });
+
+        return mutate(variables)
+          .then(res => {
+            if (res.error) {
+              console.error(
+                `Error fetching documents owned by [${variables.ownerId}]: ${res.error}`,
+              );
+              notifications.update({
+                id: NOTIFICATION_ID,
+                title: 'Error!',
+                message: 'Oh no!, we have an error! 🤥',
+                color: 'red',
+                autoClose: 5000,
+              });
+              return reject(res.error.message);
+            }
+            if (!res.data) {
+              console.error(
+                `Error fetching documents owned by [${variables.ownerId}]: No data returned`,
+              );
+              notifications.update({
+                id: NOTIFICATION_ID,
+                title: 'Error!',
+                message: 'Oh no!, we have an error! 🤥',
+                color: 'red',
+                autoClose: 5000,
+              });
+              return reject('No data returned');
+            }
+            notifications.update({
+              id: NOTIFICATION_ID,
+              title: 'Fetch Success!',
+              autoClose: res.data.fetchIncomeDocuments.length > 0 ? false : 5000,
+              message:
+                res.data.fetchIncomeDocuments.length > 0
+                  ? NewDocumentsList({ data: res.data.fetchIncomeDocuments })
+                  : 'No new documents found',
+              withCloseButton: true,
+            });
+            return resolve(res.data.fetchIncomeDocuments);
+          })
+          .catch(() => {
+            notifications.update({
+              id: NOTIFICATION_ID,
               title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
+              color: 'red',
+              autoClose: 5000,
             });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error fetching documents owned by [${variables.ownerId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Update Success!',
-            message:
-              res.data.fetchIncomeDocuments.length > 0
-                ? 'New documents fetched! 🎉'
-                : 'No new documents found',
           });
-          return resolve(res.data.fetchIncomeDocuments);
-        }),
-      ),
+      }),
   };
 };
