@@ -1,5 +1,22 @@
 # @accounter/modern-poalim-scraper
 
+## 0.9.15
+
+### Patch Changes
+
+- [#1246](https://github.com/Urigo/accounter-fullstack/pull/1246)
+  [`f4a1c28`](https://github.com/Urigo/accounter-fullstack/commit/f4a1c28419d6960a5dcecd09592a59b4c6595cbe)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`inquirer@12.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.2.0)
+    (from `10.2.2`, in `dependencies`)
+
+- [#1519](https://github.com/Urigo/accounter-fullstack/pull/1519)
+  [`a60016c`](https://github.com/Urigo/accounter-fullstack/commit/a60016ce4fdff20715dc0b00340e343dd5493c1b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@23.11.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/23.11.0)
+    (from `23.10.4`, in `dependencies`)
+
 ## 0.9.14
 
 ### Patch Changes
