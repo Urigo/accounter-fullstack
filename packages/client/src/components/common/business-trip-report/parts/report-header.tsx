@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays, format, setHours } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
@@ -66,8 +66,12 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
       </Grid.Col>
       <Grid.Col xl={2} lg={3} md={6}>
         Total Days:
-        <Text fz="lg">{dates ? differenceInDays(dates.end, dates.start) + 1 : 'Missing'}</Text>
+        <Text fz="lg">{dates ? getDaysDiff(dates.start, dates.end) : 'Missing'}</Text>
       </Grid.Col>
     </Grid>
   );
 };
+
+function getDaysDiff(start: string, end: string): number {
+  return differenceInDays(setHours(new Date(end), 22), setHours(new Date(start), 6)) + 1;
+}
