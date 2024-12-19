@@ -335,7 +335,7 @@ export async function accommodationExpenseDataCollector(
   await Promise.all(
     Array.from(attendeesMap.entries()).map(
       async ([attendeeId, { nightsCount: totalNights, arrival }]) => {
-        if (!attendeesAccommodationMap.has(attendeeId)) {
+        if (totalNights && !attendeesAccommodationMap.has(attendeeId)) {
           unAccommodatedDays += totalNights + 1;
           return;
         }
@@ -746,13 +746,43 @@ async function attendeeAccommodationTaxableAmounts(
         prevAccommodatedNights,
       )
     : calculateMaxTaxableAttendeeAmount(accommodationNights, accommodationTaxVariables);
+  const minTaxableAmount = accommodationNights * accommodationTaxVariables.eightOrMoreNights * -1;
 
   const maxTaxableLocal = 0; // TODO: calculate
   const maxTaxableForeign = maxTaxableUsd;
   const unAccommodatedAttendeeDays =
     totalNights > accommodationNights ? totalNights - accommodationNights : 0;
 
-  const taxableAmount = Math.max(foreignAmount, maxTaxableUsd);
+  let taxableForeignAmount = foreignAmount;
+  if (prevAccommodatedNights + accommodationNights > 7) {
+    if (prevAccommodatedNights > 7) {
+      taxableForeignAmount = Math.max(
+        Math.min(minTaxableAmount, foreignAmount),
+        foreignAmount * 0.75,
+      );
+    } else {
+      const leftAccommodatedNightsUnderWeek = 7 - prevAccommodatedNights;
+      const dailyAmount = foreignAmount / accommodationNights;
+
+      // calculate leftAccommodatedNightsUnderWeek with full tax rate
+      const fullTaxableNightsAmount = leftAccommodatedNightsUnderWeek * dailyAmount;
+
+      // calculate rest of the days with lower tax rate
+      const overSevenNights = Math.max(0, accommodationNights - leftAccommodatedNightsUnderWeek);
+      const partialTaxableNightsAmount = overSevenNights * dailyAmount;
+
+      taxableForeignAmount =
+        fullTaxableNightsAmount +
+        Math.min(
+          Math.max(
+            overSevenNights * accommodationTaxVariables.eightOrMoreNights * -1,
+            partialTaxableNightsAmount,
+          ),
+          partialTaxableNightsAmount * 0.75,
+        );
+    }
+  }
+  const taxableAmount = Math.max(taxableForeignAmount, maxTaxableUsd);
   const taxablePortion = taxableAmount / foreignAmount;
 
   const taxableLocal = localAmount * taxablePortion;
