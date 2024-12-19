@@ -10,6 +10,8 @@ import {
   type BusinessTripSummaryRow,
 } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
+import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';
 import type {
   flight_class,
@@ -19,6 +21,7 @@ import type {
   IGetBusinessTripsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult,
+  IGetLastFlightByDateAndAttendeeIdResult,
 } from '../types.js';
 
 export type SummaryCategoryData = Partial<
@@ -30,6 +33,8 @@ export type SummaryCategoryData = Partial<
 export type SummaryData = Record<BusinessTripSummaryCategories, SummaryCategoryData>;
 export type AttendeeInfo = {
   name: string;
+  arrival: Date | null;
+  departure: Date | null;
   daysCount: number;
   nightsCount: number;
 };
@@ -275,21 +280,21 @@ export async function accommodationExpenseDataCollector(
         );
       }
 
-      const localAmountPerNight = localAmount / businessTripExpense.nights_count;
-      const foreignAmountPerNight = foreignAmount / businessTripExpense.nights_count;
-
       if (!Number.isInteger(businessTripExpense.nights_count)) {
         console.error(`Nights count must be an integer`);
         throw new BusinessTripError('Accommodation expenses: nights count must be an integer');
       }
 
+      const localAmountPerNight = localAmount / businessTripExpense.nights_count;
+      const foreignAmountPerNight = foreignAmount / businessTripExpense.nights_count;
+
       const attendeesStay = businessTripExpense.attendees_stay.filter(
         Boolean,
       ) as BusinessTripAttendeeStayInput[];
-      let attendeesStayNightsCount = 0;
+      let cumulativeExpenseAccommodationNights = 0;
 
-      attendeesStay.map(({ attendeeId, nightsCount = 0 }) => {
-        attendeesStayNightsCount += nightsCount;
+      attendeesStay.map(async ({ attendeeId, nightsCount = 0 }) => {
+        cumulativeExpenseAccommodationNights += nightsCount;
 
         if (!attendeesAccommodationMap.has(attendeeId)) {
           attendeesAccommodationMap.set(attendeeId, {
@@ -309,9 +314,9 @@ export async function accommodationExpenseDataCollector(
         });
       });
 
-      if (attendeesStayNightsCount !== businessTripExpense.nights_count) {
+      if (cumulativeExpenseAccommodationNights !== businessTripExpense.nights_count) {
         console.error(
-          `Attendees nights count (${attendeesStayNightsCount}) doesn't match total nights count (${businessTripExpense.nights_count}) for expense ID ${businessTripExpense.id}`,
+          `Attendees nights count (${cumulativeExpenseAccommodationNights}) doesn't match total nights count (${businessTripExpense.nights_count}) for expense ID ${businessTripExpense.id}`,
         );
         throw new BusinessTripError('Accommodation expenses: attendees nights count mismatch');
       }
@@ -327,49 +332,45 @@ export async function accommodationExpenseDataCollector(
   let unAccommodatedDays = 0;
 
   // set taxable amounts
-  for (const [attendeeId, { nightsCount: totalNights }] of Array.from(attendeesMap.entries())) {
-    if (!attendeesAccommodationMap.has(attendeeId)) {
-      unAccommodatedDays += totalNights + 1;
-      continue;
-    }
+  await Promise.all(
+    Array.from(attendeesMap.entries()).map(
+      async ([attendeeId, { nightsCount: totalNights, arrival }]) => {
+        if (totalNights && !attendeesAccommodationMap.has(attendeeId)) {
+          unAccommodatedDays += totalNights + 1;
+          return;
+        }
 
-    const {
-      nights: accommodationNights,
-      localAmount,
-      foreignAmount,
-    } = attendeesAccommodationMap.get(attendeeId)!;
+        const {
+          taxableLocal,
+          taxableForeign,
+          maxTaxableLocal,
+          maxTaxableForeign,
+          unAccommodatedAttendeeDays,
+        } = await attendeeAccommodationTaxableAmounts(
+          injector,
+          attendeeId,
+          totalNights,
+          arrival,
+          accommodationTaxVariables,
+          attendeesAccommodationMap.get(attendeeId)!,
+        );
 
-    if (accommodationNights > totalNights) {
-      console.error(
-        `Accommodated nights (${accommodationNights}) exceed total nights (${totalNights})`,
-      );
-      throw new BusinessTripError(
-        'Accommodation expenses: accommodated nights exceed total nights stay',
-      );
-    }
+        category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += maxTaxableLocal;
+        category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableForeign;
 
-    const maxTaxableUsd = calculateMaxTaxableAttendeeAmount(
-      accommodationNights,
-      accommodationTaxVariables,
-    );
+        unAccommodatedDays += unAccommodatedAttendeeDays;
 
-    category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += 0; // TODO: calculate
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableUsd;
-
-    if (totalNights > accommodationNights) {
-      unAccommodatedDays += totalNights - accommodationNights;
-    }
-
-    const taxableAmount = Math.max(foreignAmount, maxTaxableUsd);
-    const taxablePortion = taxableAmount / foreignAmount;
-
-    // update amounts
-    category[DEFAULT_LOCAL_CURRENCY]!.taxable += localAmount * taxablePortion;
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.taxable += taxableAmount;
-  }
+        // update amounts
+        category[DEFAULT_LOCAL_CURRENCY]!.taxable += taxableLocal;
+        category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.taxable += taxableForeign;
+      },
+    ),
+  );
 
   return unAccommodatedDays;
 }
+
+export async function employeeAccommodationDataByTrip() {}
 
 export async function otherExpensesDataCollector(
   injector: Injector,
@@ -602,6 +603,10 @@ function calculateMaxTaxableAttendeeAmount(
   totalAttendeeNights: number,
   { upToSevenNights, eightOrMoreNights }: AccommodationTaxVariables,
 ) {
+  if (totalAttendeeNights === 0) {
+    return 0;
+  }
+
   let maxTaxableUsd = 0;
 
   if (totalAttendeeNights <= 7) {
@@ -609,7 +614,7 @@ function calculateMaxTaxableAttendeeAmount(
     maxTaxableUsd += totalAttendeeNights * upToSevenNights;
   } else if (totalAttendeeNights > 90) {
     // over 90 days
-    maxTaxableUsd += 90 * eightOrMoreNights;
+    maxTaxableUsd += totalAttendeeNights * eightOrMoreNights;
   } else {
     // 8 to 90 days
     const remainingNights = totalAttendeeNights - 7;
@@ -621,14 +626,23 @@ function calculateMaxTaxableAttendeeAmount(
   return maxTaxableUsd;
 }
 
-export function getAttendeeAccommodationMaxTax(
+function calculateMaxTaxableAttendeeAmountWithPrevTrips(
   totalAttendeeNights: number,
-  destinationCode: string | null,
-  taxVariables: IGetAllTaxVariablesResult,
-): number {
-  const accommodationTaxVariables = getAccommodationTaxVariablesUSD(destinationCode, taxVariables);
-
-  return calculateMaxTaxableAttendeeAmount(totalAttendeeNights, accommodationTaxVariables);
+  accommodationTaxVariables: AccommodationTaxVariables,
+  prevAccommodatedNights: number,
+) {
+  if (prevAccommodatedNights + totalAttendeeNights > 90) {
+    return calculateMaxTaxableAttendeeAmount(
+      prevAccommodatedNights + totalAttendeeNights,
+      accommodationTaxVariables,
+    );
+  }
+  return (
+    calculateMaxTaxableAttendeeAmount(
+      prevAccommodatedNights + totalAttendeeNights,
+      accommodationTaxVariables,
+    ) - calculateMaxTaxableAttendeeAmount(prevAccommodatedNights, accommodationTaxVariables)
+  );
 }
 
 export function getAttendeeTravelAndSubsistenceMaxTax(
@@ -656,4 +670,160 @@ export function getAttendeeTravelAndSubsistenceMaxTax(
     -1;
 
   return maxTaxableUsd;
+}
+
+async function attendeeAccommodationTaxableAmounts(
+  injector: Injector,
+  attendeeId: string,
+  totalNights: number,
+  arrival: Date | null,
+  accommodationTaxVariables: AccommodationTaxVariables,
+  attendeeAccommodationData: { nights: number; localAmount: number; foreignAmount: number },
+) {
+  if (totalNights === 0) {
+    return {
+      taxableLocal: 0,
+      taxableForeign: 0,
+      maxTaxableLocal: 0,
+      maxTaxableForeign: 0,
+      unAccommodatedAttendeeDays: 0,
+    };
+  }
+
+  if (arrival === null) {
+    console.error(`Arrival date not found for attendee ID ${attendeeId}`);
+    throw new BusinessTripError('Accommodation expenses: arrival date not found');
+  }
+
+  // check for consecutive trips (less than 14 days between trips)
+  let attendeePreviousTrip: IGetLastFlightByDateAndAttendeeIdResult | undefined = undefined;
+  [attendeePreviousTrip] = await injector
+    .get(BusinessTripAttendeesProvider)
+    .getLastFlightByDateAndAttendeeId({
+      attendeeBusinessId: attendeeId,
+      date: arrival,
+    });
+  let prevAccommodatedNights = 0;
+  if (attendeePreviousTrip) {
+    const previousTripIds: string[] = [];
+    do {
+      previousTripIds.push(attendeePreviousTrip.business_trip_id);
+      if (attendeePreviousTrip?.arrival) {
+        [attendeePreviousTrip] = await injector
+          .get(BusinessTripAttendeesProvider)
+          .getLastFlightByDateAndAttendeeId({
+            attendeeBusinessId: attendeeId,
+            date: attendeePreviousTrip.arrival,
+          });
+      } else {
+        attendeePreviousTrip = undefined;
+      }
+    } while (attendeePreviousTrip);
+    prevAccommodatedNights = await getPreviousTripsAccommodatedNights(
+      injector,
+      attendeeId,
+      previousTripIds,
+    );
+  }
+
+  // validate attendee accommodation data
+  const { nights: accommodationNights, localAmount, foreignAmount } = attendeeAccommodationData;
+
+  if (accommodationNights > totalNights) {
+    console.error(
+      `Accommodated nights (${accommodationNights}) exceed total nights (${totalNights})`,
+    );
+    throw new BusinessTripError(
+      'Accommodation expenses: accommodated nights exceed total nights stay',
+    );
+  }
+
+  // calculate taxable amount
+  const maxTaxableUsd = prevAccommodatedNights
+    ? calculateMaxTaxableAttendeeAmountWithPrevTrips(
+        accommodationNights,
+        accommodationTaxVariables,
+        prevAccommodatedNights,
+      )
+    : calculateMaxTaxableAttendeeAmount(accommodationNights, accommodationTaxVariables);
+  const minTaxableAmount = accommodationNights * accommodationTaxVariables.eightOrMoreNights * -1;
+
+  const maxTaxableLocal = 0; // TODO: calculate
+  const maxTaxableForeign = maxTaxableUsd;
+  const unAccommodatedAttendeeDays =
+    totalNights > accommodationNights ? totalNights - accommodationNights : 0;
+
+  let taxableForeignAmount = foreignAmount;
+  if (prevAccommodatedNights + accommodationNights > 7) {
+    if (prevAccommodatedNights > 7) {
+      taxableForeignAmount = Math.max(
+        Math.min(minTaxableAmount, foreignAmount),
+        foreignAmount * 0.75,
+      );
+    } else {
+      const leftAccommodatedNightsUnderWeek = 7 - prevAccommodatedNights;
+      const dailyAmount = foreignAmount / accommodationNights;
+
+      // calculate leftAccommodatedNightsUnderWeek with full tax rate
+      const fullTaxableNightsAmount = leftAccommodatedNightsUnderWeek * dailyAmount;
+
+      // calculate rest of the days with lower tax rate
+      const overSevenNights = Math.max(0, accommodationNights - leftAccommodatedNightsUnderWeek);
+      const partialTaxableNightsAmount = overSevenNights * dailyAmount;
+
+      taxableForeignAmount =
+        fullTaxableNightsAmount +
+        Math.min(
+          Math.max(
+            overSevenNights * accommodationTaxVariables.eightOrMoreNights * -1,
+            partialTaxableNightsAmount,
+          ),
+          partialTaxableNightsAmount * 0.75,
+        );
+    }
+  }
+  const taxableAmount = Math.max(taxableForeignAmount, maxTaxableUsd);
+  const taxablePortion = taxableAmount / foreignAmount;
+
+  const taxableLocal = localAmount * taxablePortion;
+  const taxableForeign = taxableAmount;
+
+  return {
+    taxableLocal,
+    taxableForeign,
+    maxTaxableLocal,
+    maxTaxableForeign,
+    unAccommodatedAttendeeDays,
+  };
+}
+
+async function getPreviousTripsAccommodatedNights(
+  injector: Injector,
+  attendeeId: string,
+  previousTripIds: string[],
+): Promise<number> {
+  if (previousTripIds.length === 0) {
+    return 0;
+  }
+
+  const accommodationExpenses = await injector
+    .get(BusinessTripAccommodationsExpensesProvider)
+    .getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.loadMany(previousTripIds)
+    .then(
+      res =>
+        res
+          .filter(r => !(r instanceof Error))
+          .flat() as IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
+    );
+
+  let accommodatedNights = 0;
+  accommodationExpenses.map(expense => {
+    const attendeesStay = expense.attendees_stay.filter(Boolean) as BusinessTripAttendeeStayInput[];
+    attendeesStay.map(({ attendeeId: expenseAttendeeId, nightsCount }) => {
+      if (expenseAttendeeId === attendeeId) {
+        accommodatedNights += nightsCount;
+      }
+    });
+  });
+  return accommodatedNights;
 }

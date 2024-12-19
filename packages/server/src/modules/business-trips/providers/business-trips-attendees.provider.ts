@@ -4,11 +4,13 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
+  DateOrString,
   IAddBusinessTripAttendeesParams,
   IAddBusinessTripAttendeesQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsResult,
   IGetBusinessTripsByChargeIdsResult,
+  IGetLastFlightByDateAndAttendeeIdQuery,
   IRemoveBusinessTripAttendeesParams,
   IRemoveBusinessTripAttendeesQuery,
   IUpdateBusinessTripAttendeeParams,
@@ -23,7 +25,16 @@ const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendee
     ON bta.attendee_business_id = fe.id
   LEFT JOIN accounter_schema.businesses b
     ON bta.attendee_business_id = b.id
-  WHERE ($isBusinessTripIds = 0 OR bta.business_trip_id IN $$businessTripIds);`;
+  WHERE bta.business_trip_id IN $$businessTripIds;`;
+
+const getLastFlightByDateAndAttendeeId = sql<IGetLastFlightByDateAndAttendeeIdQuery>`
+  SELECT *
+  FROM accounter_schema.business_trips_attendees
+  WHERE attendee_business_id = $attendeeBusinessId
+    AND arrival < $date
+    AND departure <= $date AND departure >= $date - INTERVAL '14 DAY'
+  ORDER BY departure DESC
+      FETCH FIRST 1 ROWS ONLY;`;
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`
   INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure)
@@ -107,7 +118,6 @@ export class BusinessTripAttendeesProvider {
   private async batchBusinessTripsAttendeesByBusinessTripIds(businessTripIds: readonly string[]) {
     const businessTrips = await getBusinessTripsAttendeesByBusinessTripIds.run(
       {
-        isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
         businessTripIds,
       },
       this.dbProvider,
@@ -124,6 +134,13 @@ export class BusinessTripAttendeesProvider {
       cacheMap: this.cache,
     },
   );
+
+  public getLastFlightByDateAndAttendeeId(params: {
+    attendeeBusinessId: string;
+    date: DateOrString;
+  }) {
+    return getLastFlightByDateAndAttendeeId.run(params, this.dbProvider);
+  }
 
   public addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
     if (params.businessTripId) {
