@@ -255,7 +255,9 @@ async function shareholdersPotentialAmountToDistributePromise(
 
       const totalDays = differenceInDays(attendee.departure, attendee.arrival) + 1;
       const accommodatedNights = shareholdersAccommodatedNightsMap.get(id) ?? 0;
-      const unAccommodatedDays = accommodatedNights ? totalDays - accommodatedNights - 1 : 0;
+      const unAccommodatedDays = accommodatedNights
+        ? totalDays - accommodatedNights - 1
+        : totalDays;
 
       const maxTaxableAmount =
         getAttendeeTravelAndSubsistenceMaxTax(
