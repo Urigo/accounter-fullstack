@@ -101,6 +101,8 @@ export async function businessTripSummary(
       }
       attendeesMap.set(attendee.id, {
         name: attendee.name,
+        arrival,
+        departure,
         daysCount,
         nightsCount,
       });
