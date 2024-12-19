@@ -1,5 +1,46 @@
 # @accounter/client
 
+## 0.0.4
+
+### Patch Changes
+
+- [#1511](https://github.com/Urigo/accounter-fullstack/pull/1511)
+  [`6afccff`](https://github.com/Urigo/accounter-fullstack/commit/6afccfff0e669c7e57ba4b7faea13d5cb6995fec)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.4)
+    (from `2.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.1.4)
+    (from `2.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.4)
+    (from `1.2.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.1.6)
+    (from `1.1.5`, in `dependencies`)
+
+- [#1514](https://github.com/Urigo/accounter-fullstack/pull/1514)
+  [`b957fc9`](https://github.com/Urigo/accounter-fullstack/commit/b957fc92e7725eab8a19a5099dd1c6c63e6e6bea)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.2.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.2.1) (from `6.2.0`,
+    in `dependencies`)
+
+- [#1518](https://github.com/Urigo/accounter-fullstack/pull/1518)
+  [`fe155e1`](https://github.com/Urigo/accounter-fullstack/commit/fe155e1fddde622791f7338a95a5a5fef2c28bbb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.62.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.8)
+    (from `5.62.7`, in `dependencies`)
+  - Updated dependency [`next@15.1.1` ↗︎](https://www.npmjs.com/package/next/v/15.1.1) (from
+    `15.1.0`, in `dependencies`)
+
 ## 0.0.3
 
 ### Patch Changes
