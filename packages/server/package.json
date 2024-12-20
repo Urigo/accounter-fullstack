@@ -33,7 +33,7 @@
     "dataloader": "2.2.3",
     "date-fns": "4.1.0",
     "dotenv": "16.4.7",
-    "dotenv-cli": "7.4.4",
+    "dotenv-cli": "8.0.0",
     "graphql": "16.10.0",
     "graphql-modules": "2.4.0",
     "graphql-yoga": "5.10.6",
