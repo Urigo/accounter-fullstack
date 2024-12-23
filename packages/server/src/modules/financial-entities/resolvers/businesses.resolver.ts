@@ -278,9 +278,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       }
     },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
-      const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
+      const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
         ownerIDs: [DEFAULT_FINANCIAL_ENTITY_ID, '1bd4bd60-50df-4a1a-b31b-c20457e8cd2b'],
       });
+      const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
+      const [transactions, businesses] = await Promise.all([
+        transactionsPromise,
+        businessesPromise,
+      ]);
 
       const businessIdsPerDescription = new Map<string, Set<string>>();
       transactions.map(transaction => {
@@ -294,6 +299,23 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         if (transaction.business_id) {
           businessIdsPerDescription.get(description)?.add(transaction.business_id);
         }
+      });
+      businesses.map(business => {
+        if (
+          !business.suggestion_data ||
+          typeof business.suggestion_data !== 'object' ||
+          !('phrases' in business.suggestion_data)
+        ) {
+          return;
+        }
+        const phrases = business.suggestion_data.phrases as string[];
+        phrases.map(phrase => {
+          const description = phrase.toLowerCase();
+          if (!businessIdsPerDescription.has(description)) {
+            businessIdsPerDescription.set(description, new Set());
+          }
+          businessIdsPerDescription.get(description)?.add(business.id);
+        });
       });
 
       const descriptionBusinessPairs: [string, string][] = [];
@@ -314,7 +336,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         nonMatchesDescriptions.push(description);
       });
 
-      console.log('Multiple matches descriptions:', multipleMatchesDescriptions);
+      console.log(
+        'Multiple matches descriptions:',
+        multipleMatchesDescriptions
+          .map(([description, businessIDs]) => `\n  "${description}": ${businessIDs.join(', ')}`)
+          .join(''),
+      );
 
       const uniqueDescriptions = Array.from(new Set<string>(nonMatchesDescriptions)).sort();
 
