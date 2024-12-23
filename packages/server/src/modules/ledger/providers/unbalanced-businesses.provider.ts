@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
+  IDeleteChargeUnbalancedBusinessesByBusinessIdQuery,
   IDeleteChargeUnbalancedBusinessesByChargeIdParams,
   IDeleteChargeUnbalancedBusinessesByChargeIdQuery,
   IDeleteChargeUnbalancedBusinessesParams,
@@ -30,6 +31,10 @@ const deleteChargeUnbalancedBusinesses = sql<IDeleteChargeUnbalancedBusinessesQu
     DELETE FROM accounter_schema.charge_unbalanced_ledger_businesses
     WHERE charge_id = $chargeId
         AND business_id IN $$businessIds;`;
+
+const deleteChargeUnbalancedBusinessesByBusinessId = sql<IDeleteChargeUnbalancedBusinessesByBusinessIdQuery>`
+    DELETE FROM accounter_schema.charge_unbalanced_ledger_businesses
+    WHERE business_id = $businessId;`;
 
 const deleteChargeUnbalancedBusinessesByChargeId = sql<IDeleteChargeUnbalancedBusinessesByChargeIdQuery>`
     DELETE FROM accounter_schema.charge_unbalanced_ledger_businesses
@@ -98,6 +103,10 @@ export class UnbalancedBusinessesProvider {
       this.invalidateByChargeId(params.chargeId);
     }
     return deleteChargeUnbalancedBusinessesByChargeId.run(params, this.dbProvider);
+  }
+
+  public deleteChargeUnbalancedBusinessesByBusinessId(businessId: string) {
+    return deleteChargeUnbalancedBusinessesByBusinessId.run({ businessId }, this.dbProvider);
   }
 
   public updateChargeUnbalancedBusiness(params: IUpdateChargeUnbalancedBusinessParams) {

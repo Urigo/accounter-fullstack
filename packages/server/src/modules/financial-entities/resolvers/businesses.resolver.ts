@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DEFAULT_FINANCIAL_ENTITY_ID, UUID_REGEX } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
+import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -9,22 +11,14 @@ import { FinancialEntitiesProvider } from '../providers/financial-entities.provi
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
-  IInsertBusinessParams,
+  IGetBusinessesByIdsResult,
+  IInsertBusinessesParams,
   IInsertBusinessTaxCategoryResult,
   IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
   Json,
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
-
-type RequireAtLeastOne<T> = {
-  [K in keyof T]-?: Required<Pick<T, K>>;
-}[keyof T];
-
-type Tag = RequireAtLeastOne<{
-  name: string;
-  id: string;
-}>;
 
 export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Pick<Resolvers, 'Business' | 'UpdateBusinessResponse'> = {
@@ -84,39 +78,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             message: `Business ID="${businessId}" not found`,
           };
         }
-        if (
-          currentBusiness.suggestion_data &&
-          typeof currentBusiness.suggestion_data === 'object'
-        ) {
-          const tags = fields.suggestions.tags
-            ? fields.suggestions.tags.map(tag => tag.id)
-            : 'tags' in currentBusiness.suggestion_data
-              ? (currentBusiness.suggestion_data.tags as Tag[]).map(tag =>
-                  'id' in tag ? tag.id : tag.name,
-                )
-              : undefined;
-          const phrases =
-            fields.suggestions.phrases ??
-            ('phrases' in currentBusiness.suggestion_data
-              ? (currentBusiness.suggestion_data.phrases as string[])
-              : undefined);
-          const description =
-            fields.suggestions.description ??
-            ('description' in currentBusiness.suggestion_data
-              ? (currentBusiness.suggestion_data.description as string)
-              : undefined);
-          suggestionData = {
-            tags,
-            phrases,
-            description,
-          } as unknown as Json;
-        } else {
-          suggestionData = {
-            tags: fields.suggestions.tags?.map(tag => tag.id),
-            phrases: fields.suggestions.phrases?.map(phrase => phrase),
-            description: fields.suggestions.description ?? undefined,
-          } as Json;
-        }
+        suggestionData = updateSuggestions(fields.suggestions, currentBusiness.suggestion_data);
       }
       const adjustedFields: IUpdateBusinessParams = {
         address: fields.address,
@@ -127,7 +89,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         phoneNumber: fields.phoneNumber,
         website: fields.website,
         optionalVat: fields.optionalVAT,
-        businessId,
         suggestionData,
       };
       try {
@@ -144,7 +105,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         ) {
           await injector
             .get(BusinessesProvider)
-            .updateBusiness(adjustedFields)
+            .updateBusiness({ ...adjustedFields, businessId })
             .catch((e: Error) => {
               console.error(e);
               throw new Error(`Update core business fields error`);
@@ -207,13 +168,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           };
         }
 
-        const suggestions: IInsertBusinessParams['suggestions'] = fields.suggestions
-          ? ({
-              tags: fields.suggestions.tags?.map(tag => tag.id),
-              phrases: fields.suggestions.phrases?.map(phrase => phrase),
-              description: fields.suggestions.description ?? undefined,
-            } as Json)
-          : undefined;
+        const suggestions: IInsertBusinessesParams['businesses'][number]['suggestions'] =
+          fields.suggestions
+            ? ({
+                tags: fields.suggestions.tags?.map(tag => tag.id),
+                phrases: fields.suggestions.phrases?.map(phrase => phrase),
+                description: fields.suggestions.description ?? undefined,
+              } as Json)
+            : undefined;
 
         const insertBusinessPromise = injector.get(BusinessesProvider).insertBusiness({
           id: financialEntity.id,
@@ -259,6 +221,175 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           message: `Failed to create business`,
         };
       }
+    },
+    mergeBusinesses: async (_, { targetBusinessId, businessIdsToMerge }, { injector }) => {
+      try {
+        const [targetBusiness, ...businessesToMerge] = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.loadMany([targetBusinessId, ...businessIdsToMerge]);
+        if (!targetBusiness || targetBusiness instanceof Error) {
+          throw new GraphQLError(`Target business not found`);
+        }
+
+        const mergeBusinessPromises = businessIdsToMerge.map(businessIdToMerge =>
+          injector
+            .get(FinancialEntitiesProvider)
+            .replaceFinancialEntity(targetBusinessId, businessIdToMerge, true),
+        );
+        await Promise.all(mergeBusinessPromises);
+
+        // handle suggestions
+        let suggestionData = targetBusiness.suggestion_data;
+        for (const businessToMerge of businessesToMerge) {
+          if (!businessToMerge || businessToMerge instanceof Error) {
+            continue;
+          }
+          if (
+            businessToMerge.suggestion_data &&
+            typeof businessToMerge.suggestion_data === 'object' &&
+            'phrases' in businessToMerge.suggestion_data
+          ) {
+            suggestionData = updateSuggestions(
+              { phrases: businessToMerge.suggestion_data['phrases'] as string[] },
+              suggestionData,
+              true,
+            );
+          }
+        }
+        await injector.get(BusinessesProvider).updateBusiness({
+          businessId: targetBusinessId,
+          suggestionData,
+        });
+
+        // refetch updated target business
+        const updatedBusiness = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(targetBusinessId);
+        if (!updatedBusiness || updatedBusiness instanceof Error) {
+          throw new GraphQLError(`Target business not found`);
+        }
+        return updatedBusiness;
+      } catch (e) {
+        console.error(e);
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new GraphQLError(`Failed to merge businesses`);
+      }
+    },
+    batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
+      const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
+        ownerIDs: [DEFAULT_FINANCIAL_ENTITY_ID, '1bd4bd60-50df-4a1a-b31b-c20457e8cd2b'],
+      });
+
+      const businessIdsPerDescription = new Map<string, Set<string>>();
+      transactions.map(transaction => {
+        if (!transaction.source_description) {
+          return;
+        }
+        const description = transaction.source_description.toLowerCase();
+        if (!businessIdsPerDescription.has(description)) {
+          businessIdsPerDescription.set(description, new Set());
+        }
+        if (transaction.business_id) {
+          businessIdsPerDescription.get(description)?.add(transaction.business_id);
+        }
+      });
+
+      const descriptionBusinessPairs: [string, string][] = [];
+      const multipleMatchesDescriptions: [string, string[]][] = [];
+      const nonMatchesDescriptions: string[] = [];
+
+      Array.from(businessIdsPerDescription.entries()).map(async ([description, businessIds]) => {
+        if (businessIds.size === 1) {
+          descriptionBusinessPairs.push([description, businessIds.values().next().value!]);
+          return;
+        }
+
+        if (businessIds.size > 1) {
+          multipleMatchesDescriptions.push([description, Array.from(businessIds.values())]);
+          return;
+        }
+
+        nonMatchesDescriptions.push(description);
+      });
+
+      const uniqueDescriptions = Array.from(new Set<string>(nonMatchesDescriptions)).sort();
+
+      const businessTransactions = new Map<string, string[]>();
+
+      transactions.map(t => {
+        if (!t.business_id && t.source_description) {
+          const businessId = descriptionBusinessPairs.find(
+            pair => pair[0] === t.source_description,
+          );
+          if (businessId) {
+            if (!businessTransactions.has(businessId[1])) {
+              businessTransactions.set(businessId[1], []);
+            }
+            businessTransactions.get(businessId[1])?.push(t.id);
+          }
+        }
+      });
+
+      Array.from(businessTransactions.entries())
+        .map(([businessId, transactionIds]) =>
+          transactionIds.map(transactionId =>
+            injector.get(TransactionsProvider).updateTransaction({
+              businessId,
+              transactionId,
+            }),
+          ),
+        )
+        .flat();
+
+      const newBusinessesIds = await Promise.all(
+        uniqueDescriptions.map(async description => {
+          const financialEntity = await injector
+            .get(FinancialEntitiesProvider)
+            .insertFinancialEntitiesLoader.load({
+              ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+              name: description,
+              type: 'business',
+              sortCode: null,
+            })
+            .catch((e: Error) => {
+              console.error(e);
+              return null;
+            });
+
+          if (!financialEntity) {
+            throw new Error(
+              `Failed to create core financial entity for description "${description}"`,
+            );
+          }
+
+          const business = await injector.get(BusinessesProvider).insertBusinessesLoader.load({
+            id: financialEntity.id,
+            hebrewName: description,
+            suggestions: {
+              phrases: [description],
+            },
+            address: undefined,
+            email: undefined,
+            website: undefined,
+            phoneNumber: undefined,
+            governmentId: undefined,
+            exemptDealer: false,
+            optionalVat: false,
+          });
+
+          if (!business) {
+            throw new Error(`Failed to create business for description "${description}"`);
+          }
+
+          return business.id;
+        }),
+      );
+
+      return injector
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.loadMany(newBusinessesIds) as Promise<IGetBusinessesByIdsResult[]>;
     },
   },
   Business: {

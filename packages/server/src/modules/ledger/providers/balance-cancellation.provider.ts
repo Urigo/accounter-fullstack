@@ -3,12 +3,19 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
-import type { IGetBalanceCancellationByChargesIdsQuery } from '../types.js';
+import type {
+  IDeleteBalanceCancellationByBusinessIdQuery,
+  IGetBalanceCancellationByChargesIdsQuery,
+} from '../types.js';
 
 const getBalanceCancellationByChargesIds = sql<IGetBalanceCancellationByChargesIdsQuery>`
     SELECT *
     FROM accounter_schema.charge_balance_cancellation
     WHERE charge_id IN $$chargeIds;`;
+
+const deleteBalanceCancellationByBusinessId = sql<IDeleteBalanceCancellationByBusinessIdQuery>`
+    DELETE FROM accounter_schema.charge_balance_cancellation
+    WHERE business_id = $businessId;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -38,6 +45,10 @@ export class BalanceCancellationProvider {
       cacheMap: this.cache,
     },
   );
+
+  public deleteBalanceCancellationByBusinessId(businessId: string) {
+    return deleteBalanceCancellationByBusinessId.run({ businessId }, this.dbProvider);
+  }
 
   public clearCache() {
     this.cache.clear();

@@ -5,4 +5,7 @@ export type {
   IGetBalanceCancellationByChargesIdsParams,
   IGetBalanceCancellationByChargesIdsResult,
   IGetBalanceCancellationByChargesIdsQuery,
+  IDeleteBalanceCancellationByBusinessIdParams,
+  IDeleteBalanceCancellationByBusinessIdResult,
+  IDeleteBalanceCancellationByBusinessIdQuery,
 } from './__generated__/balance-cancellation.types.js';

@@ -18,6 +18,9 @@ export type {
   IGetLastFlightByDateAndAttendeeIdParams,
   IGetLastFlightByDateAndAttendeeIdResult,
   IGetLastFlightByDateAndAttendeeIdQuery,
+  IGetBusinessTripsByAttendeeIdParams,
+  IGetBusinessTripsByAttendeeIdResult,
+  IGetBusinessTripsByAttendeeIdQuery,
 } from './__generated__/business-trips-attendees.types.js';
 export * from './__generated__/business-trips-tax-variables.types.js';
 export type {

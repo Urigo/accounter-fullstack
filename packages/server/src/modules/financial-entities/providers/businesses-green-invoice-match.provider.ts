@@ -50,6 +50,11 @@ const updateBusinessMatch = sql<IUpdateBusinessMatchQuery>`
     $emails,
     emails,
     NULL
+  ),
+  business_id = COALESCE(
+    $newBusinessId,
+    business_id,
+    NULL
   )
   WHERE
     business_id = $businessId
@@ -142,9 +147,9 @@ export class BusinessesGreenInvoiceMatcherProvider {
     return updateBusinessMatch.run(params, this.dbProvider);
   }
 
-  public async deleteBusinessMatch(params: IDeleteBusinessMatchParams) {
+  public async deleteBusinessMatch(businessId: string) {
     this.clearCache();
-    return deleteBusinessMatch.run(params, this.dbProvider);
+    return deleteBusinessMatch.run({ businessId }, this.dbProvider);
   }
 
   public async insertBusinessMatch(params: IInsertBusinessMatchParams) {

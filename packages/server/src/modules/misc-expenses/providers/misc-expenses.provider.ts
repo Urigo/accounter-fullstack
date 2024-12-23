@@ -8,7 +8,8 @@ import type {
   IDeleteExpenseQuery,
   IGetExpensesByChargeIdsQuery,
   IGetExpensesByChargeIdsResult,
-  IGetExpensesByIdQuery,
+  IGetExpensesByFinancialEntityIdsQuery,
+  IGetExpensesByIdsQuery,
   IInsertExpenseParams,
   IInsertExpenseQuery,
   IUpdateExpenseParams,
@@ -20,10 +21,15 @@ const getExpensesByChargeIds = sql<IGetExpensesByChargeIdsQuery>`
   FROM accounter_schema.misc_expenses
   WHERE charge_id IN $$chargeIds;`;
 
-const getExpensesById = sql<IGetExpensesByIdQuery>`
+const getExpensesByIds = sql<IGetExpensesByIdsQuery>`
   SELECT *
   FROM accounter_schema.misc_expenses
-  WHERE id = $id;`;
+  WHERE id = $$ids;`;
+
+const getExpensesByFinancialEntityIds = sql<IGetExpensesByFinancialEntityIdsQuery>`
+SELECT *
+FROM accounter_schema.misc_expenses
+WHERE creditor_id IN $$financialEntityIds OR debtor_id IN $$financialEntityIds;`;
 
 const updateExpense = sql<IUpdateExpenseQuery>`
   UPDATE accounter_schema.misc_expenses
@@ -106,9 +112,51 @@ export class MiscExpensesProvider {
     },
   );
 
+  private async batchExpensesByFinancialEntityIds(financialEntityIds: readonly string[]) {
+    const expenses = await getExpensesByFinancialEntityIds.run(
+      { financialEntityIds },
+      this.dbProvider,
+    );
+    const expensesByFinancialEntityId = new Map<string, IGetExpensesByChargeIdsResult[]>();
+    expenses.map(expense => {
+      if (expensesByFinancialEntityId.has(expense.creditor_id)) {
+        expensesByFinancialEntityId.get(expense.creditor_id)?.push(expense);
+      } else {
+        expensesByFinancialEntityId.set(expense.creditor_id, [expense]);
+      }
+      if (expensesByFinancialEntityId.has(expense.debtor_id)) {
+        expensesByFinancialEntityId.get(expense.debtor_id)?.push(expense);
+      } else {
+        expensesByFinancialEntityId.set(expense.debtor_id, [expense]);
+      }
+    });
+    return financialEntityIds.map(id => expensesByFinancialEntityId.get(id) ?? []);
+  }
+
+  public getExpensesByFinancialEntityIdLoader = new DataLoader(
+    (financialEntityIds: readonly string[]) =>
+      this.batchExpensesByFinancialEntityIds(financialEntityIds),
+    {
+      cacheKeyFn: key => `misc-expenses-financial-entity-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  private async batchExpensesByIds(ids: readonly string[]) {
+    const expenses = await getExpensesByIds.run({ ids }, this.dbProvider);
+    return ids.map(id => expenses.find(expense => expense.id === id));
+  }
+
+  public getExpensesByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchExpensesByIds(ids),
+    {
+      cacheKeyFn: key => `misc-expenses-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
   public updateExpense(params: IUpdateExpenseParams) {
     if (params.miscExpenseId) this.invalidateById(params.miscExpenseId);
-    if (params.chargeId) this.invalidateByChargeId(params.chargeId);
     return updateExpense.run(params, this.dbProvider);
   }
 
@@ -123,12 +171,25 @@ export class MiscExpensesProvider {
   }
 
   public async invalidateByChargeId(chargeId: string) {
+    const expenses = await this.getExpensesByChargeIdLoader.load(chargeId);
+    await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
     this.cache.delete(`misc-expenses-charge-${chargeId}`);
   }
 
+  public async invalidateByFinancialEntityId(financialEntityId: string) {
+    const expenses = await this.getExpensesByFinancialEntityIdLoader.load(financialEntityId);
+    await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
+    this.cache.delete(`misc-expenses-financial-entity-${financialEntityId}`);
+  }
+
   public async invalidateById(id: string) {
-    const [expense] = await getExpensesById.run({ id }, this.dbProvider);
-    if (expense) this.invalidateByChargeId(expense.charge_id);
+    const expense = await this.getExpensesByIdLoader.load(id);
+    if (expense) {
+      this.cache.delete(`misc-expenses-charge-${expense.charge_id}`);
+      this.cache.delete(`misc-expenses-financial-entity-${expense.creditor_id}`);
+      this.cache.delete(`misc-expenses-financial-entity-${expense.debtor_id}`);
+    }
+    this.cache.delete(`misc-expenses-${id}`);
   }
 
   public clearCache() {

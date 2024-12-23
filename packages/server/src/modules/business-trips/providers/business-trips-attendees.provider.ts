@@ -9,6 +9,7 @@ import type {
   IAddBusinessTripAttendeesQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsResult,
+  IGetBusinessTripsByAttendeeIdQuery,
   IGetBusinessTripsByChargeIdsResult,
   IGetLastFlightByDateAndAttendeeIdQuery,
   IRemoveBusinessTripAttendeesParams,
@@ -26,6 +27,13 @@ const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendee
   LEFT JOIN accounter_schema.businesses b
     ON bta.attendee_business_id = b.id
   WHERE bta.business_trip_id IN $$businessTripIds;`;
+
+const getBusinessTripsByAttendeeId = sql<IGetBusinessTripsByAttendeeIdQuery>`
+  SELECT DISTINCT bt.*
+  FROM accounter_schema.business_trips_attendees bta
+  LEFT JOIN accounter_schema.business_trips bt
+    ON bt.id = bta.business_trip_id
+  WHERE bta.attendee_business_id = $attendeeId;`;
 
 const getLastFlightByDateAndAttendeeId = sql<IGetLastFlightByDateAndAttendeeIdQuery>`
   SELECT *
@@ -134,6 +142,10 @@ export class BusinessTripAttendeesProvider {
       cacheMap: this.cache,
     },
   );
+
+  public getBusinessTripsByAttendeeId(attendeeId: string) {
+    return getBusinessTripsByAttendeeId.run({ attendeeId }, this.dbProvider);
+  }
 
   public getLastFlightByDateAndAttendeeId(params: {
     attendeeBusinessId: string;

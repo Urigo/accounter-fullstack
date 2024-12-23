@@ -107,7 +107,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         .map(async ({ taxCategoryId, amount, isCredit }) => {
           const taxCategory = await injector
             .get(TaxCategoriesProvider)
-            .taxCategoryByIDsLoader.load(taxCategoryId);
+            .taxCategoryByIdLoader.load(taxCategoryId);
           if (!taxCategory) {
             throw new LedgerError(`Tax category "${taxCategoryId}" not found`);
           }
