@@ -314,6 +314,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         nonMatchesDescriptions.push(description);
       });
 
+      console.log('Multiple matches descriptions:', multipleMatchesDescriptions);
+
       const uniqueDescriptions = Array.from(new Set<string>(nonMatchesDescriptions)).sort();
 
       const businessTransactions = new Map<string, string[]>();

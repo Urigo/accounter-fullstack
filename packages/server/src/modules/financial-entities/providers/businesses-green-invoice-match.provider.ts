@@ -4,7 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
-  IDeleteBusinessMatchParams,
   IDeleteBusinessMatchQuery,
   IGetAllBusinessMatchesQuery,
   IGetAllBusinessMatchesResult,
