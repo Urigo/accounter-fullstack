@@ -4,7 +4,6 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
-  IDeleteBusinessMatchParams,
   IDeleteBusinessMatchQuery,
   IGetAllBusinessMatchesQuery,
   IGetAllBusinessMatchesResult,
@@ -49,6 +48,11 @@ const updateBusinessMatch = sql<IUpdateBusinessMatchQuery>`
   emails = COALESCE(
     $emails,
     emails,
+    NULL
+  ),
+  business_id = COALESCE(
+    $newBusinessId,
+    business_id,
     NULL
   )
   WHERE
@@ -142,9 +146,9 @@ export class BusinessesGreenInvoiceMatcherProvider {
     return updateBusinessMatch.run(params, this.dbProvider);
   }
 
-  public async deleteBusinessMatch(params: IDeleteBusinessMatchParams) {
+  public async deleteBusinessMatch(businessId: string) {
     this.clearCache();
-    return deleteBusinessMatch.run(params, this.dbProvider);
+    return deleteBusinessMatch.run({ businessId }, this.dbProvider);
   }
 
   public async insertBusinessMatch(params: IInsertBusinessMatchParams) {

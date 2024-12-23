@@ -69,7 +69,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
 
         const updatedTaxCategory = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByIDsLoader.load(taxCategoryId);
+          .taxCategoryByIdLoader.load(taxCategoryId);
         if (!updatedTaxCategory) {
           throw new Error(`Updated tax category not found`);
         }
@@ -103,7 +103,7 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
           if (!('hashavshevet_name' in parent)) {
             const texCategory = await injector
               .get(TaxCategoriesProvider)
-              .taxCategoryByIDsLoader.load(parent.id);
+              .taxCategoryByIdLoader.load(parent.id);
             if (texCategory) {
               Object.assign(parent, texCategory);
             }

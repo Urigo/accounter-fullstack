@@ -18,7 +18,7 @@ export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
     }
     return injector
       .get(TaxCategoriesProvider)
-      .taxCategoryByIDsLoader.load(DbCharge.tax_category_id)
+      .taxCategoryByIdLoader.load(DbCharge.tax_category_id)
       .then(taxCategory => taxCategory ?? null);
   },
 };

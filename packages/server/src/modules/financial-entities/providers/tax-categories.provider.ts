@@ -5,6 +5,9 @@ import { sql } from '@pgtyped/runtime';
 import { Currency } from '@shared/gql-types';
 import { getCacheInstance } from '@shared/helpers';
 import type {
+  IDeleteBusinessTaxCategoryParams,
+  IDeleteBusinessTaxCategoryQuery,
+  IDeleteTaxCategoryQuery,
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
@@ -14,6 +17,7 @@ import type {
   IGetTaxCategoryByIDsQuery,
   IInsertBusinessTaxCategoryParams,
   IInsertBusinessTaxCategoryQuery,
+  IReplaceTaxCategoriesQuery,
   IUpdateBusinessTaxCategoryParams,
   IUpdateBusinessTaxCategoryQuery,
   IUpdateTaxCategoryParams,
@@ -102,6 +106,38 @@ const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
   VALUES ($businessId, $ownerId, $taxCategoryId)
   RETURNING *;`;
 
+const deleteBusinessTaxCategory = sql<IDeleteBusinessTaxCategoryQuery>`
+  DELETE FROM accounter_schema.business_tax_category_match
+  WHERE
+    business_id = $businessId
+    AND owner_id = $ownerId
+  RETURNING *;`;
+
+const deleteTaxCategory = sql<IDeleteTaxCategoryQuery>`
+  DELETE FROM accounter_schema.tax_categories
+  WHERE
+    id = $taxCategoryId
+  RETURNING *;`;
+
+const replaceTaxCategories = sql<IReplaceTaxCategoriesQuery>`
+    WITH accounts AS (
+      UPDATE accounter_schema.financial_accounts_tax_categories
+      SET tax_category_id = $targetTaxCategoryId
+      WHERE tax_category_id = $taxCategoryIdToReplace
+      RETURNING financial_account_id
+    ),
+    business_match AS (
+      UPDATE accounter_schema.business_tax_category_match
+      SET tax_category_id = $targetTaxCategoryId
+      WHERE tax_category_id = $taxCategoryIdToReplace
+      RETURNING business_id
+    )
+    UPDATE accounter_schema.charges
+      SET tax_category_id = $targetTaxCategoryId
+      WHERE tax_category_id = $taxCategoryIdToReplace
+    RETURNING id;
+  `;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -131,6 +167,33 @@ export class TaxCategoriesProvider {
     );
   }
 
+  public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
+    (keys: readonly { businessId: string; ownerId: string }[]) =>
+      this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchTaxCategoryByIDs(
+    ids: readonly string[],
+  ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
+    const taxCategories = await getTaxCategoryByIDs.run(
+      {
+        Ids: ids,
+      },
+      this.dbProvider,
+    );
+    return ids.map(id => taxCategories.find(tc => tc.id === id));
+  }
+
+  public taxCategoryByIdLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchTaxCategoryByIDs(ids),
+    {
+      cache: false,
+    },
+  );
+
   private async batchTaxCategoryByFinancialAccountIdsAndCurrencies(
     entries: readonly { financialAccountId: string; currency: Currency }[],
   ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
@@ -151,14 +214,6 @@ export class TaxCategoriesProvider {
       ),
     );
   }
-
-  public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
-    (keys: readonly { businessId: string; ownerId: string }[]) =>
-      this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
-    {
-      cache: false,
-    },
-  );
 
   public taxCategoryByFinancialAccountIdsAndCurrenciesLoader = new DataLoader(
     (keys: readonly { financialAccountId: string; currency: Currency }[]) =>
@@ -202,24 +257,6 @@ export class TaxCategoriesProvider {
     },
   );
 
-  private async batchTaxCategoryByIDs(Ids: readonly string[]) {
-    const taxCategories = await getTaxCategoryByIDs.run(
-      {
-        Ids,
-      },
-      this.dbProvider,
-    );
-    return Ids.map(id => taxCategories.find(tc => tc.id === id));
-  }
-
-  public taxCategoryByIDsLoader = new DataLoader(
-    (IDs: readonly string[]) => this.batchTaxCategoryByIDs(IDs),
-    {
-      cacheKeyFn: id => `tax-category-${id}`,
-      cacheMap: this.cache,
-    },
-  );
-
   public getAllTaxCategories() {
     const data = this.cache.get<IGetAllTaxCategoriesResult[]>('all-tax-categories');
     if (data) {
@@ -247,6 +284,53 @@ export class TaxCategoriesProvider {
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
     this.cache.delete('all-tax-categories');
     return insertBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  public deleteBusinessTaxCategory(params: IDeleteBusinessTaxCategoryParams) {
+    this.cache.delete('all-tax-categories');
+    return deleteBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  public async deleteTaxCategoryById(taxCategoryId: string) {
+    const entity = await this.taxCategoryByIdLoader.load(taxCategoryId);
+    if (!entity) {
+      throw new Error(`Tax category with id ${taxCategoryId} not found`);
+    }
+    this.invalidateTaxCategoryById(taxCategoryId);
+
+    // delete tax category
+    deleteTaxCategory.run({ taxCategoryId }, this.dbProvider);
+  }
+
+  public async replaceTaxCategory(
+    targetTaxCategoryId: string,
+    taxCategoryIdToReplace: string,
+    deleteTaxCategory: boolean = false,
+  ) {
+    const [taxCategoryToReplace, taxCategory] = await Promise.all([
+      this.taxCategoryByIdLoader.load(targetTaxCategoryId),
+      this.taxCategoryByIdLoader.load(taxCategoryIdToReplace),
+    ]);
+    if (!taxCategoryToReplace) {
+      throw new Error(`Tax category with id ${taxCategoryIdToReplace} not found`);
+    }
+    if (!taxCategory) {
+      throw new Error(`Tax category with id ${targetTaxCategoryId} not found`);
+    }
+    this.invalidateTaxCategoryById(taxCategoryIdToReplace);
+    this.invalidateTaxCategoryById(targetTaxCategoryId);
+
+    await replaceTaxCategories.run(
+      {
+        targetTaxCategoryId,
+        taxCategoryIdToReplace,
+      },
+      this.dbProvider,
+    );
+
+    if (deleteTaxCategory) {
+      await this.deleteTaxCategoryById(taxCategoryIdToReplace);
+    }
   }
 
   public invalidateTaxCategoryById(taxCategoryId: string) {

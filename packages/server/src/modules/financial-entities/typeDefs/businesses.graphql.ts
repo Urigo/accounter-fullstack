@@ -4,7 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     business(id: UUID!): Business! @auth(role: ACCOUNTANT)
-    " TODO: This is temporary & should be replaced after auth and financial entities hierarchy is implemented "
+    businesses(ids: [UUID!]!): [Business!]! @auth(role: ACCOUNTANT)
     allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @auth(role: ACCOUNTANT)
   }
 
@@ -59,6 +59,9 @@ export default gql`
     ): UpdateBusinessResponse! @auth(role: ACCOUNTANT)
     insertNewBusiness(fields: InsertNewBusinessInput!): UpdateBusinessResponse!
       @auth(role: ACCOUNTANT)
+    mergeBusinesses(targetBusinessId: UUID!, businessIdsToMerge: [UUID!]!): Business!
+      @auth(role: ACCOUNTANT)
+    batchGenerateBusinessesOutOfTransactions: [Business!]! @auth(role: ACCOUNTANT)
   }
 
   " result type for updateBusiness "
