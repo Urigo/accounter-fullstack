@@ -26,10 +26,18 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     business: async (_, { id }, { injector }) => {
       const dbFe = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(id);
       if (!dbFe) {
-        throw new Error(`Financial entity ID="${id}" not found`);
+        throw new Error(`Business ID="${id}" not found`);
       }
 
       return dbFe;
+    },
+    businesses: async (_, { ids }, { injector }) => {
+      const businesses = await injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(ids);
+      if (businesses.some(business => !business || business instanceof Error)) {
+        throw new Error(`Error fetching some of the businesses`);
+      }
+
+      return businesses as IGetBusinessesByIdsResult[];
     },
     allBusinesses: async (_, { page, limit, name }, { injector }) => {
       const businesses = await injector.get(BusinessesProvider).getAllBusinesses();

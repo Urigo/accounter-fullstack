@@ -7,7 +7,7 @@ import {
   AllBusinessesRowFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
-import { BusinessCard } from '../common/index.js';
+import { BusinessCard, ToggleMergeSelected } from '../common/index.js';
 import { HebrewName } from './cells/hebrew-name.js';
 import { Name } from './cells/name.js';
 
@@ -26,9 +26,16 @@ interface Props {
     { __typename: 'LtdFinancialEntity' }
   >;
   isAllOpened: boolean;
+  toggleMergeBusiness?: (onChange: () => void) => void;
+  isSelectedForMerge: boolean;
 }
 
-export const AllBusinessesRow = ({ data, isAllOpened }: Props): ReactElement => {
+export const AllBusinessesRow = ({
+  data,
+  isAllOpened,
+  toggleMergeBusiness,
+  isSelectedForMerge,
+}: Props): ReactElement => {
   const [opened, setOpened] = useState(false);
   const [business, setBusiness] = useState<AllBusinessesRowFieldsFragment>(
     getFragmentData(AllBusinessesRowFieldsFragmentDoc, data),
@@ -54,6 +61,13 @@ export const AllBusinessesRow = ({ data, isAllOpened }: Props): ReactElement => 
                 <LayoutNavbarExpand size={20} />
               )}
             </ActionIcon>
+
+            {toggleMergeBusiness && (
+              <ToggleMergeSelected
+                toggleMergeSelected={(): void => toggleMergeBusiness(() => {})}
+                mergeSelected={isSelectedForMerge}
+              />
+            )}
           </div>
         </td>
       </tr>

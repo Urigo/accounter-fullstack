@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
@@ -7,6 +7,7 @@ import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
+import { MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { AllBusinessesRow } from './all-businesses-row.js';
 import { BusinessesFilters } from './businesses-filters.js';
@@ -48,6 +49,27 @@ export const Businesses = (): ReactElement => {
     },
   });
 
+  const [mergeSelectedBusinesses, setMergeSelectedBusinesses] = useState<
+    Array<{ id: string; onChange: () => void }>
+  >([]);
+
+  const toggleMergeBusiness = useCallback(
+    (businessId: string, onChange: () => void) => {
+      if (mergeSelectedBusinesses.map(selected => selected.id).includes(businessId)) {
+        setMergeSelectedBusinesses(
+          mergeSelectedBusinesses.filter(selected => selected.id !== businessId),
+        );
+      } else {
+        setMergeSelectedBusinesses([...mergeSelectedBusinesses, { id: businessId, onChange }]);
+      }
+    },
+    [mergeSelectedBusinesses],
+  );
+
+  function onResetMerge(): void {
+    setMergeSelectedBusinesses([]);
+  }
+
   // Footer
   useEffect(() => {
     setFiltersContext(
@@ -64,6 +86,7 @@ export const Businesses = (): ReactElement => {
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
           </ActionIcon>
         </Tooltip>
+        <MergeBusinessesButton selected={mergeSelectedBusinesses} resetMerge={onResetMerge} />
       </div>,
     );
   }, [
@@ -75,12 +98,15 @@ export const Businesses = (): ReactElement => {
     setActivePage,
     setBusinessName,
     setIsAllOpened,
+    mergeSelectedBusinesses,
   ]);
 
   const businesses =
     data?.allBusinesses?.nodes
       .filter(business => business.__typename === 'LtdFinancialEntity')
       .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1)) ?? [];
+
+  const selectedIds = new Set(mergeSelectedBusinesses.map(selected => selected.id));
 
   return (
     <PageLayout title={`Businesses (${businesses.length})`} description="All businesses">
@@ -108,6 +134,12 @@ export const Businesses = (): ReactElement => {
                   >
                 }
                 isAllOpened={isAllOpened}
+                toggleMergeBusiness={
+                  toggleMergeBusiness
+                    ? (onChange: () => void): void => toggleMergeBusiness(business.id, onChange)
+                    : undefined
+                }
+                isSelectedForMerge={selectedIds.has(business.id) ?? false}
               />
             ))}
           </tbody>

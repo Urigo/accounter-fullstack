@@ -4,7 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     business(id: UUID!): Business! @auth(role: ACCOUNTANT)
-    " TODO: This is temporary & should be replaced after auth and financial entities hierarchy is implemented "
+    businesses(ids: [UUID!]!): [Business!]! @auth(role: ACCOUNTANT)
     allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @auth(role: ACCOUNTANT)
   }
 

@@ -1,6 +1,6 @@
 import { useMutation } from 'urql';
 import { notifications } from '@mantine/notifications';
-import { NewDocumentsList } from '../components/common/new-documnts-list.js';
+import { NewDocumentsList } from '../components/common/new-documents-list.js';
 import {
   FetchIncomeDocumentsDocument,
   FetchIncomeDocumentsMutation,

@@ -11,6 +11,7 @@ export * from './inputs/index.js';
 export * from './list-capsule.js';
 export * from './loader.js';
 export * from './merge-charges/index.js';
+export * from './merge-businesses/index.js';
 export * from './modals/index.js';
 export * from './notification.js';
 export * from './simple-grid.js';
