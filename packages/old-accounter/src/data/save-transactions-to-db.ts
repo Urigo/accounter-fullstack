@@ -2,6 +2,7 @@ import lodash from 'lodash';
 import moment from 'moment';
 import pg from 'pg';
 import type { CalTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/cal/get-card-transactions-details.js';
+import type { DiscountTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/discount/get-transactions-details.js';
 import type { DecoratedTransaction } from '../scrape.js';
 
 const { camelCase } = lodash;
@@ -391,6 +392,101 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     }
 
     console.error('Error in Cal insert:', {
+      error:
+        error instanceof Error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              cause: error.cause,
+            }
+          : error,
+      query: {
+        text,
+        values: values.map((v, i) => `$${i + 1}: ${v}`),
+      },
+    });
+  }
+}
+
+export async function saveDiscountTransactionsToDB(
+  card: string,
+  transactions: DiscountTransaction[],
+  pool: pg.Pool,
+) {
+  for (const transaction of transactions) {
+    await saveDiscountTransaction(card, transaction, pool);
+  }
+}
+
+async function saveDiscountTransaction(
+  card: string,
+  transaction: DiscountTransaction,
+  pool: pg.Pool,
+) {
+  const tableName = 'accounter_schema.discount_transactions';
+  // TODO: fix
+  const text = `INSERT INTO ${tableName} (
+    TODO
+  ) VALUES (
+    $1
+  ) RETURNING *`;
+
+  // TODO: fix
+  const values = [
+    card,
+    transaction.trnIntId,
+    transaction.trnNumaretor,
+    transaction.merchantName,
+    formatDate(transaction.trnPurchaseDate),
+    transaction.trnAmt,
+    normalizeCurrencySymbol(transaction.trnCurrencySymbol),
+    transaction.trnType,
+    transaction.trnTypeCode,
+    formatDate(transaction.debCrdDate),
+    transaction.amtBeforeConvAndIndex,
+    normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
+    transaction.merchantAddress,
+    transaction.merchantPhoneNo,
+    transaction.branchCodeDesc,
+    transaction.transCardPresentInd,
+    transaction.curPaymentNum,
+    transaction.numOfPayments,
+    transaction.tokenInd,
+    transaction.walletProviderCode,
+    transaction.walletProviderDesc,
+    transaction.tokenNumberPart4,
+    transaction.cashAccountTrnAmt,
+    transaction.chargeExternalToCardComment,
+    transaction.refundInd,
+    transaction.isImmediateCommentInd,
+    transaction.isImmediateHHKInd,
+    transaction.isMargarita,
+    transaction.isSpreadPaymenstAbroad,
+    transaction.trnExacWay,
+    transaction.debitSpreadInd,
+    transaction.onGoingTransactionsComment,
+    transaction.earlyPaymentInd,
+    transaction.merchantId,
+    transaction.crdExtIdNumTypeCode,
+    transaction.transSource,
+    transaction.isAbroadTransaction,
+  ];
+
+  try {
+    await pool.query(text, values);
+    console.log(
+      `Success in insert to Discount - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('duplicate key value violates unique constraint')
+    ) {
+      console.log('Duplicate key violation, skipping insert', { id: transaction.trnIntId });
+      return;
+    }
+
+    console.error('Error in Discount insert:', {
       error:
         error instanceof Error
           ? {

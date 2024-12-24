@@ -3,6 +3,7 @@ import { subYears } from 'date-fns';
 import { waitUntil } from '../helpers/waiting.js';
 import { calTransactionsSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
+import { waitUntilElementFound } from '../utils/browser-util.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
@@ -285,11 +286,6 @@ async function getAuthorizationHeader(page: Page) {
     throw new Error('could not find \'auth-module\' in session storage');
   }
   return `CALAuthScheme ${authModule.auth.calConnectToken}`;
-}
-
-async function waitUntilElementFound(page: Page | Frame, elementSelector: string, onlyVisible = false, timeout = 10_000) {
-  // console.debug('waitUntilElementFound', { elementSelector, onlyVisible, timeout });
-  await page.waitForSelector(elementSelector, { visible: onlyVisible, timeout });
 }
 
 async function getXSiteId() {
