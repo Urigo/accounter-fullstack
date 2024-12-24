@@ -53,6 +53,12 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
   useEffect(() => {
+    if (originalTags?.length && !tags.length) {
+      setTags(originalTags);
+    }
+  }, [originalTags, tags.length]);
+
+  useEffect(() => {
     if (tags.length === 0 && hasAlternative) {
       setTags(missingInfoSuggestions?.tags ?? []);
     }
