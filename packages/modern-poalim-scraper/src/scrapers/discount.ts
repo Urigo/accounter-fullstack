@@ -3,10 +3,11 @@ import { addDays, subYears, max, format, parse } from 'date-fns';
 import { waitUntilElementFound } from '../utils/browser-util.js';
 import { fetchGetWithinPage } from '../utils/fetch.js';
 import { sleep } from '../utils/sleep.js';
+import { type DiscountTransaction, zodLastTransactionsSchema } from 'packages/modern-poalim-scraper/src/scrapers/types/discount/get-last-transactions.js';
 
 const BASE_URL = 'https://start.telebank.co.il';
 const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE_SME`; // `/LOGIN_PAGE` instead if logging in to a personal account
-const DATE_FORMAT = 'YYYYMMDD';
+const DATE_FORMAT = 'yyyyMMdd';
 
 enum TransactionStatuses {
   Completed = 'completed',
@@ -18,34 +19,12 @@ enum TransactionTypes {
   Installments = 'installments',
 }
 
-interface ScrapedTransaction {
-  OperationNumber: number;
-  OperationDate: string;
-  ValueDate: string;
-  OperationAmount: number;
-  OperationDescriptionToDisplay: string;
-}
-
-interface CurrentAccountInfo {
-  AccountBalance: number;
-}
-
 interface ScrapedAccountData {
   UserAccountsData: {
     DefaultAccountNumber: string;
   };
 }
 
-interface ScrapedTransactionData {
-  Error?: { MsgText: string };
-  CurrentAccountLastTransactions?: {
-    OperationEntry: ScrapedTransaction[];
-    CurrentAccountInfo: CurrentAccountInfo;
-    FutureTransactionsBlock:{
-      FutureTransactionEntry: ScrapedTransaction[];
-    };
-  };
-}
 
 export async function discount(page: Page, credentials: DiscountCredentials, options: DiscountOptions = {}) {
   console.debug('Starting discount');
@@ -81,7 +60,7 @@ async function login(credentials: DiscountCredentials, page: Page) {
   }
   
   // TODO: see if we can remove this
-  await sleep(2000);
+  await sleep(3000);
 
   console.debug('Clicking login button');
 
@@ -127,10 +106,11 @@ async function login(credentials: DiscountCredentials, page: Page) {
   }
 }
 
-function convertTransactions(txns: ScrapedTransaction[], txnStatus: TransactionStatuses) {
+function convertTransactions(txns: DiscountTransaction[], txnStatus: TransactionStatuses) {
   if (!txns) {
     return [];
   }
+
   return txns.map((txn) => {
     return {
       type: TransactionTypes.Normal,
@@ -149,9 +129,8 @@ function convertTransactions(txns: ScrapedTransaction[], txnStatus: TransactionS
 async function fetchAccountData(page: Page, options: DiscountOptions) {
   const apiSiteUrl = `${BASE_URL}/Titan/gatewayAPI`;
 
-  const accountDataUrl = `${apiSiteUrl}/userAccountsData`;
+  const accountDataUrl = `${apiSiteUrl}/userAccounts/bsUserAccountsData?FetchAccountsNickName=true&FirstTimeEntry=false`;
   const accountInfo = await fetchGetWithinPage<ScrapedAccountData>(page, accountDataUrl);
-
   if (!accountInfo) {
     console.error('failed to get account data');
     return { success: false, errorMessage: 'failed to get account data' };
@@ -166,42 +145,33 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
 
   const startDateStr = format(startMoment, 'yyyyMMdd');
   const txnsUrl = `${apiSiteUrl}/lastTransactions/${accountNumber}/Date?IsCategoryDescCode=True&IsTransactionDetails=True&IsEventNames=True&IsFutureTransactionFlag=True&FromDate=${startDateStr}`;
-  const txnsResult = await fetchGetWithinPage<ScrapedTransactionData>(page, txnsUrl);
-  console.log("🚀 ~ fetchAccountData ~ txnsResult:", txnsResult)
-  if (!txnsResult || txnsResult.Error || !txnsResult.CurrentAccountLastTransactions) {
-    console.error('failed to get transactions', txnsResult);
+  const txnsResult = await fetchGetWithinPage(page, txnsUrl);
+  
+  const { success, data } = zodLastTransactionsSchema.safeParse(txnsResult);
+  if (!success) {
+    console.error('failed to parse transactions', data);
     return {
       success: false,
-      errorMessage: txnsResult?.Error ? txnsResult.Error.MsgText : 'unknown error',
+      errorMessage: 'failed to parse transactions',
     };
   }
 
   const completedTxns = convertTransactions(
-    txnsResult.CurrentAccountLastTransactions.OperationEntry,
+    data.CurrentAccountLastTransactions.OperationEntry,
     TransactionStatuses.Completed,
   );
-  const rawFutureTxns = txnsResult?.CurrentAccountLastTransactions?.FutureTransactionsBlock?.FutureTransactionEntry;
-  const pendingTxns = convertTransactions(rawFutureTxns, TransactionStatuses.Pending);
 
   const accountData = {
     success: true,
     accounts: [{
       accountNumber,
-      balance: txnsResult.CurrentAccountLastTransactions.CurrentAccountInfo.AccountBalance,
-      txns: [...completedTxns, ...pendingTxns],
+      balance: data.CurrentAccountLastTransactions.CurrentAccountInfo.AccountBalance,
+      txns: completedTxns,
     }],
   };
 
   return accountData;
 }
-
-// async function navigateOrErrorLabel(page: Page) {
-//   try {
-//     await waitForNavigation(page);
-//   } catch {
-//     await waitUntilElementFound(page, '#general-error', false, 100);
-//   }
-// }
 
 export class DiscountCredentials {
   ID: string = '';
