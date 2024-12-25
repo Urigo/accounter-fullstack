@@ -3,7 +3,7 @@ import { addDays, subYears, max, format, parse } from 'date-fns';
 import { waitUntilElementFound } from '../utils/browser-util.js';
 import { fetchGetWithinPage } from '../utils/fetch.js';
 import { sleep } from '../utils/sleep.js';
-import { type DiscountTransaction, zodLastTransactionsSchema } from 'packages/modern-poalim-scraper/src/scrapers/types/discount/get-last-transactions.js';
+import { type DiscountTransaction, zodLastTransactionsSchema } from '../scrapers/types/discount/get-last-transactions.js';
 
 const BASE_URL = 'https://start.telebank.co.il';
 const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE_SME`; // `/LOGIN_PAGE` instead if logging in to a personal account
@@ -137,7 +137,6 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
   }
 
   const accountNumber = accountInfo.UserAccountsData.DefaultAccountNumber;
-  console.log("🚀 ~ fetchAccountData ~ accountNumber:", accountNumber)
 
   const defaultStartDate = addDays(subYears(new Date(), 1), 2);
   const startDate = options.startDate || defaultStartDate;

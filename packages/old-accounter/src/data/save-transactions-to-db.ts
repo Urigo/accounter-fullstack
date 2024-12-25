@@ -2,7 +2,7 @@ import lodash from 'lodash';
 import moment from 'moment';
 import pg from 'pg';
 import type { CalTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/cal/get-card-transactions-details.js';
-import type { DiscountTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/discount/get-transactions-details.js';
+import type { DiscountTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/discount/get-last-transactions.js';
 import type { DecoratedTransaction } from '../scrape.js';
 
 const { camelCase } = lodash;
@@ -418,65 +418,86 @@ export async function saveDiscountTransactionsToDB(
 }
 
 async function saveDiscountTransaction(transaction: DiscountTransaction, pool: pg.Pool) {
-  const tableName = 'accounter_schema.discount_transactions';
-  // TODO: fix
+  const tableName = 'accounter_schema.bank_discount_transactions';
   const text = `INSERT INTO ${tableName} (
-    TODO
+    operation_date,
+    value_date,
+    operation_code,
+    operation_description,
+    operation_description_2,
+    operation_description_3,
+    operation_branch,
+    operation_bank,
+    channel,
+    channel_name,
+    check_number,
+    institute_code,
+    operation_amount,
+    balance_after_operation,
+    operation_number,
+    branch_treasury_number,
+    urn,
+    operation_details_service_name,
+    commission_channel_code,
+    commission_channel_name,
+    commission_type_name,
+    business_day_date,
+    event_name,
+    category_code,
+    category_desc_code,
+    category_description,
+    operation_description_to_display,
+    operation_order,
+    is_last_seen
   ) VALUES (
-    $1
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+    $21, $22, $23, $24, $25, $26, $27, $28, $29
   ) RETURNING *`;
 
-  // TODO: fix
   const values = [
-    transaction.trnIntId,
-    transaction.trnNumaretor,
-    transaction.merchantName,
-    formatDate(transaction.trnPurchaseDate),
-    transaction.trnAmt,
-    normalizeCurrencySymbol(transaction.trnCurrencySymbol),
-    transaction.trnType,
-    transaction.trnTypeCode,
-    formatDate(transaction.debCrdDate),
-    transaction.amtBeforeConvAndIndex,
-    normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
-    transaction.merchantAddress,
-    transaction.merchantPhoneNo,
-    transaction.branchCodeDesc,
-    transaction.transCardPresentInd,
-    transaction.curPaymentNum,
-    transaction.numOfPayments,
-    transaction.tokenInd,
-    transaction.walletProviderCode,
-    transaction.walletProviderDesc,
-    transaction.tokenNumberPart4,
-    transaction.cashAccountTrnAmt,
-    transaction.chargeExternalToCardComment,
-    transaction.refundInd,
-    transaction.isImmediateCommentInd,
-    transaction.isImmediateHHKInd,
-    transaction.isMargarita,
-    transaction.isSpreadPaymenstAbroad,
-    transaction.trnExacWay,
-    transaction.debitSpreadInd,
-    transaction.onGoingTransactionsComment,
-    transaction.earlyPaymentInd,
-    transaction.merchantId,
-    transaction.crdExtIdNumTypeCode,
-    transaction.transSource,
-    transaction.isAbroadTransaction,
+    transaction.OperationDate,
+    transaction.ValueDate,
+    transaction.OperationCode,
+    transaction.OperationDescription,
+    transaction.OperationDescription2,
+    transaction.OperationDescription3,
+    transaction.OperationBranch,
+    transaction.OperationBank,
+    transaction.Channel,
+    transaction.ChannelName,
+    transaction.CheckNumber || null,
+    transaction.InstituteCode,
+    transaction.OperationAmount,
+    transaction.BalanceAfterOperation,
+    transaction.OperationNumber,
+    transaction.BranchTreasuryNumber,
+    transaction.Urn,
+    transaction.OperationDetailsServiceName,
+    transaction.CommissionChannelCode,
+    transaction.CommissionChannelName,
+    transaction.CommissionTypeName,
+    transaction.BusinessDayDate,
+    transaction.EventName,
+    transaction.CategoryCode,
+    transaction.CategoryDescCode,
+    transaction.CategoryDescription,
+    transaction.OperationDescriptionToDisplay,
+    transaction.OperationOrder,
+    transaction.IsLastSeen,
   ];
 
   try {
     await pool.query(text, values);
     console.log(
-      `Success in insert to Discount - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
+      `Success in insert to Discount - ${transaction.OperationDescription} - ${transaction.OperationAmount}`,
     );
   } catch (error) {
     if (
       error instanceof Error &&
       error.message.includes('duplicate key value violates unique constraint')
     ) {
-      console.log('Duplicate key violation, skipping insert', { id: transaction.trnIntId });
+      console.log('Duplicate key violation, skipping insert', { urn: transaction.Urn });
       return;
     }
 

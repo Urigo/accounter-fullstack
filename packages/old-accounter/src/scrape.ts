@@ -1405,10 +1405,11 @@ async function getForeignSwiftTransactionsfromBankAndSave(
   console.log('after all');
 
   // close scraper instances
-  // await newScraperInstance.close();
-  // await secondScraperInstance.close();
-  // await thirdScraperInstance.close();
-  // await fourthScraperInstance.close();
+  await newScraperInstance.close();
+  await secondScraperInstance.close();
+  await thirdScraperInstance.close();
+  await fourthScraperInstance.close();
+  await fifthScraperInstance.close();
 
   // await compareHashavshevetToDB(pool),
   //   console.log('after compareHashavshevetToDB');
