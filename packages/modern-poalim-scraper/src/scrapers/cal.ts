@@ -4,6 +4,7 @@ import { waitUntil } from '../helpers/waiting.js';
 import { calTransactionsSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
 import { waitUntilElementFound } from '../utils/browser-util.js';
+import { sleep } from 'packages/modern-poalim-scraper/src/utils/sleep.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
@@ -304,11 +305,6 @@ async function getXSiteId() {
           this.xSiteId = "09031987-273E-2311-906C-8AF85B17C8D9",
   */
   return Promise.resolve('09031987-273E-2311-906C-8AF85B17C8D9');
-}
-
-async function sleep(ms: number) {
-  console.debug('sleep', ms);
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class CalCredentials {

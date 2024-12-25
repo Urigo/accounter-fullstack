@@ -6,6 +6,9 @@ import {
   cal,
   CalCredentials,
   CalOptions,
+  discount,
+  DiscountCredentials,
+  DiscountOptions,
   hapoalim,
   HapoalimCredentials,
   HapoalimOptions,
@@ -49,6 +52,11 @@ export async function init({
       //return cal.init
       const page = await newPage(browser);
       return cal(page, credentials, options);
+    },
+    discount: async (credentials: DiscountCredentials, options?: DiscountOptions) => {
+      //return discount.init
+      const page = await newPage(browser);
+      return discount(page, credentials, options);
     },
     close: () => {
       return browser.close();

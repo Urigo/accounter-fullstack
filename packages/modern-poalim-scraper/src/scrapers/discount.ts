@@ -2,9 +2,10 @@ import { type Page } from 'puppeteer';
 import { addDays, subYears, max, format, parse } from 'date-fns';
 import { waitUntilElementFound } from '../utils/browser-util.js';
 import { fetchGetWithinPage } from '../utils/fetch.js';
+import { sleep } from 'packages/modern-poalim-scraper/src/utils/sleep.js';
 
 const BASE_URL = 'https://start.telebank.co.il';
-const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE`;
+const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE_SME`; // `/LOGIN_PAGE` instead if logging in to a personal account
 const DATE_FORMAT = 'YYYYMMDD';
 
 enum TransactionStatuses {
@@ -69,8 +70,13 @@ async function login(credentials: DiscountCredentials, page: Page) {
   // Fill login form
   await page.type('#tzId', credentials.id);
   await page.type('#tzPassword', credentials.password);
-  await page.type('#aidnum', credentials.num);
+  if (credentials.code) {
+    await page.type('#aidnum', credentials.code);
+  }
   
+  // TODO: see if we can remove this
+  await sleep(5000);
+
   // Wait for submit button and click
   await waitUntilElementFound(page, '.sendBtn');
   await page.click('.sendBtn');
@@ -194,7 +200,7 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
 export class DiscountCredentials {
   id: string = '';
   password: string = '';
-  num: string = '';
+  code?: string;
 }
 
 export class DiscountOptions {
