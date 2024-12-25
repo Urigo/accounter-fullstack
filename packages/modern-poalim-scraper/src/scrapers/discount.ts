@@ -68,7 +68,7 @@ async function login(credentials: DiscountCredentials, page: Page) {
   await waitUntilElementFound(page, '#tzId', true);
   
   // Fill login form
-  await page.type('#tzId', credentials.id);
+  await page.type('#tzId', credentials.ID);
   await page.type('#tzPassword', credentials.password);
   if (credentials.code) {
     await page.type('#aidnum', credentials.code);
@@ -198,7 +198,7 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
 // }
 
 export class DiscountCredentials {
-  id: string = '';
+  ID: string = '';
   password: string = '';
   code?: string;
 }

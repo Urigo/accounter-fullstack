@@ -15,7 +15,7 @@ async function main() {
   try {
     const scraper = await discount(
       {
-        id: process.env['DISCOUNT_ID'],
+        ID: process.env['DISCOUNT_ID'],
         password: process.env['DISCOUNT_PASSWORD'],
       },
       new DiscountOptions(),

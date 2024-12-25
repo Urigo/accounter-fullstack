@@ -409,20 +409,15 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
 }
 
 export async function saveDiscountTransactionsToDB(
-  card: string,
   transactions: DiscountTransaction[],
   pool: pg.Pool,
 ) {
   for (const transaction of transactions) {
-    await saveDiscountTransaction(card, transaction, pool);
+    await saveDiscountTransaction(transaction, pool);
   }
 }
 
-async function saveDiscountTransaction(
-  card: string,
-  transaction: DiscountTransaction,
-  pool: pg.Pool,
-) {
+async function saveDiscountTransaction(transaction: DiscountTransaction, pool: pg.Pool) {
   const tableName = 'accounter_schema.discount_transactions';
   // TODO: fix
   const text = `INSERT INTO ${tableName} (
@@ -433,7 +428,6 @@ async function saveDiscountTransaction(
 
   // TODO: fix
   const values = [
-    card,
     transaction.trnIntId,
     transaction.trnNumaretor,
     transaction.merchantName,
