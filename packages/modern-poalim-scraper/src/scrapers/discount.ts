@@ -2,7 +2,7 @@ import { type Page } from 'puppeteer';
 import { addDays, subYears, max, format, parse } from 'date-fns';
 import { waitUntilElementFound } from '../utils/browser-util.js';
 import { fetchGetWithinPage } from '../utils/fetch.js';
-import { sleep } from 'packages/modern-poalim-scraper/src/utils/sleep.js';
+import { sleep } from '../utils/sleep.js';
 
 const BASE_URL = 'https://start.telebank.co.il';
 const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE_SME`; // `/LOGIN_PAGE` instead if logging in to a personal account
@@ -47,11 +47,15 @@ interface ScrapedTransactionData {
   };
 }
 
-export async function discount(page: Page, credentials: DiscountCredentials, _options: DiscountOptions = {}) {
+export async function discount(page: Page, credentials: DiscountCredentials, options: DiscountOptions = {}) {
+  console.debug('Starting discount');
   await login(credentials, page);
 
   return {
-    getMonthTransactions: async (_last4Digits: string, _month: Date) => {
+    getMonthTransactions: async (_month: Date) => {
+      console.log('getMonthTransactions');
+      const accountData = await fetchAccountData(page, options);
+      console.log(accountData);
       return [];
     },
     getTransactions: async () => {
@@ -60,12 +64,14 @@ export async function discount(page: Page, credentials: DiscountCredentials, _op
   }
 }
 
-
 async function login(credentials: DiscountCredentials, page: Page) {
+  console.debug('Logging in to Discount');
   await page.goto(LOGIN_URL);
 
   // Wait for and click the login button
   await waitUntilElementFound(page, '#tzId', true);
+  
+  console.debug('Filling in login form');
   
   // Fill login form
   await page.type('#tzId', credentials.ID);
@@ -75,7 +81,9 @@ async function login(credentials: DiscountCredentials, page: Page) {
   }
   
   // TODO: see if we can remove this
-  await sleep(5000);
+  await sleep(2000);
+
+  console.debug('Clicking login button');
 
   // Wait for submit button and click
   await waitUntilElementFound(page, '.sendBtn');
@@ -119,7 +127,6 @@ async function login(credentials: DiscountCredentials, page: Page) {
   }
 }
 
-
 function convertTransactions(txns: ScrapedTransaction[], txnStatus: TransactionStatuses) {
   if (!txns) {
     return [];
@@ -139,8 +146,6 @@ function convertTransactions(txns: ScrapedTransaction[], txnStatus: TransactionS
   });
 }
 
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function fetchAccountData(page: Page, options: DiscountOptions) {
   const apiSiteUrl = `${BASE_URL}/Titan/gatewayAPI`;
 
@@ -148,12 +153,12 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
   const accountInfo = await fetchGetWithinPage<ScrapedAccountData>(page, accountDataUrl);
 
   if (!accountInfo) {
-    return {
-      success: false,
-      errorMessage: 'failed to get account data',
-    };
+    console.error('failed to get account data');
+    return { success: false, errorMessage: 'failed to get account data' };
   }
+
   const accountNumber = accountInfo.UserAccountsData.DefaultAccountNumber;
+  console.log("🚀 ~ fetchAccountData ~ accountNumber:", accountNumber)
 
   const defaultStartDate = addDays(subYears(new Date(), 1), 2);
   const startDate = options.startDate || defaultStartDate;
@@ -162,8 +167,9 @@ async function fetchAccountData(page: Page, options: DiscountOptions) {
   const startDateStr = format(startMoment, 'yyyyMMdd');
   const txnsUrl = `${apiSiteUrl}/lastTransactions/${accountNumber}/Date?IsCategoryDescCode=True&IsTransactionDetails=True&IsEventNames=True&IsFutureTransactionFlag=True&FromDate=${startDateStr}`;
   const txnsResult = await fetchGetWithinPage<ScrapedTransactionData>(page, txnsUrl);
-  if (!txnsResult || txnsResult.Error ||
-    !txnsResult.CurrentAccountLastTransactions) {
+  console.log("🚀 ~ fetchAccountData ~ txnsResult:", txnsResult)
+  if (!txnsResult || txnsResult.Error || !txnsResult.CurrentAccountLastTransactions) {
+    console.error('failed to get transactions', txnsResult);
     return {
       success: false,
       errorMessage: txnsResult?.Error ? txnsResult.Error.MsgText : 'unknown error',

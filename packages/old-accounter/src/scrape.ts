@@ -619,10 +619,10 @@ async function getDiscountTransactionsAndSave(
   month: Date,
 ) {
   console.log(`Getting from discount ${month.getMonth()}:${month.getFullYear()}`);
-  const transactions = await newInstance.getTransactions();
+  const transactions = await newInstance.getMonthTransactions(month);
   console.log(`got ${transactions.length} transactions`);
   console.log(`saving discount ${month.getMonth()}:${month.getFullYear()}`);
-  await saveDiscountTransactionsToDB(transactions, pool);
+  // await saveDiscountTransactionsToDB(transactions, pool);
   console.log(`finished saving discount ${month.getMonth()}:${month.getFullYear()}`);
 }
 
@@ -711,8 +711,8 @@ async function getDiscountData(
 ) {
   console.log('start getDiscountData');
   const { ID, password, code } = credentials;
-  if (!ID || !password || !code) {
-    console.error('Missing credentials for visa cal creditcard');
+  if (!ID || !password) {
+    console.error('Missing credentials for Discount');
     return;
   }
 
@@ -725,7 +725,7 @@ async function getDiscountData(
   console.log('got discount instance');
 
   // fetch for every month in the last 24 months
-  const monthsToFetch = 24;
+  const monthsToFetch = 2;
   const end = new Date();
   const start = subMonths(end, monthsToFetch);
   for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {

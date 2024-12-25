@@ -4,7 +4,7 @@ import { waitUntil } from '../helpers/waiting.js';
 import { calTransactionsSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
 import { waitUntilElementFound } from '../utils/browser-util.js';
-import { sleep } from 'packages/modern-poalim-scraper/src/utils/sleep.js';
+import { sleep } from '../utils/sleep.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
