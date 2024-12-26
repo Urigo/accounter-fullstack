@@ -342,12 +342,12 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     transaction.trnIntId,
     transaction.trnNumaretor,
     transaction.merchantName,
-    formatDate(transaction.trnPurchaseDate),
+    formatDate(new Date(transaction.trnPurchaseDate)),
     transaction.trnAmt,
     normalizeCurrencySymbol(transaction.trnCurrencySymbol),
     transaction.trnType,
     transaction.trnTypeCode,
-    formatDate(transaction.debCrdDate),
+    formatDate(new Date(transaction.debCrdDate)),
     transaction.amtBeforeConvAndIndex,
     normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
     transaction.merchantAddress,
@@ -461,10 +461,19 @@ async function saveDiscountTransaction(
     $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
   ) RETURNING *`;
 
+  // converts 20240109 to Date object
+  function convertToDate(dateStr: string): Date {
+    return new Date(
+      parseInt(dateStr.substring(0, 4)),
+      parseInt(dateStr.substring(4, 6)) - 1,
+      parseInt(dateStr.substring(6, 8)),
+    );
+  }
+
   const values = [
     accountNumber,
-    transaction.OperationDate,
-    transaction.ValueDate,
+    formatDate(convertToDate(transaction.OperationDate)),
+    formatDate(convertToDate(transaction.ValueDate)),
     transaction.OperationCode,
     transaction.OperationDescription,
     transaction.OperationDescription2,
@@ -484,7 +493,7 @@ async function saveDiscountTransaction(
     transaction.CommissionChannelCode,
     transaction.CommissionChannelName,
     transaction.CommissionTypeName,
-    transaction.BusinessDayDate,
+    formatDate(convertToDate(transaction.BusinessDayDate)),
     transaction.EventName,
     transaction.CategoryCode,
     transaction.CategoryDescCode,
@@ -517,10 +526,10 @@ async function saveDiscountTransaction(
               cause: error.cause,
             }
           : error,
-      // query: {
-      //   text,
-      //   values: values.map((v, i) => `$${i + 1}: ${v}`),
-      // },
+      query: {
+        text,
+        values: values.map((v, i) => `$${i + 1}: ${v}`),
+      },
     });
   }
 }
@@ -546,9 +555,8 @@ function normalizeCurrencySymbol(currencySymbol: string): string {
   }
 }
 
-function formatDate(dateString: string): string {
+function formatDate(date: Date): string {
   // Convert ISO date string to DD/MM/YYYY format for to_date() function
-  const date = new Date(dateString);
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
