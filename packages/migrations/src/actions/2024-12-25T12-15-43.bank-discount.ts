@@ -3,11 +3,9 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2024-12-25T12-15-43.bank-discount.sql',
   run: ({ sql }) => sql`
-    BEGIN;
-
-    CREATE TABLE IF NOT EXISTS accounter_schema.bank_discount_creditcard_transactions (
+    CREATE TABLE IF NOT EXISTS accounter_schema.bank_discount_transactions (
         id uuid default gen_random_uuid() not null
-            constraint bank_discount_creditcard_transactions_pk
+            constraint bank_discount_transactions_pk
                 primary key,
         card INTEGER NOT NULL,
         trn_int_id VARCHAR(255),
@@ -48,10 +46,10 @@ export default {
         is_abroad_transaction BOOLEAN,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT bank_discount_creditcard_transactions_trn_int_id_idx UNIQUE (trn_int_id)
+        CONSTRAINT bank_discount_transactions_trn_int_id_idx UNIQUE (trn_int_id)
     );
 
-    CREATE INDEX bank_discount_creditcard_transactions_trn_int_id ON accounter_schema.bank_discount_creditcard_transactions(trn_int_id);
+    CREATE INDEX bank_discount_transactions_trn_int_id ON accounter_schema.bank_discount_transactions(trn_int_id);
 
     ALTER TABLE accounter_schema.transactions_raw_list ADD bank_discount_id uuid;
 
@@ -73,7 +71,7 @@ export default {
             (bank_discount_id IS NOT NULL)::integer = 1
         );
 
-    CREATE OR REPLACE FUNCTION accounter_schema.insert_cal_creditcard_transaction_handler() 
+    CREATE OR REPLACE FUNCTION accounter_schema.insert_bank_discount_transaction_handler() 
         RETURNS trigger
         LANGUAGE plpgsql
     AS 
@@ -85,7 +83,7 @@ export default {
         charge_id_var UUID = NULL;
     BEGIN
         -- Create merged raw transactions record:
-        INSERT INTO accounter_schema.transactions_raw_list (cal_id)
+        INSERT INTO accounter_schema.transactions_raw_list (bank_discount_id)
         VALUES (NEW.id)
         RETURNING id INTO merged_id;
 
@@ -139,10 +137,10 @@ export default {
     END;
     $func$;
 
-    CREATE TRIGGER cal_creditcard_transaction_insert_trigger
-        AFTER INSERT ON accounter_schema.cal_creditcard_transactions
+    CREATE TRIGGER bank_discount_transaction_insert_trigger
+        AFTER INSERT ON accounter_schema.bank_discount_transactions
         FOR EACH ROW
-        EXECUTE FUNCTION accounter_schema.insert_cal_creditcard_transaction_handler();
+        EXECUTE FUNCTION accounter_schema.insert_bank_discount_transaction_handler();
 
     DROP VIEW accounter_schema.extended_business_trip_transactions;
     DROP VIEW accounter_schema.extended_charges;
@@ -250,23 +248,14 @@ export default {
                                          cal_creditcard_transactions.merchant_name AS source_details
                                   FROM accounter_schema.cal_creditcard_transactions
                                   UNION
-                                  SELECT bank_discount_creditcard_transactions.id::text AS id,
-                                         bank_discount_creditcard_transactions.trn_int_id AS reference_number,
+                                  SELECT bank_discount_transactions.id::text AS id,
+                                         bank_discount_transactions.trn_int_id AS reference_number,
                                          0 AS currency_rate,
                                          NULL::timestamp without time zone AS debit_timestamp,
                                          'BANK_DISCOUNT'::text AS origin,
-                                         bank_discount_creditcard_transactions.card AS card_number,
-                                         bank_discount_creditcard_transactions.merchant_name AS source_details
-                                  FROM accounter_schema.bank_discount_creditcard_transactions
-                                  UNION
-                                  SELECT bank_discount_creditcard_transactions.id::text AS id,
-                                         bank_discount_creditcard_transactions.trn_int_id AS reference_number,
-                                         0 AS currency_rate,
-                                         NULL::timestamp without time zone AS debit_timestamp,
-                                         'BANK_DISCOUNT'::text AS origin,
-                                         bank_discount_creditcard_transactions.card AS card_number,
-                                         bank_discount_creditcard_transactions.merchant_name AS source_details
-                                  FROM accounter_schema.bank_discount_creditcard_transactions),
+                                         bank_discount_transactions.card AS card_number,
+                                         bank_discount_transactions.merchant_name AS source_details
+                                  FROM accounter_schema.bank_discount_transactions),
         alt_debit_date AS (SELECT p.event_date,
                                   p.reference_number
                             FROM accounter_schema.poalim_ils_account_transactions p
@@ -314,7 +303,17 @@ export default {
                                                         rt.poalim_swift_id::text, rt.poalim_usd_id::text, 
                                                         rt.kraken_id, rt.etana_id, rt.etherscan_id::text, 
                                                         rt.amex_id::text, rt.cal_id::text, 
-                                                        rt.bank_discount_id::text);
+                                                        rt.bank_discount_id::text)
+            LEFT JOIN alt_debit_date ON alt_debit_date.reference_number = original_transaction.card_number AND
+                                      alt_debit_date.event_date > t.event_date AND
+                                      alt_debit_date.event_date < (t.event_date + '40 days'::interval) AND
+                                      alt_debit_date.event_date = (
+                                          SELECT min(add.event_date) AS min
+                                          FROM alt_debit_date add
+                                          WHERE add.reference_number = original_transaction.card_number
+                                          AND add.event_date > t.event_date
+                                          AND add.event_date < (t.event_date + '40 days'::interval)
+                                      );
 
     create or replace view accounter_schema.extended_charges
                 (id, owner_id, is_property, accountant_status, user_description, created_at, updated_at, tax_category_id,
@@ -590,7 +589,5 @@ export default {
     FROM accounter_schema.business_trips_transactions btt
             LEFT JOIN transactions_by_business_trip_transaction t ON t.business_trip_transaction_id = btt.id
             LEFT JOIN accounter_schema.business_trips_employee_payments ep ON ep.id = btt.id;
-
-    COMMIT;
 `,
 } satisfies MigrationExecutor;
