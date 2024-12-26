@@ -3,7 +3,7 @@
     {
       "mode": "ts",
       "include": "**/*.ts",
-      "emitTemplate": "./src/__generated__/db.types.ts"
+      "emitTemplate": "./src/__generated__/{{name}}.types.ts"
     }
   ],
   "srcDir": "./src/",
