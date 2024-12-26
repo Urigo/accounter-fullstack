@@ -411,15 +411,21 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
 export async function saveDiscountTransactionsToDB(
   transactions: DiscountTransaction[],
   pool: pg.Pool,
+  accountNumber: string,
 ) {
   for (const transaction of transactions) {
-    await saveDiscountTransaction(transaction, pool);
+    await saveDiscountTransaction(transaction, pool, accountNumber);
   }
 }
 
-async function saveDiscountTransaction(transaction: DiscountTransaction, pool: pg.Pool) {
+async function saveDiscountTransaction(
+  transaction: DiscountTransaction,
+  pool: pg.Pool,
+  accountNumber: string,
+) {
   const tableName = 'accounter_schema.bank_discount_transactions';
   const text = `INSERT INTO ${tableName} (
+    account_number,
     operation_date,
     value_date,
     operation_code,
@@ -452,10 +458,11 @@ async function saveDiscountTransaction(transaction: DiscountTransaction, pool: p
   ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
     $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-    $21, $22, $23, $24, $25, $26, $27, $28, $29
+    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
   ) RETURNING *`;
 
   const values = [
+    accountNumber,
     transaction.OperationDate,
     transaction.ValueDate,
     transaction.OperationCode,

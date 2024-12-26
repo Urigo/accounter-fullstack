@@ -15,6 +15,7 @@ export default {
         operation_description3 VARCHAR(255),
         operation_branch VARCHAR(255),
         operation_bank VARCHAR(255),
+        account_number VARCHAR(255),
         channel VARCHAR(255),
         channel_name VARCHAR(255),
         check_number INTEGER,
@@ -81,7 +82,9 @@ export default {
         SELECT INTO account_id_var, owner_id_var
             id, owner
         FROM accounter_schema.financial_accounts 
-        WHERE account_number = NEW.operation_branch::TEXT;
+        WHERE account_number = NEW.account_number::TEXT
+            AND operation_branch = NEW.operation_branch::TEXT
+            AND operation_bank = NEW.operation_bank::TEXT;
 
         -- check if matching charge exists:
         -- TBD

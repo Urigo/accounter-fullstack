@@ -619,10 +619,10 @@ async function getDiscountTransactionsAndSave(
   month: Date,
 ) {
   console.log(`Getting from discount ${month.getMonth()}:${month.getFullYear()}`);
-  const { transactions } = await newInstance.getMonthTransactions(month);
+  const { transactions, accountNumber } = await newInstance.getMonthTransactions(month);
   console.log(`got ${transactions.length} transactions`);
   console.log(`saving discount ${month.getMonth()}:${month.getFullYear()}`);
-  await saveDiscountTransactionsToDB(transactions, pool);
+  await saveDiscountTransactionsToDB(transactions, pool, accountNumber);
   console.log(`finished saving discount ${month.getMonth()}:${month.getFullYear()}`);
 }
 
