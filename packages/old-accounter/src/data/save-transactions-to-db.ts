@@ -424,8 +424,8 @@ async function saveDiscountTransaction(transaction: DiscountTransaction, pool: p
     value_date,
     operation_code,
     operation_description,
-    operation_description_2,
-    operation_description_3,
+    operation_description2,
+    operation_description3,
     operation_branch,
     operation_bank,
     channel,
@@ -510,10 +510,10 @@ async function saveDiscountTransaction(transaction: DiscountTransaction, pool: p
               cause: error.cause,
             }
           : error,
-      query: {
-        text,
-        values: values.map((v, i) => `$${i + 1}: ${v}`),
-      },
+      // query: {
+      //   text,
+      //   values: values.map((v, i) => `$${i + 1}: ${v}`),
+      // },
     });
   }
 }

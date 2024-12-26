@@ -1,55 +1,45 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2024-12-25T12-15-43.bank-discount.sql',
+  name: '2024-12-26T12-15-43.bank-discount.sql',
   run: ({ sql }) => sql`
     CREATE TABLE IF NOT EXISTS accounter_schema.bank_discount_transactions (
         id uuid default gen_random_uuid() not null
             constraint bank_discount_transactions_pk
                 primary key,
-        card INTEGER NOT NULL,
-        trn_int_id VARCHAR(255),
-        trn_numaretor INTEGER,
-        merchant_name VARCHAR(255),
-        trn_purchase_date VARCHAR(255),
-        trn_amt DECIMAL(15,2),
-        trn_currency_symbol VARCHAR(10),
-        trn_type VARCHAR(255),
-        trn_type_code VARCHAR(255),
-        deb_crd_date VARCHAR(255),
-        amt_before_conv_and_index DECIMAL(15,2),
-        deb_crd_currency_symbol VARCHAR(10),
-        merchant_address VARCHAR(255),
-        merchant_phone_no VARCHAR(255),
-        branch_code_desc VARCHAR(255),
-        trans_card_present_ind BOOLEAN,
-        cur_payment_num INTEGER,
-        num_of_payments INTEGER,
-        token_ind INTEGER,
-        wallet_provider_code INTEGER,
-        wallet_provider_desc VARCHAR(255),
-        token_number_part4 VARCHAR(4),
-        cash_account_trn_amt DECIMAL(15,2),
-        charge_external_to_card_comment TEXT,
-        refund_ind BOOLEAN,
-        is_immediate_comment_ind BOOLEAN,
-        is_immediate_hhk_ind BOOLEAN,
-        is_margarita BOOLEAN,
-        is_spread_paymenst_abroad BOOLEAN,
-        trn_exac_way INTEGER,
-        debit_spread_ind BOOLEAN,
-        on_going_transactions_comment TEXT,
-        early_payment_ind BOOLEAN,
-        merchant_id VARCHAR(255),
-        crd_ext_id_num_type_code VARCHAR(255),
-        trans_source VARCHAR(255),
-        is_abroad_transaction BOOLEAN,
+        operation_date VARCHAR(255),
+        value_date VARCHAR(255),
+        operation_code VARCHAR(255),
+        operation_description VARCHAR(255),
+        operation_description2 VARCHAR(255),
+        operation_description3 VARCHAR(255),
+        operation_branch VARCHAR(255),
+        operation_bank VARCHAR(255),
+        channel VARCHAR(255),
+        channel_name VARCHAR(255),
+        check_number INTEGER,
+        institute_code VARCHAR(255),
+        operation_amount DECIMAL(15,2),
+        balance_after_operation DECIMAL(15,2),
+        operation_number INTEGER,
+        branch_treasury_number VARCHAR(255),
+        urn VARCHAR(255),
+        operation_details_service_name VARCHAR(255),
+        commission_channel_code VARCHAR(255),
+        commission_channel_name VARCHAR(255),
+        commission_type_name VARCHAR(255),
+        business_day_date VARCHAR(255),
+        event_name VARCHAR(255),
+        category_code INTEGER,
+        category_desc_code INTEGER,
+        category_description VARCHAR(255),
+        operation_description_to_display VARCHAR(255),
+        operation_order INTEGER,
+        is_last_seen BOOLEAN,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT bank_discount_transactions_trn_int_id_idx UNIQUE (trn_int_id)
+        CONSTRAINT bank_discount_transactions_urn_idx UNIQUE (urn)
     );
-
-    CREATE INDEX bank_discount_transactions_trn_int_id ON accounter_schema.bank_discount_transactions(trn_int_id);
 
     ALTER TABLE accounter_schema.transactions_raw_list ADD bank_discount_id uuid;
 
@@ -91,7 +81,7 @@ export default {
         SELECT INTO account_id_var, owner_id_var
             id, owner
         FROM accounter_schema.financial_accounts 
-        WHERE account_number = NEW.card::TEXT;
+        WHERE account_number = NEW.operation_branch::TEXT;
 
         -- check if matching charge exists:
         -- TBD
@@ -125,12 +115,12 @@ export default {
             account_id_var,
             charge_id_var,
             merged_id,
-            NEW.merchant_name,
-            CAST(NEW.trn_currency_symbol as accounter_schema.currency),
-            to_date(NEW.trn_purchase_date, 'DD/MM/YYYY'),
-            to_date(NEW.deb_crd_date, 'DD/MM/YYYY'),
-            NEW.trn_amt * -1,
-            0
+            NEW.operation_description,
+            'ILS'::accounter_schema.currency,
+            to_date(NEW.operation_date, 'DD/MM/YYYY'),
+            to_date(NEW.value_date, 'DD/MM/YYYY'),
+            NEW.operation_amount * -1,
+            NEW.balance_after_operation
         );
 
         RETURN NEW;
@@ -249,12 +239,12 @@ export default {
                                   FROM accounter_schema.cal_creditcard_transactions
                                   UNION
                                   SELECT bank_discount_transactions.id::text AS id,
-                                         bank_discount_transactions.trn_int_id AS reference_number,
+                                         bank_discount_transactions.urn AS reference_number,
                                          0 AS currency_rate,
                                          NULL::timestamp without time zone AS debit_timestamp,
                                          'BANK_DISCOUNT'::text AS origin,
-                                         bank_discount_transactions.card AS card_number,
-                                         bank_discount_transactions.merchant_name AS source_details
+                                         NULL::integer AS card_number,
+                                         bank_discount_transactions.operation_description AS source_details
                                   FROM accounter_schema.bank_discount_transactions),
         alt_debit_date AS (SELECT p.event_date,
                                   p.reference_number
