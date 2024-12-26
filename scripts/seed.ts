@@ -64,24 +64,40 @@ async function seed() {
       branch_number?: number;
     }[] = [];
 
-    if (
-      process.env.SEED_BANK_ACCOUNT_NUMBER &&
-      process.env.SEED_BANK_NUMBER &&
-      process.env.SEED_BRANCH_NUMBER
-    ) {
+    // Handle multiple bank accounts
+    // SEED_BANK_ACCOUNT_NUMBER,
+    // SEED_BANK_ACCOUNT_NUMBER_2,
+    // ...
+    for (let i = 1; i < 100; i++) {
+      const suffix = i === 1 ? '' : `_${i}`;
+      const accountNumber = process.env[`SEED_BANK_ACCOUNT_NUMBER${suffix}`];
+      const bankNumber = process.env[`SEED_BANK_NUMBER${suffix}`];
+      const branchNumber = process.env[`SEED_BRANCH_NUMBER${suffix}`];
+
+      if (!accountNumber || !bankNumber || !branchNumber) break;
+
       accountsToCreate.push({
-        account_number: process.env.SEED_BANK_ACCOUNT_NUMBER,
-        bank_number: parseInt(process.env.SEED_BANK_NUMBER),
-        branch_number: parseInt(process.env.SEED_BRANCH_NUMBER),
+        account_number: accountNumber,
+        bank_number: parseInt(bankNumber),
+        branch_number: parseInt(branchNumber),
         type: 'BANK_ACCOUNT',
         private_business: 'business',
         owner: adminEntityId,
       });
     }
 
-    if (process.env.SEED_CREDIT_CARD_LAST4DIGITS) {
+    // Handle multiple credit cards
+    // SEED_CREDIT_CARD_LAST4DIGITS,
+    // SEED_CREDIT_CARD_LAST4DIGITS_2,
+    // ...
+    for (let i = 1; i < 100; i++) {
+      const suffix = i === 1 ? '' : `_${i}`;
+      const last4digits = process.env[`SEED_CREDIT_CARD_LAST4DIGITS${suffix}`];
+
+      if (!last4digits) break;
+
       accountsToCreate.push({
-        account_number: process.env.SEED_CREDIT_CARD_LAST4DIGITS,
+        account_number: last4digits,
         type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
