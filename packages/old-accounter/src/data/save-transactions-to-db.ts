@@ -2,6 +2,7 @@ import lodash from 'lodash';
 import moment from 'moment';
 import pg from 'pg';
 import type { CalTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/cal/get-card-transactions-details.js';
+import type { DiscountTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/discount/get-last-transactions.js';
 import type { DecoratedTransaction } from '../scrape.js';
 
 const { camelCase } = lodash;
@@ -341,12 +342,12 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     transaction.trnIntId,
     transaction.trnNumaretor,
     transaction.merchantName,
-    formatDate(transaction.trnPurchaseDate),
+    formatDate(new Date(transaction.trnPurchaseDate)),
     transaction.trnAmt,
     normalizeCurrencySymbol(transaction.trnCurrencySymbol),
     transaction.trnType,
     transaction.trnTypeCode,
-    formatDate(transaction.debCrdDate),
+    formatDate(new Date(transaction.debCrdDate)),
     transaction.amtBeforeConvAndIndex,
     normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
     transaction.merchantAddress,
@@ -379,7 +380,7 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
   try {
     await pool.query(text, values);
     console.log(
-      `Success in insert to CAL - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
+      `Success in insert to Cal - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
     );
   } catch (error) {
     if (
@@ -391,6 +392,132 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
     }
 
     console.error('Error in Cal insert:', {
+      error:
+        error instanceof Error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              cause: error.cause,
+            }
+          : error,
+      query: {
+        text,
+        values: values.map((v, i) => `$${i + 1}: ${v}`),
+      },
+    });
+  }
+}
+
+export async function saveDiscountTransactionsToDB(
+  transactions: DiscountTransaction[],
+  pool: pg.Pool,
+  accountNumber: string,
+) {
+  for (const transaction of transactions) {
+    await saveDiscountTransaction(transaction, pool, accountNumber);
+  }
+}
+
+async function saveDiscountTransaction(
+  transaction: DiscountTransaction,
+  pool: pg.Pool,
+  accountNumber: string,
+) {
+  const tableName = 'accounter_schema.bank_discount_transactions';
+  const text = `INSERT INTO ${tableName} (
+    account_number,
+    operation_date,
+    value_date,
+    operation_code,
+    operation_description,
+    operation_description2,
+    operation_description3,
+    operation_branch,
+    operation_bank,
+    channel,
+    channel_name,
+    check_number,
+    institute_code,
+    operation_amount,
+    balance_after_operation,
+    operation_number,
+    branch_treasury_number,
+    urn,
+    operation_details_service_name,
+    commission_channel_code,
+    commission_channel_name,
+    commission_type_name,
+    business_day_date,
+    event_name,
+    category_code,
+    category_desc_code,
+    category_description,
+    operation_description_to_display,
+    operation_order,
+    is_last_seen
+  ) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+  ) RETURNING *`;
+
+  // converts 20240109 to Date object
+  function convertToDate(dateStr: string): Date {
+    return new Date(
+      parseInt(dateStr.substring(0, 4)),
+      parseInt(dateStr.substring(4, 6)) - 1,
+      parseInt(dateStr.substring(6, 8)),
+    );
+  }
+
+  const values = [
+    accountNumber,
+    formatDate(convertToDate(transaction.OperationDate)),
+    formatDate(convertToDate(transaction.ValueDate)),
+    transaction.OperationCode,
+    transaction.OperationDescription,
+    transaction.OperationDescription2,
+    transaction.OperationDescription3,
+    transaction.OperationBranch,
+    transaction.OperationBank,
+    transaction.Channel,
+    transaction.ChannelName,
+    transaction.CheckNumber || null,
+    transaction.InstituteCode,
+    transaction.OperationAmount,
+    transaction.BalanceAfterOperation,
+    transaction.OperationNumber,
+    transaction.BranchTreasuryNumber,
+    transaction.Urn,
+    transaction.OperationDetailsServiceName,
+    transaction.CommissionChannelCode,
+    transaction.CommissionChannelName,
+    transaction.CommissionTypeName,
+    formatDate(convertToDate(transaction.BusinessDayDate)),
+    transaction.EventName,
+    transaction.CategoryCode,
+    transaction.CategoryDescCode,
+    transaction.CategoryDescription,
+    transaction.OperationDescriptionToDisplay,
+    transaction.OperationOrder,
+    transaction.IsLastSeen,
+  ];
+
+  try {
+    await pool.query(text, values);
+    console.log(
+      `Success in insert to Discount - ${transaction.OperationDescription} - ${transaction.OperationAmount}`,
+    );
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('duplicate key value violates unique constraint')
+    ) {
+      console.log('Duplicate key violation, skipping insert', { urn: transaction.Urn });
+      return;
+    }
+
+    console.error('Error in Discount insert:', {
       error:
         error instanceof Error
           ? {
@@ -428,9 +555,8 @@ function normalizeCurrencySymbol(currencySymbol: string): string {
   }
 }
 
-function formatDate(dateString: string): string {
+function formatDate(date: Date): string {
   // Convert ISO date string to DD/MM/YYYY format for to_date() function
-  const date = new Date(dateString);
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();

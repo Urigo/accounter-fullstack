@@ -3,6 +3,8 @@ import { subYears } from 'date-fns';
 import { waitUntil } from '../helpers/waiting.js';
 import { calTransactionsSchema, type CalTransaction } from './types/cal/get-card-transactions-details.js';
 import { fetchPostWithinPage } from '../utils/fetch.js';
+import { waitUntilElementFound } from '../utils/browser-util.js';
+import { sleep } from '../utils/sleep.js';
 
 const LOGIN_URL = 'https://www.cal-online.co.il/';
 const TRANSACTIONS_REQUEST_ENDPOINT = 'https://api.cal-online.co.il/Transactions/api/transactionsDetails/getCardTransactionsDetails';
@@ -207,7 +209,8 @@ async function fetchMonthCompletedTransactions(
 
   const parsedResponse = calTransactionsSchema.safeParse(response);
   if (!parsedResponse.success) {
-    throw new Error('Failed to parse response');
+    console.error('failed to parse response', parsedResponse.error);
+    throw new Error('Failed to parse response', parsedResponse.error);
   }
 
   const { statusCode, result, statusDescription } = parsedResponse.data;
@@ -287,11 +290,6 @@ async function getAuthorizationHeader(page: Page) {
   return `CALAuthScheme ${authModule.auth.calConnectToken}`;
 }
 
-async function waitUntilElementFound(page: Page | Frame, elementSelector: string, onlyVisible = false, timeout = 10_000) {
-  // console.debug('waitUntilElementFound', { elementSelector, onlyVisible, timeout });
-  await page.waitForSelector(elementSelector, { visible: onlyVisible, timeout });
-}
-
 async function getXSiteId() {
   /*
     I don't know if the constant below will change in the feature.
@@ -308,11 +306,6 @@ async function getXSiteId() {
           this.xSiteId = "09031987-273E-2311-906C-8AF85B17C8D9",
   */
   return Promise.resolve('09031987-273E-2311-906C-8AF85B17C8D9');
-}
-
-async function sleep(ms: number) {
-  console.debug('sleep', ms);
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class CalCredentials {

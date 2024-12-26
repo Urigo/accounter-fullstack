@@ -1,4 +1,4 @@
-import type { Browser, Page } from 'puppeteer';
+import type { Browser, Frame, Page } from 'puppeteer';
 
 export async function newPage(browser: Browser): Promise<Page> {
   // creates new page in browser
@@ -13,4 +13,14 @@ export async function newPage(browser: Browser): Promise<Page> {
   });
 
   return page;
+}
+
+export async function waitUntilElementFound(
+  page: Page | Frame,
+  elementSelector: string,
+  onlyVisible = false,
+  timeout = 10_000,
+) {
+  // console.debug('waitUntilElementFound', { elementSelector, onlyVisible, timeout });
+  await page.waitForSelector(elementSelector, { visible: onlyVisible, timeout });
 }
