@@ -56,7 +56,7 @@ async function seed() {
 
     // Create bank accounts and credit cards
     const accountsToCreate: {
-      account_number: number;
+      account_number: string;
       type: FinancialAccountType;
       private_business: string;
       owner: string;
@@ -70,7 +70,7 @@ async function seed() {
       process.env.SEED_BRANCH_NUMBER
     ) {
       accountsToCreate.push({
-        account_number: parseInt(process.env.SEED_BANK_ACCOUNT_NUMBER),
+        account_number: process.env.SEED_BANK_ACCOUNT_NUMBER,
         bank_number: parseInt(process.env.SEED_BANK_NUMBER),
         branch_number: parseInt(process.env.SEED_BRANCH_NUMBER),
         type: 'BANK_ACCOUNT',
@@ -81,7 +81,7 @@ async function seed() {
 
     if (process.env.SEED_CREDIT_CARD_LAST4DIGITS) {
       accountsToCreate.push({
-        account_number: parseInt(process.env.SEED_CREDIT_CARD_LAST4DIGITS),
+        account_number: process.env.SEED_CREDIT_CARD_LAST4DIGITS,
         type: 'CREDIT_CARD',
         private_business: 'business',
         owner: adminEntityId,
