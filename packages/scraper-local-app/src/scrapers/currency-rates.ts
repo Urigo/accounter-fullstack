@@ -10,7 +10,7 @@ import type {
   IInsertExchangeRatesQuery,
   IUpdateExchangeRateParams,
   IUpdateExchangeRateQuery,
-} from '../__generated__/db.types.js';
+} from '../helpers/types.js';
 
 const currencies = ['USD', 'EUR', 'GBP'] as const;
 type Currency = (typeof currencies)[number];
