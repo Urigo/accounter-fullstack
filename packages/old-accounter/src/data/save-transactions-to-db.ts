@@ -380,7 +380,7 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
   try {
     await pool.query(text, values);
     console.log(
-      `Success in insert to CAL - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
+      `Success in insert to Cal - ${transaction.merchantName} - ${transaction.trnAmt} ${transaction.trnCurrencySymbol}`,
     );
   } catch (error) {
     if (
