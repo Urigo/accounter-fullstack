@@ -619,10 +619,10 @@ async function getDiscountTransactionsAndSave(
   month: Date,
 ) {
   console.log(`Getting from discount ${month.getMonth()}:${month.getFullYear()}`);
-  const transactions = await newInstance.getMonthTransactions(month);
+  const { transactions } = await newInstance.getMonthTransactions(month);
   console.log(`got ${transactions.length} transactions`);
   console.log(`saving discount ${month.getMonth()}:${month.getFullYear()}`);
-  // await saveDiscountTransactionsToDB(transactions, pool);
+  await saveDiscountTransactionsToDB(transactions, pool);
   console.log(`finished saving discount ${month.getMonth()}:${month.getFullYear()}`);
 }
 
@@ -724,8 +724,8 @@ async function getDiscountData(
   });
   console.log('got discount instance');
 
-  // fetch for every month in the last 24 months
-  const monthsToFetch = 2;
+  // fetch for every month in the last 12 months
+  const monthsToFetch = 12;
   const end = new Date();
   const start = subMonths(end, monthsToFetch);
   for (let month = start; isBefore(month, end); month = addMonths(month, 1)) {
@@ -1366,7 +1366,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
     userAgent:
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
   });
-  const fifthScraperInstance = await init({ headless: false });
+  const fifthScraperInstance = await init();
   console.log('After Init scraper');
 
   const calCards = process.env.CAL_LAST4DIGITS?.split(',') || [];

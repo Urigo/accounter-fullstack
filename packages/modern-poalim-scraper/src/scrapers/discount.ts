@@ -1,44 +1,41 @@
 import { type Page } from 'puppeteer';
-import { addDays, subYears, max, format, parse } from 'date-fns';
+import { subYears, format, addMonths, min } from 'date-fns';
 import { waitUntilElementFound } from '../utils/browser-util.js';
 import { fetchGetWithinPage } from '../utils/fetch.js';
 import { sleep } from '../utils/sleep.js';
-import { type DiscountTransaction, zodLastTransactionsSchema } from '../scrapers/types/discount/get-last-transactions.js';
+import { zodLastTransactionsSchema } from '../scrapers/types/discount/get-last-transactions.js';
+import { getAccountSchema } from '../scrapers/types/discount/get-account.js';
 
 const BASE_URL = 'https://start.telebank.co.il';
 const LOGIN_URL = `${BASE_URL}/login/#/LOGIN_PAGE_SME`; // `/LOGIN_PAGE` instead if logging in to a personal account
-const DATE_FORMAT = 'yyyyMMdd';
-
-enum TransactionStatuses {
-  Completed = 'completed',
-  Pending = 'pending',
-}
-
-enum TransactionTypes {
-  Normal = 'normal',
-  Installments = 'installments',
-}
-
-interface ScrapedAccountData {
-  UserAccountsData: {
-    DefaultAccountNumber: string;
-  };
-}
-
 
 export async function discount(page: Page, credentials: DiscountCredentials, options: DiscountOptions = {}) {
   console.debug('Starting discount');
   await login(credentials, page);
 
   return {
-    getMonthTransactions: async (_month: Date) => {
+    getMonthTransactions: async (month: Date) => {
       console.log('getMonthTransactions');
-      const accountData = await fetchAccountData(page, options);
-      console.log(accountData);
-      return [];
+      const txData = await fetchTransactions(page, month);
+      console.log(`Got ${txData.transactions.length} transactions for ${format(month, 'yyyy-MM')}`);
+      console.log(txData);
+      return txData;
     },
     getTransactions: async () => {
-      return [];
+      const startDate = options.startDate || subYears(new Date(), 2);
+      const endDate = new Date();
+
+      const txs = [];
+      let currentDate = startDate;
+
+      while (currentDate <= endDate) {
+        const txData = await fetchTransactions(page, currentDate);
+        console.log(txData);
+        txs.push(txData);
+        currentDate = addMonths(currentDate, 1);
+      }
+      
+      return txs;
     },
   }
 }
@@ -106,67 +103,41 @@ async function login(credentials: DiscountCredentials, page: Page) {
   }
 }
 
-function convertTransactions(txns: DiscountTransaction[], txnStatus: TransactionStatuses) {
-  if (!txns) {
-    return [];
-  }
-
-  return txns.map((txn) => {
-    return {
-      type: TransactionTypes.Normal,
-      identifier: txn.OperationNumber,
-      date: parse(txn.OperationDate, DATE_FORMAT, new Date()).toISOString(),
-      processedDate: parse(txn.ValueDate, DATE_FORMAT, new Date()).toISOString(),
-      originalAmount: txn.OperationAmount,
-      originalCurrency: 'ILS',
-      chargedAmount: txn.OperationAmount,
-      description: txn.OperationDescriptionToDisplay,
-      status: txnStatus,
-    };
-  });
-}
-
-async function fetchAccountData(page: Page, options: DiscountOptions) {
+async function fetchTransactions(page: Page, month: Date) {
   const apiSiteUrl = `${BASE_URL}/Titan/gatewayAPI`;
 
   const accountDataUrl = `${apiSiteUrl}/userAccounts/bsUserAccountsData?FetchAccountsNickName=true&FirstTimeEntry=false`;
-  const accountInfo = await fetchGetWithinPage<ScrapedAccountData>(page, accountDataUrl);
-  if (!accountInfo) {
-    console.error('failed to get account data');
-    return { success: false, errorMessage: 'failed to get account data' };
+  const accountInfo = await fetchGetWithinPage(page, accountDataUrl);
+  
+  const parsedAccountInfo = getAccountSchema.safeParse(accountInfo);
+  if (!parsedAccountInfo.success) {
+    console.error('failed to parse response', parsedAccountInfo.error);
+    throw new Error('Failed to parse response', parsedAccountInfo.error);
   }
 
-  const accountNumber = accountInfo.UserAccountsData.DefaultAccountNumber;
+  const accountNumber = parsedAccountInfo.data.UserAccountsData.DefaultAccountNumber;
 
-  const defaultStartDate = addDays(subYears(new Date(), 1), 2);
-  const startDate = options.startDate || defaultStartDate;
-  const startMoment = max([defaultStartDate, startDate]);
+  const startDate = month;
+  const startDateStr = format(startDate, 'yyyyMMdd');
+  
+  const endDate = addMonths(month, 1);
+  const endMoment = min([endDate, new Date()]);
+  const endDateStr = format(endMoment, 'yyyyMMdd');
 
-  const startDateStr = format(startMoment, 'yyyyMMdd');
-  const txnsUrl = `${apiSiteUrl}/lastTransactions/${accountNumber}/Date?IsCategoryDescCode=True&IsTransactionDetails=True&IsEventNames=True&IsFutureTransactionFlag=True&FromDate=${startDateStr}`;
+  const txnsUrl = `${apiSiteUrl}/lastTransactions/${accountNumber}/Date?IsCategoryDescCode=True&IsTransactionDetails=True&IsEventNames=True&IsFutureTransactionFlag=True&FromDate=${startDateStr}&ToDate=${endDateStr}`;
   const txnsResult = await fetchGetWithinPage(page, txnsUrl);
   
-  const { success, data } = zodLastTransactionsSchema.safeParse(txnsResult);
+  const { success, data, error } = zodLastTransactionsSchema.safeParse(txnsResult);
   if (!success) {
-    console.error('failed to parse transactions', data);
-    return {
-      success: false,
-      errorMessage: 'failed to parse transactions',
-    };
+    console.error('failed to parse response', error);
+    throw new Error('Failed to parse response', error);
   }
-
-  const completedTxns = convertTransactions(
-    data.CurrentAccountLastTransactions.OperationEntry,
-    TransactionStatuses.Completed,
-  );
 
   const accountData = {
     success: true,
-    accounts: [{
-      accountNumber,
-      balance: data.CurrentAccountLastTransactions.CurrentAccountInfo.AccountBalance,
-      txns: completedTxns,
-    }],
+    accountNumber,
+    balance: data.CurrentAccountLastTransactions.CurrentAccountInfo.AccountBalance,
+    transactions: data.CurrentAccountLastTransactions.OperationEntry,
   };
 
   return accountData;

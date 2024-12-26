@@ -209,7 +209,8 @@ async function fetchMonthCompletedTransactions(
 
   const parsedResponse = calTransactionsSchema.safeParse(response);
   if (!parsedResponse.success) {
-    throw new Error('Failed to parse response');
+    console.error('failed to parse response', parsedResponse.error);
+    throw new Error('Failed to parse response', parsedResponse.error);
   }
 
   const { statusCode, result, statusDescription } = parsedResponse.data;
