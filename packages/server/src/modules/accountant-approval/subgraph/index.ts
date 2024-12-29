@@ -1,11 +1,11 @@
 import { createYoga } from 'graphql-yoga';
 import { buildSubgraphSchema } from '@apollo/subgraph';
-import { accountantApprovalResolvers } from '../resolvers/accountant-approval.resolver';
+import { accountantApprovalSubgraphResolvers } from './resolver';
 import { typeDefsAccountantApproval } from './schema';
 
 export const getAccountantApprovalSubgraph = () =>
   buildSubgraphSchema([
-    { typeDefs: typeDefsAccountantApproval, resolvers: accountantApprovalResolvers },
+    { typeDefs: typeDefsAccountantApproval, resolvers: accountantApprovalSubgraphResolvers },
   ]);
 
 export const accountantApprovalYoga = createYoga({
