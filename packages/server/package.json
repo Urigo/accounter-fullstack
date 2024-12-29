@@ -21,6 +21,7 @@
     "@accounter/green-invoice-graphql": "^0.7.2",
     "@accounter/pcn874-generator": "^0.4.1",
     "@envelop/generic-auth": "8.0.1",
+    "@apollo/subgraph": "2.9.3",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-hive/yoga": "^0.39.0",
     "@graphql-yoga/plugin-defer-stream": "3.10.6",
