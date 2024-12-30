@@ -1,3 +1,5 @@
+import type { IGetTableColumnsResult } from '../__generated__/sql.types.js';
+
 export type * from '../__generated__/sql.types.js';
 export type {
   financial_account_type,
@@ -12,4 +14,13 @@ export type {
   IGetPoalimIlsTransactionsParams,
   IGetPoalimIlsTransactionsResult,
   IGetPoalimIlsTransactionsQuery,
+  IInsertPoalimIlsTransactionsParams,
+  IInsertPoalimIlsTransactionsResult,
+  IInsertPoalimIlsTransactionsQuery,
 } from '../__generated__/ils-transactions.types.js';
+export * from '../__generated__/foreign-transactions.types.js';
+
+export type FilteredColumns = (Omit<IGetTableColumnsResult, 'column_name' | 'data_type'> & {
+  column_name: string;
+  data_type: string;
+})[];

@@ -43,7 +43,11 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
           return;
         }
 
-        ctx.scrapedAccounts = accounts.data;
+        ctx.scrapedAccounts = accounts.data.filter(
+          account =>
+            parentCtx.acceptedAccountNumbers.length === 0 ||
+            parentCtx.acceptedAccountNumbers.includes(account.accountNumber),
+        );
       },
     },
     {
@@ -64,13 +68,18 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
       task: async () => {
         try {
           parentCtx.columns ??= {};
-          parentCtx.columns['poalim_ils_account_transactions'] = await getTableColumns.run(
-            { tableName: 'poalim_ils_account_transactions' },
-            pool,
+          await Promise.all(
+            ['ils', 'eur', 'usd', 'gbp'].map(async currency => {
+              parentCtx.columns![`poalim_${currency}_account_transactions`] =
+                await getTableColumns.run(
+                  { tableName: `poalim_${currency}_account_transactions` },
+                  pool,
+                );
+            }),
           );
         } catch (error) {
           console.error(error);
-          throw new Error("Error on getting 'poalim_ils_account_transactions' columns info");
+          throw new Error('Error on getting columns info');
         }
       },
     },
@@ -78,6 +87,13 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
       title: 'Validate Accounts',
       task: async (ctx, task) => {
         for (const account of ctx.scrapedAccounts) {
+          if (
+            parentCtx.acceptedAccountNumbers.length &&
+            !parentCtx.acceptedAccountNumbers.includes(account.accountNumber)
+          ) {
+            throw new Error(`Poalim Account ${account.accountNumber} is not accepted`);
+          }
+
           const dbAccount = ctx.dbAccounts.find(
             dbAccount =>
               dbAccount.branch_number === account.branchNumber &&
