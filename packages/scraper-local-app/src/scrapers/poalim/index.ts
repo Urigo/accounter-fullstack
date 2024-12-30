@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from '../../env.js';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
+import { Logger } from '../../logger.js';
 import { handlePoalimAccount } from './account.js';
 import { getPoalimAccounts, type ScrapedAccount } from './accounts.js';
 
@@ -29,13 +30,15 @@ export type PoalimContext = {
     [table: string]: IGetTableColumnsResult[];
   };
   createDumpFile?: boolean;
+  logger: Logger;
 };
 
-export async function getPoalimData(pool: Pool, credentials: PoalimCredentials) {
+export async function getPoalimData(pool: Pool, credentials: PoalimCredentials, logger: Logger) {
   return new Listr<PoalimContext>([
     {
       title: 'Login',
       task: async (ctx, task) => {
+        ctx.logger = logger;
         ctx.acceptedAccountNumbers = credentials.options?.acceptedAccountNumbers ?? [];
         ctx.createDumpFile = credentials.options?.createDumpFile ?? false;
 

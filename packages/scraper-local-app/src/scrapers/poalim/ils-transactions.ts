@@ -12,6 +12,7 @@ import type {
   IInsertPoalimIlsTransactionsParams,
   IInsertPoalimIlsTransactionsQuery,
 } from '../../helpers/types.js';
+import type { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimContext, PoalimScraper } from './index.js';
 
@@ -186,6 +187,7 @@ async function normalizeIlsForAccount(
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
+  logger: Logger,
 ) {
   task.output = `Getting transactions`;
   const transactions = await scraper.getILSTransactions(bankAccount);
@@ -198,7 +200,7 @@ async function normalizeIlsForAccount(
 
   if (!transactions.isValid) {
     if ('errors' in transactions) {
-      console.error(transactions.errors);
+      logger.error(transactions.errors);
     }
     throw new Error(
       `Invalid transactions data for ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
@@ -222,7 +224,11 @@ async function normalizeIlsForAccount(
   }
 }
 
-function newAttributesChecker(transaction: NormalizedIlsTransaction, columnNames: string[]) {
+function newAttributesChecker(
+  transaction: NormalizedIlsTransaction,
+  columnNames: string[],
+  logger: Logger,
+) {
   const knownOptionals = [
     'beneficiaryDetailsDataPartyName',
     'beneficiaryDetailsDataMessageHeadline',
@@ -246,10 +252,10 @@ function newAttributesChecker(transaction: NormalizedIlsTransaction, columnNames
     x => !allKeys.includes(x) && !knownOptionals.includes(x),
   );
   if (InTransactionNotInDB.length) {
-    console.log('New Poalim ILS keys, in DB missing from transaction', inDBNotInTransaction);
+    logger.log('New Poalim ILS keys, in DB missing from transaction', inDBNotInTransaction);
   }
   if (InTransactionNotInDB.length) {
-    console.log(`New Poalim ILS keys, in transaction missing from DB`, InTransactionNotInDB);
+    logger.log(`New Poalim ILS keys, in transaction missing from DB`, InTransactionNotInDB);
   }
 }
 
@@ -338,9 +344,10 @@ async function isTransactionNew(
   transaction: NormalizedIlsTransaction,
   pool: Pool,
   columns: FilteredColumns,
+  logger: Logger,
 ): Promise<boolean> {
   const columnNames = columns.map(column => camelCase(column.column_name));
-  newAttributesChecker(transaction, columnNames);
+  newAttributesChecker(transaction, columnNames, logger);
 
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
   const allKeys = Object.keys(transaction);
@@ -358,7 +365,7 @@ async function isTransactionNew(
       continue;
     }
     if (key.defaultValue) {
-      console.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
+      logger.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
     } else {
       switch (key.type) {
         case 'integer':
@@ -366,7 +373,7 @@ async function isTransactionNew(
           transaction[key.name] = 0 as never;
           break;
         default:
-          console.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
+          logger.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
       }
     }
   }
@@ -393,25 +400,29 @@ async function isTransactionNew(
     }
     return true;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw new Error('Failed to check if transaction is new');
   }
 }
 
-async function insertTransactions(transactions: NormalizedIlsTransaction[], pool: Pool) {
+async function insertTransactions(
+  transactions: NormalizedIlsTransaction[],
+  pool: Pool,
+  logger: Logger,
+) {
   const transactionsToInsert: Array<IInsertPoalimIlsTransactionsParams['transactions'][number]> =
     [];
   for (const transaction of transactions) {
     const direction = transaction.eventActivityTypeCode === 2 ? -1 : 1;
     const amount = transaction.eventAmount * direction;
     if (transaction.transactionType === 'TODAY') {
-      console.log(`Today transaction -
+      logger.log(`Today transaction -
               ${reverse(transaction.activityDescription)},
               ils${amount.toLocaleString()},
               ${transaction.accountNumber}
             `);
     } else if (transaction.transactionType === 'FUTURE') {
-      console.log(`Future transaction -
+      logger.log(`Future transaction -
                 ${reverse(transaction.activityDescription)},
                 ils${amount.toLocaleString()},
                 ${transaction.accountNumber}
@@ -419,7 +430,7 @@ async function insertTransactions(transactions: NormalizedIlsTransaction[], pool
     } else if (
       differenceInMonths(new Date(), new Date(convertNumberDateToString(transaction.eventDate))) > 2
     ) {
-      console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
+      logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
       throw new Error('Old transaction');
     }
     const transactionToInsert: IInsertPoalimIlsTransactionsParams['transactions'][number] = {
@@ -488,12 +499,12 @@ async function insertTransactions(transactions: NormalizedIlsTransaction[], pool
       res.map(transaction => {
         const direction = transaction.event_activity_type_code === 2 ? -1 : 1;
         const amount = Number(transaction.event_amount) * direction;
-        console.log(
+        logger.log(
           `success in insert to Poalim ILS - ${transaction.account_number} - ${reverse(transaction.activity_description)} - ${amount.toLocaleString()} - ${transaction.event_date}`,
         );
       });
     } catch (error) {
-      console.error('Failed to insert Poalim ILS transactions', error);
+      logger.error('Failed to insert Poalim ILS transactions', error);
       throw new Error('Failed to insert transactions');
     }
   }
@@ -517,12 +528,20 @@ export async function getIlsTransactions(
   account: ScrapedAccount,
   parentCtx: PoalimContext,
 ) {
-  const knownAccountNumbers = parentCtx.accounts!.map(account => account.accountNumber);
+  const { logger, accounts } = parentCtx;
+  const knownAccountNumbers = accounts!.map(account => account.accountNumber);
   return new Listr<Context>([
     {
       title: `Get Transactions`,
       task: async (ctx, task) => {
-        await normalizeIlsForAccount(ctx, task, parentCtx.scraper!, account, knownAccountNumbers);
+        await normalizeIlsForAccount(
+          ctx,
+          task,
+          parentCtx.scraper!,
+          account,
+          knownAccountNumbers,
+          logger,
+        );
         task.title = `${task.title} (Got ${ctx.transactions?.length} transactions)`;
       },
     },
@@ -536,7 +555,7 @@ export async function getIlsTransactions(
         ) as FilteredColumns;
         const newTransactions: NormalizedIlsTransaction[] = [];
         for (const normalizedTransaction of transactions) {
-          if (await isTransactionNew(normalizedTransaction, pool, columns)) {
+          if (await isTransactionNew(normalizedTransaction, pool, columns, logger)) {
             newTransactions.push(normalizedTransaction);
           }
         }
@@ -549,7 +568,7 @@ export async function getIlsTransactions(
       skip: ctx => (ctx.newTransactions?.length === 0 ? 'No new transactions' : undefined),
       task: async ctx => {
         const { newTransactions = [] } = ctx;
-        await insertTransactions(newTransactions, pool);
+        await insertTransactions(newTransactions, pool, logger);
       },
     },
     {

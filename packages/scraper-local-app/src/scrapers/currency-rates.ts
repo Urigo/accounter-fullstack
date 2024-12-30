@@ -1,7 +1,6 @@
 import { format } from 'date-fns';
 import { XMLParser } from 'fast-xml-parser';
 import Listr from 'listr';
-import { Logger } from 'logger.js';
 import { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type {
@@ -11,6 +10,7 @@ import type {
   IUpdateExchangeRateParams,
   IUpdateExchangeRateQuery,
 } from '../helpers/types.js';
+import type { Logger } from '../logger.js';
 
 const currencies = ['USD', 'EUR', 'GBP'] as const;
 type Currency = (typeof currencies)[number];
@@ -44,9 +44,7 @@ const updateExchangeRate = sql<IUpdateExchangeRateQuery>`
   RETURNING *;
 `;
 
-const logger = new Logger();
-
-async function getDatabaseRates(pool: Pool, ctx: Context) {
+async function getDatabaseRates(pool: Pool, ctx: Context, logger: Logger) {
   try {
     const existingRates = await getAllExchangeRates.run(undefined, pool);
 
@@ -69,7 +67,7 @@ async function getDatabaseRates(pool: Pool, ctx: Context) {
   }
 }
 
-async function getBoiRates(ctx: Context) {
+async function getBoiRates(ctx: Context, logger: Logger) {
   try {
     const res = await fetch(
       'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS',
@@ -120,7 +118,7 @@ async function getBoiRates(ctx: Context) {
   }
 }
 
-async function compareAndUpdateRates(pool: Pool, ctx: Context) {
+async function compareAndUpdateRates(pool: Pool, ctx: Context, logger: Logger) {
   const newRecords: Array<IInsertExchangeRatesParams['newRecords'][number]> = [];
 
   for (const [exchangeDate, rates] of ctx.boiData!) {
@@ -200,19 +198,19 @@ type Context = {
   boiData?: Awaited<ReturnType<typeof getBoiRates>>;
 };
 
-export async function getCurrencyRates(pool: Pool) {
+export async function getCurrencyRates(pool: Pool, logger: Logger) {
   return new Listr<Context>([
     {
       title: 'Fetch DB Data',
-      task: ctx => getDatabaseRates(pool, ctx),
+      task: ctx => getDatabaseRates(pool, ctx, logger),
     },
     {
       title: 'Fetch Bank of Israel Data',
-      task: ctx => getBoiRates(ctx),
+      task: ctx => getBoiRates(ctx, logger),
     },
     {
       title: 'Compare and Update Data',
-      task: async ctx => compareAndUpdateRates(pool, ctx),
+      task: async ctx => compareAndUpdateRates(pool, ctx, logger),
       enabled: ctx => {
         return !!ctx.databaseData && !!ctx.boiData;
       },

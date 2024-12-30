@@ -1,5 +1,6 @@
 import { differenceInMonths } from 'date-fns';
 import Listr, { ListrTaskWrapper, type ListrTask } from 'listr';
+import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
@@ -411,6 +412,7 @@ async function normalizeForeignTransactionsForAccount(
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
+  logger: Logger,
 ) {
   task.output = `Getting transactions`;
   const transactions = await scraper.getForeignTransactions(bankAccount);
@@ -423,7 +425,7 @@ async function normalizeForeignTransactionsForAccount(
 
   if (!transactions.isValid) {
     if ('errors' in transactions) {
-      console.error(transactions.errors);
+      logger.error(transactions.errors);
       if (transactions.errors === 'Data seems unreachable. Is the account active?') {
         return;
       }
@@ -481,7 +483,11 @@ async function normalizeForeignTransactionsForAccount(
   );
 }
 
-function newAttributesChecker(transaction: NormalizedForeignTransaction, columnNames: string[]) {
+function newAttributesChecker(
+  transaction: NormalizedForeignTransaction,
+  columnNames: string[],
+  logger: Logger,
+) {
   const knownOptionals = [
     'metadata',
     'urlAddressNiar',
@@ -500,10 +506,10 @@ function newAttributesChecker(transaction: NormalizedForeignTransaction, columnN
     x => !allKeys.includes(x) && !knownOptionals.includes(x),
   );
   if (InTransactionNotInDB.length) {
-    console.log('New Poalim Foreign keys, in DB missing from transaction', inDBNotInTransaction);
+    logger.log('New Poalim Foreign keys, in DB missing from transaction', inDBNotInTransaction);
   }
   if (InTransactionNotInDB.length) {
-    console.log(`New Poalim Foreign keys, in transaction missing from DB`, InTransactionNotInDB);
+    logger.log(`New Poalim Foreign keys, in transaction missing from DB`, InTransactionNotInDB);
   }
 }
 
@@ -512,19 +518,20 @@ async function isTransactionNew(
   currency: ForeignCurrency,
   pool: Pool,
   columns: FilteredColumns,
+  logger: Logger,
 ): Promise<boolean> {
   let oldContraAccountFieldNameLableAPI = false;
   if (
     'contraAccountFieldNameLable' in transaction &&
     Number(transaction.contraAccountFieldNameLable) === 0
   ) {
-    console.log('old API!');
+    logger.log('old API!');
     transaction.contraAccountFieldNameLable = null;
     oldContraAccountFieldNameLableAPI = true;
   }
 
   const columnNames = columns.map(column => camelCase(column.column_name));
-  newAttributesChecker(transaction, columnNames);
+  newAttributesChecker(transaction, columnNames, logger);
 
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
   const allKeys = Object.keys(transaction);
@@ -542,7 +549,7 @@ async function isTransactionNew(
       continue;
     }
     if (key.defaultValue) {
-      console.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
+      logger.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
     } else {
       switch (key.type) {
         case 'integer':
@@ -550,7 +557,7 @@ async function isTransactionNew(
           transaction[key.name] = 0 as never;
           break;
         default:
-          console.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
+          logger.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
       }
     }
   }
@@ -590,7 +597,7 @@ async function isTransactionNew(
     }
     return true;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw new Error('Failed to check if transaction is new');
   }
 }
@@ -598,19 +605,19 @@ async function isTransactionNew(
 async function insertTransactions<
   T extends ForeignCurrency,
   U extends InsertionTransactionParams<T>,
->(transactions: NormalizedForeignTransaction[], pool: Pool, currency: T) {
+>(transactions: NormalizedForeignTransaction[], pool: Pool, currency: T, logger: Logger) {
   const transactionsToInsert: Array<U['transactions'][number]> = [];
   for (const transaction of transactions) {
     const direction = transaction.eventActivityTypeCode === 2 ? -1 : 1;
     const amount = transaction.eventAmount * direction;
     if (transaction.transactionType === 'TODAY') {
-      console.log(`Today transaction -
+      logger.log(`Today transaction -
               ${reverse(transaction.activityDescription)},
               ${currency}${amount.toLocaleString()},
               ${transaction.accountNumber}
             `);
     } else if (transaction.transactionType === 'FUTURE') {
-      console.log(`Future transaction -
+      logger.log(`Future transaction -
                 ${reverse(transaction.activityDescription)},
                 ${currency}${amount.toLocaleString()},
                 ${transaction.accountNumber}
@@ -621,7 +628,7 @@ async function insertTransactions<
         new Date(convertNumberDateToString(transaction.executingDate)),
       ) > 2
     ) {
-      console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
+      logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
       throw new Error('Old transaction');
     }
     const transactionToInsert: U['transactions'][number] = {
@@ -712,12 +719,12 @@ async function insertTransactions<
       res.map(transaction => {
         const direction = transaction.event_activity_type_code === 2 ? -1 : 1;
         const amount = Number(transaction.event_amount) * direction;
-        console.log(
+        logger.log(
           `success in insert to Poalim ${currency} - ${transaction.account_number} - ${reverse(transaction.activity_description)} - ${amount.toLocaleString()} - ${transaction.executing_date}`,
         );
       });
     } catch (error) {
-      console.error(`Failed to insert Poalim ${currency} transactions`, error);
+      logger.error(`Failed to insert Poalim ${currency} transactions`, error);
       throw new Error('Failed to insert transactions');
     }
   }
@@ -728,7 +735,8 @@ export async function getForeignTransactions(
   account: ScrapedAccount,
   parentCtx: PoalimContext,
 ) {
-  const knownAccountNumbers = parentCtx.accounts!.map(account => account.accountNumber);
+  const { logger, accounts } = parentCtx;
+  const knownAccountNumbers = accounts!.map(account => account.accountNumber);
   return new Listr<Context>([
     {
       title: `Get Transactions`,
@@ -739,6 +747,7 @@ export async function getForeignTransactions(
           parentCtx.scraper!,
           account,
           knownAccountNumbers,
+          logger,
         );
         const currencyAccounts = Object.keys(foreignAccountsContext.transactionsByCurrencies ?? {});
         if (currencyAccounts.length) {
@@ -779,7 +788,15 @@ export async function getForeignTransactions(
                     ) as FilteredColumns;
                     const newTransactions: NormalizedForeignTransaction[] = [];
                     for (const normalizedTransaction of transactions) {
-                      if (await isTransactionNew(normalizedTransaction, currency, pool, columns)) {
+                      if (
+                        await isTransactionNew(
+                          normalizedTransaction,
+                          currency,
+                          pool,
+                          columns,
+                          logger,
+                        )
+                      ) {
                         newTransactions.push(normalizedTransaction);
                       }
                     }
@@ -795,7 +812,7 @@ export async function getForeignTransactions(
                       : undefined,
                   task: async specificForeignAccountContext => {
                     const { newTransactions = [] } = specificForeignAccountContext;
-                    await insertTransactions(newTransactions, pool, currency);
+                    await insertTransactions(newTransactions, pool, currency, logger);
                   },
                 },
               ]);
