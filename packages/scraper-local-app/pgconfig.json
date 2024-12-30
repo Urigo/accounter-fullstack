@@ -1,0 +1,17 @@
+{
+  "transforms": [
+    {
+      "mode": "ts",
+      "include": "**/*.ts",
+      "emitTemplate": "./src/__generated__/{{name}}.types.ts"
+    }
+  ],
+  "srcDir": "./src/",
+  "failOnError": true,
+  "camelCaseColumnNames": false,
+  "db": {
+    "ssl": {
+      "rejectUnauthorized": false
+    }
+  }
+}
