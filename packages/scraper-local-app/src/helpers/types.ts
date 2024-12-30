@@ -19,6 +19,7 @@ export type {
   IInsertPoalimIlsTransactionsQuery,
 } from '../__generated__/ils-transactions.types.js';
 export * from '../__generated__/foreign-transactions.types.js';
+export * from '../__generated__/swift-transactions.types.js';
 
 export type FilteredColumns = (Omit<IGetTableColumnsResult, 'column_name' | 'data_type'> & {
   column_name: string;
