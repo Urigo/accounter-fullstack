@@ -12,7 +12,7 @@ const {
 } = appConfig?.database ?? {};
 
 const dbUrl = `postgres://${user}:${password}@${host}:${port}/${database}${
-  ssl === true ? '?sslmode=require' : '?sslmode=disable'
+  ssl ? '?sslmode=require' : '?sslmode=disable'
 }`;
 
 // eslint-disable-next-line no-console

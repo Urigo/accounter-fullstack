@@ -9,12 +9,6 @@ const { Pool } = pg;
 export async function scrape() {
   const pool = new Pool(config.database);
 
-  const closeContext = {
-    onDone: async () => {
-      pool.end();
-    },
-  };
-
   const tasks = new Listr(
     [
       {
@@ -23,7 +17,7 @@ export async function scrape() {
       },
       ...(config.poalimAccounts?.map((creds, i) => ({
         title: `Poalim Account ${creds.nickname ?? i + 1}`,
-        task: async () => await getPoalimData(pool, creds, closeContext),
+        task: async () => await getPoalimData(pool, creds),
       })) ?? []),
     ],
     { concurrent: true },
@@ -32,7 +26,7 @@ export async function scrape() {
   await tasks.run().catch(err => {
     console.error(err);
   });
-  await closeContext.onDone();
+  pool.end();
   console.log('Tasks completed.');
 }
 

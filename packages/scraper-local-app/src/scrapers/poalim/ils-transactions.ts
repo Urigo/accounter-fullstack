@@ -1,29 +1,22 @@
-// import { writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
+import { differenceInMonths, format } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import { ILSCheckingTransactionsDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
-import { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/__generated__/isracardCardsTransactionsList.js';
+import type { ILSCheckingTransactionsDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
 import { sql } from '@pgtyped/runtime';
-import { camelCase } from '../../helpers/misc.js';
+import { camelCase, convertNumberDateToString, reverse } from '../../helpers/misc.js';
 import type {
+  FilteredColumns,
   IGetPoalimIlsTransactionsQuery,
   IGetPoalimIlsTransactionsResult,
-  IGetTableColumnsResult,
+  IInsertPoalimIlsTransactionsParams,
+  IInsertPoalimIlsTransactionsQuery,
 } from '../../helpers/types.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimContext, PoalimScraper } from './index.js';
 
-type IsraelTransaction = NonNullable<
-  IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][number]['txnIsrael']
->[number];
-type ForeignTransaction = NonNullable<
-  IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][number]['txnAbroad']
->[number];
-export type DecoratedTransaction = (IsraelTransaction | ForeignTransaction) & { card: string };
-
-type IlsTransaction = ILSCheckingTransactionsDataSchema['transactions'][number];
-
-type NormalizedIlsTransaction = IlsTransaction & {
+export type IlsTransaction = ILSCheckingTransactionsDataSchema['transactions'][number];
+export type NormalizedIlsTransaction = IlsTransaction & {
   beneficiaryDetailsDataPartyName?: string | null;
   beneficiaryDetailsDataMessageHeadline?: string | null;
   beneficiaryDetailsDataPartyHeadline?: string | null;
@@ -34,24 +27,122 @@ type NormalizedIlsTransaction = IlsTransaction & {
   branchNumber: number;
   bankNumber: number;
 };
+type Context = {
+  transactions?: NormalizedIlsTransaction[];
+  newTransactions?: NormalizedIlsTransaction[];
+};
 
-type FilteredColumns = (Omit<IGetTableColumnsResult, 'column_name' | 'data_type'> & {
-  column_name: string;
-  data_type: string;
-})[];
-
-export const getPoalimIlsTransactions = sql<IGetPoalimIlsTransactionsQuery>`
+const getPoalimIlsTransactions = sql<IGetPoalimIlsTransactionsQuery>`
   SELECT * FROM accounter_schema.poalim_ils_account_transactions
   WHERE account_number = $accountNumber
     AND branch_number = $branchNumber
     AND bank_number = $bankNumber
     AND event_date = $eventDate
-    AND value_date = $valueDate 
+    AND value_date = $valueDate
     AND reference_number = $referenceNumber;`;
 
-// function reverse(s: string) {
-//   return s.split('').reverse().join('');
-// }
+const insertPoalimIlsTransactions = sql<IInsertPoalimIlsTransactionsQuery>`
+  INSERT INTO accounter_schema.poalim_ils_account_transactions (
+    event_date,
+    formatted_event_date,
+    serial_number,
+    activity_type_code,
+    activity_description,
+    text_code,
+    reference_number,
+    reference_catenated_number,
+    value_date,
+    formatted_value_date,
+    event_amount,
+    event_activity_type_code,
+    current_balance,
+    internal_link_code,
+    original_event_create_date,
+    formatted_original_event_create_date,
+    transaction_type,
+    data_group_code,
+    beneficiary_details_data,
+    expanded_event_date,
+    executing_branch_number,
+    event_id,
+    details,
+    pfm_details,
+    different_date_indication,
+    rejected_data_event_pertaining_indication,
+    table_number,
+    record_number,
+    contra_bank_number,
+    contra_branch_number,
+    contra_account_number,
+    contra_account_type_code,
+    marketing_offer_context,
+    comment_existence_switch,
+    english_action_desc,
+    field_desc_display_switch,
+    url_address_niar,
+    offer_activity_context,
+    comment,
+    beneficiary_details_data_party_name,
+    beneficiary_details_data_message_headline,
+    beneficiary_details_data_party_headline,
+    beneficiary_details_data_message_detail,
+    beneficiary_details_data_table_number,
+    beneficiary_details_data_record_number,
+    activity_description_include_value_date,
+    bank_number,
+    branch_number,
+    account_number)
+  VALUES $$transactions(
+    eventDate,
+    formattedEventDate,
+    serialNumber,
+    activityTypeCode,
+    activityDescription,
+    textCode,
+    referenceNumber,
+    referenceCatenatedNumber,
+    valueDate,
+    formattedValueDate,
+    eventAmount,
+    eventActivityTypeCode,
+    currentBalance,
+    internalLinkCode,
+    originalEventCreateDate,
+    formattedOriginalEventCreateDate,
+    transactionType,
+    dataGroupCode,
+    beneficiaryDetailsData,
+    expandedEventDate,
+    executingBranchNumber,
+    eventId,
+    details,
+    pfmDetails,
+    differentDateIndication,
+    rejectedDataEventPertainingIndication,
+    tableNumber,
+    recordNumber,
+    contraBankNumber,
+    contraBranchNumber,
+    contraAccountNumber,
+    contraAccountTypeCode,
+    marketingOfferContext,
+    commentExistenceSwitch,
+    englishActionDesc,
+    fieldDescDisplaySwitch,
+    urlAddressNiar,
+    offerActivityContext,
+    comment,
+    beneficiaryDetailsDataPartyName,
+    beneficiaryDetailsDataMessageHeadline,
+    beneficiaryDetailsDataPartyHeadline,
+    beneficiaryDetailsDataMessageDetail,
+    beneficiaryDetailsDataTableNumber,
+    beneficiaryDetailsDataRecordNumber,
+    activityDescriptionIncludeValueDate,
+    bankNumber,
+    branchNumber,
+    accountNumber)
+  RETURNING *;`;
 
 function normalizeBeneficiaryDetailsData(
   transaction: IlsTransaction,
@@ -63,10 +154,14 @@ function normalizeBeneficiaryDetailsData(
 ): NormalizedIlsTransaction {
   const normalizedTransaction = { ...transaction, ...accountObject } as NormalizedIlsTransaction;
   normalizedTransaction.activityDescriptionIncludeValueDate ??= null;
-  if (
-    typeof transaction.beneficiaryDetailsData !== 'undefined' &&
-    transaction.beneficiaryDetailsData != null
-  ) {
+  if (transaction.beneficiaryDetailsData == null) {
+    normalizedTransaction.beneficiaryDetailsDataPartyName = null;
+    normalizedTransaction.beneficiaryDetailsDataMessageHeadline = null;
+    normalizedTransaction.beneficiaryDetailsDataPartyHeadline = null;
+    normalizedTransaction.beneficiaryDetailsDataMessageDetail = null;
+    normalizedTransaction.beneficiaryDetailsDataTableNumber = null;
+    normalizedTransaction.beneficiaryDetailsDataRecordNumber = null;
+  } else {
     normalizedTransaction.beneficiaryDetailsDataPartyName =
       transaction.beneficiaryDetailsData.partyName;
     normalizedTransaction.beneficiaryDetailsDataMessageHeadline =
@@ -80,153 +175,51 @@ function normalizeBeneficiaryDetailsData(
     normalizedTransaction.beneficiaryDetailsDataRecordNumber =
       transaction.beneficiaryDetailsData.recordNumber;
 
-    transaction.beneficiaryDetailsData = null;
-  } else {
-    normalizedTransaction.beneficiaryDetailsDataPartyName = null;
-    normalizedTransaction.beneficiaryDetailsDataMessageHeadline = null;
-    normalizedTransaction.beneficiaryDetailsDataPartyHeadline = null;
-    normalizedTransaction.beneficiaryDetailsDataMessageDetail = null;
-    normalizedTransaction.beneficiaryDetailsDataTableNumber = null;
-    normalizedTransaction.beneficiaryDetailsDataRecordNumber = null;
+    normalizedTransaction.beneficiaryDetailsData = null;
   }
   return normalizedTransaction;
 }
 
-// function createWhereClause(
-//   transaction: NormalizedIlsTransaction,
-//   checkingColumnNames: { column_name: string; data_type: string }[],
-// ) {
-//   let whereClause = `
-//   SELECT * FROM accounter_schema.poalim_ils_account_transactions
-//   WHERE account_number = ${transaction.accountNumber}
-//     AND branch_number = ${transaction.branchNumber}
-//     AND bank_number = ${transaction.bankNumber}
-//     AND event_date = '${transaction.eventDate}'
-//     AND value_date = ${transaction.valueDate}
-//     AND reference_number = ${transaction.referenceNumber};`;
-
-//   const columnNamesToExcludeFromComparison: (keyof NormalizedIlsTransaction | 'id')[] = [
-//     'recordNumber',
-//     'beneficiaryDetailsDataRecordNumber', // Same beneficiary will update the index whenever there is a new one
-//     'id',
-//     'formattedEventAmount',
-//     'formattedCurrentBalance',
-//   ];
-
-//   for (const dBcolumn of checkingColumnNames) {
-//     const camelCaseColumnName = camelCase(dBcolumn.column_name) as keyof NormalizedIlsTransaction;
-//     if (columnNamesToExcludeFromComparison.includes(camelCaseColumnName)) {
-//       continue;
-//     }
-
-//     let actualCondition = '';
-//     const isNotNull = transaction[camelCaseColumnName] != null;
-
-//     whereClause = whereClause.concat('  ' + dBcolumn.column_name);
-
-//     if (
-//       dBcolumn.data_type === 'character varying' ||
-//       dBcolumn.data_type === 'USER-DEFINED' ||
-//       dBcolumn.data_type === 'text'
-//     ) {
-//       if (isNotNull && camelCaseColumnName !== 'beneficiaryDetailsData') {
-//         actualCondition = `= $$` + transaction[camelCaseColumnName] + `$$`;
-//       }
-//     } else if (dBcolumn.data_type === 'date' || dBcolumn.data_type === 'bit') {
-//       actualCondition = `= '` + transaction[camelCaseColumnName] + `'`;
-//       // if (dBcolumn.data_type == 'bit') {
-//       //   console.log('bit - ', actualCondition);
-//       //   console.log(transaction.eventAmount)
-//       // }
-//     } else if (
-//       dBcolumn.data_type === 'integer' ||
-//       dBcolumn.data_type === 'numeric' ||
-//       dBcolumn.data_type === 'bigint'
-//     ) {
-//       actualCondition = `= ` + transaction[camelCaseColumnName];
-//     } else if (isNotNull) {
-//       // TODO: Log important checks
-//       console.log('unknown type ' + dBcolumn.data_type + ' ' + camelCaseColumnName);
-//     }
-
-//     whereClause = whereClause.concat(
-//       ` ${isNotNull ? actualCondition : 'IS NULL'} AND
-//            `,
-//     );
-//   }
-//   const lastIndexOfAND = whereClause.lastIndexOf('AND');
-//   whereClause = whereClause.substring(0, lastIndexOfAND);
-
-//   return whereClause;
-// }
-
-// function transactionValuesToArray(transaction: NormalizedIlsTransaction) {
-//   let values: (string | null)[] = [];
-//   values = [
-//     transaction.eventDate,
-//     transaction.formattedEventDate,
-//     transaction.serialNumber,
-//     transaction.activityTypeCode,
-//     transaction.activityDescription,
-//     transaction.textCode,
-//     transaction.referenceNumber,
-//     transaction.referenceCatenatedNumber,
-//     transaction.valueDate,
-//     transaction.formattedValueDate,
-//     transaction.eventAmount,
-//     transaction.eventActivityTypeCode,
-//     transaction.currentBalance,
-//     transaction.internalLinkCode,
-//     transaction.originalEventCreateDate,
-//     transaction.formattedOriginalEventCreateDate,
-//     transaction.transactionType,
-//     transaction.dataGroupCode,
-//     transaction.beneficiaryDetailsData,
-//     transaction.expandedEventDate,
-//     transaction.executingBranchNumber,
-//     transaction.eventId,
-//     transaction.details,
-//     transaction.pfmDetails,
-//     transaction.differentDateIndication,
-//     transaction.rejectedDataEventPertainingIndication,
-//     transaction.tableNumber,
-//     transaction.recordNumber,
-//     transaction.contraBankNumber,
-//     transaction.contraBranchNumber,
-//     transaction.contraAccountNumber,
-//     transaction.contraAccountTypeCode,
-//     transaction.marketingOfferContext,
-//     transaction.commentExistenceSwitch,
-//     transaction.englishActionDesc,
-//     transaction.fieldDescDisplaySwitch,
-//     transaction.urlAddressNiar,
-//     transaction.offerActivityContext,
-//     transaction.comment,
-//     transaction.beneficiaryDetailsDataPartyName,
-//     transaction.beneficiaryDetailsDataMessageHeadline,
-//     transaction.beneficiaryDetailsDataPartyHeadline,
-//     transaction.beneficiaryDetailsDataMessageDetail,
-//     transaction.beneficiaryDetailsDataTableNumber,
-//     transaction.beneficiaryDetailsDataRecordNumber,
-//     transaction.activityDescriptionIncludeValueDate,
-//     transaction.bankNumber,
-//     transaction.branchNumber,
-//     transaction.accountNumber,
-//   ];
-//   return values;
-// }
-
-function compareTransactions(
-  transaction: NormalizedIlsTransaction,
-  dbTransaction: IGetPoalimIlsTransactionsResult,
+async function normalizeIlsForAccount(
+  ctx: Context,
+  task: ListrTaskWrapper<unknown>,
+  scraper: PoalimScraper,
+  bankAccount: ScrapedAccount,
+  knownAccountsNumbers: number[],
 ) {
-  // const whereClause = createWhereClause(transaction, columns);
-  // console.log('whereClause', whereClause);
+  task.output = `Getting transactions`;
+  const transactions = await scraper.getILSTransactions(bankAccount);
 
-  // do exact comparison
+  if (!transactions.data) {
+    task.skip('No data');
+    ctx.transactions = [];
+    return;
+  }
 
-  console.log(transaction && dbTransaction);
-  return false;
+  if (!transactions.isValid) {
+    if ('errors' in transactions) {
+      console.error(transactions.errors);
+    }
+    throw new Error(
+      `Invalid transactions data for ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
+    );
+  }
+
+  if (knownAccountsNumbers.includes(transactions.data.retrievalTransactionData.accountNumber)) {
+    task.output = `Normalizing transactions`;
+    const account = {
+      accountNumber: transactions.data.retrievalTransactionData.accountNumber,
+      branchNumber: transactions.data.retrievalTransactionData.branchNumber,
+      bankNumber: transactions.data.retrievalTransactionData.bankNumber,
+    };
+    ctx.transactions = transactions.data.transactions.map(transaction =>
+      normalizeBeneficiaryDetailsData(transaction, account),
+    );
+  } else {
+    throw new Error(
+      `UNKNOWN ACCOUNT ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
+    );
+  }
 }
 
 function newAttributesChecker(transaction: NormalizedIlsTransaction, columnNames: string[]) {
@@ -259,6 +252,87 @@ function newAttributesChecker(transaction: NormalizedIlsTransaction, columnNames
     console.log(`New Poalim ILS keys, in transaction missing from DB`, InTransactionNotInDB);
   }
 }
+
+function isSameTransaction(
+  transaction: NormalizedIlsTransaction,
+  dbTransaction: IGetPoalimIlsTransactionsResult,
+  columns: FilteredColumns,
+  ignoredColumns: string[] = [],
+) {
+  for (const column of columns) {
+    if (ignoredColumns.includes(camelCase(column.column_name))) {
+      continue;
+    }
+
+    const key = column.column_name as keyof IGetPoalimIlsTransactionsResult;
+    const attribute = camelCase(key) as keyof NormalizedIlsTransaction;
+    const type = column.data_type;
+
+    // normalize nullables
+    const isNullable = column.is_nullable === 'YES';
+    const dbValue = isNullable ? (dbTransaction[key] ?? null) : dbTransaction[key];
+    const transactionValue = isNullable ? (transaction[attribute] ?? null) : transaction[attribute];
+
+    switch (type) {
+      case 'character varying':
+      case 'USER-DEFINED':
+      case 'text': {
+        // string values
+        if (dbValue !== transactionValue) {
+          return false;
+        }
+        break;
+      }
+      case 'date': {
+        // date values
+        const dbDateString = dbValue ? format(dbValue as Date, 'yyyyMMdd') : null;
+        const transactionDateString = transactionValue ? transactionValue.toString() : null;
+
+        if (dbDateString !== transactionDateString) {
+          return false;
+        }
+        break;
+      }
+      case 'bit': {
+        // boolean values
+        const transactionBit = transactionValue == null ? null : transactionValue.toString();
+        if (transactionBit !== dbValue) {
+          return false;
+        }
+        break;
+      }
+      case 'integer':
+      case 'numeric':
+      case 'bigint': {
+        // numeric values
+        // should consider 0 value, string numbers, etc
+        const dbNumber = dbValue == null ? null : Number(dbValue);
+        const transactionNumber = transactionValue == null ? null : Number(transactionValue);
+        if (dbNumber !== transactionNumber) {
+          return false;
+        }
+        break;
+      }
+      default: {
+        if (!isNullable) {
+          throw new Error(`Unhandled type ${type}`);
+        }
+      }
+    }
+  }
+
+  // case no diffs found
+  return true;
+}
+
+const columnNamesToExcludeFromComparison = [
+  'recordNumber',
+  'beneficiaryDetailsDataRecordNumber', // Same beneficiary will update the index whenever there is a new one
+  'id',
+  'formattedEventAmount',
+  'formattedCurrentBalance',
+  'beneficiaryDetailsData',
+];
 
 async function isTransactionNew(
   transaction: NormalizedIlsTransaction,
@@ -311,7 +385,10 @@ async function isTransactionNew(
     );
     if (res.length > 0) {
       for (const dbTransaction of res) {
-        if (compareTransactions(transaction, dbTransaction)) return false;
+        if (
+          isSameTransaction(transaction, dbTransaction, columns, columnNamesToExcludeFromComparison)
+        )
+          return false;
       }
     }
     return true;
@@ -321,161 +398,119 @@ async function isTransactionNew(
   }
 }
 
-// async function insertTransactions(
-//   transactions: NormalizedIlsTransaction[],
-//   pool: Pool,
-//   columns: IGetTableColumnsResult[],
-// ) {
-//   for (const transaction of transactions) {
-//     try {
-//       let columnNames = columns.map(column => column.column_name);
-//       columnNames = columnNames.filter(columnName => columnName !== 'id');
-//       let text = `INSERT INTO accounter_schema.poalim_ils_account_transactions
-//         (
-//           ${columnNames.map(x => x).join(', ')},
-//         )`;
-//       const lastIndexOfComma = text.lastIndexOf(',');
-//       text = text
-//         .substring(0, lastIndexOfComma)
-//         .concat(text.substring(lastIndexOfComma + 1, text.length));
-
-//       const arrayKeys = columnNames.keys();
-//       let denseKeys = [...arrayKeys];
-//       denseKeys = denseKeys.map(x => x + 1);
-//       const keysOfInputs = denseKeys.join(', $');
-//       text = text.concat(` VALUES($${keysOfInputs}) RETURNING *`);
-
-//       const values = transactionValuesToArray(transaction);
-
-//       if (values.length !== columnNames.length) {
-//         // TODO: Log important checks
-//         console.log('Wrong Insert length');
-//       }
-
-//       try {
-//         let sign = '+';
-//         if (transaction.eventActivityTypeCode === 2) {
-//           sign = '-';
-//         }
-//         if (transaction.transactionType === 'TODAY') {
-//           console.log(`Today transaction -
-//               ${reverse(transaction.activityDescription)},
-//               ils${sign}${transaction.eventAmount.toLocaleString()},
-//               ${transaction.accountNumber}
-//             `);
-//         } else if (transaction.transactionType === 'FUTURE') {
-//           console.log(`Future transaction -
-//                 ${reverse(transaction.activityDescription)},
-//                 ils${sign}${transaction.eventAmount.toLocaleString()},
-//                 ${transaction.accountNumber}
-//               `);
-//         } else if (moment(transaction.eventDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2) {
-//           console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
-//         } else {
-//           const res = await pool.query(text, values);
-//           if (res.rows[0].event_amount) {
-//             console.log(
-//               `success in insert to ils - ${transaction.accountNumber} - ${reverse(res.rows[0].activity_description)} - ${sign}${res.rows[0].event_amount.toLocaleString()} - ${res.rows[0].event_date}`,
-//             );
-//           } else if (res.rows[0].original_amount) {
-//             console.log(
-//               `success in insert to ils-${transaction.accountNumber} - `,
-//               res.rows[0].original_amount,
-//             );
-//           } else if (res.rows[0].card) {
-//             let supplierName = res.rows[0].supplier_name;
-//             if (supplierName) {
-//               supplierName = reverse(res.rows[0].supplier_name);
-//             } else {
-//               supplierName = res.rows[0].supplier_name_outbound;
-//             }
-//             console.log(
-//               `success in insert to ${res.rows[0].card} - ${res.rows[0].payment_sum} - ${res.rows[0].payment_sum_outbound} - ${supplierName} - ${res.rows[0].full_purchase_date_outbound}`,
-//               res.rows[0].full_purchase_date,
-//             );
-//           } else if (res.rows[0].source) {
-//             console.log(
-//               `success in insert to ${res.rows[0].source} - ${res.rows[0].amount} - ${res.rows[0].validityDate}`,
-//               res.rows[0].data_0_product_free_text,
-//             );
-//           } else {
-//             // console.log('saved', JSON.stringify(res));
-//           }
-//         }
-//         // console.log('nothing');
-//       } catch (error) {
-//         // TODO: Log important checks
-//         console.log(
-//           `error in insert - ${error} - ${text} - ${values} - ${JSON.stringify(transaction)}`,
-//         );
-//         // console.log('nothing');
-//       }
-//     } catch (error) {
-//       // TODO: Log important checks
-//       console.log('pg error - ', error);
-//     }
-//   }
-// }
-
-async function normalizeIlsForAccount(
-  ctx: Context,
-  task: ListrTaskWrapper<unknown>,
-  scraper: PoalimScraper,
-  bankAccount: ScrapedAccount,
-  knownAccountsNumbers: number[],
-) {
-  task.output = `Getting transactions`;
-  const transactions = await scraper.getILSTransactions(bankAccount);
-
-  if (!transactions.data) {
-    task.skip('No data');
-    ctx.transactions = [];
-    return;
-  }
-
-  if (!transactions.isValid) {
-    if ('errors' in transactions) {
-      console.error(transactions.errors);
+async function insertTransactions(transactions: NormalizedIlsTransaction[], pool: Pool) {
+  const transactionsToInsert: Array<IInsertPoalimIlsTransactionsParams['transactions'][number]> =
+    [];
+  for (const transaction of transactions) {
+    const direction = transaction.eventActivityTypeCode === 2 ? -1 : 1;
+    const amount = transaction.eventAmount * direction;
+    if (transaction.transactionType === 'TODAY') {
+      console.log(`Today transaction -
+              ${reverse(transaction.activityDescription)},
+              ils${amount.toLocaleString()},
+              ${transaction.accountNumber}
+            `);
+    } else if (transaction.transactionType === 'FUTURE') {
+      console.log(`Future transaction -
+                ${reverse(transaction.activityDescription)},
+                ils${amount.toLocaleString()},
+                ${transaction.accountNumber}
+              `);
+    } else if (
+      differenceInMonths(new Date(), new Date(convertNumberDateToString(transaction.eventDate))) > 2
+    ) {
+      console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
+      throw new Error('Old transaction');
     }
-    throw new Error(
-      `Invalid transactions data for ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
+    const transactionToInsert: IInsertPoalimIlsTransactionsParams['transactions'][number] = {
+      eventDate: convertNumberDateToString(transaction.eventDate),
+      formattedEventDate: transaction.formattedEventDate,
+      serialNumber: transaction.serialNumber,
+      activityTypeCode: transaction.activityTypeCode,
+      activityDescription: transaction.activityDescription,
+      textCode: transaction.textCode,
+      referenceNumber: transaction.referenceNumber,
+      referenceCatenatedNumber: transaction.referenceCatenatedNumber,
+      valueDate: convertNumberDateToString(transaction.valueDate),
+      formattedValueDate: transaction.formattedValueDate,
+      eventAmount: transaction.eventAmount,
+      eventActivityTypeCode: transaction.eventActivityTypeCode,
+      currentBalance: transaction.currentBalance,
+      internalLinkCode: transaction.internalLinkCode,
+      originalEventCreateDate: transaction.originalEventCreateDate,
+      formattedOriginalEventCreateDate: transaction.formattedOriginalEventCreateDate,
+      transactionType: transaction.transactionType,
+      dataGroupCode: transaction.dataGroupCode,
+      beneficiaryDetailsData: transaction.beneficiaryDetailsData
+        ? JSON.stringify(transaction.beneficiaryDetailsData)
+        : null,
+      expandedEventDate: transaction.expandedEventDate,
+      executingBranchNumber: transaction.executingBranchNumber,
+      eventId: transaction.eventId,
+      details: transaction.details,
+      pfmDetails: transaction.pfmDetails,
+      differentDateIndication: transaction.differentDateIndication,
+      rejectedDataEventPertainingIndication: transaction.rejectedDataEventPertainingIndication,
+      tableNumber: transaction.tableNumber,
+      recordNumber: transaction.recordNumber,
+      contraBankNumber: transaction.contraBankNumber,
+      contraBranchNumber: transaction.contraBranchNumber,
+      contraAccountNumber: transaction.contraAccountNumber,
+      contraAccountTypeCode: transaction.contraAccountTypeCode,
+      marketingOfferContext: transaction.marketingOfferContext as unknown as boolean,
+      commentExistenceSwitch: transaction.commentExistenceSwitch as unknown as boolean,
+      englishActionDesc: transaction.englishActionDesc,
+      fieldDescDisplaySwitch: transaction.fieldDescDisplaySwitch as unknown as boolean,
+      urlAddressNiar: null, // TODO: why this attribute exists?
+      offerActivityContext: transaction.offerActivityContext,
+      comment: transaction.comment,
+      beneficiaryDetailsDataPartyName: transaction.beneficiaryDetailsDataPartyName,
+      beneficiaryDetailsDataMessageHeadline: transaction.beneficiaryDetailsDataMessageHeadline,
+      beneficiaryDetailsDataPartyHeadline: transaction.beneficiaryDetailsDataPartyHeadline,
+      beneficiaryDetailsDataMessageDetail: transaction.beneficiaryDetailsDataMessageDetail,
+      beneficiaryDetailsDataTableNumber: transaction.beneficiaryDetailsDataTableNumber,
+      beneficiaryDetailsDataRecordNumber: transaction.beneficiaryDetailsDataRecordNumber,
+      activityDescriptionIncludeValueDate: transaction.activityDescriptionIncludeValueDate,
+      bankNumber: transaction.bankNumber,
+      branchNumber: transaction.branchNumber,
+      accountNumber: transaction.accountNumber,
+    };
+    transactionsToInsert.push(
+      transactionToInsert as IInsertPoalimIlsTransactionsParams['transactions'][number],
     );
   }
-
-  if (knownAccountsNumbers.includes(transactions.data.retrievalTransactionData.accountNumber)) {
-    task.output = `Normalizing transactions`;
-    const account = {
-      accountNumber: transactions.data.retrievalTransactionData.accountNumber,
-      branchNumber: transactions.data.retrievalTransactionData.branchNumber,
-      bankNumber: transactions.data.retrievalTransactionData.bankNumber,
-    };
-    ctx.transactions = transactions.data.transactions.map(transaction =>
-      normalizeBeneficiaryDetailsData(transaction, account),
-    );
-  } else {
-    throw new Error(
-      `UNKNOWN ACCOUNT ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
-    );
+  if (transactionsToInsert.length > 0) {
+    try {
+      const res = await insertPoalimIlsTransactions.run(
+        { transactions: transactionsToInsert },
+        pool,
+      );
+      res.map(transaction => {
+        const direction = transaction.event_activity_type_code === 2 ? -1 : 1;
+        const amount = Number(transaction.event_amount) * direction;
+        console.log(
+          `success in insert to Poalim ILS - ${transaction.account_number} - ${reverse(transaction.activity_description)} - ${amount.toLocaleString()} - ${transaction.event_date}`,
+        );
+      });
+    } catch (error) {
+      console.error('Failed to insert Poalim ILS transactions', error);
+      throw new Error('Failed to insert transactions');
+    }
   }
 }
 
-// function createDumpFile(transactions: NormalizedIlsTransaction[], bankAccount: ScrapedAccount) {
-//   const date = new Date();
-//   const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-//     .toISOString()
-//     .split('T')[0];
+function createDumpFile(transactions: NormalizedIlsTransaction[], bankAccount: ScrapedAccount) {
+  const date = new Date();
+  const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .split('T')[0];
 
-//   writeFileSync(
-//     `../archived_data/POALIM_original_checking_bank_dump_${dateString}_${bankAccount.accountNumber}.json`,
-//     JSON.stringify(transactions),
-//     'utf8',
-//   );
-// }
-
-type Context = {
-  transactions?: NormalizedIlsTransaction[];
-  newTransactions?: NormalizedIlsTransaction[];
-};
+  writeFileSync(
+    `../archived_data/POALIM_original_checking_bank_dump_${dateString}_${bankAccount.accountNumber}.json`,
+    JSON.stringify(transactions),
+    'utf8',
+  );
+}
 
 export async function getIlsTransactions(
   pool: Pool,
@@ -486,17 +521,15 @@ export async function getIlsTransactions(
   return new Listr<Context>([
     {
       title: `Get Transactions`,
-      enabled: () => !!parentCtx.scraper,
       task: async (ctx, task) => {
         await normalizeIlsForAccount(ctx, task, parentCtx.scraper!, account, knownAccountNumbers);
+        task.title = `${task.title} (Got ${ctx.transactions?.length} transactions)`;
       },
     },
     {
       title: `Check for New Transactions`,
-      enabled: ctx =>
-        !!ctx.transactions && !!parentCtx.columns?.['poalim_ils_account_transactions'],
-      skip: ctx => ctx.transactions?.length === 0,
-      task: async ctx => {
+      skip: ctx => (ctx.transactions?.length === 0 ? 'No transactions' : undefined),
+      task: async (ctx, task) => {
         const { transactions = [] } = ctx;
         const columns = parentCtx.columns!.poalim_ils_account_transactions!.filter(
           column => column.column_name && column.data_type,
@@ -508,24 +541,21 @@ export async function getIlsTransactions(
           }
         }
         ctx.newTransactions = newTransactions;
+        task.title = `${task.title} (${ctx.newTransactions?.length} new transactions)`;
       },
     },
-    // {
-    //   title: `Save New Transactions`,
-    //   enabled: ctx => !!ctx.newTransactions,
-    //   skip: ctx => ctx.newTransactions?.length === 0,
-    //   task: async ctx => {
-    //     const { newTransactions = [] } = ctx;
-    //     const columns = parentCtx.columns!.poalim_ils_account_transactions!.filter(
-    //       column => column.column_name,
-    //     );
-    //     await insertTransactions(newTransactions, pool, columns);
-    //   },
-    // },
-    // {
-    //   title: 'Create dump file',
-    //   skip: ctx => ctx.transactions?.length === 0,
-    //   task: ctx => createDumpFile(ctx.transactions!, account),
-    // },
+    {
+      title: `Save New Transactions`,
+      skip: ctx => (ctx.newTransactions?.length === 0 ? 'No new transactions' : undefined),
+      task: async ctx => {
+        const { newTransactions = [] } = ctx;
+        await insertTransactions(newTransactions, pool);
+      },
+    },
+    {
+      title: 'Create dump file',
+      skip: ctx => ctx.transactions?.length === 0 || !parentCtx.createDumpFile,
+      task: ctx => createDumpFile(ctx.transactions!, account),
+    },
   ]);
 }
