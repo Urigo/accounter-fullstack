@@ -24,6 +24,7 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
     AND bank_number = 12;`;
 
 export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
+  const { logger } = parentCtx;
   return new Listr<AccountsContext>([
     {
       title: 'Get Accounts from Bank',
@@ -31,7 +32,7 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
         const accounts = await parentCtx.scraper!.getAccountsData();
 
         if (!accounts.isValid) {
-          console.log(
+          logger.log(
             `Poalim accounts validation errors: `,
             'errors' in accounts ? accounts.errors : null,
           );
@@ -58,7 +59,7 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
 
           ctx.dbAccounts = accounts;
         } catch (error) {
-          console.error(error);
+          logger.error(error);
           throw new Error('Failed to get accounts from database');
         }
       },
@@ -78,7 +79,7 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
             }),
           );
         } catch (error) {
-          console.error(error);
+          logger.error(error);
           throw new Error('Error on getting columns info');
         }
       },
@@ -184,7 +185,7 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
               );
               task.output = `Poalim Account ${res.account_number} inserted`;
             } catch (error) {
-              console.error(error);
+              logger.error(error);
               throw new Error(`Poalim Account ${account.accountNumber} insert failed`);
             }
           }

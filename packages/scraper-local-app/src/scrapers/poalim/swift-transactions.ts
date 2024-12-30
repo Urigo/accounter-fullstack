@@ -8,6 +8,7 @@ import type {
   IInsertSwiftTransactionParams,
   IInsertSwiftTransactionQuery,
 } from '../../helpers/types.js';
+import type { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimContext, PoalimScraper } from './index.js';
 
@@ -135,6 +136,7 @@ async function fetchSwiftTransactions(
   task: ListrTaskWrapper<unknown>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
+  logger: Logger,
 ) {
   task.output = `Getting transactions`;
 
@@ -142,7 +144,7 @@ async function fetchSwiftTransactions(
 
   if (!foreignSwiftTransactions.isValid) {
     if ('errors' in foreignSwiftTransactions) {
-      console.error(foreignSwiftTransactions.errors);
+      logger.error(foreignSwiftTransactions.errors);
     }
     throw new Error(
       `Invalid swift data for ${bankAccount.branchNumber}:${bankAccount.accountNumber}`,
@@ -163,7 +165,7 @@ async function fetchSwiftTransactions(
   ctx.transactions = swiftTransactions.filter(transaction => {
     if (transaction.currencyLongDescription === 'שקל חדש') {
       // skip local transactions
-      console.log(`
+      logger.log(`
             ${transaction.startDate}
             ${transaction.amount}
             ${transaction.chargePartyName}
@@ -172,7 +174,7 @@ async function fetchSwiftTransactions(
     }
     if (transaction.dataOriginCode !== 2) {
       // skip non-ready transactions
-      console.log(`
+      logger.log(`
           ${transaction.startDate}
           ${transaction.amount}
           ${transaction.chargePartyName}
@@ -183,7 +185,11 @@ async function fetchSwiftTransactions(
   });
 }
 
-async function isTransactionNew(transaction: SwiftTransaction, pool: Pool): Promise<boolean> {
+async function isTransactionNew(
+  transaction: SwiftTransaction,
+  pool: Pool,
+  logger: Logger,
+): Promise<boolean> {
   try {
     const existingStatement = await checkForExistingSwiftTransaction.run(
       {
@@ -196,7 +202,7 @@ async function isTransactionNew(transaction: SwiftTransaction, pool: Pool): Prom
     }
     return true;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw new Error('Failed to check if swift transaction is new');
   }
 }
@@ -235,6 +241,7 @@ async function normalizeTransaction(
   transaction: SwiftTransaction,
   bankAccount: ScrapedAccount,
   scraper: PoalimScraper,
+  logger: Logger,
 ) {
   try {
     const foreignSwiftTransactionDetails = await scraper.getForeignSwiftTransaction(
@@ -244,7 +251,7 @@ async function normalizeTransaction(
 
     if (!foreignSwiftTransactionDetails.isValid) {
       if ('errors' in foreignSwiftTransactionDetails) {
-        console.error(foreignSwiftTransactionDetails.errors);
+        logger.error(foreignSwiftTransactionDetails.errors);
       }
       throw new Error(
         `Invalid swift data for ${transaction.transferCatenatedId} on ${bankAccount.branchNumber}:${bankAccount.accountNumber}`,
@@ -345,7 +352,7 @@ async function normalizeTransaction(
 
     return insertableTransaction;
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     throw new Error('Failed to normalize swift transaction');
   }
 }
@@ -355,22 +362,24 @@ export async function getSwiftTransactions(
   account: ScrapedAccount,
   parentCtx: PoalimContext,
 ) {
+  const { logger } = parentCtx;
   return new Listr<Context>([
     {
       title: `Get Transactions`,
       task: async (ctx, task) => {
-        await fetchSwiftTransactions(ctx, task, parentCtx.scraper!, account);
+        await fetchSwiftTransactions(ctx, task, parentCtx.scraper!, account, logger);
         task.title = `${task.title} (Got ${ctx.transactions?.length} deposits)`;
       },
     },
     {
       title: `Check for New Transactions`,
+      enabled: ctx => !!ctx.transactions,
       skip: ctx => (ctx.transactions?.length === 0 ? 'No transactions' : undefined),
       task: async (ctx, task) => {
         const { transactions = [] } = ctx;
         const newTransactions: SwiftTransaction[] = [];
         for (const transaction of transactions) {
-          if (await isTransactionNew(transaction, pool)) {
+          if (await isTransactionNew(transaction, pool, logger)) {
             newTransactions.push(transaction);
           }
         }
@@ -380,6 +389,7 @@ export async function getSwiftTransactions(
     },
     {
       title: `Insert Transactions`,
+      enabled: ctx => !!ctx.newTransactions,
       skip: ctx => (ctx.newTransactions?.length === 0 ? 'No transactions' : undefined),
       task: async ctx => {
         try {
@@ -389,14 +399,14 @@ export async function getSwiftTransactions(
           await Promise.all(
             newTransactions.map(async transaction => {
               insertableTransactions.push(
-                await normalizeTransaction(transaction, account, parentCtx.scraper!),
+                await normalizeTransaction(transaction, account, parentCtx.scraper!, logger),
               );
             }),
           );
 
           await insertSwiftTransaction.run({ switfTransactions: insertableTransactions }, pool);
         } catch (error) {
-          console.error(error);
+          logger.error(error);
           throw new Error('Failed to insert swift transactions');
         }
       },
