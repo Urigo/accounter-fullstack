@@ -1,14 +1,20 @@
 import { writeFileSync } from 'node:fs';
-import { differenceInMonths, format } from 'date-fns';
+import { differenceInMonths } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import type { ILSCheckingTransactionsDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
 import { sql } from '@pgtyped/runtime';
-import { camelCase, convertNumberDateToString, reverse } from '../../helpers/misc.js';
+import {
+  camelCase,
+  convertNumberDateToString,
+  fillInDefaultValues,
+  isSameTransaction,
+  newAttributesChecker,
+  reverse,
+} from '../../helpers/misc.js';
 import type {
   FilteredColumns,
   IGetPoalimIlsTransactionsQuery,
-  IGetPoalimIlsTransactionsResult,
   IInsertPoalimIlsTransactionsParams,
   IInsertPoalimIlsTransactionsQuery,
 } from '../../helpers/types.js';
@@ -192,19 +198,19 @@ async function normalizeIlsForAccount(
   task.output = `Getting transactions`;
   const transactions = await scraper.getILSTransactions(bankAccount);
 
-  if (!transactions.data) {
-    task.skip('No data');
-    ctx.transactions = [];
-    return;
-  }
-
   if (!transactions.isValid) {
     if ('errors' in transactions) {
       logger.error(transactions.errors);
     }
     throw new Error(
-      `Invalid transactions data for ${transactions.data.retrievalTransactionData.branchNumber}:${transactions.data.retrievalTransactionData.accountNumber}`,
+      `Invalid transactions data for ${bankAccount.branchNumber}:${bankAccount.accountNumber}`,
     );
+  }
+
+  if (!transactions.data) {
+    task.skip('No data');
+    ctx.transactions = [];
+    return;
   }
 
   if (knownAccountsNumbers.includes(transactions.data.retrievalTransactionData.accountNumber)) {
@@ -224,113 +230,6 @@ async function normalizeIlsForAccount(
   }
 }
 
-function newAttributesChecker(
-  transaction: NormalizedIlsTransaction,
-  columnNames: string[],
-  logger: Logger,
-) {
-  const knownOptionals = [
-    'beneficiaryDetailsDataPartyName',
-    'beneficiaryDetailsDataMessageHeadline',
-    'beneficiaryDetailsDataPartyHeadline',
-    'beneficiaryDetailsDataMessageDetail',
-    'beneficiaryDetailsDataTableNumber',
-    'beneficiaryDetailsDataRecordNumber',
-    'activityDescriptionIncludeValueDate',
-    'displayCreditAccountDetails',
-    'displayRTGSIncomingTrsDetails',
-    'formattedEventAmount',
-    'formattedCurrentBalance',
-    'id',
-  ];
-  const allKeys = Object.keys(transaction);
-
-  const InTransactionNotInDB = allKeys.filter(
-    x => !columnNames.includes(x) && !knownOptionals.includes(x),
-  );
-  const inDBNotInTransaction = columnNames.filter(
-    x => !allKeys.includes(x) && !knownOptionals.includes(x),
-  );
-  if (InTransactionNotInDB.length) {
-    logger.log('New Poalim ILS keys, in DB missing from transaction', inDBNotInTransaction);
-  }
-  if (InTransactionNotInDB.length) {
-    logger.log(`New Poalim ILS keys, in transaction missing from DB`, InTransactionNotInDB);
-  }
-}
-
-function isSameTransaction(
-  transaction: NormalizedIlsTransaction,
-  dbTransaction: IGetPoalimIlsTransactionsResult,
-  columns: FilteredColumns,
-  ignoredColumns: string[] = [],
-) {
-  for (const column of columns) {
-    if (ignoredColumns.includes(camelCase(column.column_name))) {
-      continue;
-    }
-
-    const key = column.column_name as keyof IGetPoalimIlsTransactionsResult;
-    const attribute = camelCase(key) as keyof NormalizedIlsTransaction;
-    const type = column.data_type;
-
-    // normalize nullables
-    const isNullable = column.is_nullable === 'YES';
-    const dbValue = isNullable ? (dbTransaction[key] ?? null) : dbTransaction[key];
-    const transactionValue = isNullable ? (transaction[attribute] ?? null) : transaction[attribute];
-
-    switch (type) {
-      case 'character varying':
-      case 'USER-DEFINED':
-      case 'text': {
-        // string values
-        if (dbValue !== transactionValue) {
-          return false;
-        }
-        break;
-      }
-      case 'date': {
-        // date values
-        const dbDateString = dbValue ? format(dbValue as Date, 'yyyyMMdd') : null;
-        const transactionDateString = transactionValue ? transactionValue.toString() : null;
-
-        if (dbDateString !== transactionDateString) {
-          return false;
-        }
-        break;
-      }
-      case 'bit': {
-        // boolean values
-        const transactionBit = transactionValue == null ? null : transactionValue.toString();
-        if (transactionBit !== dbValue) {
-          return false;
-        }
-        break;
-      }
-      case 'integer':
-      case 'numeric':
-      case 'bigint': {
-        // numeric values
-        // should consider 0 value, string numbers, etc
-        const dbNumber = dbValue == null ? null : Number(dbValue);
-        const transactionNumber = transactionValue == null ? null : Number(transactionValue);
-        if (dbNumber !== transactionNumber) {
-          return false;
-        }
-        break;
-      }
-      default: {
-        if (!isNullable) {
-          throw new Error(`Unhandled type ${type}`);
-        }
-      }
-    }
-  }
-
-  // case no diffs found
-  return true;
-}
-
 const columnNamesToExcludeFromComparison = [
   'recordNumber',
   'beneficiaryDetailsDataRecordNumber', // Same beneficiary will update the index whenever there is a new one
@@ -347,36 +246,24 @@ async function isTransactionNew(
   logger: Logger,
 ): Promise<boolean> {
   const columnNames = columns.map(column => camelCase(column.column_name));
-  newAttributesChecker(transaction, columnNames, logger);
+  const knownOptionals = [
+    'beneficiaryDetailsDataPartyName',
+    'beneficiaryDetailsDataMessageHeadline',
+    'beneficiaryDetailsDataPartyHeadline',
+    'beneficiaryDetailsDataMessageDetail',
+    'beneficiaryDetailsDataTableNumber',
+    'beneficiaryDetailsDataRecordNumber',
+    'activityDescriptionIncludeValueDate',
+    'displayCreditAccountDetails',
+    'displayRTGSIncomingTrsDetails',
+    'formattedEventAmount',
+    'formattedCurrentBalance',
+    'id',
+  ];
+  newAttributesChecker(transaction, columnNames, logger, 'Poalim ILS', knownOptionals);
 
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
-  const allKeys = Object.keys(transaction);
-  const existingFields = columns.map(column => ({
-    name: camelCase(column.column_name ?? '') as keyof NormalizedIlsTransaction | 'id',
-    nullable: column.is_nullable === 'YES',
-    type: column.data_type,
-    defaultValue: column.column_default,
-  }));
-
-  const inDBNotInTransaction = existingFields.filter(x => !allKeys.includes(x.name) && !x.nullable);
-
-  for (const key of inDBNotInTransaction) {
-    if (key.name === 'id') {
-      continue;
-    }
-    if (key.defaultValue) {
-      logger.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
-    } else {
-      switch (key.type) {
-        case 'integer':
-        case 'bit':
-          transaction[key.name] = 0 as never;
-          break;
-        default:
-          logger.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
-      }
-    }
-  }
+  fillInDefaultValues(transaction, columns, logger, 'Poalim Foreign');
 
   try {
     const res = await getPoalimIlsTransactions.run(
@@ -554,11 +441,13 @@ export async function getIlsTransactions(
           column => column.column_name && column.data_type,
         ) as FilteredColumns;
         const newTransactions: NormalizedIlsTransaction[] = [];
-        for (const normalizedTransaction of transactions) {
-          if (await isTransactionNew(normalizedTransaction, pool, columns, logger)) {
-            newTransactions.push(normalizedTransaction);
-          }
-        }
+        await Promise.all(
+          transactions.map(async normalizedTransaction => {
+            if (await isTransactionNew(normalizedTransaction, pool, columns, logger)) {
+              newTransactions.push(normalizedTransaction);
+            }
+          }),
+        );
         ctx.newTransactions = newTransactions;
         task.title = `${task.title} (${ctx.newTransactions?.length} new transactions)`;
       },

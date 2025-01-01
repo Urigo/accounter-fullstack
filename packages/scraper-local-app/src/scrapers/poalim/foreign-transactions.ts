@@ -5,7 +5,14 @@ import type { Pool } from 'pg';
 import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
 import { sql, TaggedQuery } from '@pgtyped/runtime';
-import { camelCase, convertNumberDateToString, reverse } from '../../helpers/misc.js';
+import {
+  camelCase,
+  convertNumberDateToString,
+  fillInDefaultValues,
+  isSameTransaction,
+  newAttributesChecker,
+  reverse,
+} from '../../helpers/misc.js';
 import type {
   FilteredColumns,
   IGetPoalimForeignTransactionsQuery,
@@ -19,7 +26,6 @@ import type {
 } from '../../helpers/types.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimContext, PoalimScraper } from './index.js';
-import { isSameTransaction } from './utils.js';
 
 export type ForeignTransaction = (
   | ForeignTransactionsPersonalSchema
@@ -483,36 +489,6 @@ async function normalizeForeignTransactionsForAccount(
   );
 }
 
-function newAttributesChecker(
-  transaction: NormalizedForeignTransaction,
-  columnNames: string[],
-  logger: Logger,
-) {
-  const knownOptionals = [
-    'metadata',
-    'urlAddressNiar',
-    'displayCreditAccountDetails',
-    'displayRTGSIncomingTrsDetails',
-    'recordSerialNumber',
-    'expendedExecutingDate',
-    'id',
-  ];
-  const allKeys = Object.keys(transaction);
-
-  const InTransactionNotInDB = allKeys.filter(
-    x => !columnNames.includes(x) && !knownOptionals.includes(x),
-  );
-  const inDBNotInTransaction = columnNames.filter(
-    x => !allKeys.includes(x) && !knownOptionals.includes(x),
-  );
-  if (InTransactionNotInDB.length) {
-    logger.log('New Poalim Foreign keys, in DB missing from transaction', inDBNotInTransaction);
-  }
-  if (InTransactionNotInDB.length) {
-    logger.log(`New Poalim Foreign keys, in transaction missing from DB`, InTransactionNotInDB);
-  }
-}
-
 async function isTransactionNew(
   transaction: NormalizedForeignTransaction,
   currency: ForeignCurrency,
@@ -531,36 +507,19 @@ async function isTransactionNew(
   }
 
   const columnNames = columns.map(column => camelCase(column.column_name));
-  newAttributesChecker(transaction, columnNames, logger);
+  const knownOptionals = [
+    'metadata',
+    'urlAddressNiar',
+    'displayCreditAccountDetails',
+    'displayRTGSIncomingTrsDetails',
+    'recordSerialNumber',
+    'expendedExecutingDate',
+    'id',
+  ];
+  newAttributesChecker(transaction, columnNames, logger, 'Poalim Foreign', knownOptionals);
 
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
-  const allKeys = Object.keys(transaction);
-  const existingFields = columns.map(column => ({
-    name: camelCase(column.column_name ?? '') as keyof NormalizedForeignTransaction | 'id',
-    nullable: column.is_nullable === 'YES',
-    type: column.data_type,
-    defaultValue: column.column_default,
-  }));
-
-  const inDBNotInTransaction = existingFields.filter(x => !allKeys.includes(x.name) && !x.nullable);
-
-  for (const key of inDBNotInTransaction) {
-    if (key.name === 'id') {
-      continue;
-    }
-    if (key.defaultValue) {
-      logger.log(`Poalim ILS: Cannot autofill ${key.name} in ils with ${key.defaultValue}`);
-    } else {
-      switch (key.type) {
-        case 'integer':
-        case 'bit':
-          transaction[key.name] = 0 as never;
-          break;
-        default:
-          logger.log(`Cannot autofill ${key.name}, no default value for ${key.type}`);
-      }
-    }
-  }
+  fillInDefaultValues(transaction, columns, logger, 'Poalim Foreign');
 
   try {
     const res = await getPoalimForeignTransactions
@@ -787,19 +746,21 @@ export async function getForeignTransactions(
                       column => column.column_name && column.data_type,
                     ) as FilteredColumns;
                     const newTransactions: NormalizedForeignTransaction[] = [];
-                    for (const normalizedTransaction of transactions) {
-                      if (
-                        await isTransactionNew(
-                          normalizedTransaction,
-                          currency,
-                          pool,
-                          columns,
-                          logger,
-                        )
-                      ) {
-                        newTransactions.push(normalizedTransaction);
-                      }
-                    }
+                    await Promise.all(
+                      transactions.map(async normalizedTransaction => {
+                        if (
+                          await isTransactionNew(
+                            normalizedTransaction,
+                            currency,
+                            pool,
+                            columns,
+                            logger,
+                          )
+                        ) {
+                          newTransactions.push(normalizedTransaction);
+                        }
+                      }),
+                    );
                     specificForeignAccountContext.newTransactions = newTransactions;
                     task.title = `${task.title} (${specificForeignAccountContext.newTransactions?.length} new transactions)`;
                   },
