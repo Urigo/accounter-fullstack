@@ -1,6 +1,6 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
 import { getTableColumns } from 'helpers/sql.js';
-import Listr, { type ListrTask } from 'listr';
+import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from '../../env.js';
@@ -48,6 +48,7 @@ export async function getIsracardAmexData(
   pool: Pool,
   credentials: IsracardCredentials,
   logger: Logger,
+  parentTask: ListrTaskWrapper,
 ) {
   return new Listr<IsracardAmexContext>([
     {
@@ -137,22 +138,30 @@ export async function getIsracardAmexData(
     },
     {
       title: 'Close Browser',
-      task: async (ctx, task) => {
+      task: async ctx => {
         await ctx.closeBrowser?.();
-        let status: string | undefined = undefined;
+        let status: string = '';
+
+        // update main task status
         if (ctx.processedData) {
           if (ctx.processedData.transactions) {
-            status = `Transactions: ${ctx.processedData.transactions}`;
+            status += `Reviewed ${ctx.processedData.transactions} Transactions`;
           }
-          if (ctx.processedData.newTransactions) {
-            status = `New transactions: ${ctx.processedData.newTransactions}`;
+          if (ctx.processedData.newTransactions === 0) {
+            status += `, Nothing New`;
+          } else if (ctx.processedData.newTransactions) {
+            status += `, ${ctx.processedData.newTransactions} New`;
           }
           if (ctx.processedData.insertedTransactions) {
-            status = `Inserted transactions: ${ctx.processedData.insertedTransactions}`;
+            if (ctx.processedData.insertedTransactions === ctx.processedData.newTransactions) {
+              status += `, All Inserted`;
+            } else {
+              status += `, Some Inserted`;
+            }
           }
         }
-        if (status) {
-          task.title = `${task.title} (${status})`;
+        if (status !== '') {
+          parentTask.title = `${parentTask.title} (${status})`;
         }
         return;
       },
