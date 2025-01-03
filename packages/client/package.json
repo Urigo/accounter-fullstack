@@ -20,7 +20,7 @@
     "@mantine/dropzone": "6.0.22",
     "@mantine/hooks": "6.0.22",
     "@mantine/notifications": "6.0.22",
-    "@mui/material": "6.3.0",
+    "@mui/material": "6.3.1",
     "@mui/x-charts": "7.23.2",
     "@radix-ui/react-avatar": "1.1.2",
     "@radix-ui/react-collapsible": "^1.1.0",
@@ -34,7 +34,7 @@
     "@radix-ui/react-slot": "1.1.1",
     "@radix-ui/react-toast": "1.2.4",
     "@radix-ui/react-tooltip": "1.1.6",
-    "@tanstack/react-query": "5.62.11",
+    "@tanstack/react-query": "5.62.12",
     "@tanstack/react-table": "8.20.6",
     "@urql/exchange-auth": "2.2.0",
     "chart.js": "4.4.7",
@@ -67,7 +67,7 @@
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "vite": "6.0.6"
+    "vite": "6.0.7"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
