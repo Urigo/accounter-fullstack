@@ -7,6 +7,8 @@ dist/
 **/gql/
 .idea/
 schema.graphql
+supergraph.graphql
+packages/server/legacy-subgraph.graphql
 docker/.*
 **/.mesh
 **/mesh-artifacts

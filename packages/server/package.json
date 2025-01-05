@@ -7,12 +7,14 @@
   "main": "./src/index.mts",
   "scripts": {
     "build": "tsc && tsc-alias",
+    "build-subgraph-schema": "tsx generate-subgraph-schema.ts",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
     "generate:sql:watch": "dotenv -e ../../.env yarn pgtyped:watch",
     "pgtyped": "yarn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c $(node scripts/generate-local-pgconfig.cjs)",
     "pgtyped:watch": "yarn pgtyped -w",
+    "prepgtyped": "rimraf **/__generated__/*.types.ts",
     "server:dev": "yarn dev",
     "start": "yarn build && node dist/server/src/index.js"
   },
@@ -20,9 +22,12 @@
     "@accounter/green-invoice-graphql": "workspace:^",
     "@accounter/pcn874-generator": "workspace:^",
     "@ai-sdk/anthropic": "1.1.11",
+    "@anthropic-ai/sdk": "0.36.3",
+    "@apollo/subgraph": "2.9.3",
     "@envelop/generic-auth": "9.0.1",
     "@envelop/graphql-modules": "7.0.2",
     "@graphql-hive/yoga": "0.40.1",
+    "@graphql-tools/merge": "9.0.16",
     "@graphql-yoga/plugin-defer-stream": "3.12.1",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
@@ -52,6 +57,7 @@
     "pino-pretty": "13.0.0",
     "rimraf": "6.0.1",
     "tsc-alias": "1.8.11",
+    "tsx": "4.19.3",
     "typescript": "5.7.3"
   },
   "publishConfig": {
