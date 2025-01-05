@@ -1,9 +1,4 @@
-import { config as dotenv } from 'dotenv';
 import type { Config } from './index.js';
-
-dotenv({
-  path: '../../.env',
-});
 
 export const config: Config = {
   database: {
