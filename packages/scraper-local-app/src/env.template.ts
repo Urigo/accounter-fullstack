@@ -1,13 +1,16 @@
+import { config as dotenv } from 'dotenv';
 import type { Config } from './index.js';
+
+dotenv({ path: '../../.env' });
 
 export const config: Config = {
   database: {
-    user: 'postgres',
-    password: 'postgres',
-    host: 'localhost',
-    port: 5432,
-    database: 'accounter',
-    ssl: false,
+    user: process.env.POSTGRES_USER ?? 'postgres',
+    password: process.env.POSTGRES_PASSWORD ?? 'postgres',
+    host: process.env.POSTGRES_HOST ?? 'localhost',
+    port: Number(process.env.POSTGRES_PORT) ?? 5432,
+    database: process.env.POSTGRES_DB ?? 'accounter',
+    ssl: process.env.POSTGRES_SSL ? { rejectUnauthorized: false } : false,
   },
   showBrowser: false,
   poalimAccounts: [],
