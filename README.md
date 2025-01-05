@@ -33,7 +33,8 @@ yarn local:setup
 ```sh
 yarn build
 yarn client:dev
-yarn server:dev
+yarn subgraphs:dev
+yarn gateway:dev
 # Also helpful while developing:
 yarn generate:watch
 ```
@@ -54,6 +55,19 @@ different terminals.
 ```sh
 yarn scrape
 ```
+
+## Servers
+
+Accounter based on Federated architecture.
+
+### Subgraphs
+
+Visit [http://localhost:4001/subgraphName](http://localhost:4001/subgraphName) and explore the
+subgraph SDL.
+
+### Gateway
+
+Visit [http://localhost:4000/graphql](http://localhost:4000/graphql) and explore the supergraph.
 
 9. Generate businesses by visiting http://localhost:4000/graphql
 

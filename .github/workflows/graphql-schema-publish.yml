@@ -16,7 +16,7 @@ jobs:
 
       - name: schema publish
         env:
-          HIVE_TOKEN: ${{ secrets.hiveToken }}
+          HIVE_REGISTRY_TOKEN: ${{ secrets.hiveToken }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
           hive schema:publish "packages/server/src/modules/*/typeDefs/*.graphql.ts" --github
