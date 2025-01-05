@@ -1,33 +1,28 @@
 import Listr from 'listr';
-import type { Pool } from 'pg';
 import type { ScrapedAccount } from './accounts.js';
 import { getForeignTransactions } from './foreign-transactions.js';
 import { getIlsTransactions } from './ils-transactions.js';
-import type { PoalimContext } from './index.js';
+import type { PoalimUserContext } from './index.js';
 import { getSwiftTransactions } from './swift-transactions.js';
 
-export async function handlePoalimAccount(
-  account: ScrapedAccount,
-  pool: Pool,
-  parentCtx: PoalimContext,
-) {
-  return new Listr<unknown>(
+export async function handlePoalimAccount(account: ScrapedAccount, bankKey: string) {
+  return new Listr<PoalimUserContext>(
     [
       {
         title: 'Get ILS transactions',
-        enabled: () =>
-          !!parentCtx.scraper && !!parentCtx.columns?.['poalim_ils_account_transactions'],
-        task: async () => getIlsTransactions(pool, account, parentCtx),
+        enabled: ctx =>
+          !!ctx[bankKey]?.scraper && !!ctx[bankKey]?.columns?.['poalim_ils_account_transactions'],
+        task: async () => getIlsTransactions(bankKey, account),
       },
       {
         title: 'Get foreign transactions',
-        enabled: () => !!parentCtx.scraper,
-        task: async () => getForeignTransactions(pool, account, parentCtx),
+        enabled: ctx => !!ctx[bankKey]?.scraper,
+        task: async () => getForeignTransactions(bankKey, account),
       },
       {
         title: 'Get Swift transactions',
-        enabled: () => !!parentCtx.scraper,
-        task: async () => getSwiftTransactions(pool, account, parentCtx),
+        enabled: ctx => !!ctx[bankKey]?.scraper,
+        task: async () => getSwiftTransactions(bankKey, account),
       },
     ],
     { concurrent: true },

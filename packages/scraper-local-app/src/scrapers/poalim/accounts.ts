@@ -1,5 +1,4 @@
 import Listr from 'listr';
-import type { Pool } from 'pg';
 import type { AccountDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/accountDataSchema.js';
 import { sql } from '@pgtyped/runtime';
 import { getTableColumns, insertFinancialAccount } from '../../helpers/sql.js';
@@ -7,6 +6,7 @@ import type {
   IGetAllFinancialAccountsQuery,
   IGetAllFinancialAccountsResult,
 } from '../../helpers/types.js';
+import { MainContext } from '../../index.js';
 import { PoalimContext } from './index.js';
 
 export type ScrapedAccount = AccountDataSchema[number];
@@ -23,31 +23,30 @@ const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
   WHERE type = 'BANK_ACCOUNT'
     AND bank_number = 12;`;
 
-export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
-  const { logger } = parentCtx;
-  return new Listr<AccountsContext>([
+export async function getPoalimAccounts(bankKey: string) {
+  return new Listr<MainContext & { [bankKey: string]: PoalimContext & AccountsContext }>([
     {
       title: 'Get Accounts from Bank',
       task: async (ctx, task) => {
-        const accounts = await parentCtx.scraper!.getAccountsData();
+        const accounts = await ctx[bankKey].scraper!.getAccountsData();
 
         if (!accounts.isValid) {
-          logger.log(
+          ctx.logger.log(
             `Poalim accounts validation errors: `,
             'errors' in accounts ? accounts.errors : null,
           );
         }
 
         if (!accounts.data) {
-          ctx.scrapedAccounts = [];
+          ctx[bankKey].scrapedAccounts = [];
           task.skip('No accounts data');
           return;
         }
 
-        ctx.scrapedAccounts = accounts.data.filter(
+        ctx[bankKey].scrapedAccounts = accounts.data.filter(
           account =>
-            parentCtx.acceptedAccountNumbers.length === 0 ||
-            parentCtx.acceptedAccountNumbers.includes(account.accountNumber),
+            ctx[bankKey].acceptedAccountNumbers.length === 0 ||
+            ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber),
         );
       },
     },
@@ -55,31 +54,31 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
       title: 'Get Accounts from Datsabase',
       task: async ctx => {
         try {
-          const accounts = await getAllFinancialAccounts.run(undefined, pool);
+          const accounts = await getAllFinancialAccounts.run(undefined, ctx.pool);
 
-          ctx.dbAccounts = accounts;
+          ctx[bankKey].dbAccounts = accounts;
         } catch (error) {
-          logger.error(error);
+          ctx.logger.error(error);
           throw new Error('Failed to get accounts from database');
         }
       },
     },
     {
       title: 'Get metadata from DB',
-      task: async () => {
+      task: async ctx => {
         try {
-          parentCtx.columns ??= {};
+          ctx[bankKey].columns ??= {};
           await Promise.all(
             ['ils', 'eur', 'usd', 'gbp'].map(async currency => {
-              parentCtx.columns![`poalim_${currency}_account_transactions`] =
+              ctx[bankKey].columns![`poalim_${currency}_account_transactions`] =
                 await getTableColumns.run(
                   { tableName: `poalim_${currency}_account_transactions` },
-                  pool,
+                  ctx.pool,
                 );
             }),
           );
         } catch (error) {
-          logger.error(error);
+          ctx.logger.error(error);
           throw new Error('Error on getting columns info');
         }
       },
@@ -87,15 +86,15 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
     {
       title: 'Validate Accounts',
       task: async (ctx, task) => {
-        for (const account of ctx.scrapedAccounts) {
+        for (const account of ctx[bankKey].scrapedAccounts) {
           if (
-            parentCtx.acceptedAccountNumbers.length &&
-            !parentCtx.acceptedAccountNumbers.includes(account.accountNumber)
+            ctx[bankKey].acceptedAccountNumbers.length &&
+            !ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber)
           ) {
             throw new Error(`Poalim Account ${account.accountNumber} is not accepted`);
           }
 
-          const dbAccount = ctx.dbAccounts.find(
+          const dbAccount = ctx[bankKey].dbAccounts.find(
             dbAccount =>
               dbAccount.branch_number === account.branchNumber &&
               dbAccount.account_number === account.accountNumber.toString(),
@@ -181,16 +180,16 @@ export async function getPoalimAccounts(pool: Pool, parentCtx: PoalimContext) {
                   productLabel: account.productLabel,
                   privateBusiness: null,
                 },
-                pool,
+                ctx.pool,
               );
               task.output = `Poalim Account ${res.account_number} inserted`;
             } catch (error) {
-              logger.error(error);
+              ctx.logger.error(error);
               throw new Error(`Poalim Account ${account.accountNumber} insert failed`);
             }
           }
         }
-        parentCtx.accounts = ctx.scrapedAccounts;
+        ctx[bankKey].accounts = ctx[bankKey].scrapedAccounts;
       },
     },
   ]);

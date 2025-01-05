@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { XMLParser } from 'fast-xml-parser';
+import { MainContext } from 'index.js';
 import Listr from 'listr';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type {
   IGetAllExchangeRatesQuery,
@@ -44,7 +45,7 @@ const updateExchangeRate = sql<IUpdateExchangeRateQuery>`
   RETURNING *;
 `;
 
-async function getDatabaseRates(pool: Pool, ctx: Context, logger: Logger) {
+async function getDatabaseRates(pool: Pool, ctx: CurrencyRatesContext, logger: Logger) {
   try {
     const existingRates = await getAllExchangeRates.run(undefined, pool);
 
@@ -67,7 +68,7 @@ async function getDatabaseRates(pool: Pool, ctx: Context, logger: Logger) {
   }
 }
 
-async function getBoiRates(ctx: Context, logger: Logger) {
+async function getBoiRates(ctx: CurrencyRatesContext, logger: Logger) {
   try {
     const res = await fetch(
       'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS',
@@ -118,7 +119,7 @@ async function getBoiRates(ctx: Context, logger: Logger) {
   }
 }
 
-async function compareAndUpdateRates(pool: Pool, ctx: Context, logger: Logger) {
+async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logger: Logger) {
   const newRecords: Array<IInsertExchangeRatesParams['newRecords'][number]> = [];
 
   for (const [exchangeDate, rates] of ctx.boiData!) {
@@ -193,26 +194,29 @@ function getCurrencyKey(currency: Currency): keyof Omit<IUpdateExchangeRateParam
   }
 }
 
-type Context = {
+type CurrencyRatesContext = {
   databaseData?: Awaited<ReturnType<typeof getDatabaseRates>>;
   boiData?: Awaited<ReturnType<typeof getBoiRates>>;
 };
 
-export async function getCurrencyRates(pool: Pool, logger: Logger) {
-  return new Listr<Context>([
+const KEY = 'currencyRates';
+
+export async function getCurrencyRates(ctx: MainContext & { [KEY]?: CurrencyRatesContext }) {
+  ctx[KEY] ??= {};
+  return new Listr<MainContext & { [KEY]: CurrencyRatesContext }>([
     {
       title: 'Fetch DB Data',
-      task: ctx => getDatabaseRates(pool, ctx, logger),
+      task: ctx => getDatabaseRates(ctx.pool, ctx[KEY], ctx.logger),
     },
     {
       title: 'Fetch Bank of Israel Data',
-      task: ctx => getBoiRates(ctx, logger),
+      task: ctx => getBoiRates(ctx[KEY], ctx.logger),
     },
     {
       title: 'Compare and Update Data',
-      task: async ctx => compareAndUpdateRates(pool, ctx, logger),
+      task: async ctx => compareAndUpdateRates(ctx.pool, ctx[KEY], ctx.logger),
       enabled: ctx => {
-        return !!ctx.databaseData && !!ctx.boiData;
+        return !!ctx[KEY].databaseData && !!ctx[KEY].boiData;
       },
     },
   ]);

@@ -1,5 +1,6 @@
 import { differenceInMonths, format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
+import type { Pool } from 'pg';
 import type {
   Index,
   IsracardCardsTransactionsList,
@@ -20,7 +21,8 @@ import type {
   IInsertIsracardTransactionsParams,
   IInsertIsracardTransactionsQuery,
 } from '../../helpers/types.js';
-import type { IsracardAmexContext } from './index.js';
+import type { Logger } from '../../logger.js';
+import type { IsracardAmexAccountContext, IsracardAmexContext } from './index.js';
 
 type Context = {
   transactionsListBean?: IsracardCardsTransactionsList['CardsTransactionsListBean'];
@@ -259,9 +261,11 @@ const insertAmexTransactions = sql<IInsertAmexTransactionsQuery>`
 
 async function isTransactionNew(
   transaction: DecoratedTransaction,
-  context: IsracardAmexContext,
+  context: IsracardAmexAccountContext,
+  pool: Pool,
+  logger: Logger,
 ): Promise<boolean> {
-  const { columns, pool, logger, type, nickname } = context;
+  const { columns, type, nickname } = context;
   const columnNames = columns!.map(column => camelCase(column.column_name));
   const optionalTransactionKeys = [
     'clientIpAddress',
@@ -337,9 +341,11 @@ async function isTransactionNew(
 
 async function insertTransactions(
   transactions: DecoratedTransaction[],
-  context: IsracardAmexContext,
+  context: IsracardAmexAccountContext,
+  pool: Pool,
+  logger: Logger,
 ) {
-  const { logger, type, nickname, pool } = context;
+  const { type, nickname } = context;
   const transactionsToInsert: Array<InsertionTransactionParams> = [];
   for (const transaction of transactions) {
     if (
@@ -441,180 +447,198 @@ async function insertTransactions(
 
 export async function getMonthTransactions(
   month: Date,
-  parentContext: IsracardAmexContext,
+  accountKey: string,
   parentTask: ListrTaskWrapper,
 ) {
+  const monthKey = format(month, 'MM-yyyy');
   const originalTitle = parentTask.title;
-  return new Listr<Context>([
-    {
-      title: 'Get Transactions',
-      task: async (ctx, task) => {
-        const { scraper, logger, type, nickname } = parentContext;
-        try {
-          const monthTransactions = await scraper!.getMonthTransactions(month);
+  return new Listr<IsracardAmexContext & { [accountKey: string]: { [monthKey: string]: Context } }>(
+    [
+      {
+        title: 'Get Transactions',
+        task: async (ctx, task) => {
+          ctx[accountKey][monthKey] ??= {};
+          const { logger } = ctx;
+          const { scraper, type, nickname } = ctx[accountKey];
+          try {
+            const monthTransactions = await scraper!.getMonthTransactions(month);
 
-          if (!monthTransactions.isValid) {
-            if ('errors' in monthTransactions) {
-              logger.error(monthTransactions.errors);
+            if (!monthTransactions.isValid) {
+              if ('errors' in monthTransactions) {
+                logger.error(monthTransactions.errors);
+              }
+              throw new Error(
+                `Invalid transactions data for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
+              );
             }
+
+            if (!monthTransactions.data) {
+              task.skip('No data');
+              ctx[accountKey].processedData ??= {};
+              ctx[accountKey].processedData.transactions ??= 0;
+              parentTask.title = originalTitle + ' (No data)';
+              return;
+            }
+
+            if (monthTransactions?.data?.Header?.Status !== '1') {
+              logger.log(JSON.stringify(monthTransactions.data?.Header));
+              throw new Error(
+                `Replace password for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
+              );
+            }
+
+            ctx[accountKey][monthKey].transactionsListBean =
+              monthTransactions.data.CardsTransactionsListBean;
+          } catch (error) {
+            logger.error(`Failed to get transactions: ${error}`);
             throw new Error(
-              `Invalid transactions data for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
+              `Failed to get transactions for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
             );
           }
+        },
+      },
+      {
+        title: 'Normalize Transactions',
+        enabled: ctx => !!ctx[accountKey][monthKey]?.transactionsListBean,
+        task: async (ctx, task) => {
+          const { transactionsListBean } = ctx[accountKey][monthKey];
+          const normalizedTransactions: Array<DecoratedTransaction> = [];
+          const cardNumberMapping = ctx[accountKey].options?.cardNumberMapping;
+          const cardNumbersToMap = cardNumberMapping ? Object.keys(cardNumberMapping) : [];
+          transactionsListBean?.cardNumberList.map((cardInformation, index) => {
+            let card = cardInformation.slice(cardInformation.length - 4);
+            if (cardNumberMapping && cardNumbersToMap.includes(card)) {
+              card = cardNumberMapping[card];
+            }
 
-          if (!monthTransactions.data) {
-            task.skip('No data');
-            parentContext.processedData ??= {};
-            parentContext.processedData.transactions ??= 0;
-            parentTask.title = originalTitle + ' (No data)';
+            const transactionsGroups =
+              transactionsListBean[`Index${index}` as 'Index0'].CurrentCardTransactions;
+
+            if (transactionsGroups) {
+              transactionsGroups.map(txnGroup => {
+                if (txnGroup.txnIsrael) {
+                  txnGroup.txnIsrael.map(transaction => {
+                    normalizedTransactions.push({
+                      ...transaction,
+                      card,
+                    });
+                  });
+                }
+                if (txnGroup.txnAbroad) {
+                  txnGroup.txnAbroad.map(transaction => {
+                    normalizedTransactions.push({
+                      ...transaction,
+                      card,
+                    });
+                  });
+                }
+              });
+            }
+          });
+
+          ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(t => t.card);
+
+          // if (transaction.card && transaction.card == '17 *') {
+          //   transaction.card = '9217';
+          // }
+
+          // const wantedCreditCards = [
+          //   '1082',
+          //   '2733',
+          //   '9217',
+          //   '6264',
+          //   '1074',
+          //   '17 *',
+          //   '5972',
+          //   '6317',
+          //   '6466',
+          //   '9270',
+          //   '5084',
+          //   '7086',
+          //   '2294',
+          //   '70 *',
+          // ];
+
+          const { acceptedCardNumbers } = ctx[accountKey].options ?? {};
+          if (acceptedCardNumbers && acceptedCardNumbers.length > 0) {
+            ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(transaction =>
+              acceptedCardNumbers.includes(transaction.card),
+            );
+          } else {
+            ctx[accountKey][monthKey].transactions = normalizedTransactions;
+          }
+
+          if (ctx[accountKey][monthKey].transactions.length !== normalizedTransactions.length) {
+            throw new Error('Some transactions were filtered out');
+          }
+
+          parentTask.title = `${originalTitle} (${ctx[accountKey][monthKey].transactions.length} transactions)`;
+          task.title =
+            task.title + ` (${ctx[accountKey][monthKey].transactions.length} transactions)`;
+          ctx[accountKey].processedData ??= {};
+          ctx[accountKey].processedData.transactions ??= 0;
+          ctx[accountKey].processedData.transactions +=
+            ctx[accountKey][monthKey].transactions.length;
+          return;
+        },
+      },
+      {
+        title: `Check for New Transactions`,
+        skip: ctx =>
+          ctx[accountKey][monthKey]?.transactions?.length === 0 ? 'No transactions' : undefined,
+        task: async (ctx, task) => {
+          try {
+            const { transactions = [] } = ctx[accountKey][monthKey];
+            const newTransactions: DecoratedTransaction[] = [];
+            await Promise.all(
+              transactions.map(async transaction => {
+                if (await isTransactionNew(transaction, ctx[accountKey], ctx.pool, ctx.logger)) {
+                  newTransactions.push(transaction);
+                }
+              }),
+            );
+            ctx[accountKey][monthKey].newTransactions = newTransactions;
+            task.title = `${task.title} (${ctx[accountKey][monthKey].newTransactions?.length} new transactions)`;
+            parentTask.title = `${originalTitle} (${ctx[accountKey][monthKey].newTransactions?.length} new transactions)`;
+            ctx[accountKey].processedData ??= {};
+            ctx[accountKey].processedData.newTransactions ??= 0;
+            ctx[accountKey].processedData.newTransactions +=
+              ctx[accountKey][monthKey].newTransactions.length;
+          } catch (error) {
+            ctx.logger.error(`Failed to save transactions: ${error}`);
+            throw new Error(
+              `Failed to check rather transactions are new for ${ctx[accountKey].type} ${ctx[accountKey].nickname}`,
+            );
+          }
+        },
+      },
+      {
+        title: 'Save Transactions',
+        enabled: ctx => !!ctx[accountKey][monthKey]?.newTransactions,
+        task: async (ctx, task) => {
+          const { newTransactions = [] } = ctx[accountKey][monthKey];
+          if (newTransactions.length === 0) {
+            task.skip('No new transactions');
             return;
           }
 
-          if (monthTransactions?.data?.Header?.Status !== '1') {
-            logger.log(JSON.stringify(monthTransactions.data?.Header));
-            throw new Error(`Replace password for ${type} ${nickname} ${format(month, 'MM-yyyy')}`);
+          try {
+            await insertTransactions(newTransactions, ctx[accountKey], ctx.pool, ctx.logger).then(
+              () => {
+                parentTask.title = `${originalTitle} (${newTransactions.length} new transactions inserted)`;
+              },
+            );
+            ctx[accountKey].processedData ??= {};
+            ctx[accountKey].processedData.insertedTransactions ??= 0;
+            ctx[accountKey].processedData.insertedTransactions += newTransactions.length;
+          } catch (error) {
+            ctx.logger.error(`Failed to save transactions: ${error}`);
+            throw new Error(
+              `Failed to save transactions for ${ctx[accountKey].type} ${ctx[accountKey].nickname}`,
+            );
           }
-
-          ctx.transactionsListBean = monthTransactions.data.CardsTransactionsListBean;
-        } catch (error) {
-          logger.error(`Failed to get transactions: ${error}`);
-          throw new Error(
-            `Failed to get transactions for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
-          );
-        }
+        },
       },
-    },
-    {
-      title: 'Normalize Transactions',
-      enabled: ctx => !!ctx.transactionsListBean,
-      task: async (ctx, task) => {
-        const { transactionsListBean } = ctx;
-        const normalizedTransactions: Array<DecoratedTransaction> = [];
-        const cardNumberMapping = parentContext.options?.cardNumberMapping;
-        const cardNumbersToMap = cardNumberMapping ? Object.keys(cardNumberMapping) : [];
-        transactionsListBean?.cardNumberList.map((cardInformation, index) => {
-          let card = cardInformation.slice(cardInformation.length - 4);
-          if (cardNumberMapping && cardNumbersToMap.includes(card)) {
-            card = cardNumberMapping[card];
-          }
-
-          const transactionsGroups =
-            transactionsListBean[`Index${index}` as 'Index0'].CurrentCardTransactions;
-
-          if (transactionsGroups) {
-            transactionsGroups.map(txnGroup => {
-              if (txnGroup.txnIsrael) {
-                txnGroup.txnIsrael.map(transaction => {
-                  normalizedTransactions.push({
-                    ...transaction,
-                    card,
-                  });
-                });
-              }
-              if (txnGroup.txnAbroad) {
-                txnGroup.txnAbroad.map(transaction => {
-                  normalizedTransactions.push({
-                    ...transaction,
-                    card,
-                  });
-                });
-              }
-            });
-          }
-        });
-
-        ctx.transactions = normalizedTransactions.filter(t => t.card);
-
-        // if (transaction.card && transaction.card == '17 *') {
-        //   transaction.card = '9217';
-        // }
-
-        // const wantedCreditCards = [
-        //   '1082',
-        //   '2733',
-        //   '9217',
-        //   '6264',
-        //   '1074',
-        //   '17 *',
-        //   '5972',
-        //   '6317',
-        //   '6466',
-        //   '9270',
-        //   '5084',
-        //   '7086',
-        //   '2294',
-        //   '70 *',
-        // ];
-
-        const { acceptedCardNumbers } = parentContext.options ?? {};
-        if (acceptedCardNumbers && acceptedCardNumbers.length > 0) {
-          ctx.transactions = normalizedTransactions.filter(transaction =>
-            acceptedCardNumbers.includes(transaction.card),
-          );
-        } else {
-          ctx.transactions = normalizedTransactions;
-        }
-
-        parentTask.title = `${originalTitle} (${ctx.transactions.length} transactions)`;
-        task.title = task.title + ` (${ctx.transactions.length} transactions)`;
-        parentContext.processedData ??= {};
-        parentContext.processedData.transactions ??= 0;
-        parentContext.processedData.transactions += ctx.transactions.length;
-        return;
-      },
-    },
-    {
-      title: `Check for New Transactions`,
-      skip: ctx => (ctx.transactions?.length === 0 ? 'No transactions' : undefined),
-      task: async (ctx, task) => {
-        try {
-          const { transactions = [] } = ctx;
-          const newTransactions: DecoratedTransaction[] = [];
-          await Promise.all(
-            transactions.map(async transaction => {
-              if (await isTransactionNew(transaction, parentContext)) {
-                newTransactions.push(transaction);
-              }
-            }),
-          );
-          ctx.newTransactions = newTransactions;
-          task.title = `${task.title} (${ctx.newTransactions?.length} new transactions)`;
-          parentTask.title = `${originalTitle} (${ctx.newTransactions?.length} new transactions)`;
-          parentContext.processedData ??= {};
-          parentContext.processedData.newTransactions ??= 0;
-          parentContext.processedData.newTransactions += ctx.newTransactions.length;
-        } catch (error) {
-          parentContext.logger.error(`Failed to save transactions: ${error}`);
-          throw new Error(
-            `Failed to check rather transactions are new for ${parentContext.type} ${parentContext.nickname}`,
-          );
-        }
-      },
-    },
-    {
-      title: 'Save Transactions',
-      enabled: ctx => !!ctx.newTransactions,
-      task: async (ctx, task) => {
-        const { newTransactions = [] } = ctx;
-        if (newTransactions.length === 0) {
-          task.skip('No new transactions');
-          return;
-        }
-
-        try {
-          await insertTransactions(newTransactions, parentContext).then(() => {
-            parentTask.title = `${originalTitle} (${newTransactions.length} new transactions inserted)`;
-          });
-          parentContext.processedData ??= {};
-          parentContext.processedData.insertedTransactions ??= 0;
-          parentContext.processedData.insertedTransactions += newTransactions.length;
-        } catch (error) {
-          parentContext.logger.error(`Failed to save transactions: ${error}`);
-          throw new Error(
-            `Failed to save transactions for ${parentContext.type} ${parentContext.nickname}`,
-          );
-        }
-      },
-    },
-  ]);
+    ],
+  );
 }

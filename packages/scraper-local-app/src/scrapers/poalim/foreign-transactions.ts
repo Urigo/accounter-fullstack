@@ -25,7 +25,7 @@ import type {
   Json,
 } from '../../helpers/types.js';
 import type { ScrapedAccount } from './accounts.js';
-import type { PoalimContext, PoalimScraper } from './index.js';
+import type { PoalimScraper, PoalimUserContext } from './index.js';
 
 export type ForeignTransaction = (
   | ForeignTransactionsPersonalSchema
@@ -46,7 +46,7 @@ export type NormalizedForeignTransaction = ForeignTransaction & {
   bankNumber: number;
 };
 type ForeignCurrency = 'usd' | 'eur' | 'gbp';
-type Context = {
+type ForeignCurrenciesContext = {
   transactionsByCurrencies?: Partial<{
     [key in ForeignCurrency]: NormalizedForeignTransaction[];
   }>;
@@ -413,7 +413,7 @@ function normalizeForeignTransactionMetadata(
 }
 
 async function normalizeForeignTransactionsForAccount(
-  ctx: Context,
+  ctx: ForeignCurrenciesContext,
   task: ListrTaskWrapper<unknown>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
@@ -689,26 +689,29 @@ async function insertTransactions<
   }
 }
 
-export async function getForeignTransactions(
-  pool: Pool,
-  account: ScrapedAccount,
-  parentCtx: PoalimContext,
-) {
-  const { logger, accounts } = parentCtx;
-  const knownAccountNumbers = accounts!.map(account => account.accountNumber);
-  return new Listr<Context>([
+type PoalimForeignCurrenciesContext = PoalimUserContext & {
+  [bankKey: string]: { [foreignKey: string]: ForeignCurrenciesContext };
+};
+
+export async function getForeignTransactions(bankKey: string, account: ScrapedAccount) {
+  const foreignKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_foreign`;
+  return new Listr<PoalimForeignCurrenciesContext>([
     {
       title: `Get Transactions`,
-      task: async (foreignAccountsContext, task) => {
+      task: async (ctx, task) => {
+        ctx[bankKey][foreignKey] = {};
+        const knownAccountNumbers = ctx[bankKey].accounts!.map(account => account.accountNumber);
         await normalizeForeignTransactionsForAccount(
-          foreignAccountsContext,
+          ctx[bankKey][foreignKey],
           task,
-          parentCtx.scraper!,
+          ctx[bankKey].scraper!,
           account,
           knownAccountNumbers,
-          logger,
+          ctx.logger,
         );
-        const currencyAccounts = Object.keys(foreignAccountsContext.transactionsByCurrencies ?? {});
+        const currencyAccounts = Object.keys(
+          ctx[bankKey][foreignKey].transactionsByCurrencies ?? {},
+        );
         if (currencyAccounts.length) {
           task.title = `${task.title} (Got ${currencyAccounts.length} currency accounts)`;
         }
@@ -716,29 +719,37 @@ export async function getForeignTransactions(
     },
     {
       title: `Handle Foreign Currencies`,
-      skip: foreignAccountsContext =>
-        foreignAccountsContext.transactionsByCurrencies &&
-        Object.keys(foreignAccountsContext.transactionsByCurrencies).length === 0,
-      task: async foreignAccountsContext => {
+      skip: ctx =>
+        ctx[bankKey][foreignKey]?.transactionsByCurrencies &&
+        Object.keys(ctx[bankKey][foreignKey].transactionsByCurrencies).length === 0,
+      task: async ctx => {
         const currencies = Object.keys(
-          foreignAccountsContext.transactionsByCurrencies ?? {},
+          ctx[bankKey][foreignKey].transactionsByCurrencies ?? {},
         ) as ForeignCurrency[];
         const tasks = currencies.map(currency => {
-          const transactions = foreignAccountsContext.transactionsByCurrencies![currency]!;
+          const transactions = ctx[bankKey][foreignKey].transactionsByCurrencies![currency]!;
           return {
             title: `Currency ${currency.toLocaleUpperCase()}`,
             task: () => {
               if (!transactions.length) {
                 throw new Error(`No transactions for ${currency}`);
               }
-              return new Listr<{
-                newTransactions?: NormalizedForeignTransaction[];
-              }>([
+              const currencyKey = `${foreignKey}_${currency}`;
+              return new Listr<
+                PoalimForeignCurrenciesContext & {
+                  [bankKey: string]: {
+                    [currencyKey: string]: {
+                      newTransactions?: NormalizedForeignTransaction[];
+                    };
+                  };
+                }
+              >([
                 {
                   title: `Check for New Transactions`,
-                  task: async (specificForeignAccountContext, task) => {
+                  task: async (ctx, task) => {
+                    ctx[bankKey][currencyKey] = {};
                     const allColumns =
-                      parentCtx.columns![`poalim_${currency}_account_transactions`];
+                      ctx[bankKey].columns![`poalim_${currency}_account_transactions`];
                     if (!allColumns) {
                       throw new Error(`No columns for ${currency}`);
                     }
@@ -752,28 +763,28 @@ export async function getForeignTransactions(
                           await isTransactionNew(
                             normalizedTransaction,
                             currency,
-                            pool,
+                            ctx.pool,
                             columns,
-                            logger,
+                            ctx.logger,
                           )
                         ) {
                           newTransactions.push(normalizedTransaction);
                         }
                       }),
                     );
-                    specificForeignAccountContext.newTransactions = newTransactions;
-                    task.title = `${task.title} (${specificForeignAccountContext.newTransactions?.length} new transactions)`;
+                    ctx[bankKey][currencyKey].newTransactions = newTransactions;
+                    task.title = `${task.title} (${ctx[bankKey][currencyKey].newTransactions?.length} new transactions)`;
                   },
                 },
                 {
                   title: `Save New Transactions`,
-                  skip: specificForeignAccountContext =>
-                    specificForeignAccountContext.newTransactions?.length === 0
+                  skip: ctx =>
+                    ctx[bankKey][currencyKey].newTransactions?.length === 0
                       ? 'No new transactions'
                       : undefined,
-                  task: async specificForeignAccountContext => {
-                    const { newTransactions = [] } = specificForeignAccountContext;
-                    await insertTransactions(newTransactions, pool, currency, logger);
+                  task: async ctx => {
+                    const { newTransactions = [] } = ctx[bankKey][currencyKey];
+                    await insertTransactions(newTransactions, ctx.pool, currency, ctx.logger);
                   },
                 },
               ]);

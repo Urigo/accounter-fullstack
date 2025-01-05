@@ -10,9 +10,9 @@ import type {
 } from '../../helpers/types.js';
 import type { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
-import type { PoalimContext, PoalimScraper } from './index.js';
+import type { PoalimScraper, PoalimUserContext } from './index.js';
 
-type Context = {
+type SwiftContext = {
   transactions?: SwiftTransaction[];
   newTransactions?: SwiftTransaction[];
   insertableTransactions?: SwiftTransaction[];
@@ -132,7 +132,7 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
   RETURNING *;`;
 
 async function fetchSwiftTransactions(
-  ctx: Context,
+  ctx: SwiftContext,
   task: ListrTaskWrapper<unknown>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
@@ -357,59 +357,69 @@ async function normalizeTransaction(
   }
 }
 
-export async function getSwiftTransactions(
-  pool: Pool,
-  account: ScrapedAccount,
-  parentCtx: PoalimContext,
-) {
-  const { logger } = parentCtx;
-  return new Listr<Context>([
-    {
-      title: `Get Transactions`,
-      task: async (ctx, task) => {
-        await fetchSwiftTransactions(ctx, task, parentCtx.scraper!, account, logger);
-        task.title = `${task.title} (Got ${ctx.transactions?.length} deposits)`;
+export async function getSwiftTransactions(bankKey: string, account: ScrapedAccount) {
+  const swiftKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_swift`;
+  return new Listr<PoalimUserContext & { [bankKey: string]: { [swiftKey: string]: SwiftContext } }>(
+    [
+      {
+        title: `Get Transactions`,
+        task: async (ctx, task) => {
+          const { scraper } = ctx[bankKey];
+          ctx[bankKey][swiftKey] = {} as SwiftContext;
+          await fetchSwiftTransactions(ctx[bankKey][swiftKey], task, scraper!, account, ctx.logger);
+          task.title = `${task.title} (Got ${ctx[bankKey][swiftKey].transactions?.length} deposits)`;
+        },
       },
-    },
-    {
-      title: `Check for New Transactions`,
-      enabled: ctx => !!ctx.transactions,
-      skip: ctx => (ctx.transactions?.length === 0 ? 'No transactions' : undefined),
-      task: async (ctx, task) => {
-        const { transactions = [] } = ctx;
-        const newTransactions: SwiftTransaction[] = [];
-        for (const transaction of transactions) {
-          if (await isTransactionNew(transaction, pool, logger)) {
-            newTransactions.push(transaction);
+      {
+        title: `Check for New Transactions`,
+        enabled: ctx => !!ctx[bankKey][swiftKey]?.transactions,
+        skip: ctx =>
+          ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : undefined,
+        task: async (ctx, task) => {
+          const { transactions = [] } = ctx[bankKey][swiftKey];
+          const newTransactions: SwiftTransaction[] = [];
+          for (const transaction of transactions) {
+            if (await isTransactionNew(transaction, ctx.pool, ctx.logger)) {
+              newTransactions.push(transaction);
+            }
           }
-        }
-        ctx.newTransactions = newTransactions;
-        task.title = `${task.title} (${ctx.newTransactions?.length} new transactions)`;
+          ctx[bankKey][swiftKey].newTransactions = newTransactions;
+          task.title = `${task.title} (${ctx[bankKey][swiftKey].newTransactions?.length} new transactions)`;
+        },
       },
-    },
-    {
-      title: `Insert Transactions`,
-      enabled: ctx => !!ctx.newTransactions,
-      skip: ctx => (ctx.newTransactions?.length === 0 ? 'No transactions' : undefined),
-      task: async ctx => {
-        try {
-          const { newTransactions = [] } = ctx;
-          const insertableTransactions: IInsertSwiftTransactionParams['switfTransactions'][number][] =
-            [];
-          await Promise.all(
-            newTransactions.map(async transaction => {
-              insertableTransactions.push(
-                await normalizeTransaction(transaction, account, parentCtx.scraper!, logger),
-              );
-            }),
-          );
+      {
+        title: `Insert Transactions`,
+        enabled: ctx => !!ctx[bankKey][swiftKey]?.newTransactions,
+        skip: ctx =>
+          ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : undefined,
+        task: async ctx => {
+          try {
+            const { newTransactions = [] } = ctx[bankKey][swiftKey];
+            const insertableTransactions: IInsertSwiftTransactionParams['switfTransactions'][number][] =
+              [];
+            await Promise.all(
+              newTransactions.map(async transaction => {
+                insertableTransactions.push(
+                  await normalizeTransaction(
+                    transaction,
+                    account,
+                    ctx[bankKey].scraper!,
+                    ctx.logger,
+                  ),
+                );
+              }),
+            );
 
-          await insertSwiftTransaction.run({ switfTransactions: insertableTransactions }, pool);
-        } catch (error) {
-          logger.error(error);
-          throw new Error('Failed to insert swift transactions');
-        }
+            await insertSwiftTransaction.run(
+              { switfTransactions: insertableTransactions },
+              ctx.pool,
+            );
+          } catch (error) {
+            ctx.logger.error(error);
+            throw new Error('Failed to insert swift transactions');
+          }
+        },
       },
-    },
-  ]);
+    ],
+  );
 }

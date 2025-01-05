@@ -1,11 +1,10 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
 import { getTableColumns } from 'helpers/sql.js';
 import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
-import type { Pool } from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from '../../env.js';
 import type { FilteredColumns } from '../../helpers/types.js';
-import { Logger } from '../../logger.js';
+import type { MainContext } from '../../index.js';
 import { getMonthTransactions } from './month.js';
 import { getTableName } from './utils.js';
 
@@ -27,14 +26,12 @@ export type AmexCredentials = IsracardAmexCreds;
 type Scraper = Awaited<ReturnType<typeof init>>;
 export type IsracardAmexScraper = Awaited<ReturnType<Scraper['isracard'] | Scraper['amex']>>;
 
-export type IsracardAmexContext = {
+export type IsracardAmexAccountContext = {
   type: CreditcardType;
   nickname: string;
   scraper?: IsracardAmexScraper;
   closeBrowser?: () => Promise<void>;
   options: IsracardAmexCreds['options'];
-  pool: Pool;
-  logger: Logger;
   columns?: FilteredColumns;
   processedData?: {
     transactions?: number;
@@ -43,13 +40,16 @@ export type IsracardAmexContext = {
   };
 };
 
+export type IsracardAmexContext = MainContext & {
+  [accountKey: string]: IsracardAmexAccountContext;
+};
+
 export async function getIsracardAmexData(
   type: CreditcardType,
-  pool: Pool,
   credentials: IsracardCredentials,
-  logger: Logger,
   parentTask: ListrTaskWrapper,
 ) {
+  const accountKey = `${type}_${credentials.ownerId.substring(5, 9)}`;
   return new Listr<IsracardAmexContext>([
     {
       title: 'Login',
@@ -57,16 +57,15 @@ export async function getIsracardAmexData(
         if (!credentials.ownerId || !credentials.password || !credentials.last6Digits) {
           throw new Error('Missing credentials for isracard');
         }
-
-        ctx.type = type;
-        ctx.logger = logger;
-        ctx.options = credentials.options;
-        ctx.pool = pool;
-        ctx.nickname = credentials.nickname ?? `ID ...${credentials.ownerId.substring(5, 9)}`;
+        ctx[accountKey] = {
+          type,
+          options: credentials.options,
+          nickname: credentials.nickname ?? `ID ...${credentials.ownerId.substring(5, 9)}`,
+        };
 
         task.output = 'Scraper Init';
         const scraper = await init({ headless: !config.showBrowser });
-        ctx.closeBrowser = scraper.close;
+        ctx[accountKey].closeBrowser = scraper.close;
 
         let scraperLogin: typeof scraper.isracard | typeof scraper.amex | null = null;
         switch (type) {
@@ -93,7 +92,7 @@ export async function getIsracardAmexData(
           },
         );
 
-        ctx.scraper = newIsracardInstance;
+        ctx[accountKey].scraper = newIsracardInstance;
         return;
       },
     },
@@ -101,13 +100,13 @@ export async function getIsracardAmexData(
       title: 'Get metadata from DB',
       task: async ctx => {
         try {
-          const tableName = getTableName(ctx.type);
-          const allColumns = await getTableColumns.run({ tableName }, pool);
-          ctx.columns = allColumns.filter(
+          const tableName = getTableName(ctx[accountKey].type);
+          const allColumns = await getTableColumns.run({ tableName }, ctx.pool);
+          ctx[accountKey].columns = allColumns.filter(
             column => column.column_name && column.data_type,
           ) as FilteredColumns;
         } catch (error) {
-          logger.error(error);
+          ctx.logger.error(error);
           throw new Error('Error on getting columns info');
         }
       },
@@ -129,7 +128,7 @@ export async function getIsracardAmexData(
             month =>
               ({
                 title: format(month, 'MM-yyyy'),
-                task: async (ctx, task) => await getMonthTransactions(month, ctx, task),
+                task: async (_, task) => await getMonthTransactions(month, accountKey, task),
               }) as ListrTask,
           ),
           { concurrent: true },
@@ -137,23 +136,25 @@ export async function getIsracardAmexData(
       },
     },
     {
-      title: 'Close Browser',
+      title: 'Status Update',
       task: async ctx => {
-        await ctx.closeBrowser?.();
-        let status: string = '';
+        await ctx[accountKey].closeBrowser?.();
 
-        // update main task status
-        if (ctx.processedData) {
-          if (ctx.processedData.transactions) {
-            status += `Reviewed ${ctx.processedData.transactions} Transactions`;
+        let status: string = '';
+        if (ctx[accountKey].processedData) {
+          if (ctx[accountKey].processedData.transactions) {
+            status += `Reviewed ${ctx[accountKey].processedData.transactions} Transactions`;
           }
-          if (ctx.processedData.newTransactions === 0) {
+          if (ctx[accountKey].processedData.newTransactions === 0) {
             status += `, Nothing New`;
-          } else if (ctx.processedData.newTransactions) {
-            status += `, ${ctx.processedData.newTransactions} New`;
+          } else if (ctx[accountKey].processedData.newTransactions) {
+            status += `, ${ctx[accountKey].processedData.newTransactions} New`;
           }
-          if (ctx.processedData.insertedTransactions) {
-            if (ctx.processedData.insertedTransactions === ctx.processedData.newTransactions) {
+          if (ctx[accountKey].processedData.insertedTransactions) {
+            if (
+              ctx[accountKey].processedData.insertedTransactions ===
+              ctx[accountKey].processedData.newTransactions
+            ) {
               status += `, All Inserted`;
             } else {
               status += `, Some Inserted`;

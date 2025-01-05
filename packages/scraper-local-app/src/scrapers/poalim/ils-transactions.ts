@@ -20,7 +20,7 @@ import type {
 } from '../../helpers/types.js';
 import type { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
-import type { PoalimContext, PoalimScraper } from './index.js';
+import type { PoalimScraper, PoalimUserContext } from './index.js';
 
 export type IlsTransaction = ILSCheckingTransactionsDataSchema['transactions'][number];
 export type NormalizedIlsTransaction = IlsTransaction & {
@@ -410,60 +410,60 @@ function createDumpFile(transactions: NormalizedIlsTransaction[], bankAccount: S
   );
 }
 
-export async function getIlsTransactions(
-  pool: Pool,
-  account: ScrapedAccount,
-  parentCtx: PoalimContext,
-) {
-  const { logger, accounts } = parentCtx;
-  const knownAccountNumbers = accounts!.map(account => account.accountNumber);
-  return new Listr<Context>([
+export async function getIlsTransactions(bankKey: string, account: ScrapedAccount) {
+  const ilsKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_ils`;
+  return new Listr<PoalimUserContext & { [bankKey: string]: { [ilsKey: string]: Context } }>([
     {
       title: `Get Transactions`,
       task: async (ctx, task) => {
+        ctx[bankKey][ilsKey] = {};
+
+        const knownAccountNumbers = ctx[bankKey].accounts!.map(account => account.accountNumber);
         await normalizeIlsForAccount(
-          ctx,
+          ctx[bankKey][ilsKey],
           task,
-          parentCtx.scraper!,
+          ctx[bankKey].scraper!,
           account,
           knownAccountNumbers,
-          logger,
+          ctx.logger,
         );
-        task.title = `${task.title} (Got ${ctx.transactions?.length} transactions)`;
+        task.title = `${task.title} (Got ${ctx[bankKey][ilsKey].transactions?.length} transactions)`;
       },
     },
     {
       title: `Check for New Transactions`,
-      skip: ctx => (ctx.transactions?.length === 0 ? 'No transactions' : undefined),
+      skip: ctx =>
+        ctx[bankKey][ilsKey].transactions?.length === 0 ? 'No transactions' : undefined,
       task: async (ctx, task) => {
-        const { transactions = [] } = ctx;
-        const columns = parentCtx.columns!.poalim_ils_account_transactions!.filter(
+        const { transactions = [] } = ctx[bankKey][ilsKey];
+        const columns = ctx[bankKey].columns!.poalim_ils_account_transactions!.filter(
           column => column.column_name && column.data_type,
         ) as FilteredColumns;
         const newTransactions: NormalizedIlsTransaction[] = [];
         await Promise.all(
           transactions.map(async normalizedTransaction => {
-            if (await isTransactionNew(normalizedTransaction, pool, columns, logger)) {
+            if (await isTransactionNew(normalizedTransaction, ctx.pool, columns, ctx.logger)) {
               newTransactions.push(normalizedTransaction);
             }
           }),
         );
-        ctx.newTransactions = newTransactions;
-        task.title = `${task.title} (${ctx.newTransactions?.length} new transactions)`;
+        ctx[bankKey][ilsKey].newTransactions = newTransactions;
+        task.title = `${task.title} (${ctx[bankKey][ilsKey].newTransactions?.length} new transactions)`;
       },
     },
     {
       title: `Save New Transactions`,
-      skip: ctx => (ctx.newTransactions?.length === 0 ? 'No new transactions' : undefined),
+      skip: ctx =>
+        ctx[bankKey][ilsKey].newTransactions?.length === 0 ? 'No new transactions' : undefined,
       task: async ctx => {
-        const { newTransactions = [] } = ctx;
-        await insertTransactions(newTransactions, pool, logger);
+        const { newTransactions = [] } = ctx[bankKey][ilsKey];
+        await insertTransactions(newTransactions, ctx.pool, ctx.logger);
       },
     },
     {
       title: 'Create dump file',
-      skip: ctx => ctx.transactions?.length === 0 || !parentCtx.createDumpFile,
-      task: ctx => createDumpFile(ctx.transactions!, account),
+      skip: ctx => ctx[bankKey][ilsKey].transactions?.length === 0 || ctx[bankKey].createDumpFile,
+      task: ctx => createDumpFile(ctx[bankKey][ilsKey].transactions!, account),
     },
   ]);
 }

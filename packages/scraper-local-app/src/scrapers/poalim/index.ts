@@ -1,9 +1,9 @@
+import { MainContext } from 'index.js';
 import Listr, { type ListrTask } from 'listr';
-import type { Pool } from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from '../../env.js';
+import { makeId } from '../../helpers/misc.js';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
-import { Logger } from '../../logger.js';
 import { handlePoalimAccount } from './account.js';
 import { getPoalimAccounts, type ScrapedAccount } from './accounts.js';
 
@@ -30,21 +30,23 @@ export type PoalimContext = {
     [table: string]: IGetTableColumnsResult[];
   };
   createDumpFile?: boolean;
-  logger: Logger;
 };
+export type PoalimUserContext = MainContext & { [key: string]: PoalimContext };
 
-export async function getPoalimData(pool: Pool, credentials: PoalimCredentials, logger: Logger) {
-  return new Listr<PoalimContext>([
+export async function getPoalimData(credentials: PoalimCredentials) {
+  const KEY = makeId(8);
+  return new Listr<PoalimUserContext>([
     {
       title: 'Login',
       task: async (ctx, task) => {
-        ctx.logger = logger;
-        ctx.acceptedAccountNumbers = credentials.options?.acceptedAccountNumbers ?? [];
-        ctx.createDumpFile = credentials.options?.createDumpFile ?? false;
+        ctx[KEY] = {
+          acceptedAccountNumbers: credentials.options?.acceptedAccountNumbers ?? [],
+          createDumpFile: credentials.options?.createDumpFile ?? false,
+        };
 
         task.output = 'Scraper Init';
         const scraper = await init({ headless: !config.showBrowser });
-        ctx.closeBrowser = scraper.close;
+        ctx[KEY].closeBrowser = scraper.close;
 
         task.output = 'Bank Login';
 
@@ -63,24 +65,24 @@ export async function getPoalimData(pool: Pool, credentials: PoalimCredentials, 
           throw new Error('Unknown Error logging into Hapoalim');
         }
 
-        ctx.scraper = newPoalimInstance;
+        ctx[KEY].scraper = newPoalimInstance;
         return;
       },
     },
     {
       title: 'Get Accounts',
-      task: async ctx => await getPoalimAccounts(pool, ctx),
+      task: async () => await getPoalimAccounts(KEY),
     },
     {
       title: 'Handle Accounts',
-      skip: ctx => ctx.accounts?.length === 0,
+      skip: ctx => ctx[KEY].accounts?.length === 0,
       task: async ctx => {
         return new Listr(
-          ctx.accounts!.map(
+          ctx[KEY].accounts!.map(
             account =>
               ({
                 title: `Poalim Account ${account.branchNumber}:${account.accountNumber}`,
-                task: async () => handlePoalimAccount(account, pool, ctx),
+                task: async () => handlePoalimAccount(account, KEY),
               }) as ListrTask,
           ),
           { concurrent: true },
@@ -90,7 +92,7 @@ export async function getPoalimData(pool: Pool, credentials: PoalimCredentials, 
     {
       title: 'Close Browser',
       task: async ctx => {
-        await ctx.closeBrowser?.();
+        await ctx[KEY].closeBrowser?.();
         return;
       },
     },
