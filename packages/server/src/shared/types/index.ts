@@ -57,6 +57,13 @@ export type AccounterContext = YogaInitialContext & {
   session?: {
     role?: Role;
   };
+  currentUser: UserType;
+};
+
+export type UserType = {
+  username: string;
+  userId: string;
+  role?: Role;
 };
 
 type addZero<T> = T | 0;

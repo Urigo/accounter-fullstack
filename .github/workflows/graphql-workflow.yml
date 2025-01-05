@@ -1,7 +1,11 @@
+name: GraphQL Schema Management
+
 on:
   workflow_call:
     secrets:
       hiveDevRegistryToken:
+        required: true
+      hiveToken:
         required: true
 
 env:
@@ -53,13 +57,56 @@ jobs:
           name: legacy-subgraph-graphql
           path: packages/server/legacy-subgraph.graphql
 
+  schema-check:
+    name: Check Schema for Breaking Changes
+    needs: generate-legacy-subgraph
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download generated schema artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy-subgraph-graphql
+          path: packages/server/
+
       - name: Hive - Schema Check
         env:
           HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
-           hive schema:check \
+          hive schema:check \
           --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
           --service="legacy" \
           --url="http://localhost:4001/subgraphs/legacy" \
+          packages/server/legacy-subgraph.graphql
+
+  schema-publish:
+    name: Publish Schema
+    needs: schema-check
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download generated schema artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy-subgraph-graphql
+          path: packages/server/
+
+      - name: Publish schema to Hive
+        env:
+          HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+          hive schema:publish \
+          --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
+          --service="legacy" \
+          --url="http://localhost:4001/subgraphs/legacy" \
+          --author "GitHub Actions" \
+          --commit "Publish from CI" \
           packages/server/legacy-subgraph.graphql

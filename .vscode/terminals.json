@@ -9,11 +9,19 @@
       "icon": "device-desktop"
     },
     {
-      "name": "server:dev",
+      "name": "server:subgraphs",
       "description": "Run server",
       "open": true,
       "focus": true,
-      "command": "yarn server:dev",
+      "command": "yarn subgraphs:dev",
+      "icon": "server"
+    },
+    {
+      "name": "server:gateway",
+      "description": "Run gateway",
+      "open": true,
+      "focus": true,
+      "command": "yarn gateway:watch",
       "icon": "server"
     },
     {
