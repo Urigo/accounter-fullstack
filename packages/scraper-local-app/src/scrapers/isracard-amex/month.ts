@@ -538,27 +538,6 @@ export async function getMonthTransactions(
 
           ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(t => t.card);
 
-          // if (transaction.card && transaction.card == '17 *') {
-          //   transaction.card = '9217';
-          // }
-
-          // const wantedCreditCards = [
-          //   '1082',
-          //   '2733',
-          //   '9217',
-          //   '6264',
-          //   '1074',
-          //   '17 *',
-          //   '5972',
-          //   '6317',
-          //   '6466',
-          //   '9270',
-          //   '5084',
-          //   '7086',
-          //   '2294',
-          //   '70 *',
-          // ];
-
           const { acceptedCardNumbers } = ctx[accountKey].options ?? {};
           if (acceptedCardNumbers && acceptedCardNumbers.length > 0) {
             ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(transaction =>
