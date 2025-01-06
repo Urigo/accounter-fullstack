@@ -3,14 +3,11 @@ import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
-import {
-  DECREASED_VAT_RATIO,
-  DEFAULT_LOCAL_CURRENCY,
-  DEFAULT_VAT_PERCENTAGE,
-} from '@shared/constants';
+import { VatProvider } from '@modules/vat/providers/vat.provider.js';
+import { DECREASED_VAT_RATIO, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
 import type { AccountantStatus } from '@shared/gql-types';
-import { formatCurrency } from '@shared/helpers';
+import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
   charge: IGetChargesByFiltersResult;
@@ -96,13 +93,18 @@ export async function adjustTaxRecord(
     if (!vatAmount) {
       partialRecord.localAmountBeforeVAT = (totalAmount - noVatAmount) * rate;
     } else if (partialRecord.businessId) {
-      // TODO: figure out how to handle VAT != DEFAULT_VAT_PERCENTAGE
-      const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
+      const vatValue = await injector
+        .get(VatProvider)
+        .getVatValueByDateLoader.load(dateToTimelessDateString(doc.date));
+      if (!vatValue) {
+        throw new Error(`VAT value is missing for invoice ID=${doc.id}`);
+      }
+      const convertedVat = vatValue / (1 + vatValue);
       const tiplessTotalAmount = totalAmount - noVatAmount;
       const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - vatAmount);
       if (vatDiff > 0.005) {
         console.error(
-          `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
+          `Expected VAT amount is not ${vatValue * 100}%, but got ${
             vatAmount / (tiplessTotalAmount - vatAmount)
           } for invoice ID=${doc.id}`,
         );

@@ -1,8 +1,8 @@
-import { DEFAULT_VAT_PERCENTAGE } from '@shared/constants';
 import type { IGetAllDocumentsResult } from '../types.js';
 
 export function validateDocumentVat(
   document: IGetAllDocumentsResult,
+  vatValue: number,
   onError: (message: string) => void,
   requireVat: boolean = false,
 ): boolean {
@@ -19,13 +19,13 @@ export function validateDocumentVat(
     return true;
   }
 
-  const convertedVat = DEFAULT_VAT_PERCENTAGE / (1 + DEFAULT_VAT_PERCENTAGE);
+  const convertedVat = vatValue / (1 + vatValue);
   const tiplessTotalAmount =
     document.total_amount - (document.no_vat_amount ? Number(document.no_vat_amount) : 0);
   const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - document.vat_amount);
   if (vatDiff > 0.005) {
     onError(
-      `Expected VAT amount is not ${DEFAULT_VAT_PERCENTAGE}%, but got ${
+      `Expected VAT amount is not ${vatValue * 100}%, but got ${
         document.vat_amount / (tiplessTotalAmount - document.vat_amount)
       } for invoice ID=${document.id}`,
     );

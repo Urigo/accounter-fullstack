@@ -4,6 +4,7 @@ import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
@@ -11,7 +12,7 @@ import {
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
-import { formatCurrency } from '@shared/helpers';
+import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
 import {
@@ -68,7 +69,15 @@ export async function ledgerEntryFromDocument(
         ? INPUT_VAT_TAX_CATEGORY_ID
         : OUTPUT_VAT_TAX_CATEGORY_ID;
 
-    validateDocumentVat(document, message => {
+    const vatValue = await injector
+      .get(VatProvider)
+      .getVatValueByDateLoader.load(dateToTimelessDateString(document.date));
+
+    if (!vatValue) {
+      throw new LedgerError(`VAT value is missing for document ID=${document.id}`);
+    }
+
+    validateDocumentVat(document, vatValue, message => {
       throw new LedgerError(message);
     });
   }
