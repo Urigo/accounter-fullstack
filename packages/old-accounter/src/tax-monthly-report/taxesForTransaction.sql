@@ -50,8 +50,7 @@ ORDER BY
 
 DROP FUNCTION get_tax_report_of_transaction (transaction_id UUID);
 
-CREATE
-OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id UUID) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION get_tax_report_of_transaction (transaction_id UUID) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,

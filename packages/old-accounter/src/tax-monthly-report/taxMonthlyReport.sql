@@ -330,8 +330,7 @@ ORDER BY
 
 DROP FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR);
 
-CREATE
-OR REPLACE FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION report_to_hashavshevet_by_month (month_report VARCHAR) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
@@ -403,8 +402,7 @@ ORDER BY
 
 DROP FUNCTION get_unified_tax_report_of_month;
 
-CREATE
-OR REPLACE FUNCTION get_unified_tax_report_of_month (
+CREATE OR REPLACE FUNCTION get_unified_tax_report_of_month (
   business_name TEXT,
   month_start VARCHAR,
   month_end VARCHAR
@@ -864,8 +862,7 @@ FROM
 
 DROP FUNCTION get_tax_report_of_month (month_input VARCHAR);
 
-CREATE
-OR REPLACE FUNCTION get_tax_report_of_month (month_input VARCHAR) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION get_tax_report_of_month (month_input VARCHAR) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,
