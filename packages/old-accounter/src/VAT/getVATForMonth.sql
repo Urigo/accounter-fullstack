@@ -5,8 +5,7 @@ FROM
 
 DROP FUNCTION get_vat_for_month (month_input VARCHAR);
 
-CREATE
-OR REPLACE FUNCTION get_vat_for_month (month_input VARCHAR) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION get_vat_for_month (month_input VARCHAR) RETURNS TABLE (
   overall_VAT_status NUMERIC(9, 2),
   vat NUMERIC(9, 2),
   event_date date,
