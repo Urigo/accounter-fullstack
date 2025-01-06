@@ -10,7 +10,7 @@ export const config: Config = {
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: Number(process.env.POSTGRES_PORT) ?? 5432,
     database: process.env.POSTGRES_DB ?? 'accounter',
-    ssl: process.env.POSTGRES_SSL ? { rejectUnauthorized: false } : false,
+    ssl: process.env.POSTGRES_SSL ? true : false,
   },
   showBrowser: false,
   poalimAccounts: [],
