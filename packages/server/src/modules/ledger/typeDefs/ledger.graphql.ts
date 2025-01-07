@@ -25,7 +25,7 @@ export default gql`
     invoiceDate: DateTime!
     valueDate: DateTime!
     description: String
-    reference1: String
+    reference: String
   }
 
   extend interface Charge {

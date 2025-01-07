@@ -401,7 +401,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
                 : businessTripsEmployeePayment.employee_business_id,
               debitAmount1: absForeignAmount,
               localCurrencyDebitAmount1: absAmount,
-              reference1: businessTripsEmployeePayment.id!,
+              reference: businessTripsEmployeePayment.id!,
               isCreditorCounterparty,
               ownerId: charge.owner_id,
               currencyRate: exchangeRate,

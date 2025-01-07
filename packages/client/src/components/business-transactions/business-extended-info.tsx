@@ -33,8 +33,7 @@ import { DownloadCSV } from './download-csv.js';
             currency
           }
           invoiceDate
-          reference1
-          reference2
+          reference
           details
           counterAccount {
             __typename
@@ -180,8 +179,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   ))}
                 </>
               )}
-              <th>Reference1</th>
-              <th>Reference2</th>
+              <th>Reference</th>
               <th>Details</th>
               <th>Counter Account</th>
               <th>
@@ -236,8 +234,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
                 <td />
                 {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
-                <td>{row.reference1}</td>
-                <td>{row.reference2}</td>
+                <td>{row.reference}</td>
                 <td>{row.details}</td>
                 <td>
                   {row.counterAccount && (
