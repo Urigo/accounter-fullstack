@@ -1,8 +1,7 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
 import { getTableColumns } from 'helpers/sql.js';
 import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
-import { init } from '@accounter/modern-poalim-scraper';
-import { config } from '../../env.js';
+import type { init } from '@accounter/modern-poalim-scraper';
 import type { FilteredColumns } from '../../helpers/types.js';
 import type { MainContext } from '../../index.js';
 import { getMonthTransactions } from './month.js';
@@ -30,7 +29,6 @@ export type IsracardAmexAccountContext = {
   type: CreditcardType;
   nickname: string;
   scraper?: IsracardAmexScraper;
-  closeBrowser?: () => Promise<void>;
   options: IsracardAmexCreds['options'];
   columns?: FilteredColumns;
   processedData?: {
@@ -64,17 +62,15 @@ export async function getIsracardAmexData(
         };
 
         task.output = 'Scraper Init';
-        const scraper = await init({ headless: !config.showBrowser });
-        ctx[accountKey].closeBrowser = scraper.close;
 
-        let scraperLogin: typeof scraper.isracard | typeof scraper.amex | null = null;
+        let scraperLogin: typeof ctx.scraper.isracard | typeof ctx.scraper.amex | null = null;
         switch (type) {
           case 'ISRACARD': {
-            scraperLogin = scraper.isracard;
+            scraperLogin = ctx.scraper.isracard;
             break;
           }
           case 'AMEX': {
-            scraperLogin = scraper.amex;
+            scraperLogin = ctx.scraper.amex;
             break;
           }
           default:
@@ -138,8 +134,6 @@ export async function getIsracardAmexData(
     {
       title: 'Status Update',
       task: async ctx => {
-        await ctx[accountKey].closeBrowser?.();
-
         let status: string = '';
         if (ctx[accountKey].processedData) {
           if (ctx[accountKey].processedData.transactions) {
