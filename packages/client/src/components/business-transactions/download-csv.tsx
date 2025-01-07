@@ -48,7 +48,7 @@ const convertToCSV = (transactions: Array<ExtendedTransaction>): string => {
     ),
   );
 
-  csvString += `Sorting Date,Date,Amount,Amount Balance,${getHeadersFromForeignCurrencies(currencies)}Reference1,Reference2,Details,Counter Account\r\n`;
+  csvString += `Sorting Date,Date,Amount,Amount Balance,${getHeadersFromForeignCurrencies(currencies)}Reference,Details,Counter Account\r\n`;
 
   for (const transaction of transactions) {
     const stringifiedTransaction = handleTransaction(transaction, currencies);
@@ -94,10 +94,10 @@ function handleTransaction(transaction: ExtendedTransaction, currencies: Array<C
     ? format(new Date(transaction.invoiceDate), 'dd/MM/yy')
     : null;
   const ilsAmount = transaction.amount.raw;
-  const { ilsBalance, reference1, reference2, details } = transaction;
+  const { ilsBalance, reference, details } = transaction;
   const counterAccount = transaction.counterAccount?.name ?? '';
 
-  transactionString += `${sortingDate},${date},${ilsAmount},${ilsBalance},${getAmountsFromForeignCurrencies(transaction, currencies)}${sanitizeString(reference1 ?? '')},${sanitizeString(reference2 ?? '')},${sanitizeString(details ?? '')},${sanitizeString(counterAccount)},\r\n`;
+  transactionString += `${sortingDate},${date},${ilsAmount},${ilsBalance},${getAmountsFromForeignCurrencies(transaction, currencies)}${sanitizeString(reference ?? '')},${sanitizeString(details ?? '')},${sanitizeString(counterAccount)},\r\n`;
   return transactionString;
 }
 

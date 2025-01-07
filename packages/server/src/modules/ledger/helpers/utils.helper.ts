@@ -115,7 +115,7 @@ export function generatePartialLedgerEntry(
     debitAmount1: absForeignAmount,
     localCurrencyDebitAmount1: absAmount,
     description: transaction.source_description ?? undefined,
-    reference1: transaction.source_reference ?? undefined,
+    reference: transaction.source_reference ?? undefined,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -305,7 +305,7 @@ export function ledgerProtoToRecordsConverter(
       id: EMPTY_UUID,
       invoice_date: record.invoiceDate,
       owner_id: record.ownerId ?? null,
-      reference1: record.reference1 ?? null,
+      reference1: record.reference ?? null,
       updated_at: new Date(),
       value_date: record.valueDate,
     };

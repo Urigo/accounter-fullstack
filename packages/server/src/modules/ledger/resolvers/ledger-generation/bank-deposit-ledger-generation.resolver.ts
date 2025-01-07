@@ -161,7 +161,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyDebitAmount1: Math.abs(amount),
         description: transaction.source_description ?? undefined,
-        reference1: transaction.source_id,
+        reference: transaction.source_id,
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

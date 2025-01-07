@@ -113,7 +113,7 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     invoice_date
   ),
   reference1 = COALESCE(
-    $reference1,
+    $reference,
     reference1
   ),
   value_date = COALESCE(
@@ -166,7 +166,7 @@ const insertLedgerRecords = sql<IInsertLedgerRecordsQuery>`
     description,
     invoiceDate,
     ownerId,
-    reference1,
+    reference,
     valueDate
   )
   RETURNING *;
