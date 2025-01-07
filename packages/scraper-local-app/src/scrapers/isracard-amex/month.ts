@@ -362,7 +362,7 @@ async function insertTransactions(
       specificDate: transaction.specificDate,
       cardIndex: Number(transaction.cardIndex),
       dealsInbound: transaction.dealsInbound,
-      supplierId: Number(transaction.supplierId),
+      supplierId: transaction.supplierId ? Number(transaction.supplierId) : null,
       supplierName: transaction.supplierName,
       dealSumType: transaction.dealSumType,
       paymentSumSign: transaction.paymentSumSign,
@@ -432,9 +432,9 @@ async function insertTransactions(
       res.map(transaction => {
         const supplierName = transaction.supplier_name
           ? reverse(transaction.supplier_name)
-          : transaction.supplier_name;
+          : transaction.supplier_name_outbound;
         logger.log(
-          `success in insert to ${transaction.card} - ${transaction.payment_sum} - ${transaction.payment_sum_outbound} - ${supplierName} - ${transaction.full_purchase_date_outbound}`,
+          `success in insert to ${transaction.card} - ${transaction.payment_sum ?? transaction.payment_sum_outbound} - ${supplierName} - ${transaction.full_purchase_date ?? transaction.full_purchase_date_outbound}`,
           transaction.full_purchase_date,
         );
       });
@@ -536,8 +536,6 @@ export async function getMonthTransactions(
             }
           });
 
-          ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(t => t.card);
-
           const { acceptedCardNumbers } = ctx[accountKey].options ?? {};
           if (acceptedCardNumbers && acceptedCardNumbers.length > 0) {
             ctx[accountKey][monthKey].transactions = normalizedTransactions.filter(transaction =>
@@ -545,10 +543,6 @@ export async function getMonthTransactions(
             );
           } else {
             ctx[accountKey][monthKey].transactions = normalizedTransactions;
-          }
-
-          if (ctx[accountKey][monthKey].transactions.length !== normalizedTransactions.length) {
-            throw new Error('Some transactions were filtered out');
           }
 
           parentTask.title = `${originalTitle} (${ctx[accountKey][monthKey].transactions.length} transactions)`;
