@@ -499,6 +499,7 @@ async function isTransactionNew(
   let oldContraAccountFieldNameLableAPI = false;
   if (
     'contraAccountFieldNameLable' in transaction &&
+    transaction.contraAccountFieldNameLable != null &&
     Number(transaction.contraAccountFieldNameLable) === 0
   ) {
     logger.log('old API!');
