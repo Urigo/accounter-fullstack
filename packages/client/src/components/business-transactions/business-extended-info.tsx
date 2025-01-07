@@ -203,7 +203,19 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   window.open(`/charges/${row.chargeId}`, '_blank', 'noreferrer');
                 }}
               >
-                <td>{row.business.name}</td>
+                <td>
+                  <a
+                    href={`/business-transactions/${row.business.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <NavLink
+                      label={row.business.name}
+                      className="[&>*>.mantine-NavLink-label]:font-semibold"
+                    />
+                  </a>
+                </td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {row.amount && row.amount.raw !== 0 && (

@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { FileDown } from 'lucide-react';
+import { Tooltip } from '@mantine/core';
 import { TimelessDateString } from '../../../helpers/dates.js';
 import { ExtendedSortCode } from './trial-balance-report-sort-code.js';
 import { SortCodeGroup } from './trial-balance-table.js';
@@ -21,7 +23,13 @@ export const DownloadCSV = ({ data, fromDate, toDate }: Props): ReactElement => 
     document.body.removeChild(link);
   };
 
-  return <button onClick={downloadCSV}>Download CSV</button>;
+  return (
+    <button onClick={downloadCSV}>
+      <Tooltip label="Download CSV" position="top">
+        <FileDown />
+      </Tooltip>
+    </button>
+  );
 };
 
 const convertToCSV = (sortCodesGroups: Record<number, SortCodeGroup>): string => {
