@@ -292,90 +292,55 @@ export async function saveCalTransactionsToDB(
 
 async function saveCalTransaction(card: string, transaction: CalTransaction, pool: pg.Pool) {
   const tableName = 'accounter_schema.cal_creditcard_transactions';
-  const text = `INSERT INTO ${tableName} (
-    card,
-    trn_int_id,
-    trn_numaretor,
-    merchant_name,
-    trn_purchase_date,
-    trn_amt,
-    trn_currency_symbol,
-    trn_type,
-    trn_type_code,
-    deb_crd_date,
-    amt_before_conv_and_index,
-    deb_crd_currency_symbol,
-    merchant_address,
-    merchant_phone_no,
-    branch_code_desc,
-    trans_card_present_ind,
-    cur_payment_num,
-    num_of_payments,
-    token_ind,
-    wallet_provider_code,
-    wallet_provider_desc,
-    token_number_part4,
-    cash_account_trn_amt,
-    charge_external_to_card_comment,
-    refund_ind,
-    is_immediate_comment_ind,
-    is_immediate_hhk_ind,
-    is_margarita,
-    is_spread_paymenst_abroad,
-    trn_exac_way,
-    debit_spread_ind,
-    on_going_transactions_comment,
-    early_payment_ind,
-    merchant_id,
-    crd_ext_id_num_type_code,
-    trans_source,
-    is_abroad_transaction
-  ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-    $31, $32, $33, $34, $35, $36, $37
-  ) RETURNING *`;
 
-  const values = [
+  const transactionData = {
     card,
-    transaction.trnIntId,
-    transaction.trnNumaretor,
-    transaction.merchantName,
-    formatDate(new Date(transaction.trnPurchaseDate)),
-    transaction.trnAmt,
-    normalizeCurrencySymbol(transaction.trnCurrencySymbol),
-    transaction.trnType,
-    transaction.trnTypeCode,
-    formatDate(new Date(transaction.debCrdDate)),
-    transaction.amtBeforeConvAndIndex,
-    normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
-    transaction.merchantAddress,
-    transaction.merchantPhoneNo,
-    transaction.branchCodeDesc,
-    transaction.transCardPresentInd,
-    transaction.curPaymentNum,
-    transaction.numOfPayments,
-    transaction.tokenInd,
-    transaction.walletProviderCode,
-    transaction.walletProviderDesc,
-    transaction.tokenNumberPart4,
-    transaction.cashAccountTrnAmt,
-    transaction.chargeExternalToCardComment,
-    transaction.refundInd,
-    transaction.isImmediateCommentInd,
-    transaction.isImmediateHHKInd,
-    transaction.isMargarita,
-    transaction.isSpreadPaymenstAbroad,
-    transaction.trnExacWay,
-    transaction.debitSpreadInd,
-    transaction.onGoingTransactionsComment,
-    transaction.earlyPaymentInd,
-    transaction.merchantId,
-    transaction.crdExtIdNumTypeCode,
-    transaction.transSource,
-    transaction.isAbroadTransaction,
-  ];
+    trn_int_id: transaction.trnIntId,
+    trn_numaretor: transaction.trnNumaretor,
+    merchant_name: transaction.merchantName,
+    trn_purchase_date: formatDate(new Date(transaction.trnPurchaseDate)),
+    trn_amt: transaction.trnAmt,
+    trn_currency_symbol: normalizeCurrencySymbol(transaction.trnCurrencySymbol),
+    trn_type: transaction.trnType,
+    trn_type_code: transaction.trnTypeCode,
+    deb_crd_date: formatDate(new Date(transaction.debCrdDate)),
+    amt_before_conv_and_index: transaction.amtBeforeConvAndIndex,
+    deb_crd_currency_symbol: normalizeCurrencySymbol(transaction.debCrdCurrencySymbol),
+    merchant_address: transaction.merchantAddress,
+    merchant_phone_no: transaction.merchantPhoneNo,
+    branch_code_desc: transaction.branchCodeDesc,
+    trans_card_present_ind: transaction.transCardPresentInd,
+    cur_payment_num: transaction.curPaymentNum,
+    num_of_payments: transaction.numOfPayments,
+    token_ind: transaction.tokenInd,
+    wallet_provider_code: transaction.walletProviderCode,
+    wallet_provider_desc: transaction.walletProviderDesc,
+    token_number_part4: transaction.tokenNumberPart4,
+    cash_account_trn_amt: transaction.cashAccountTrnAmt,
+    charge_external_to_card_comment: transaction.chargeExternalToCardComment,
+    refund_ind: transaction.refundInd,
+    is_immediate_comment_ind: transaction.isImmediateCommentInd,
+    is_immediate_hhk_ind: transaction.isImmediateHHKInd,
+    is_margarita: transaction.isMargarita,
+    is_spread_paymenst_abroad: transaction.isSpreadPaymenstAbroad,
+    trn_exac_way: transaction.trnExacWay,
+    debit_spread_ind: transaction.debitSpreadInd,
+    on_going_transactions_comment: transaction.onGoingTransactionsComment,
+    early_payment_ind: transaction.earlyPaymentInd,
+    merchant_id: transaction.merchantId,
+    crd_ext_id_num_type_code: transaction.crdExtIdNumTypeCode,
+    trans_source: transaction.transSource,
+    is_abroad_transaction: transaction.isAbroadTransaction,
+  };
+
+  const columns = Object.keys(transactionData);
+  const values = Object.values(transactionData);
+
+  const text = `INSERT INTO ${tableName} (
+    ${columns.join(', ')}
+  ) VALUES (
+    ${columns.map((_, i) => `$${i + 1}`).join(', ')}
+  ) RETURNING *`;
 
   try {
     await pool.query(text, values);
@@ -401,8 +366,8 @@ async function saveCalTransaction(card: string, transaction: CalTransaction, poo
             }
           : error,
       query: {
-        text,
-        values: values.map((v, i) => `$${i + 1}: ${v}`),
+        // text,
+        values: transactionData,
       },
     });
   }
@@ -424,42 +389,6 @@ async function saveDiscountTransaction(
   accountNumber: string,
 ) {
   const tableName = 'accounter_schema.bank_discount_transactions';
-  const text = `INSERT INTO ${tableName} (
-    account_number,
-    operation_date,
-    value_date,
-    operation_code,
-    operation_description,
-    operation_description2,
-    operation_description3,
-    operation_branch,
-    operation_bank,
-    channel,
-    channel_name,
-    check_number,
-    institute_code,
-    operation_amount,
-    balance_after_operation,
-    operation_number,
-    branch_treasury_number,
-    urn,
-    operation_details_service_name,
-    commission_channel_code,
-    commission_channel_name,
-    commission_type_name,
-    business_day_date,
-    event_name,
-    category_code,
-    category_desc_code,
-    category_description,
-    operation_description_to_display,
-    operation_order,
-    is_last_seen
-  ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-    $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-  ) RETURNING *`;
 
   // converts 20240109 to Date object
   function convertToDate(dateStr: string): Date {
@@ -470,38 +399,47 @@ async function saveDiscountTransaction(
     );
   }
 
-  const values = [
-    accountNumber,
-    formatDate(convertToDate(transaction.OperationDate)),
-    formatDate(convertToDate(transaction.ValueDate)),
-    transaction.OperationCode,
-    transaction.OperationDescription,
-    transaction.OperationDescription2,
-    transaction.OperationDescription3,
-    transaction.OperationBranch,
-    transaction.OperationBank,
-    transaction.Channel,
-    transaction.ChannelName,
-    transaction.CheckNumber || null,
-    transaction.InstituteCode,
-    transaction.OperationAmount,
-    transaction.BalanceAfterOperation,
-    transaction.OperationNumber,
-    transaction.BranchTreasuryNumber,
-    transaction.Urn,
-    transaction.OperationDetailsServiceName,
-    transaction.CommissionChannelCode,
-    transaction.CommissionChannelName,
-    transaction.CommissionTypeName,
-    formatDate(convertToDate(transaction.BusinessDayDate)),
-    transaction.EventName,
-    transaction.CategoryCode,
-    transaction.CategoryDescCode,
-    transaction.CategoryDescription,
-    transaction.OperationDescriptionToDisplay,
-    transaction.OperationOrder,
-    transaction.IsLastSeen,
-  ];
+  const transactionData = {
+    account_number: accountNumber,
+    operation_date: formatDate(convertToDate(transaction.OperationDate)),
+    value_date: formatDate(convertToDate(transaction.ValueDate)),
+    operation_code: transaction.OperationCode,
+    operation_description: transaction.OperationDescription,
+    operation_description2: transaction.OperationDescription2,
+    operation_description3: transaction.OperationDescription3,
+    operation_branch: transaction.OperationBranch,
+    operation_bank: transaction.OperationBank,
+    channel: transaction.Channel,
+    channel_name: transaction.ChannelName,
+    check_number: transaction.CheckNumber || null,
+    institute_code: transaction.InstituteCode,
+    operation_amount: transaction.OperationAmount,
+    balance_after_operation: transaction.BalanceAfterOperation,
+    operation_number: transaction.OperationNumber,
+    branch_treasury_number: transaction.BranchTreasuryNumber,
+    urn: transaction.Urn,
+    operation_details_service_name: transaction.OperationDetailsServiceName,
+    commission_channel_code: transaction.CommissionChannelCode,
+    commission_channel_name: transaction.CommissionChannelName,
+    commission_type_name: transaction.CommissionTypeName,
+    business_day_date: formatDate(convertToDate(transaction.BusinessDayDate)),
+    event_name: transaction.EventName,
+    category_code: transaction.CategoryCode,
+    category_desc_code: transaction.CategoryDescCode,
+    category_description: transaction.CategoryDescription,
+    operation_description_to_display: transaction.OperationDescriptionToDisplay,
+    operation_order: transaction.OperationOrder,
+    is_last_seen: transaction.IsLastSeen,
+  };
+
+  const columns = Object.keys(transactionData);
+  const values = Object.values(transactionData);
+
+  const text = `INSERT INTO ${tableName} (
+    ${columns.join(', ')}
+  ) VALUES (
+    ${columns.map((_, i) => `$${i + 1}`).join(', ')}
+  ) RETURNING *`;
 
   try {
     await pool.query(text, values);
@@ -527,8 +465,8 @@ async function saveDiscountTransaction(
             }
           : error,
       query: {
-        text,
-        values: values.map((v, i) => `$${i + 1}: ${v}`),
+        // text,
+        values: transactionData,
       },
     });
   }
