@@ -1,8 +1,9 @@
 import Listr, { ListrTask } from 'listr';
 import pg, { type Pool as PgPool, type PoolConfig } from 'pg';
-import type { PoalimCredentials } from 'scrapers/poalim/index.js';
+import type { PoalimContext, PoalimCredentials } from 'scrapers/poalim/index.js';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from './env.js';
+import { makeId } from './helpers/misc.js';
 import { Logger } from './logger.js';
 import { getCurrencyRates } from './scrapers/currency-rates.js';
 import { getIsracardAmexData } from './scrapers/isracard-amex/index.js';
@@ -29,13 +30,45 @@ export async function scrape() {
   const logger = new Logger();
   const scraper = await init({ headless: !config.showBrowser });
 
+  // Poalim accounts must be initiated before tasks list, as they might require phone code to be entered
+  const poalimContexts = await Promise.all(
+    (config.poalimAccounts ?? []).map(async credentials => {
+      logger.log('Poalim Scraper Init');
+
+      logger.log('Bank Poalim Login');
+
+      if (!credentials.userCode || !credentials.password) {
+        throw new Error('Missing credentials for Hapoalim');
+      }
+
+      const isBusiness = credentials.options?.isBusinessAccount === false ? false : true;
+
+      const newPoalimInstance = await scraper.hapoalim(credentials, {
+        validateSchema: true,
+        isBusiness,
+      });
+
+      if (newPoalimInstance === 'Unknown Error') {
+        throw new Error('Unknown Error logging into Hapoalim');
+      }
+
+      return {
+        nickname: credentials.nickname,
+        key: credentials.nickname ? `POALIM_${credentials.nickname}` : makeId(8),
+        acceptedAccountNumbers: credentials.options?.acceptedAccountNumbers ?? [],
+        createDumpFile: credentials.options?.createDumpFile ?? false,
+        scraper: newPoalimInstance,
+      } as PoalimContext;
+    }),
+  );
+
   const tasksList = new Listr<MainContext>(
     [
       {
         title: 'Currency Rates',
         task: async ctx => getCurrencyRates(ctx),
       },
-      ...(config.poalimAccounts?.map(
+      ...(poalimContexts.map(
         (creds, i) =>
           ({
             title: `Poalim Account ${creds.nickname ?? i + 1}`,
@@ -70,11 +103,11 @@ export async function scrape() {
   );
 
   await tasksList.run({ logger, scraper, pool }).catch(err => {
-    console.error(err);
+    logger.error(err);
   });
-  pool.end();
   console.log('Tasks completed.');
-
+  pool.end();
+  scraper.close();
   await logger.reLog();
   return;
 }
