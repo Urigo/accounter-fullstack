@@ -13,6 +13,7 @@ import { getPoalimData } from './scrapers/poalim/index.js';
 export type Config = {
   database: PoolConfig;
   showBrowser?: boolean;
+  fetchBankOfIsraelRates?: boolean;
   poalimAccounts?: PoalimCredentials[];
   isracardAccounts?: IsracardCredentials[];
   amexAccounts?: AmexCredentials[];
@@ -66,6 +67,14 @@ export async function scrape() {
     [
       {
         title: 'Currency Rates',
+        skip: () => {
+          const shouldFetchCurrencyRates =
+            config.fetchBankOfIsraelRates == null ? true : config.fetchBankOfIsraelRates;
+          if (!shouldFetchCurrencyRates) {
+            return 'Skipping currency rates';
+          }
+          return false;
+        },
         task: async ctx => getCurrencyRates(ctx),
       },
       ...(poalimContexts.map(
