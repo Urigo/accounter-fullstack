@@ -1,8 +1,6 @@
 import { MainContext } from 'index.js';
 import Listr, { type ListrTask } from 'listr';
 import { init } from '@accounter/modern-poalim-scraper';
-import { config } from '../../env.js';
-import { makeId } from '../../helpers/misc.js';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
 import { handlePoalimAccount } from './account.js';
 import { getPoalimAccounts, type ScrapedAccount } from './accounts.js';
@@ -22,8 +20,9 @@ type Scraper = Awaited<ReturnType<typeof init>>;
 export type PoalimScraper = Exclude<Awaited<ReturnType<Scraper['hapoalim']>>, 'Unknown Error'>;
 
 export type PoalimContext = {
+  key: string;
+  nickname?: string;
   scraper?: PoalimScraper;
-  closeBrowser?: () => Promise<void>;
   acceptedAccountNumbers: number[];
   accounts?: ScrapedAccount[];
   columns?: {
@@ -33,39 +32,15 @@ export type PoalimContext = {
 };
 export type PoalimUserContext = MainContext & { [key: string]: PoalimContext };
 
-export async function getPoalimData(credentials: PoalimCredentials) {
-  const KEY = makeId(8);
+export async function getPoalimData(initialContext: PoalimContext) {
+  const KEY = initialContext.key;
   return new Listr<PoalimUserContext>([
     {
-      title: 'Login',
-      task: async (ctx, task) => {
+      title: 'Setup Context',
+      task: async ctx => {
         ctx[KEY] = {
-          acceptedAccountNumbers: credentials.options?.acceptedAccountNumbers ?? [],
-          createDumpFile: credentials.options?.createDumpFile ?? false,
+          ...initialContext,
         };
-
-        task.output = 'Scraper Init';
-        const scraper = await init({ headless: !config.showBrowser });
-        ctx[KEY].closeBrowser = scraper.close;
-
-        task.output = 'Bank Login';
-
-        if (!credentials.userCode || !credentials.password) {
-          throw new Error('Missing credentials for Hapoalim');
-        }
-
-        const isBusiness = credentials.options?.isBusinessAccount === false ? false : true;
-
-        const newPoalimInstance = await scraper.hapoalim(credentials, {
-          validateSchema: true,
-          isBusiness,
-        });
-
-        if (newPoalimInstance === 'Unknown Error') {
-          throw new Error('Unknown Error logging into Hapoalim');
-        }
-
-        ctx[KEY].scraper = newPoalimInstance;
         return;
       },
     },
@@ -87,13 +62,6 @@ export async function getPoalimData(credentials: PoalimCredentials) {
           ),
           { concurrent: true },
         );
-      },
-    },
-    {
-      title: 'Close Browser',
-      task: async ctx => {
-        await ctx[KEY].closeBrowser?.();
-        return;
       },
     },
   ]);

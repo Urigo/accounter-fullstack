@@ -462,7 +462,7 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
     },
     {
       title: 'Create dump file',
-      skip: ctx => ctx[bankKey][ilsKey].transactions?.length === 0 || ctx[bankKey].createDumpFile,
+      skip: ctx => ctx[bankKey][ilsKey].transactions?.length === 0 || !ctx[bankKey].createDumpFile,
       task: ctx => createDumpFile(ctx[bankKey][ilsKey].transactions!, account),
     },
   ]);
