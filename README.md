@@ -49,3 +49,13 @@ yarn server:dev
 ```sh
 yarn scrape
 ```
+
+## Miscellaneous
+
+### Multiple Bank Branches
+
+For Poalim Bank and Discount Bank accounts, your account may appear under multiple branch numbers:
+
+- Your account number and bank number remain the same
+- The same account might be associated with 2-3 different branch numbers
+- You can configure all relevant branch numbers in the `scripts/seed.ts` file
