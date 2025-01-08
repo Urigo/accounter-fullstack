@@ -111,7 +111,7 @@ async function fetchTransactions(page: Page, month: Date) {
   
   const parsedAccountInfo = getAccountSchema.safeParse(accountInfo);
   if (!parsedAccountInfo.success) {
-    console.error('failed to parse response', parsedAccountInfo.error);
+    console.error('failed to parse response', parsedAccountInfo.error, accountInfo);
     throw new Error('Failed to parse response', parsedAccountInfo.error);
   }
 
@@ -129,7 +129,7 @@ async function fetchTransactions(page: Page, month: Date) {
   
   const { success, data, error } = zodLastTransactionsSchema.safeParse(txnsResult);
   if (!success) {
-    console.error('failed to parse response', error);
+    console.error('failed to parse response', error, txnsResult);
     throw new Error('Failed to parse response', error);
   }
 
