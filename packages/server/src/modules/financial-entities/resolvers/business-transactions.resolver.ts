@@ -244,8 +244,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
       ),
 
     invoiceDate: parent => dateToTimelessDateString(parent.date!),
-    reference1: parent => parent.reference1 ?? null,
-    reference2: _ => null,
+    reference: parent => parent.reference ?? null,
     details: parent => parent.details ?? null,
     counterAccount: (parent, _, { injector }) =>
       parent.counterAccountId

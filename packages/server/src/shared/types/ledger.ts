@@ -9,8 +9,7 @@ export interface EntryForFinancialAccount {
   debitAmount: number;
   creditAmountILS: number | null;
   debitAmountILS: number | null;
-  reference1: string | null;
-  reference2: string | null;
+  reference: string | null;
   description: string | null;
 }
 
@@ -26,8 +25,7 @@ export interface EntryForAccounting {
   secondAccountCreditAmountILS?: number;
   secondAccountDebitAmount?: number;
   secondAccountDebitAmountILS?: number;
-  reference1: string | null;
-  reference2: string | null;
+  reference: string | null;
   description: string | null;
 }
 
@@ -47,7 +45,7 @@ export interface LedgerProto {
   localCurrencyDebitAmount2?: number;
   description?: string;
   invoiceDate: Date;
-  reference1?: string;
+  reference?: string;
   valueDate: Date;
   currency: Currency;
   isCreditorCounterparty: boolean;

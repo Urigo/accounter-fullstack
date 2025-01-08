@@ -4,6 +4,7 @@ import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
@@ -11,7 +12,7 @@ import {
   INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
-import { formatCurrency } from '@shared/helpers';
+import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
 import {
@@ -68,7 +69,15 @@ export async function ledgerEntryFromDocument(
         ? INPUT_VAT_TAX_CATEGORY_ID
         : OUTPUT_VAT_TAX_CATEGORY_ID;
 
-    validateDocumentVat(document, message => {
+    const vatValue = await injector
+      .get(VatProvider)
+      .getVatValueByDateLoader.load(dateToTimelessDateString(document.date));
+
+    if (!vatValue) {
+      throw new LedgerError(`VAT value is missing for document ID=${document.id}`);
+    }
+
+    validateDocumentVat(document, vatValue, message => {
       throw new LedgerError(message);
     });
   }
@@ -146,7 +155,7 @@ export async function ledgerEntryFromDocument(
     debitAmount2: debitAmount2 ?? undefined,
     localCurrencyDebitAmount2: localCurrencyDebitAmount2 ?? undefined,
     description: undefined,
-    reference1: document.serial_number ?? undefined,
+    reference: document.serial_number ?? undefined,
     isCreditorCounterparty,
     ownerId,
     chargeId,
@@ -218,7 +227,7 @@ export async function ledgerEntryFromMainTransaction(
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: transaction.source_description ?? undefined,
-    reference1: transaction.source_id,
+    reference: transaction.source_id,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -281,7 +290,7 @@ export function ledgerEntryFromBalanceCancellation(
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: balanceCancellation.description ?? undefined,
-    reference1: financialAccountEntry.reference1,
+    reference: financialAccountEntry.reference,
     isCreditorCounterparty,
     ownerId,
     currencyRate: financialAccountEntry.currencyRate,

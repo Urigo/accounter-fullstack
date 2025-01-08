@@ -5,8 +5,7 @@ FROM
 
 DROP FUNCTION top_expenses_not_categorized;
 
-CREATE
-OR REPLACE FUNCTION top_expenses_not_categorized (month_input VARCHAR) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION top_expenses_not_categorized (month_input VARCHAR) RETURNS TABLE (
   amount NUMERIC,
   date date,
   description TEXT,

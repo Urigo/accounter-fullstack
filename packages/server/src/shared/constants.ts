@@ -7,7 +7,6 @@ export const TIMELESS_DATE_REGEX =
 export const UUID_REGEX =
   /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
 
-export const DEFAULT_VAT_PERCENTAGE = 0.17;
 export const DECREASED_VAT_RATIO = 2 / 3;
 
 export const AVERAGE_MONTHLY_WORK_DAYS = 21.67;

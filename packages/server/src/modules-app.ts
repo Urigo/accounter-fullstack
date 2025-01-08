@@ -4,6 +4,7 @@ import type { UserType } from 'plugins/auth-plugin.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
+import { vatModule } from '@modules/vat/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -65,6 +66,7 @@ export async function createGraphQLApp(env: Environment) {
       chartsModule,
       corporateTaxesModule,
       countriesModule,
+      vatModule,
     ],
     providers: [
       {

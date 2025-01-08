@@ -56,7 +56,7 @@ export function handleBusinessTransaction(
     ownerID: record.owner_id!,
     foreignAmount,
     date: record.invoice_date,
-    reference1: record.reference1 ?? undefined,
+    reference: record.reference1 ?? undefined,
     chargeId: record.charge_id,
   };
   return rawTransaction;

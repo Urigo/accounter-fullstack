@@ -32,8 +32,7 @@ FROM
 
 DROP FUNCTION report_to_hashavshevet_by_month (salary_transaction UUID);
 
-CREATE
-OR REPLACE FUNCTION input_salary (salary_transaction_id UUID) RETURNS TABLE (
+CREATE OR REPLACE FUNCTION input_salary (salary_transaction_id UUID) RETURNS TABLE (
   invoice_date VARCHAR,
   debit_account_1 VARCHAR,
   debit_amount_1 VARCHAR,

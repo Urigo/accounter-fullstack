@@ -48,7 +48,7 @@ export type BusinessTransactionProto = {
   ownerID: string;
   foreignAmount: number;
   date: Date;
-  reference1?: string;
+  reference?: string;
   chargeId: string;
 };
 

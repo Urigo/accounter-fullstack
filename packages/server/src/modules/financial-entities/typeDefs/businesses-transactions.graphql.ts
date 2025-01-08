@@ -70,8 +70,7 @@ export default gql`
     business: FinancialEntity!
     foreignAmount: FinancialAmount
     invoiceDate: TimelessDate!
-    reference1: String
-    reference2: String
+    reference: String
     details: String
     counterAccount: FinancialEntity
     chargeId: UUID!

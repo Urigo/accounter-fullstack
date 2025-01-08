@@ -11,7 +11,7 @@ import { AccountDetails, GeneralDate } from './cells/index.js';
     ...LedgerRecordsAccountDetailsFields
     ...LedgerRecordsGeneralDateFields
     description
-    reference1
+    reference
   }
 `;
 
@@ -74,15 +74,15 @@ export const LedgerRecordRow = ({
         <div className="flex flex-col">
           <p
             className={
-              !diffsRecord?.reference1 || diffsRecord.reference1 === record.reference1
+              !diffsRecord?.reference || diffsRecord.reference === record.reference
                 ? ''
                 : 'line-through'
             }
           >
-            {record.reference1}
+            {record.reference}
           </p>
-          {diffsRecord?.reference1 && diffsRecord?.reference1 !== record.reference1 && (
-            <div className="border-2 border-yellow-500 rounded-md">{diffsRecord?.reference1}</div>
+          {diffsRecord?.reference && diffsRecord?.reference !== record.reference && (
+            <div className="border-2 border-yellow-500 rounded-md">{diffsRecord?.reference}</div>
           )}
         </div>
       </td>

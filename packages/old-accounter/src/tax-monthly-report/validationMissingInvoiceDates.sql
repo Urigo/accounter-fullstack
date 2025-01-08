@@ -5,8 +5,7 @@ FROM
 
 DROP FUNCTION missing_invoice_dates (month_input VARCHAR);
 
-CREATE
-OR REPLACE FUNCTION missing_invoice_dates (month_input VARCHAR) RETURNS SETOF accounter_schema.all_transactions LANGUAGE SQL AS $$
+CREATE OR REPLACE FUNCTION missing_invoice_dates (month_input VARCHAR) RETURNS SETOF accounter_schema.all_transactions LANGUAGE SQL AS $$
 
 WITH this_month_business AS (
     SELECT *

@@ -11,6 +11,7 @@ import {
 } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
+import { DownloadCSV } from './download-csv.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,8 +33,7 @@ import { AccounterLoader } from '../common/index.js';
             currency
           }
           invoiceDate
-          reference1
-          reference2
+          reference
           details
           counterAccount {
             __typename
@@ -51,7 +51,7 @@ import { AccounterLoader } from '../common/index.js';
   }
 `;
 
-type ExtendedTransaction = Extract<
+export type ExtendedTransaction = Extract<
   BusinessTransactionsInfoQuery['businessTransactionsFromLedgerRecords'],
   { __typename?: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult' }
 >['businessTransactions'][number] & {
@@ -115,15 +115,14 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     } as (typeof extendedTransactions)[number]);
   }
 
-  const isEur =
-    isExtendAllCurrencies ||
-    transactions.some(item => item.foreignAmount?.currency === Currency.Eur);
-  const isUsd =
-    isExtendAllCurrencies ||
-    transactions.some(item => item.foreignAmount?.currency === Currency.Usd);
-  const isGbp =
-    isExtendAllCurrencies ||
-    transactions.some(item => item.foreignAmount?.currency === Currency.Gbp);
+  const currencies = new Set(
+    transactions.filter(t => t.foreignAmount?.currency).map(t => t.foreignAmount!.currency),
+  );
+  const isEur = isExtendAllCurrencies || currencies.has(Currency.Eur);
+  const isUsd = isExtendAllCurrencies || currencies.has(Currency.Usd);
+  const isGbp = isExtendAllCurrencies || currencies.has(Currency.Gbp);
+
+  const businessName = transactions[0]?.business.name ?? 'unknown';
 
   return (
     <div className="flex flex-row gap-5">
@@ -180,10 +179,17 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   ))}
                 </>
               )}
-              <th>Reference1</th>
-              <th>Reference2</th>
+              <th>Reference</th>
               <th>Details</th>
               <th>Counter Account</th>
+              <th>
+                <DownloadCSV
+                  transactions={extendedTransactions}
+                  businessName={businessName}
+                  fromDate={filter?.fromDate ?? undefined}
+                  toDate={filter?.toDate ?? undefined}
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -195,7 +201,19 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   window.open(`/charges/${row.chargeId}`, '_blank', 'noreferrer');
                 }}
               >
-                <td>{row.business.name}</td>
+                <td>
+                  <a
+                    href={`/business-transactions/${row.business.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <NavLink
+                      label={row.business.name}
+                      className="[&>*>.mantine-NavLink-label]:font-semibold"
+                    />
+                  </a>
+                </td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {row.amount && row.amount.raw !== 0 && (
@@ -216,8 +234,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
                 <td />
                 {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
-                <td>{row.reference1}</td>
-                <td>{row.reference2}</td>
+                <td>{row.reference}</td>
                 <td>{row.details}</td>
                 <td>
                   {row.counterAccount && (
@@ -234,6 +251,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                     </a>
                   )}
                 </td>
+                <td />
               </tr>
             ))}
           </tbody>

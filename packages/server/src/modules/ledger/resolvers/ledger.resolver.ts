@@ -281,7 +281,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     invoiceDate: DbLedgerRecord => DbLedgerRecord.invoice_date,
     valueDate: DbLedgerRecord => DbLedgerRecord.value_date,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
-    reference1: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
+    reference: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
   },
   Ledger: {
     records: parent => parent.records,

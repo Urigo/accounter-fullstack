@@ -232,8 +232,7 @@ ORDER BY
 DROP FUNCTION trip_report;
 
 -- TODO: Send year as a parameter and adjust to it
-CREATE
-OR REPLACE FUNCTION trip_report (
+CREATE OR REPLACE FUNCTION trip_report (
   last_date_input VARCHAR,
   trip_name VARCHAR,
   is_higher_country BOOLEAN,

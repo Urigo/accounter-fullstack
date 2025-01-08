@@ -157,7 +157,7 @@ export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordIn
     debitLocalAmount2: record.localCurrencyDebitAmount2,
     description: record.description,
     invoiceDate: record.invoiceDate,
-    reference1: record.reference1,
+    reference: record.reference,
     valueDate: record.valueDate,
   };
 }
@@ -209,7 +209,7 @@ export function convertLedgerRecordToProto(
       : undefined,
     description: record.description ?? undefined,
     invoiceDate: record.invoice_date,
-    reference1: record.reference1 ?? undefined,
+    reference: record.reference1 ?? undefined,
     valueDate: record.value_date,
     currency: formatCurrency(record.currency),
     isCreditorCounterparty: false, // redundant value
@@ -249,7 +249,7 @@ export function convertLedgerRecordToInput(
     debitLocalAmount2: record.debit_local_amount2 ? Number(record.debit_local_amount2) : undefined,
     description: record.description ?? undefined,
     invoiceDate: record.invoice_date,
-    reference1: record.reference1 ?? undefined,
+    reference: record.reference1 ?? undefined,
     valueDate: record.value_date,
     currency: formatCurrency(record.currency),
     ledgerId: record.id,
