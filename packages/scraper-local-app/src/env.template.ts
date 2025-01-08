@@ -12,7 +12,6 @@ export const config: Config = {
     database: process.env.POSTGRES_DB ?? 'accounter',
     ssl: process.env.POSTGRES_SSL ? true : false,
   },
-  showBrowser: false,
   poalimAccounts: [],
   isracardAccounts: [],
   amexAccounts: [],
