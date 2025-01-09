@@ -64,11 +64,7 @@ function ModalContent({ description, opened, close, onAdd }: ModalProps): ReactE
       <Modal.Title>Add New Business</Modal.Title>
       <Modal.Body>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <InsertBusinessFields
-            description={description}
-            useFormManager={useFormManager}
-            setFetching={setFetching}
-          />
+          <InsertBusinessFields useFormManager={useFormManager} setFetching={setFetching} />
 
           <div className="flex justify-center mt-5 gap-3">
             <button

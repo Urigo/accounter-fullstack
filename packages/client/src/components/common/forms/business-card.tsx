@@ -62,7 +62,7 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   >(undefined);
 
   // Form business data handle
-  const [{ data, fetching: documentFetching }, refetchBusiness] = useQuery({
+  const [{ data, fetching: businessFetching }, refetchBusiness] = useQuery({
     query: FetchBusinessDocument,
     variables: {
       id: businessID,
@@ -70,27 +70,27 @@ export function BusinessCard({ businessID, updateBusiness }: Props): ReactElemen
   });
 
   useEffect(() => {
-    if (data && data.business.__typename === 'LtdFinancialEntity') {
+    if (businessFetching) {
+      setBusiness(undefined);
+    } else if (data && data.business.__typename === 'LtdFinancialEntity') {
       setBusiness(data.business);
     }
-  }, [data]);
+  }, [data, businessFetching]);
 
-  // on every business fetch, update the business in the parent component
+  // on every business successful fetch, update the business in the parent component
   useEffect(() => {
-    if (data?.business?.__typename === 'LtdFinancialEntity') {
-      updateBusiness(data?.business);
+    if (business) {
+      updateBusiness(business);
     }
-  }, [data, updateBusiness]);
+  }, [business, updateBusiness]);
 
   return (
     <div className="flex flex-col gap-5">
-      {documentFetching && (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
-      )}
-      {!documentFetching && business && (
+      {business ? (
         <BusinessCardContent business={business} refetchBusiness={refetchBusiness} />
-      )}
-      {!documentFetching && !business && (
+      ) : businessFetching ? (
+        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+      ) : (
         <p>Error fetching extended information for this business</p>
       )}
     </div>
@@ -129,6 +129,9 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
 
       if (dataToUpdate.suggestions?.tags) {
         dataToUpdate.suggestions.tags = dataToUpdate.suggestions.tags.map(tag => ({ id: tag.id }));
+      }
+      if (dataToUpdate.suggestions?.phrases) {
+        dataToUpdate.suggestions.phrases = data.suggestions!.phrases!.map(tag => tag);
       }
 
       updateDbBusiness({

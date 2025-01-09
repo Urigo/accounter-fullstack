@@ -1,10 +1,11 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 import {
   ArrayPath,
   Controller,
+  FieldArray,
   FieldValues,
   Path,
-  PathValue,
+  useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
@@ -13,69 +14,60 @@ import { ActionIcon, TextInput } from '@mantine/core';
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
   phrasesPath: ArrayPath<T>;
-  defaultPhrases?: string[];
 };
 
 export function PhrasesInput<T extends FieldValues>({
   formManager,
   phrasesPath,
-  defaultPhrases,
 }: Props<T>): ReactElement {
-  const { control, setValue } = formManager;
-  const [phrases, setPhrases] = useState<{ ''?: string }[]>(
-    defaultPhrases ? defaultPhrases.map(phrase => ({ '': phrase })) : [],
-  );
+  const { control, watch } = formManager;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: phrasesPath,
+  });
 
-  const change = (phrase: string, index: number): void => {
-    const list = [...phrases];
-    list[index][''] = phrase;
-    setPhrases(list);
-  };
-  const add = (): void => {
-    setPhrases([...phrases, {}]);
-  };
-  const remove = (index: number): void => {
-    const list = [...phrases];
-    list.splice(index, 1);
-    setValue(phrasesPath as Path<T>, list.map(item => item['']) as PathValue<T, Path<T>>);
-    setPhrases(list);
-  };
+  const watchPhrasesArray = watch(phrasesPath as Path<T>);
+  const controlledFields = fields.map((field, index) => {
+    return {
+      id: field.id,
+      ...watchPhrasesArray[index],
+    };
+  });
 
   return (
     <div>
       <span className="mantine-InputWrapper-label mantine-Select-label">Phrases</span>
       <div className="h-full flex flex-col overflow-hidden">
-        {phrases.map((phrase, index) => (
-          <div key={index} className=" flex items-center gap-2 text-gray-600 mb-2">
+        {controlledFields.map((phrase, index) => (
+          <div key={phrase.id} className=" flex items-center gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-sm">
               <Controller
-                control={control}
                 name={`${phrasesPath}.${index}` as Path<T>}
+                control={control}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
                 }}
-                render={({ field, fieldState }): ReactElement => (
-                  <TextInput
-                    className="w-full"
-                    {...field}
-                    value={phrase['']}
-                    onChange={(event): void => {
-                      change(event.target.value, index);
-                      field.onChange(event.target.value);
-                    }}
-                    error={fieldState.error?.message}
-                  />
-                )}
+                render={({ field, fieldState }): ReactElement => {
+                  return (
+                    <TextInput
+                      className="w-full"
+                      {...field}
+                      value={field.value ?? undefined}
+                      error={fieldState.error?.message}
+                      required
+                    />
+                  );
+                }}
               />
             </div>
             <ActionIcon>
-              <TrashX size={20} onClick={(): void => remove(index)} />
+              <TrashX size={20} onClick={() => remove(index)} />
             </ActionIcon>
           </div>
         ))}
         <ActionIcon>
-          <PlaylistAdd size={20} onClick={add} />
+          <PlaylistAdd size={20} onClick={() => append(undefined as FieldArray<T>)} />
         </ActionIcon>
       </div>
     </div>
