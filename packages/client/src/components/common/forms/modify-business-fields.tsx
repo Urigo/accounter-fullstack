@@ -19,13 +19,11 @@ type ModalProps<T extends boolean> = {
     undefined
   >;
   setFetching: (fetching: boolean) => void;
-  defaultPhrases?: string[];
 };
 
 export function ModifyBusinessFields({
   useFormManager,
   setFetching,
-  defaultPhrases,
 }: ModalProps<boolean>): ReactElement {
   const { control } = useFormManager;
   const [tagsFetching, setTagsFetching] = useState(false);
@@ -124,6 +122,27 @@ export function ModifyBusinessFields({
               value={field.value ?? undefined}
               error={fieldState.error?.message}
               label="Hebrew Name"
+            />
+          )}
+        />
+        <Controller
+          name="country"
+          control={control}
+          rules={{
+            required: 'Required',
+          }}
+          render={({ field, fieldState }): ReactElement => (
+            <Select
+              {...field}
+              data={[
+                { value: 'Israel', label: 'Local' },
+                { value: 'FOREIGN', label: 'Foreign' },
+              ]}
+              value={field.value}
+              label="Locality"
+              maxDropdownHeight={160}
+              required
+              error={fieldState.error?.message}
             />
           )}
         />
@@ -268,11 +287,7 @@ export function ModifyBusinessFields({
       <Divider my="sm" />
       <Title order={5}>Suggestions</Title>
       <SimpleGrid cols={3}>
-        <PhrasesInput
-          formManager={useFormManager}
-          phrasesPath="suggestions.phrases"
-          defaultPhrases={defaultPhrases}
-        />
+        <PhrasesInput formManager={useFormManager} phrasesPath="suggestions.phrases" />
         <TagsInput
           formManager={useFormManager}
           tagsPath="suggestions.tags"
