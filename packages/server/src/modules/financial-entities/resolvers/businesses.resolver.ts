@@ -97,6 +97,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         phoneNumber: fields.phoneNumber,
         website: fields.website,
         optionalVat: fields.optionalVAT,
+        country: fields.country,
         suggestionData,
       };
       try {
@@ -195,6 +196,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phoneNumber: fields.phoneNumber,
           website: fields.website,
           optionalVat: fields.optionalVAT,
+          country: fields.country,
           suggestions,
         });
 
@@ -403,6 +405,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
           const business = await injector.get(BusinessesProvider).insertBusinessesLoader.load({
             id: financialEntity.id,
+            country: 'Israel',
             hebrewName: description,
             suggestions: {
               phrases: [description],
@@ -447,6 +450,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
+    country: DbBusiness => DbBusiness.country,
     governmentId: DbBusiness => DbBusiness.vat_number,
     name: DbBusiness => DbBusiness.name,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,

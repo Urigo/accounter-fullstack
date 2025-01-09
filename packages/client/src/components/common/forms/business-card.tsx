@@ -21,6 +21,7 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
       __typename
       id
       ... on LtdFinancialEntity {
+        country
         address
         email
         exemptDealer

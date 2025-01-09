@@ -126,6 +126,27 @@ export function ModifyBusinessFields({
           )}
         />
         <Controller
+          name="country"
+          control={control}
+          rules={{
+            required: 'Required',
+          }}
+          render={({ field, fieldState }): ReactElement => (
+            <Select
+              {...field}
+              data={[
+                { value: 'Israel', label: 'Local' },
+                { value: 'FOREIGN', label: 'Foreign' },
+              ]}
+              value={field.value}
+              label="Locality"
+              maxDropdownHeight={160}
+              required
+              error={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
           name="governmentId"
           control={control}
           rules={{

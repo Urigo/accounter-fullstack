@@ -44,7 +44,11 @@ type ModalProps = {
 
 function ModalContent({ description, opened, close, onAdd }: ModalProps): ReactElement {
   const useFormManager = useForm<InsertNewBusinessInput>({
-    defaultValues: { name: description, suggestions: { phrases: [description] } },
+    defaultValues: {
+      name: description,
+      country: 'Israel',
+      suggestions: { phrases: [description] },
+    },
   });
   const { handleSubmit } = useFormManager;
   const [fetching, setFetching] = useState(false);
