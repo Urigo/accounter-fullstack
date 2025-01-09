@@ -14,7 +14,7 @@ jobs:
     name: Hive schema check
     uses: ./.github/workflows/graphql-schema-check.yml
     secrets:
-      hiveToken: ${{ secrets.HIVE_REGISTRY_TOKEN }}
+      hiveRegistryToken: ${{ secrets.HIVE_REGISTRY_TOKEN }}
 
   validate-schema:
     name: Validate GraphQL schema
@@ -25,7 +25,7 @@ jobs:
     needs: [graphql-breaking-changes, validate-schema]
     uses: ./.github/workflows/graphql-schema-publish.yml
     secrets:
-      hiveToken: ${{ secrets.HIVE_REGISTRY_TOKEN }}
+      hiveRegistryToken: ${{ secrets.HIVE_REGISTRY_TOKEN }}
 
   client-publish:
     name: client publish

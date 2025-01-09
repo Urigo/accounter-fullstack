@@ -139,7 +139,7 @@ export const env = {
     users: authorization?.AUTHORIZED_USERS,
   },
   hive: {
-    hiveToken: hive?.HIVE_REGISTRY_TOKEN,
+    hiveRegistryToken: hive?.HIVE_REGISTRY_TOKEN,
     hiveCdnEndpoint: hiveCdnEndpoint?.HIVE_CDN_ENDPOINT,
     hiveCdnKey: hiveCdnKey?.HIVE_CDN_KEY,
   },

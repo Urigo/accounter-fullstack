@@ -1,7 +1,7 @@
 on:
   workflow_call:
     secrets:
-      hiveToken:
+      hiveRegistryToken:
         required: true
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
 
       - name: schema publish
         env:
-          HIVE_REGISTRY_TOKEN: ${{ secrets.hiveToken }}
+          HIVE_REGISTRY_TOKEN: ${{ secrets.hiveRegistryToken }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
           hive schema:publish "packages/server/src/modules/*/typeDefs/*.graphql.ts" --github

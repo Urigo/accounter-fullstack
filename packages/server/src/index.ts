@@ -1,11 +1,8 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import 'reflect-metadata';
-import { buildSubgraphSchema } from '@apollo/subgraph';
-import { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper/resolverMap.js';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
-import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { AccounterContext } from '@shared/types';
 import { env } from './environment.js';
@@ -14,28 +11,22 @@ import { authPlugin } from './plugins/auth-plugin.js';
 
 async function main() {
   const application = await createGraphQLApp(env);
-  const typeDefs = mergeTypeDefs(application.typeDefs);
-  const resolvers = mergeResolvers(application.resolvers) as GraphQLResolverMap<unknown>;
 
+  // While createGraphQLApp initializes the application, we use buildSubgraphSchema to build the Subgraph Schema.
   const yoga = createYoga({
-    schema: buildSubgraphSchema([
-      {
-        typeDefs,
-        resolvers,
-      },
-    ]),
-    graphqlEndpoint: '/graphql',
+    schema: application.schema,
+    graphqlEndpoint: '/legacy',
     graphiql: {
       title: 'Legacy Subgraph',
     },
     landingPage: true,
     plugins: [
       authPlugin(),
-      useGraphQLModules(application),
       useDeferStream(),
+      useGraphQLModules(application),
       useHive({
-        enabled: !!env.hive.hiveToken,
-        token: env.hive.hiveToken ?? '',
+        enabled: !!env.hive.hiveRegistryToken,
+        token: env.hive.hiveRegistryToken ?? '',
         usage: true,
       }),
     ],
@@ -50,14 +41,12 @@ async function main() {
   const server = createServer(yoga);
   const port = 4001;
 
-  server.listen(
-    {
-      port,
-    },
-    () => {
-      console.info(`🚀 Legacy Subgraph ready at http://localhost:${port}`);
-    },
-  );
+  server.listen({ port }, () => {
+    console.info(`🚀 Legacy Subgraph ready at http://localhost:${port}`);
+  });
 }
 
-main();
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

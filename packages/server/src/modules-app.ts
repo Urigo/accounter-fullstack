@@ -1,6 +1,9 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
 import type { UserType } from 'plugins/auth-plugin.js';
+import { buildSubgraphSchema } from '@apollo/subgraph';
+import { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper/resolverMap.js';
+import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
@@ -44,6 +47,12 @@ declare global {
 
 export async function createGraphQLApp(env: Environment) {
   return createApplication({
+    schemaBuilder: ({ typeDefs, resolvers }) => {
+      return buildSubgraphSchema({
+        typeDefs: mergeTypeDefs(typeDefs),
+        resolvers: mergeResolvers(resolvers) as unknown as GraphQLResolverMap<unknown>,
+      });
+    },
     modules: [
       commonModule,
       accountantApprovalModule,
