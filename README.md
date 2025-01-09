@@ -56,18 +56,42 @@ different terminals.
 yarn scrape
 ```
 
-## Servers
+## Server Architecture
 
-Accounter based on Federated architecture.
+Accounter uses a federated GraphQL architecture consisting of subgraphs and a gateway.
+
+- **Gateway**: Central entry point that composes the complete API (`localhost:4000`)
+- **Legacy Subgraph**: Handles core business logic (`localhost:4001`)
 
 ### Subgraphs
 
-Visit [http://localhost:4001/subgraphName](http://localhost:4001/subgraphName) and explore the
-subgraph SDL.
+The legacy subgraph runs on port 4001 and provides the core business functionality. It features:
+
+- GraphQL Yoga server with GraphiQL interface
+- Authentication plugin
+- GraphQL Modules for modular code organization
+- GraphQL Hive integration for schema registry and metrics
+- Support for deferred and streamed responses
+
+To explore the subgraph schema:
+
+1. Start the server: `yarn subgraphs:dev`
+2. Visit `http://localhost:4001/legacy`
+3. Use the GraphiQL interface to explore available operations
 
 ### Gateway
 
-Visit [http://localhost:4000/graphql](http://localhost:4000/graphql) and explore the supergraph.
+The gateway (port 4000) uses GraphQL Hive to compose the supergraph schema. It requires:
+
+- Valid Hive CDN endpoint
+- Hive CDN access key
+- Configuration in `gateway.config.ts`
+
+To use the gateway:
+
+1. Set up Hive credentials in your environment
+2. Start the gateway: `yarn gateway:dev`
+3. Visit `http://localhost:4000/graphql`
 
 9. Generate businesses by visiting http://localhost:4000/graphql
 
