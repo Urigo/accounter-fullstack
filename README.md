@@ -50,6 +50,37 @@ yarn server:dev
 yarn scrape
 ```
 
+9. Generate businesses by visiting http://localhost:4000/graphql
+
+Set your headers at the bottom:
+
+```json
+{
+  "authorization": "Basic [YOUR_TOKEN]"
+}
+```
+
+You can find `YOUR_TOKEN` by adding a log in the codebase to `getUserFromRequest`:
+
+```ts
+function getUserFromRequest(request: Request) {
+  const authorization = request.headers?.get('authorization') ?? undefined
+  console.log('🚀 YOUR_TOKEN:', authorization)
+  return auth({ headers: { authorization } })
+}
+```
+
+Then run this mutation:
+
+```gql
+mutation {
+  batchGenerateBusinessesOutOfTransactions {
+    id
+    name
+  }
+}
+```
+
 ## Miscellaneous
 
 ### Multiple Bank Branches
