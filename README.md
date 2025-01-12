@@ -34,7 +34,12 @@ yarn local:setup
 yarn build
 yarn client:dev
 yarn server:dev
+# Also helpful while developing:
+yarn generate:watch
 ```
+
+Or use the VSCode Terminals extension: `fabiospampinato.vscode-terminals` to run all this for you in
+different terminals.
 
 6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in. The credentials to log in are
    in your `.env` file under `AUTHORIZED_USERS`. Set the hashed password in the `.env` file. e.g.
@@ -50,52 +55,35 @@ yarn server:dev
 yarn scrape
 ```
 
-## Node ES Modules with TypeScript
+9. Generate businesses by visiting http://localhost:4000/graphql
 
-Latest Typescript and Node - as bare-bone as possible example app
+Set your headers at the bottom:
 
-I wanted to start a simple Node project where I can install the latest things I want and using as
-little compilation from Typescript as possible.
+```json
+{
+  "authorization": "Basic [YOUR_TOKEN]"
+}
+```
 
-I remembered Node announced
-[Node 13 support ESModules without experimental flags](https://medium.com/@nodejs/announcing-core-node-js-support-for-ecmascript-modules-c5d6dc29b663),
-checked out the [official documentation](https://nodejs.org/api/esm.html) but couldn't find a simple
-bare bone example, so maybe that would help someone.
+You can find `YOUR_TOKEN` by in the GraphQL request headers in your browser's `Network` tab.
 
-I've committed the dist folder as well to see how the output from Typescript.
+Then run this mutation:
 
-Would love suggestions on how to make it better or to point to a better example!
+```gql
+mutation {
+  batchGenerateBusinessesOutOfTransactions {
+    id
+    name
+  }
+}
+```
 
-## What I've done (so you can tell me what I should have done...)
+## Miscellaneous
 
-### Node
+### Multiple Bank Branches
 
-- `type: module`: Tell Node that `.js` files are ES Modules
-- `--es-module-specifier-resolution=node`: By default, Node wants file extensions in import but
-  [TypeScript doesn't include file extension in it's output](https://github.com/microsoft/TypeScript/issues/16577).
-  so this enable automatic extension resolution in Node.
+For Poalim Bank and Discount Bank accounts, your account may appear under multiple branch numbers:
 
-### TypeScript
-
-- `"module": "esnext"`: Make Typescript output ES Modules
-- `"target": "es2020"`: Highest target (from `3.8.0-beta`)
-
-## Run app
-
-1. Install latest Node (Notice that I've placed the `engines` field on `package.json` so try to make
-   sure you have the exact version or simply delete it from `package.json`
-2. Install dependencies - `yarn`
-3. Compile with `tsc -w` and run Node with `nodemon` - `yarn dev`
-4. You can also use `yarn compile` and `yarn start` separately
-
-## Want to import from a commonjs package?
-
-Here is a branch of the example with including a commonjs pacakge (`pg`):
-
-https://github.com/Urigo/typescript-node-es-modules-example/commit/98304173e964713955be3a92b4e355a857376dca
-
-> The
-> [renovate.json](https://github.com/Urigo/typescript-node-es-modules-example/blob/master/renovate.json)
-> file has nothing to do with the project itself. It's a file to activate
-> [RenovateBot](https://github.com/renovatebot/renovate) to automatically PR this repository when a
-> new version of any dependency of that project has been published
+- Your account number and bank number remain the same
+- The same account might be associated with 2-3 different branch numbers
+- You can configure all relevant branch numbers in the `scripts/seed.ts` file

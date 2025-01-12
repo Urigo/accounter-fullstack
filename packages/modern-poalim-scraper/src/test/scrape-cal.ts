@@ -1,8 +1,8 @@
 // Script to test out cal scraping. Run with:
-// tsx packages/modern-poalim-scraper/src/scrape.ts
+// tsx packages/modern-poalim-scraper/src/test/scrape-cal.ts
 import dotenv from 'dotenv';
-import { init } from './index.js';
-import { CalOptions } from './scrapers/cal.js';
+import { init } from '../index.js';
+import { CalOptions } from '../scrapers/cal.js';
 
 dotenv.config();
 
