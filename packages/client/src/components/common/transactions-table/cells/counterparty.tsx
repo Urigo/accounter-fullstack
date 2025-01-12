@@ -1,7 +1,11 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
-// import { NavLink } from '@mantine/core';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { useQuery } from 'urql';
+import {
+  AllBusinessesDocument,
+  ChargeFilter,
+  TransactionsTableEntityFieldsFragmentDoc,
+} from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
@@ -10,73 +14,6 @@ import { Button } from '../../../ui/button.js';
 // import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
 import { SelectWithSearch } from '../../../ui/select-with-search.js';
 import { ContentTooltip } from '../../../ui/tooltip.js';
-
-const frameworks = [
-  {
-    value: 'next.js',
-    label: 'Next.js',
-  },
-  {
-    value: 'sveltekit',
-    label: 'SvelteKit',
-  },
-  {
-    value: 'nuxt.js',
-    label: 'Nuxt.js',
-  },
-  {
-    value: 'remix',
-    label: 'Remix',
-  },
-  {
-    value: 'astro',
-    label: 'Astro',
-  },
-  {
-    value: 'angular',
-    label: 'Angular',
-  },
-  {
-    value: 'vue',
-    label: 'Vue.js',
-  },
-  {
-    value: 'react',
-    label: 'React',
-  },
-  {
-    value: 'ember',
-    label: 'Ember.js',
-  },
-  {
-    value: 'gatsby',
-    label: 'Gatsby',
-  },
-  {
-    value: 'eleventy',
-    label: 'Eleventy',
-  },
-  {
-    value: 'solid',
-    label: 'SolidJS',
-  },
-  {
-    value: 'preact',
-    label: 'Preact',
-  },
-  {
-    value: 'qwik',
-    label: 'Qwik',
-  },
-  {
-    value: 'alpine',
-    label: 'Alpine.js',
-  },
-  {
-    value: 'lit',
-    label: 'Lit',
-  },
-];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -159,6 +96,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
+  // TODO: make use of loading and error states
+  const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
+    query: AllBusinessesDocument,
+  });
+
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
     missingInfoSuggestions?.business?.id ?? null,
   );
@@ -180,7 +122,12 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
             <SelectWithSearch
               value={selectedBusinessId}
               onChange={setSelectedBusinessId}
-              options={frameworks}
+              options={
+                businessesData?.allBusinesses?.nodes.map(node => ({
+                  value: node.id,
+                  label: node.name,
+                })) || []
+              }
               placeholder="Choose or create a business"
               empty={<InsertBusiness description={sourceDescription} />}
             />
