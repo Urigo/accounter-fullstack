@@ -12,6 +12,7 @@ export default gql`
     usd: FinancialAmount
     gbp: FinancialAmount
     eur: FinancialAmount
+    cad: FinancialAmount
     date: TimelessDate!
   }
 

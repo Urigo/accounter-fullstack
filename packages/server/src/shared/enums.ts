@@ -23,6 +23,7 @@ export enum Currency {
   Eth = 'ETH',
   Eur = 'EUR',
   Gbp = 'GBP',
+  Cad = 'CAD',
   Grt = 'GRT',
   Ils = 'ILS',
   Usd = 'USD',
