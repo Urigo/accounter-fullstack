@@ -170,6 +170,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     ...getCurrencyCells(Currency.Eur),
     ...getCurrencyCells(Currency.Usd),
     ...getCurrencyCells(Currency.Gbp),
+    ...getCurrencyCells(Currency.Cad),
     ...getExtendedCurrencies(isExpandedCurrencies),
   ];
 
@@ -250,7 +251,8 @@ function getExtendedCurrencies(isExpandedCurrencies: boolean): CellInfo[] {
   }
 
   const currenciesToExtend = Object.values(Currency).filter(
-    currency => ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp].includes(currency),
+    currency =>
+      ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp, Currency.Cad].includes(currency),
   );
 
   return currenciesToExtend.map(getCurrencyCells).flat();

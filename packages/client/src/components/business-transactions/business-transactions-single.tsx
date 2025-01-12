@@ -97,6 +97,7 @@ export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement 
         ...getCurrencyCells(Currency.Eur),
         ...getCurrencyCells(Currency.Usd),
         ...getCurrencyCells(Currency.Gbp),
+        ...getCurrencyCells(Currency.Cad),
       ]}
     />
   );

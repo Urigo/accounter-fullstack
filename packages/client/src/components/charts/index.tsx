@@ -34,6 +34,11 @@ import { StatsCard } from './stats-card.js';
             raw
           }
           eventExchangeRates {
+            cad {
+              currency
+              formatted
+              raw
+            }
             eur {
               currency
               formatted
@@ -52,6 +57,11 @@ import { StatsCard } from './stats-card.js';
             date
           }
           debitExchangeRates {
+            cad {
+              currency
+              formatted
+              raw
+            }
             eur {
               currency
               formatted
@@ -117,7 +127,7 @@ export const ChartPage = (): ReactElement => {
         // Filter crypto as we're lacking the conversion rates
         if (
           // TODO: implement crypto exchange and add here
-          [Currency.Eur, Currency.Gbp, Currency.Ils, Currency.Usd].includes(
+          [Currency.Eur, Currency.Gbp, Currency.Ils, Currency.Usd, Currency.Cad].includes(
             transaction.amount?.currency,
           )
         ) {
@@ -141,7 +151,7 @@ export const ChartPage = (): ReactElement => {
         {} as Record<string, Array<Transaction>>,
       ) ?? {};
 
-    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO or GBP, convert to USD. If its USD, do nothing
+    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad or GBP, convert to USD. If its USD, do nothing
     const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];
     Object.entries(transactionsByMonth).map(([key, value]) => {
       let converted: Array<Transaction | null> = value.map(item => {
@@ -186,6 +196,25 @@ export const ChartPage = (): ReactElement => {
         }
         if (item.amount.currency === Currency.Gbp) {
           const rateToILS = item.debitExchangeRates?.gbp?.raw || item.eventExchangeRates?.gbp?.raw;
+          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          if (!rateToILS || !rateToUSD) {
+            console.log(`No rate found for transaction ${item.id}`);
+            return null;
+          }
+          const rate = rateToUSD / rateToILS;
+          const amount = numberToDecimalJS(item.amount.raw * rate);
+          return {
+            ...item,
+            amount: {
+              ...item.amount,
+              raw: amount,
+              currency: Currency.Usd,
+              formatted: `$${amount} `,
+            },
+          };
+        }
+        if (item.amount.currency === Currency.Cad) {
+          const rateToILS = item.debitExchangeRates?.cad?.raw || item.eventExchangeRates?.cad?.raw;
           const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
           if (!rateToILS || !rateToUSD) {
             console.log(`No rate found for transaction ${item.id}`);
