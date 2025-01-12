@@ -29,7 +29,6 @@ export function LoginPage(): ReactElement {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       userService.login(values.username, values.password).then(_user => {

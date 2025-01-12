@@ -8,7 +8,6 @@ import {
 } from './toast.js';
 import { useToast } from './use-toast.js';
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function Toaster() {
   const { toasts } = useToast();
 
