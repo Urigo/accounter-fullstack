@@ -19,7 +19,7 @@
     "validate-env": "if [ ! -f \"./src/env.ts\" ] ; then cp ./src/env.template.ts ./src/env.ts ; fi"
   },
   "dependencies": {
-    "@accounter/modern-poalim-scraper": "0.9.14",
+    "@accounter/modern-poalim-scraper": "0.9.15",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@sinclair/typebox": "0.34.13",
