@@ -58,8 +58,11 @@ export function getRateForCurrency(
   if (currencyCode === DEFAULT_LOCAL_CURRENCY) {
     return 1;
   }
-  if (currencyCode && [Currency.Usd, Currency.Eur, Currency.Gbp].includes(currencyCode)) {
-    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp';
+  if (
+    currencyCode &&
+    [Currency.Usd, Currency.Eur, Currency.Gbp, Currency.Cad].includes(currencyCode)
+  ) {
+    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp' | 'cad';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {
       throw new Error(

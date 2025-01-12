@@ -46,6 +46,15 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
       return formatFinancialAmount(exchangeRates.eur, Currency.Eur) ?? null;
     },
+    cad: async (timelessDate, _, { injector }) => {
+      const exchangeRates = await injector
+        .get(FiatExchangeProvider)
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.cad) {
+        return null;
+      }
+      return formatFinancialAmount(exchangeRates.cad, Currency.Cad) ?? null;
+    },
     date: timelessDate => timelessDate,
   },
   CommonCharge: commonChargeFields,
