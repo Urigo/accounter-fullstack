@@ -84,6 +84,7 @@ export default gql`
     ILS
     GBP
     EUR
+    CAD
     GRT
     USDC
     ETH

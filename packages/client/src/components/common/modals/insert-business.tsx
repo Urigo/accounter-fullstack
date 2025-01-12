@@ -44,7 +44,11 @@ type CreateBusinessFormProps = {
 
 function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormProps): ReactElement {
   const useFormManager = useForm<InsertNewBusinessInput>({
-    defaultValues: { name: description, suggestions: { phrases: [description] } },
+    defaultValues: {
+      name: description,
+      country: 'Israel',
+      suggestions: { phrases: [description] },
+    },
   });
   const { handleSubmit } = useFormManager;
   const [fetching, setFetching] = useState(false);
@@ -61,12 +65,7 @@ function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormPro
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <InsertBusinessFields
-        description={description}
-        useFormManager={useFormManager}
-        setFetching={setFetching}
-      />
-
+      <InsertBusinessFields useFormManager={useFormManager} setFetching={setFetching} />
       <div className="flex justify-center mt-4">
         <Button type="submit" disabled={addingInProcess || fetching}>
           Add

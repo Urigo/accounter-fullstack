@@ -121,6 +121,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const isEur = isExtendAllCurrencies || currencies.has(Currency.Eur);
   const isUsd = isExtendAllCurrencies || currencies.has(Currency.Usd);
   const isGbp = isExtendAllCurrencies || currencies.has(Currency.Gbp);
+  const isCad = isExtendAllCurrencies || currencies.has(Currency.Cad);
 
   const businessName = transactions[0]?.business.name ?? 'unknown';
 
@@ -152,6 +153,12 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <>
                   <th>GBP Amount</th>
                   <th>GBP Balance</th>
+                </>
+              )}
+              {isCad && (
+                <>
+                  <th>CAD Amount</th>
+                  <th>CAD Balance</th>
                 </>
               )}
               <th>
@@ -232,6 +239,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
                 {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
                 {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
+                {isCad && <CurrencyCells data={row} currency={Currency.Cad} />}
                 <td />
                 {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
                 <td>{row.reference}</td>
@@ -293,7 +301,8 @@ export function CurrencyCells({
 }
 
 const currenciesToExtend = Object.values(Currency).filter(
-  currency => ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp].includes(currency),
+  currency =>
+    ![Currency.Ils, Currency.Eur, Currency.Usd, Currency.Gbp, Currency.Cad].includes(currency),
 );
 
 export function ExtendedCurrencyCells({ data }: { data: ExtendedTransaction }): ReactElement {

@@ -54,6 +54,8 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Eur;
     case 'אירו':
       return Currency.Eur;
+    case 'CAD':
+      return Currency.Cad;
     case 'ILS':
       return Currency.Ils;
     case 'GRT':
@@ -83,6 +85,8 @@ export function getCurrencySymbol(currency: Currency) {
       return '$';
     case Currency.Eur:
       return '€';
+    case Currency.Cad:
+      return 'C$';
     case Currency.Ils:
       return '₪';
     case Currency.Grt:

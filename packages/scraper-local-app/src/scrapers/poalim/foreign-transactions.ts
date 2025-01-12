@@ -576,12 +576,14 @@ async function insertTransactions<
               ${currency}${amount.toLocaleString()},
               ${transaction.accountNumber}
             `);
+      continue;
     } else if (transaction.transactionType === 'FUTURE') {
       logger.log(`Future transaction -
                 ${reverse(transaction.activityDescription)},
                 ${currency}${amount.toLocaleString()},
                 ${transaction.accountNumber}
               `);
+      continue;
     } else if (
       differenceInMonths(
         new Date(),

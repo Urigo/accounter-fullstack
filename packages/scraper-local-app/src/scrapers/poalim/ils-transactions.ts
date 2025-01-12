@@ -308,12 +308,14 @@ async function insertTransactions(
               ils${amount.toLocaleString()},
               ${transaction.accountNumber}
             `);
+      continue;
     } else if (transaction.transactionType === 'FUTURE') {
       logger.log(`Future transaction -
                 ${reverse(transaction.activityDescription)},
                 ils${amount.toLocaleString()},
                 ${transaction.accountNumber}
               `);
+      continue;
     } else if (
       differenceInMonths(new Date(), new Date(convertNumberDateToString(transaction.eventDate))) > 2
     ) {

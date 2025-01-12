@@ -10,7 +10,7 @@
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "engines": {
-    "node": "23.5.0"
+    "node": "23.6.0"
   },
   "scripts": {
     "build": "yarn workspaces run build",
@@ -60,7 +60,7 @@
     "@graphql-codegen/typescript": "4.1.2",
     "@graphql-codegen/typescript-resolvers": "4.4.1",
     "@graphql-eslint/eslint-plugin": "4.3.0",
-    "@graphql-hive/cli": "0.44.5",
+    "@graphql-hive/cli": "0.45.0",
     "@graphql-inspector/cli": "5.0.8",
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.13.2",
@@ -69,13 +69,13 @@
     "bob-the-bundler": "^7.0.1",
     "concurrently": "9.1.2",
     "eslint": "8.57.1",
-    "glob": "11.0.0",
+    "glob": "11.0.1",
     "husky": "9.1.7",
     "lint-staged": "15.3.0",
     "prettier": "3.4.2",
     "prettier-plugin-sql": "0.18.1",
     "ts-node": "10.9.2",
-    "typescript": "5.7.2",
+    "typescript": "5.7.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "2.1.8"
   },
