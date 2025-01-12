@@ -165,7 +165,14 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">
         {id ? (
-          <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{name}</p>
+          <a
+            href={getHref(id)}
+            target="_blank"
+            rel="noreferrer"
+            className={hasAlternative ? 'bg-yellow-400' : undefined}
+          >
+            {name}
+          </a>
         ) : (
           <>
             <SelectWithSearch
@@ -173,7 +180,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               placeholder="Choose or create a business"
               empty={<InsertBusiness description={sourceDescription} />}
             />
-            <ContentTooltip content="Add business">
+            <ContentTooltip content="Select business">
               <Button variant="outline" size="icon">
                 <CheckIcon className="size-4" />
               </Button>
