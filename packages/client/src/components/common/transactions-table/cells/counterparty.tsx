@@ -6,10 +6,10 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { InsertBusiness } from '../../../common/modals/insert-business.js';
-import { Tooltip } from '../../../common/tooltip.js';
 import { Button } from '../../../ui/button.js';
 // import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
 import { SelectWithSearch } from '../../../ui/select-with-search.js';
+import { ContentTooltip } from '../../../ui/tooltip.js';
 
 const frameworks = [
   {
@@ -173,11 +173,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               placeholder="Choose or create a business"
               empty={<InsertBusiness description={sourceDescription} />}
             />
-            <Tooltip content="Add business">
+            <ContentTooltip content="Add business">
               <Button variant="outline" size="icon">
                 <CheckIcon className="size-4" />
               </Button>
-            </Tooltip>
+            </ContentTooltip>
           </>
         )}
         {/* {id && (
