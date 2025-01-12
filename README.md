@@ -34,7 +34,12 @@ yarn local:setup
 yarn build
 yarn client:dev
 yarn server:dev
+# Also helpful while developing:
+yarn generate:watch
 ```
+
+Or use the VSCode Terminals extension: `fabiospampinato.vscode-terminals` to run all this for you in
+different terminals.
 
 6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in. The credentials to log in are
    in your `.env` file under `AUTHORIZED_USERS`. Set the hashed password in the `.env` file. e.g.
