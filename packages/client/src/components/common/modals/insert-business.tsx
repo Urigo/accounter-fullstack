@@ -1,10 +1,10 @@
 import { ReactElement, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { LayoutGridAdd } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { InsertNewBusinessInput } from '../../../gql/graphql.js';
 import { useInsertBusiness } from '../../../hooks/use-insert-business.js';
+import { Button } from '../../ui/button.js';
 import { InsertBusinessFields } from '../index.js';
 
 export function InsertBusiness(props: {
@@ -16,18 +16,15 @@ export function InsertBusiness(props: {
 
   return (
     <>
-      <Tooltip label="Create New Business">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
-            event.stopPropagation();
-            open();
-          }}
-          size={30}
-        >
-          <LayoutGridAdd size={20} />
-        </ActionIcon>
-      </Tooltip>
+      <Button
+        variant="default"
+        onClick={event => {
+          event.stopPropagation();
+          open();
+        }}
+      >
+        Add Business
+      </Button>
       {opened && (
         <ModalContent description={description} opened={opened} close={close} onAdd={onAdd} />
       )}
