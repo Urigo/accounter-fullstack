@@ -159,8 +159,6 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
-  // const content = <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{name}</p>;
-
   return (
     <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">

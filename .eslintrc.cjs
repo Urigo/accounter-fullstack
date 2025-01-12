@@ -109,9 +109,7 @@ module.exports = {
       env: {
         browser: true,
       },
-      rules: {
-        '@typescript-eslint/explicit-function-return-type': 'error',
-      },
+      rules: {},
     },
     {
       files: 'server/**',
