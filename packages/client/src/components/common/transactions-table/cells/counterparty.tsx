@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
 // import { NavLink } from '@mantine/core';
 import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
@@ -159,6 +159,10 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
+    missingInfoSuggestions?.business?.id ?? null,
+  );
+
   return (
     <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">
@@ -174,12 +178,19 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
         ) : (
           <>
             <SelectWithSearch
+              value={selectedBusinessId}
+              onChange={setSelectedBusinessId}
               options={frameworks}
               placeholder="Choose or create a business"
               empty={<InsertBusiness description={sourceDescription} />}
             />
             <ContentTooltip content="Select business">
-              <Button variant="outline" size="icon">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => selectedBusinessId && updateBusiness(selectedBusinessId)}
+                disabled={fetching || !selectedBusinessId}
+              >
                 <CheckIcon className="size-4" />
               </Button>
             </ContentTooltip>
