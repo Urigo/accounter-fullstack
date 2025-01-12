@@ -60,15 +60,7 @@ Set your headers at the bottom:
 }
 ```
 
-You can find `YOUR_TOKEN` by adding a log in the codebase to `getUserFromRequest`:
-
-```ts
-function getUserFromRequest(request: Request) {
-  const authorization = request.headers?.get('authorization') ?? undefined
-  console.log('🚀 YOUR_TOKEN:', authorization)
-  return auth({ headers: { authorization } })
-}
-```
+You can find `YOUR_TOKEN` by in the GraphQL request headers in your browser's `Network` tab.
 
 Then run this mutation:
 
