@@ -15,21 +15,22 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover.js';
 
 function SelectWithSearch({
   options,
-  // onChange,
+  value,
+  onChange,
   label,
   placeholder,
   empty,
   id,
 }: {
   options: Array<{ value: string; label: string }>;
-  // onChange: (value: string) => void;
+  value: string | null;
+  onChange: (value: string | null) => void;
   label?: string;
   placeholder?: string;
   empty: React.ReactNode;
   id?: string;
 }) {
   const [open, setOpen] = useState<boolean>(false);
-  const [value, setValue] = useState<string>('');
 
   const selectId = id || 'select-with-search';
 
@@ -69,7 +70,7 @@ function SelectWithSearch({
                     key={option.value}
                     value={option.value}
                     onSelect={currentValue => {
-                      setValue(currentValue === value ? '' : currentValue);
+                      onChange(currentValue === value ? null : currentValue);
                       setOpen(false);
                     }}
                   >
