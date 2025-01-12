@@ -24,4 +24,26 @@ const TooltipContent = React.forwardRef<
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+interface ContentTooltipProps {
+  children: React.ReactElement;
+  content?: string | React.ReactNode;
+}
+
+const ContentTooltip = (props: ContentTooltipProps) => {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>{props.children}</TooltipTrigger>
+        <TooltipContent>
+          {typeof props.content === 'string' ? (
+            <p className="max-w-xs">{props.content}</p>
+          ) : (
+            props.content
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, ContentTooltip };
