@@ -41,11 +41,8 @@ export default {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT bank_discount_transactions_urn_idx UNIQUE (urn)
     );
-
     ALTER TABLE accounter_schema.transactions_raw_list ADD bank_discount_id uuid;
-
     ALTER TABLE accounter_schema.transactions_raw_list DROP CONSTRAINT transactions_raw_list_check;
-
     ALTER TABLE accounter_schema.transactions_raw_list ADD CONSTRAINT transactions_raw_list_check
         CHECK (
             (creditcard_id IS NOT NULL)::integer + 
@@ -61,7 +58,6 @@ export default {
             (cal_id IS NOT NULL)::integer +
             (bank_discount_id IS NOT NULL)::integer = 1
         );
-
     CREATE OR REPLACE FUNCTION accounter_schema.insert_bank_discount_transaction_handler() 
         RETURNS trigger
         LANGUAGE plpgsql
@@ -77,7 +73,6 @@ export default {
         INSERT INTO accounter_schema.transactions_raw_list (bank_discount_id)
         VALUES (NEW.id)
         RETURNING id INTO merged_id;
-
         -- get account and owner IDs
         SELECT INTO account_id_var, owner_id_var
             id, owner
@@ -85,23 +80,18 @@ export default {
         WHERE account_number = NEW.account_number
             AND branch_number = NEW.operation_branch
             AND bank_number = NEW.operation_bank;
-
         -- check if matching charge exists:
         -- TBD
-
         -- create new charge
         IF (charge_id_var IS NULL) THEN
             INSERT INTO accounter_schema.charges (owner_id)
             VALUES (owner_id_var)
             RETURNING id INTO charge_id_var;
         END IF;
-
         -- check if new record is fee
         -- TBD
-
         -- check if new record contains fees  
         -- TBD
-
         -- create new transaction
         INSERT INTO accounter_schema.transactions (
             account_id, 
@@ -125,20 +115,16 @@ export default {
             NEW.operation_amount * -1,
             NEW.balance_after_operation
         );
-
         RETURN NEW;
     END;
     $func$;
-
     CREATE TRIGGER bank_discount_transaction_insert_trigger
         AFTER INSERT ON accounter_schema.bank_discount_transactions
         FOR EACH ROW
         EXECUTE FUNCTION accounter_schema.insert_bank_discount_transaction_handler();
-
     DROP VIEW accounter_schema.extended_business_trip_transactions;
     DROP VIEW accounter_schema.extended_charges;
     DROP VIEW accounter_schema.extended_transactions;
-
     create or replace view accounter_schema.extended_transactions
                 (id, charge_id, business_id, currency, debit_date, debit_timestamp, source_debit_date, event_date,
                 account_id, account_type, amount, current_balance, source_description, source_details, created_at,
@@ -154,6 +140,17 @@ export default {
                                         COALESCE(isracard_creditcard_transactions.full_supplier_name_heb,
                                                   isracard_creditcard_transactions.full_supplier_name_outbound) AS source_details
                                   FROM accounter_schema.isracard_creditcard_transactions
+                                  UNION
+                                  SELECT amex_creditcard_transactions.id::text                              AS raw_id,
+                                        COALESCE(amex_creditcard_transactions.voucher_number::text,
+                                                amex_creditcard_transactions.voucher_number_ratz::text)   AS reference_number,
+                                        0                                                                  AS currency_rate,
+                                        NULL::timestamp without time zone                                  AS debit_timestamp,
+                                        'AMEX'::text                                                       AS origin,
+                                        amex_creditcard_transactions.card                                  AS card_number,
+                                        COALESCE(amex_creditcard_transactions.full_supplier_name_heb,
+                                                amex_creditcard_transactions.full_supplier_name_outbound) AS source_details
+                                  FROM accounter_schema.amex_creditcard_transactions
                                   UNION
                                   SELECT poalim_ils_account_transactions.id::text                                AS id,
                                         poalim_ils_account_transactions.reference_number::text                  AS reference_number,
@@ -259,7 +256,8 @@ export default {
                               t.business_id,
                               t.currency,
                               CASE
-                                  WHEN original_transaction.origin = 'ISRACARD'::text AND
+                                  WHEN (original_transaction.origin = 'ISRACARD'::text OR
+                                          original_transaction.origin = 'AMEX'::text) AND
                                       t.currency = 'ILS'::accounter_schema.currency AND t.debit_date IS NULL AND
                                       t.debit_date_override IS NULL THEN alt_debit_date.event_date
                                   ELSE COALESCE(t.debit_date_override, t.debit_date)
@@ -307,7 +305,6 @@ export default {
                                           AND add.event_date > t.event_date
                                           AND add.event_date < (t.event_date + '40 days'::interval)
                                       );
-
     create or replace view accounter_schema.extended_charges
                 (id, owner_id, is_property, accountant_status, user_description, created_at, updated_at, tax_category_id,
                 event_amount, transactions_min_event_date, transactions_max_event_date, transactions_min_debit_date,
@@ -535,7 +532,6 @@ export default {
             LEFT JOIN ledger_by_charge ON ledger_by_charge.charge_id = c.id
             LEFT JOIN years_of_relevance y ON y.charge_id = c.id
             LEFT JOIN accounter_schema.depreciation d ON d.charge_id = c.id;
-
     create or replace view accounter_schema.extended_business_trip_transactions
                 (id, business_trip_id, transaction_ids, charge_ids, category, date, value_date, amount, currency,
                 employee_business_id, payed_by_employee)
@@ -553,7 +549,11 @@ export default {
     SELECT DISTINCT ON (btt.id) btt.id,
                                 btt.business_trip_id,
                                 t.transaction_ids,
-                                t.charge_ids,
+                                CASE
+                                    WHEN t.charge_ids IS NOT NULL THEN t.charge_ids
+                                    WHEN ep.charge_id IS NOT NULL THEN ARRAY [ep.charge_id]
+                                    ELSE NULL::uuid[]
+                                    END                                AS charge_ids,
                                 btt.category,
                                 CASE
                                     WHEN t.business_trip_transaction_id IS NULL THEN ep.date
