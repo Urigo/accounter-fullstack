@@ -10,7 +10,7 @@ type PageLayoutProps = {
 
 export function PageLayout({ children, title, description }: PageLayoutProps): JSX.Element {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 light">
       <Heading title={title} description={description} />
       <Separator />
       {children}

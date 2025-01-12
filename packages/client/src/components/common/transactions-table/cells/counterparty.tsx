@@ -1,10 +1,19 @@
-import { ReactElement, useCallback } from 'react';
-import { NavLink } from '@mantine/core';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { ReactElement, useCallback, useState } from 'react';
+import { CheckIcon } from 'lucide-react';
+import { useQuery } from 'urql';
+import {
+  AllBusinessesDocument,
+  ChargeFilter,
+  TransactionsTableEntityFieldsFragmentDoc,
+} from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
+import { InsertBusiness } from '../../../common/modals/insert-business.js';
+import { Button } from '../../../ui/button.js';
+// import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
+import { SelectWithSearch } from '../../../ui/select-with-search.js';
+import { ContentTooltip } from '../../../ui/tooltip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -87,12 +96,54 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
-  const content = <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{name}</p>;
+  // TODO: make use of loading and error states
+  const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
+    query: AllBusinessesDocument,
+  });
+
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
+    missingInfoSuggestions?.business?.id ?? null,
+  );
 
   return (
     <td>
-      <div className="flex flex-wrap">
-        {id && (
+      <div className="flex flex-wrap gap-1 items-center justify-center">
+        {id ? (
+          <a
+            href={getHref(id)}
+            target="_blank"
+            rel="noreferrer"
+            className={hasAlternative ? 'bg-yellow-400' : undefined}
+          >
+            {name}
+          </a>
+        ) : (
+          <>
+            <SelectWithSearch
+              value={selectedBusinessId}
+              onChange={setSelectedBusinessId}
+              options={
+                businessesData?.allBusinesses?.nodes.map(node => ({
+                  value: node.id,
+                  label: node.name,
+                })) || []
+              }
+              placeholder="Choose or create a business"
+              empty={<InsertBusiness description={sourceDescription} />}
+            />
+            <ContentTooltip content="Select business">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => selectedBusinessId && updateBusiness(selectedBusinessId)}
+                disabled={fetching || !selectedBusinessId}
+              >
+                <CheckIcon className="size-4" />
+              </Button>
+            </ContentTooltip>
+          </>
+        )}
+        {/* {id && (
           <>
             <a href={getHref(id)} target="_blank" rel="noreferrer">
               <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
@@ -105,7 +156,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
             )}
           </>
         )}
-        {!id && sourceDescription !== '' && <InsertBusiness description={sourceDescription} />}
+        {!id && sourceDescription !== '' && <InsertBusiness description={sourceDescription} />} */}
       </div>
     </td>
   );
