@@ -409,7 +409,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           const today = new Date();
           const monthStart = dateToTimelessDateString(startOfMonth(today));
           const monthEnd = dateToTimelessDateString(endOfMonth(today));
-          const year = today.getFullYear();
+          const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
           const month = format(subMonths(today, 1), 'MMMM');
 
           const documentInput: DocumentInput_Input & { businessName: string } = {
