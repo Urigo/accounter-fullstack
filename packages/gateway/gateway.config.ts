@@ -14,4 +14,34 @@ export const gatewayConfig = defineConfig({
     endpoint: hiveCdnEndpoint,
     key: hiveCdnKey,
   },
+  // Configure header propagation to forward auth headers to subgraphs
+  propagateHeaders: {
+    fromClientToSubgraphs({ request }) {
+      const authHeader = request.headers.get('authorization');
+      // Only return the header if it exists
+      if (authHeader) {
+        return {
+          authorization: authHeader,
+        };
+      }
+      // Return void if no auth header
+      return;
+    },
+  },
+  // Configure generic auth for the Gateway
+  genericAuth: {
+    mode: 'protect-granular',
+    resolveUserFn: context => {
+      const authorization = context.request.headers.get('authorization');
+      if (!authorization) {
+        return null;
+      }
+
+      // Forward the auth info to subgraphs through context
+      return {
+        authorization,
+      };
+    },
+    rejectUnauthenticated: true,
+  },
 });

@@ -93,7 +93,7 @@ To use the gateway:
 2. Start the gateway: `yarn gateway:dev`
 3. Visit `http://localhost:4000/graphql`
 
-9. Generate businesses by visiting http://localhost:4000/graphql
+4. Generate businesses by visiting http://localhost:4000/graphql
 
 Set your headers at the bottom:
 
