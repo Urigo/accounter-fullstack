@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: accounter-fullstack
     outputs:
-      hive_token_present: ${{ steps.secrets_present.outputs.hive_token }}
+      hive_token_present: ${{ steps.secrets_present.outputs.hiveRegistryToken }}
     steps:
       - name: check for Hive token presence
         env:
           HIVE_REGISTRY_TOKEN: ${{ secrets.hiveRegistryToken }}
         id: secrets_present
-        run: echo "hive_token=${{ env.HIVE_REGISTRY_TOKEN != '' }}" >> $GITHUB_OUTPUT
+        run: echo "hiveRegistryToken=${{ env.HIVE_REGISTRY_TOKEN != '' }}" >> $GITHUB_OUTPUT
 
   check:
     runs-on: ubuntu-latest
