@@ -60,19 +60,7 @@ const AuthorizationModel = zod.union([
 const HiveRegistryModel = zod.union([
   zod.object({
     HIVE_REGISTRY_TOKEN: zod.string(),
-  }),
-  zod.void(),
-]);
-
-const HiveCdnEndpointModel = zod.union([
-  zod.object({
     HIVE_CDN_ENDPOINT: zod.string(),
-  }),
-  zod.void(),
-]);
-
-const HiveCdnKeyModel = zod.union([
-  zod.object({
     HIVE_CDN_KEY: zod.string(),
   }),
   zod.void(),
@@ -84,8 +72,6 @@ const configs = {
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveRegistryModel.safeParse(process.env),
-  hiveCdnEndpoint: HiveCdnEndpointModel.safeParse(process.env),
-  hiveCdnKey: HiveCdnKeyModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -114,8 +100,6 @@ const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
-const hiveCdnEndpoint = extractConfig(configs.hiveCdnEndpoint);
-const hiveCdnKey = extractConfig(configs.hiveCdnKey);
 
 export const env = {
   postgres: {
@@ -140,7 +124,7 @@ export const env = {
   },
   hive: {
     hiveRegistryToken: hive?.HIVE_REGISTRY_TOKEN,
-    hiveCdnEndpoint: hiveCdnEndpoint?.HIVE_CDN_ENDPOINT,
-    hiveCdnKey: hiveCdnKey?.HIVE_CDN_KEY,
+    hiveCdnEndpoint: hive?.HIVE_CDN_ENDPOINT,
+    hiveCdnKey: hive?.HIVE_CDN_KEY,
   },
 } as const;

@@ -56,6 +56,29 @@ different terminals.
 yarn scrape
 ```
 
+9. Generate businesses by visiting http://localhost:4000/graphql
+
+Set your headers at the bottom:
+
+```json
+{
+  "authorization": "Basic [YOUR_TOKEN]"
+}
+```
+
+You can find `YOUR_TOKEN` by in the GraphQL request headers in your browser's `Network` tab.
+
+Then run this mutation:
+
+```gql
+mutation {
+  batchGenerateBusinessesOutOfTransactions {
+    id
+    name
+  }
+}
+```
+
 ## Server Architecture
 
 Accounter uses a federated GraphQL architecture consisting of subgraphs and a gateway.
@@ -94,27 +117,6 @@ To use the gateway:
 3. Visit `http://localhost:4000/graphql`
 
 4. Generate businesses by visiting http://localhost:4000/graphql
-
-Set your headers at the bottom:
-
-```json
-{
-  "authorization": "Basic [YOUR_TOKEN]"
-}
-```
-
-You can find `YOUR_TOKEN` by in the GraphQL request headers in your browser's `Network` tab.
-
-Then run this mutation:
-
-```gql
-mutation {
-  batchGenerateBusinessesOutOfTransactions {
-    id
-    name
-  }
-}
-```
 
 ## Miscellaneous
 
