@@ -10247,10 +10247,10 @@ lru-cache@^7.14.1:
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-7.18.3.tgz#f793896e0fd0e954a59dfdd82f0773808df6aa89"
   integrity sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==
 
-lucide-react@0.471.0:
-  version "0.471.0"
-  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.471.0.tgz#22b0966f2f9953e75387c7f5b2c95f5459b4c51e"
-  integrity sha512-3L0OOJClsKDETJGK7nABqW8ftaVmUjWzluzPpw/6dGdI1bOmzsLsCjZpAEpg24Xs/U7xdYveQU+CBkHxWy7MrA==
+lucide-react@0.471.1:
+  version "0.471.1"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.471.1.tgz#16f29cd65c7c847eceab0bbf8592443104423249"
+  integrity sha512-syOxwPhf62gg2YOsz72HRn+CIpeudFy67AeKnSR8Hn/fIIF4ubhNbRF+pQ2CaJrl+X9Os4PL87z2DXQi3DVeDA==
 
 magic-string@^0.30.12:
   version "0.30.17"
