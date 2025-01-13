@@ -20,6 +20,7 @@
     "db:migrate": "yarn --cwd packages/migrations migration:run",
     "deploy": "git push heroku master",
     "dev": "yarn --cwd packages/old-accounter dev",
+    "gateway:dev": "yarn --cwd packages/gateway dev",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn --cwd packages/server generate:sql\"",
     "generate:graphql": "graphql-codegen",
     "generate:watch": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql --watch\" \"yarn --cwd packages/server generate:sql:watch\"",
@@ -41,9 +42,9 @@
     "release": "yarn build && changeset publish",
     "scrape": "yarn --cwd packages/old-accounter scrape",
     "seed": "tsx scripts/seed.ts",
-    "server:build": "yarn --cwd packages/server build",
-    "server:dev": "yarn --cwd packages/server dev",
     "start": "yarn --cwd packages/old-accounter start",
+    "subgraphs:build": "yarn --cwd packages/server build",
+    "subgraphs:dev": "yarn --cwd packages/server dev",
     "test": "vitest"
   },
   "dependencies": {

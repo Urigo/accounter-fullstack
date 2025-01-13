@@ -1,7 +1,7 @@
 on:
   workflow_call:
     secrets:
-      hiveToken:
+      hiveRegistryToken:
 
 env:
   NODE_NO_WARNINGS: true
@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: accounter-fullstack
     outputs:
-      hive_token_present: ${{ steps.secrets_present.outputs.hive_token }}
+      hive_token_present: ${{ steps.secrets_present.outputs.hiveRegistryToken }}
     steps:
       - name: check for Hive token presence
         env:
-          HIVE_TOKEN: ${{ secrets.hiveToken }}
+          HIVE_REGISTRY_TOKEN: ${{ secrets.hiveRegistryToken }}
         id: secrets_present
-        run: echo "hive_token=${{ env.HIVE_TOKEN != '' }}" >> $GITHUB_OUTPUT
+        run: echo "hiveRegistryToken=${{ env.HIVE_REGISTRY_TOKEN != '' }}" >> $GITHUB_OUTPUT
 
   check:
     runs-on: ubuntu-latest
@@ -42,7 +42,7 @@ jobs:
 
       - name: schema check
         env:
-          HIVE_TOKEN: ${{ secrets.hiveToken }}
+          HIVE_REGISTRY_TOKEN: ${{ secrets.hiveRegistryToken }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
           hive schema:check "packages/server/src/modules/*/typeDefs/*.graphql.ts" ${{steps.pr-label-check.outputs.safeFlag }} --github

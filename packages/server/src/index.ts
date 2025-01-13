@@ -12,14 +12,21 @@ import { authPlugin } from './plugins/auth-plugin.js';
 async function main() {
   const application = await createGraphQLApp(env);
 
+  // While createGraphQLApp initializes the application, we use buildSubgraphSchema to build the Subgraph Schema.
   const yoga = createYoga({
+    schema: application.schema,
+    graphqlEndpoint: '/legacy',
+    graphiql: {
+      title: 'Legacy Subgraph',
+    },
+    landingPage: true,
     plugins: [
       authPlugin(),
-      useGraphQLModules(application),
       useDeferStream(),
+      useGraphQLModules(application),
       useHive({
-        enabled: !!env.hive.hiveToken,
-        token: env.hive.hiveToken ?? '',
+        enabled: !!env.hive.hiveRegistryToken,
+        token: env.hive.hiveRegistryToken ?? '',
         usage: true,
       }),
     ],
@@ -32,15 +39,14 @@ async function main() {
   });
 
   const server = createServer(yoga);
+  const port = 4001;
 
-  server.listen(
-    {
-      port: 4000,
-    },
-    () => {
-      console.log('GraphQL API located at http://localhost:4000/graphql');
-    },
-  );
+  server.listen({ port }, () => {
+    console.info(`🚀 Legacy Subgraph ready at http://localhost:${port}`);
+  });
 }
 
-main();
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

@@ -41,7 +41,7 @@ jobs:
     name: Hive schema check
     uses: ./.github/workflows/graphql-schema-check.yml
     secrets:
-      hiveToken: ${{ secrets.HIVE_TOKEN }}
+      hiveRegistryToken: ${{ secrets.HIVE_REGISTRY_TOKEN }}
 
   validate-schema:
     name: Validate GraphQL schema
