@@ -4,12 +4,7 @@ import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/comm
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  DIVIDEND_TAX_CATEGORY_ID,
-  DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
-  DIVIDEND_WITHHOLDING_TAX_PERCENTAGE,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
@@ -29,12 +24,28 @@ export const generateLedgerRecordsForDividend: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const { dividendWithholdingTaxBusinessId, dividendTaxCategoryId } =
+    context.adminContext.dividends;
+  if (!dividendWithholdingTaxBusinessId) {
+    return {
+      __typename: 'CommonError',
+      message: `Dividend withholding tax business ID is not defined`,
+    };
+  }
+  if (!dividendTaxCategoryId) {
+    return {
+      __typename: 'CommonError',
+      message: `Dividend tax category ID is not defined`,
+    };
+  }
+
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
 
   try {
+    const { injector } = context;
     // validate ledger records are balanced
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
@@ -64,7 +75,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       paymentsTransactions,
       feeTransactions,
       errors: splitErrors,
-    } = splitDividendTransactions(transactions);
+    } = splitDividendTransactions(transactions, context);
 
     splitErrors.map(errors.add);
 
@@ -168,11 +179,11 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           valueDate: dividendRecord.date,
           isCreditorCounterparty: false,
           description: 'Main dividend record',
-          debitAccountID1: DIVIDEND_TAX_CATEGORY_ID,
+          debitAccountID1: dividendTaxCategoryId,
           localCurrencyDebitAmount1: dividendRecordAbsAmount,
           creditAccountID1: dividendRecord.business_id,
           localCurrencyCreditAmount1: dividendRecordAbsAmount * (1 - withholdingTaxPercentage),
-          creditAccountID2: DIVIDEND_WITHHOLDING_TAX_BUSINESS_ID,
+          creditAccountID2: dividendWithholdingTaxBusinessId,
           localCurrencyCreditAmount2: dividendRecordAbsAmount * withholdingTaxPercentage,
         };
 
@@ -227,7 +238,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      await getEntriesFromFeeTransaction(transaction, charge, injector)
+      await getEntriesFromFeeTransaction(transaction, charge, context)
         .then(ledgerEntries => {
           feeFinancialAccountLedgerEntries.push(...ledgerEntries);
           ledgerEntries.map(ledgerEntry => {

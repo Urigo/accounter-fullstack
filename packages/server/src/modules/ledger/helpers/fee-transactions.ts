@@ -1,14 +1,7 @@
-import { Injector } from 'graphql-modules';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  FEE_TAX_CATEGORY_ID,
-  GENERAL_FEE_TAX_CATEGORY_ID,
-  INTERNAL_WALLETS_IDS,
-  SWIFT_BUSINESS_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import {
   getFinancialAccountTaxCategoryId,
@@ -31,6 +24,7 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
 
 export function isSupplementalFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
+  context: GraphQLModules.Context,
 ): boolean {
   if (!transaction.is_fee) {
     return false;
@@ -41,11 +35,13 @@ export function isSupplementalFeeTransaction(
     );
   }
 
-  if (INTERNAL_WALLETS_IDS.includes(transaction.business_id)) {
+  const { internalWalletsIds, swiftBusinessId } = context.adminContext.financialAccounts;
+
+  if (internalWalletsIds.includes(transaction.business_id)) {
     return true;
   }
 
-  const fundamentalFeeBusinesses: string[] = [SWIFT_BUSINESS_ID];
+  const fundamentalFeeBusinesses = [swiftBusinessId].filter(Boolean) as string[];
   if (fundamentalFeeBusinesses.includes(transaction.business_id)) {
     return false;
   }
@@ -57,7 +53,7 @@ export function isSupplementalFeeTransaction(
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<Array<LedgerProto>> {
   const ledgerEntries: Array<LedgerProto> = [];
 
@@ -67,7 +63,7 @@ export async function getEntriesFromFeeTransaction(
     );
   }
 
-  const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+  const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
@@ -76,7 +72,7 @@ export async function getEntriesFromFeeTransaction(
 
   if (currency !== DEFAULT_LOCAL_CURRENCY) {
     // get exchange rate for currency
-    const exchangeRate = await injector
+    const exchangeRate = await context.injector
       .get(ExchangeProvider)
       .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
 
@@ -107,7 +103,7 @@ export async function getEntriesFromFeeTransaction(
   };
 
   if (isSupplementalFee) {
-    mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction);
+    mainAccount = await getFinancialAccountTaxCategoryId(context.injector, transaction);
   } else {
     const mainBusiness = charge.business_id ?? undefined;
 
@@ -121,9 +117,9 @@ export async function getEntriesFromFeeTransaction(
   }
 
   const feeTaxCategory =
-    charge.tax_category_id === GENERAL_FEE_TAX_CATEGORY_ID
-      ? GENERAL_FEE_TAX_CATEGORY_ID
-      : FEE_TAX_CATEGORY_ID;
+    charge.tax_category_id === context.adminContext.general.taxCategories.generalFeeTaxCategoryId
+      ? context.adminContext.general.taxCategories.generalFeeTaxCategoryId
+      : context.adminContext.general.taxCategories.feeTaxCategoryId;
 
   const ledgerEntry: LedgerProto = {
     ...partialLedgerEntry,

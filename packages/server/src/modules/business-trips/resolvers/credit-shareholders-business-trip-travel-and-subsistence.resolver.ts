@@ -38,7 +38,8 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
   unknown,
   GraphQLModules.Context,
   RequireFields<MutationCreditShareholdersBusinessTripTravelAndSubsistenceArgs, 'businessTripId'>
-> = async (_, { businessTripId }, { injector }) => {
+> = async (_, { businessTripId }, context) => {
+  const { injector } = context;
   async function summaryDataPromise() {
     const businessTrip = await injector
       .get(BusinessTripsProvider)
@@ -157,7 +158,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
 
   return Object.entries(shareholdersPotentialAmountToDistribute).map(([id, amount]) => {
     const shareholder = shareholdersMap.get(id)!;
-    return createTravelAndSubsistenceExpense(injector, {
+    return createTravelAndSubsistenceExpense(context, {
       ...commonFields,
       amount: amount * creditRatio,
       expenseType: `${shareholder.first_name}'s travel and subsistence expenses, no invoice`,

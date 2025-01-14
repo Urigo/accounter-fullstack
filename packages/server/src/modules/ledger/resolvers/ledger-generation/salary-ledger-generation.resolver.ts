@@ -9,14 +9,7 @@ import { EmployeesProvider } from '@modules/salaries/providers/employees.provide
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-  BATCHED_EMPLOYEE_BUSINESS_ID,
-  BATCHED_PENSION_BUSINESS_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
-  SALARY_BATCHED_BUSINESSES,
-} from '@shared/constants';
+import { BALANCE_CANCELLATION_TAX_CATEGORY_ID, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
@@ -53,7 +46,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     );
   }
   const chargeId = charge.id;
-  const { injector } = context;
+  const { injector, adminContext } = context;
+  const { batchedFundsBusinessId, batchedEmployeesBusinessId, salaryBatchedBusinessIds } =
+    adminContext.salaries;
+  const { exchangeRateTaxCategoryId } = adminContext.general.taxCategories;
   const errors: Set<string> = new Set();
 
   try {
@@ -94,6 +90,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       const { entries, monthlyEntriesProto, month } = generateEntriesFromSalaryRecords(
         salaryRecords,
         charge,
+        context,
       );
 
       entries.map(ledgerEntry => {
@@ -176,10 +173,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           transaction,
         );
 
-        if (
-          transaction.business_id &&
-          SALARY_BATCHED_BUSINESSES.includes(transaction.business_id)
-        ) {
+        if (transaction.business_id && salaryBatchedBusinessIds.includes(transaction.business_id)) {
           batchedTransactionEntriesMaterials.push({
             transaction,
             partialEntry,
@@ -287,9 +281,9 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       if (validation === true) {
         const ledgerEntry: StrictLedgerProto = {
           id: matchingTransaction.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? businessId : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          creditAccountID1: isCreditorCounterparty ? businessId : exchangeRateTaxCategoryId,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : businessId,
+          debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : businessId,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
@@ -314,14 +308,14 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         try {
           const unbatchedBusinesses: Array<string> = [];
           switch (transaction.business_id) {
-            case BATCHED_EMPLOYEE_BUSINESS_ID: {
+            case batchedEmployeesBusinessId: {
               const employees = await injector
                 .get(EmployeesProvider)
                 .getEmployeesByEmployerLoader.load(charge.owner_id);
               unbatchedBusinesses.push(...employees.map(({ business_id }) => business_id));
               break;
             }
-            case BATCHED_PENSION_BUSINESS_ID: {
+            case batchedFundsBusinessId: {
               const funds = await injector.get(FundsProvider).getAllFunds();
               unbatchedBusinesses.push(...funds.map(({ id }) => id));
               break;
@@ -416,7 +410,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeFinancialAccountLedgerEntriesPromises = feeTransactions.map(async transaction => {
-      await getEntriesFromFeeTransaction(transaction, charge, injector).then(ledgerEntries => {
+      await getEntriesFromFeeTransaction(transaction, charge, context).then(ledgerEntries => {
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);

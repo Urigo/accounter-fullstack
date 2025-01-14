@@ -1,7 +1,5 @@
-import { Injector } from 'graphql-modules';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { GENERAL_FEE_TAX_CATEGORY_ID } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
@@ -9,13 +7,15 @@ import { getChargeType } from './charge-type.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<ResolversTypes['ValidationData']> => {
+  const { injector } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const chargeType = getChargeType(charge);
+  const chargeType = getChargeType(charge, context);
 
-  const isGeneralFees = charge.tax_category_id === GENERAL_FEE_TAX_CATEGORY_ID;
+  const isGeneralFees =
+    charge.tax_category_id === context.adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // check for consistent counterparty business
   const businessNotRequired =

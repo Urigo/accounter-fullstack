@@ -203,7 +203,7 @@ export class LedgerProvider {
   });
 
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
   ) {}
 

@@ -734,7 +734,7 @@ async function createAdminBusinessContext(
       'tax_category',
       true,
     ),
-    bank_deposit_interest_income_expenses_tax_category_id: findId(
+    bank_deposit_interest_income_tax_category_id: findId(
       'Bank Deposit Interest Income',
       'tax_category',
       true,

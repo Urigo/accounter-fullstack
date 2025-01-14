@@ -1,11 +1,6 @@
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateRecoveryReserveAmount } from '@modules/ledger/helpers/recovery-reserve.helper.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
-  RECOVERY_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -17,11 +12,25 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   try {
-    const { injector } = context;
+    const { injector, adminContext } = context;
+    const { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId } =
+      adminContext.salaries;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
         message: `Recovery reserve charge must include user description with designated year`,
+      };
+    }
+    if (!recoveryReserveExpensesTaxCategoryId) {
+      return {
+        __typename: 'CommonError',
+        message: `Recovery reserve expenses tax category is not set`,
+      };
+    }
+    if (!recoveryReserveTaxCategoryId) {
+      return {
+        __typename: 'CommonError',
+        message: `Recovery reserve tax category is not set`,
       };
     }
 
@@ -44,7 +53,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
       };
     }
 
-    const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(injector, year);
+    const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(context, year);
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
@@ -52,8 +61,8 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
       valueDate: new Date(year, 11, 31),
       currency: DEFAULT_LOCAL_CURRENCY,
       isCreditorCounterparty: true,
-      creditAccountID1: RECOVERY_RESERVE_TAX_CATEGORY_ID,
-      debitAccountID1: RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
+      creditAccountID1: recoveryReserveTaxCategoryId,
+      debitAccountID1: recoveryReserveExpensesTaxCategoryId,
       localCurrencyCreditAmount1: Math.abs(recoveryReserveAmount),
       localCurrencyDebitAmount1: Math.abs(recoveryReserveAmount),
       description: `Recovery reserve for ${year}`,

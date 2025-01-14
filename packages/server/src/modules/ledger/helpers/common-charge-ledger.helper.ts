@@ -9,7 +9,6 @@ import {
   BALANCE_CANCELLATION_TAX_CATEGORY_ID,
   DEFAULT_LOCAL_CURRENCY,
   INPUT_VAT_TAX_CATEGORY_ID,
-  INTERNAL_WALLETS_IDS,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
@@ -166,12 +165,13 @@ export async function ledgerEntryFromDocument(
 
 export async function ledgerEntryFromMainTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   chargeId: string,
   ownerId: string,
   businessId?: string,
   gotRelevantDocuments = false,
 ): Promise<StrictLedgerProto> {
+  const { injector } = context;
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
@@ -181,7 +181,7 @@ export async function ledgerEntryFromMainTransaction(
     !gotRelevantDocuments &&
     transaction.source_reference &&
     businessId &&
-    INTERNAL_WALLETS_IDS.includes(businessId)
+    context.adminContext.financialAccounts.internalWalletsIds.includes(businessId)
   ) {
     const account = await injector
       .get(FinancialAccountsProvider)

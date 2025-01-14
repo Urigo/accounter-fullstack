@@ -1,11 +1,4 @@
-import {
-  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
-  BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-  RECOVERY_RESERVE_TAX_CATEGORY_ID,
-  TAX_EXPENSES_TAX_CATEGORY_ID,
-  VACATION_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { TAX_EXPENSES_TAX_CATEGORY_ID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
@@ -29,8 +22,9 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
         message: `Financial charge must include tax category`,
       };
     }
+    const { depreciation, salaries, bankDeposits } = context.adminContext;
     switch (charge.tax_category_id) {
-      case EXCHANGE_REVALUATION_TAX_CATEGORY_ID:
+      case context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId:
         return generateLedgerRecordsForExchangeRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },
@@ -44,28 +38,28 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
           context,
           info,
         );
-      case ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID:
+      case depreciation.accumulatedDepreciationTaxCategoryId:
         return generateLedgerRecordsForDepreciationExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case RECOVERY_RESERVE_TAX_CATEGORY_ID:
+      case salaries.recoveryReserveTaxCategoryId:
         return generateLedgerRecordsForRecoveryReserveExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case VACATION_RESERVE_TAX_CATEGORY_ID:
+      case salaries.vacationReserveTaxCategoryId:
         return generateLedgerRecordsForVacationReserveExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID:
+      case bankDeposits.bankDepositInterestIncomeTaxCategoryId:
         return generateLedgerRecordsForBankDepositsRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },

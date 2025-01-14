@@ -296,7 +296,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
 
   const ledgerRecords = await Promise.all(
     charges.map(charge =>
-      ledgerGenerationByCharge(charge)(
+      ledgerGenerationByCharge(charge, context)(
         charge,
         { insertLedgerRecordsIfNotExists: false },
         context,

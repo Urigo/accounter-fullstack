@@ -1,13 +1,7 @@
+import { GraphQLError } from 'graphql';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateDepreciationAmount } from '@modules/reports/helpers/tax.helper.js';
-import {
-  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-  MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-  RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -84,28 +78,47 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       ledgerEntries.push(ledgerEntry);
     }
 
+    const {
+      accumulatedDepreciationTaxCategoryId,
+      rndDepreciationExpensesTaxCategoryId,
+      gnmDepreciationExpensesTaxCategoryId,
+      marketingDepreciationExpensesTaxCategoryId,
+    } = context.adminContext.depreciation;
+    if (!accumulatedDepreciationTaxCategoryId) {
+      throw new GraphQLError('Accumulated depreciation tax category is not defined');
+    }
+    if (!rndDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('R&D depreciation expenses tax category is not defined');
+    }
+    if (!gnmDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('G&M depreciation expenses tax category is not defined');
+    }
+    if (!marketingDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('Marketing depreciation expenses tax category is not defined');
+    }
+
     addLedgerEntry(
       rndDepreciationYearlyAmount,
       'R&D',
       undefined,
-      RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      rndDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       gnmDepreciationYearlyAmount,
       'G&M',
       undefined,
-      GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      gnmDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       marketingDepreciationYearlyAmount,
       'Marketing',
       undefined,
-      MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      marketingDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       totalDepreciationYearlyAmount,
       'Accumulated',
-      ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
+      accumulatedDepreciationTaxCategoryId,
     );
 
     if (insertLedgerRecordsIfNotExists) {

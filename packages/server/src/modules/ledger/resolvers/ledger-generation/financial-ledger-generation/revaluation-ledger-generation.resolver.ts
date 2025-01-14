@@ -4,11 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -145,10 +141,12 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
         ...(isCreditorCounterparty
           ? {
               creditAccountID1: account.id,
-              debitAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+              debitAccountID1:
+                context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
             }
           : {
-              creditAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+              creditAccountID1:
+                context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
               debitAccountID1: account.id,
             }),
         localCurrencyCreditAmount1: Math.abs(revaluationDiff),

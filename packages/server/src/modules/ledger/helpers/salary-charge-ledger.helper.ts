@@ -1,18 +1,7 @@
 import { lastDayOfMonth } from 'date-fns';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
-import {
-  COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  PENSION_EXPENSES_TAX_CATEGORY_ID,
-  SALARY_EXPENSES_TAX_CATEGORY_ID,
-  SOCIAL_SECURITY_BUSINESS_ID,
-  SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
-  TAX_DEDUCTIONS_BUSINESS_ID,
-  TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
-  ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
-  ZKUFOT_INCOME_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, SOCIAL_SECURITY_BUSINESS_ID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
 
@@ -63,15 +52,20 @@ type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boo
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
+  context: GraphQLModules.Context,
 ): {
   entries: LedgerProto[];
   monthlyEntriesProto: MonthlyLedgerProto[];
   month: string;
 } {
+  const { taxDeductionsBusinessId } = context.adminContext.salaries;
   const chargeId = charge.id;
 
   if (!salaryRecords.length) {
     throw new LedgerError(`No salary records found for charge ${chargeId}`);
+  }
+  if (!taxDeductionsBusinessId) {
+    throw new LedgerError('Tax deductions business is not set');
   }
 
   const entries: LedgerProto[] = [];
@@ -200,7 +194,7 @@ export function generateEntriesFromSalaryRecords(
   // generate tax entries
   for (const [month, amount] of Object.entries(taxAmountPerMonth)) {
     if (amount > 0) {
-      entries.push(generateEntry(charge.id, TAX_DEDUCTIONS_BUSINESS_ID, amount, month));
+      entries.push(generateEntry(charge.id, taxDeductionsBusinessId, amount, month));
     }
   }
 
@@ -211,6 +205,7 @@ export function generateEntriesFromSalaryRecords(
     compensationProvidentFundExpensesAmount,
     trainingFundExpensesAmount,
     zkufotAmount,
+    context,
   });
 
   return {
@@ -227,6 +222,7 @@ export function getMonthlyExpensesEntriesProto({
   compensationProvidentFundExpensesAmount,
   trainingFundExpensesAmount,
   zkufotAmount,
+  context,
 }: {
   salaryExpensesAmount: number;
   socialSecurityExpensesAmount: number;
@@ -234,40 +230,61 @@ export function getMonthlyExpensesEntriesProto({
   compensationProvidentFundExpensesAmount: number;
   trainingFundExpensesAmount: number;
   zkufotAmount: number;
+  context: GraphQLModules.Context;
 }) {
+  const {
+    zkufotExpensesTaxCategoryId,
+    zkufotIncomeTaxCategoryId,
+    socialSecurityExpensesTaxCategoryId,
+    salaryExpensesTaxCategoryId,
+    trainingFundExpensesTaxCategoryId,
+    pensionExpensesTaxCategoryId,
+    compensationFundExpensesTaxCategoryId,
+  } = context.adminContext.salaries;
+  if (
+    !zkufotExpensesTaxCategoryId ||
+    !zkufotIncomeTaxCategoryId ||
+    !socialSecurityExpensesTaxCategoryId ||
+    !salaryExpensesTaxCategoryId ||
+    !trainingFundExpensesTaxCategoryId ||
+    !pensionExpensesTaxCategoryId ||
+    !compensationFundExpensesTaxCategoryId
+  ) {
+    throw new LedgerError('Missing salary tax categories');
+  }
   const monthlyEntriesProto: MonthlyLedgerProto[] = [
     {
-      taxCategoryId: ZKUFOT_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: zkufotExpensesTaxCategoryId,
       amount: zkufotAmount,
       isCredit: false,
     },
     {
-      taxCategoryId: ZKUFOT_INCOME_TAX_CATEGORY_ID,
+      taxCategoryId: zkufotIncomeTaxCategoryId,
       amount: zkufotAmount,
       isCredit: true,
     },
     {
-      taxCategoryId: SOCIAL_SECURITY_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: socialSecurityExpensesTaxCategoryId,
       amount: socialSecurityExpensesAmount,
       isCredit: false,
     },
     {
-      taxCategoryId: SALARY_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: salaryExpensesTaxCategoryId,
       amount: salaryExpensesAmount,
       isCredit: false,
     },
     {
-      taxCategoryId: TRAINING_FUND_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: trainingFundExpensesTaxCategoryId,
       amount: trainingFundExpensesAmount,
       isCredit: false,
     },
     {
-      taxCategoryId: PENSION_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: pensionExpensesTaxCategoryId,
       amount: pensionFundExpensesAmount,
       isCredit: false,
     },
     {
-      taxCategoryId: COMPENSATION_FUND_EXPENSES_TAX_CATEGORY_ID,
+      taxCategoryId: compensationFundExpensesTaxCategoryId,
       amount: compensationProvidentFundExpensesAmount,
       isCredit: false,
     },

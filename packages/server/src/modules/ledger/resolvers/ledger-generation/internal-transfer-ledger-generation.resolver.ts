@@ -1,10 +1,9 @@
-import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import {
@@ -24,9 +23,10 @@ import {
 export const generateLedgerRecordsForInternalTransfer: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const { injector } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -141,7 +141,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
           charge,
-          injector,
+          context,
         ).catch(e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -219,10 +219,14 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         const ledgerEntry: LedgerProto = {
           id: destinationEntry.id, // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? undefined : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          creditAccountID1: isCreditorCounterparty
+            ? undefined
+            : context.adminContext.general.taxCategories.exchangeRateTaxCategoryId,
           creditAmount1: undefined,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : undefined,
+          debitAccountID1: isCreditorCounterparty
+            ? context.adminContext.general.taxCategories.exchangeRateTaxCategoryId
+            : undefined,
           debitAmount1: undefined,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',

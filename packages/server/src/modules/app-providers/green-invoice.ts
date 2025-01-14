@@ -1,6 +1,5 @@
-import { Inject, Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { init, type Sdk } from '@accounter/green-invoice-graphql';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
@@ -12,11 +11,14 @@ export type ExpenseDraft = NonNullable<
   >['items'][number]
 >;
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class GreenInvoiceProvider {
-  constructor(@Inject(ENVIRONMENT) private env: Environment) {}
+  constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
+    @Inject(ENVIRONMENT) private env: Environment,
+  ) {}
 
   public authToken: string | null = null;
 
@@ -118,7 +120,7 @@ export class GreenInvoiceProvider {
             // check if any actual OCR fields exists
             if (
               expense.amount !== null ||
-              expense.currency !== DEFAULT_LOCAL_CURRENCY ||
+              expense.currency !== this.context.adminContext.defaultLocalCurrency ||
               expense.date !== null ||
               expense.documentType !== '_20' ||
               expense.number !== null ||
@@ -140,7 +142,7 @@ export class GreenInvoiceProvider {
           number: undefined,
           date: undefined,
           amount: 0,
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: this.context.adminContext.defaultLocalCurrency,
           vat: 0,
         },
       } as ExpenseDraft;

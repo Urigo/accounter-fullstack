@@ -7,11 +7,7 @@ import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/
 import type { IGetExpensesByChargeIdsResult } from '@modules/misc-expenses/types.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import {
-  BUSINESS_TRIP_TAG_ID,
-  BUSINESS_TRIP_TAX_CATEGORY_ID,
-  DEFAULT_FINANCIAL_ENTITY_ID,
-} from '@shared/constants';
+import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import type {
   AddBusinessTripTravelAndSubsistenceExpenseInput,
   BusinessTripExpenseCategories,
@@ -36,6 +32,7 @@ function validateTransactionAgainstBusinessTripsExpenses(
   transaction: IGetTransactionsByChargeIdsResult,
   transactionMatchingExpenses: IGetBusinessTripsExpenseMatchesByTransactionIdsResult[],
   miscExpenses: IGetExpensesByChargeIdsResult[],
+  context: GraphQLModules.Context,
 ): boolean {
   if (!transactionMatchingExpenses?.length && !miscExpenses?.length) {
     throw new LedgerError(
@@ -48,7 +45,7 @@ function validateTransactionAgainstBusinessTripsExpenses(
     0,
   );
 
-  const direction = isSupplementalFeeTransaction(transaction) ? -1 : 1;
+  const direction = isSupplementalFeeTransaction(transaction, context) ? -1 : 1;
 
   const miscExpensesAmount = miscExpenses.reduce(
     (acc, expense) => Number(expense.amount) * direction + acc,
@@ -65,10 +62,10 @@ function validateTransactionAgainstBusinessTripsExpenses(
 }
 
 export const validateTransactionAgainstBusinessTrips = async (
-  injector: Injector,
+  context: GraphQLModules.Context,
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<boolean> => {
-  const transactionMatchingExpenses = await injector
+  const transactionMatchingExpenses = await context.injector
     .get(BusinessTripExpensesTransactionsMatchProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
@@ -76,14 +73,15 @@ export const validateTransactionAgainstBusinessTrips = async (
     transaction,
     transactionMatchingExpenses,
     [],
+    context,
   );
 };
 
 export const getTransactionMatchedAmount = async (
-  injector: Injector,
+  context: GraphQLModules.Context,
   transaction: IGetTransactionsByChargeIdsResult,
 ): Promise<{ isFullyMatched: boolean; amount: number; errors?: string[] }> => {
-  const transactionMatchingExpensesPromise = injector
+  const transactionMatchingExpensesPromise = context.injector
     .get(BusinessTripExpensesTransactionsMatchProvider)
     .getBusinessTripsExpenseMatchesByTransactionIdLoader.load(transaction.id);
 
@@ -95,7 +93,12 @@ export const getTransactionMatchedAmount = async (
   );
 
   try {
-    validateTransactionAgainstBusinessTripsExpenses(transaction, transactionMatchingExpenses, []);
+    validateTransactionAgainstBusinessTripsExpenses(
+      transaction,
+      transactionMatchingExpenses,
+      [],
+      context,
+    );
   } catch (e) {
     const errors = [];
     if (e instanceof LedgerError) {
@@ -178,14 +181,19 @@ export async function coreExpenseUpdate(
 }
 
 export async function generateChargeForEmployeePayment(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripId: string,
   description?: string,
 ) {
+  const { injector, adminContext } = context;
+  const { businessTripTaxCategoryId } = adminContext.businessTrips;
+  if (!businessTripTaxCategoryId) {
+    throw new GraphQLError('Business trip tax category not set');
+  }
   try {
     const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
       ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
-      taxCategoryId: BUSINESS_TRIP_TAX_CATEGORY_ID,
+      taxCategoryId: businessTripTaxCategoryId,
       userDescription: description || 'Employee payment charge',
     });
 
@@ -252,9 +260,11 @@ export const updateExistingTripExpense = async (
 };
 
 export async function createTravelAndSubsistenceExpense(
-  injector: Injector,
+  context: GraphQLModules.Context,
   fields: AddBusinessTripTravelAndSubsistenceExpenseInput,
 ): Promise<string> {
+  const { injector, adminContext } = context;
+  const { businessTripTagId } = adminContext.businessTrips;
   try {
     const coreExpensePromise = injector
       .get(BusinessTripExpensesProvider)
@@ -265,7 +275,7 @@ export async function createTravelAndSubsistenceExpense(
       .then(res => res[0]);
 
     const chargeGenerationPromise = generateChargeForEmployeePayment(
-      injector,
+      context,
       fields.businessTripId,
       fields.expenseType ?? undefined,
     );
@@ -292,7 +302,9 @@ export async function createTravelAndSubsistenceExpense(
         currency: fields.currency,
         employeeBusinessId: fields.employeeBusinessId,
       }),
-      injector.get(ChargeTagsProvider).insertChargeTag({ chargeId, tagId: BUSINESS_TRIP_TAG_ID }),
+      businessTripTagId
+        ? injector.get(ChargeTagsProvider).insertChargeTag({ chargeId, tagId: businessTripTagId })
+        : Promise.resolve(),
     ]);
 
     if (!charge) {
@@ -303,7 +315,7 @@ export async function createTravelAndSubsistenceExpense(
     await generateLedgerRecordsForBusinessTrip(
       charge,
       { insertLedgerRecordsIfNotExists: true },
-      { injector },
+      context,
       {} as GraphQLResolveInfo,
     );
 

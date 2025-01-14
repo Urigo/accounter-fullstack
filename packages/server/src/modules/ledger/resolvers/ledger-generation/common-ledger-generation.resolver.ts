@@ -13,11 +13,7 @@ import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.he
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  DEFAULT_TAX_CATEGORY,
-  INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, DEFAULT_TAX_CATEGORY } from '@shared/constants';
 import type {
   Currency,
   Maybe,
@@ -47,7 +43,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const { injector } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -178,7 +175,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const mainTransactionsPromises = mainTransactions.map(async transaction => {
         const ledgerEntry = await ledgerEntryFromMainTransaction(
           transaction,
-          injector,
+          context,
           chargeId,
           charge.owner_id,
           charge.business_id ?? undefined,
@@ -206,7 +203,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
           charge,
-          injector,
+          context,
         ).catch(e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -395,7 +392,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           const isIncomeCharge =
             !isRefund && charge.event_amount && Number(charge.event_amount) > 0;
           if (isIncomeCharge) {
-            exchangeRateTaxCategory = INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID;
+            exchangeRateTaxCategory =
+              context.adminContext.general.taxCategories.incomeExchangeRateTaxCategoryId;
           }
         }
 
@@ -448,7 +446,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const crossYearLedgerEntries = await handleCrossYearLedgerEntries(
       charge,
-      injector,
+      context,
       accountingLedgerEntries,
     );
 

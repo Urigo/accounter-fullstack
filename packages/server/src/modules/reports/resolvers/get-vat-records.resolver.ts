@@ -25,7 +25,8 @@ export const getVatRecords: ResolverFn<
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
   Partial<QueryVatReportArgs>
-> = async (_, { filters }, { injector }) => {
+> = async (_, { filters }, context) => {
+  const { injector } = context;
   try {
     const response = {
       income: [] as Array<RawVatReportRecord>,
@@ -182,7 +183,7 @@ export const getVatRecords: ResolverFn<
       charges.map(
         charge =>
           new Promise((resolve, reject) => {
-            validateCharge(charge, injector)
+            validateCharge(charge, context)
               .then(res => {
                 if ('isValid' in res) {
                   resolve({ charge, isValid: res.isValid });

@@ -1,4 +1,3 @@
-import { Injector } from 'graphql-modules';
 import { validateTransactionAgainstBusinessTrips } from '@modules/business-trips/helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
@@ -17,11 +16,7 @@ import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-st
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  DEFAULT_TAX_CATEGORY,
-  INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, DEFAULT_TAX_CATEGORY } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -51,9 +46,10 @@ const AMOUNT_FOR_SELF_CLOSING = 300;
 export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const { injector } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -180,7 +176,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
 
         const validateTransactionAgainstBusinessTripsPromise =
-          validateTransactionAgainstBusinessTrips(injector, transaction).catch(e => {
+          validateTransactionAgainstBusinessTrips(context, transaction).catch(e => {
             if (e instanceof LedgerError) {
               errors.add(e.message);
             } else {
@@ -260,7 +256,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // create a ledger record for fee transactions
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, injector).catch(
+      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, context).catch(
         e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -532,7 +528,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
         const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
         if (isIncomeCharge) {
-          exchangeRateTaxCategory = INCOME_EXCHANGE_RATE_TAX_CATEGORY_ID;
+          exchangeRateTaxCategory =
+            context.adminContext.general.taxCategories.incomeExchangeRateTaxCategoryId;
         }
       }
 

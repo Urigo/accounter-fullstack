@@ -1,12 +1,7 @@
-import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-  FEE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -33,9 +28,10 @@ import {
 export const generateLedgerRecordsForConversion: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const { injector } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -151,7 +147,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         }
 
         try {
-          const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+          const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
           const { currency, valueDate, transactionBusinessId } =
             validateTransactionBasicVariables(transaction);
 
@@ -186,13 +182,13 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               valueDate,
               currency,
               creditAccountID1: isCreditorCounterparty
-                ? FEE_TAX_CATEGORY_ID
+                ? context.adminContext.general.taxCategories.feeTaxCategoryId
                 : financialAccountTaxCategoryId,
               creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyCreditAmount1: Math.abs(amount),
               debitAccountID1: isCreditorCounterparty
                 ? financialAccountTaxCategoryId
-                : FEE_TAX_CATEGORY_ID,
+                : context.adminContext.general.taxCategories.feeTaxCategoryId,
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
@@ -218,11 +214,13 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               valueDate,
               currency,
               creditAccountID1: isCreditorCounterparty
-                ? FEE_TAX_CATEGORY_ID
+                ? context.adminContext.general.taxCategories.feeTaxCategoryId
                 : transactionBusinessId,
               creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyCreditAmount1: Math.abs(amount),
-              debitAccountID1: isCreditorCounterparty ? transactionBusinessId : FEE_TAX_CATEGORY_ID,
+              debitAccountID1: isCreditorCounterparty
+                ? transactionBusinessId
+                : context.adminContext.general.taxCategories.feeTaxCategoryId,
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
@@ -271,9 +269,13 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
           const ledgerEntry: LedgerProto = {
             id: quoteEntry.id + '|revaluation', // NOTE: this field is dummy
-            creditAccountID1: isDebitConversion ? EXCHANGE_REVALUATION_TAX_CATEGORY_ID : undefined,
+            creditAccountID1: isDebitConversion
+              ? context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId
+              : undefined,
             localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
-            debitAccountID1: isDebitConversion ? undefined : EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+            debitAccountID1: isDebitConversion
+              ? undefined
+              : context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
             localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
             description: 'Exchange Revaluation',
             isCreditorCounterparty: true,

@@ -4,12 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import {
-  BANK_DEPOSIT_BUSINESS_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -30,11 +25,18 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
-    const { injector } = context;
+    const { injector, adminContext } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
         message: `Bank deposits revaluation charge must include user description with designated year`,
+      };
+    }
+    const bankDepositBusinessId = adminContext.bankDeposits.bankDepositBusinessId;
+    if (!bankDepositBusinessId) {
+      return {
+        __typename: 'CommonError',
+        message: `Bank deposits business is not set`,
       };
     }
 
@@ -65,7 +67,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
       {
         filters: {
           ownerIds: [charge.owner_id],
-          businessIDs: [BANK_DEPOSIT_BUSINESS_ID],
+          businessIDs: [bankDepositBusinessId],
           toDate: cumulativeDate,
           includeRevaluation: false,
         },
@@ -134,12 +136,14 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
           isCreditorCounterparty,
           ...(isCreditorCounterparty
             ? {
-                creditAccountID1: BANK_DEPOSIT_BUSINESS_ID,
-                debitAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+                creditAccountID1: bankDepositBusinessId,
+                debitAccountID1:
+                  context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
               }
             : {
-                creditAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-                debitAccountID1: BANK_DEPOSIT_BUSINESS_ID,
+                creditAccountID1:
+                  context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
+                debitAccountID1: bankDepositBusinessId,
               }),
           localCurrencyCreditAmount1: Math.abs(revaluationDiff),
           localCurrencyDebitAmount1: Math.abs(revaluationDiff),

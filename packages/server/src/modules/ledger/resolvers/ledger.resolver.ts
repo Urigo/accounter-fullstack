@@ -80,7 +80,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         await Promise.all(
           limitedCharges.map(async charge => {
             try {
-              const generatedRecordsPromise = ledgerGenerationByCharge(charge)(
+              const generatedRecordsPromise = ledgerGenerationByCharge(charge, context)(
                 charge,
                 { insertLedgerRecordsIfNotExists: false },
                 context,
@@ -137,7 +137,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge)(
+        const generated = await ledgerGenerationByCharge(charge, context)(
           charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
@@ -285,7 +285,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   Ledger: {
     records: parent => parent.records,
-    balance: async (parent, _, { injector }) => {
+    balance: async (parent, _, context) => {
+      const { injector } = context;
       if (parent.balance) {
         return parent.balance;
       }
@@ -315,7 +316,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
       const allowedUnbalancedBusinessesPromise = ledgerUnbalancedBusinessesByCharge(
         parent.charge,
-        injector,
+        context,
       );
 
       const [financialEntities, allowedUnbalancedBusinesses] = await Promise.all([
@@ -342,7 +343,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       const insertLedgerRecordsIfNotExists =
         shouldInsertLedgerInNew == null ? true : shouldInsertLedgerInNew;
       try {
-        const generated = await ledgerGenerationByCharge(charge)(
+        const generated = await ledgerGenerationByCharge(charge, context)(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,

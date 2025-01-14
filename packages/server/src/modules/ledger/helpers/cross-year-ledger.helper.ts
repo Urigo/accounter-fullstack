@@ -1,12 +1,7 @@
-import { Injector } from 'graphql-modules';
 import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import {
   DEFAULT_LOCAL_CURRENCY,
-  EXPENSES_IN_ADVANCE_TAX_CATEGORY,
-  EXPENSES_TO_PAY_TAX_CATEGORY,
-  INCOME_IN_ADVANCE_TAX_CATEGORY,
-  INCOME_TO_COLLECT_TAX_CATEGORY,
   INPUT_VAT_TAX_CATEGORY_ID,
   OUTPUT_VAT_TAX_CATEGORY_ID,
 } from '@shared/constants';
@@ -90,12 +85,28 @@ function getPartialEntryAmounts(
 
 export async function handleCrossYearLedgerEntries(
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   accountingLedgerEntries: LedgerProto[],
 ): Promise<LedgerProto[] | null> {
+  const { injector, adminContext } = context;
+  const {
+    expensesToPayTaxCategoryId,
+    expensesInAdvanceTaxCategoryId,
+    incomeInAdvanceTaxCategoryId,
+    incomeToCollectTaxCategoryId,
+  } = adminContext.crossYear;
   if (accountingLedgerEntries.length === 0) {
     return null;
   }
+  if (
+    !expensesToPayTaxCategoryId ||
+    !expensesInAdvanceTaxCategoryId ||
+    !incomeInAdvanceTaxCategoryId ||
+    !incomeToCollectTaxCategoryId
+  ) {
+    throw new LedgerError('Some cross-year tax categories are not set');
+  }
+
   const spreadRecords = await injector
     .get(ChargeSpreadProvider)
     .getChargeSpreadByChargeIdLoader.load(charge.id);
@@ -145,11 +156,11 @@ export async function handleCrossYearLedgerEntries(
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
       const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
         ? isYearOfRelevancePrior
-          ? EXPENSES_TO_PAY_TAX_CATEGORY
-          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+          ? expensesToPayTaxCategoryId
+          : expensesInAdvanceTaxCategoryId
         : isYearOfRelevancePrior
-          ? INCOME_TO_COLLECT_TAX_CATEGORY
-          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+          ? incomeToCollectTaxCategoryId
+          : incomeInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
@@ -198,11 +209,11 @@ export async function handleCrossYearLedgerEntries(
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
       const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
         ? isYearOfRelevancePrior
-          ? EXPENSES_TO_PAY_TAX_CATEGORY
-          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+          ? expensesToPayTaxCategoryId
+          : expensesInAdvanceTaxCategoryId
         : isYearOfRelevancePrior
-          ? INCOME_TO_COLLECT_TAX_CATEGORY
-          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+          ? incomeToCollectTaxCategoryId
+          : incomeInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }

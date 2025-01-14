@@ -58,7 +58,7 @@ export class CorporateTaxesProvider {
   });
 
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
   ) {}
 

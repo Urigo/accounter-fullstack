@@ -7,7 +7,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
+import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import type {
   Currency,
   Maybe,
@@ -97,7 +97,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const mainTransactionPromise = async () =>
       ledgerEntryFromMainTransaction(
         mainTransaction,
-        injector,
+        context,
         chargeId,
         charge.owner_id,
         charge.business_id ?? undefined,
@@ -278,9 +278,11 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
             id: mainTransaction.id + '|fee', // NOTE: this field is dummy
             creditAccountID1: isCreditorCounterparty
               ? mainAccountId
-              : EXCHANGE_RATE_TAX_CATEGORY_ID,
+              : context.adminContext.general.taxCategories.exchangeRateTaxCategoryId,
             localCurrencyCreditAmount1: amount,
-            debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : mainAccountId,
+            debitAccountID1: isCreditorCounterparty
+              ? context.adminContext.general.taxCategories.exchangeRateTaxCategoryId
+              : mainAccountId,
             localCurrencyDebitAmount1: amount,
             description: 'Exchange ledger record',
             isCreditorCounterparty,
