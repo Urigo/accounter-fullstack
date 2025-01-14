@@ -739,7 +739,7 @@ async function createAdminBusinessContext(
       'tax_category',
       true,
     ),
-    business_trip_expenses_tax_category_id: findId('Business Trip', 'tax_category', true),
+    business_trip_tax_category_id: findId('Business Trip', 'tax_category', true),
     business_trip_tag_id: findId('Business Trip', 'tag', true),
     expenses_to_pay_tax_category_id: findId('Expenses to Pay', 'tax_category'),
     expenses_in_advance_tax_category_id: findId('Expenses in Advance', 'tax_category'),
