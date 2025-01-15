@@ -1,8 +1,9 @@
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { Currency } from '@shared/enums';
 import type { IInsertLedgerRecordsParams } from '../types.js';
 
 export function validateLedgerRecordParams(
   record: IInsertLedgerRecordsParams['ledgerRecords'][number],
+  defaultLocalCurrency: Currency,
 ) {
   if (!record.creditEntity1 && !record.debitEntity1) {
     throw new Error('Ledger record must have at least one main credit or debit entity');
@@ -29,7 +30,7 @@ export function validateLedgerRecordParams(
     throw new Error('Ledger record financial entity must have an amount');
   }
 
-  if (!record.currency || record.currency === DEFAULT_LOCAL_CURRENCY) {
+  if (!record.currency || record.currency === defaultLocalCurrency) {
     const credit1HasForeignAmount = !!record.creditEntity1 && !!record.creditForeignAmount1;
     const credit2HasForeignAmount = !!record.creditEntity2 && !!record.creditForeignAmount2;
     const debit1HasForeignAmount = !!record.debitEntity1 && !!record.debitForeignAmount1;

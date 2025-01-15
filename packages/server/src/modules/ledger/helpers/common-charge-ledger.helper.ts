@@ -1,17 +1,9 @@
-import { Injector } from 'graphql-modules';
 import { validateDocumentVat } from '@modules/documents/helpers/validate-document-vat.helper.js';
 import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
-import {
-  BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  INPUT_VAT_TAX_CATEGORY_ID,
-  INTERNAL_WALLETS_IDS,
-  OUTPUT_VAT_TAX_CATEGORY_ID,
-} from '@shared/constants';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
@@ -23,11 +15,18 @@ import {
 
 export async function ledgerEntryFromDocument(
   document: IGetDocumentsByChargeIdResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   chargeId: string,
   ownerId: string,
   taxCategoryId: string,
 ): Promise<StrictLedgerProto> {
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      authorities: { inputVatTaxCategoryId, outputVatTaxCategoryId },
+    },
+  } = context;
   if (!document.date) {
     throw new LedgerError(`Document serial "${document.serial_number}" is missing the date`);
   }
@@ -65,9 +64,7 @@ export async function ledgerEntryFromDocument(
     const isCreditInvoice = document.type === 'CREDIT_INVOICE';
     amountWithoutVat = amountWithoutVat - vatAmount;
     vatTaxCategory =
-      isCreditorCounterparty === isCreditInvoice
-        ? INPUT_VAT_TAX_CATEGORY_ID
-        : OUTPUT_VAT_TAX_CATEGORY_ID;
+      isCreditorCounterparty === isCreditInvoice ? inputVatTaxCategoryId : outputVatTaxCategoryId;
 
     const vatValue = await injector
       .get(VatProvider)
@@ -83,10 +80,10 @@ export async function ledgerEntryFromDocument(
   }
 
   // handle non-local currencies
-  if (document.currency_code !== DEFAULT_LOCAL_CURRENCY) {
+  if (document.currency_code !== defaultLocalCurrency) {
     const exchangeRate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, document.date);
+      .getExchangeRates(currency, defaultLocalCurrency, document.date);
 
     // Set foreign amounts
     foreignTotalAmount = totalAmount;
@@ -166,12 +163,19 @@ export async function ledgerEntryFromDocument(
 
 export async function ledgerEntryFromMainTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   chargeId: string,
   ownerId: string,
   businessId?: string,
   gotRelevantDocuments = false,
 ): Promise<StrictLedgerProto> {
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      financialAccounts: { internalWalletsIds },
+    },
+  } = context;
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
@@ -181,7 +185,7 @@ export async function ledgerEntryFromMainTransaction(
     !gotRelevantDocuments &&
     transaction.source_reference &&
     businessId &&
-    INTERNAL_WALLETS_IDS.includes(businessId)
+    internalWalletsIds.includes(businessId)
   ) {
     const account = await injector
       .get(FinancialAccountsProvider)
@@ -200,11 +204,11 @@ export async function ledgerEntryFromMainTransaction(
   let amount = Number(transaction.amount);
   let foreignAmount: number | undefined = undefined;
 
-  if (currency !== DEFAULT_LOCAL_CURRENCY) {
+  if (currency !== defaultLocalCurrency) {
     // get exchange rate for currency
     const exchangeRate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+      .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
     foreignAmount = amount;
     // calculate amounts in ILS
@@ -243,7 +247,16 @@ export function ledgerEntryFromBalanceCancellation(
   financialAccountLedgerEntries: StrictLedgerProto[],
   chargeId: string,
   ownerId: string,
+  context: GraphQLModules.Context,
 ): LedgerProto {
+  const {
+    adminContext: {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { balanceCancellationTaxCategoryId },
+      },
+    },
+  } = context;
   const entityBalance = ledgerBalance.get(balanceCancellation.business_id);
   if (!entityBalance) {
     throw new LedgerError(
@@ -270,7 +283,7 @@ export function ledgerEntryFromBalanceCancellation(
   let foreignAmount: number | undefined = undefined;
 
   if (
-    financialAccountEntry.currency !== DEFAULT_LOCAL_CURRENCY &&
+    financialAccountEntry.currency !== defaultLocalCurrency &&
     financialAccountEntry.currencyRate
   ) {
     foreignAmount = financialAccountEntry.currencyRate * amount;
@@ -283,10 +296,10 @@ export function ledgerEntryFromBalanceCancellation(
     invoiceDate: financialAccountEntry.invoiceDate,
     valueDate: financialAccountEntry.valueDate,
     currency: financialAccountEntry.currency,
-    creditAccountID1: isCreditorCounterparty ? BALANCE_CANCELLATION_TAX_CATEGORY_ID : entityId,
+    creditAccountID1: isCreditorCounterparty ? balanceCancellationTaxCategoryId : entityId,
     creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyCreditAmount1: Math.abs(amount),
-    debitAccountID1: isCreditorCounterparty ? entityId : BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+    debitAccountID1: isCreditorCounterparty ? entityId : balanceCancellationTaxCategoryId,
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: balanceCancellation.description ?? undefined,

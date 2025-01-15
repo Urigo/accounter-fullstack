@@ -6,7 +6,6 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
@@ -29,7 +28,11 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       }),
   date: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.date),
   valueDate: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.value_date),
-  amount: async (DbTripExpense, _, { injector }) => {
+  amount: async (
+    DbTripExpense,
+    _,
+    { injector, adminContext: { defaultCryptoConversionFiatCurrency } },
+  ) => {
     if (!DbTripExpense.amount || !DbTripExpense.currency) {
       if (!DbTripExpense.transaction_ids?.length) {
         return null;
@@ -59,7 +62,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
             .get(ExchangeProvider)
             .getExchangeRates(
               transaction.currency as Currency,
-              DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+              defaultCryptoConversionFiatCurrency,
               date,
             );
 
@@ -68,10 +71,10 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         }),
       );
 
-      return formatFinancialAmount(amount, DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY);
+      return formatFinancialAmount(amount, defaultCryptoConversionFiatCurrency);
     }
 
-    if (DbTripExpense.currency === DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY) {
+    if (DbTripExpense.currency === defaultCryptoConversionFiatCurrency) {
       return formatFinancialAmount(DbTripExpense.amount, DbTripExpense.currency);
     }
 
@@ -85,12 +88,12 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         .get(ExchangeProvider)
         .getExchangeRates(
           DbTripExpense.currency as Currency,
-          DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+          defaultCryptoConversionFiatCurrency,
           date,
         );
       return formatFinancialAmount(
         Number(DbTripExpense.amount) * exchangeRate,
-        DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+        defaultCryptoConversionFiatCurrency,
       );
     }
 
@@ -131,13 +134,13 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         const { currency, valueDate } = validateTransactionBasicVariables(transaction);
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, valueDate);
+          .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, valueDate);
         const amount = Number(match.amount || transaction.amount);
         totalAmount += amount * exchangeRate;
       }),
     );
 
-    return formatFinancialAmount(totalAmount, DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY);
+    return formatFinancialAmount(totalAmount, defaultCryptoConversionFiatCurrency);
   },
   employee: (DbTripExpense, _, { injector }) =>
     DbTripExpense.employee_business_id

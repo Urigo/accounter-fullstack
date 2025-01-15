@@ -1,13 +1,7 @@
+import { GraphQLError } from 'graphql';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateDepreciationAmount } from '@modules/reports/helpers/tax.helper.js';
-import {
-  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-  MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-  RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -19,7 +13,18 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   try {
-    const { injector } = context;
+    const {
+      injector,
+      adminContext: {
+        defaultLocalCurrency,
+        depreciation: {
+          accumulatedDepreciationTaxCategoryId,
+          rndDepreciationExpensesTaxCategoryId,
+          gnmDepreciationExpensesTaxCategoryId,
+          marketingDepreciationExpensesTaxCategoryId,
+        },
+      },
+    } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -69,7 +74,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
         id: EMPTY_UUID,
         invoiceDate: new Date(year, 11, 31),
         valueDate: new Date(year, 11, 31),
-        currency: DEFAULT_LOCAL_CURRENCY,
+        currency: defaultLocalCurrency,
         isCreditorCounterparty: true,
         creditAccountID1: creditor,
         debitAccountID1: debtor,
@@ -84,32 +89,45 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       ledgerEntries.push(ledgerEntry);
     }
 
+    if (!accumulatedDepreciationTaxCategoryId) {
+      throw new GraphQLError('Accumulated depreciation tax category is not defined');
+    }
+    if (!rndDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('R&D depreciation expenses tax category is not defined');
+    }
+    if (!gnmDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('G&M depreciation expenses tax category is not defined');
+    }
+    if (!marketingDepreciationExpensesTaxCategoryId) {
+      throw new GraphQLError('Marketing depreciation expenses tax category is not defined');
+    }
+
     addLedgerEntry(
       rndDepreciationYearlyAmount,
       'R&D',
       undefined,
-      RND_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      rndDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       gnmDepreciationYearlyAmount,
       'G&M',
       undefined,
-      GNM_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      gnmDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       marketingDepreciationYearlyAmount,
       'Marketing',
       undefined,
-      MARKETING_DEPRECIATION_EXPENSES_TAX_CATEGORY_ID,
+      marketingDepreciationExpensesTaxCategoryId,
     );
     addLedgerEntry(
       totalDepreciationYearlyAmount,
       'Accumulated',
-      ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
+      accumulatedDepreciationTaxCategoryId,
     );
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, injector);
+      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
     }
 
     return {

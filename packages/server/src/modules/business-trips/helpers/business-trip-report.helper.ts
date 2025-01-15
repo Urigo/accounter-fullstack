@@ -1,8 +1,6 @@
-import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   Currency,
   type BusinessTripSummaryCategories,
@@ -20,10 +18,7 @@ import type {
 } from '../types.js';
 
 export type SummaryCategoryData = Partial<
-  Record<
-    typeof DEFAULT_LOCAL_CURRENCY | typeof DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
-    { total: number; taxable: number; maxTaxable: number }
-  >
+  Record<Currency, { total: number; taxable: number; maxTaxable: number }>
 >;
 export type SummaryData = Record<BusinessTripSummaryCategories, SummaryCategoryData>;
 export type AttendeeInfo = {
@@ -104,21 +99,25 @@ export function getExpenseCoreData(
 }
 
 async function getDefaultCurrenciesAmountsAndExchangeRate(
-  injector: Injector,
+  context: GraphQLModules.Context,
   currency: Currency,
   amount: number,
   date: Date,
 ) {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency, defaultCryptoConversionFiatCurrency },
+  } = context;
   const exchangeRatePromise =
-    currency === DEFAULT_LOCAL_CURRENCY
+    currency === defaultLocalCurrency
       ? Promise.resolve(1)
-      : injector.get(ExchangeProvider).getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, date);
+      : injector.get(ExchangeProvider).getExchangeRates(currency, defaultLocalCurrency, date);
   const usdRatePromise =
-    currency === DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY
+    currency === defaultCryptoConversionFiatCurrency
       ? Promise.resolve(1)
       : injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, date);
+          .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, date);
   const [localRate, foreignRate] = await Promise.all([exchangeRatePromise, usdRatePromise]);
   const localAmount = localRate * amount;
   const foreignAmount = foreignRate * amount;
@@ -126,14 +125,15 @@ async function getDefaultCurrenciesAmountsAndExchangeRate(
 }
 
 export async function getExpenseAmountsData(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpense: IGetBusinessTripsExpensesByBusinessTripIdsResult,
 ) {
+  const { injector } = context;
   try {
     const { amount, currency, date } = getExpenseCoreData(businessTripExpense);
 
     const { localAmount, foreignAmount } = await getDefaultCurrenciesAmountsAndExchangeRate(
-      injector,
+      context,
       currency,
       amount,
       date,
@@ -179,7 +179,7 @@ export async function getExpenseAmountsData(
         }
 
         const { localAmount: transactionLocalAmount, foreignAmount: transactionForeignAmount } =
-          await getDefaultCurrenciesAmountsAndExchangeRate(injector, currency, amount, date);
+          await getDefaultCurrenciesAmountsAndExchangeRate(context, currency, amount, date);
 
         localAmount += transactionLocalAmount;
         foreignAmount += transactionForeignAmount;
@@ -191,7 +191,7 @@ export async function getExpenseAmountsData(
 }
 
 export async function flightExpenseDataCollector(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpense: IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
 ): Promise<void> {
@@ -199,7 +199,7 @@ export async function flightExpenseDataCollector(
   partialSummaryData['FLIGHT'] ??= {};
   const category = partialSummaryData['FLIGHT'] as SummaryCategoryData;
 
-  const { localAmount, foreignAmount } = await getExpenseAmountsData(injector, businessTripExpense);
+  const { localAmount, foreignAmount } = await getExpenseAmountsData(context, businessTripExpense);
 
   // calculate taxable amount
   const fullyTaxableClasses: flight_class[] = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'];
@@ -221,14 +221,15 @@ export async function flightExpenseDataCollector(
   const foreignTaxable = foreignAmount;
 
   // update amounts
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_LOCAL_CURRENCY].total += localAmount;
-  category[DEFAULT_LOCAL_CURRENCY].taxable += localTaxable;
-  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += localTaxable;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total += foreignAmount;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += foreignTaxable;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += foreignTaxable;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
+  category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultLocalCurrency].total += localAmount;
+  category[defaultLocalCurrency].taxable += localTaxable;
+  category[defaultLocalCurrency].maxTaxable += localTaxable;
+  category[defaultCryptoConversionFiatCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultCryptoConversionFiatCurrency].total += foreignAmount;
+  category[defaultCryptoConversionFiatCurrency].taxable += foreignTaxable;
+  category[defaultCryptoConversionFiatCurrency].maxTaxable += foreignTaxable;
 
   return void 0;
 }
@@ -236,15 +237,16 @@ export async function flightExpenseDataCollector(
 export async function employeeAccommodationDataByTrip() {}
 
 export async function otherExpensesDataCollector(
-  injector: Injector,
+  context: GraphQLModules.Context,
   otherExpenses: IGetBusinessTripsExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
 ): Promise<string | void> {
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
   // populate category
   partialSummaryData['OTHER'] ??= {};
   const category = partialSummaryData['OTHER'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultCryptoConversionFiatCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   if (otherExpenses.length === 0) {
     return void 0;
@@ -253,16 +255,16 @@ export async function otherExpensesDataCollector(
   await Promise.all(
     otherExpenses.map(async businessTripExpense => {
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        injector,
+        context,
         businessTripExpense,
       );
 
-      category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
-      category[DEFAULT_LOCAL_CURRENCY]!.taxable += localAmount;
-      category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += localAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.taxable += foreignAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += foreignAmount;
+      category[defaultLocalCurrency]!.total += localAmount;
+      category[defaultLocalCurrency]!.taxable += localAmount;
+      category[defaultLocalCurrency]!.maxTaxable += localAmount;
+      category[defaultCryptoConversionFiatCurrency]!.total += foreignAmount;
+      category[defaultCryptoConversionFiatCurrency]!.taxable += foreignAmount;
+      category[defaultCryptoConversionFiatCurrency]!.maxTaxable += foreignAmount;
     }),
   );
 
@@ -276,17 +278,18 @@ type ReportMetaData = {
 };
 
 export async function travelAndSubsistenceExpensesDataCollector(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
   { destinationCode, unAccommodatedDays, attendees }: ReportMetaData,
 ): Promise<void> {
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
   // populate category
   partialSummaryData['TRAVEL_AND_SUBSISTENCE'] ??= {};
   const category = partialSummaryData['TRAVEL_AND_SUBSISTENCE'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultCryptoConversionFiatCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   const totalBusinessDays = Array.from(attendees.values()).reduce(
     (acc, attendee) => acc + attendee.daysCount,
@@ -300,51 +303,51 @@ export async function travelAndSubsistenceExpensesDataCollector(
     taxVariables,
   );
 
-  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += 0; // TODO: calculate
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += maxTaxableUsd;
+  category[defaultLocalCurrency].maxTaxable += 0; // TODO: calculate
+  category[defaultCryptoConversionFiatCurrency].maxTaxable += maxTaxableUsd;
 
   // set actual expense amounts
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense => {
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        injector,
+        context,
         businessTripExpense,
       );
 
-      category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
+      category[defaultLocalCurrency]!.total += localAmount;
+      category[defaultCryptoConversionFiatCurrency]!.total += foreignAmount;
     }),
   );
 
   // set taxable amounts
   const taxableAmount = Math.max(
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
+    category[defaultCryptoConversionFiatCurrency].total,
     maxTaxableUsd,
   );
   const taxablePortion =
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total === 0
+    category[defaultCryptoConversionFiatCurrency].total === 0
       ? 0
-      : taxableAmount / category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total;
+      : taxableAmount / category[defaultCryptoConversionFiatCurrency].total;
 
-  category[DEFAULT_LOCAL_CURRENCY].taxable +=
-    category[DEFAULT_LOCAL_CURRENCY].total * taxablePortion;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += taxableAmount;
+  category[defaultLocalCurrency].taxable += category[defaultLocalCurrency].total * taxablePortion;
+  category[defaultCryptoConversionFiatCurrency].taxable += taxableAmount;
 
   return void 0;
 }
 
 export async function carRentalExpensesDataCollector(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpenses: IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
   destinationCode: string | null,
 ): Promise<void> {
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
   // populate category
   partialSummaryData['CAR_RENTAL'] ??= {};
   const category = partialSummaryData['CAR_RENTAL'] as SummaryCategoryData;
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultCryptoConversionFiatCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   let rentalDays = 0;
 
@@ -356,12 +359,12 @@ export async function carRentalExpensesDataCollector(
       }
 
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        injector,
+        context,
         businessTripExpense,
       );
 
-      category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
+      category[defaultLocalCurrency]!.total += localAmount;
+      category[defaultCryptoConversionFiatCurrency]!.total += foreignAmount;
     }),
   );
 
@@ -377,22 +380,21 @@ export async function carRentalExpensesDataCollector(
 
   const maxTaxableUsd = maxDailyRentalAmount * rentalDays * increasedLimitDestination * -1;
 
-  category[DEFAULT_LOCAL_CURRENCY].maxTaxable += 0; // TODO: calculate
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].maxTaxable += maxTaxableUsd;
+  category[defaultLocalCurrency].maxTaxable += 0; // TODO: calculate
+  category[defaultCryptoConversionFiatCurrency].maxTaxable += maxTaxableUsd;
 
   // set taxable amounts
   const taxableAmount = Math.max(
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total,
+    category[defaultCryptoConversionFiatCurrency].total,
     maxTaxableUsd,
   );
   const taxablePortion =
-    category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total === 0
+    category[defaultCryptoConversionFiatCurrency].total === 0
       ? 0
-      : taxableAmount / category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].total;
+      : taxableAmount / category[defaultCryptoConversionFiatCurrency].total;
 
-  category[DEFAULT_LOCAL_CURRENCY].taxable +=
-    category[DEFAULT_LOCAL_CURRENCY].total * taxablePortion;
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY].taxable += taxableAmount;
+  category[defaultLocalCurrency].taxable += category[defaultLocalCurrency].total * taxablePortion;
+  category[defaultCryptoConversionFiatCurrency].taxable += taxableAmount;
 
   return void 0;
 }

@@ -4,7 +4,6 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
 import type { CornJobsModule } from '../types.js';
 
@@ -13,10 +12,14 @@ const ACCEPTABLE_DATE_DIFF_MILLISECONDS = 86_400_000; // 1 days
 
 export const cornJobsResolvers: CornJobsModule.Resolvers = {
   Mutation: {
-    mergeChargesByTransactionReference: async (_, __, { injector }) => {
+    mergeChargesByTransactionReference: async (
+      _,
+      __,
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       try {
         const candidates = (await injector.get(CornJobsProvider).getReferenceMergeCandidates({
-          ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+          ownerId: defaultAdminBusinessId,
         })) as IGetTransactionsByChargeIdsResult[];
 
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
@@ -164,11 +167,15 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         };
       }
     },
-    flagForeignFeeTransactions: async (_, __, { injector }) => {
+    flagForeignFeeTransactions: async (
+      _,
+      __,
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       try {
         const updatedTransactionsId = await injector
           .get(CornJobsProvider)
-          .flagForeignFeeTransactions({ ownerId: DEFAULT_FINANCIAL_ENTITY_ID });
+          .flagForeignFeeTransactions({ ownerId: defaultAdminBusinessId });
         const res = await injector
           .get(TransactionsProvider)
           .getTransactionByIdLoader.loadMany(updatedTransactionsId.map(({ id }) => id));

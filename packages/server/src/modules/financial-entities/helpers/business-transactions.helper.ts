@@ -1,5 +1,4 @@
 import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { BusinessTransactionProto, RawBusinessTransactionsSum } from '@shared/types';
 
@@ -10,6 +9,7 @@ export function handleBusinessLedgerRecord(
   isCredit: boolean,
   stringifiedAmount: string | null,
   stringifiedForeignAmount: string | null,
+  defaultLocalCurrency: Currency,
 ) {
   const amount = stringifiedAmount ? parseFloat(stringifiedAmount) : 0;
   const foreignAmount = stringifiedForeignAmount ? parseFloat(stringifiedForeignAmount) : 0;
@@ -22,11 +22,11 @@ export function handleBusinessLedgerRecord(
   };
 
   const record = rawRes[businessId];
-  record[DEFAULT_LOCAL_CURRENCY].credit += isCredit ? amount : 0;
-  record[DEFAULT_LOCAL_CURRENCY].debit += isCredit ? 0 : amount;
-  record[DEFAULT_LOCAL_CURRENCY].total += (isCredit ? 1 : -1) * amount;
+  record[defaultLocalCurrency].credit += isCredit ? amount : 0;
+  record[defaultLocalCurrency].debit += isCredit ? 0 : amount;
+  record[defaultLocalCurrency].total += (isCredit ? 1 : -1) * amount;
 
-  if (currency !== DEFAULT_LOCAL_CURRENCY) {
+  if (currency !== defaultLocalCurrency) {
     const foreignInfo = record[currency];
 
     foreignInfo.credit += isCredit ? foreignAmount : 0;

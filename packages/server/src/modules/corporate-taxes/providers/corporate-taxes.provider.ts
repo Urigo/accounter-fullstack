@@ -56,23 +56,26 @@ export class CorporateTaxesProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 5,
   });
+  adminBusinessId: string;
 
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
-  ) {}
+  ) {
+    this.adminBusinessId = this.context.currentUser.userId;
+  }
 
   public getAllCorporateTaxes() {
     const cached = this.cache.get<IGetCorporateTaxesByCorporateIdsResult[]>(
-      `corporate-taxes-${this.context.currentUser.userId}`,
+      `corporate-taxes-${this.adminBusinessId}`,
     );
     if (cached) {
       return Promise.resolve(cached);
     }
     return getCorporateTaxesByCorporateIds
-      .run({ corporateIds: [this.context.currentUser.userId] }, this.dbProvider)
+      .run({ corporateIds: [this.adminBusinessId] }, this.dbProvider)
       .then(res => {
-        this.cache.set(`corporate-taxes-${this.context.currentUser.userId}`, res);
+        this.cache.set(`corporate-taxes-${this.adminBusinessId}`, res);
         return res;
       });
   }
@@ -93,10 +96,10 @@ export class CorporateTaxesProvider {
   public getCorporateTaxesByDateLoader = new DataLoader(
     (taxRates: readonly TimelessDateString[]) =>
       this.batchCorporateTaxesByDates(
-        taxRates.map(date => ({ date, corporateId: this.context.currentUser.userId })),
+        taxRates.map(date => ({ date, corporateId: this.adminBusinessId })),
       ),
     {
-      cacheKeyFn: date => `corporate-tax-${this.context.currentUser.userId}-${date}`,
+      cacheKeyFn: date => `corporate-tax-${this.adminBusinessId}-${date}`,
       cacheMap: this.cache,
     },
   );

@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { SalariesProvider } from '../providers/salaries.provider.js';
@@ -153,11 +152,11 @@ export const salariesResolvers: SalariesModule.Resolvers &
     },
   },
   Salary: {
-    directAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.direct_payment_amount, DEFAULT_LOCAL_CURRENCY),
-    baseAmount: DbSalary =>
+    directAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.direct_payment_amount, defaultLocalCurrency),
+    baseAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
       DbSalary.base_salary
-        ? formatFinancialAmount(DbSalary.base_salary, DEFAULT_LOCAL_CURRENCY)
+        ? formatFinancialAmount(DbSalary.base_salary, defaultLocalCurrency)
         : null,
     employee: (DbSalary, _, { injector }) =>
       injector
@@ -176,14 +175,14 @@ export const salariesResolvers: SalariesModule.Resolvers &
             .getBusinessByIdLoader.load(DbSalary.pension_fund_id)
             .then(res => res ?? null)
         : null,
-    pensionEmployeeAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.pension_employee_amount, DEFAULT_LOCAL_CURRENCY),
+    pensionEmployeeAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.pension_employee_amount, defaultLocalCurrency),
     pensionEmployeePercentage: DbSalary => DbSalary.pension_employee_percentage,
-    pensionEmployerAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.pension_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    pensionEmployerAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.pension_employer_amount, defaultLocalCurrency),
     pensionEmployerPercentage: DbSalary => DbSalary.pension_employer_percentage,
-    compensationsAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.compensations_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    compensationsAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.compensations_employer_amount, defaultLocalCurrency),
     compensationsPercentage: DbSalary => DbSalary.compensations_employer_percentage,
     trainingFund: (DbSalary, _, { injector }) =>
       DbSalary.training_fund_id
@@ -192,27 +191,32 @@ export const salariesResolvers: SalariesModule.Resolvers &
             .getBusinessByIdLoader.load(DbSalary.training_fund_id)
             .then(res => res ?? null)
         : null,
-    trainingFundEmployeeAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.training_fund_employee_amount, DEFAULT_LOCAL_CURRENCY),
+    trainingFundEmployeeAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.training_fund_employee_amount, defaultLocalCurrency),
     trainingFundEmployeePercentage: DbSalary => DbSalary.training_fund_employee_percentage,
-    trainingFundEmployerAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.training_fund_employer_amount, DEFAULT_LOCAL_CURRENCY),
+    trainingFundEmployerAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.training_fund_employer_amount, defaultLocalCurrency),
     trainingFundEmployerPercentage: DbSalary => DbSalary.training_fund_employer_percentage,
-    socialSecurityEmployeeAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.social_security_amount_employee, DEFAULT_LOCAL_CURRENCY),
-    socialSecurityEmployerAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.social_security_amount_employer, DEFAULT_LOCAL_CURRENCY),
-    incomeTaxAmount: DbSalary => formatFinancialAmount(DbSalary.tax_amount, DEFAULT_LOCAL_CURRENCY),
-    healthInsuranceAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.health_payment_amount, DEFAULT_LOCAL_CURRENCY),
-    globalAdditionalHoursAmount: DbSalary =>
-      formatFinancialAmount(DbSalary.global_additional_hours, DEFAULT_LOCAL_CURRENCY),
-    bonus: DbSalary => formatFinancialAmount(DbSalary.bonus, DEFAULT_LOCAL_CURRENCY),
-    gift: DbSalary => formatFinancialAmount(DbSalary.gift, DEFAULT_LOCAL_CURRENCY),
-    recovery: DbSalary => formatFinancialAmount(DbSalary.recovery, DEFAULT_LOCAL_CURRENCY),
-    vacationTakeout: DbSalary =>
-      formatFinancialAmount(DbSalary.vacation_takeout, DEFAULT_LOCAL_CURRENCY),
-    notionalExpense: DbSalary => formatFinancialAmount(DbSalary.zkufot, DEFAULT_LOCAL_CURRENCY),
+    socialSecurityEmployeeAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.social_security_amount_employee, defaultLocalCurrency),
+    socialSecurityEmployerAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.social_security_amount_employer, defaultLocalCurrency),
+    incomeTaxAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.tax_amount, defaultLocalCurrency),
+    healthInsuranceAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.health_payment_amount, defaultLocalCurrency),
+    globalAdditionalHoursAmount: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.global_additional_hours, defaultLocalCurrency),
+    bonus: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.bonus, defaultLocalCurrency),
+    gift: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.gift, defaultLocalCurrency),
+    recovery: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.recovery, defaultLocalCurrency),
+    vacationTakeout: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.vacation_takeout, defaultLocalCurrency),
+    notionalExpense: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.zkufot, defaultLocalCurrency),
     vacationDays: DbSalary => ({
       added: DbSalary.added_vacation_days ? Number(DbSalary.added_vacation_days) : null,
       balance: DbSalary.vacation_days_balance ? Number(DbSalary.vacation_days_balance) : null,

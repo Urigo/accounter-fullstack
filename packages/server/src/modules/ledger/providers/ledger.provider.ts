@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import type { Currency } from '@shared/enums';
 import { getCacheInstance } from '@shared/helpers';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
@@ -201,17 +201,22 @@ export class LedgerProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 5,
   });
+  adminBusinessId: string;
+  localCurrency: Currency;
 
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
-  ) {}
+  ) {
+    this.adminBusinessId = this.context.adminContext.defaultAdminBusinessId;
+    this.localCurrency = this.context.adminContext.defaultLocalCurrency;
+  }
 
   private async batchLedgerRecordsByChargesIds(ids: readonly string[]) {
     const ledgerRecords = await getLedgerRecordsByChargesIds.run(
       {
         chargeIds: ids,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: this.adminBusinessId,
       },
       this.dbProvider,
     );
@@ -230,7 +235,7 @@ export class LedgerProvider {
     const ledgerRecords = await getLedgerRecordsByFinancialEntityIds.run(
       {
         financialEntityIds: ids,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: this.adminBusinessId,
       },
       this.dbProvider,
     );
@@ -256,7 +261,7 @@ export class LedgerProvider {
 
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
     return getLedgerRecordsByDates.run(
-      { ...params, ownerId: params.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID },
+      { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
       this.dbProvider,
     );
   }
@@ -264,7 +269,7 @@ export class LedgerProvider {
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
     this.clearCache();
     return updateLedgerRecord.run(
-      { ...params, ownerId: params.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID },
+      { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
       this.dbProvider,
     );
   }
@@ -273,7 +278,7 @@ export class LedgerProvider {
     if (params.ledgerRecords.length === 0) return [];
 
     this.clearCache();
-    params.ledgerRecords.map(validateLedgerRecordParams);
+    params.ledgerRecords.map(record => validateLedgerRecordParams(record, this.localCurrency));
     return insertLedgerRecords.run(params, this.dbProvider);
   }
 
@@ -282,7 +287,7 @@ export class LedgerProvider {
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: this.adminBusinessId,
       },
       this.dbProvider,
     );
@@ -299,7 +304,7 @@ export class LedgerProvider {
     await deleteLedgerRecordsByChargeIds.run(
       {
         chargeIds,
-        ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+        ownerId: this.adminBusinessId,
       },
       this.dbProvider,
     );

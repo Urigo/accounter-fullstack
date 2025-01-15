@@ -203,7 +203,11 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
         });
     },
     chargeId: dbDepreciationRecord => dbDepreciationRecord.charge_id,
-    amount: async (dbDepreciationRecord, _, { injector }) => {
+    amount: async (
+      dbDepreciationRecord,
+      _,
+      { injector, adminContext: { defaultLocalCurrency } },
+    ) => {
       if (dbDepreciationRecord.amount && dbDepreciationRecord.currency) {
         return formatFinancialAmount(dbDepreciationRecord.amount, dbDepreciationRecord.currency);
       }
@@ -213,7 +217,7 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       if (!charge) {
         throw new GraphQLError(`Charge with id ${dbDepreciationRecord.charge_id} not found`);
       }
-      const amount = calculateTotalAmount(charge);
+      const amount = calculateTotalAmount(charge, defaultLocalCurrency);
       if (!amount) {
         throw new GraphQLError(
           `Error calculating amount for depreciation record id ${dbDepreciationRecord.id}`,

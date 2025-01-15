@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
@@ -19,7 +18,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   Query: {
     businessTransactionsSumFromLedgerRecords,
     businessTransactionsFromLedgerRecords: async (_, { filters }, context, _info) => {
-      const injector = context.injector;
+      const { injector } = context;
       const { ownerIds, businessIDs, fromDate, toDate, type } = filters || {};
 
       const shouldFetchAllFinancialEntities = !businessIDs?.length && !!type;
@@ -185,18 +184,18 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
           return res;
         }),
-    credit: rawSum =>
-      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].credit, DEFAULT_LOCAL_CURRENCY),
-    debit: rawSum =>
-      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].debit, DEFAULT_LOCAL_CURRENCY),
-    total: rawSum =>
-      formatFinancialAmount(rawSum[DEFAULT_LOCAL_CURRENCY].total, DEFAULT_LOCAL_CURRENCY),
-    foreignCurrenciesSum: rawSum => {
+    credit: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(rawSum[defaultLocalCurrency].credit, defaultLocalCurrency),
+    debit: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(rawSum[defaultLocalCurrency].debit, defaultLocalCurrency),
+    total: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(rawSum[defaultLocalCurrency].total, defaultLocalCurrency),
+    foreignCurrenciesSum: (rawSum, _, { adminContext: { defaultLocalCurrency } }) => {
       const currencies = [];
       for (const key in rawSum) {
         if (!Object.values(Currency).includes(key as Currency)) continue;
         const currency = key as Currency;
-        if (currency === DEFAULT_LOCAL_CURRENCY) continue;
+        if (currency === defaultLocalCurrency) continue;
         const currencySum = rawSum[currency];
         if (currencySum.credit || currencySum.debit) {
           currencies.push({
@@ -218,12 +217,12 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
   },
   BusinessTransaction: {
     __isTypeOf: parent => !!parent.businessId,
-    amount: parent =>
+    amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
       formatFinancialAmount(
         Number.isNaN(parent.foreignAmount)
           ? parent.amount
           : Number(parent.amount) * (parent.isCredit ? 1 : -1),
-        Currency.Ils,
+        defaultLocalCurrency,
       ),
     business: (parent, _, { injector }) =>
       injector

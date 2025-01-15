@@ -1,6 +1,5 @@
 import { differenceInYears, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import { RecoveryProvider } from '@modules/salaries/providers/recovery.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
@@ -8,12 +7,7 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import {
-  AVERAGE_MONTHLY_WORK_HOURS,
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID,
-  RECOVERY_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { AVERAGE_MONTHLY_WORK_HOURS } from '@shared/constants';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function recoveryDaysPerYearsOfExperience(years: number) {
@@ -75,13 +69,30 @@ function calculateMonthPart(
   return [1, 0];
 }
 
-export async function calculateRecoveryReserveAmount(injector: Injector, year: number) {
+export async function calculateRecoveryReserveAmount(
+  context: GraphQLModules.Context,
+  year: number,
+) {
+  const {
+    injector,
+    adminContext: {
+      defaultAdminBusinessId,
+      salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
+    },
+  } = context;
+  if (!recoveryReserveExpensesTaxCategoryId) {
+    throw new GraphQLError('Recovery reserve expenses tax category is not set');
+  }
+  if (!recoveryReserveTaxCategoryId) {
+    throw new GraphQLError('Recovery reserve tax category is not set');
+  }
+
   const salariesPromise = injector
     .get(SalariesProvider)
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(DEFAULT_FINANCIAL_ENTITY_ID);
+    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
   const recoveryDataPromise = injector
     .get(RecoveryProvider)
     .getRecoveryData()
@@ -94,7 +105,7 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
     });
   const recoveryLedgerRecordsPromise = injector
     .get(LedgerProvider)
-    .getLedgerRecordsByFinancialEntityIdLoader.load(RECOVERY_RESERVE_TAX_CATEGORY_ID);
+    .getLedgerRecordsByFinancialEntityIdLoader.load(recoveryReserveTaxCategoryId);
   const [salaries, employees, recoveryDayValueByYear, recoveryLedgerRecords] = await Promise.all([
     salariesPromise,
     employeesPromise,
@@ -232,8 +243,8 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
 
   const prevRecoveryReserveAmount = recoveryLedgerRecords.reduce((acc, record) => {
     if (
-      record.credit_entity1 !== RECOVERY_RESERVE_TAX_CATEGORY_ID ||
-      record.debit_entity1 !== RECOVERY_RESERVE_EXPENSES_TAX_CATEGORY_ID ||
+      record.credit_entity1 !== recoveryReserveTaxCategoryId ||
+      record.debit_entity1 !== recoveryReserveExpensesTaxCategoryId ||
       record.value_date.getTime() >= new Date(year, 11, 31).getTime()
     ) {
       return acc;

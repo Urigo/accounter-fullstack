@@ -6,13 +6,6 @@ import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanc
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  INPUT_VAT_TAX_CATEGORY_ID,
-  OUTPUT_VAT_TAX_CATEGORY_ID,
-  VAT_BUSINESS_ID,
-} from '@shared/constants';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString, getMonthFromDescription } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -33,7 +26,16 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, __) => {
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      authorities: { vatBusinessId, inputVatTaxCategoryId, outputVatTaxCategoryId },
+      general: {
+        taxCategories: { balanceCancellationTaxCategoryId },
+      },
+    },
+  } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -99,7 +101,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
       try {
         const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
-        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (transaction.currency !== defaultLocalCurrency) {
           throw new LedgerError(
             `Monthly VAT currency supposed to be local, got ${transaction.currency}`,
           );
@@ -107,13 +109,13 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
         // preparations for core ledger entries
         let exchangeRate: number | undefined = undefined;
-        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (transaction.currency !== defaultLocalCurrency) {
           // get exchange rate for currency
           exchangeRate = await injector
             .get(ExchangeProvider)
             .getExchangeRates(
               transaction.currency,
-              DEFAULT_LOCAL_CURRENCY,
+              defaultLocalCurrency,
               transaction.debit_timestamp,
             );
         }
@@ -129,17 +131,17 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
           ...partialEntry,
           ...(partialEntry.isCreditorCounterparty
             ? {
-                creditAccountID1: VAT_BUSINESS_ID,
+                creditAccountID1: vatBusinessId,
                 debitAccountID1: financialAccountTaxCategoryId,
               }
             : {
                 creditAccountID1: financialAccountTaxCategoryId,
-                debitAccountID1: VAT_BUSINESS_ID,
+                debitAccountID1: vatBusinessId,
               }),
         };
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -149,11 +151,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     });
 
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         miscExpensesLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
       });
     });
 
@@ -174,13 +176,13 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       accountingLedgerMaterials.push(
         {
           amount: roundedIncomeVat,
-          taxCategoryId: INPUT_VAT_TAX_CATEGORY_ID,
-          counterpartyId: VAT_BUSINESS_ID,
+          taxCategoryId: inputVatTaxCategoryId,
+          counterpartyId: vatBusinessId,
         },
         {
           amount: roundedExpensesVat * -1,
-          taxCategoryId: OUTPUT_VAT_TAX_CATEGORY_ID,
-          counterpartyId: VAT_BUSINESS_ID,
+          taxCategoryId: outputVatTaxCategoryId,
+          counterpartyId: vatBusinessId,
         },
       );
 
@@ -188,8 +190,8 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       if (roundedIncomeVatDiff) {
         accountingLedgerMaterials.push({
           amount: roundedIncomeVatDiff * -1,
-          taxCategoryId: INPUT_VAT_TAX_CATEGORY_ID,
-          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+          taxCategoryId: inputVatTaxCategoryId,
+          counterpartyId: balanceCancellationTaxCategoryId,
         });
       }
 
@@ -197,8 +199,8 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       if (roundedExpensesVatDiff) {
         accountingLedgerMaterials.push({
           amount: roundedExpensesVatDiff,
-          taxCategoryId: OUTPUT_VAT_TAX_CATEGORY_ID,
-          counterpartyId: BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+          taxCategoryId: outputVatTaxCategoryId,
+          counterpartyId: balanceCancellationTaxCategoryId,
         });
       }
 
@@ -213,13 +215,13 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
           id: chargeId,
           invoiceDate: ledgerDate,
           valueDate: ledgerDate,
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: defaultLocalCurrency,
           creditAccountID1: isCreditorCounterparty ? counterpartyId : taxCategoryId,
           localCurrencyCreditAmount1: Math.abs(amount),
           debitAccountID1: isCreditorCounterparty ? taxCategoryId : counterpartyId,
           localCurrencyDebitAmount1: Math.abs(amount),
           description:
-            counterpartyId === BALANCE_CANCELLATION_TAX_CATEGORY_ID
+            counterpartyId === balanceCancellationTaxCategoryId
               ? 'Balance cancellation'
               : `VAT command ${vatDate}`,
           isCreditorCounterparty,
@@ -228,7 +230,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         };
 
         accountingLedgerEntries.push(ledgerProto);
-        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance, context);
       });
     }
 
@@ -237,7 +239,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     );
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
@@ -250,7 +252,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     return {

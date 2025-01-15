@@ -1,4 +1,3 @@
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
@@ -21,6 +20,7 @@ export function conversionFeeCalculator(
   base: LedgerProto,
   quote: LedgerProto,
   officialRate: number,
+  defaultLocalCurrency: Currency,
   localCurrencyRate?: number,
 ): { localAmount: number; foreignAmount?: number; currency: Currency } {
   if (base.currency === quote.currency) {
@@ -29,12 +29,12 @@ export function conversionFeeCalculator(
   const eventRate = getConversionBankRate(base, quote);
 
   const baseAmount =
-    base.currency === DEFAULT_LOCAL_CURRENCY
+    base.currency === defaultLocalCurrency
       ? base.localCurrencyCreditAmount1
       : (base.creditAmount1 as number);
 
   const quoteAmount =
-    quote.currency === DEFAULT_LOCAL_CURRENCY
+    quote.currency === defaultLocalCurrency
       ? quote.localCurrencyCreditAmount1
       : (quote.creditAmount1 as number);
   const baseAmountConvertedByEventRate = baseAmount / eventRate;
@@ -48,11 +48,11 @@ export function conversionFeeCalculator(
 
   const feeAmountByQuoteCurrency = quoteAmount - baseAmountConvertedByOfficialRate;
 
-  if (quote.currency === DEFAULT_LOCAL_CURRENCY) {
-    return { localAmount: feeAmountByQuoteCurrency, currency: DEFAULT_LOCAL_CURRENCY };
+  if (quote.currency === defaultLocalCurrency) {
+    return { localAmount: feeAmountByQuoteCurrency, currency: defaultLocalCurrency };
   }
   if (!localCurrencyRate) {
-    if (base.currency === DEFAULT_LOCAL_CURRENCY) {
+    if (base.currency === defaultLocalCurrency) {
       localCurrencyRate = 1 / officialRate;
     } else {
       throw new LedgerError('Conversion records are missing local currency rate');

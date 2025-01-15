@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
@@ -195,11 +195,15 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
     type: DbTransaction => (Number(DbTransaction.amount) > 0 ? 'QUOTE' : 'BASE'),
     bankRate: DbTransaction => DbTransaction.currency_rate,
-    officialRateToLocal: async (DbTransaction, _, { injector }) => {
+    officialRateToLocal: async (
+      DbTransaction,
+      _,
+      { injector, adminContext: { defaultLocalCurrency } },
+    ) => {
       return injector
         .get(ExchangeProvider)
         .getExchangeRates(
-          DEFAULT_LOCAL_CURRENCY,
+          defaultLocalCurrency,
           formatCurrency(DbTransaction.currency),
           DbTransaction.event_date,
         );

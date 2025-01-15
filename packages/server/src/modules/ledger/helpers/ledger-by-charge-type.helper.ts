@@ -1,4 +1,3 @@
-import type { Injector } from 'graphql-modules';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
@@ -13,8 +12,11 @@ import { generateLedgerRecordsForInternalTransfer } from '../resolvers/ledger-ge
 import { generateLedgerRecordsForMonthlyVat } from '../resolvers/ledger-generation/monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/ledger-generation/salary-ledger-generation.resolver.js';
 
-export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
-  const chargeType = getChargeType(charge);
+export function ledgerGenerationByCharge(
+  charge: IGetChargesByIdsResult,
+  context: GraphQLModules.Context,
+) {
+  const chargeType = getChargeType(charge, context);
   switch (chargeType) {
     case 'CommonCharge':
       return generateLedgerRecordsForCommonCharge;
@@ -43,9 +45,10 @@ export function ledgerGenerationByCharge(charge: IGetChargesByIdsResult) {
 
 export async function ledgerUnbalancedBusinessesByCharge(
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<Set<string> | undefined> {
-  const chargeType = getChargeType(charge);
+  const { injector } = context;
+  const chargeType = getChargeType(charge, context);
   switch (chargeType) {
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector

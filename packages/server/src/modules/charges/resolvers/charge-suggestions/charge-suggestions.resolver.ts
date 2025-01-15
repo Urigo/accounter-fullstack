@@ -2,13 +2,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  ETANA_BUSINESS_ID,
-  ETHERSCAN_BUSINESS_ID,
-  KRAKEN_BUSINESS_ID,
-  POALIM_BUSINESS_ID,
-  UUID_REGEX,
-} from '@shared/constants';
+import { UUID_REGEX } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type {
   ChargeResolvers,
@@ -40,9 +34,11 @@ const missingInfoSuggestions: Resolver<
     return null;
   }
 
-  const { injector } = context;
+  const { injector, adminContext } = context;
+  const { poalimBusinessId, etherScanBusinessId, krakenBusinessId, etanaBusinessId } =
+    adminContext.financialAccounts;
 
-  const chargeType = getChargeType(DbCharge);
+  const chargeType = getChargeType(DbCharge, context);
 
   if (chargeType === ChargeTypeEnum.Conversion) {
     return missingConversionInfoSuggestions(DbCharge, _, context, __);
@@ -70,10 +66,11 @@ const missingInfoSuggestions: Resolver<
   }
 
   if (DbCharge.business_array && DbCharge.business_array.length > 1) {
-    const isKrakenIncluded = DbCharge.business_array.includes(KRAKEN_BUSINESS_ID);
-    const isEtherscanIncluded = DbCharge.business_array.includes(ETHERSCAN_BUSINESS_ID);
-    const isEtanaIncluded = DbCharge.business_array.includes(ETANA_BUSINESS_ID);
-    const isPoalimIncluded = DbCharge.business_array.includes(POALIM_BUSINESS_ID);
+    const isKrakenIncluded = krakenBusinessId && DbCharge.business_array.includes(krakenBusinessId);
+    const isEtherscanIncluded =
+      etherScanBusinessId && DbCharge.business_array.includes(etherScanBusinessId);
+    const isEtanaIncluded = etanaBusinessId && DbCharge.business_array.includes(etanaBusinessId);
+    const isPoalimIncluded = poalimBusinessId && DbCharge.business_array.includes(poalimBusinessId);
 
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {

@@ -1,6 +1,5 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
-import type { UserType } from 'plugins/auth-plugin.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
@@ -27,6 +26,8 @@ import { salariesModule } from './modules/salaries/index.js';
 import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
+import type { AdminContext } from './plugins/admin-context-plugin.js';
+import type { UserType } from './plugins/auth-plugin.js';
 import { ENVIRONMENT } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
@@ -38,6 +39,7 @@ declare global {
     interface GlobalContext {
       env: Environment;
       currentUser: UserType;
+      adminContext: AdminContext;
     }
   }
 }

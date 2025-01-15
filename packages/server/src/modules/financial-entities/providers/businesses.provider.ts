@@ -298,7 +298,7 @@ export class BusinessesProvider {
   });
 
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
     private taxCategoryProvider: TaxCategoriesProvider,
     private businessesGreenInvoiceMatcherProvider: BusinessesGreenInvoiceMatcherProvider,

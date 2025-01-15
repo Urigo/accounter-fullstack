@@ -1,15 +1,18 @@
-import type { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 
 export async function generateMiscExpensesLedger(
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<LedgerProto[]> {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency },
+  } = context;
   const expenses = await injector
     .get(MiscExpensesProvider)
     .getExpensesByChargeIdLoader.load(charge.id);
@@ -21,11 +24,11 @@ export async function generateMiscExpensesLedger(
   for (const expense of expenses) {
     let amount = Number(expense.amount);
     let foreignAmount: number | undefined = undefined;
-    if (expense.currency !== DEFAULT_LOCAL_CURRENCY) {
+    if (expense.currency !== defaultLocalCurrency) {
       // get exchange rate for currency
       const exchangeRate = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(expense.currency as Currency, DEFAULT_LOCAL_CURRENCY, expense.value_date);
+        .getExchangeRates(expense.currency as Currency, defaultLocalCurrency, expense.value_date);
 
       foreignAmount = amount;
       // calculate amounts in local currency

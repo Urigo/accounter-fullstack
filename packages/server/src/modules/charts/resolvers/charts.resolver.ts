@@ -1,10 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
-  DEFAULT_FINANCIAL_ENTITY_ID,
-} from '@shared/constants';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -12,15 +8,19 @@ import type { ChartsModule, MonthDataProto } from '../types.js';
 
 export const chartsResolvers: ChartsModule.Resolvers = {
   Query: {
-    incomeExpenseChart: async (_, { filters }, { injector }) => {
+    incomeExpenseChart: async (
+      _,
+      { filters },
+      { injector, adminContext: { defaultAdminBusinessId, defaultCryptoConversionFiatCurrency } },
+    ) => {
       try {
         const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
           fromDebitDate: filters.fromDate,
           toDebitDate: filters.toDate,
-          ownerIDs: [DEFAULT_FINANCIAL_ENTITY_ID],
+          ownerIDs: [defaultAdminBusinessId],
         });
 
-        const currency = filters.currency ?? DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
+        const currency = filters.currency ?? defaultCryptoConversionFiatCurrency;
 
         const monthDataMap = new Map<
           TimelessDateString,

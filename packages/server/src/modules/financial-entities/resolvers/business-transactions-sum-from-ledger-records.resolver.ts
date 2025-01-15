@@ -19,8 +19,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
   object,
   GraphQLModules.Context,
   Partial<QueryBusinessTransactionsSumFromLedgerRecordsArgs>
-> = async (_, { filters }, context, _info) => {
-  const injector = context.injector;
+> = async (_, { filters }, { injector, adminContext: { defaultLocalCurrency } }, _info) => {
   const {
     ownerIds,
     businessIDs,
@@ -121,6 +120,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           true,
           ledger.credit_local_amount1,
           ledger.credit_foreign_amount1,
+          defaultLocalCurrency,
         );
       }
 
@@ -135,6 +135,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           true,
           ledger.credit_local_amount2,
           ledger.credit_foreign_amount2,
+          defaultLocalCurrency,
         );
       }
 
@@ -149,6 +150,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           false,
           ledger.debit_local_amount1,
           ledger.debit_foreign_amount1,
+          defaultLocalCurrency,
         );
       }
 
@@ -163,6 +165,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           false,
           ledger.debit_local_amount2,
           ledger.debit_foreign_amount2,
+          defaultLocalCurrency,
         );
       }
     }

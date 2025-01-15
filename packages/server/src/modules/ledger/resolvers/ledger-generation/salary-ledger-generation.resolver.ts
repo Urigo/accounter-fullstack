@@ -9,14 +9,6 @@ import { EmployeesProvider } from '@modules/salaries/providers/employees.provide
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  BALANCE_CANCELLATION_TAX_CATEGORY_ID,
-  BATCHED_EMPLOYEE_BUSINESS_ID,
-  BATCHED_PENSION_BUSINESS_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_RATE_TAX_CATEGORY_ID,
-  SALARY_BATCHED_BUSINESSES,
-} from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
@@ -53,7 +45,16 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     );
   }
   const chargeId = charge.id;
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { balanceCancellationTaxCategoryId, exchangeRateTaxCategoryId },
+      },
+      salaries: { batchedFundsBusinessId, batchedEmployeesBusinessId, salaryBatchedBusinessIds },
+    },
+  } = context;
   const errors: Set<string> = new Set();
 
   try {
@@ -94,11 +95,12 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       const { entries, monthlyEntriesProto, month } = generateEntriesFromSalaryRecords(
         salaryRecords,
         charge,
+        context,
       );
 
       entries.map(ledgerEntry => {
         accountingLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       });
 
       // generate monthly expenses ledger entries
@@ -116,7 +118,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
             id: taxCategoryId,
             invoiceDate: lastDayOfMonth(new Date(`${month}-01`)),
             valueDate: lastDayOfMonth(new Date(`${month}-01`)),
-            currency: DEFAULT_LOCAL_CURRENCY,
+            currency: defaultLocalCurrency,
             ...(isCredit
               ? { creditAccountID1: taxCategoryId }
               : { debitAccountID1: taxCategoryId }),
@@ -129,7 +131,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           };
 
           accountingLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         });
       entriesPromises.push(...monthlyEntriesPromises);
     } catch (e) {
@@ -158,13 +160,13 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
         // preparations for core ledger entries
         let exchangeRate: number | undefined = undefined;
-        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (transaction.currency !== defaultLocalCurrency) {
           // get exchange rate for currency
           exchangeRate = await injector
             .get(ExchangeProvider)
             .getExchangeRates(
               transaction.currency,
-              DEFAULT_LOCAL_CURRENCY,
+              defaultLocalCurrency,
               transaction.debit_timestamp,
             );
         }
@@ -176,10 +178,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           transaction,
         );
 
-        if (
-          transaction.business_id &&
-          SALARY_BATCHED_BUSINESSES.includes(transaction.business_id)
-        ) {
+        if (transaction.business_id && salaryBatchedBusinessIds.includes(transaction.business_id)) {
           batchedTransactionEntriesMaterials.push({
             transaction,
             partialEntry,
@@ -202,10 +201,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         };
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
 
         // on foreign currency salary, update matching accounting ledger entry
-        if (ledgerEntry.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (ledgerEntry.currency !== defaultLocalCurrency) {
           const matchingEntry = accountingLedgerEntries.find(accountingEntry => {
             return (
               transaction.business_id ===
@@ -230,15 +229,13 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         }
       }
     });
-    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge, injector).then(
-      entries => {
-        entries.map(entry => {
-          entry.ownerId = charge.owner_id;
-          miscExpensesLedgerEntries.push(entry);
-          updateLedgerBalanceByEntry(entry, ledgerBalance);
-        });
-      },
-    );
+    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        miscExpensesLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+      });
+    });
     entriesPromises.push(...transactionEntriesPromises, miscExpensesEntriesPromise);
 
     await Promise.all(entriesPromises);
@@ -283,24 +280,25 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         businessId,
         [...accountingLedgerEntries, ...financialAccountLedgerEntries],
         balance,
+        defaultLocalCurrency,
       );
       if (validation === true) {
         const ledgerEntry: StrictLedgerProto = {
           id: matchingTransaction.id + '|fee', // NOTE: this field is dummy
-          creditAccountID1: isCreditorCounterparty ? businessId : EXCHANGE_RATE_TAX_CATEGORY_ID,
+          creditAccountID1: isCreditorCounterparty ? businessId : exchangeRateTaxCategoryId,
           localCurrencyCreditAmount1: amount,
-          debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : businessId,
+          debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : businessId,
           localCurrencyDebitAmount1: amount,
           description: 'Exchange ledger record',
           isCreditorCounterparty,
           invoiceDate: matchingTransaction.invoiceDate,
           valueDate: entry.valueDate,
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: defaultLocalCurrency,
           ownerId: matchingTransaction.ownerId,
           chargeId,
         };
         miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       } else {
         errors.add(validation);
       }
@@ -314,14 +312,14 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         try {
           const unbatchedBusinesses: Array<string> = [];
           switch (transaction.business_id) {
-            case BATCHED_EMPLOYEE_BUSINESS_ID: {
+            case batchedEmployeesBusinessId: {
               const employees = await injector
                 .get(EmployeesProvider)
                 .getEmployeesByEmployerLoader.load(charge.owner_id);
               unbatchedBusinesses.push(...employees.map(({ business_id }) => business_id));
               break;
             }
-            case BATCHED_PENSION_BUSINESS_ID: {
+            case batchedFundsBusinessId: {
               const funds = await injector.get(FundsProvider).getAllFunds();
               unbatchedBusinesses.push(...funds.map(({ id }) => id));
               break;
@@ -400,7 +398,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
             };
 
             batchedLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
           }
         } catch (e) {
           if (e instanceof LedgerError) {
@@ -416,10 +414,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeFinancialAccountLedgerEntriesPromises = feeTransactions.map(async transaction => {
-      await getEntriesFromFeeTransaction(transaction, charge, injector).then(ledgerEntries => {
+      await getEntriesFromFeeTransaction(transaction, charge, context).then(ledgerEntries => {
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         });
       });
     });
@@ -456,7 +454,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         let foreignAmount: number | undefined = undefined;
 
         if (
-          financialAccountEntry.currency !== DEFAULT_LOCAL_CURRENCY &&
+          financialAccountEntry.currency !== defaultLocalCurrency &&
           financialAccountEntry.currencyRate
         ) {
           foreignAmount = financialAccountEntry.currencyRate * amount;
@@ -469,12 +467,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           invoiceDate: financialAccountEntry.invoiceDate,
           valueDate: financialAccountEntry.valueDate,
           currency: financialAccountEntry.currency,
-          creditAccountID1: isCreditorCounterparty
-            ? BALANCE_CANCELLATION_TAX_CATEGORY_ID
-            : entityId,
+          creditAccountID1: isCreditorCounterparty ? balanceCancellationTaxCategoryId : entityId,
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
-          debitAccountID1: isCreditorCounterparty ? entityId : BALANCE_CANCELLATION_TAX_CATEGORY_ID,
+          debitAccountID1: isCreditorCounterparty ? entityId : balanceCancellationTaxCategoryId,
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: balanceCancellation.description ?? 'Balance Cancellation',
@@ -485,7 +481,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         };
 
         miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -499,7 +495,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       unbalancedBusinesses.map(({ business_id }) => business_id),
     );
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
@@ -515,7 +511,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     return {
