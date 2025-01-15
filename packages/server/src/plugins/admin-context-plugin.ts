@@ -18,18 +18,18 @@ const getAdminBusinessContext = sql<IGetAdminBusinessContextQuery>`
 
 export type AdminContext = {
   defaultLocalCurrency: Currency;
-  // authorities: {
-  //   businesses: [
-  //     'VAT',
-  //     'Tax',
-  //     'Social Security'
-  //   ],
-  //   taxCategories: [
-  //     'Input Vat',
-  //     'Output Vat',
-  //     'Tax Expenses'
-  //   ],
-  // },
+  defaultCryptoConversionFiatCurrency: Currency;
+  defaultAdminBusinessId: string;
+  defaultTaxCategoryId: string;
+  authorities: {
+    vatBusinessId: string;
+    inputVatTaxCategoryId: string;
+    outputVatTaxCategoryId: string;
+    taxBusinessId: string;
+    taxExpensesTaxCategoryId: string;
+    socialSecurityBusinessId: string;
+    vatReportExcludedBusinessNames: string[];
+  };
   general: {
     taxCategories: {
       exchangeRateTaxCategoryId: string;
@@ -157,8 +157,28 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
     rawContext.batched_employees_business_id,
     rawContext.batched_funds_business_id,
   ].filter(Boolean) as string[];
+  const vatReportExcludedBusinessNames = [
+    rawContext.vat_business_id,
+    rawContext.tax_business_id,
+    rawContext.social_security_business_id,
+  ];
   return {
     defaultLocalCurrency: formatCurrency(rawContext.default_local_currency),
+    defaultCryptoConversionFiatCurrency: formatCurrency(
+      rawContext.default_fiat_currency_for_crypto_conversions,
+    ),
+    defaultAdminBusinessId: rawContext.owner_id,
+    defaultTaxCategoryId: rawContext.default_tax_category_id,
+
+    authorities: {
+      vatBusinessId: rawContext.vat_business_id,
+      inputVatTaxCategoryId: rawContext.input_vat_tax_category_id,
+      outputVatTaxCategoryId: rawContext.output_vat_tax_category_id,
+      taxBusinessId: rawContext.tax_business_id,
+      taxExpensesTaxCategoryId: rawContext.tax_expenses_tax_category_id,
+      socialSecurityBusinessId: rawContext.social_security_business_id,
+      vatReportExcludedBusinessNames,
+    },
     depreciation: {
       accumulatedDepreciationTaxCategoryId: rawContext.accumulated_depreciation_tax_category_id,
       rndDepreciationExpensesTaxCategoryId: rawContext.rnd_depreciation_expenses_tax_category_id,

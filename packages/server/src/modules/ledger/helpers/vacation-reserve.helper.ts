@@ -6,11 +6,7 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import {
-  AVERAGE_MONTHLY_WORK_DAYS,
-  AVERAGE_MONTHLY_WORK_HOURS,
-  DEFAULT_FINANCIAL_ENTITY_ID,
-} from '@shared/constants';
+import { AVERAGE_MONTHLY_WORK_DAYS, AVERAGE_MONTHLY_WORK_HOURS } from '@shared/constants';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function roundHalf(n: number) {
@@ -40,9 +36,13 @@ export async function calculateVacationReserveAmount(
   context: GraphQLModules.Context,
   year: number,
 ) {
-  const { injector, adminContext } = context;
-  const { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId } =
-    adminContext.salaries;
+  const {
+    injector,
+    adminContext: {
+      defaultAdminBusinessId,
+      salaries: { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId },
+    },
+  } = context;
   if (!vacationReserveTaxCategoryId) {
     throw new GraphQLError(`Vacation reserves tax category is not set`);
   }
@@ -55,7 +55,7 @@ export async function calculateVacationReserveAmount(
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(DEFAULT_FINANCIAL_ENTITY_ID);
+    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
   const vacationLedgerRecordsPromise = injector
     .get(LedgerProvider)
     .getLedgerRecordsByFinancialEntityIdLoader.load(vacationReserveTaxCategoryId);

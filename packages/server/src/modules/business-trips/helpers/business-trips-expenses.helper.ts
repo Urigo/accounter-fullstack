@@ -7,7 +7,6 @@ import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/
 import type { IGetExpensesByChargeIdsResult } from '@modules/misc-expenses/types.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import type {
   AddBusinessTripTravelAndSubsistenceExpenseInput,
   BusinessTripExpenseCategories,
@@ -185,14 +184,19 @@ export async function generateChargeForEmployeePayment(
   businessTripId: string,
   description?: string,
 ) {
-  const { injector, adminContext } = context;
-  const { businessTripTaxCategoryId } = adminContext.businessTrips;
+  const {
+    injector,
+    adminContext: {
+      businessTrips: { businessTripTaxCategoryId },
+      defaultAdminBusinessId,
+    },
+  } = context;
   if (!businessTripTaxCategoryId) {
     throw new GraphQLError('Business trip tax category not set');
   }
   try {
     const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
-      ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+      ownerId: defaultAdminBusinessId,
       taxCategoryId: businessTripTaxCategoryId,
       userDescription: description || 'Employee payment charge',
     });

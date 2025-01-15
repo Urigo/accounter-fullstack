@@ -1,6 +1,6 @@
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateRecoveryReserveAmount } from '@modules/ledger/helpers/recovery-reserve.helper.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -12,9 +12,12 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   try {
-    const { injector, adminContext } = context;
-    const { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId } =
-      adminContext.salaries;
+    const {
+      adminContext: {
+        defaultLocalCurrency,
+        salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
+      },
+    } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -59,7 +62,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
       id: EMPTY_UUID,
       invoiceDate: new Date(year, 11, 31),
       valueDate: new Date(year, 11, 31),
-      currency: DEFAULT_LOCAL_CURRENCY,
+      currency: defaultLocalCurrency,
       isCreditorCounterparty: true,
       creditAccountID1: recoveryReserveTaxCategoryId,
       debitAccountID1: recoveryReserveExpensesTaxCategoryId,
@@ -74,7 +77,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
     const ledgerEntries = [ledgerEntry];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, injector);
+      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
     }
 
     return {

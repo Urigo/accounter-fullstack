@@ -4,7 +4,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, Resolvers, ResolversTypes } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
@@ -197,7 +197,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           .then(() =>
             injector.get(LedgerProvider).insertLedgerRecords({
               ledgerRecords: recordsToUpdate
-                .map(record => convertLedgerRecordToInput(record))
+                .map(record => convertLedgerRecordToInput(record, context))
                 .map(record => {
                   record.chargeId = chargeId;
                   return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
@@ -213,8 +213,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             ? injector
                 .get(LedgerProvider)
                 .insertLedgerRecords({
-                  ledgerRecords: newRecords.map(
-                    convertLedgerRecordToInput,
+                  ledgerRecords: newRecords.map(record =>
+                    convertLedgerRecordToInput(record, context),
                   ) as IInsertLedgerRecordsParams['ledgerRecords'],
                 })
                 .catch(e => {
@@ -266,18 +266,18 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       DbLedgerRecord.credit_foreign_amount2 == null
         ? null
         : formatFinancialAmount(DbLedgerRecord.credit_foreign_amount2, DbLedgerRecord.currency),
-    localCurrencyDebitAmount1: DbLedgerRecord =>
-      formatFinancialAmount(DbLedgerRecord.debit_local_amount1, DEFAULT_LOCAL_CURRENCY),
-    localCurrencyDebitAmount2: DbLedgerRecord =>
+    localCurrencyDebitAmount1: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbLedgerRecord.debit_local_amount1, defaultLocalCurrency),
+    localCurrencyDebitAmount2: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
       DbLedgerRecord.debit_local_amount2 == null
         ? null
-        : formatFinancialAmount(DbLedgerRecord.debit_local_amount2, DEFAULT_LOCAL_CURRENCY),
-    localCurrencyCreditAmount1: DbLedgerRecord =>
-      formatFinancialAmount(DbLedgerRecord.credit_local_amount1, DEFAULT_LOCAL_CURRENCY),
-    localCurrencyCreditAmount2: DbLedgerRecord =>
+        : formatFinancialAmount(DbLedgerRecord.debit_local_amount2, defaultLocalCurrency),
+    localCurrencyCreditAmount1: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbLedgerRecord.credit_local_amount1, defaultLocalCurrency),
+    localCurrencyCreditAmount2: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
       DbLedgerRecord.credit_local_amount2 == null
         ? null
-        : formatFinancialAmount(DbLedgerRecord.credit_local_amount2, DEFAULT_LOCAL_CURRENCY),
+        : formatFinancialAmount(DbLedgerRecord.credit_local_amount2, defaultLocalCurrency),
     invoiceDate: DbLedgerRecord => DbLedgerRecord.invoice_date,
     valueDate: DbLedgerRecord => DbLedgerRecord.value_date,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
@@ -325,14 +325,16 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       ]);
 
       const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
-      const ledgerEntries = parent.records.map(convertLedgerRecordToProto);
+      const ledgerEntries = parent.records.map(record =>
+        convertLedgerRecordToProto(record, context),
+      );
 
       for (const ledgerEntry of ledgerEntries) {
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       }
 
       return getLedgerBalanceInfo(
-        injector,
+        context,
         ledgerBalance,
         undefined,
         allowedUnbalancedBusinesses,

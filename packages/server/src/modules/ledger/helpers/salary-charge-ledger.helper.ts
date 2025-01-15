@@ -1,7 +1,6 @@
 import { lastDayOfMonth } from 'date-fns';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import type { IGetSalaryRecordsByChargeIdsResult } from '@modules/salaries/types.js';
-import { DEFAULT_LOCAL_CURRENCY, SOCIAL_SECURITY_BUSINESS_ID } from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
 
@@ -13,12 +12,13 @@ function generateEntryRaw(
   ownerId: string,
   isCreditor: boolean,
   chargeId: string,
+  context: GraphQLModules.Context,
 ): LedgerProto {
   return {
     id: `${accountId}|${month}`,
     invoiceDate: transactionDate,
     valueDate: transactionDate,
-    currency: DEFAULT_LOCAL_CURRENCY,
+    currency: context.adminContext.defaultLocalCurrency,
     ...(isCreditor ? { creditAccountID1: accountId } : { debitAccountID1: accountId }),
     localCurrencyCreditAmount1: amount,
     localCurrencyDebitAmount1: amount,
@@ -58,7 +58,10 @@ export function generateEntriesFromSalaryRecords(
   monthlyEntriesProto: MonthlyLedgerProto[];
   month: string;
 } {
-  const { taxDeductionsBusinessId } = context.adminContext.salaries;
+  const {
+    salaries: { taxDeductionsBusinessId },
+    authorities: { socialSecurityBusinessId },
+  } = context.adminContext;
   const chargeId = charge.id;
 
   if (!salaryRecords.length) {
@@ -85,6 +88,7 @@ export function generateEntriesFromSalaryRecords(
       charge.owner_id,
       isCreditor,
       chargeId,
+      context,
     );
   }
 
@@ -140,8 +144,8 @@ export function generateEntriesFromSalaryRecords(
       salaryRecord.social_security_amount_employer ?? '0',
     );
     const HealthPaymentAmount = Number(salaryRecord.health_payment_amount ?? '0');
-    amountPerBusiness[SOCIAL_SECURITY_BUSINESS_ID] ??= 0;
-    amountPerBusiness[SOCIAL_SECURITY_BUSINESS_ID] +=
+    amountPerBusiness[socialSecurityBusinessId] ??= 0;
+    amountPerBusiness[socialSecurityBusinessId] +=
       socialSecurityEmployeeAmount + socialSecurityEmployerAmount + HealthPaymentAmount;
     socialSecurityExpensesAmount += Number(salaryRecord.social_security_amount_employer ?? '0');
 

@@ -9,13 +9,13 @@ export const validateCharge = async (
   charge: IGetChargesByIdsResult,
   context: GraphQLModules.Context,
 ): Promise<ResolversTypes['ValidationData']> => {
-  const { injector } = context;
+  const { injector, adminContext } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
   const chargeType = getChargeType(charge, context);
 
   const isGeneralFees =
-    charge.tax_category_id === context.adminContext.general.taxCategories.generalFeeTaxCategoryId;
+    charge.tax_category_id === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // check for consistent counterparty business
   const businessNotRequired =

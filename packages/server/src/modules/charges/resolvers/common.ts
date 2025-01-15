@@ -11,7 +11,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     DbCharge.documents_vat_amount != null && DbCharge.documents_currency
       ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
       : null,
-  totalAmount: dbCharge => calculateTotalAmount(dbCharge),
+  totalAmount: (dbCharge, _, { adminContext: { defaultLocalCurrency } }) =>
+    calculateTotalAmount(dbCharge, defaultLocalCurrency),
   property: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.type === 'CONVERSION',
   salary: DbCharge => DbCharge.type === 'PAYROLL',

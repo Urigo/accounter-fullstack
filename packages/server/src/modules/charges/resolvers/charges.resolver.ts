@@ -6,7 +6,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { EMPTY_UUID, TAX_EXPENSES_TAX_CATEGORY_ID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { getChargeType } from '../helpers/charge-type.js';
@@ -297,14 +297,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
       return true;
     },
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
-      const { injector } = context;
+      const { injector, adminContext } = context;
       try {
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
           userDescription: `Revaluation charge for ${date}`,
           type: 'FINANCIAL',
-          taxCategoryId:
-            context.adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
+          taxCategoryId: adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
         });
 
         if (!charge) {
@@ -333,9 +332,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     generateBankDepositsRevaluationCharge: async (_, { date, ownerId }, context, info) => {
-      const { injector } = context;
+      const { injector, adminContext } = context;
       try {
-        const { bankDepositInterestIncomeTaxCategoryId } = context.adminContext.bankDeposits;
+        const { bankDepositInterestIncomeTaxCategoryId } = adminContext.bankDeposits;
         if (!bankDepositInterestIncomeTaxCategoryId) {
           throw new GraphQLError('Bank deposit interest income tax category missing');
         }
@@ -372,13 +371,18 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
-      const { injector } = context;
+      const {
+        injector,
+        adminContext: {
+          authorities: { taxExpensesTaxCategoryId },
+        },
+      } = context;
       try {
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
           userDescription: `Tax expenses charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
-          taxCategoryId: TAX_EXPENSES_TAX_CATEGORY_ID,
+          taxCategoryId: taxExpensesTaxCategoryId,
         });
 
         if (!charge) {
@@ -433,16 +437,21 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
-      if (!context.adminContext.depreciation.accumulatedDepreciationTaxCategoryId) {
+      const {
+        injector,
+        adminContext: {
+          depreciation: { accumulatedDepreciationTaxCategoryId },
+        },
+      } = context;
+      if (!accumulatedDepreciationTaxCategoryId) {
         throw new GraphQLError('Accumulated depreciation tax category missing');
       }
-      const { injector } = context;
       try {
         const [charge] = await injector.get(ChargesProvider).generateCharge({
           ownerId,
           userDescription: `Depreciation charge for ${year.substring(0, 4)}`,
           type: 'FINANCIAL',
-          taxCategoryId: context.adminContext.depreciation.accumulatedDepreciationTaxCategoryId,
+          taxCategoryId: accumulatedDepreciationTaxCategoryId,
         });
 
         if (!charge) {

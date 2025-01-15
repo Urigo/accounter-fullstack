@@ -6,7 +6,6 @@ import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import { VAT_REPORT_EXCLUDED_BUSINESS_NAMES } from '@shared/constants';
 import {
   DocumentType,
   type QueryVatReportArgs,
@@ -26,7 +25,12 @@ export const getVatRecords: ResolverFn<
   GraphQLModules.Context,
   Partial<QueryVatReportArgs>
 > = async (_, { filters }, context) => {
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: {
+      authorities: { vatReportExcludedBusinessNames },
+    },
+  } = context;
   try {
     const response = {
       income: [] as Array<RawVatReportRecord>,
@@ -100,7 +104,7 @@ export const getVatRecords: ResolverFn<
     }
     docsCharges = docsCharges.filter(charge => {
       for (const businessId of charge.business_array ?? []) {
-        if (VAT_REPORT_EXCLUDED_BUSINESS_NAMES.includes(businessId)) {
+        if (vatReportExcludedBusinessNames.includes(businessId)) {
           return false;
         }
       }
@@ -163,12 +167,12 @@ export const getVatRecords: ResolverFn<
       // TODO: what if no exchange dates found?
       await Promise.all([
         ...incomeRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, injector).then(res => {
+          adjustTaxRecord(rawRecord, context).then(res => {
             response.income.push(res);
           }),
         ),
         ...expenseRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, injector).then(res => {
+          adjustTaxRecord(rawRecord, context).then(res => {
             response.expenses.push(res);
           }),
         ),

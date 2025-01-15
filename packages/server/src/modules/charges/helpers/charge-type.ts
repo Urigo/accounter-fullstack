@@ -1,4 +1,3 @@
-import { VAT_BUSINESS_ID } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
 
@@ -19,13 +18,17 @@ export function getChargeType(
     return ChargeTypeEnum.BusinessTrip;
   }
 
-  const { bankDeposits, financialAccounts } = context.adminContext;
-  const { internalWalletsIds, creditCardIds } = financialAccounts;
+  const {
+    bankDeposits: { bankDepositBusinessId },
+    dividends: { dividendBusinessIds },
+    authorities: { vatBusinessId },
+    financialAccounts: { internalWalletsIds, creditCardIds },
+  } = context.adminContext;
 
   if (
-    bankDeposits.bankDepositBusinessId &&
-    (charge.business_id === bankDeposits.bankDepositBusinessId ||
-      charge.business_array?.includes(bankDeposits.bankDepositBusinessId))
+    bankDepositBusinessId &&
+    (charge.business_id === bankDepositBusinessId ||
+      charge.business_array?.includes(bankDepositBusinessId))
   ) {
     return ChargeTypeEnum.BankDeposit;
   }
@@ -37,15 +40,11 @@ export function getChargeType(
     return ChargeTypeEnum.InternalTransfer;
   }
 
-  if (
-    charge.business_array?.some(businessId =>
-      context.adminContext.dividends.dividendBusinessIds.includes(businessId),
-    )
-  ) {
+  if (charge.business_array?.some(businessId => dividendBusinessIds.includes(businessId))) {
     return ChargeTypeEnum.Dividend;
   }
 
-  if (charge.business_id === VAT_BUSINESS_ID) {
+  if (charge.business_id === vatBusinessId) {
     return ChargeTypeEnum.MonthlyVat;
   }
 

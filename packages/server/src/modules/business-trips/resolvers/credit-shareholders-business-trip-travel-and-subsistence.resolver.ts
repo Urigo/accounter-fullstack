@@ -4,7 +4,6 @@ import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import type { IGetEmployeesByIdResult } from '@modules/salaries/types';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import {
   Currency,
   type AddBusinessTripTravelAndSubsistenceExpenseInput,
@@ -69,7 +68,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
       throw new GraphQLError(`Business trip with id ${businessTripId} is missing end date`);
     }
 
-    const summaryData = await businessTripSummary(injector, businessTrip);
+    const summaryData = await businessTripSummary(context, businessTrip);
 
     return { businessTrip: { ...businessTrip, toDate }, summaryData };
   }
@@ -127,7 +126,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
   const [availableAmountToDistribute, shareholdersPotentialAmountToDistribute] = await Promise.all([
     availableAmountToDistributePromise(),
     shareholdersPotentialAmountToDistributePromise(
-      injector,
+      context,
       accommodationExpenses,
       shareholdersMap,
       attendeesMap,
@@ -206,13 +205,17 @@ async function shareholdersMapPromise(injector: Injector, businessTripId: string
 }
 
 async function shareholdersPotentialAmountToDistributePromise(
-  injector: Injector,
+  context: GraphQLModules.Context,
   accommodationExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   shareholdersMap: Map<string, IGetEmployeesByIdResult>,
   attendeesMap: Map<string, IGetBusinessTripsAttendeesByBusinessTripIdsResult>,
   attendeePayedTnSExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
   businessTrip: BusinessTripProto & { toDate: Date },
 ) {
+  const {
+    injector,
+    adminContext: { defaultCryptoConversionFiatCurrency },
+  } = context;
   const shareholdersPotentialAmountToDistribute: Record<string, number> = {};
   const shareholdersAccommodatedNightsMap = new Map<string, number>();
 
@@ -277,16 +280,12 @@ async function shareholdersPotentialAmountToDistributePromise(
           shareholderPayedTnSExpenses.map(async expense => {
             const { amount, currency, date } = getExpenseCoreData(expense);
 
-            if (expense.currency === DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY) {
+            if (expense.currency === defaultCryptoConversionFiatCurrency) {
               payedAmount += amount;
             } else {
               const rate = await injector
                 .get(ExchangeProvider)
-                .getExchangeRates(
-                  currency,
-                  DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
-                  new Date(date),
-                );
+                .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, new Date(date));
 
               payedAmount += amount * rate;
             }

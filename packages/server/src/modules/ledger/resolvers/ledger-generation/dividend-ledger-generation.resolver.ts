@@ -4,7 +4,7 @@ import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/comm
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '@shared/constants';
+import { DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
@@ -25,8 +25,13 @@ export const generateLedgerRecordsForDividend: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const { dividendWithholdingTaxBusinessId, dividendTaxCategoryId } =
-    context.adminContext.dividends;
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      dividends: { dividendWithholdingTaxBusinessId, dividendTaxCategoryId },
+    },
+  } = context;
   if (!dividendWithholdingTaxBusinessId) {
     return {
       __typename: 'CommonError',
@@ -45,7 +50,6 @@ export const generateLedgerRecordsForDividend: ResolverFn<
   const errors: Set<string> = new Set();
 
   try {
-    const { injector } = context;
     // validate ledger records are balanced
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
@@ -84,7 +88,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
       async preValidatedTransaction => {
         try {
           const transaction = validateTransactionRequiredVariables(preValidatedTransaction);
-          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          if (transaction.currency !== defaultLocalCurrency) {
             errors.add(
               `Withholding tax currency supposed to be local, got ${transaction.currency}`,
             );
@@ -114,7 +118,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           };
 
           withholdingTaxLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         } catch (e) {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -171,7 +175,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
         // generate core ledger entries
         const coreLedgerEntry: StrictLedgerProto = {
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: defaultLocalCurrency,
           ownerId: dividendRecord.owner_id,
           id: dividendRecord.id,
           chargeId,
@@ -188,20 +192,20 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         };
 
         coreLedgerEntries.push(coreLedgerEntry);
-        updateLedgerBalanceByEntry(coreLedgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(coreLedgerEntry, ledgerBalance, context);
 
         // preparations for payment ledger entries
         let exchangeRate: number | undefined = undefined;
-        if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (transaction.currency !== defaultLocalCurrency) {
           // get exchange rate for currency
           exchangeRate = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(transaction.currency, DEFAULT_LOCAL_CURRENCY, dividendRecord.date);
+            .getExchangeRates(transaction.currency, defaultLocalCurrency, dividendRecord.date);
         }
 
         const partialEntry = generatePartialLedgerEntry(transaction, charge.owner_id, exchangeRate);
 
-        const isForeignCurrency = partialEntry.currency !== DEFAULT_LOCAL_CURRENCY;
+        const isForeignCurrency = partialEntry.currency !== defaultLocalCurrency;
         const amountDiff =
           partialEntry.localCurrencyCreditAmount1 -
           Number(dividendRecord.amount) * (1 - withholdingTaxPercentage);
@@ -225,7 +229,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         };
 
         paymentLedgerEntries.push(paymentEntry);
-        updateLedgerBalanceByEntry(paymentEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(paymentEntry, ledgerBalance, context);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -242,7 +246,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         .then(ledgerEntries => {
           feeFinancialAccountLedgerEntries.push(...ledgerEntries);
           ledgerEntries.map(ledgerEntry => {
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
           });
         })
         .catch(e => {
@@ -259,7 +263,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
     // create foreign currency balance ledger
     for (const entry of paymentLedgerEntries) {
-      if (entry.currency !== DEFAULT_LOCAL_CURRENCY) {
+      if (entry.currency !== defaultLocalCurrency) {
         const currencyBalanceEntry1: LedgerProto = {
           id: entry.id + `|${entry.currency}-balance`, // NOTE: this field is dummy
           creditAccountID1: entry.debitAccountID1,
@@ -276,24 +280,24 @@ export const generateLedgerRecordsForDividend: ResolverFn<
         };
 
         miscLedgerEntries.push(currencyBalanceEntry1);
-        updateLedgerBalanceByEntry(currencyBalanceEntry1, ledgerBalance);
+        updateLedgerBalanceByEntry(currencyBalanceEntry1, ledgerBalance, context);
 
         const currencyBalanceEntry2: LedgerProto = {
-          id: entry.id + `|${DEFAULT_LOCAL_CURRENCY}-balance`, // NOTE: this field is dummy
+          id: entry.id + `|${defaultLocalCurrency}-balance`, // NOTE: this field is dummy
           debitAccountID1: entry.debitAccountID1,
           localCurrencyCreditAmount1: entry.localCurrencyCreditAmount1,
           localCurrencyDebitAmount1: entry.localCurrencyCreditAmount1,
-          description: `Foreign currency balance (${DEFAULT_LOCAL_CURRENCY})`,
+          description: `Foreign currency balance (${defaultLocalCurrency})`,
           isCreditorCounterparty: false,
           invoiceDate: entry.invoiceDate,
           valueDate: entry.valueDate,
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: defaultLocalCurrency,
           ownerId: entry.ownerId,
           chargeId: charge.id,
         };
 
         miscLedgerEntries.push(currencyBalanceEntry2);
-        updateLedgerBalanceByEntry(currencyBalanceEntry2, ledgerBalance);
+        updateLedgerBalanceByEntry(currencyBalanceEntry2, ledgerBalance, context);
       }
     }
 
@@ -306,10 +310,11 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           coreLedgerEntries,
           chargeId,
           charge.owner_id,
+          context,
         );
 
         miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -321,7 +326,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
@@ -336,7 +341,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     return {

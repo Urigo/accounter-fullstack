@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 import { commonTaxChargeFields } from './common.js';
@@ -31,12 +30,12 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   BankDepositCharge: commonTaxChargeFields,
   CreditcardBankCharge: commonTaxChargeFields,
   LtdFinancialEntity: {
-    taxCategory: async (parent, _, { injector }) => {
+    taxCategory: async (parent, _, { injector, adminContext: { defaultAdminBusinessId } }) => {
       const taxCategory = await injector
         .get(TaxCategoriesProvider)
         .taxCategoryByBusinessAndOwnerIDsLoader.load({
           businessId: parent.id,
-          ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+          ownerId: defaultAdminBusinessId,
         });
       if (!taxCategory) {
         throw new GraphQLError(`Tax category for business ID="${parent.id}" not found`);

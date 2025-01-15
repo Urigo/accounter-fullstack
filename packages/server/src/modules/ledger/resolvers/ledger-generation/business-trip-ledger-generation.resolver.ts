@@ -16,7 +16,6 @@ import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-st
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_LOCAL_CURRENCY, DEFAULT_TAX_CATEGORY } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -49,7 +48,16 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      defaultTaxCategoryId,
+      general: {
+        taxCategories: { incomeExchangeRateTaxCategoryId },
+      },
+    },
+  } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -96,7 +104,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             resolve(res);
           } else {
             errors.add('Tax category not found');
-            resolve(DEFAULT_TAX_CATEGORY);
+            resolve(defaultTaxCategoryId);
           }
         })
         .catch(reject);
@@ -155,11 +163,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     let transactionsTotalLocalAmount = 0;
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
         dates.add(entry.valueDate.getTime());
         currencies.add(entry.currency);
       });
@@ -193,13 +201,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
           // preparations for core ledger entries
           let exchangeRate: number | undefined = undefined;
-          if (transaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+          if (transaction.currency !== defaultLocalCurrency) {
             // get exchange rate for currency
             exchangeRate = await injector
               .get(ExchangeProvider)
               .getExchangeRates(
                 transaction.currency,
-                DEFAULT_LOCAL_CURRENCY,
+                defaultLocalCurrency,
                 transaction.debit_timestamp,
               );
           }
@@ -242,7 +250,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         ]);
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       } catch (e) {
@@ -272,7 +280,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       feeFinancialAccountLedgerEntries.push(...ledgerEntries);
       ledgerEntries.map(ledgerEntry => {
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       });
@@ -298,14 +306,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
         return ledgerEntryFromDocument(
           document,
-          injector,
+          context,
           chargeId,
           charge.owner_id,
           documentsTaxCategoryId!,
         )
           .then(ledgerEntry => {
             accountingLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
             dates.add(ledgerEntry.valueDate.getTime());
             currencies.add(ledgerEntry.currency);
           })
@@ -333,7 +341,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       accountingLedgerEntries.length === 0
     ) {
       errors.add(
-        `Charge of more than ${AMOUNT_REQUIRING_DOCUMENT} ${DEFAULT_LOCAL_CURRENCY} requires a document`,
+        `Charge of more than ${AMOUNT_REQUIRING_DOCUMENT} ${defaultLocalCurrency} requires a document`,
       );
     }
 
@@ -359,13 +367,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
             // preparations for core ledger entries
             let exchangeRate: number | undefined = undefined;
-            if (businessTripsEmployeePayment.currency !== DEFAULT_LOCAL_CURRENCY) {
+            if (businessTripsEmployeePayment.currency !== defaultLocalCurrency) {
               // get exchange rate for currency
               exchangeRate = await injector
                 .get(ExchangeProvider)
                 .getExchangeRates(
                   businessTripsEmployeePayment.currency as Currency,
-                  DEFAULT_LOCAL_CURRENCY,
+                  defaultLocalCurrency,
                   businessTripsEmployeePayment.date,
                 );
             }
@@ -405,7 +413,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             };
 
             accountingLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
             dates.add(ledgerEntry.valueDate.getTime());
             currencies.add(ledgerEntry.currency);
           },
@@ -437,7 +445,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           };
 
           accountingLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         });
         await Promise.all(businessTripExpensesPromises);
       }
@@ -449,7 +457,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ]);
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       undefined,
       allowedUnbalancedBusinesses,
@@ -474,6 +482,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       try {
         const entries = multipleForeignCurrenciesBalanceEntries(
+          context,
           documentEntries,
           transactionEntries,
           charge,
@@ -482,7 +491,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         );
         for (const ledgerEntry of entries) {
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         }
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -495,7 +504,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // check if exchange rate record is needed
     const hasMultipleDates = dates.size > 1;
-    const foreignCurrencyCount = currencies.size - (currencies.has(DEFAULT_LOCAL_CURRENCY) ? 1 : 0);
+    const foreignCurrencyCount = currencies.size - (currencies.has(defaultLocalCurrency) ? 1 : 0);
 
     const mightRequireExchangeRateRecord =
       (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
@@ -528,8 +537,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
         const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
         if (isIncomeCharge) {
-          exchangeRateTaxCategory =
-            context.adminContext.general.taxCategories.incomeExchangeRateTaxCategoryId;
+          exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
         }
       }
 
@@ -543,6 +551,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           ...miscLedgerEntries,
         ],
         balance.raw,
+        defaultLocalCurrency,
       );
       if (validation === true) {
         if (exchangeRateTaxCategory) {
@@ -556,12 +565,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             isCreditorCounterparty,
             invoiceDate: entryDate,
             valueDate: entryDate,
-            currency: DEFAULT_LOCAL_CURRENCY,
+            currency: defaultLocalCurrency,
             ownerId: transactionEntry.ownerId,
             chargeId,
           };
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         } else {
           errors.add(
             `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
@@ -580,14 +589,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ];
 
     const updatedLedgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
     );
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     return {

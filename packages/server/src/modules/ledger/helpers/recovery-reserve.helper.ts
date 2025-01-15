@@ -7,7 +7,7 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import { AVERAGE_MONTHLY_WORK_HOURS, DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
+import { AVERAGE_MONTHLY_WORK_HOURS } from '@shared/constants';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function recoveryDaysPerYearsOfExperience(years: number) {
@@ -70,11 +70,16 @@ function calculateMonthPart(
 }
 
 export async function calculateRecoveryReserveAmount(
-  { injector, adminContext }: GraphQLModules.Context,
+  context: GraphQLModules.Context,
   year: number,
 ) {
-  const { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId } =
-    adminContext.salaries;
+  const {
+    injector,
+    adminContext: {
+      defaultAdminBusinessId,
+      salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
+    },
+  } = context;
   if (!recoveryReserveExpensesTaxCategoryId) {
     throw new GraphQLError('Recovery reserve expenses tax category is not set');
   }
@@ -87,7 +92,7 @@ export async function calculateRecoveryReserveAmount(
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(DEFAULT_FINANCIAL_ENTITY_ID);
+    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
   const recoveryDataPromise = injector
     .get(RecoveryProvider)
     .getRecoveryData()
