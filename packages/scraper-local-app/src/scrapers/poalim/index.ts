@@ -12,7 +12,6 @@ export type PoalimCredentials = {
   options?: {
     isBusinessAccount?: boolean;
     acceptedAccountNumbers?: number[];
-    createDumpFile?: boolean;
   };
 };
 
@@ -28,7 +27,6 @@ export type PoalimContext = {
   columns?: {
     [table: string]: IGetTableColumnsResult[];
   };
-  createDumpFile?: boolean;
 };
 export type PoalimUserContext = MainContext & { [key: string]: PoalimContext };
 

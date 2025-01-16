@@ -57,7 +57,6 @@ export async function scrape() {
         nickname: credentials.nickname,
         key: credentials.nickname ? `POALIM_${credentials.nickname}` : makeId(8),
         acceptedAccountNumbers: credentials.options?.acceptedAccountNumbers ?? [],
-        createDumpFile: credentials.options?.createDumpFile ?? false,
         scraper: newPoalimInstance,
       } as PoalimContext;
     }),
