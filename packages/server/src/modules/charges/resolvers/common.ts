@@ -11,7 +11,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     DbCharge.documents_vat_amount != null && DbCharge.documents_currency
       ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
       : null,
-  totalAmount: dbCharge => calculateTotalAmount(dbCharge),
+  totalAmount: (dbCharge, _, { adminContext: { defaultLocalCurrency } }) =>
+    calculateTotalAmount(dbCharge, defaultLocalCurrency),
   property: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.type === 'CONVERSION',
   salary: DbCharge => DbCharge.type === 'PAYROLL',
@@ -20,7 +21,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minEventDate: DbCharge => DbCharge.transactions_min_event_date,
   minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
-  validationData: (DbCharge, _, { injector }) => validateCharge(DbCharge, injector),
+  validationData: (DbCharge, _, context) => validateCharge(DbCharge, context),
   metadata: DbCharge => DbCharge,
   yearsOfRelevance: async (DbCharge, _, { injector }) => {
     const spreadRecords = await injector

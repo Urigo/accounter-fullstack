@@ -4,7 +4,7 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import { DEFAULT_LOCAL_CURRENCY, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
@@ -135,6 +135,7 @@ function entrySingleAccountBalancer(
   entry: LedgerProto,
   isCredit: boolean,
   ledgerEntityNumber: 1 | 2,
+  context: GraphQLModules.Context,
 ) {
   const entityId = isCredit
     ? ledgerEntityNumber === 1
@@ -168,10 +169,13 @@ function entrySingleAccountBalancer(
       : ledgerEntityNumber === 1
         ? entry.localCurrencyDebitAmount1
         : entry.localCurrencyDebitAmount2) ?? 0) * factor;
+  const {
+    adminContext: { defaultLocalCurrency },
+  } = context;
   if (current) {
     current.amount += localAmount;
     current.foreignAmounts ||= {};
-    if (amount && currency !== DEFAULT_LOCAL_CURRENCY) {
+    if (amount && currency !== defaultLocalCurrency) {
       current.foreignAmounts[currency] = {
         foreign: (current.foreignAmounts[currency]?.foreign ?? 0) + amount,
         local: (current.foreignAmounts[currency]?.local ?? 0) + localAmount,
@@ -182,7 +186,7 @@ function entrySingleAccountBalancer(
       amount: localAmount,
       entityId,
       foreignAmounts:
-        amount && currency !== DEFAULT_LOCAL_CURRENCY
+        amount && currency !== defaultLocalCurrency
           ? {
               [currency]: {
                 foreign: amount,
@@ -204,17 +208,18 @@ export function updateLedgerBalanceByEntry(
       foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
     }
   >,
+  context: GraphQLModules.Context,
 ): void {
-  entrySingleAccountBalancer(ledgerBalance, entry, true, 1);
-  entrySingleAccountBalancer(ledgerBalance, entry, true, 2);
-  entrySingleAccountBalancer(ledgerBalance, entry, false, 1);
-  entrySingleAccountBalancer(ledgerBalance, entry, false, 2);
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 1, context);
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 2, context);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 1, context);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 2, context);
 
   return;
 }
 
 export async function getLedgerBalanceInfo(
-  injector: Injector,
+  context: GraphQLModules.Context,
   ledgerBalance: Map<string, { amount: number; entityId: string }>,
   errors: Set<string> = new Set(),
   allowedUnbalancedBusinesses: Set<string> = new Set(),
@@ -224,6 +229,10 @@ export async function getLedgerBalanceInfo(
     financialEntities: Array<IGetFinancialEntitiesByIdsResult>;
   }
 > {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency },
+  } = context;
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<{ entityId: string; balance: FinancialAmount }> = [];
@@ -258,13 +267,13 @@ export async function getLedgerBalanceInfo(
         }
       }
       errors.add(
-        `Business ${businessIdentification} is unbalanced (By ${amount.toFixed(2)}${getCurrencySymbol(DEFAULT_LOCAL_CURRENCY)})`,
+        `Business ${businessIdentification} is unbalanced (By ${amount.toFixed(2)}${getCurrencySymbol(defaultLocalCurrency)})`,
       );
       isBalanced = false;
     }
     unbalancedEntities.push({
       entityId,
-      balance: formatFinancialAmount(amount, DEFAULT_LOCAL_CURRENCY),
+      balance: formatFinancialAmount(amount, defaultLocalCurrency),
     });
     ledgerBalanceSum += amount;
   }
@@ -334,12 +343,16 @@ export async function getFinancialAccountTaxCategoryId(
 }
 
 export function multipleForeignCurrenciesBalanceEntries(
+  context: GraphQLModules.Context,
   documentEntries: LedgerProto[],
   transactionEntries: LedgerProto[],
   charge: IGetChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
   balanceAgainstLocal?: boolean,
 ): LedgerProto[] {
+  const {
+    adminContext: { defaultLocalCurrency },
+  } = context;
   if (!transactionEntries.length || !documentEntries.length) {
     throw new LedgerError(
       `Failed to locate transaction or document entries for charge "${charge.id}"`,
@@ -365,8 +378,8 @@ export function multipleForeignCurrenciesBalanceEntries(
       localDiff += local;
     }
 
-    if (balanceAgainstLocal && !foreignAmounts[DEFAULT_LOCAL_CURRENCY]) {
-      foreignAmounts[DEFAULT_LOCAL_CURRENCY] = {
+    if (balanceAgainstLocal && !foreignAmounts[defaultLocalCurrency]) {
+      foreignAmounts[defaultLocalCurrency] = {
         local: -localDiff,
         foreign: 0,
       };
@@ -399,7 +412,7 @@ export function multipleForeignCurrenciesBalanceEntries(
       }
 
       const isLocalCurrencyAndShouldBeBalanced =
-        balanceAgainstLocal && mainForeignCurrency && DEFAULT_LOCAL_CURRENCY === currency;
+        balanceAgainstLocal && mainForeignCurrency && defaultLocalCurrency === currency;
       const isCreditorCounterparty = isLocalCurrencyAndShouldBeBalanced
         ? mainForeignCurrency!.amount > 0
         : foreign < 0;

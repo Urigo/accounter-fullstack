@@ -1,19 +1,12 @@
 import { differenceInDays, endOfMonth, endOfYear, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import {
-  AVERAGE_MONTHLY_WORK_DAYS,
-  AVERAGE_MONTHLY_WORK_HOURS,
-  DEFAULT_FINANCIAL_ENTITY_ID,
-  VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
-  VACATION_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { AVERAGE_MONTHLY_WORK_DAYS, AVERAGE_MONTHLY_WORK_HOURS } from '@shared/constants';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function roundHalf(n: number) {
@@ -39,16 +32,33 @@ function vacationDaysPerYearsOfExperience(years: number) {
   return 0;
 }
 
-export async function calculateVacationReserveAmount(injector: Injector, year: number) {
+export async function calculateVacationReserveAmount(
+  context: GraphQLModules.Context,
+  year: number,
+) {
+  const {
+    injector,
+    adminContext: {
+      defaultAdminBusinessId,
+      salaries: { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId },
+    },
+  } = context;
+  if (!vacationReserveTaxCategoryId) {
+    throw new GraphQLError(`Vacation reserves tax category is not set`);
+  }
+  if (!vacationReserveExpensesTaxCategoryId) {
+    throw new GraphQLError(`Vacation reserves expenses tax category is not set`);
+  }
+
   const salariesPromise = injector
     .get(SalariesProvider)
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(DEFAULT_FINANCIAL_ENTITY_ID);
+    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
   const vacationLedgerRecordsPromise = injector
     .get(LedgerProvider)
-    .getLedgerRecordsByFinancialEntityIdLoader.load(VACATION_RESERVE_TAX_CATEGORY_ID);
+    .getLedgerRecordsByFinancialEntityIdLoader.load(vacationReserveTaxCategoryId);
   const [salaries, employees, vacationLedgerRecords] = await Promise.all([
     salariesPromise,
     employeesPromise,
@@ -181,8 +191,8 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
 
   const prevVacationReserveAmount = vacationLedgerRecords.reduce((acc, record) => {
     if (
-      record.credit_entity1 !== VACATION_RESERVE_TAX_CATEGORY_ID ||
-      record.debit_entity1 !== VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID ||
+      record.credit_entity1 !== vacationReserveTaxCategoryId ||
+      record.debit_entity1 !== vacationReserveExpensesTaxCategoryId ||
       record.value_date.getTime() >= new Date(year, 11, 31).getTime()
     ) {
       return acc;

@@ -1,4 +1,3 @@
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
@@ -19,7 +18,11 @@ export const commonTransactionFields:
     }
     return dateToTimelessDateString(DbTransaction.event_date);
   },
-  cryptoExchangeRate: async (DbTransaction, _, { injector }) => {
+  cryptoExchangeRate: async (
+    DbTransaction,
+    _,
+    { injector, adminContext: { defaultCryptoConversionFiatCurrency } },
+  ) => {
     const currency = formatCurrency(DbTransaction.currency);
     if (!isCryptoCurrency(currency) || !DbTransaction.debit_timestamp) {
       return null;
@@ -34,7 +37,7 @@ export const commonTransactionFields:
 
     return {
       from: currency,
-      to: DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY,
+      to: defaultCryptoConversionFiatCurrency,
       rate,
     };
   },

@@ -1,11 +1,10 @@
 import DataLoader from 'dataloader';
 import { format, subHours } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { CoinMarketCapProvider } from '@modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { getCacheInstance } from '@shared/helpers';
 import {
@@ -37,19 +36,22 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
     WHERE symbol in $$currencySymbols;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class CryptoExchangeProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 60 * 24, // 24 hours
   });
-  fiatCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY;
+  fiatCurrency: Currency;
 
   constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
     private coinMarketCap: CoinMarketCapProvider,
-  ) {}
+  ) {
+    this.fiatCurrency = this.context.adminContext.defaultCryptoConversionFiatCurrency;
+  }
 
   private async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
     return getRateByCurrencyAndDate.run({ currency, date }, this.dbProvider);
@@ -159,33 +161,31 @@ export class CryptoExchangeProvider {
   >(
     async keys => {
       const rates = await Promise.all(
-        keys.map(
-          async ({ cryptoCurrency, date, against = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY }) => {
-            // Fetch from DB first
-            const res = await this.getCryptoExchangeRatesFromDB(cryptoCurrency, date);
-            if (res.length > 0) {
-              return res[0];
-            }
-            // If not found in DB, fetch from API
-            const rate = await this.getCryptoExchangeRatesFromAPI(cryptoCurrency, date);
-            if (rate == null) {
-              return new GraphQLError(
-                `No data found for ${cryptoCurrency} on ${format(date, 'dd-MM-yyyy')}`,
-              );
-            }
-            return {
-              date,
-              coin_symbol: cryptoCurrency,
-              value: rate.toString(),
-              against,
-            } as IGetRateByCurrencyAndDateResult;
-          },
-        ),
+        keys.map(async ({ cryptoCurrency, date, against = this.fiatCurrency }) => {
+          // Fetch from DB first
+          const res = await this.getCryptoExchangeRatesFromDB(cryptoCurrency, date);
+          if (res.length > 0) {
+            return res[0];
+          }
+          // If not found in DB, fetch from API
+          const rate = await this.getCryptoExchangeRatesFromAPI(cryptoCurrency, date);
+          if (rate == null) {
+            return new GraphQLError(
+              `No data found for ${cryptoCurrency} on ${format(date, 'dd-MM-yyyy')}`,
+            );
+          }
+          return {
+            date,
+            coin_symbol: cryptoCurrency,
+            value: rate.toString(),
+            against,
+          } as IGetRateByCurrencyAndDateResult;
+        }),
       );
       return rates;
     },
     {
-      cacheKeyFn: ({ cryptoCurrency, date, against = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY }) =>
+      cacheKeyFn: ({ cryptoCurrency, date, against = this.fiatCurrency }) =>
         `${cryptoCurrency}-${date.getTime()}-${against}`,
       cacheMap: this.cache,
     },

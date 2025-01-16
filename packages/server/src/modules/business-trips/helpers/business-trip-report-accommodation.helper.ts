@@ -1,5 +1,4 @@
 import { Injector } from 'graphql-modules';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import type { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
@@ -23,19 +22,23 @@ type AccommodationTaxVariables = {
 };
 
 export async function accommodationExpenseDataCollector(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
   attendeesMap: Map<string, AttendeeInfo>,
 ): Promise<number> {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency, defaultCryptoConversionFiatCurrency },
+  } = context;
   // populate category
   partialSummaryData['ACCOMMODATION'] ??= {};
   const category = partialSummaryData['ACCOMMODATION'] as SummaryCategoryData;
 
-  category[DEFAULT_LOCAL_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
-  category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
+  category[defaultCryptoConversionFiatCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
 
   // set actual expense amounts and collect attendee accommodation data
   const attendeesAccommodationMap = new Map<
@@ -47,12 +50,12 @@ export async function accommodationExpenseDataCollector(
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense =>
       expenseAccommodationTaxableAmounts(
-        injector,
+        context,
         businessTripExpense,
         attendeesAccommodationMap,
       ).then(({ localAmount, foreignAmount }) => {
-        category[DEFAULT_LOCAL_CURRENCY]!.total += localAmount;
-        category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.total += foreignAmount;
+        category[defaultLocalCurrency]!.total += localAmount;
+        category[defaultCryptoConversionFiatCurrency]!.total += foreignAmount;
       }),
     ),
   );
@@ -79,10 +82,10 @@ export async function accommodationExpenseDataCollector(
         attendeesAccommodationMap.get(attendeeId),
       );
 
-      category[DEFAULT_LOCAL_CURRENCY]!.maxTaxable += maxTaxableLocal;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.maxTaxable += maxTaxableForeign;
-      category[DEFAULT_LOCAL_CURRENCY]!.taxable += taxableLocal;
-      category[DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY]!.taxable += taxableForeign;
+      category[defaultLocalCurrency]!.maxTaxable += maxTaxableLocal;
+      category[defaultCryptoConversionFiatCurrency]!.maxTaxable += maxTaxableForeign;
+      category[defaultLocalCurrency]!.taxable += taxableLocal;
+      category[defaultCryptoConversionFiatCurrency]!.taxable += taxableForeign;
 
       unAccommodatedDays += unAccommodatedAttendeeDays;
     }),
@@ -115,14 +118,14 @@ function getAccommodationTaxVariablesUSD(
 }
 
 async function expenseAccommodationTaxableAmounts(
-  injector: Injector,
+  context: GraphQLModules.Context,
   businessTripExpense: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
   attendeesAccommodationMap: Map<
     string,
     { localAmount: number; foreignAmount: number; nights: number }
   >,
 ) {
-  const { localAmount, foreignAmount } = await getExpenseAmountsData(injector, businessTripExpense);
+  const { localAmount, foreignAmount } = await getExpenseAmountsData(context, businessTripExpense);
 
   if (!businessTripExpense.nights_count) {
     console.error(

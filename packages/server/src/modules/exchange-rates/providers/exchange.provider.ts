@@ -1,20 +1,24 @@
-import { Injectable, Scope } from 'graphql-modules';
-import { DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { Currency } from '@shared/gql-types';
 import { getRateForCurrency, isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from './crypto-exchange.provider.js';
 import { FiatExchangeProvider } from './fiat-exchange.provider.js';
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class ExchangeProvider {
+  localCurrency: Currency;
+  cryptoConversionFiatCurrency: Currency;
   constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private cryptoExchangeProvider: CryptoExchangeProvider,
     private fiatExchangeProvider: FiatExchangeProvider,
   ) {
-    return;
+    this.localCurrency = this.context.adminContext.defaultLocalCurrency;
+    this.cryptoConversionFiatCurrency =
+      this.context.adminContext.defaultCryptoConversionFiatCurrency;
   }
 
   public async getExchangeRates(baseCurrency: Currency, quoteCurrency: Currency, date: Date) {
@@ -33,7 +37,7 @@ export class ExchangeProvider {
           date,
         });
         rate = rate * Number(value);
-        baseCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY as Currency;
+        baseCurrency = this.cryptoConversionFiatCurrency;
       }
     };
     const ifQuoteIsCryptoAdjuster = async () => {
@@ -43,7 +47,7 @@ export class ExchangeProvider {
           date,
         });
         rate = rate / Number(value);
-        quoteCurrency = DEFAULT_CRYPTO_FIAT_CONVERSION_CURRENCY as Currency;
+        quoteCurrency = this.cryptoConversionFiatCurrency;
       }
     };
     const getFiatRatesPromise = this.fiatExchangeProvider.getExchangeRatesByDatesLoader.load(date);
@@ -54,12 +58,12 @@ export class ExchangeProvider {
     ]);
 
     // adjust rate and convert to local default currency if base or quote are not local
-    if (baseCurrency !== DEFAULT_LOCAL_CURRENCY) {
-      const baseRate = getRateForCurrency(baseCurrency, rates);
+    if (baseCurrency !== this.localCurrency) {
+      const baseRate = getRateForCurrency(baseCurrency, rates, this.localCurrency);
       rate = rate * baseRate;
     }
-    if (quoteCurrency !== DEFAULT_LOCAL_CURRENCY) {
-      const quoteRate = getRateForCurrency(quoteCurrency, rates);
+    if (quoteCurrency !== this.localCurrency) {
+      const quoteRate = getRateForCurrency(quoteCurrency, rates, this.localCurrency);
       rate = rate / quoteRate;
     }
     return rate;

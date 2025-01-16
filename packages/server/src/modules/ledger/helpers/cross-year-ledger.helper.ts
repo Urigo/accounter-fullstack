@@ -1,15 +1,6 @@
-import { Injector } from 'graphql-modules';
 import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXPENSES_IN_ADVANCE_TAX_CATEGORY,
-  EXPENSES_TO_PAY_TAX_CATEGORY,
-  INCOME_IN_ADVANCE_TAX_CATEGORY,
-  INCOME_TO_COLLECT_TAX_CATEGORY,
-  INPUT_VAT_TAX_CATEGORY_ID,
-  OUTPUT_VAT_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
 
@@ -24,6 +15,7 @@ function divideEntryAmounts(
   entry: LedgerProto,
   yearsCount: number,
   predefinedAmount = 0,
+  defaultLocalCurrency: Currency,
 ): Partial<
   Pick<
     LedgerProto,
@@ -31,9 +23,7 @@ function divideEntryAmounts(
   >
 > {
   const originAmount =
-    entry.currency === DEFAULT_LOCAL_CURRENCY
-      ? entry.localCurrencyDebitAmount1
-      : entry.debitAmount1;
+    entry.currency === defaultLocalCurrency ? entry.localCurrencyDebitAmount1 : entry.debitAmount1;
   const ratio = 1 - Math.abs(predefinedAmount / originAmount!);
   return {
     creditAmount1: divideAmount(yearsCount, partialAmountCalculator(entry.creditAmount1, ratio)),
@@ -59,6 +49,7 @@ function partialAmountCalculator(amount: number | undefined, ratio = 0): number 
 function getPartialEntryAmounts(
   entry: LedgerProto,
   stringAmount: string | null,
+  defaultLocalCurrency: Currency,
 ): Partial<LedgerProto> | null {
   if (stringAmount === null) {
     return null;
@@ -68,7 +59,7 @@ function getPartialEntryAmounts(
     return null;
   }
 
-  const mainAmount = getEntryMainAmount(entry);
+  const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
 
   if ((entry.debitAmount1 || entry.creditAmount1) && partialAmount > mainAmount) {
     throw new LedgerError('Partial amount exceeds ledger record amount');
@@ -90,12 +81,33 @@ function getPartialEntryAmounts(
 
 export async function handleCrossYearLedgerEntries(
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   accountingLedgerEntries: LedgerProto[],
 ): Promise<LedgerProto[] | null> {
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      crossYear: {
+        expensesToPayTaxCategoryId,
+        expensesInAdvanceTaxCategoryId,
+        incomeInAdvanceTaxCategoryId,
+        incomeToCollectTaxCategoryId,
+      },
+    },
+  } = context;
   if (accountingLedgerEntries.length === 0) {
     return null;
   }
+  if (
+    !expensesToPayTaxCategoryId ||
+    !expensesInAdvanceTaxCategoryId ||
+    !incomeInAdvanceTaxCategoryId ||
+    !incomeToCollectTaxCategoryId
+  ) {
+    throw new LedgerError('Some cross-year tax categories are not set');
+  }
+
   const spreadRecords = await injector
     .get(ChargeSpreadProvider)
     .getChargeSpreadByChargeIdLoader.load(charge.id);
@@ -121,17 +133,20 @@ export async function handleCrossYearLedgerEntries(
   const crossYearEntries: LedgerProto[] = [];
   if (accountingLedgerEntries.length === 1) {
     const entry = accountingLedgerEntries[0];
-    const { adjustedEntry, vatEntries } = splitVatPayments(entry);
+    const { adjustedEntry, vatEntries } = splitVatPayments(entry, context);
     crossYearEntries.push(...vatEntries);
 
     const defaultAmounts = divideEntryAmounts(
       adjustedEntry,
       yearsWithoutSpecifiedAmountCount,
       predefinedAmount,
+      defaultLocalCurrency,
     );
 
     for (const spreadRecord of spreadRecords) {
-      const amounts = getPartialEntryAmounts(adjustedEntry, spreadRecord.amount) ?? defaultAmounts;
+      const amounts =
+        getPartialEntryAmounts(adjustedEntry, spreadRecord.amount, defaultLocalCurrency) ??
+        defaultAmounts;
       const yearDate = spreadRecord.year_of_relevance;
       if (
         adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
@@ -145,11 +160,11 @@ export async function handleCrossYearLedgerEntries(
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
       const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
         ? isYearOfRelevancePrior
-          ? EXPENSES_TO_PAY_TAX_CATEGORY
-          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+          ? expensesToPayTaxCategoryId
+          : expensesInAdvanceTaxCategoryId
         : isYearOfRelevancePrior
-          ? INCOME_TO_COLLECT_TAX_CATEGORY
-          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+          ? incomeToCollectTaxCategoryId
+          : incomeInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
@@ -180,10 +195,14 @@ export async function handleCrossYearLedgerEntries(
     const spreadRecord = spreadRecords[0];
     const yearDate = spreadRecord.year_of_relevance;
 
-    validateEntriesAmountsMatchesSpread(spreadRecord.amount, accountingLedgerEntries);
+    validateEntriesAmountsMatchesSpread(
+      spreadRecord.amount,
+      accountingLedgerEntries,
+      defaultLocalCurrency,
+    );
 
     for (const entry of accountingLedgerEntries) {
-      const { adjustedEntry, vatEntries } = splitVatPayments(entry);
+      const { adjustedEntry, vatEntries } = splitVatPayments(entry, context);
       crossYearEntries.push(...vatEntries);
 
       if (
@@ -198,11 +217,11 @@ export async function handleCrossYearLedgerEntries(
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
       const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
         ? isYearOfRelevancePrior
-          ? EXPENSES_TO_PAY_TAX_CATEGORY
-          : EXPENSES_IN_ADVANCE_TAX_CATEGORY
+          ? expensesToPayTaxCategoryId
+          : expensesInAdvanceTaxCategoryId
         : isYearOfRelevancePrior
-          ? INCOME_TO_COLLECT_TAX_CATEGORY
-          : INCOME_IN_ADVANCE_TAX_CATEGORY;
+          ? incomeToCollectTaxCategoryId
+          : incomeInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
@@ -231,11 +250,15 @@ export async function handleCrossYearLedgerEntries(
   return crossYearEntries;
 }
 
-function splitVatPayments(entry: LedgerProto): {
+function splitVatPayments(
+  entry: LedgerProto,
+  context: GraphQLModules.Context,
+): {
   adjustedEntry: LedgerProto;
   vatEntries: LedgerProto[];
 } {
-  const vatTaxIds = [INPUT_VAT_TAX_CATEGORY_ID, OUTPUT_VAT_TAX_CATEGORY_ID];
+  const { inputVatTaxCategoryId, outputVatTaxCategoryId } = context.adminContext.authorities;
+  const vatTaxIds = [inputVatTaxCategoryId, outputVatTaxCategoryId];
   const vatEntries: LedgerProto[] = [];
   const adjustedEntry = { ...entry };
   if (vatTaxIds.includes(entry.creditAccountID2 ?? '')) {
@@ -292,10 +315,10 @@ function splitVatPayments(entry: LedgerProto): {
   return { adjustedEntry, vatEntries };
 }
 
-function getEntryMainAmount(entry: LedgerProto): number {
+function getEntryMainAmount(entry: LedgerProto, defaultLocalCurrency: Currency): number {
   const mainAmount = Math.abs(
     Math.max(
-      ...(entry.currency === DEFAULT_LOCAL_CURRENCY
+      ...(entry.currency === defaultLocalCurrency
         ? [entry.localCurrencyDebitAmount1 ?? 0, entry.localCurrencyCreditAmount1 ?? 0]
         : [entry.debitAmount1 ?? 0, entry.creditAmount1 ?? 0]),
     ),
@@ -307,6 +330,7 @@ function getEntryMainAmount(entry: LedgerProto): number {
 function validateEntriesAmountsMatchesSpread(
   spreadStringifiedAmount: string | null,
   entries: LedgerProto[],
+  defaultLocalCurrency: Currency,
 ): void {
   if (spreadStringifiedAmount === null) {
     return;
@@ -317,7 +341,7 @@ function validateEntriesAmountsMatchesSpread(
   }
 
   const entriesAmount = entries.reduce((acc, entry) => {
-    const mainAmount = getEntryMainAmount(entry);
+    const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
     return acc + mainAmount;
   }, 0);
 

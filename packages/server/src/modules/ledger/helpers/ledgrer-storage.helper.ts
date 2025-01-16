@@ -1,7 +1,6 @@
 import { startOfDay } from 'date-fns';
-import { Injector } from 'graphql-modules';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID, EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
@@ -138,10 +137,13 @@ function isExactMatch(
   }, true as boolean);
 }
 
-export function convertToStorageInputRecord(record: LedgerProto): LedgerRecordInput {
+export function convertToStorageInputRecord(
+  record: LedgerProto,
+  context: GraphQLModules.Context,
+): LedgerRecordInput {
   return {
     chargeId: record.chargeId,
-    ownerId: record.ownerId ?? DEFAULT_FINANCIAL_ENTITY_ID,
+    ownerId: record.ownerId ?? context.adminContext.defaultAdminBusinessId,
     creditEntity1: record.creditAccountID1,
     creditEntity2: record.creditAccountID2,
     creditForeignAmount1: record.creditAmount1,
@@ -184,6 +186,7 @@ function getMatchScore(
 
 export function convertLedgerRecordToProto(
   record: IGetLedgerRecordsByChargesIdsResult,
+  context: GraphQLModules.Context,
 ): LedgerProto {
   return {
     id: record.id,
@@ -213,7 +216,7 @@ export function convertLedgerRecordToProto(
     valueDate: record.value_date,
     currency: formatCurrency(record.currency),
     isCreditorCounterparty: false, // redundant value
-    ownerId: record.owner_id ?? DEFAULT_FINANCIAL_ENTITY_ID,
+    ownerId: record.owner_id ?? context.adminContext.defaultAdminBusinessId,
     currencyRate: undefined,
     chargeId: record.charge_id,
   };
@@ -221,10 +224,11 @@ export function convertLedgerRecordToProto(
 
 export function convertLedgerRecordToInput(
   record: IGetLedgerRecordsByChargesIdsResult,
+  context: GraphQLModules.Context,
 ): LedgerRecordInput | IUpdateLedgerRecordParams {
   return {
     chargeId: record.charge_id ?? undefined,
-    ownerId: record.owner_id ?? DEFAULT_FINANCIAL_ENTITY_ID,
+    ownerId: record.owner_id ?? context.adminContext.defaultAdminBusinessId,
     creditEntity1: record.credit_entity1 ?? undefined,
     creditEntity2: record.credit_entity2 ?? undefined,
     debitEntity1: record.debit_entity1 ?? undefined,
@@ -259,14 +263,14 @@ export function convertLedgerRecordToInput(
 export async function storeInitialGeneratedRecords(
   charge: IGetChargesByIdsResult,
   records: LedgerProto[],
-  injector: Injector,
+  context: GraphQLModules.Context,
 ) {
   if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
-    const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(
-      convertToStorageInputRecord,
+    const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(record =>
+      convertToStorageInputRecord(record, context),
     );
     if (ledgerRecords.length) {
-      return injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
+      return context.injector.get(LedgerProvider).insertLedgerRecords({ ledgerRecords });
     }
   }
   return void 0;

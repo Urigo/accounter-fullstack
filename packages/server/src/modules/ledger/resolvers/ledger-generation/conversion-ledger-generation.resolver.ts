@@ -1,12 +1,6 @@
-import { Injector } from 'graphql-modules';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-  FEE_TAX_CATEGORY_ID,
-} from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -33,9 +27,18 @@ import {
 export const generateLedgerRecordsForConversion: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
-  { injector: Injector },
+  GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { feeTaxCategoryId, exchangeRevaluationTaxCategoryId },
+      },
+    },
+  } = context;
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -81,11 +84,11 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         let amount = Number(transaction.amount);
         let foreignAmount: number | undefined = undefined;
 
-        if (currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (currency !== defaultLocalCurrency) {
           // get exchange rate for currency
           const exchangeRate = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+            .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
           foreignAmount = amount;
           // calculate amounts in ILS
@@ -121,7 +124,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         };
 
         mainFinancialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -151,7 +154,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         }
 
         try {
-          const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+          const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
           const { currency, valueDate, transactionBusinessId } =
             validateTransactionBasicVariables(transaction);
 
@@ -161,11 +164,11 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           }
           let foreignAmount: number | undefined = undefined;
 
-          if (currency !== DEFAULT_LOCAL_CURRENCY) {
+          if (currency !== defaultLocalCurrency) {
             // get exchange rate for currency
             const exchangeRate = await injector
               .get(ExchangeProvider)
-              .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+              .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
             foreignAmount = amount;
             // calculate amounts in ILS
@@ -186,13 +189,13 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               valueDate,
               currency,
               creditAccountID1: isCreditorCounterparty
-                ? FEE_TAX_CATEGORY_ID
+                ? feeTaxCategoryId
                 : financialAccountTaxCategoryId,
               creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyCreditAmount1: Math.abs(amount),
               debitAccountID1: isCreditorCounterparty
                 ? financialAccountTaxCategoryId
-                : FEE_TAX_CATEGORY_ID,
+                : feeTaxCategoryId,
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
@@ -217,12 +220,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               invoiceDate: transaction.event_date,
               valueDate,
               currency,
-              creditAccountID1: isCreditorCounterparty
-                ? FEE_TAX_CATEGORY_ID
-                : transactionBusinessId,
+              creditAccountID1: isCreditorCounterparty ? feeTaxCategoryId : transactionBusinessId,
               creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyCreditAmount1: Math.abs(amount),
-              debitAccountID1: isCreditorCounterparty ? transactionBusinessId : FEE_TAX_CATEGORY_ID,
+              debitAccountID1: isCreditorCounterparty ? transactionBusinessId : feeTaxCategoryId,
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
@@ -236,7 +237,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
             };
 
             feeFinancialAccountLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
           }
         } catch (e) {
           if (e instanceof LedgerError) {
@@ -252,7 +253,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         [quoteEntry.currency, baseEntry.currency].map(currency =>
           injector
             .get(ExchangeProvider)
-            .getExchangeRates(currency as Currency, DEFAULT_LOCAL_CURRENCY, baseEntry!.valueDate),
+            .getExchangeRates(currency as Currency, defaultLocalCurrency, baseEntry!.valueDate),
         ),
       );
       const toLocalRate = quoteRate;
@@ -263,6 +264,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           baseEntry,
           quoteEntry,
           directRate,
+          defaultLocalCurrency,
           toLocalRate,
         );
 
@@ -271,22 +273,22 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
           const ledgerEntry: LedgerProto = {
             id: quoteEntry.id + '|revaluation', // NOTE: this field is dummy
-            creditAccountID1: isDebitConversion ? EXCHANGE_REVALUATION_TAX_CATEGORY_ID : undefined,
+            creditAccountID1: isDebitConversion ? exchangeRevaluationTaxCategoryId : undefined,
             localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
-            debitAccountID1: isDebitConversion ? undefined : EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+            debitAccountID1: isDebitConversion ? undefined : exchangeRevaluationTaxCategoryId,
             localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
             description: 'Exchange Revaluation',
             isCreditorCounterparty: true,
             invoiceDate: quoteEntry.invoiceDate,
             valueDate: quoteEntry.valueDate,
-            currency: DEFAULT_LOCAL_CURRENCY,
+            currency: defaultLocalCurrency,
             reference: quoteEntry.reference,
             ownerId: quoteEntry.ownerId,
             chargeId,
           };
 
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         }
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -297,7 +299,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(context, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,
@@ -306,7 +308,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     return {

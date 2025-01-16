@@ -7,7 +7,6 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY, EXCHANGE_RATE_TAX_CATEGORY_ID } from '@shared/constants';
 import type {
   Currency,
   Maybe,
@@ -36,7 +35,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   const chargeId = charge.id;
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { exchangeRateTaxCategoryId },
+      },
+    },
+  } = context;
 
   const errors: Set<string> = new Set();
 
@@ -97,14 +104,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const mainTransactionPromise = async () =>
       ledgerEntryFromMainTransaction(
         mainTransaction,
-        injector,
+        context,
         chargeId,
         charge.owner_id,
         charge.business_id ?? undefined,
       )
         .then(ledgerEntry => {
           financialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
         })
         .catch(e => {
           if (e instanceof LedgerError) {
@@ -134,11 +141,11 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       let amount = Number(transaction.amount);
       let foreignAmount: number | undefined = undefined;
 
-      if (currency !== DEFAULT_LOCAL_CURRENCY) {
+      if (currency !== defaultLocalCurrency) {
         // get exchange rate for currency
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+          .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
         foreignAmount = amount;
         // calculate amounts in ILS:
@@ -169,15 +176,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       };
 
       interestLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
       });
     });
 
@@ -211,7 +218,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           ? ledgerBalance.get(mainTransaction.business_id)
           : undefined;
         const mainBusinessBalanceByCurrency =
-          mainTransaction.currency === DEFAULT_LOCAL_CURRENCY
+          mainTransaction.currency === defaultLocalCurrency
             ? mainBusinessBalance?.amount
             : mainBusinessBalance?.foreignAmounts?.[mainTransaction.currency]?.foreign;
         const mainBusinessAbsBalance = mainBusinessBalanceByCurrency
@@ -246,11 +253,12 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
         if (depositLedgerRecord.debit_entity1) {
           updateLedgerBalanceByEntry(
-            convertLedgerRecordToProto(depositLedgerRecord),
+            convertLedgerRecordToProto(depositLedgerRecord, context),
             ledgerBalance,
+            context,
           );
         }
-        if (mainTransaction.currency !== DEFAULT_LOCAL_CURRENCY) {
+        if (mainTransaction.currency !== defaultLocalCurrency) {
           const rawAmount =
             Number(depositLedgerRecord.credit_local_amount1) -
             mainLedgerEntry.localCurrencyCreditAmount1;
@@ -260,10 +268,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
           // validate exchange rate
           try {
-            const exchangeAmount = calculateExchangeRate(mainLedgerEntry.creditAccountID1, [
-              ...financialAccountLedgerEntries,
-              convertLedgerRecordToProto(depositLedgerRecord),
-            ]);
+            const exchangeAmount = calculateExchangeRate(
+              mainLedgerEntry.creditAccountID1,
+              [
+                ...financialAccountLedgerEntries,
+                convertLedgerRecordToProto(depositLedgerRecord, context),
+              ],
+              defaultLocalCurrency,
+            );
             if (
               (!exchangeAmount && !!amount) ||
               (exchangeAmount && Math.abs(exchangeAmount) !== amount)
@@ -276,22 +288,20 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
           const exchangeLedgerEntry: StrictLedgerProto = {
             id: mainTransaction.id + '|fee', // NOTE: this field is dummy
-            creditAccountID1: isCreditorCounterparty
-              ? mainAccountId
-              : EXCHANGE_RATE_TAX_CATEGORY_ID,
+            creditAccountID1: isCreditorCounterparty ? mainAccountId : exchangeRateTaxCategoryId,
             localCurrencyCreditAmount1: amount,
-            debitAccountID1: isCreditorCounterparty ? EXCHANGE_RATE_TAX_CATEGORY_ID : mainAccountId,
+            debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : mainAccountId,
             localCurrencyDebitAmount1: amount,
             description: 'Exchange ledger record',
             isCreditorCounterparty,
             invoiceDate: mainLedgerEntry.valueDate,
             valueDate: mainLedgerEntry.valueDate,
-            currency: DEFAULT_LOCAL_CURRENCY,
+            currency: defaultLocalCurrency,
             ownerId: mainLedgerEntry.ownerId,
             chargeId,
           };
           miscLedgerEntries.push(exchangeLedgerEntry);
-          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance);
+          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance, context);
         }
       }
 
@@ -313,7 +323,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       ...miscLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, injector);
+      await storeInitialGeneratedRecords(charge, records, context);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
@@ -322,7 +332,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
     }
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      injector,
+      context,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,

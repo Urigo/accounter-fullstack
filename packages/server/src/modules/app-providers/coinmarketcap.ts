@@ -1,14 +1,12 @@
 import { GraphQLError } from 'graphql';
-import { Inject, Injectable, Scope } from 'graphql-modules';
-import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+import { Injectable, Scope } from 'graphql-modules';
 
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class CoinMarketCapProvider {
-  constructor(@Inject(ENVIRONMENT) private env: Environment) {}
+  constructor() {}
 
   public async getExchangeRates(
     coinmarketcapId: number,

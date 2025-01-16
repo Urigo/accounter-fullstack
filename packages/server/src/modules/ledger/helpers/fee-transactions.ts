@@ -1,14 +1,6 @@
-import { Injector } from 'graphql-modules';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  FEE_TAX_CATEGORY_ID,
-  GENERAL_FEE_TAX_CATEGORY_ID,
-  INTERNAL_WALLETS_IDS,
-  SWIFT_BUSINESS_ID,
-} from '@shared/constants';
 import type { LedgerProto } from '@shared/types';
 import {
   getFinancialAccountTaxCategoryId,
@@ -31,7 +23,9 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
 
 export function isSupplementalFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
+  context: GraphQLModules.Context,
 ): boolean {
+  const { internalWalletsIds, swiftBusinessId } = context.adminContext.financialAccounts;
   if (!transaction.is_fee) {
     return false;
   }
@@ -41,11 +35,11 @@ export function isSupplementalFeeTransaction(
     );
   }
 
-  if (INTERNAL_WALLETS_IDS.includes(transaction.business_id)) {
+  if (internalWalletsIds.includes(transaction.business_id)) {
     return true;
   }
 
-  const fundamentalFeeBusinesses: string[] = [SWIFT_BUSINESS_ID];
+  const fundamentalFeeBusinesses = [swiftBusinessId].filter(Boolean) as string[];
   if (fundamentalFeeBusinesses.includes(transaction.business_id)) {
     return false;
   }
@@ -57,8 +51,17 @@ export function isSupplementalFeeTransaction(
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   charge: IGetChargesByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<Array<LedgerProto>> {
+  const {
+    injector,
+    adminContext: {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { feeTaxCategoryId, generalFeeTaxCategoryId },
+      },
+    },
+  } = context;
   const ledgerEntries: Array<LedgerProto> = [];
 
   if (!transaction.is_fee) {
@@ -67,18 +70,18 @@ export async function getEntriesFromFeeTransaction(
     );
   }
 
-  const isSupplementalFee = isSupplementalFeeTransaction(transaction);
+  const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
   let amount = Number(transaction.amount);
   let foreignAmount: number | undefined = undefined;
 
-  if (currency !== DEFAULT_LOCAL_CURRENCY) {
+  if (currency !== defaultLocalCurrency) {
     // get exchange rate for currency
     const exchangeRate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, valueDate);
+      .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
     foreignAmount = amount;
     // calculate amounts in ILS
@@ -121,9 +124,7 @@ export async function getEntriesFromFeeTransaction(
   }
 
   const feeTaxCategory =
-    charge.tax_category_id === GENERAL_FEE_TAX_CATEGORY_ID
-      ? GENERAL_FEE_TAX_CATEGORY_ID
-      : FEE_TAX_CATEGORY_ID;
+    charge.tax_category_id === generalFeeTaxCategoryId ? generalFeeTaxCategoryId : feeTaxCategoryId;
 
   const ledgerEntry: LedgerProto = {
     ...partialLedgerEntry,

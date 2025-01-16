@@ -4,11 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -29,7 +25,15 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
-    const { injector } = context;
+    const {
+      injector,
+      adminContext: {
+        defaultLocalCurrency,
+        general: {
+          taxCategories: { exchangeRevaluationTaxCategoryId },
+        },
+      },
+    } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -60,7 +64,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     }
 
     const foreignAccounts = accountTaxCategories.filter(
-      ({ currency }) => currency !== DEFAULT_LOCAL_CURRENCY,
+      ({ currency }) => currency !== defaultLocalCurrency,
     );
 
     if (foreignAccounts.length === 0) {
@@ -91,7 +95,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       ...Array.from(currencies).map(async currency => {
         const rates = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, new Date(revaluationDate));
+          .getExchangeRates(currency, defaultLocalCurrency, new Date(revaluationDate));
         exchangeRates.set(currency, rates);
       }),
     ]);
@@ -121,11 +125,11 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       if (
         !cumulativeSums ||
         (cumulativeSums[account.currency].total === 0 &&
-          cumulativeSums[DEFAULT_LOCAL_CURRENCY].total === 0)
+          cumulativeSums[defaultLocalCurrency].total === 0)
       ) {
         return;
       }
-      const cumulativeLocalBalance = cumulativeSums[DEFAULT_LOCAL_CURRENCY].total;
+      const cumulativeLocalBalance = cumulativeSums[defaultLocalCurrency].total;
       const cumulativeForeignBalance = cumulativeSums[account.currency].total;
 
       const revaluationDiff = cumulativeLocalBalance - cumulativeForeignBalance * rate;
@@ -140,15 +144,15 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
         id: EMPTY_UUID,
         invoiceDate: new Date(revaluationDate),
         valueDate: new Date(revaluationDate),
-        currency: DEFAULT_LOCAL_CURRENCY,
+        currency: defaultLocalCurrency,
         isCreditorCounterparty,
         ...(isCreditorCounterparty
           ? {
               creditAccountID1: account.id,
-              debitAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+              debitAccountID1: exchangeRevaluationTaxCategoryId,
             }
           : {
-              creditAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+              creditAccountID1: exchangeRevaluationTaxCategoryId,
               debitAccountID1: account.id,
             }),
         localCurrencyCreditAmount1: Math.abs(revaluationDiff),
@@ -163,7 +167,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     });
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, injector);
+      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
     }
 
     return {

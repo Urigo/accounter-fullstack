@@ -7,6 +7,7 @@ import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { AccounterContext } from '@shared/types';
 import { env } from './environment.js';
 import { createGraphQLApp } from './modules-app.js';
+import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 
 async function main() {
@@ -15,6 +16,7 @@ async function main() {
   const yoga = createYoga({
     plugins: [
       authPlugin(),
+      adminContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
       useHive({

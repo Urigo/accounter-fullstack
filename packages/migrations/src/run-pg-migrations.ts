@@ -68,6 +68,7 @@ import migration_2024_12_26T12_15_43_bank_discount from './actions/2024-12-26T12
 import migration_2025_01_05T18_20_42_vat_table from './actions/2025-01-05T18-20-42.vat-table.js';
 import migration_2025_01_07T18_54_54_poalim_foreign_event_details_column_update from './actions/2025-01-07T18-54-54.poalim-foreign-event-details-column-update.js';
 import migration_2025_01_12T11_47_46_support_cad_currency from './actions/2025-01-12T11-47-46.support-cad-currency.js';
+import migration_2025_01_14T18_59_26_add_user_context_table from './actions/2025-01-14T18-59-26.add-user-context-table.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -143,5 +144,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_01_05T18_20_42_vat_table,
       migration_2025_01_07T18_54_54_poalim_foreign_event_details_column_update,
       migration_2025_01_12T11_47_46_support_cad_currency,
+      migration_2025_01_14T18_59_26_add_user_context_table,
     ],
   });

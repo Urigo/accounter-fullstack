@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField } from '@shared/types';
@@ -54,8 +53,9 @@ export function defineConversionBaseAndQuote(transactions: Array<IGetTransaction
 export function getRateForCurrency(
   currencyCode: Currency,
   exchangeRates: IGetExchangeRatesByDatesResult,
+  defaultLocalCurrency: Currency,
 ) {
-  if (currencyCode === DEFAULT_LOCAL_CURRENCY) {
+  if (currencyCode === defaultLocalCurrency) {
     return 1;
   }
   if (

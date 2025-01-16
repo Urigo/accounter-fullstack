@@ -1,11 +1,6 @@
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { calculateVacationReserveAmount } from '@modules/ledger/helpers/vacation-reserve.helper.js';
-import {
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
-  VACATION_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -17,11 +12,28 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
   try {
-    const { injector } = context;
+    const {
+      adminContext: {
+        defaultLocalCurrency,
+        salaries: { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId },
+      },
+    } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
         message: `Vacation reserves charge must include user description with designated year`,
+      };
+    }
+    if (!vacationReserveTaxCategoryId) {
+      return {
+        __typename: 'CommonError',
+        message: `Vacation reserves tax category is not set`,
+      };
+    }
+    if (!vacationReserveExpensesTaxCategoryId) {
+      return {
+        __typename: 'CommonError',
+        message: `Vacation reserves expenses tax category is not set`,
       };
     }
 
@@ -44,16 +56,16 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
       };
     }
 
-    const { vacationReserveAmount } = await calculateVacationReserveAmount(injector, year);
+    const { vacationReserveAmount } = await calculateVacationReserveAmount(context, year);
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
       invoiceDate: new Date(year, 11, 31),
       valueDate: new Date(year, 11, 31),
-      currency: DEFAULT_LOCAL_CURRENCY,
+      currency: defaultLocalCurrency,
       isCreditorCounterparty: true,
-      creditAccountID1: VACATION_RESERVE_TAX_CATEGORY_ID,
-      debitAccountID1: VACATION_RESERVE_EXPENSES_TAX_CATEGORY_ID,
+      creditAccountID1: vacationReserveTaxCategoryId,
+      debitAccountID1: vacationReserveExpensesTaxCategoryId,
       localCurrencyCreditAmount1: Math.abs(vacationReserveAmount),
       localCurrencyDebitAmount1: Math.abs(vacationReserveAmount),
       description: `Vacation reserve for ${year}`,
@@ -65,7 +77,7 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
     const ledgerEntries = [ledgerEntry];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, injector);
+      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
     }
 
     return {
