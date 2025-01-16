@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs';
 import { differenceInMonths } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
