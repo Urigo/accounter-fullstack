@@ -46,7 +46,7 @@ async function seed() {
     // update the owner_id of the admin entity
     await client.query(
       `
-      UPDATE accounter_schema.financial_entities 
+      UPDATE accounter_schema.financial_entities
       SET owner_id = $1
       WHERE id = $1
     `,
@@ -108,7 +108,7 @@ async function seed() {
     for (const account of accountsToCreate) {
       const financialAccountResult = await client.query(
         `
-        INSERT INTO accounter_schema.financial_accounts 
+        INSERT INTO accounter_schema.financial_accounts
         (account_number, type, private_business, owner, bank_number, branch_number)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id
@@ -790,8 +790,10 @@ async function createAdminBusinessContext(
     await client.query(`
       INSERT INTO accounter_schema.user_context (owner_id, default_local_currency, default_fiat_currency_for_crypto_conversions,
       ${Object.keys(context).join(', ')})
-      VALUES ('${adminEntityId}', 'ILS', 'USD', ${[Object.values(context)].map(id => (id ? `'${id}'` : 'NULL')).join(', ')}}',;
-      RETURNING *
+      VALUES ('${adminEntityId}', 'ILS', 'USD', ${Object.values(context)
+        .map(id => (id ? `'${id}'` : 'NULL'))
+        .join(`, `)})
+      RETURNING *;
       `);
   } catch (e) {
     console.error('Failed to create context:', e);
