@@ -399,19 +399,6 @@ async function insertTransactions(
   }
 }
 
-function createDumpFile(transactions: NormalizedIlsTransaction[], bankAccount: ScrapedAccount) {
-  const date = new Date();
-  const dateString = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .split('T')[0];
-
-  writeFileSync(
-    `../archived_data/POALIM_original_checking_bank_dump_${dateString}_${bankAccount.accountNumber}.json`,
-    JSON.stringify(transactions),
-    'utf8',
-  );
-}
-
 export async function getIlsTransactions(bankKey: string, account: ScrapedAccount) {
   const ilsKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_ils`;
   return new Listr<PoalimUserContext & { [bankKey: string]: { [ilsKey: string]: Context } }>([
@@ -461,11 +448,6 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
         const { newTransactions = [] } = ctx[bankKey][ilsKey];
         await insertTransactions(newTransactions, ctx.pool, ctx.logger);
       },
-    },
-    {
-      title: 'Create dump file',
-      skip: ctx => ctx[bankKey][ilsKey].transactions?.length === 0 || !ctx[bankKey].createDumpFile,
-      task: ctx => createDumpFile(ctx[bankKey][ilsKey].transactions!, account),
     },
   ]);
 }
