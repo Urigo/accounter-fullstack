@@ -28,7 +28,7 @@ import { commonChargeLedgerResolver } from './common.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   Query: {
-    chargesWithLedgerChanges: (_, { filters, limit }, context, info) =>
+    chargesWithLedgerChanges: async (_, { filters, limit }, context, info) =>
       new Repeater<ResolversTypes['ChargesWithLedgerChangesResult']>(async (push, stop) => {
         const { injector } = context;
 

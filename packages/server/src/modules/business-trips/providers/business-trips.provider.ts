@@ -3,11 +3,11 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
-import { IGetBusinessTripsByChargeIdsQuery } from '../__generated__/business-trips.types.js';
 import type {
   BusinessTripProto,
   IDeleteChargeBusinessTripQuery,
   IGetAllBusinessTripsQuery,
+  IGetBusinessTripsByChargeIdsQuery,
   IGetBusinessTripsByDatesParams,
   IGetBusinessTripsByDatesQuery,
   IGetBusinessTripsByIdsQuery,

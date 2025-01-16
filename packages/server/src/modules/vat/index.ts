@@ -8,7 +8,7 @@ export const vatModule = createModule({
   id: 'vat',
   dirname: __dirname,
   typeDefs: [vat],
-  providers: [VatProvider],
+  providers: () => [VatProvider],
 });
 
 export * as VatTypes from './types.js';

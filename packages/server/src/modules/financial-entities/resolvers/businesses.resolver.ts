@@ -297,7 +297,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
-        ownerIDs: [defaultAdminBusinessId, '1bd4bd60-50df-4a1a-b31b-c20457e8cd2b'], // TODO: replace hard coded ID
+        ownerIDs: [defaultAdminBusinessId],
       });
       const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
       const [transactions, businesses] = await Promise.all([

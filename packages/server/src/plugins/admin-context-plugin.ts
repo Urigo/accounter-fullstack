@@ -3,13 +3,13 @@ import pg from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
 import { formatCurrency, getCacheInstance } from '@shared/helpers';
-import { Environment } from '@shared/types';
+import type { Environment } from '@shared/types';
 import { env } from '../environment.js';
 import type {
   IGetAdminBusinessContextQuery,
   IGetAdminBusinessContextResult,
 } from './__generated__/admin-context-plugin.types.js';
-import { UserType } from './auth-plugin.js';
+import type { UserType } from './auth-plugin.js';
 
 const getAdminBusinessContext = sql<IGetAdminBusinessContextQuery>`
   SELECT *
@@ -247,7 +247,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       expensesToPayTaxCategoryId: rawContext.expenses_to_pay_tax_category_id,
       expensesInAdvanceTaxCategoryId: rawContext.expenses_in_advance_tax_category_id,
       incomeToCollectTaxCategoryId: rawContext.income_to_collect_tax_category_id,
-      incomeInAdvanceTaxCategoryId: rawContext.income_in_advance_tax_category_id,
+      incomeInAdvanceTaxCategoryId: rawContext.default_tax_category_id,
     },
     general: {
       taxCategories: {
