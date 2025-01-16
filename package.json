@@ -61,7 +61,7 @@
     "@graphql-codegen/typescript": "4.1.2",
     "@graphql-codegen/typescript-resolvers": "4.4.1",
     "@graphql-eslint/eslint-plugin": "4.3.0",
-    "@graphql-hive/cli": "0.45.0",
+    "@graphql-hive/cli": "0.46.0",
     "@graphql-inspector/cli": "5.0.8",
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.13.2",

@@ -2122,10 +2122,10 @@
     graphql-depth-limit "^1.1.0"
     lodash.lowercase "^4.3.0"
 
-"@graphql-hive/cli@0.45.0":
-  version "0.45.0"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.45.0.tgz#2ed4533d81bcf1eb707aeb38ec1627119ea84a5c"
-  integrity sha512-zlCVzeq/UhspZzrony5v72LjaaOxqI/mg4SQJ984xIt1/w/5jtL8pknqoffMGN02Yf8MjLVqrmRbuK+xhGHSfg==
+"@graphql-hive/cli@0.46.0":
+  version "0.46.0"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.46.0.tgz#611197c3371f52062c1bdcc9da119c3c2e012edf"
+  integrity sha512-CetTT9o8cAKil71EvJTuI09JoxqBRn1s3rLJyZtNbLcubjVt2sR9fjhqQIESb5h8hC08M2grMLLWH7gptmQYqg==
   dependencies:
     "@graphql-hive/core" "0.8.3"
     "@graphql-inspector/core" "5.1.0-alpha-20231208113249-34700c8a"
@@ -2139,12 +2139,12 @@
     "@oclif/core" "^3.26.6"
     "@oclif/plugin-help" "6.0.22"
     "@oclif/plugin-update" "4.2.13"
+    "@sinclair/typebox" "0.34.13"
     "@theguild/federation-composition" "0.14.2"
     colors "1.4.0"
     env-ci "7.3.0"
     graphql "^16.8.1"
     graphql-tag "2.12.6"
-    mkdirp "3.0.1"
     tslib "2.8.1"
     zod "3.24.1"
 
@@ -4862,6 +4862,11 @@
   version "0.4.1"
   resolved "https://registry.yarnpkg.com/@sec-ant/readable-stream/-/readable-stream-0.4.1.tgz#60de891bb126abfdc5410fdc6166aca065f10a0c"
   integrity sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==
+
+"@sinclair/typebox@0.34.13":
+  version "0.34.13"
+  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.34.13.tgz#9a014b58d10a4a5d0ac8badaa793571224767c4b"
+  integrity sha512-ceVKqyCEgC355Kw0s/0tyfY9MzMQINSykJ/pG2w6YnaZyrcjV48svZpr8lVZrYgWjzOmrIPBhQRAtr/7eJpA5g==
 
 "@sinclair/typebox@0.34.14":
   version "0.34.14"
@@ -11025,15 +11030,15 @@ mkdirp-classic@^0.5.2:
   resolved "https://registry.yarnpkg.com/mkdirp-classic/-/mkdirp-classic-0.5.3.tgz#fa10c9115cc6d8865be221ba47ee9bed78601113"
   integrity sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==
 
-mkdirp@3.0.1, mkdirp@^3.0.0:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-3.0.1.tgz#e44e4c5607fb279c168241713cc6e0fea9adcb50"
-  integrity sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==
-
 mkdirp@^1.0.3:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
+
+mkdirp@^3.0.0:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-3.0.1.tgz#e44e4c5607fb279c168241713cc6e0fea9adcb50"
+  integrity sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==
 
 moment@2.30.1, moment@^2.10.2:
   version "2.30.1"
