@@ -4743,10 +4743,10 @@
   resolved "https://registry.yarnpkg.com/@sec-ant/readable-stream/-/readable-stream-0.4.1.tgz#60de891bb126abfdc5410fdc6166aca065f10a0c"
   integrity sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==
 
-"@sinclair/typebox@0.34.13":
-  version "0.34.13"
-  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.34.13.tgz#9a014b58d10a4a5d0ac8badaa793571224767c4b"
-  integrity sha512-ceVKqyCEgC355Kw0s/0tyfY9MzMQINSykJ/pG2w6YnaZyrcjV48svZpr8lVZrYgWjzOmrIPBhQRAtr/7eJpA5g==
+"@sinclair/typebox@0.34.14":
+  version "0.34.14"
+  resolved "https://registry.yarnpkg.com/@sinclair/typebox/-/typebox-0.34.14.tgz#cae482cc36cf5b0d8fe6fa85a15b28e0bc6fb05d"
+  integrity sha512-TJ7Al17j3+by5y2QkTLcF/oBVMbgXBhILVgi9PuwpxQVZZvGh5BFRzWbJPmZVNKpbRLjuMzFuRwR+tdFPqCkvA==
 
 "@sindresorhus/is@^5.2.0":
   version "5.6.0"
