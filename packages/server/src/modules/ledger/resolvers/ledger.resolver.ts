@@ -28,48 +28,48 @@ import { commonChargeLedgerResolver } from './common.resolver.js';
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   Query: {
-    chargesWithLedgerChanges: async (_, { filters, limit }, context, info) =>
-      new Repeater<ResolversTypes['ChargesWithLedgerChangesResult']>(async (push, stop) => {
-        const { injector } = context;
+    chargesWithLedgerChanges: async (_, { filters, limit }, context, info) => {
+      const { injector } = context;
 
-        // handle sort column
-        let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
-        switch (filters?.sortBy?.field) {
-          case ChargeSortByField.Amount:
-            sortColumn = 'event_amount';
-            break;
-          case ChargeSortByField.AbsAmount:
-            sortColumn = 'abs_event_amount';
-            break;
-          case ChargeSortByField.Date:
-            sortColumn = 'event_date';
-            break;
-        }
+      // handle sort column
+      let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
+      switch (filters?.sortBy?.field) {
+        case ChargeSortByField.Amount:
+          sortColumn = 'event_amount';
+          break;
+        case ChargeSortByField.AbsAmount:
+          sortColumn = 'abs_event_amount';
+          break;
+        case ChargeSortByField.Date:
+          sortColumn = 'event_date';
+          break;
+      }
 
-        const charges = await injector
-          .get(ChargesProvider)
-          .getChargesByFilters({
-            ownerIds: filters?.byOwners,
-            fromDate: filters?.fromDate,
-            toDate: filters?.toDate,
-            fromAnyDate: filters?.fromAnyDate,
-            toAnyDate: filters?.toAnyDate,
-            sortColumn,
-            asc: filters?.sortBy?.asc !== false,
-            chargeType: filters?.chargesType,
-            businessIds: filters?.byBusinesses,
-            withoutInvoice: filters?.withoutInvoice,
-            withoutDocuments: filters?.withoutDocuments,
-            withoutLedger: filters?.withoutLedger,
-            tags: filters?.byTags,
-            accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
-          })
-          .catch(e => {
-            throw new Error(e.message);
-          });
+      const charges = await injector
+        .get(ChargesProvider)
+        .getChargesByFilters({
+          ownerIds: filters?.byOwners,
+          fromDate: filters?.fromDate,
+          toDate: filters?.toDate,
+          fromAnyDate: filters?.fromAnyDate,
+          toAnyDate: filters?.toAnyDate,
+          sortColumn,
+          asc: filters?.sortBy?.asc !== false,
+          chargeType: filters?.chargesType,
+          businessIds: filters?.byBusinesses,
+          withoutInvoice: filters?.withoutInvoice,
+          withoutDocuments: filters?.withoutDocuments,
+          withoutLedger: filters?.withoutLedger,
+          tags: filters?.byTags,
+          accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
+        })
+        .catch(e => {
+          throw new Error(e.message);
+        });
 
-        const limitedCharges = limit ? charges.slice(0, limit) : charges;
+      const limitedCharges = limit ? charges.slice(0, limit) : charges;
 
+      return new Repeater<ResolversTypes['ChargesWithLedgerChangesResult']>(async (push, stop) => {
         push({ progress: 20 });
         let handledCharges: number = 0;
 
@@ -127,7 +127,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
         push({ progress: 100 });
         stop();
-      }) as unknown as Promise<readonly ResolversTypes['ChargesWithLedgerChangesResult'][]>,
+      }) as unknown as Promise<readonly ResolversTypes['ChargesWithLedgerChangesResult'][]>;
+    },
   },
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
