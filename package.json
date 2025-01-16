@@ -65,7 +65,7 @@
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.13.2",
     "@theguild/prettier-config": "3.0.0",
-    "@types/node": "22.10.5",
+    "@types/node": "22.10.7",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "9.1.2",
     "eslint": "8.57.1",
