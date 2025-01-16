@@ -721,15 +721,15 @@ export const chargesResolvers: ChargesModule.Resolvers &
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
     updatedAt: DbCharge => DbCharge.updated_at,
-    invoicesCount: DbCharge => Number(DbCharge.invoices_count) ?? 0,
-    receiptsCount: DbCharge => Number(DbCharge.receipts_count) ?? 0,
-    documentsCount: DbCharge => Number(DbCharge.documents_count) ?? 0,
+    invoicesCount: DbCharge => (DbCharge.invoices_count ? Number(DbCharge.invoices_count) : 0),
+    receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
+    documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
     invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
     transactionsCount: DbCharge => {
-      return Number(DbCharge.transactions_count) ?? 0;
+      return DbCharge.transactions_count ? Number(DbCharge.transactions_count) : 0;
     },
     invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
-    ledgerCount: DbCharge => Number(DbCharge.ledger_count) ?? 0,
+    ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
         const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge)(
