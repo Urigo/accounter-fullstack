@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckIcon, ChevronDownIcon } from '@radix-ui/react-icons';
 import { cn } from '../../lib/utils.js';
 import { Button } from '../ui/button.js';
@@ -34,6 +34,11 @@ function SelectWithSearch({
 
   const selectId = id || 'select-with-search';
 
+  const labelMap = useMemo(
+    () => Object.fromEntries(options.map(option => [option.value, option.label.toLowerCase()])),
+    [options],
+  );
+
   return (
     <div className="space-y-2 w-[300px]">
       {label && <Label htmlFor={selectId}>{label}</Label>}
@@ -60,7 +65,13 @@ function SelectWithSearch({
           className="w-full min-w-[var(--radix-popper-anchor-width)] border-gray-200 p-0 dark:border-gray-800"
           align="start"
         >
-          <Command>
+          <Command
+            filter={(value, search) => {
+              const normalizedSearch = search.toLowerCase();
+              if (labelMap[value]?.includes(normalizedSearch)) return 1;
+              return 0;
+            }}
+          >
             <CommandInput placeholder={placeholder || 'Search...'} />
             <CommandList>
               <CommandEmpty>{empty}</CommandEmpty>
