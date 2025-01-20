@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { ReactElement, useCallback, useMemo, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -48,12 +48,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     sourceDescription,
   } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
-  const hasAlternative = !!missingInfoSuggestions?.business && enableEdit;
-  const alternativeName = hasAlternative ? missingInfoSuggestions?.business?.name : 'Missing';
-  const alternativeId = hasAlternative ? missingInfoSuggestions?.business?.id : null;
+  const hasSuggestion = !!missingInfoSuggestions?.business && enableEdit;
+  const suggestedName = hasSuggestion ? missingInfoSuggestions?.business?.name : 'Missing';
+  const suggestedId = hasSuggestion ? missingInfoSuggestions?.business?.id : null;
 
-  const name = counterparty?.name ?? alternativeName;
-  const id = counterparty?.id ?? alternativeId;
+  const name = counterparty?.name ?? suggestedName;
 
   const { updateTransaction, fetching } = useUpdateTransaction();
   const updateBusiness = useCallback(
@@ -96,42 +95,40 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
-  // TODO: make use of loading and error states
-  const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
-    query: AllBusinessesDocument,
-  });
+  const [{ data: businessesData }] = useQuery({ query: AllBusinessesDocument });
 
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(
-    missingInfoSuggestions?.business?.id ?? null,
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
+
+  const [search, setSearch] = useState<string | null>(sourceDescription);
+
+  const selectOptions = useMemo(
+    () =>
+      businessesData?.allBusinesses?.nodes.map(node => ({
+        value: node.id,
+        label: node.name,
+      })) || [],
+    [businessesData],
   );
 
   return (
     <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">
-        {id ? (
-          <a
-            href={getHref(id)}
-            target="_blank"
-            rel="noreferrer"
-            className={hasAlternative ? 'bg-yellow-400' : undefined}
-          >
+        {counterparty?.id ? (
+          <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
             {name}
           </a>
         ) : (
           <>
             <SelectWithSearch
+              options={selectOptions}
               value={selectedBusinessId}
               onChange={setSelectedBusinessId}
-              options={
-                businessesData?.allBusinesses?.nodes.map(node => ({
-                  value: node.id,
-                  label: node.name,
-                })) || []
-              }
+              search={search}
+              onSearchChange={setSearch}
               placeholder="Choose or create a business"
-              empty={<InsertBusiness description={sourceDescription} />}
+              empty={search ? <InsertBusiness description={search} /> : null}
             />
-            <ContentTooltip content="Select business">
+            <ContentTooltip content="Approve">
               <Button
                 variant="outline"
                 size="icon"
@@ -143,20 +140,6 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
             </ContentTooltip>
           </>
         )}
-        {/* {id && (
-          <>
-            <a href={getHref(id)} target="_blank" rel="noreferrer">
-              <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-            </a>
-            {hasAlternative && (
-              <ConfirmMiniButton
-                onClick={(): void => updateBusiness(missingInfoSuggestions.business.id)}
-                disabled={fetching}
-              />
-            )}
-          </>
-        )}
-        {!id && sourceDescription !== '' && <InsertBusiness description={sourceDescription} />} */}
       </div>
     </td>
   );
