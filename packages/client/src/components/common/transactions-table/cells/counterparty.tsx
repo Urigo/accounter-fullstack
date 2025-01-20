@@ -10,8 +10,8 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { InsertBusiness } from '../../../common/modals/insert-business.js';
+import { SimilarTransactionsModal } from '../../../common/modals/similar-transactions-modal.js';
 import { Button } from '../../../ui/button.js';
-// import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
 import { SelectWithSearch } from '../../../ui/select-with-search.js';
 import { ContentTooltip } from '../../../ui/tooltip.js';
 
@@ -54,15 +54,19 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
 
   const name = counterparty?.name ?? suggestedName;
 
+  const [similarTransactionsOpen, setSimilarTransactionsOpen] = useState(false);
+
   const { updateTransaction, fetching } = useUpdateTransaction();
   const updateBusiness = useCallback(
-    (counterpartyId: string) => {
-      updateTransaction({
+    async (counterpartyId: string) => {
+      await updateTransaction({
         transactionId,
         fields: {
           counterpartyId,
         },
-      }).then(onChange);
+      });
+      onChange?.();
+      setSimilarTransactionsOpen(true);
     },
     [transactionId, updateTransaction, onChange],
   );
@@ -141,6 +145,12 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
           </>
         )}
       </div>
+
+      <SimilarTransactionsModal
+        counterpartyId={counterparty?.id}
+        open={similarTransactionsOpen}
+        onOpenChange={setSimilarTransactionsOpen}
+      />
     </td>
   );
 }
