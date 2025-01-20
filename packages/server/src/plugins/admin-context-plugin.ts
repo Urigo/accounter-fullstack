@@ -48,7 +48,7 @@ export type AdminContext = {
     expensesToPayTaxCategoryId: string;
     expensesInAdvanceTaxCategoryId: string;
     incomeToCollectTaxCategoryId: string;
-    incomeInAdvanceTaxCategoryId: string | null;
+    incomeInAdvanceTaxCategoryId: string;
   };
   financialAccounts: {
     poalimBusinessId: string | null;
@@ -247,7 +247,8 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       expensesToPayTaxCategoryId: rawContext.expenses_to_pay_tax_category_id,
       expensesInAdvanceTaxCategoryId: rawContext.expenses_in_advance_tax_category_id,
       incomeToCollectTaxCategoryId: rawContext.income_to_collect_tax_category_id,
-      incomeInAdvanceTaxCategoryId: rawContext.default_tax_category_id,
+      incomeInAdvanceTaxCategoryId:
+        rawContext.income_in_advance_tax_category_id ?? rawContext.default_tax_category_id,
     },
     general: {
       taxCategories: {
