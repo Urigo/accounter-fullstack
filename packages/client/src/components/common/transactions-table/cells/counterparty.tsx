@@ -126,7 +126,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               search={search}
               onSearchChange={setSearch}
               placeholder="Choose or create a business"
-              empty={search ? <InsertBusiness description={search} /> : null}
+              empty={search ? <InsertBusiness description={search} onAdd={updateBusiness} /> : null}
             />
             <ContentTooltip content="Approve">
               <Button
