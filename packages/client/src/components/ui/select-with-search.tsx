@@ -17,6 +17,8 @@ function SelectWithSearch({
   options,
   value,
   onChange,
+  search,
+  onSearchChange,
   label,
   placeholder,
   empty,
@@ -25,6 +27,8 @@ function SelectWithSearch({
   options: Array<{ value: string; label: string }>;
   value: string | null;
   onChange: (value: string | null) => void;
+  search: string | null;
+  onSearchChange: (value: string | null) => void;
   label?: string;
   placeholder?: string;
   empty: React.ReactNode;
@@ -72,7 +76,11 @@ function SelectWithSearch({
               return 0;
             }}
           >
-            <CommandInput placeholder={placeholder || 'Search...'} />
+            <CommandInput
+              placeholder={placeholder || 'Search...'}
+              onValueChange={onSearchChange}
+              value={search || ''}
+            />
             <CommandList>
               <CommandEmpty>{empty}</CommandEmpty>
               <CommandGroup>
