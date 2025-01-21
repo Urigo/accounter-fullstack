@@ -1,10 +1,27 @@
 import { z } from 'zod';
 
-const resultSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-});
+const resultImageSchema = z
+  .object({
+    alt: z.string(),
+    url: z.string(),
+  })
+  .strict();
 
-export const maxCategoriesSchema = z.object({
-  result: z.array(resultSchema),
-});
+const resultSchema = z
+  .object({
+    color: z.string(),
+    id: z.number(),
+    image: resultImageSchema,
+    name: z.string(),
+    roundImage: resultImageSchema,
+  })
+  .strict();
+
+export const maxCategoriesSchema = z
+  .object({
+    correlationID: z.string(),
+    rcDesc: z.null(),
+    result: z.array(resultSchema),
+    returnCode: z.number(),
+  })
+  .strict();
