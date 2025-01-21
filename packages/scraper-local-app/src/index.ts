@@ -9,6 +9,7 @@ import { getCurrencyRates } from './scrapers/currency-rates.js';
 import { getDiscountData, type DiscountCredentials } from './scrapers/discount/index.js';
 import { getIsracardAmexData } from './scrapers/isracard-amex/index.js';
 import type { AmexCredentials, IsracardCredentials } from './scrapers/isracard-amex/index.js';
+import { getMaxData, type MaxCredentials } from './scrapers/max/index.js';
 import type { PoalimContext, PoalimCredentials } from './scrapers/poalim/index.js';
 import { getPoalimData } from './scrapers/poalim/index.js';
 
@@ -21,6 +22,7 @@ export type Config = {
   isracardAccounts?: IsracardCredentials[];
   amexAccounts?: AmexCredentials[];
   calAccounts?: CalCredentials[];
+  maxAccounts?: MaxCredentials[];
 };
 
 const { Pool } = pg;
@@ -126,6 +128,16 @@ export async function scrape() {
             title: `CAL ${creds.nickname ?? i + 1}`,
             task: async (_, task) =>
               await getCalData(creds, task).catch(e => {
+                logger.error(e);
+              }),
+          }) as ListrTask,
+      ) ?? []),
+      ...(config.maxAccounts?.map(
+        (creds, i) =>
+          ({
+            title: `MAX ${creds.nickname ?? i + 1}`,
+            task: async (_, task) =>
+              await getMaxData(creds, task, `MAX-${creds.nickname ?? i + 1}`).catch(e => {
                 logger.error(e);
               }),
           }) as ListrTask,
