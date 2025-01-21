@@ -1,10 +1,10 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
-import { getTableColumns } from 'helpers/sql.js';
 import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
 import type { init } from '@accounter/modern-poalim-scraper';
+import { getTableColumns } from '../../helpers/sql.js';
 import type { FilteredColumns } from '../../helpers/types.js';
 import type { MainContext } from '../../index.js';
-import { getMonthTransactions } from './month.js';
+import { getMonthTransactions } from './isracard-amex-month.js';
 import { getTableName } from './utils.js';
 
 export type CreditcardType = 'ISRACARD' | 'AMEX';

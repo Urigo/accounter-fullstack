@@ -1,13 +1,15 @@
 import Listr, { ListrTask } from 'listr';
 import pg, { type Pool as PgPool, type PoolConfig } from 'pg';
-import type { PoalimContext, PoalimCredentials } from 'scrapers/poalim/index.js';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from './env.js';
 import { makeId } from './helpers/misc.js';
 import { Logger } from './logger.js';
+import { getCalData, type CalCredentials } from './scrapers/cal/index.js';
 import { getCurrencyRates } from './scrapers/currency-rates.js';
+import { getDiscountData, type DiscountCredentials } from './scrapers/discount/index.js';
 import { getIsracardAmexData } from './scrapers/isracard-amex/index.js';
 import type { AmexCredentials, IsracardCredentials } from './scrapers/isracard-amex/index.js';
+import type { PoalimContext, PoalimCredentials } from './scrapers/poalim/index.js';
 import { getPoalimData } from './scrapers/poalim/index.js';
 
 export type Config = {
@@ -15,8 +17,10 @@ export type Config = {
   showBrowser?: boolean;
   fetchBankOfIsraelRates?: boolean;
   poalimAccounts?: PoalimCredentials[];
+  discountAccounts?: DiscountCredentials[];
   isracardAccounts?: IsracardCredentials[];
   amexAccounts?: AmexCredentials[];
+  calAccounts?: CalCredentials[];
 };
 
 const { Pool } = pg;
@@ -82,17 +86,27 @@ export async function scrape() {
             title: `Poalim Account ${creds.nickname ?? i + 1}`,
             task: async () =>
               await getPoalimData(creds).catch(e => {
-                console.log(e);
+                logger.error(e);
               }),
           }) as ListrTask,
       ) ?? []),
+      ...(config.discountAccounts?.map((creds, i) => {
+        const nickname = `Discount ${creds.nickname ?? i + 1}`;
+        return {
+          title: nickname,
+          task: async (_, task) =>
+            await getDiscountData({ ...creds, nickname }, task).catch(e => {
+              logger.error(e);
+            }),
+        } as ListrTask;
+      }) ?? []),
       ...(config.isracardAccounts?.map(
         (creds, i) =>
           ({
             title: `Isracard ${creds.nickname ?? i + 1}`,
             task: async (_, task) =>
               await getIsracardAmexData('ISRACARD', creds, task).catch(e => {
-                console.log(e);
+                logger.error(e);
               }),
           }) as ListrTask,
       ) ?? []),
@@ -102,7 +116,17 @@ export async function scrape() {
             title: `American Express ${creds.nickname ?? i + 1}`,
             task: async (_, task) =>
               await getIsracardAmexData('AMEX', creds, task).catch(e => {
-                console.log(e);
+                logger.error(e);
+              }),
+          }) as ListrTask,
+      ) ?? []),
+      ...(config.calAccounts?.map(
+        (creds, i) =>
+          ({
+            title: `CAL ${creds.nickname ?? i + 1}`,
+            task: async (_, task) =>
+              await getCalData(creds, task).catch(e => {
+                logger.error(e);
               }),
           }) as ListrTask,
       ) ?? []),
