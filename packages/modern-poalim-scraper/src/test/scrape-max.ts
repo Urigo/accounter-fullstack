@@ -12,10 +12,12 @@ async function main() {
   const { max, close } = await init({ headless: true });
 
   try {
-    const transactions = await max({
+    const scraper = await max({
       username: process.env['MAX_USERNAME'],
       password: process.env['MAX_PASSWORD'],
     });
+
+    const transactions = await scraper.getTransactions();
 
     console.log(transactions);
   } catch (error) {

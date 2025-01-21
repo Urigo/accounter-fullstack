@@ -229,7 +229,7 @@ async function waitUntilElementFound(
 }
 
 function getAllMonthDates(options: MaxOptions) {
-  const defaultStartDate = subYears(new Date(), 4);
+  const defaultStartDate = subYears(new Date(), 3);
   const startDate = options.startDate
     ? maxDate([defaultStartDate, options.startDate])
     : defaultStartDate;
@@ -612,11 +612,7 @@ async function login(page: Page, credentials: MaxCredentials): Promise<boolean> 
   return handleLoginResult(loginResult);
 }
 
-export async function max(
-  page: Page,
-  credentials: MaxCredentials,
-  options: MaxOptions = {},
-): Promise<MaxScrapingResult> {
+export async function max(page: Page, credentials: MaxCredentials, options: MaxOptions = {}) {
   try {
     await login(page, credentials);
   } catch (e) {
@@ -624,10 +620,14 @@ export async function max(
     throw new Error((e as Error).message);
   }
 
-  try {
-    return await fetchTransactions(page, options);
-  } catch (e) {
-    console.error(e);
-    throw new Error((e as Error).message);
-  }
+  return {
+    getTransactions: async () => {
+      try {
+        return await fetchTransactions(page, options);
+      } catch (e) {
+        console.error(e);
+        throw new Error((e as Error).message);
+      }
+    },
+  };
 }
