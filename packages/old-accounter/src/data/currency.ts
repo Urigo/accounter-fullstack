@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 
 // TODO: Compare to this library: https://github.com/TobiasNickel/tXml
 
-const currencies = ['USD', 'EUR', 'GBP'] as const;
+const currencies = ['USD', 'EUR', 'GBP', 'CAD'] as const;
 type Currency = (typeof currencies)[number];
 
 export async function getCurrencyRates(pool: Pool) {
@@ -20,11 +20,12 @@ export async function getCurrencyRates(pool: Pool) {
       USD: rate.usd ? Number(rate.usd) : null,
       EUR: rate.eur ? Number(rate.eur) : null,
       GBP: rate.gbp ? Number(rate.gbp) : null,
+      CAD: rate.cad ? Number(rate.cad) : null,
     });
   }
 
   const res = await fetch(
-    'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS',
+    'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS,RER_CAD_ILS',
   );
 
   const XMLdata = await res.text();
@@ -113,17 +114,17 @@ export async function getCurrencyRates(pool: Pool) {
       }
     } else if (date > '2009-12-31') {
       newRecords.push(
-        `$${newValuesCount}, $${newValuesCount + 1}, $${newValuesCount + 2}, $${newValuesCount + 3}`,
+        `$${newValuesCount}, $${newValuesCount + 1}, $${newValuesCount + 2}, $${newValuesCount + 3}, $${newValuesCount + 4}`,
       );
-      newValues.push(date, rates.USD, rates.EUR, rates.GBP);
-      newValuesCount += 4;
+      newValues.push(date, rates.USD, rates.EUR, rates.GBP, rates.CAD);
+      newValuesCount += 5;
     }
   }
 
   if (newRecords.length) {
     const text = `
       INSERT INTO accounter_schema.exchange_rates 
-      (exchange_date, usd, eur, gbp) VALUES (${newRecords.join('), (')}) RETURNING *
+      (exchange_date, usd, eur, gbp, cad) VALUES (${newRecords.join('), (')}) RETURNING *
     `;
 
     try {

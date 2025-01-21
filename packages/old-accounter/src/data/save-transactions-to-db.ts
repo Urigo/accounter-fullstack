@@ -16,6 +16,7 @@ export type AccountTypes =
   | 'usd'
   | 'eur'
   | 'gbp'
+  | 'cad'
   | 'deposits'
   | 'foreign_deposits'
   | 'isracard'
@@ -60,7 +61,12 @@ export async function saveTransactionsToDB<
       if (transaction.activityDescriptionIncludeValueDate == undefined) {
         transaction.activityDescriptionIncludeValueDate = null;
       }
-    } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
+    } else if (
+      accountType == 'usd' ||
+      accountType == 'eur' ||
+      accountType == 'gbp' ||
+      accountType == 'cad'
+    ) {
       normalizeForeignTransactionMetadata<Type>(transaction);
       if (transaction.contraAccountFieldNameLable == 0) {
         console.log('old API!');
@@ -108,7 +114,12 @@ export async function saveTransactionsToDB<
         'formattedEventAmount',
         'formattedCurrentBalance',
       ];
-    } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
+    } else if (
+      accountType == 'usd' ||
+      accountType == 'eur' ||
+      accountType == 'gbp' ||
+      accountType == 'cad'
+    ) {
       // TODO: Save the mandatory values to DB accourding to schema
       optionalTransactionKeys = [
         'metadata',
@@ -218,7 +229,10 @@ export async function saveTransactionsToDB<
           ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
           } else if (
-            (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') &&
+            (accountType == 'usd' ||
+              accountType == 'eur' ||
+              accountType == 'gbp' ||
+              accountType == 'cad') &&
             moment(transaction.executingDate, 'YYYY-MM-DD').diff(moment(), 'months') > 2
           ) {
             console.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
@@ -488,6 +502,8 @@ function normalizeCurrencySymbol(currencySymbol: string): string {
     case '£':
     case 'GBP':
       return 'GBP';
+    case 'CAD':
+      return 'CAD';
     default:
       return 'ILS';
   }
@@ -796,7 +812,12 @@ function transactionValuesToArray<
       transaction.branchNumber,
       transaction.accountNumber,
     ];
-  } else if (accountType == 'usd' || accountType == 'eur' || accountType == 'gbp') {
+  } else if (
+    accountType == 'usd' ||
+    accountType == 'eur' ||
+    accountType == 'gbp' ||
+    accountType == 'cad'
+  ) {
     values = [
       transaction.metadataAttributesOriginalEventKey,
       transaction.metadataAttributesContraBranchNumber,

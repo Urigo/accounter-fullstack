@@ -160,7 +160,7 @@ async function getForeignTransactionsfromBankAndSave(
 
   await Promise.all(
     foreignTransactions.data.balancesAndLimitsDataList.map(async foreignAccountsArray => {
-      let accountCurrency: 'usd' | 'eur' | 'gbp' | undefined;
+      let accountCurrency: 'usd' | 'eur' | 'gbp' | 'cad' | undefined;
       switch (foreignAccountsArray.currencyCode) {
         case 19:
           accountCurrency = 'usd';
@@ -170,6 +170,9 @@ async function getForeignTransactionsfromBankAndSave(
           break;
         case 27:
           accountCurrency = 'gbp';
+          break;
+        case 140:
+          accountCurrency = 'cad';
           break;
         default:
           // TODO: Log important checks
@@ -264,6 +267,7 @@ async function getBankData(pool: pg.Pool, scraper: Scraper) {
       'hashavshevetAccountUsd',
       'hashavshevetAccountEur',
       'hashavshevetAccountGbp',
+      'hashavshevetAccountCad',
       'metegDoarNet',
       'id',
       'type',
