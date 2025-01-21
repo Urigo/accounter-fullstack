@@ -257,7 +257,7 @@
                 },
                 "contraCurrencyCode": {
                   "type": "integer",
-                  "enum": [0, 1, 19, 27, 78, 100]
+                  "enum": [0, 1, 19, 27, 78, 100, 140]
                 },
                 "currencyLongDescription": {
                   "type": "string"
