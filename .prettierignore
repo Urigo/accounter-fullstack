@@ -17,4 +17,4 @@ yarn.lock
 CHANGELOG.md
 **/.DS_Store
 
-packages/modern-poalim-scraper/src/scrapers/*
+# packages/modern-poalim-scraper/src/scrapers/*

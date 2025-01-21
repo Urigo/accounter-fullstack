@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from 'zod';
 
 export const zodDiscountTransactionSchema = z.object({
   OperationDate: z.string(),
@@ -29,8 +29,8 @@ export const zodDiscountTransactionSchema = z.object({
   CategoryDescription: z.string(),
   OperationDescriptionToDisplay: z.string(),
   OperationOrder: z.number(),
-  IsLastSeen: z.boolean()
-})
+  IsLastSeen: z.boolean(),
+});
 export type DiscountTransaction = z.infer<typeof zodDiscountTransactionSchema>;
 
 export const zodLastTransactionsSchema = z.object({
@@ -41,35 +41,37 @@ export const zodLastTransactionsSchema = z.object({
       AccountCurrencyCode: z.string(),
       AccountCurrencyDescription: z.object({ Value: z.string(), C: z.string() }),
       AccountCustomerType: z.string().optional(),
-      CommissionFlag: z.string()
+      CommissionFlag: z.string(),
     }),
     AdditionalTransactions: z.string(),
     OperationEntry: z.array(zodDiscountTransactionSchema),
     FutureTransactionsBlock: z.object({
       FutureTransactionStatus: z.string(),
-      FutureTransactionEntry: z.array(
-        z.object({
-          OperationDate: z.string(),
-          OperationCode: z.string(),
-          OperationDescription: z.string(),
-          OperationDescription2: z.string(),
-          OperationDescription3: z.string(),
-          OperationAmount: z.number(),
-          EstimatedBalance: z.number(),
-          ValueDate: z.string(),
-          Urn: z.string(),
-          CategoryCode: z.number(),
-          CategoryDescCode: z.number(),
-          CategoryDescription: z.string(),
-          Comments: z.string(),
-          OperationDescriptionToDisplay: z.string(),
-          OperationOrder: z.number()
-        })
-      ).optional()
+      FutureTransactionEntry: z
+        .array(
+          z.object({
+            OperationDate: z.string(),
+            OperationCode: z.string(),
+            OperationDescription: z.string(),
+            OperationDescription2: z.string(),
+            OperationDescription3: z.string(),
+            OperationAmount: z.number(),
+            EstimatedBalance: z.number(),
+            ValueDate: z.string(),
+            Urn: z.string(),
+            CategoryCode: z.number(),
+            CategoryDescCode: z.number(),
+            CategoryDescription: z.string(),
+            Comments: z.string(),
+            OperationDescriptionToDisplay: z.string(),
+            OperationOrder: z.number(),
+          }),
+        )
+        .optional(),
     }),
     TotalFutureTransactionsBalance: z.number(),
     BalanceAfterOperationFrequency: z.string(),
     TotalOperation: z.number(),
-    TotalNumberFutureTransaction: z.number()
-  })
-})
+    TotalNumberFutureTransaction: z.number(),
+  }),
+});
