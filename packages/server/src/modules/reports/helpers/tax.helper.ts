@@ -19,7 +19,8 @@ export async function calculateTaxAmounts(
   context: GraphQLModules.Context,
   year: number,
   decoratedLedgerRecords: DecoratedLedgerRecord[],
-  researchAndDevelopmentExpensesAmount: number,
+  yearlyResearchAndDevelopmentExpensesAmount: number,
+  researchAndDevelopmentExpensesForTax: number,
   profitBeforeTaxAmount: number,
 ) {
   const {
@@ -53,8 +54,6 @@ export async function calculateTaxAmounts(
   if (!taxRateVariables) {
     throw new GraphQLError('No tax rate for year');
   }
-
-  const researchAndDevelopmentExpensesForTax = researchAndDevelopmentExpensesAmount / 3;
 
   let finesAmount = 0;
   const finesRecords = new Map<
@@ -163,16 +162,16 @@ export async function calculateTaxAmounts(
   let businessTripsExcessExpensesAmount = 0;
   businessTrips.map(summary => {
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
-    businessTripsExcessExpensesAmount += amount;
+    businessTripsExcessExpensesAmount -= amount;
   });
   const salaryExcessExpensesAmount = 0; // TODO: get amounts directly from accountant
   const reserves = amountBySortCodeValidation(decoratedLedgerRecords, sortCode => sortCode === 931);
 
   const taxableIncomeAmount =
     profitBeforeTaxAmount -
-    researchAndDevelopmentExpensesAmount -
+    yearlyResearchAndDevelopmentExpensesAmount -
     fines.amount -
-    untaxableGifts.amount +
+    untaxableGifts.amount -
     businessTripsExcessExpensesAmount -
     salaryExcessExpensesAmount -
     reserves.amount +

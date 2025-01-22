@@ -63,12 +63,18 @@ export const taxReport: ResolverFn<
   for (const year of years) {
     const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
 
+    let profitAndLoss = profitLossByYear.get(year);
+    if (!profitAndLoss) {
+      profitAndLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
+      profitLossByYear.set(year, profitAndLoss);
+    }
+
     const {
       profitBeforeTaxAmount,
       profitBeforeTaxRecords,
       researchAndDevelopmentExpensesAmount,
       researchAndDevelopmentExpensesRecords,
-    } = profitLossByYear.get(year) ?? getProfitLossReportAmounts(decoratedLedgerRecords);
+    } = profitAndLoss;
 
     let cumulativeResearchAndDevelopmentExpensesAmount = 0;
     for (const rndYear of [year - 2, year - 1, year]) {
@@ -76,11 +82,15 @@ export const taxReport: ResolverFn<
       if (!profitLossHelperReportAmounts) {
         const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
         profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
+        profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
       }
 
       cumulativeResearchAndDevelopmentExpensesAmount +=
         profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
     }
+
+    const taxableCumulativeResearchAndDevelopmentExpensesAmount =
+      cumulativeResearchAndDevelopmentExpensesAmount / 3;
 
     const {
       researchAndDevelopmentExpensesForTax,
@@ -96,7 +106,8 @@ export const taxReport: ResolverFn<
       context,
       year,
       decoratedLedgerRecords,
-      cumulativeResearchAndDevelopmentExpensesAmount,
+      researchAndDevelopmentExpensesAmount,
+      taxableCumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );
 

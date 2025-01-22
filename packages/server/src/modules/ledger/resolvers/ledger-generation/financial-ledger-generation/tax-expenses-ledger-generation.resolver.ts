@@ -4,6 +4,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
+  type DecoratedLedgerRecord,
 } from '@modules/reports/helpers/profit-and-loss.helper.js';
 import { calculateTaxAmounts } from '@modules/reports/helpers/tax.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -51,7 +52,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       };
     }
 
-    const from = new Date(year, 0, 1);
+    const from = new Date(year - 2, 0, 1, 0, 0, 1);
     const to = new Date(year + 1, 0, 0);
     const ledgerRecords = await injector
       .get(LedgerProvider)
@@ -63,16 +64,53 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 
-    const decoratedLedgerRecords = decorateLedgerRecords(ledgerRecords, financialEntitiesDict);
+    const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
+    for (let year = from.getFullYear(); year <= to.getFullYear(); year++) {
+      if (from.getFullYear() > to.getFullYear()) {
+        break;
+      }
+
+      decoratedLedgerByYear.set(year, []);
+    }
+
+    ledgerRecords.map(record => {
+      const year = record.invoice_date.getFullYear();
+      const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
+      decoratedLedgerByYear.get(year)?.push(decoratedRecord);
+    });
+
+    const profitLossByYear = new Map<number, ReturnType<typeof getProfitLossReportAmounts>>();
+    // eslint-disable-next-line no-inner-declarations
+    function getProfitLossReportAmountsByYear(year: number) {
+      let amounts = profitLossByYear.get(year);
+      if (!amounts) {
+        const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
+        amounts = getProfitLossReportAmounts(decoratedLedgerRecords);
+        profitLossByYear.set(year, amounts);
+      }
+      return amounts;
+    }
+
+    let cumulativeResearchAndDevelopmentExpensesAmount = 0;
+    for (const rndYear of [year - 2, year - 1, year]) {
+      const profitLossHelperReportAmounts = getProfitLossReportAmountsByYear(rndYear);
+
+      cumulativeResearchAndDevelopmentExpensesAmount +=
+        profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
+    }
+
+    const taxableCumulativeResearchAndDevelopmentExpensesAmount =
+      cumulativeResearchAndDevelopmentExpensesAmount / 3;
 
     const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
-      getProfitLossReportAmounts(decoratedLedgerRecords);
+      getProfitLossReportAmountsByYear(year);
 
     const { annualTaxExpenseAmount } = await calculateTaxAmounts(
       context,
       year,
-      decoratedLedgerRecords,
+      decoratedLedgerByYear.get(year) ?? [],
       researchAndDevelopmentExpensesAmount,
+      taxableCumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );
 
