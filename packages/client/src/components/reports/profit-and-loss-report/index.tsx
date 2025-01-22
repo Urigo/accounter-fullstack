@@ -249,14 +249,6 @@ export const ProfitAndLossReport = (): ReactElement => {
                   )}
                   commentaryData={report.marketingExpenses}
                 />
-                <tr>
-                  <td>Marketing Expenses</td>
-                  <td>{report.marketingExpenses.amount.formatted}</td>
-                  <td />
-                  {referenceYearsData.map(report => (
-                    <td key={report.year}>{report.marketingExpenses.amount.formatted}</td>
-                  ))}
-                </tr>
                 <ReportCommentaryRow
                   dataRow={button => (
                     <tr>
