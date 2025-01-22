@@ -1,5 +1,5 @@
-// Script to test out discount scraping. Run with:
-// tsx packages/modern-poalim-scraper/src/test/scrape-discount.ts
+// Script to test out MAX scraping. Run with:
+// tsx packages/modern-poalim-scraper/src/test/scrape-max.ts
 import dotenv from 'dotenv';
 import { init } from '../index.js';
 
