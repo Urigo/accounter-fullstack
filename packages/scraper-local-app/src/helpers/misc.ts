@@ -121,6 +121,7 @@ export function isSameTransaction<T extends object, U extends object>(
   dbTransaction: T,
   columns: FilteredColumns,
   ignoredColumns: string[] = [],
+  dateFormat?: string,
 ) {
   for (const column of columns) {
     if (ignoredColumns.includes(camelCase(column.column_name))) {
@@ -148,7 +149,9 @@ export function isSameTransaction<T extends object, U extends object>(
       }
       case 'date': {
         // date values
-        const dbDateString = dbValue ? format(dbValue as unknown as Date, 'yyyyMMdd') : null;
+        const dbDateString = dbValue
+          ? format(dbValue as unknown as Date, dateFormat ?? 'yyyyMMdd')
+          : null;
         const transactionDateString = transactionValue ? transactionValue.toString() : null;
 
         if (dbDateString !== transactionDateString) {

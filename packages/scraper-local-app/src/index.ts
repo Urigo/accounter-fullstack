@@ -9,7 +9,7 @@ import { getCurrencyRates } from './scrapers/currency-rates.js';
 import { getDiscountData, type DiscountCredentials } from './scrapers/discount/index.js';
 import { getIsracardAmexData } from './scrapers/isracard-amex/index.js';
 import type { AmexCredentials, IsracardCredentials } from './scrapers/isracard-amex/index.js';
-import { getMaxData, type MaxCredentials } from './scrapers/max/index.js';
+import { getMaxData, type MaxCredentials } from './scrapers/max.js';
 import type { PoalimContext, PoalimCredentials } from './scrapers/poalim/index.js';
 import { getPoalimData } from './scrapers/poalim/index.js';
 

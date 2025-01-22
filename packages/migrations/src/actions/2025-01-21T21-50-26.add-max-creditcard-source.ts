@@ -9,96 +9,96 @@ export default {
 
 create table if not exists accounter_schema.max_creditcard_transactions
 (
-    id                                 uuid default gen_random_uuid() not null
+    id                                       uuid default gen_random_uuid() not null
         constraint max_creditcard_transactions_pk
             primary key,
-    actualpaymentamount                numeric(9, 2)                  not null,
-    arn                                text                           not null,
-    cardindex                          integer                        not null,
-    categoryid                         integer                        not null,
-    comments                           text                           not null,
-    dealdataacq                        varchar(10)                    not null,
-    dealdataadjustmentamount           varchar(10),
-    dealdataadjustmenttype             numeric(9, 2)                  not null,
-    dealdataamount                     numeric(9, 2)                  not null,
-    dealdataamountils                  numeric(9, 2)                  not null,
-    dealdataamountleft                 numeric(9, 2)                  not null,
-    dealdataarn                        varchar(10)                    not null,
-    dealdataauthorizationnumber        varchar(10)                    not null,
-    dealdatacardname                   varchar(10),
-    dealdatacardtoken                  varchar(10),
-    dealdatacommissionvat              numeric(9, 2)                  not null,
-    dealdatadirectexchange             varchar(10),
-    dealdataexchangecommissionamount   varchar(10),
-    dealdataexchangecommissionmaam     varchar(10),
-    dealdataexchangecommissiontype     varchar(10),
-    dealdataexchangedirect             varchar(10)                    not null,
-    dealdataexchangerate               numeric(9, 2)                  not null,
-    dealdataindexratebase              varchar(10),
-    dealdataindexratepmt               varchar(10),
-    dealdatainterestamount             numeric(9, 2)                  not null,
-    dealdataisallowedspreadwithbenefit bit                            not null,
-    dealdataissuercurrency             varchar(10)                    not null,
-    dealdataissuerexchangerate         varchar(10),
-    dealdataoriginalterm               varchar(10),
-    dealdatapercentmaam                numeric(9, 2),
-    dealdataplan                       numeric(9, 2)                  not null,
-    dealdataposentryemv                numeric(9, 2)                  not null,
-    dealdataprocessingdate             timestamp                      not null,
-    dealdatapurchaseamount             varchar(10),
-    dealdatapurchasetime               time,
-    dealdatarefnbr                     varchar(10)                    not null,
-    dealdatashowcanceldebit            bit                            not null,
-    dealdatashowspread                 bit                            not null,
-    dealdatashowspreadbenefitbutton    bit                            not null,
-    dealdatashowspreadbutton           bit                            not null,
-    dealdatashowspreadforleumi         bit                            not null,
-    dealdatatdmcardtoken               varchar(10)                    not null,
-    dealdatatdmtransactiontype         integer                        not null,
-    dealdatatransactiontype            integer                        not null,
-    dealdatatxncode                    integer                        not null,
-    dealdatausername                   varchar(10)                    not null,
-    dealdatawithdrawalcommissionamount varchar(10),
-    discountkeyamount                  varchar(10),
-    discountkeyrectype                 varchar(10),
-    ethocaind                          bit                            not null,
-    fundstransfercomment               text,
-    fundstransferreceiverortransfer    text,
-    isregisterch                       bit                            not null,
-    isspreadingautorizationallowed     bit                            not null,
-    issuerid                           integer                        not null,
-    merchantaddress                    text,
-    merchantcoordinates                varchar(10)                    not null,
-    merchantmaxphone                   bit                            not null,
-    merchant                           text                           not null,
-    merchantcommercialname             text,
-    merchantnumber                     varchar(10)                    not null,
-    merchantphone                      varchar(10)                    not null,
-    merchanttaxid                      varchar(9)                     not null,
-    merchantname                       text                           not null,
-    originalamount                     numeric(9, 2)                  not null,
-    originalcurrency                   varchar(4)                     not null,
-    paymentcurrency                    integer,
-    paymentdate                        timestamp,
-    planname                           text                           not null,
-    plantypeid                         integer                        not null,
-    promotionamount                    numeric(9, 2),
-    promotionclub                      text                           not null,
-    promotiontype                      varchar(10),
-    purchasedate                       timestamp                      not null,
-    receiptpdf                         varchar(10),
-    refindex                           integer                        not null,
-    runtimereferenceinternalid         varchar(10)                    not null,
-    runtimereferencetype               integer                        not null,
-    runtimereferenceid                 varchar(10),
-    shortcardnumber                    varchar(4),
-    spreadtransactionbycampainind      bit                            not null,
-    spreadtransactionbycampainnumber   integer,
-    tabletype                          integer                        not null,
-    tag                                varchar(10),
-    uid                                text                           not null,
-    upsalefortransactionresult         varchar(10),
-    userindex                          integer                        not null
+    actual_payment_amount                    numeric(9, 2)                  not null,
+    arn                                      text                           not null,
+    card_index                               integer                        not null,
+    category_id                              integer                        not null,
+    comments                                 text                           not null,
+    deal_data_acq                            varchar(10)                    not null,
+    deal_data_adjustment_amount              varchar(10),
+    deal_data_adjustment_type                numeric(9, 2)                  not null,
+    deal_data_amount                         numeric(9, 2)                  not null,
+    deal_data_amount_ils                     numeric(9, 2)                  not null,
+    deal_data_amount_left                    numeric(9, 2)                  not null,
+    deal_data_arn                            varchar(25)                    not null,
+    deal_data_authorization_number           varchar(15)                    not null,
+    deal_data_card_name                      varchar(10),
+    deal_data_card_token                     varchar(10),
+    deal_data_commission_vat                 numeric(9, 2)                  not null,
+    deal_data_direct_exchange                varchar(10),
+    deal_data_exchange_commission_amount     varchar(10),
+    deal_data_exchange_commission_maam       varchar(10),
+    deal_data_exchange_commission_type       varchar(10),
+    deal_data_exchange_direct                varchar(10)                    not null,
+    deal_data_exchange_rate                  numeric(9, 2)                  not null,
+    deal_data_index_rate_base                varchar(10),
+    deal_data_index_rate_pmt                 varchar(10),
+    deal_data_interest_amount                numeric(9, 2)                  not null,
+    deal_data_is_allowed_spread_with_benefit bit                            not null,
+    deal_data_issuer_currency                varchar(10)                    not null,
+    deal_data_issuer_exchange_rate           varchar(10),
+    deal_data_original_term                  varchar(10),
+    deal_data_percent_maam                   numeric(9, 2),
+    deal_data_plan                           numeric(9, 2)                  not null,
+    deal_data_pos_entry_emv                  numeric(9, 2)                  not null,
+    deal_data_processing_date                date                           not null,
+    deal_data_purchase_amount                varchar(10),
+    deal_data_purchase_time                  time,
+    deal_data_ref_nbr                        varchar(25)                    not null,
+    deal_data_show_cancel_debit              bit                            not null,
+    deal_data_show_spread                    bit                            not null,
+    deal_data_show_spread_benefit_button     bit                            not null,
+    deal_data_show_spread_button             bit                            not null,
+    deal_data_show_spread_for_leumi          bit                            not null,
+    deal_data_tdm_card_token                 varchar(10)                    not null,
+    deal_data_tdm_transaction_type           integer                        not null,
+    deal_data_transaction_type               integer                        not null,
+    deal_data_txn_code                       integer                        not null,
+    deal_data_user_name                      varchar(30)                    not null,
+    deal_data_withdrawal_commission_amount   varchar(10),
+    discount_key_amount                      varchar(10),
+    discount_key_rec_type                    varchar(10),
+    ethoca_ind                               bit                            not null,
+    funds_transfer_comment                   text,
+    funds_transfer_receiver_or_transfer      text,
+    is_register_ch                           bit                            not null,
+    is_spreading_autorization_allowed        bit                            not null,
+    issuer_id                                integer                        not null,
+    merchant_address                         text,
+    merchant_coordinates                     varchar(10),
+    merchant_max_phone                       bit                            not null,
+    merchant                                 text                           not null,
+    merchant_commercial_name                 text,
+    merchant_number                          varchar(10)                    not null,
+    merchant_phone                           varchar(15)                    not null,
+    merchant_tax_id                          varchar(9)                     not null,
+    merchant_name                            text                           not null,
+    original_amount                          numeric(9, 2)                  not null,
+    original_currency                        varchar(4)                     not null,
+    payment_currency                         integer,
+    payment_date                             date                           not null,
+    plan_name                                text                           not null,
+    plan_type_id                             integer                        not null,
+    promotion_amount                         numeric(9, 2),
+    promotion_club                           text                           not null,
+    promotion_type                           varchar(10),
+    purchase_date                            date                           not null,
+    receipt_p_d_f                            varchar(10),
+    ref_index                                integer                        not null,
+    runtime_reference_internal_id            varchar(36)                    not null,
+    runtime_reference_type                   integer                        not null,
+    runtime_reference_id                     varchar(36),
+    short_card_number                        varchar(4),
+    spread_transaction_by_campain_ind        bit                            not null,
+    spread_transaction_by_campain_number     integer,
+    table_type                               integer                        not null,
+    tag                                      varchar(10),
+    uid                                      text                           not null,
+    up_sale_for_transaction_result           varchar(10),
+    user_index                               integer                        not null
 );
 
 create unique index if not exists max_creditcard_transactions_id_uindex
@@ -130,617 +130,78 @@ alter table accounter_schema.transactions_raw_list
 -- create new transaction insertion trigger --
 ----------------------------------------------
 
-create or replace function accounter_schema.insert_poalim_cad_transaction_handler() returns trigger
+create or replace function accounter_schema.insert_max_creditcard_transaction_handler() returns trigger
     language plpgsql
 as
 $$
-    DECLARE
-        merged_id          UUID;
-        account_id_var     UUID;
-        owner_id_var       UUID;
-        charge_id_var      UUID    = NULL;
-        is_conversion      BOOLEAN = false;
-        is_fee             BOOLEAN = false;
-        transaction_id_var UUID    = NULL;
-    BEGIN
-        -- Create merged raw transactions record:
-        INSERT INTO accounter_schema.transactions_raw_list (poalim_cad_id)
-        VALUES (NEW.id)
-        RETURNING id INTO merged_id;
-        -- get account and owner IDs
-        SELECT INTO account_id_var, owner_id_var id,
-                                                owner
-        FROM accounter_schema.financial_accounts
-        WHERE account_number = NEW.account_number::TEXT;
-        -- handle conversions
-        IF (new.activity_type_code IN (884, 957, 1058)) THEN
-            is_conversion = true;
-            -- check if matching charge exists:
-            SELECT t.charge_id
-            INTO charge_id_var
-            FROM (SELECT 'eur', id, reference_number, reference_catenated_number, value_date, event_amount
-                  FROM accounter_schema.poalim_eur_account_transactions
-                  WHERE activity_type_code IN (884, 957, 1058)
-                  UNION
-                  SELECT 'gbp', id, reference_number, reference_catenated_number, value_date, event_amount
-                  FROM accounter_schema.poalim_gbp_account_transactions
-                  WHERE activity_type_code IN (884, 957, 1058)
-                  UNION
-                  SELECT 'usd', id, reference_number, reference_catenated_number, value_date, event_amount
-                  FROM accounter_schema.poalim_usd_account_transactions
-                  WHERE activity_type_code IN (884, 957, 1058)
-                  UNION
-                  SELECT 'ils', id, reference_number, reference_catenated_number, value_date, event_amount
-                  FROM accounter_schema.poalim_ils_account_transactions
-                  WHERE text_code IN (22, 23)) AS s
-                    LEFT JOIN accounter_schema.transactions_raw_list tr
-                              ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_usd_id, tr.poalim_cad_id) = s.id
-                    LEFT JOIN accounter_schema.transactions t
-                              ON tr.id = t.source_id
-            WHERE t.charge_id IS NOT NULL
-              AND s.reference_number = NEW.reference_number
-              AND s.reference_catenated_number = NEW.reference_catenated_number
-              AND s.value_date = NEW.value_date;
-        END IF;
-        -- if no match, create new charge
-        IF (charge_id_var IS NULL) THEN
-            INSERT INTO accounter_schema.charges (owner_id, type)
-            VALUES (owner_id_var,
-                    CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END)
-            RETURNING id INTO charge_id_var;
-        END IF;
-        -- check if new record is fee
-        IF (new.activity_type_code = 1279 AND new.event_amount BETWEEN 0 AND 30)
-        THEN
-            is_fee = true;
-        END IF;
-        -- check if new record contains fees
-        -- TBD
-        -- create new transaction
-        INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                  event_date, debit_date, amount, current_balance)
-        VALUES (account_id_var,
-                charge_id_var,
-                merged_id,
-                concat(
-                        new.activity_description,
-                        ' ',
-                        coalesce(new.event_details, ''),
-                        ' ',
-                        coalesce(new.account_name, '')
-                ),
-                'CAD',
-                new.executing_date::text::date,
-                new.value_date::text::date,
-                (CASE
-                    WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
-                    ELSE new.event_amount END
-                    ),
-                new.current_balance)
-        RETURNING id INTO transaction_id_var;
-        -- extend transaction with fee
-        IF (is_fee = TRUE) THEN
-            INSERT INTO accounter_schema.transactions_fees (id)
-            VALUES (transaction_id_var);
-        END IF;
-        RETURN NEW;
-    END;
-    $$;
-create trigger cad_transaction_insert_trigger
+DECLARE
+    merged_id      UUID;
+    account_id_var UUID;
+    owner_id_var   UUID;
+    charge_id_var  UUID = NULL;
+BEGIN
+    -- filter summarize records
+    -- Create merged raw transactions record:
+    INSERT INTO accounter_schema.transactions_raw_list (max_creditcard_id)
+    VALUES (NEW.id)
+    RETURNING id INTO merged_id;
+
+    -- get account and owner IDs
+    SELECT INTO account_id_var, owner_id_var id,
+                                             owner
+    FROM accounter_schema.financial_accounts
+    WHERE account_number = NEW.short_card_number;
+
+    -- check if matching charge exists:
+    -- TBD
+
+    -- create new charge
+    IF (charge_id_var IS NULL) THEN
+        INSERT INTO accounter_schema.charges (owner_id)
+        VALUES (owner_id_var)
+        RETURNING id INTO charge_id_var;
+    END IF;
+
+    -- check if new record is fee
+    -- TBD
+
+    -- check if new record contains fees
+    -- TBD
+
+    -- create new transaction
+    INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
+                                               event_date, debit_date, amount, current_balance)
+    VALUES (account_id_var,
+            charge_id_var,
+            merged_id,
+            CONCAT_WS(' | ', NEW.merchant_name, NEW.comments),
+            CAST(
+                    (
+                        CASE
+                            WHEN NEW.original_currency = 'ILS' THEN 'ILS'
+                            -- use ILS as default:
+                            ELSE 'ILS' END
+                        ) as accounter_schema.currency
+            ),
+            NEW.purchase_date,
+            NEW.payment_date,
+            NEW.actual_payment_amount,
+            0);
+
+    RETURN NEW;
+END ;
+$$;
+
+create trigger max_transaction_insert_trigger
     after insert
-    on accounter_schema.poalim_cad_account_transactions
+    on accounter_schema.max_creditcard_transactions
     for each row
-execute procedure accounter_schema.insert_poalim_cad_transaction_handler();
-------------------------------
--- update existing triggers --
-------------------------------
-create or replace function accounter_schema.insert_poalim_ils_transaction_handler() returns trigger
-    language plpgsql
-as
-$$
-DECLARE
-    merged_id          UUID;
-    account_id_var     UUID;
-    owner_id_var       UUID;
-    charge_id_var      UUID    = NULL;
-    is_conversion      BOOLEAN = false;
-    is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
-BEGIN
-    -- Create merged raw transactions record:
-    INSERT INTO accounter_schema.transactions_raw_list (poalim_ils_id)
-    VALUES (NEW.id)
-    RETURNING id INTO merged_id;
-    -- get account and owner IDs
-    SELECT INTO account_id_var, owner_id_var id,
-                                            owner
-    FROM accounter_schema.financial_accounts
-    WHERE account_number = NEW.account_number::TEXT;
-    -- handle conversions
-    IF (new.activity_type_code IN (22, 23)) THEN
-        is_conversion = true;
-        -- check if matching charge exists:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT 'usd' AS currency, id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_usd_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'eur', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_eur_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'gbp', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_gbp_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'cad', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_cad_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                            ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_usd_id, tr.poalim_cad_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                            ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND s.reference_number = NEW.reference_number
-            AND s.reference_catenated_number = NEW.reference_catenated_number
-            AND s.value_date = NEW.value_date;
-    END IF;
-    -- if no match, create new charge
-    IF (charge_id_var IS NULL) THEN
-        INSERT INTO accounter_schema.charges (owner_id, type)
-        VALUES (owner_id_var,
-                CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END)
-        RETURNING id INTO charge_id_var;
-    END IF;
-    -- check if new record is fee
-    IF (
-        (new.activity_type_code = 452 AND new.text_code IN (105, 547))
-            OR (new.activity_type_code = 473 AND new.text_code IN (378, 395, 437, 502, 602, 603, 716, 771, 774))
-        ) THEN
-        is_fee = true;
-    END IF;
-    -- check if new record contains fees
-    -- TBD
-    -- create new transaction
-    INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                event_date, debit_date, amount, current_balance)
-    VALUES (account_id_var,
-            charge_id_var,
-            merged_id,
-            concat(
-                    new.activity_description,
-                    ' ',
-                    coalesce(new.beneficiary_details_data_party_name, ''),
-                    ' ',
-                    coalesce(new.beneficiary_details_data_message_detail, ''),
-                    ' ',
-                    coalesce(new.english_action_desc, '')
-            ),
-            'ILS',
-            new.event_date::text::date,
-            new.event_date::text::date,
-            (CASE
-                WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
-                ELSE new.event_amount END
-                ),
-            new.current_balance)
-    RETURNING id INTO transaction_id_var;
-    -- extend transaction with fee
-    IF (is_fee = TRUE) THEN
-        INSERT INTO accounter_schema.transactions_fees (id)
-        VALUES (transaction_id_var);
-    END IF;
-    RETURN NEW;
-END;
-$$;
-create or replace function accounter_schema.insert_poalim_usd_transaction_handler() returns trigger
-    language plpgsql
-as
-$$
-DECLARE
-    merged_id          UUID;
-    account_id_var     UUID;
-    owner_id_var       UUID;
-    charge_id_var      UUID    = NULL;
-    is_conversion      BOOLEAN = false;
-    is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
-BEGIN
-    -- Create merged raw transactions record:
-    INSERT INTO accounter_schema.transactions_raw_list (poalim_usd_id)
-    VALUES (NEW.id)
-    RETURNING id INTO merged_id;
-    -- get account and owner IDs
-    SELECT INTO account_id_var, owner_id_var id,
-                                            owner
-    FROM accounter_schema.financial_accounts
-    WHERE account_number = NEW.account_number::TEXT;
-    -- handle conversions
-    IF (new.activity_type_code IN (884, 957, 1058)) THEN
-        is_conversion = true;
-        -- check if matching charge exists:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT 'eur', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_eur_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'gbp', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_gbp_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'cad', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_cad_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'ils', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_ils_account_transactions
-                WHERE text_code IN (22, 23)) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                            ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_cad_id, tr.poalim_usd_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                            ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND s.reference_number = NEW.reference_number
-            AND s.reference_catenated_number = NEW.reference_catenated_number
-            AND s.value_date = NEW.value_date;
-    END IF;
-    -- handle bank deposits
-    IF (new.activity_type_code IN (1376, 1384, 169, 171, 172)) THEN
-        -- check if matching charge exists:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT 'eur', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_eur_account_transactions
-                WHERE activity_type_code IN (1376, 1384)
-                UNION
-                SELECT 'gbp', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_gbp_account_transactions
-                WHERE activity_type_code IN (1376, 1384)
-                UNION
-                SELECT 'cad', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_cad_account_transactions
-                WHERE activity_type_code IN (1376, 1384)
-                UNION
-                SELECT 'ils', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_ils_account_transactions
-                WHERE text_code IN (113, 117, 457)) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                            ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_usd_id, tr.poalim_cad_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                            ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND s.reference_number = NEW.reference_number
-            AND s.reference_catenated_number = NEW.reference_catenated_number
-            AND s.value_date = NEW.value_date;
-    END IF;
-    -- if no match, create new charge
-    IF (charge_id_var IS NULL) THEN
-        INSERT INTO accounter_schema.charges (owner_id, type)
-        VALUES (owner_id_var,
-                CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END)
-        RETURNING id INTO charge_id_var;
-    END IF;
-    -- check if new record is fee
-    IF (new.activity_type_code = 1279 AND new.event_amount BETWEEN 0 AND 30)
-    THEN
-        is_fee = true;
-    END IF;
-    -- check if new record contains fees
-    -- TBD
-    -- create new transaction
-    INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                event_date, debit_date, amount, current_balance)
-    VALUES (account_id_var,
-            charge_id_var,
-            merged_id,
-            concat(
-                    new.activity_description,
-                    ' ',
-                    coalesce(new.event_details, ''),
-                    ' ',
-                    coalesce(new.account_name, '')
-            ),
-            'USD',
-            new.executing_date::text::date,
-            new.value_date::text::date,
-            (CASE
-                WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
-                ELSE new.event_amount END
-                ),
-            new.current_balance)
-    RETURNING id INTO transaction_id_var;
-    -- extend transaction with fee
-    IF (is_fee = TRUE) THEN
-        INSERT INTO accounter_schema.transactions_fees (id)
-        VALUES (transaction_id_var);
-    END IF;
-    RETURN NEW;
-END;
-$$;
-create or replace function accounter_schema.insert_poalim_eur_transaction_handler() returns trigger
-    language plpgsql
-as
-$$
-DECLARE
-    merged_id          UUID;
-    account_id_var     UUID;
-    owner_id_var       UUID;
-    charge_id_var      UUID    = NULL;
-    is_conversion      BOOLEAN = false;
-    is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
-BEGIN
-    -- Create merged raw transactions record:
-    INSERT INTO accounter_schema.transactions_raw_list (poalim_eur_id)
-    VALUES (NEW.id)
-    RETURNING id INTO merged_id;
-    -- get account and owner IDs
-    SELECT INTO account_id_var, owner_id_var id,
-                                            owner
-    FROM accounter_schema.financial_accounts
-    WHERE account_number = NEW.account_number::TEXT;
-    -- handle conversions
-    IF (new.activity_type_code in (884, 957, 1058)) THEN
-        is_conversion = true;
-        -- check if matching charge exists:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT 'usd' AS currency, id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_usd_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'gbp', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_gbp_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'cad', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_cad_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'ils', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_ils_account_transactions
-                WHERE text_code IN (22, 23)) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                            ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_usd_id, tr.poalim_cad_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                            ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND s.reference_number = NEW.reference_number
-            AND s.reference_catenated_number = NEW.reference_catenated_number
-            AND s.value_date = NEW.value_date;
-    END IF;
-    -- if no match, create new charge
-    IF (charge_id_var IS NULL) THEN
-        INSERT INTO accounter_schema.charges (owner_id, type)
-        VALUES (owner_id_var,
-                CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END)
-        RETURNING id INTO charge_id_var;
-    END IF;
-    -- check if new record is fee
-    IF (new.activity_type_code = 1279 AND new.event_amount BETWEEN 0 AND 30)
-    THEN
-        is_fee = true;
-    END IF;
-    -- check if new record contains fees
-    -- TBD
-    -- create new transaction
-    INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                event_date, debit_date, amount, current_balance)
-    VALUES (account_id_var,
-            charge_id_var,
-            merged_id,
-            concat(
-                    new.activity_description,
-                    ' ',
-                    coalesce(new.event_details, ''),
-                    ' ',
-                    coalesce(new.account_name, '')
-            ),
-            'EUR',
-            new.executing_date::text::date,
-            new.value_date::text::date,
-            (CASE
-                WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
-                ELSE new.event_amount END
-                ),
-            new.current_balance)
-    RETURNING id INTO transaction_id_var;
-    -- extend transaction with fee
-    IF (is_fee = TRUE) THEN
-        INSERT INTO accounter_schema.transactions_fees (id)
-        VALUES (transaction_id_var);
-    END IF;
-    RETURN NEW;
-END;
-$$;
-create or replace function accounter_schema.insert_poalim_gbp_transaction_handler() returns trigger
-    language plpgsql
-as
-$$
-DECLARE
-    merged_id          UUID;
-    account_id_var     UUID;
-    owner_id_var       UUID;
-    charge_id_var      UUID    = NULL;
-    is_conversion      BOOLEAN = false;
-    is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
-BEGIN
-    -- Create merged raw transactions record:
-    INSERT INTO accounter_schema.transactions_raw_list (poalim_gbp_id)
-    VALUES (NEW.id)
-    RETURNING id INTO merged_id;
-    -- get account and owner IDs
-    SELECT INTO account_id_var, owner_id_var id,
-                                            owner
-    FROM accounter_schema.financial_accounts
-    WHERE account_number = NEW.account_number::TEXT;
-    -- handle conversions
-    IF (new.activity_type_code IN (884, 957, 1058)) THEN
-        is_conversion = true;
-        -- check if matching charge exists:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT 'usd' AS currency, id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_usd_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'eur', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_eur_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'cad', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_cad_account_transactions
-                WHERE activity_type_code IN (884, 957, 1058)
-                UNION
-                SELECT 'ils', id, reference_number, reference_catenated_number, value_date, event_amount
-                FROM accounter_schema.poalim_ils_account_transactions
-                WHERE text_code IN (22, 23)) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                            ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_cad_id, tr.poalim_usd_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                            ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND s.reference_number = NEW.reference_number
-            AND s.reference_catenated_number = NEW.reference_catenated_number
-            AND s.value_date = NEW.value_date;
-    END IF;
-    -- if no match, create new charge
-    IF (charge_id_var IS NULL) THEN
-        INSERT INTO accounter_schema.charges (owner_id, type)
-        VALUES (owner_id_var,
-                CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END)
-        RETURNING id INTO charge_id_var;
-    END IF;
-    -- check if new record is fee
-    IF (new.activity_type_code = 1279 AND new.event_amount BETWEEN 0 AND 30)
-    THEN
-        is_fee = true;
-    END IF;
-    -- check if new record contains fees
-    -- TBD
-    -- create new transaction
-    INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                event_date, debit_date, amount, current_balance)
-    VALUES (account_id_var,
-            charge_id_var,
-            merged_id,
-            concat(
-                    new.activity_description,
-                    ' ',
-                    coalesce(new.event_details, ''),
-                    ' ',
-                    coalesce(new.account_name, '')
-            ),
-            'GBP',
-            new.executing_date::text::date,
-            new.value_date::text::date,
-            (CASE
-                WHEN new.event_activity_type_code = 2 THEN (new.event_amount * -1)
-                ELSE new.event_amount END
-                ),
-            new.current_balance)
-    RETURNING id INTO transaction_id_var;
-    -- extend transaction with fee
-    IF (is_fee = TRUE) THEN
-        INSERT INTO accounter_schema.transactions_fees (id)
-        VALUES (transaction_id_var);
-    END IF;
-    RETURN NEW;
-END;
-$$;
-create or replace function accounter_schema.insert_poalim_swift_transaction_handler() returns trigger
-  language plpgsql
-as
-$$
-DECLARE
-    merged_id          UUID;
-    account_id_var     UUID;
-    owner_id_var       UUID;
-    charge_id_var      UUID = NULL;
-    transaction_amount NUMERIC;
-    fee_amount         NUMERIC;
-    currency_code      accounter_schema.currency;
-    transaction_id_var UUID = NULL;
-BEGIN
-    transaction_amount := REPLACE(
-            RIGHT(NEW.swift_currency_instructed_amount_33b, LENGTH(NEW.swift_currency_instructed_amount_33b) - 3), ',',
-            '.')::NUMERIC;
-    fee_amount := transaction_amount - REPLACE(
-            RIGHT(NEW.swift_value_date_currency_amount_32a, LENGTH(NEW.swift_value_date_currency_amount_32a) - 9), ',',
-            '.')::NUMERIC;
-    currency_code := LEFT(NEW.swift_currency_instructed_amount_33b, 3)::accounter_schema.currency;
-    IF (fee_amount > 0) THEN
-        -- Create merged raw transactions record:
-        INSERT INTO accounter_schema.transactions_raw_list (poalim_swift_id)
-        VALUES (NEW.id)
-        RETURNING id INTO merged_id;
-        -- get account and owner IDs
-        SELECT INTO account_id_var, owner_id_var id,
-                                                owner
-        FROM accounter_schema.financial_accounts
-        WHERE account_number = NEW.account_number::TEXT;
-        -- check if matching charge exists for source:
-        SELECT t.charge_id
-        INTO charge_id_var
-        FROM (SELECT formatted_value_date, event_details, id, 'GBP' as currency, event_amount
-              FROM accounter_schema.poalim_gbp_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'EUR', event_amount
-              FROM accounter_schema.poalim_eur_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'CAD', event_amount
-              FROM accounter_schema.poalim_cad_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'USD', event_amount
-              FROM accounter_schema.poalim_usd_account_transactions) AS s
-                LEFT JOIN accounter_schema.transactions_raw_list tr
-                          ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_cad_id, tr.poalim_usd_id) = s.id
-                LEFT JOIN accounter_schema.transactions t
-                          ON tr.id = t.source_id
-        WHERE t.charge_id IS NOT NULL
-            AND (s.formatted_value_date = NEW.formatted_start_date
-                OR s.formatted_value_date = NEW.formatted_start_date)
-            AND currency_code::text = s.currency
-            AND (s.event_details LIKE '%' || TRIM(LEFT(NEW.charge_party_name, 13)) || '%'
-                AND NEW.amount::NUMERIC = s.event_amount)
-          OR (transaction_amount * -1 = s.event_amount);
-        -- if no match, create new charge
-        IF (charge_id_var IS NULL) THEN
-            INSERT INTO accounter_schema.charges (owner_id)
-            VALUES (owner_id_var)
-            RETURNING id INTO charge_id_var;
-        END IF;
-        -- create new transaction for fee
-        INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
-                                                  event_date, debit_date, amount, current_balance, business_id)
-        VALUES (account_id_var,
-                charge_id_var,
-                merged_id,
-                CONCAT_WS(' ',
-                          'Swift Fee:',
-                          NEW.charge_party_name,
-                          NEW.reference_number
-                ),
-                currency_code,
-                NEW.formatted_start_date::DATE,
-                new.formatted_start_date::DATE,
-                fee_amount * -1,
-                0,
-                NULL)
-        RETURNING id INTO transaction_id_var;
-        -- extend transaction with fee
-        INSERT INTO accounter_schema.transactions_fees (id)
-        VALUES (transaction_id_var);
-    END IF;
-    RETURN NEW;
-END;
-$$;
+execute procedure accounter_schema.insert_max_creditcard_transaction_handler();
+
 ------------------------------
 -- update transactions view --
 ------------------------------
+
 create or replace view accounter_schema.extended_transactions
             (id, charge_id, business_id, currency, debit_date, debit_timestamp, source_debit_date, event_date,
              account_id, account_type, amount, current_balance, source_description, source_details, created_at,
@@ -767,6 +228,18 @@ WITH original_transaction AS (SELECT isracard_creditcard_transactions.id::text  
                                      COALESCE(amex_creditcard_transactions.full_supplier_name_heb,
                                               amex_creditcard_transactions.full_supplier_name_outbound) AS source_details
                               FROM accounter_schema.amex_creditcard_transactions
+                              UNION
+                              SELECT max_creditcard_transactions.id::text                                               AS raw_id,
+                                     max_creditcard_transactions.arn                                                    AS reference_number,
+                                     max_creditcard_transactions.deal_data_exchange_rate                                AS currency_rate,
+                                     (max_creditcard_transactions.payment_date +
+                                      max_creditcard_transactions.deal_data_purchase_time)::timestamp without time zone AS debit_timestamp,
+                                     'MAX'::text                                                                        AS origin,
+                                     max_creditcard_transactions.short_card_number::INTEGER                             AS card_number,
+                                     CONCAT_WS(' | ', max_creditcard_transactions.merchant_name,
+                                               max_creditcard_transactions.merchant_commercial_name,
+                                               max_creditcard_transactions.comments)                                    AS source_details
+                              FROM accounter_schema.max_creditcard_transactions
                               UNION
                               SELECT poalim_ils_account_transactions.id::text                                AS id,
                                      poalim_ils_account_transactions.reference_number::text                  AS reference_number,
@@ -918,7 +391,8 @@ FROM accounter_schema.transactions t
                                                     rt.poalim_eur_id::text, rt.poalim_gbp_id::text,
                                                     rt.poalim_swift_id::text, rt.poalim_usd_id::text, rt.kraken_id,
                                                     rt.etana_id, rt.etherscan_id::text, rt.amex_id::text,
-                                                    rt.cal_id::text, rt.bank_discount_id::text, rt.poalim_cad_id::text)
+                                                    rt.cal_id::text, rt.bank_discount_id::text, rt.poalim_cad_id::text,
+                                                    rt.max_creditcard_id::text)
          LEFT JOIN alt_debit_date ON alt_debit_date.reference_number = original_transaction.card_number AND
                                      alt_debit_date.event_date > t.event_date AND
                                      alt_debit_date.event_date < (t.event_date + '40 days'::interval) AND

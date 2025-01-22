@@ -23,6 +23,7 @@ export * from '../__generated__/swift-transactions.types.js';
 export * from '../__generated__/isracard-amex-month.types.js';
 export * from '../__generated__/discount-month.types.js';
 export * from '../__generated__/cal-month.types.js';
+export * from '../__generated__/max.types.js';
 
 export type FilteredColumns = (Omit<IGetTableColumnsResult, 'column_name' | 'data_type'> & {
   column_name: string;
