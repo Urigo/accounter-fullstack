@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { max, MaxOptions, type MaxCredentials } from './scrapers/max.js';
 import {
   amex,
   AmexCredentials,
@@ -57,6 +58,10 @@ export async function init({
       //return discount.init
       const page = await newPage(browser);
       return discount(page, credentials, options);
+    },
+    max: async (credentials: MaxCredentials, options?: MaxOptions) => {
+      const page = await newPage(browser);
+      return max(page, credentials, options);
     },
     close: () => {
       return browser.close();

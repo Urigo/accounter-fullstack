@@ -70,6 +70,7 @@ import migration_2025_01_07T18_54_54_poalim_foreign_event_details_column_update 
 import migration_2025_01_12T11_47_46_support_cad_currency from './actions/2025-01-12T11-47-46.support-cad-currency.js';
 import migration_2025_01_14T18_59_26_add_user_context_table from './actions/2025-01-14T18-59-26.add-user-context-table.js';
 import migration_2025_01_21T13_37_41_add_poalim_cad from './actions/2025-01-21T13-37-41.add-poalim-cad.js';
+import migration_2025_01_21T21_50_26_add_max_creditcard_source from './actions/2025-01-21T21-50-26.add-max-creditcard-source.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -147,5 +148,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_01_12T11_47_46_support_cad_currency,
       migration_2025_01_14T18_59_26_add_user_context_table,
       migration_2025_01_21T13_37_41_add_poalim_cad,
+      migration_2025_01_21T21_50_26_add_max_creditcard_source,
     ],
   });

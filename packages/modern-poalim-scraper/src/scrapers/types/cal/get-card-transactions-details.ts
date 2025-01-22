@@ -1,33 +1,33 @@
-import { z } from "zod"
+import { z } from 'zod';
 
 const totalDebitSchema = z.object({
   currencySymbol: z.string(),
-  amount: z.number()
-})
+  amount: z.number(),
+});
 
 const commentSchema = z.object({
   key: z.string(),
-  value: z.string()
-})
+  value: z.string(),
+});
 
 const totalDebit2Schema = z.object({
   currencySymbol: z.string(),
-  amount: z.number()
-})
+  amount: z.number(),
+});
 
 const totalDailyDebitSchema = z.object({
   currencySymbol: z.string(),
-  amount: z.number()
-})
+  amount: z.number(),
+});
 
 const comment2Schema = z.object({
   key: z.string(),
-  value: z.string()
-})
+  value: z.string(),
+});
 
 const immediateCommentSchema = z.object({
-  comment: z.string()
-})
+  comment: z.string(),
+});
 
 export const calTransactionSchema = z.object({
   trnIntId: z.string(),
@@ -67,9 +67,9 @@ export const calTransactionSchema = z.object({
   merchantId: z.string(),
   crdExtIdNumTypeCode: z.string(),
   transSource: z.string(),
-  isAbroadTransaction: z.boolean()
-})
-export type CalTransaction = z.infer<typeof calTransactionSchema>
+  isAbroadTransaction: z.boolean(),
+});
+export type CalTransaction = z.infer<typeof calTransactionSchema>;
 
 const transaction2Schema = z.object({
   trnIntId: z.string(),
@@ -110,8 +110,8 @@ const transaction2Schema = z.object({
   merchantId: z.string(),
   crdExtIdNumTypeCode: z.string(),
   transSource: z.string(),
-  isAbroadTransaction: z.boolean()
-})
+  isAbroadTransaction: z.boolean(),
+});
 
 const debitDateSchema = z.object({
   date: z.string(),
@@ -122,37 +122,37 @@ const debitDateSchema = z.object({
   isChoiceRepaiment: z.boolean(),
   fixDebitAmount: z.number(),
   totalDebits: z.array(totalDebitSchema),
-  transactions: z.array(calTransactionSchema)
-})
+  transactions: z.array(calTransactionSchema),
+});
 
 const debitDaySchema = z.object({
   date: z.string(),
   numOfTransactions: z.number(),
   totalDailyDebits: z.array(totalDailyDebitSchema),
-  transactions: z.array(transaction2Schema)
-})
+  transactions: z.array(transaction2Schema),
+});
 
 const immidiateDebitsSchema = z.object({
   totalDebits: z.array(totalDebit2Schema),
-  debitDays: z.array(debitDaySchema)
-})
+  debitDays: z.array(debitDaySchema),
+});
 
 const bankAccountSchema = z.object({
   bankName: z.string(),
   bankAccountNum: z.string(),
   currentBankAccountInd: z.boolean(),
   debitDates: z.array(debitDateSchema),
-  immidiateDebits: immidiateDebitsSchema
-})
+  immidiateDebits: immidiateDebitsSchema,
+});
 
 const resultSchema = z.object({
   blockedCardInd: z.boolean(),
-  bankAccounts: z.array(bankAccountSchema)
-})
+  bankAccounts: z.array(bankAccountSchema),
+});
 
 export const calTransactionsSchema = z.object({
   result: resultSchema,
   statusDescription: z.string(),
   statusCode: z.number(),
-  groupPid: z.string()
-})
+  groupPid: z.string(),
+});
