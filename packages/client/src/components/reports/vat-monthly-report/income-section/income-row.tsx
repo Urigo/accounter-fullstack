@@ -3,7 +3,7 @@ import { Paper } from '@mantine/core';
 import { VatReportIncomeRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
-import { ChargeExtendedInfo } from '../../../all-charges/charge-extended-info.js';
+import { ChargeExtendedInfo } from '../../../charges/charge-extended-info.js';
 import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
 

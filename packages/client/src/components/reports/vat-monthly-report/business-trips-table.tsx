@@ -3,14 +3,14 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { VatReportBusinessTripsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AllChargesTable } from '../../all-charges/all-charges-table.js';
+import { ChargesTable } from '../../charges/charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VatReportBusinessTripsFields on VatReportResult {
     businessTrips {
       id
-      ...AllChargesTableFields
+      ...ChargesTableFields
     }
   }
 `;
@@ -52,7 +52,7 @@ export const BusinessTripsTable = ({
         Business Trips
       </span>
       {isOpened && chargesData && (
-        <AllChargesTable
+        <ChargesTable
           setEditChargeId={setEditCharge}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}

@@ -1,7 +1,5 @@
 import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { Charge } from './components/all-charges/charge.js';
-import { AllCharges } from './components/all-charges/index.js';
 import { BusinessTransactionsSingle } from './components/business-transactions/business-transactions-single.js';
 import { BusinessTransactionsSummery } from './components/business-transactions/index.js';
 import { BusinessTrip } from './components/business-trips/business-trip.js';
@@ -19,6 +17,8 @@ import { TaxReport } from './components/reports/tax-report/index.js';
 import { TrialBalanceReport } from './components/reports/trial-balance-report/index.js';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.js';
 import { Salaries } from './components/salaries/index.js';
+import { AllCharges } from './components/screens/charges/all-charges.js';
+import { Charge } from './components/screens/charges/charge.js';
 import { TagsManager } from './components/tags/index.js';
 import { FiltersContext } from './providers/filters-context.js';
 
@@ -30,7 +30,6 @@ export function App(): ReactElement {
       <DashboardLayout filtersContext={filtersContext}>
         <Routes>
           <Route path="/" element={<AllCharges />} />
-          <Route path="all-charges" element={<AllCharges />} /> {/* deprecated */}
           <Route path="charges" element={<AllCharges />} />
           <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
           <Route path="charges/:chargeId" element={<Charge />} />

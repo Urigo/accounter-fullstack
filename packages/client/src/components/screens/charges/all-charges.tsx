@@ -1,43 +1,39 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { format, sub } from 'date-fns';
+import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
-import {
-  ChargeFilter,
-  ChargesLedgerValidationDocument,
-  ChargeSortByField,
-} from '../gql/graphql.js';
-import { TimelessDateString } from '../helpers/dates.js';
-import { useUrlQuery } from '../hooks/use-url-query.js';
-import { FiltersContext } from '../providers/filters-context.js';
-import { UserContext } from '../providers/user-provider.js';
-import { ChargesFilters } from './charges/charges-filters.js';
-import { ChargesTable } from './charges/charges-table.js';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../../gql/graphql.js';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { FiltersContext } from '../../../providers/filters-context.js';
+import { UserContext } from '../../../providers/user-provider.jsx';
+import { ChargesFilters } from '../../charges/charges-filters.js';
+import { ChargesTable } from '../../charges/charges-table.js';
 import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
   UploadDocumentModal,
-} from './common/index.js';
-import { PageLayout } from './layout/page-layout.js';
+} from '../../common/index.js';
+import { PageLayout } from '../../layout/page-layout.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ChargesLedgerValidation($limit: Int, $filters: ChargeFilter) {
-    chargesWithLedgerChanges(limit: $limit, filters: $filters) @stream {
-      progress
-      charge {
+  query AllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
+    allCharges(page: $page, limit: $limit, filters: $filters) {
+      nodes {
         id
         ...ChargesTableFields
+      }
+      pageInfo {
+        totalPages
       }
     }
   }
 `;
 
-export const ChargesLedgerValidation = (): ReactElement => {
+export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [editChargeId, setEditChargeId] = useState<
     { id: string; onChange: () => void } | undefined
@@ -57,6 +53,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
   >([]);
   const { get } = useUrlQuery();
   const { userContext } = useContext(UserContext);
+  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
   const [filter, setFilter] = useState<ChargeFilter>(
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
@@ -66,8 +63,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
             field: ChargeSortByField.Date,
             asc: false,
           },
-          toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
-          fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
         },
   );
 
@@ -83,10 +78,11 @@ export const ChargesLedgerValidation = (): ReactElement => {
   );
 
   const [{ data, fetching }] = useQuery({
-    query: ChargesLedgerValidationDocument,
+    query: AllChargesDocument,
     variables: {
       filters: filter,
-      //   limit: 1000,
+      page: activePage,
+      limit: 100,
     },
   });
 
@@ -94,25 +90,16 @@ export const ChargesLedgerValidation = (): ReactElement => {
     setMergeSelectedCharges([]);
   }
 
-  const progress = useMemo(
-    () =>
-      data?.chargesWithLedgerChanges?.length
-        ? data.chargesWithLedgerChanges[data.chargesWithLedgerChanges.length - 1].progress
-        : 0,
-    [data?.chargesWithLedgerChanges],
-  );
-
   useEffect(() => {
     setFiltersContext(
-      <div className="flex flex-row gap-x-5 items-center">
-        <Progress
-          value={progress}
-          label={`${progress?.toFixed(2)}%`}
-          size="xl"
-          animate={progress < 100}
-          className="min-w-52"
+      <div className="flex flex-row gap-x-5">
+        <ChargesFilters
+          filter={filter}
+          setFilter={setFilter}
+          activePage={activePage}
+          setPage={setActivePage}
+          totalPages={data?.allCharges?.pageInfo.totalPages}
         />
-        <ChargesFilters filter={filter} setFilter={setFilter} activePage={1} setPage={() => {}} />
         <Tooltip label="Expand all accounts">
           <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
@@ -125,18 +112,20 @@ export const ChargesLedgerValidation = (): ReactElement => {
     data,
     fetching,
     filter,
+    activePage,
     isAllOpened,
     setFiltersContext,
+    setActivePage,
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
-    progress,
   ]);
 
   return (
-    <PageLayout title="Charges Ledger Validation" description="Manage charges">
-      {fetching && <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />}
-      {!fetching && (
+    <PageLayout title="All Charges" description="Manage charges">
+      {!data?.allCharges.nodes || fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
         <ChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
@@ -144,22 +133,9 @@ export const ChargesLedgerValidation = (): ReactElement => {
           setUploadDocument={setUploadDocument}
           toggleMergeCharge={toggleMergeCharge}
           mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-          data={
-            data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ?? []
-          }
+          data={data?.allCharges?.nodes}
           isAllOpened={isAllOpened}
         />
-      )}
-      {!fetching && (
-        <div className="flex flex-row justify-center my-2">
-          {progress < 100 && <Loader />}
-          {progress === 100 &&
-            !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
-              <ThemeIcon radius="xl" size="xl" color="green">
-                <Check />
-              </ThemeIcon>
-            )}
-        </div>
       )}
       {editChargeId && (
         <EditChargeModal
