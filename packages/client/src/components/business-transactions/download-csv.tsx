@@ -78,8 +78,6 @@ function getAmountsFromForeignCurrencies(
     } else {
       amounts += ',,';
     }
-    const currencySymbol = currencyCodeToSymbol(currency);
-    amounts += `${currency}(${currencySymbol}) Amount,${currency}(${currencySymbol}) Balance,`;
   });
   return amounts;
 }
