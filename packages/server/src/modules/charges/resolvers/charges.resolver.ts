@@ -72,8 +72,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .get(ChargesProvider)
         .getChargesByFilters({
           ownerIds: filters?.byOwners,
-          fromDate: filters?.fromDate,
-          toDate: filters?.toDate,
           fromAnyDate: filters?.fromAnyDate,
           toAnyDate: filters?.toAnyDate,
           sortColumn,
@@ -82,6 +80,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           businessIds: filters?.byBusinesses,
           withoutInvoice: filters?.withoutInvoice,
           withoutDocuments: filters?.withoutDocuments,
+          withoutTransactions: filters?.withoutTransactions,
           withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
           accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,

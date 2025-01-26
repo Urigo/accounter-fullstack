@@ -67,7 +67,7 @@ export default gql`
 
   extend input ChargeFilter {
     " Include only charges that doesn't have transactions linked "
-    withoutTransaction: Boolean
+    withoutTransactions: Boolean
     " Include only charges that doesn't have documents linked "
     withoutDocuments: Boolean
     " Include only charges that doesn't have invoice document linked "
