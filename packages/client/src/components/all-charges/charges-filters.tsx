@@ -356,6 +356,14 @@ function ChargesFiltersForm({
             />
 
             <Switch
+              defaultChecked={filter.withoutTransactions ?? false}
+              onChange={(event): void =>
+                setValue('withoutTransactions', event.currentTarget.checked)
+              }
+              label="Without Transactions"
+            />
+
+            <Switch
               defaultChecked={filter.unbalanced ?? false}
               onChange={(event): void => setValue('unbalanced', event.currentTarget.checked)}
               label="Unbalanced businesses"
