@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@types/listr": "0.14.9",
-    "@types/pg": "8.11.10",
-    "tsup": "8.3.5"
+    "@types/pg": "8.11.11",
+    "tsup": "8.3.6"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
