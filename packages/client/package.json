@@ -42,7 +42,7 @@
     "clsx": "2.1.1",
     "date-fns": "4.1.0",
     "dayjs": "1.11.13",
-    "decimal.js": "10.4.3",
+    "decimal.js": "10.5.0",
     "deep-equal": "2.2.3",
     "embla-carousel-react": "8.5.2",
     "lucide-react": "0.473.0",
