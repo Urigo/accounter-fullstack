@@ -66,7 +66,7 @@
     "@parcel/watcher": "^2.4.1",
     "@theguild/eslint-config": "0.13.2",
     "@theguild/prettier-config": "3.0.0",
-    "@types/node": "22.10.7",
+    "@types/node": "22.10.10",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "9.1.2",
     "eslint": "9.19.0",
@@ -74,14 +74,14 @@
     "glob": "11.0.1",
     "globals": "15.14.0",
     "husky": "9.1.7",
-    "lint-staged": "15.4.1",
+    "lint-staged": "15.4.3",
     "prettier": "3.4.2",
     "prettier-plugin-sql": "0.18.1",
     "ts-node": "10.9.2",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "3.0.3"
+    "vitest": "3.0.4"
   },
   "resolutions": {
     "graphql": "16.10.0"
