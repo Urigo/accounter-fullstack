@@ -11,6 +11,7 @@ import type {
   IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
   IGetTransactionsByIdsResult,
+  IGetTransactionsByMissingRequiredInfoQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
@@ -65,6 +66,11 @@ const getTransactionsByChargeIds = sql<IGetTransactionsByChargeIdsQuery>`
     FROM accounter_schema.extended_transactions
     WHERE charge_id IN $$chargeIds
     ORDER BY event_date DESC;`;
+
+const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequiredInfoQuery>`
+    SELECT *
+    FROM accounter_schema.transactions
+    WHERE business_id IS NULL;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -172,6 +178,10 @@ export class TransactionsProvider {
       cache: false,
     },
   );
+
+  public async getTransactionsByMissingRequiredInfo() {
+    return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider);
+  }
 
   public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
     return replaceTransactionsChargeId.run(params, this.dbProvider);
