@@ -19,6 +19,7 @@ import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.
 import { Salaries } from './components/salaries/index.js';
 import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
+import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { TagsManager } from './components/tags/index.js';
 import { FiltersContext } from './providers/filters-context.js';
 
@@ -31,6 +32,7 @@ export function App(): ReactElement {
         <Routes>
           <Route path="/" element={<AllCharges />} />
           <Route path="charges" element={<AllCharges />} />
+          <Route path="missing-info-charges" element={<MissingInfoCharges />} />
           <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
           <Route path="charges/:chargeId" element={<Charge />} />
           <Route path="businesses" element={<Businesses />} />
