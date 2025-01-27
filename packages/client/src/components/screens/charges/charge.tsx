@@ -46,7 +46,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   const [{ data, fetching }] = useQuery({
     query: ChargeScreenDocument,
     variables: {
-      chargeIds: [id],
+      chargeIds: id ? [id] : [],
     },
   });
 

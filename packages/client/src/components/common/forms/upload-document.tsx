@@ -13,6 +13,7 @@ export const UploadDocument = ({ chargeId, closeModal, onChange }: Props): React
   const [value, setValue] = useState<File | null>(null);
 
   const onSubmit = useCallback(async () => {
+    if (!value) return;
     uploadDocument({
       file: value,
       chargeId,

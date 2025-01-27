@@ -50,7 +50,7 @@ export const VatMonthlyReport = (): ReactElement => {
           decodeURIComponent(get('vatMonthlyReportFilters') as string),
         ) as VatReportFilter)
       : {
-          financialEntityId: userContext?.ownerId,
+          financialEntityId: userContext?.ownerId ?? '',
           fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
           toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
         },

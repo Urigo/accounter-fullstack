@@ -45,11 +45,11 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
   const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
-  const shouldHaveDebtor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
+  const shouldHaveCreditor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
     document.documentType as DocumentType,
   );
   const isError =
-    (shouldHaveDebtor && !dbCreditor?.id) ||
+    (shouldHaveCreditor && !dbCreditor?.id) ||
     [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
 
   const encodedFilters = get('chargesFilters');
@@ -116,11 +116,14 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {shouldHaveDebtor && (
-              <a href={getHref(id)} target="_blank" rel="noreferrer">
-                <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-              </a>
-            )}
+            {shouldHaveCreditor &&
+              (id ? (
+                <a href={getHref(id)} target="_blank" rel="noreferrer">
+                  <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+                </a>
+              ) : (
+                name
+              ))}
             {isError && <p className="bg-yellow-400">{name}</p>}
           </Indicator>
         </div>
