@@ -116,10 +116,12 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {shouldHaveDebtor && (
+            {shouldHaveDebtor && id ? (
               <a href={getHref(id)} target="_blank" rel="noreferrer">
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
+            ) : (
+              name
             )}
             {isError && <p className="bg-yellow-400">{name}</p>}
           </Indicator>

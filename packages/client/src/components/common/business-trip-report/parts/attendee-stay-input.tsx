@@ -61,7 +61,7 @@ export function AttendeesStayInput<T extends FieldValues>({
     query: AttendeesByBusinessTripDocument,
     pause: true,
     variables: {
-      businessTripId,
+      businessTripId: businessTripId ?? '',
     },
   });
 

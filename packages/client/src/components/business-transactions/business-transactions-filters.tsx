@@ -79,7 +79,7 @@ function BusinessTransactionsFilterForm({
             <MultiSelect
               {...field}
               data={businesses}
-              value={field.value ?? [userContext?.ownerId]}
+              value={field.value ?? (userContext?.ownerId ? [userContext.ownerId] : undefined)}
               disabled={businessesLoading}
               label="Owners"
               placeholder="Scroll to see all options"

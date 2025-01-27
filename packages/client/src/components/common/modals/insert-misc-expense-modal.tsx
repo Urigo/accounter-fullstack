@@ -71,7 +71,7 @@ export const InsertMiscExpenseModal = ({
               invoiceDate: transaction?.eventDate,
               valueDate:
                 transaction?.exactEffectiveDate || transaction?.effectiveDate
-                  ? new Date(transaction?.exactEffectiveDate || transaction?.effectiveDate)
+                  ? new Date(transaction.exactEffectiveDate ?? transaction.effectiveDate!)
                   : undefined,
               creditorId:
                 (transaction?.amount.raw ?? 0) > 0 ? transaction?.counterparty?.id : undefined,
