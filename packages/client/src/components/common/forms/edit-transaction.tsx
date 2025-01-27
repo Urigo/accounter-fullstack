@@ -190,14 +190,14 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
             <button
               type="submit"
               onClick={(): (() => void) => handleTransactionSubmit(onTransactionSubmit)}
-              className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+              className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
               disabled={isUpdating || Object.keys(dirtyChargeFields).length === 0}
             >
               Accept
             </button>
             <button
               type="button"
-              className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+              className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
               onClick={onDone}
             >
               Cancel

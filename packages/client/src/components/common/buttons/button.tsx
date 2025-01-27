@@ -33,7 +33,7 @@ export const Button = ({
       style={style}
       type={type}
       onClick={onClick}
-      className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded;"
+      className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-hidden hover:bg-indigo-600 rounded-sm;"
       {...props}
     >
       <a rel={rel} target={target} href={herf} type={type}>

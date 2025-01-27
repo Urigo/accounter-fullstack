@@ -42,7 +42,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 name={`${chargeSpreadPath}.${index}.year` as Path<T>}
                 control={control}
@@ -75,7 +75,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
                 }}
               />
             </div>
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 control={control}
                 name={`${chargeSpreadPath}.${index}.amount` as Path<T>}

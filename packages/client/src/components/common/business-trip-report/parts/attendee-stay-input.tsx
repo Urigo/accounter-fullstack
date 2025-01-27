@@ -104,7 +104,7 @@ export function AttendeesStayInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 name={`${attendeesStayPath}.${index}.attendeeId` as Path<T>}
                 control={control}
@@ -128,7 +128,7 @@ export function AttendeesStayInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 control={control}
                 name={`${attendeesStayPath}.${index}.nightsCount` as Path<T>}

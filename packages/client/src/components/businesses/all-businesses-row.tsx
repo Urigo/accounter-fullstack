@@ -74,7 +74,7 @@ export const AllBusinessesRow = ({
       {(isAllOpened || opened) && (
         <tr>
           <td colSpan={12}>
-            <Paper style={{ width: '100%' }} withBorder shadow="lg">
+            <Paper style={{ width: '100%' }} withBorder shadow-sm="lg">
               <BusinessCard businessID={business.id} updateBusiness={setBusiness} />
             </Paper>
           </td>
