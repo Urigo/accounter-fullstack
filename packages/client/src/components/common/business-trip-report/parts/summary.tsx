@@ -66,7 +66,7 @@ export const Summary = ({ data }: Props): ReactElement => {
   return (
     <div className="flex flex-col gap-2 mt-5">
       {summary.errors?.length && (
-        <Paper shadow="xs" p="md">
+        <Paper shadowSm="xs" p="md">
           <Text c="red">Errors:</Text>
           <List size="sm" withPadding>
             {summary.errors.map((error, i) => (

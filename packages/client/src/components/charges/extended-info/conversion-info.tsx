@@ -40,7 +40,7 @@ export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
     <Grid justify="center">
       {officialRate && (
         <Grid.Col span="content">
-          <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <Card shadowSm="sm" padding="xs" radius="md" withBorder>
             <Group position="apart">
               <Text weight={500}>Official Conversion Rate</Text>
               <Badge color="green" variant="light">
@@ -54,7 +54,7 @@ export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
       )}
       {eventRate && (
         <Grid.Col span="content">
-          <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <Card shadowSm="sm" padding="xs" radius="md" withBorder>
             <Group position="apart">
               <Text weight={500}>Bank Conversion Rate</Text>
               <Badge color="green" variant="light">

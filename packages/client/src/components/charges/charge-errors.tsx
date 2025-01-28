@@ -29,7 +29,7 @@ export const ChargeErrors = ({ data }: Props): ReactElement | null => {
   const charge = getFragmentData(ChargesTableErrorsFieldsFragmentDoc, data);
 
   return charge?.errorsLedger?.validate?.errors?.length ? (
-    <Paper shadow="xs" p="md">
+    <Paper shadowSm="xs" p="md">
       <Text c="red">Errors:</Text>
       <List size="sm" withPadding>
         {charge.errorsLedger.validate.errors.map((error, i) => (

@@ -8,7 +8,7 @@ export interface TableProps {
 
 export const AccounterBasicTable = ({ content, style }: TableProps): ReactElement => {
   return (
-    <Paper shadow="lg" style={{ overflowX: 'auto' }}>
+    <Paper shadowSm="lg" style={{ overflowX: 'auto' }}>
       <Table
         styles={{ tableLayout: 'fixed' }}
         sx={(): CSSObject => ({

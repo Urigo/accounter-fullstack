@@ -36,13 +36,13 @@ export const LedgerRecordRow = ({
   let rowStyle = '';
   switch (matchingStatus) {
     case 'New':
-      rowStyle = 'bg-opacity-30 bg-green-100';
+      rowStyle = 'bg-green-100/30';
       break;
     case 'Deleted':
-      rowStyle = 'bg-opacity-30 bg-red-100';
+      rowStyle = 'bg-red-100/30';
       break;
     case 'Diff':
-      rowStyle = 'bg-opacity-30 bg-yellow-100';
+      rowStyle = 'bg-yellow-100/30';
       break;
   }
 
