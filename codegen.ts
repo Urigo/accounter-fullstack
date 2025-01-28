@@ -17,6 +17,7 @@ const config: CodegenConfig = {
       },
     },
   },
+  emitLegacyCommonJSImports: false,
   generates: {
     'schema.graphql': {
       plugins: ['schema-ast'],
