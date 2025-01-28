@@ -33,7 +33,7 @@ export const SalaryRecord = ({ setEditSalaryRecord, data }: Props): ReactElement
 
   return (
     <>
-      <tr tabIndex={0} className="h-16 border border-gray-100 hover:bg-gray-100 rounded">
+      <tr tabIndex={0} className="h-16 border border-gray-100 hover:bg-gray-100 rounded-sm">
         <EmployeeCell data={salaryRecord} />
         <MainSalaryCell data={salaryRecord} />
         <FundsCell data={salaryRecord} />

@@ -114,7 +114,7 @@ export function MergeBusinessesSelectionForm({
           <div className="flex justify-center gap-5 mt-5">
             <button
               type="button"
-              className=" text-white bg-blue-500 border-0 py-2 px-8 focus:outline-none hover:bg-blue-600 rounded text-lg"
+              className=" text-white bg-blue-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-blue-600 rounded-sm text-lg"
               disabled={fetching || merging}
               onClick={onMergeBusinesses}
             >
@@ -122,14 +122,14 @@ export function MergeBusinessesSelectionForm({
             </button>
             <button
               type="button"
-              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg"
+              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-red-600 rounded-sm text-lg"
               onClick={onDone}
             >
               Cancel
             </button>
             <button
               type="button"
-              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg"
+              className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-red-600 rounded-sm text-lg"
               onClick={(): void => {
                 resetMerge();
                 onDone();

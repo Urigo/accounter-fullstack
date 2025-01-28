@@ -79,7 +79,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input({
           onChange={type === 'number' ? handleChange : onChange}
           className={`w-full bg-gray-100 rounded border border-${
             error ? 'red' : isDirty ? 'green' : 'gray'
-          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out  ${rightPadding} sm:text-sm rounded-md`}
+          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-hidden text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out  ${rightPadding} sm:text-sm rounded-md`}
         />
         {children}
       </div>

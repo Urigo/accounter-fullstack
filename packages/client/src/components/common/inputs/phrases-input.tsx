@@ -40,7 +40,7 @@ export function PhrasesInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields.map((phrase, index) => (
           <div key={phrase.id} className=" flex items-center gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 name={`${phrasesPath}.${index}` as Path<T>}
                 control={control}

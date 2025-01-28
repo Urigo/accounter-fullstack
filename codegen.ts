@@ -142,7 +142,7 @@ const config: CodegenConfig = {
       },
       config: {
         scalars: {
-          TimelessDate: '../helpers#TimelessDateString',
+          TimelessDate: '../helpers/index.js#TimelessDateString',
         },
       },
     },
