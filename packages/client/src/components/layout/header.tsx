@@ -17,7 +17,7 @@ export function Header(): JSX.Element {
 
   return (
     <div className="supports-backdrop-blur:bg-white/60 fixed left-0 right-0 top-0 z-20 border-b bg-white/95 backdrop-blur-sm">
-      <div className="flex flex-row h-14 items-center justify-between px-4">
+      <div className="flex h-14 items-center justify-between px-4">
         <div className="hidden lg:block">
           <Link to="/">
             <img src="../../../icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
