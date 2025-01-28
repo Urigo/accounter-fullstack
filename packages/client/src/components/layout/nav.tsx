@@ -37,7 +37,7 @@ export function Nav({ links, isCollapsed, closeNav }: NavProps): JSX.Element {
   return (
     <ScrollArea className="h-screen pb-40">
       <TooltipProvider delayDuration={0}>
-        <div className="grid grid-cols-1 items-start gap-2">{links.map(renderLink)}</div>
+        <nav className="grid grid-cols-1 items-start gap-2">{links.map(renderLink)}</nav>
       </TooltipProvider>
     </ScrollArea>
   );
