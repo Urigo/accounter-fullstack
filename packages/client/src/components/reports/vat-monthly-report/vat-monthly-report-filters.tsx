@@ -15,7 +15,7 @@ import {
 import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { chargesTypeFilterOptions } from '../../all-charges/charges-filters.js';
+import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
 
 interface VatMonthlyReportFilterFormProps {

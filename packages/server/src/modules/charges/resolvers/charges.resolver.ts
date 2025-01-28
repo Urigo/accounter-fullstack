@@ -1,11 +1,13 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -90,6 +92,105 @@ export const chargesResolvers: ChargesModule.Resolvers &
         });
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
+
+      return {
+        __typename: 'PaginatedCharges',
+        nodes: pageCharges,
+        pageInfo: {
+          totalPages: Math.ceil(charges.length / limit),
+        },
+      };
+    },
+    chargesWithMissingRequiredInfo: async (_, { page, limit }, { injector, adminContext }) => {
+      const chargeIds = new Set<string>();
+      // get by transactions
+      const getByTransactionsPromise = injector
+        .get(TransactionsProvider)
+        .getTransactionsByMissingRequiredInfo()
+        .then(transactions => {
+          transactions.map(transaction => {
+            if (transaction.charge_id) {
+              chargeIds.add(transaction.charge_id);
+            }
+          });
+        });
+
+      // get by documents
+      const getByDocumentsPromise = injector
+        .get(DocumentsProvider)
+        .getDocumentsByMissingRequiredInfo()
+        .then(documents => {
+          documents.map(document => {
+            if (document.charge_id) {
+              chargeIds.add(document.charge_id);
+            }
+          });
+        });
+
+      // get by charge
+      const getByChargesPromise = injector
+        .get(ChargesProvider)
+        .getChargesByMissingRequiredInfo()
+        .then(charges => {
+          charges.map(charge => {
+            if (charge.id) {
+              chargeIds.add(charge.id);
+            }
+          });
+        });
+
+      await Promise.all([getByTransactionsPromise, getByDocumentsPromise, getByChargesPromise]);
+
+      const charges = await Promise.all(
+        Array.from(chargeIds).map(
+          async id =>
+            await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(id)
+              .then(charge => {
+                if (!charge) {
+                  throw new GraphQLError(`Charge ID="${id}" not found`);
+                }
+                return charge;
+              })
+              .catch(e => {
+                const message = `Error loading charge ID="${id}"`;
+                console.error(`${message}: ${e}`);
+                throw new GraphQLError(message);
+              }),
+        ),
+      );
+
+      const pageCharges = charges
+        .filter(charge => charge.owner_id === adminContext.defaultAdminBusinessId)
+        .sort((chargeA, chargeB) => {
+          const dateA =
+            (
+              chargeA.documents_min_date ||
+              chargeA.transactions_min_debit_date ||
+              chargeA.transactions_min_event_date ||
+              chargeA.ledger_min_value_date ||
+              chargeA.ledger_min_invoice_date
+            )?.getTime() ?? 0;
+          const dateB =
+            (
+              chargeB.documents_min_date ||
+              chargeB.transactions_min_debit_date ||
+              chargeB.transactions_min_event_date ||
+              chargeB.ledger_min_value_date ||
+              chargeB.ledger_min_invoice_date
+            )?.getTime() ?? 0;
+
+          if (dateA > dateB) {
+            return -1;
+          }
+          if (dateA < dateB) {
+            return 1;
+          }
+
+          return chargeA.id.localeCompare(chargeB.id);
+        })
+        .slice(page * limit - limit, page * limit);
 
       return {
         __typename: 'PaginatedCharges',

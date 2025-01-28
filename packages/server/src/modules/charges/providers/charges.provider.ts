@@ -20,6 +20,7 @@ import type {
   IGetChargesByFinancialEntityIdsResult,
   IGetChargesByIdsQuery,
   IGetChargesByIdsResult,
+  IGetChargesByMissingRequiredInfoQuery,
   IGetChargesByTransactionIdsQuery,
   IGetChargesByTransactionIdsResult,
   IUpdateAccountantApprovalParams,
@@ -83,6 +84,14 @@ const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>
     AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     ORDER BY c.transactions_min_event_date DESC;`;
+
+const getChargesByMissingRequiredInfo = sql<IGetChargesByMissingRequiredInfoQuery>`
+    SELECT c.*
+    FROM accounter_schema.charges c
+    LEFT JOIN accounter_schema.charge_tags t
+      ON t.charge_id = c.id
+    WHERE c.user_description IS NULL
+    OR t.tag_id IS NULL;`;
 
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
@@ -275,6 +284,10 @@ export class ChargesProvider {
       cache: false,
     },
   );
+
+  public async getChargesByMissingRequiredInfo() {
+    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider);
+  }
 
   public updateCharge(params: IUpdateChargeParams) {
     return updateCharge.run(params, this.dbProvider) as Promise<

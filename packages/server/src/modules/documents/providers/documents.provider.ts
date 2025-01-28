@@ -16,6 +16,7 @@ import type {
   IGetDocumentsByFiltersParams,
   IGetDocumentsByFiltersQuery,
   IGetDocumentsByIdsQuery,
+  IGetDocumentsByMissingRequiredInfoQuery,
   IInsertDocumentsParams,
   IInsertDocumentsQuery,
   IReplaceDocumentsChargeIdParams,
@@ -41,6 +42,21 @@ const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE id IN $$Ids;
+`;
+
+const getDocumentsByMissingRequiredInfo = sql<IGetDocumentsByMissingRequiredInfoQuery>`
+  SELECT *
+  FROM accounter_schema.documents
+  WHERE charge_id IS NOT NULL
+  AND (image_url IS NULL AND file_url IS NULL) -- missing link
+  OR (type <> 'OTHER'
+      AND (serial_number IS NULL
+          OR date IS NULL
+          OR total_amount IS NULL
+          OR currency_code IS NULL
+          OR vat_amount IS NULL
+          OR debtor_id IS NULL
+          OR creditor_id IS NULL));
 `;
 
 const updateDocument = sql<IUpdateDocumentQuery>`
@@ -329,6 +345,10 @@ export class DocumentsProvider {
       cacheMap: this.cache,
     },
   );
+
+  public async getDocumentsByMissingRequiredInfo() {
+    return getDocumentsByMissingRequiredInfo.run(undefined, this.dbProvider);
+  }
 
   public async updateDocument(params: IUpdateDocumentParams) {
     if (params.documentId) {
