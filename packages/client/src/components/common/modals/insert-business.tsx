@@ -65,11 +65,7 @@ function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormPro
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <InsertBusinessFields
-        description={description}
-        useFormManager={useFormManager}
-        setFetching={setFetching}
-      />
+      <InsertBusinessFields useFormManager={useFormManager} setFetching={setFetching} />
 
       <div className="flex justify-center mt-4">
         <Button type="submit" disabled={addingInProcess || fetching}>
