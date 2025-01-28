@@ -71,7 +71,7 @@ export function EditableBusinessTrip({ tripId, isExtended = false }: Props): Rea
   }, [updatedTripDate?.businessTrip]);
 
   return (
-    <Card shadowSm="sm" radius="md" withBorder>
+    <Card shadow="sm" radius="md" withBorder>
       {trip ? (
         <>
           <ReportHeader data={trip} onChange={onChangeDo} />

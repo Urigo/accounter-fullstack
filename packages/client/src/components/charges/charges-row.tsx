@@ -227,7 +227,7 @@ export const ChargesTableRow = ({
       {hasExtendedInfo && opened && (
         <tr>
           <td colSpan={13}>
-            <Paper style={{ width: '100%' }} withBorder shadow-sm="lg">
+            <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} />
             </Paper>
           </td>

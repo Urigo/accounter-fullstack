@@ -173,7 +173,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
       {isExtended && (
         <tr key={`${attendee.id}-expension`}>
           <td colSpan={4}>
-            <Card shadowSm="sm" withBorder>
+            <Card shadow="sm" withBorder>
               <div className="flex flex-col gap-2">
                 {attendee.flights && (
                   <>

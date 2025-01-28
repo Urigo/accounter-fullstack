@@ -55,7 +55,7 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>): ReactElem
       {(props.isShowAll || opened) && moreInfoValue !== null && (
         <tr>
           <td colSpan={12}>
-            <Paper style={{ width: '100%' }} withBorder shadow-sm="lg">
+            <Paper style={{ width: '100%' }} withBorder shadow="lg">
               {moreInfoValue}
             </Paper>
           </td>

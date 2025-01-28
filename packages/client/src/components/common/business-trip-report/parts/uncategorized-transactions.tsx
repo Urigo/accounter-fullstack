@@ -191,7 +191,7 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
 export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement => {
   const [opened, { close, open }] = useDisclosure(false);
   return (
-    <Popover width={200} position="bottom" shadow-sm="md" opened={opened}>
+    <Popover width={200} position="bottom" shadow="md" opened={opened}>
       <Popover.Target>
         <AlertCircle onMouseEnter={open} onMouseLeave={close} />
       </Popover.Target>
