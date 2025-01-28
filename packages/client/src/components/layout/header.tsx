@@ -17,7 +17,7 @@ export function Header(): JSX.Element {
 
   return (
     <div className="supports-backdrop-blur:bg-white/60 fixed left-0 right-0 top-0 z-20 border-b bg-white/95 backdrop-blur-sm">
-      <div className="flex h-14 items-center justify-between px-4">
+      <nav className="flex h-14 items-center justify-between px-4">
         <div className="hidden lg:block">
           <Link to="/">
             <img src="../../../icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
@@ -29,11 +29,11 @@ export function Header(): JSX.Element {
             alt="nature"
             className="w-[25px] h-[25px] object-cover"
           />
-          <div className="text-xl font-semibold">Accounter</div>
+          <h1 className="text-xl font-semibold">Accounter</h1>
           {titleByPath && (
             <>
-              <div className="text-xl"> | </div>
-              <div className="text-xl">{titleByPath}</div>
+              <h1 className="text-xl"> | </h1>
+              <h1 className="text-xl">{titleByPath}</h1>
             </>
           )}
         </div>
@@ -43,7 +43,7 @@ export function Header(): JSX.Element {
         <div className="flex items-center gap-2">
           <UserNav />
         </div>
-      </div>
+      </nav>
     </div>
   );
 }
