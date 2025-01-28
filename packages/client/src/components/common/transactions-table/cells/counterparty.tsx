@@ -1,10 +1,19 @@
-import { ReactElement, useCallback } from 'react';
-import { NavLink } from '@mantine/core';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
+import { ReactElement, useCallback, useMemo, useState } from 'react';
+import { CheckIcon } from 'lucide-react';
+import { useQuery } from 'urql';
+import {
+  AllBusinessesDocument,
+  ChargeFilter,
+  TransactionsTableEntityFieldsFragmentDoc,
+} from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
+import { InsertBusiness } from '../../../common/modals/insert-business.js';
+import { Button } from '../../../ui/button.js';
+// import { ConfirmMiniButton, InsertBusiness } from '../../../common/index.js';
+import { SelectWithSearch } from '../../../ui/select-with-search.js';
+import { ContentTooltip } from '../../../ui/tooltip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -39,12 +48,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     sourceDescription,
   } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
-  const hasAlternative = !!missingInfoSuggestions?.business && enableEdit;
-  const alternativeName = hasAlternative ? missingInfoSuggestions?.business?.name : 'Missing';
-  const alternativeId = hasAlternative ? missingInfoSuggestions?.business?.id : null;
+  const hasSuggestion = !!missingInfoSuggestions?.business && enableEdit;
+  const suggestedName = hasSuggestion ? missingInfoSuggestions?.business?.name : 'Missing';
+  const suggestedId = hasSuggestion ? missingInfoSuggestions?.business?.id : null;
 
-  const name = counterparty?.name ?? alternativeName;
-  const id = counterparty?.id ?? alternativeId;
+  const name = counterparty?.name ?? suggestedName;
 
   const { updateTransaction, fetching } = useUpdateTransaction();
   const updateBusiness = useCallback(
@@ -87,25 +95,51 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
-  const content = <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{name}</p>;
+  const [{ data: businessesData }] = useQuery({ query: AllBusinessesDocument });
+
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
+
+  const [search, setSearch] = useState<string | null>(sourceDescription);
+
+  const selectOptions = useMemo(
+    () =>
+      businessesData?.allBusinesses?.nodes.map(node => ({
+        value: node.id,
+        label: node.name,
+      })) || [],
+    [businessesData],
+  );
 
   return (
     <td>
-      <div className="flex flex-wrap">
-        {id && (
+      <div className="flex flex-wrap gap-1 items-center justify-center">
+        {counterparty?.id ? (
+          <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
+            {name}
+          </a>
+        ) : (
           <>
-            <a href={getHref(id)} target="_blank" rel="noreferrer">
-              <NavLink label={content} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-            </a>
-            {hasAlternative && (
-              <ConfirmMiniButton
-                onClick={(): void => updateBusiness(missingInfoSuggestions.business.id)}
-                disabled={fetching}
-              />
-            )}
+            <SelectWithSearch
+              options={selectOptions}
+              value={selectedBusinessId}
+              onChange={setSelectedBusinessId}
+              search={search}
+              onSearchChange={setSearch}
+              placeholder="Choose or create a business"
+              empty={search ? <InsertBusiness description={search} onAdd={updateBusiness} /> : null}
+            />
+            <ContentTooltip content="Approve">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => selectedBusinessId && updateBusiness(selectedBusinessId)}
+                disabled={fetching || !selectedBusinessId}
+              >
+                <CheckIcon className="size-4" />
+              </Button>
+            </ContentTooltip>
           </>
         )}
-        {!id && sourceDescription !== '' && <InsertBusiness description={sourceDescription} />}
       </div>
     </td>
   );
