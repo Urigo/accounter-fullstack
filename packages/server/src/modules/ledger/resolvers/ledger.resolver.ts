@@ -130,6 +130,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       }) as unknown as Promise<readonly ResolversTypes['ChargesWithLedgerChangesResult'][]>;
     },
     ledgerRecordsByDates: async (_, { fromDate, toDate }, { injector, adminContext }) => {
+      if (fromDate > toDate) {
+        throw new GraphQLError('fromDate must be before or equal to toDate');
+      }
       return await injector
         .get(LedgerProvider)
         .getLedgerRecordsByDates({
@@ -139,7 +142,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         })
         .then(records =>
           records.sort((a, b) => a.invoice_date.getTime() - b.invoice_date.getTime()),
-        );
+        )
+        .catch(error => {
+          console.error('Failed to fetch ledger records:', error);
+          throw new GraphQLError('Failed to fetch ledger records');
+        });
     },
   },
   Mutation: {

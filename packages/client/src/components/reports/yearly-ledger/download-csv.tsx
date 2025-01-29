@@ -120,22 +120,12 @@ const dataRow: DataStructure<LedgerCsvFieldsFragment> = [
 ];
 
 const convertToCSV = (ledgerRecords: LedgerCsvFieldsFragment[]): string => {
-  let csvString = '';
-
-  csvString += `${dataRow.map(({ key }) => key).join(',')}\r\n`;
-
-  for (const record of ledgerRecords) {
-    const stringifiedRecord = handleLedgerRecordRow(record);
-    csvString += stringifiedRecord;
-  }
-
-  return csvString;
+  const rows = [
+    dataRow.map(({ key }) => key).join(','),
+    ...ledgerRecords.map(record => dataRow.map(({ valueFn }) => valueFn(record)).join(',')),
+  ];
+  return rows.join('\r\n');
 };
-
-function handleLedgerRecordRow(record: LedgerCsvFieldsFragment): string {
-  const rowString = `${dataRow.map(({ valueFn }) => valueFn(record)).join(',')}\r\n`;
-  return rowString;
-}
 
 function sanitizeString(desc: string): string {
   let itemDesc = '';
