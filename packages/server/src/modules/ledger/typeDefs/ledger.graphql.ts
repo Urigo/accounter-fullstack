@@ -5,6 +5,8 @@ export default gql`
   extend type Query {
     chargesWithLedgerChanges(filters: ChargeFilter, limit: Int): [ChargesWithLedgerChangesResult!]!
       @auth(role: ACCOUNTANT)
+    ledgerRecordsByDates(fromDate: TimelessDate!, toDate: TimelessDate!): [LedgerRecord!]!
+      @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {

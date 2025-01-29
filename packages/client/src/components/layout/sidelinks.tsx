@@ -13,6 +13,7 @@ import {
   Receipt,
   ReceiptText,
   RectangleEllipsis,
+  Rows4,
   Scale,
   Tags,
 } from 'lucide-react';
@@ -96,6 +97,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/accountant-approvals',
         icon: <Calculator size={18} />,
+      },
+      {
+        title: 'Yearly Ledger Report',
+        label: '',
+        href: '/reports/yearly-ledger',
+        icon: <Rows4 size={18} />,
       },
     ],
   },
