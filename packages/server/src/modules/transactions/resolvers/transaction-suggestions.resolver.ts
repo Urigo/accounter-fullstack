@@ -1,8 +1,9 @@
-import { GraphQLResolveInfo } from 'graphql';
+import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
+import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
 type SuggestionData = {
@@ -431,6 +432,34 @@ function missingInfoSuggestionsWrapper(
 }
 
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
+  Query: {
+    similarTransactions: async (_, { transactionId, withMissingInfo = false }, { injector }) => {
+      const mainTransaction = await injector
+        .get(TransactionsProvider)
+        .getTransactionByIdLoader.load(transactionId)
+        .catch(e => {
+          console.log('Error fetching transaction', transactionId, e);
+          throw new GraphQLError('Error fetching transaction');
+        });
+
+      if (!mainTransaction) {
+        throw new Error(`Transaction not found`);
+      }
+
+      const similarTransactions = await injector
+        .get(TransactionsProvider)
+        .getSimilarTransactions({
+          details: mainTransaction.source_details,
+          counterAccount: mainTransaction.counter_account,
+          withMissingInfo,
+        })
+        .catch(e => {
+          console.log('Error fetching similar transactions', transactionId, e);
+          throw new GraphQLError('Error fetching similar transactions');
+        });
+      return similarTransactions;
+    },
+  },
   ConversionTransaction: {
     missingInfoSuggestions: missingInfoSuggestionsWrapper,
   },

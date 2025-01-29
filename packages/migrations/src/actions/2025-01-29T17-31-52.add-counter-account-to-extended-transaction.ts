@@ -274,8 +274,5 @@ FROM accounter_schema.transactions t
                                                                    WHERE add.reference_number = original_transaction.card_number
                                                                      AND add.event_date > t.event_date
                                                                      AND add.event_date < (t.event_date + '40 days'::interval)));
-
-alter table accounter_schema.extended_transactions
-    owner to accounter_prod_user;
 `,
 } satisfies MigrationExecutor;
