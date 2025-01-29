@@ -188,12 +188,14 @@ export const AccountDetails = ({ data, diff, cred, first }: Props): ReactElement
       <div className="flex flex-col">
         {(creditAccount || isAccountDiff) && (
           <>
-            <a href={getHref(creditAccount?.id)} target="_blank" rel="noreferrer">
-              <NavLink
-                label={creditAccount?.name}
-                className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
-              />
-            </a>
+            {creditAccount && (
+              <a href={getHref(creditAccount.id)} target="_blank" rel="noreferrer">
+                <NavLink
+                  label={creditAccount.name}
+                  className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
+                />
+              </a>
+            )}
             {isAccountDiff && diffCreditAccount && (
               <div className="border-2 border-yellow-500 rounded-md">
                 <a href={getHref(diffCreditAccount.id)} target="_blank" rel="noreferrer">

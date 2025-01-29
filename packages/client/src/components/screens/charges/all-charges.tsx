@@ -58,7 +58,7 @@ export const AllCharges = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
+          byOwners: userContext?.ownerId ? [userContext.ownerId] : undefined,
           sortBy: {
             field: ChargeSortByField.Date,
             asc: false,

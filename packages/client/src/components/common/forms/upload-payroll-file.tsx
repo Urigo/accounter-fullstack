@@ -12,6 +12,7 @@ export const UploadPayrollFile = ({ chargeId, onDone }: Props): ReactElement => 
   const [value, setValue] = useState<File | null>(null);
 
   const onSubmit = useCallback(async () => {
+    if (!value) return;
     uploadPayrollFile({
       file: value,
       chargeId,

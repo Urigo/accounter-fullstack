@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { FileDown } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
-import { TimelessDateString } from '../../../helpers/dates.js';
-import { ExtendedSortCode } from './trial-balance-report-sort-code.js';
-import { SortCodeGroup } from './trial-balance-table.js';
+import type { TimelessDateString } from '../../../helpers/dates.js';
+import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
+import type { SortCodeGroup } from './trial-balance-table.js';
 
 interface Props {
   data: Record<number, SortCodeGroup>;

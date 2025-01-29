@@ -1,10 +1,6 @@
 import { useMutation } from 'urql';
 import { notifications } from '@mantine/notifications';
-import {
-  MergeBusinessesDocument,
-  MergeBusinessesMutation,
-  MergeBusinessesMutationVariables,
-} from '../gql/graphql.js';
+import { MergeBusinessesDocument, MergeBusinessesMutationVariables } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -16,11 +12,9 @@ import {
   }
 `;
 
-type Business = MergeBusinessesMutation['mergeBusinesses'];
-
 type UseMergeBusinesses = {
   fetching: boolean;
-  mergeBusinesses: (variables: MergeBusinessesMutationVariables) => Promise<Business>;
+  mergeBusinesses: (variables: MergeBusinessesMutationVariables) => Promise<string>;
 };
 
 const NOTIFICATION_ID = 'mergeBusinesses';
@@ -33,7 +27,7 @@ export const useMergeBusinesses = (): UseMergeBusinesses => {
 
   return {
     fetching,
-    mergeBusinesses: (variables: MergeBusinessesMutationVariables): Promise<Business> => {
+    mergeBusinesses: (variables: MergeBusinessesMutationVariables): Promise<string> => {
       notifications.show({
         id: NOTIFICATION_ID,
         loading: true,
@@ -42,7 +36,7 @@ export const useMergeBusinesses = (): UseMergeBusinesses => {
         autoClose: false,
         withCloseButton: true,
       });
-      return new Promise<Business>((resolve, reject) =>
+      return new Promise<string>((resolve, reject) =>
         mutate(variables).then(res => {
           if (res.error) {
             console.error(

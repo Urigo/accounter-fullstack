@@ -53,7 +53,7 @@ export const ModifySalaryRecord = ({
   const [{ data: employeesData, fetching: employeesFetching, error: employeesError }] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: userContext?.ownerId,
+      employerId: userContext?.ownerId ?? '',
     },
   });
 
@@ -162,8 +162,8 @@ export const ModifySalaryRecord = ({
   }, [employeesData, setTrainingFunds]);
 
   useEffect(() => {
-    if (!defaultValues?.employer) {
-      setValue('employer', userContext?.ownerId, { shouldDirty: true, shouldTouch: true });
+    if (!defaultValues?.employer && userContext?.ownerId) {
+      setValue('employer', userContext.ownerId, { shouldDirty: true, shouldTouch: true });
     }
   }, [setValue, defaultValues?.employer, userContext?.ownerId]);
 
