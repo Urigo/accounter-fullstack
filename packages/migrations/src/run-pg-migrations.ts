@@ -71,6 +71,7 @@ import migration_2025_01_12T11_47_46_support_cad_currency from './actions/2025-0
 import migration_2025_01_14T18_59_26_add_user_context_table from './actions/2025-01-14T18-59-26.add-user-context-table.js';
 import migration_2025_01_21T13_37_41_add_poalim_cad from './actions/2025-01-21T13-37-41.add-poalim-cad.js';
 import migration_2025_01_21T21_50_26_add_max_creditcard_source from './actions/2025-01-21T21-50-26.add-max-creditcard-source.js';
+import migration_2025_01_29T17_31_52_add_counter_account_to_extended_transaction from './actions/2025-01-29T17-31-52.add-counter-account-to-extended-transaction.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -149,5 +150,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_01_14T18_59_26_add_user_context_table,
       migration_2025_01_21T13_37_41_add_poalim_cad,
       migration_2025_01_21T21_50_26_add_max_creditcard_source,
+      migration_2025_01_29T17_31_52_add_counter_account_to_extended_transaction,
     ],
   });
