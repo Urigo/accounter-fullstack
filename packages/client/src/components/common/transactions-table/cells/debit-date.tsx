@@ -8,6 +8,7 @@ import { FragmentType, getFragmentData } from '../../../../gql/index.js';
   fragment TransactionsTableDebitDateFields on Transaction {
     id
     effectiveDate
+    sourceEffectiveDate
   }
 `;
 
@@ -21,7 +22,14 @@ export const DebitDate = ({ data }: Props): ReactElement => {
 
   return (
     <td>
-      <div>{effectiveDate && format(new Date(effectiveDate), 'dd/MM/yy')}</div>
+      <div className="flex flex-col justify-center">
+        <div>{effectiveDate && format(new Date(effectiveDate), 'dd/MM/yy')}</div>
+        {transaction.sourceEffectiveDate && (
+          <div className="text-xs text-gray-500">
+            (Originally {format(new Date(transaction.sourceEffectiveDate), 'dd/MM/yy')})
+          </div>
+        )}
+      </div>
     </td>
   );
 };
