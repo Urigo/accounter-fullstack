@@ -217,10 +217,15 @@ function SimilarTransactionsTable({
     onOpenChange(false);
   }, [updateTransaction, onOpenChange, table, counterpartyId]);
 
+  useEffect(() => {
+    if (!data.length) {
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 2000);
+    }
+  }, [data.length, onOpenChange]);
+
   if (!data.length) {
-    setTimeout(() => {
-      onOpenChange(false);
-    }, 2000);
     return (
       <DialogHeader className="flex flex-row items-center justify-between">
         <DialogTitle>No similar transactions found</DialogTitle>
