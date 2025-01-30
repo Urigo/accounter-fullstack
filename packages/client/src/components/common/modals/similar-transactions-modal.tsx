@@ -27,7 +27,7 @@ type Transaction = {
   amountFormatted: string;
   sourceDescription: string;
   eventDate: Date;
-  effectiveDate?: Date;
+  valueDate?: Date;
   accountType: string;
   accountName: string;
 };
@@ -136,7 +136,7 @@ export function SimilarTransactionsModal({
       console.log('fetching similar transactions', transactionId);
       fetchSimilarTransactions();
     }
-  }, [open, counterpartyId, fetchSimilarTransactions]);
+  }, [open, counterpartyId, fetchSimilarTransactions, transactionId]);
 
   function onDialogChange(open: boolean) {
     onOpenChange(open);
@@ -153,7 +153,7 @@ export function SimilarTransactionsModal({
         amountFormatted: t.amount.formatted,
         sourceDescription: t.sourceDescription,
         eventDate: new Date(t.eventDate),
-        effectiveDate: t.effectiveDate ? new Date(t.effectiveDate) : undefined,
+        valueDate: t.effectiveDate ? new Date(t.effectiveDate) : undefined,
         accountType: t.account.type,
         accountName: t.account.name,
       })) ?? [],
