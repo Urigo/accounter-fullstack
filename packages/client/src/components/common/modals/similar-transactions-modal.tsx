@@ -88,7 +88,7 @@ const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: 'amountRaw',
     header: 'Amount',
-    cell: ({ row }) => <div>{row.getValue('amountFormatted')}</div>,
+    cell: ({ row }) => <div>{row.original.amountFormatted}</div>,
   },
   {
     accessorKey: 'sourceDescription',
@@ -103,7 +103,9 @@ const columns: ColumnDef<Transaction>[] = [
   {
     accessorKey: 'valueDate',
     header: 'Value Date',
-    cell: ({ row }) => <div>{format(row.getValue('valueDate'), 'yyyy-MM-dd')}</div>,
+    cell: ({ row }) => (
+      <div>{row.getValue('valueDate') ? format(row.getValue('valueDate'), 'yyyy-MM-dd') : ''}</div>
+    ),
   },
 ];
 
