@@ -77,12 +77,12 @@ const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: 'accountType',
-    header: 'Account Type',
+    header: 'Type',
     cell: ({ row }) => <div>{row.getValue('accountType')}</div>,
   },
   {
     accessorKey: 'accountName',
-    header: 'Account Name',
+    header: 'Account',
     cell: ({ row }) => <div>{row.getValue('accountName')}</div>,
   },
   {
@@ -162,7 +162,7 @@ export function SimilarTransactionsModal({
 
   return (
     <Dialog open={open && !!counterpartyId} onOpenChange={onDialogChange}>
-      <DialogContent>
+      <DialogContent className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
         <ErrorBoundary fallback={<div>Error fetching similar transactions</div>}>
           {fetching ? (
             <AccounterLoader />
@@ -191,8 +191,6 @@ function SimilarTransactionsTable({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
 
-  console.log('🚀 ~ data:', data);
-
   const table = useReactTable({
     data,
     columns,
@@ -211,27 +209,26 @@ function SimilarTransactionsTable({
   const onApproveSelected = useCallback(async () => {
     const ids = table.getSelectedRowModel().rows.map(row => row.original.id);
 
-    await Promise.all(
-      ids.map(id =>
-        updateTransaction({
-          transactionId: id,
-          fields: {
-            counterpartyId,
-          },
-        }),
-      ),
-    );
+    // Avoid overloading the server with Promise.all
+    for (const id of ids) {
+      await updateTransaction({
+        transactionId: id,
+        fields: {
+          counterpartyId,
+        },
+      });
+    }
 
     onOpenChange(false);
   }, [updateTransaction, onOpenChange, table, counterpartyId]);
 
-  // useEffect(() => {
-  //   if (!data.length) {
-  //     setTimeout(() => {
-  //       onOpenChange(false);
-  //     }, 2000);
-  //   }
-  // }, [data.length, onOpenChange]);
+  useEffect(() => {
+    if (!data.length) {
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 2000);
+    }
+  }, [data.length, onOpenChange]);
 
   if (!data.length) {
     return (
