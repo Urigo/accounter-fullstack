@@ -71,6 +71,14 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [transactionId, updateTransaction],
   );
 
+  const onAddBusiness = useCallback(
+    async (businessId: string) => {
+      await updateBusiness(businessId);
+      onChange?.();
+    },
+    [updateBusiness, onChange],
+  );
+
   const encodedFilters = get('chargesFilters');
 
   const getHref = useCallback(
@@ -130,7 +138,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               search={search}
               onSearchChange={setSearch}
               placeholder="Choose or create a business"
-              empty={search ? <InsertBusiness description={search} onAdd={updateBusiness} /> : null}
+              empty={search ? <InsertBusiness description={search} onAdd={onAddBusiness} /> : null}
             />
             <ContentTooltip content="Approve">
               <Button
