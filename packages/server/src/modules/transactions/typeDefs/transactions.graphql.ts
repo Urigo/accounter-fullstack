@@ -69,6 +69,8 @@ export default gql`
     eventDate: TimelessDate!
     " debitDate "
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
+    " debitDate without user overrides and completions "
+    sourceEffectiveDate: TimelessDate
     " debitTimeStamp "
     exactEffectiveDate: DateTime
     " either credit or debit "
@@ -102,6 +104,7 @@ export default gql`
     referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
+    sourceEffectiveDate: TimelessDate
     exactEffectiveDate: DateTime
     direction: TransactionDirection!
     amount: FinancialAmount!
@@ -120,6 +123,7 @@ export default gql`
     referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate!
+    sourceEffectiveDate: TimelessDate
     exactEffectiveDate: DateTime
     direction: TransactionDirection!
     amount: FinancialAmount!

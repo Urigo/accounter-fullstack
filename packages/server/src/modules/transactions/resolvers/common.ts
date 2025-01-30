@@ -10,6 +10,15 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
   referenceKey: DbTransaction => DbTransaction.source_reference,
   eventDate: DbTransaction => dateToTimelessDateString(DbTransaction.event_date),
   effectiveDate: DbTransaction => effectiveDateSupplement(DbTransaction),
+  sourceEffectiveDate: DbTransaction => {
+    const date = DbTransaction.source_debit_date
+      ? dateToTimelessDateString(DbTransaction.source_debit_date)
+      : null;
+    if (date && date !== effectiveDateSupplement(DbTransaction)) {
+      return date;
+    }
+    return null;
+  },
   exactEffectiveDate: DbTransaction => DbTransaction.debit_timestamp,
   direction: DbTransaction =>
     parseFloat(DbTransaction.amount) > 0 ? TransactionDirection.Credit : TransactionDirection.Debit,

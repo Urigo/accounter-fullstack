@@ -21,7 +21,9 @@ export const EventDate = ({ data }: Props): ReactElement => {
 
   return (
     <td>
-      <div>{eventDate && format(new Date(eventDate), 'dd/MM/yy')}</div>
+      <div className="flex flex-col justify-center">
+        {eventDate && format(new Date(eventDate), 'dd/MM/yy')}
+      </div>
     </td>
   );
 };
