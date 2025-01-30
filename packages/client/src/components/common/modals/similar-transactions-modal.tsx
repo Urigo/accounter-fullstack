@@ -9,12 +9,12 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
-import { Button } from '../../ui/button';
-import { Card } from '../../ui/card';
-import { Checkbox } from '../../ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { Button } from '../../ui/button.js';
+import { Card } from '../../ui/card.js';
+import { Checkbox } from '../../ui/checkbox.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 
 export type Transaction = {
   id: string;

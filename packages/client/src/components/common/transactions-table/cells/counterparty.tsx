@@ -147,7 +147,8 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
       </div>
 
       <SimilarTransactionsModal
-        counterpartyId={counterparty?.id}
+        // TODO: fix this
+        counterpartyId={counterparty?.id ?? ''}
         open={similarTransactionsOpen}
         onOpenChange={setSimilarTransactionsOpen}
       />
