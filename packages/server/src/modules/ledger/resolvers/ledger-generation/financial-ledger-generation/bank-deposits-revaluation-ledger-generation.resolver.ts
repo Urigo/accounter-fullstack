@@ -4,12 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import {
-  BANK_DEPOSIT_BUSINESS_ID,
-  DEFAULT_LOCAL_CURRENCY,
-  EMPTY_UUID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-} from '@shared/constants';
+import { EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -30,11 +25,26 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
-    const { injector } = context;
+    const {
+      injector,
+      adminContext: {
+        defaultLocalCurrency,
+        general: {
+          taxCategories: { exchangeRevaluationTaxCategoryId },
+        },
+        bankDeposits: { bankDepositBusinessId },
+      },
+    } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
         message: `Bank deposits revaluation charge must include user description with designated year`,
+      };
+    }
+    if (!bankDepositBusinessId) {
+      return {
+        __typename: 'CommonError',
+        message: `Bank deposits business is not set`,
       };
     }
 
@@ -65,7 +75,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
       {
         filters: {
           ownerIds: [charge.owner_id],
-          businessIDs: [BANK_DEPOSIT_BUSINESS_ID],
+          businessIDs: [bankDepositBusinessId],
           toDate: cumulativeDate,
           includeRevaluation: false,
         },
@@ -95,7 +105,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
       currencies.map(currency =>
         injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, new Date(revaluationDate))
+          .getExchangeRates(currency, defaultLocalCurrency, new Date(revaluationDate))
           .then(rates => exchangeRates.set(currency, rates)),
       ),
     );
@@ -105,7 +115,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
     const currenciesLedgerPromise = Object.entries(bankDepositsBalance).map(
       async ([currency, sum]) => {
-        if (!currencies.includes(currency as Currency) || currency === DEFAULT_LOCAL_CURRENCY) {
+        if (!currencies.includes(currency as Currency) || currency === defaultLocalCurrency) {
           return;
         }
 
@@ -115,7 +125,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
           return;
         }
 
-        const cumulativeLocalBalance = bankDepositsBalance[DEFAULT_LOCAL_CURRENCY].total;
+        const cumulativeLocalBalance = bankDepositsBalance[defaultLocalCurrency].total;
         const cumulativeForeignBalance = (sum as CurrencySum).total;
 
         const revaluationDiff = cumulativeLocalBalance - cumulativeForeignBalance * rate;
@@ -130,16 +140,16 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
           id: EMPTY_UUID,
           invoiceDate: new Date(revaluationDate),
           valueDate: new Date(revaluationDate),
-          currency: DEFAULT_LOCAL_CURRENCY,
+          currency: defaultLocalCurrency,
           isCreditorCounterparty,
           ...(isCreditorCounterparty
             ? {
-                creditAccountID1: BANK_DEPOSIT_BUSINESS_ID,
-                debitAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
+                creditAccountID1: bankDepositBusinessId,
+                debitAccountID1: exchangeRevaluationTaxCategoryId,
               }
             : {
-                creditAccountID1: EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-                debitAccountID1: BANK_DEPOSIT_BUSINESS_ID,
+                creditAccountID1: exchangeRevaluationTaxCategoryId,
+                debitAccountID1: bankDepositBusinessId,
               }),
           localCurrencyCreditAmount1: Math.abs(revaluationDiff),
           localCurrencyDebitAmount1: Math.abs(revaluationDiff),
@@ -154,7 +164,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     );
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -164,7 +174,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     await Promise.all([expensesLedgerPromise, ...currenciesLedgerPromise]);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, injector);
+      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
     }
 
     return {

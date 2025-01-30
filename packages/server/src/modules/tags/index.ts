@@ -11,7 +11,7 @@ export const tagsModule = createModule({
   dirname: __dirname,
   typeDefs: [tags],
   resolvers: [tagsResolvers],
-  providers: [TagsProvider, ChargeTagsProvider],
+  providers: () => [TagsProvider, ChargeTagsProvider],
 });
 
 export * as TagsTypes from './types.js';

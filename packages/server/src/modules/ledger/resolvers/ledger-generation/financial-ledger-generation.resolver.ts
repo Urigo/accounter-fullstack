@@ -1,11 +1,3 @@
-import {
-  ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID,
-  BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID,
-  EXCHANGE_REVALUATION_TAX_CATEGORY_ID,
-  RECOVERY_RESERVE_TAX_CATEGORY_ID,
-  TAX_EXPENSES_TAX_CATEGORY_ID,
-  VACATION_RESERVE_TAX_CATEGORY_ID,
-} from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
@@ -22,6 +14,17 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
+  const {
+    adminContext: {
+      authorities: { taxExpensesTaxCategoryId },
+      bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
+      depreciation: { accumulatedDepreciationTaxCategoryId },
+      general: {
+        taxCategories: { exchangeRevaluationTaxCategoryId },
+      },
+      salaries: { recoveryReserveTaxCategoryId, vacationReserveTaxCategoryId },
+    },
+  } = context;
   try {
     if (!charge.tax_category_id) {
       return {
@@ -30,42 +33,42 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
       };
     }
     switch (charge.tax_category_id) {
-      case EXCHANGE_REVALUATION_TAX_CATEGORY_ID:
+      case exchangeRevaluationTaxCategoryId:
         return generateLedgerRecordsForExchangeRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case TAX_EXPENSES_TAX_CATEGORY_ID:
+      case taxExpensesTaxCategoryId:
         return generateLedgerRecordsForTaxExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case ACCUMULATED_DEPRECIATION_TAX_CATEGORY_ID:
+      case accumulatedDepreciationTaxCategoryId:
         return generateLedgerRecordsForDepreciationExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case RECOVERY_RESERVE_TAX_CATEGORY_ID:
+      case recoveryReserveTaxCategoryId:
         return generateLedgerRecordsForRecoveryReserveExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case VACATION_RESERVE_TAX_CATEGORY_ID:
+      case vacationReserveTaxCategoryId:
         return generateLedgerRecordsForVacationReserveExpenses(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
-      case BANK_DEPOSIT_INTEREST_INCOME_TAX_CATEGORY_ID:
+      case bankDepositInterestIncomeTaxCategoryId:
         return generateLedgerRecordsForBankDepositsRevaluation(
           charge,
           { insertLedgerRecordsIfNotExists },

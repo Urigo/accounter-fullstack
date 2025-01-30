@@ -1,6 +1,5 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import type { BusinessTripSummary, BusinessTripSummaryCategories } from '@shared/gql-types';
 import {
   accommodationExpenseDataCollector,
@@ -26,9 +25,10 @@ export class BusinessTripError extends Error {
 }
 
 export async function businessTripSummary(
-  injector: Injector,
+  context: GraphQLModules.Context,
   dbBusinessTrip: BusinessTripProto,
 ): Promise<BusinessTripSummary> {
+  const { injector } = context;
   try {
     const attendees = await injector
       .get(BusinessTripAttendeesProvider)
@@ -112,7 +112,7 @@ export async function businessTripSummary(
 
     const [unAccommodatedDays] = await Promise.all([
       accommodationExpenseDataCollector(
-        injector,
+        context,
         accommodationsExpenses,
         summaryData,
         dbBusinessTrip.destination,
@@ -127,7 +127,7 @@ export async function businessTripSummary(
         }
       }),
       ...flightExpenses.map(flightExpense =>
-        flightExpenseDataCollector(injector, flightExpense, summaryData).catch(e => {
+        flightExpenseDataCollector(context, flightExpense, summaryData).catch(e => {
           if (e instanceof BusinessTripError) {
             errors.push(e.message);
           } else {
@@ -136,7 +136,7 @@ export async function businessTripSummary(
           }
         }),
       ),
-      otherExpensesDataCollector(injector, otherExpenses, summaryData).catch(e => {
+      otherExpensesDataCollector(context, otherExpenses, summaryData).catch(e => {
         if (e instanceof BusinessTripError) {
           errors.push(e.message);
         } else {
@@ -145,7 +145,7 @@ export async function businessTripSummary(
         }
       }),
       carRentalExpensesDataCollector(
-        injector,
+        context,
         carRentalExpenses,
         summaryData,
         taxVariables,
@@ -161,7 +161,7 @@ export async function businessTripSummary(
     ]);
 
     await travelAndSubsistenceExpensesDataCollector(
-      injector,
+      context,
       travelAndSubsistenceExpenses,
       summaryData,
       taxVariables,

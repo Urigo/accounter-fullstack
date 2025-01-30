@@ -14,6 +14,7 @@
     "pgtyped:watch": "yarn pgtyped -w",
     "prebuild": "yarn validate-env && yarn generate && yarn typecheck",
     "prepgtyped": "rimraf **/__generated__/*.types.ts",
+    "prestart": "yarn build",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "validate-env": "if [ ! -f \"./src/env.ts\" ] ; then cp ./src/env.template.ts ./src/env.ts ; fi"
@@ -22,7 +23,7 @@
     "@accounter/modern-poalim-scraper": "0.9.14",
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
-    "@sinclair/typebox": "0.34.13",
+    "@sinclair/typebox": "0.34.14",
     "date-fns": "4.1.0",
     "dotenv": "16.4.7",
     "dotenv-cli": "8.0.0",
@@ -31,8 +32,8 @@
   },
   "devDependencies": {
     "@types/listr": "0.14.9",
-    "@types/pg": "8.11.10",
-    "tsup": "8.3.5"
+    "@types/pg": "8.11.11",
+    "tsup": "8.3.6"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

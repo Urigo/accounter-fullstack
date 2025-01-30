@@ -23,7 +23,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, Props>(function SelectI
           ref={ref}
           className={`w-full bg-gray-100 border border-${
             error ? 'red' : 'gray'
-          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-none text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out block sm:text-sm rounded-md`}
+          }-300 focus:ring-2 focus:ring-indigo-200 focus:bg-transparent focus:border-indigo-500 text-base outline-hidden text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out block sm:text-sm rounded-md`}
           {...props}
         >
           {Object.keys(selectionEnum).map(key => (

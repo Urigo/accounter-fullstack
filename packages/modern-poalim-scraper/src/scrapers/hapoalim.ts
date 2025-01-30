@@ -43,13 +43,11 @@ async function businessLogin(credentials: HapoalimCredentials, page: Page) {
 
   page.click('.submit-btn');
 
-  const answers = await inquirer.prompt<{'SMSPassword': string}>(
-    {
-      type: 'input',
-      name: 'SMSPassword',
-      message: 'Enter the code you got in SMS:',
-    },
-  );
+  const answers = await inquirer.prompt<{ SMSPassword: string }>({
+    type: 'input',
+    name: 'SMSPassword',
+    message: 'Enter the code you got in SMS:',
+  });
 
   await page.type('input[formcontrolname="code"]', answers.SMSPassword);
 
@@ -81,11 +79,11 @@ async function personalLogin(credentials: HapoalimCredentials, page: Page) {
 async function replacePassword(previousCredentials: HapoalimCredentials, page: Page) {
   await page.waitForSelector('#buttonAction');
 
-  const answers = await inquirer.prompt<{'newPassword': string}>({
-      type: 'input',
-      name: 'newPassword',
-      message: 'Enter your new wanted password:',
-    });
+  const answers = await inquirer.prompt<{ newPassword: string }>({
+    type: 'input',
+    name: 'newPassword',
+    message: 'Enter your new wanted password:',
+  });
 
   await page.type('[name="oldpassword"]', previousCredentials.password);
   await page.type('[name="newpassword"]', answers.newPassword);
@@ -206,18 +204,18 @@ export async function hapoalim(
         }
 
         if (!data) {
-          console.log(`No ILS data found for account ${fullAccountNumber}`)
+          console.log(`No ILS data found for account ${fullAccountNumber}`);
           return {
             data,
             isValid: true,
-          }
+          };
         }
         const validation = await validateSchema(ILSCheckingTransactionsDataSchemaFile, data);
         return {
           data,
           ...validation,
         };
-      } 
+      }
 
       return { data: await getIlsTransactionsFunction, isValid: null };
     },
@@ -242,7 +240,7 @@ export async function hapoalim(
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const foreignTransactionsUrl = `${apiSiteUrl}/foreign-currency/transactions?accountId=${fullAccountNumber}${
         isBusiness ? '&type=business' : ''
-      }&view=details&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&currencyCodeList=19,27,100&detailedAccountTypeCodeList=142&lang=he`;
+      }&view=details&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&currencyCodeList=19,27,100,140&detailedAccountTypeCodeList=142&lang=he`;
       const getForeignTransactionsFunction = fetchGetWithinPage<ForeignTransactionsSchema<T>>(
         page,
         foreignTransactionsUrl,
@@ -364,11 +362,11 @@ export async function hapoalim(
       if (options?.validateSchema) {
         const data = await getDepositsFunction;
         if (!data) {
-          console.log(`No deposits data found for account ${fullAccountNumber}`)
+          console.log(`No deposits data found for account ${fullAccountNumber}`);
           return {
             data,
             isValid: true,
-          }
+          };
         }
         const validation = await validateSchema(depositsSchema, data);
         return {
@@ -377,7 +375,7 @@ export async function hapoalim(
         };
       }
 
-      return { data: await getDepositsFunction, isValid: null};
+      return { data: await getDepositsFunction, isValid: null };
     },
     getForeignDeposits: async (account: {
       bankNumber: number;

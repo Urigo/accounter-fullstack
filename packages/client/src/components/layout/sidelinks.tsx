@@ -12,6 +12,8 @@ import {
   PlaneTakeoff,
   Receipt,
   ReceiptText,
+  RectangleEllipsis,
+  Rows4,
   Scale,
   Tags,
 } from 'lucide-react';
@@ -29,10 +31,30 @@ export interface SideLink extends NavLink {
 
 export const sidelinks: SideLink[] = [
   {
-    title: 'All Charges',
+    title: 'Charges',
     label: '',
-    href: '/charges',
+    href: '',
     icon: <Receipt size={18} />,
+    sub: [
+      {
+        title: 'All Charges',
+        label: '',
+        href: '/charges',
+        icon: <Receipt size={18} />,
+      },
+      {
+        title: 'Missing Info Charges',
+        label: '',
+        href: '/missing-info-charges',
+        icon: <RectangleEllipsis size={18} />,
+      },
+      {
+        title: 'Ledger Validation',
+        label: '',
+        href: '/charges-ledger-validation',
+        icon: <BookOpenCheck size={18} />,
+      },
+    ],
   },
   {
     title: 'Reports',
@@ -51,12 +73,6 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/reports/trial-balance',
         icon: <Scale size={18} />,
-      },
-      {
-        title: 'Ledger Validation',
-        label: '',
-        href: '/charges-ledger-validation',
-        icon: <BookOpenCheck size={18} />,
       },
       {
         title: 'Profit and Loss Report',
@@ -81,6 +97,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/accountant-approvals',
         icon: <Calculator size={18} />,
+      },
+      {
+        title: 'Yearly Ledger Report',
+        label: '',
+        href: '/reports/yearly-ledger',
+        icon: <Rows4 size={18} />,
       },
     ],
   },

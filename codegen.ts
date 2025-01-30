@@ -8,15 +8,7 @@ const config: CodegenConfig = {
     './packages/client/src/hooks/**/*.ts',
     './packages/client/**/*.graphql.ts',
   ],
-  config: {
-    scalars: {
-      URL: 'URL | string',
-      FileScalar: {
-        input: 'File | Blob',
-        output: 'string',
-      },
-    },
-  },
+  emitLegacyCommonJSImports: false,
   generates: {
     'schema.graphql': {
       plugins: ['schema-ast'],
@@ -141,7 +133,20 @@ const config: CodegenConfig = {
       },
       config: {
         scalars: {
-          TimelessDate: '../helpers#TimelessDateString',
+          TimelessDate: '../helpers/index.js#TimelessDateString',
+          FileScalar: {
+            input: 'File | Blob',
+            output: 'string',
+          },
+          UUID: {
+            input: 'string',
+            output: 'string',
+          },
+          URL: 'URL | string',
+          DateTime: {
+            input: 'Date',
+            output: 'Date',
+          },
         },
       },
     },

@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   QueryTaxReportArgs,
   RequireFields,
@@ -23,7 +22,8 @@ export const taxReport: ResolverFn<
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
   RequireFields<QueryTaxReportArgs, 'referenceYears' | 'reportYear'>
-> = async (_, { reportYear, referenceYears }, { injector }) => {
+> = async (_, { reportYear, referenceYears }, context) => {
+  const { injector } = context;
   referenceYears = referenceYears.filter(year => year !== reportYear);
   const years = [reportYear, ...referenceYears];
   years.map(year => {
@@ -63,12 +63,18 @@ export const taxReport: ResolverFn<
   for (const year of years) {
     const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
 
+    let profitAndLoss = profitLossByYear.get(year);
+    if (!profitAndLoss) {
+      profitAndLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
+      profitLossByYear.set(year, profitAndLoss);
+    }
+
     const {
       profitBeforeTaxAmount,
       profitBeforeTaxRecords,
       researchAndDevelopmentExpensesAmount,
       researchAndDevelopmentExpensesRecords,
-    } = profitLossByYear.get(year) ?? getProfitLossReportAmounts(decoratedLedgerRecords);
+    } = profitAndLoss;
 
     let cumulativeResearchAndDevelopmentExpensesAmount = 0;
     for (const rndYear of [year - 2, year - 1, year]) {
@@ -76,11 +82,15 @@ export const taxReport: ResolverFn<
       if (!profitLossHelperReportAmounts) {
         const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
         profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
+        profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
       }
 
       cumulativeResearchAndDevelopmentExpensesAmount +=
         profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
     }
+
+    const taxableCumulativeResearchAndDevelopmentExpensesAmount =
+      cumulativeResearchAndDevelopmentExpensesAmount / 3;
 
     const {
       researchAndDevelopmentExpensesForTax,
@@ -93,10 +103,11 @@ export const taxReport: ResolverFn<
       taxRate,
       annualTaxExpenseAmount,
     } = await calculateTaxAmounts(
-      injector,
+      context,
       year,
       decoratedLedgerRecords,
-      cumulativeResearchAndDevelopmentExpensesAmount,
+      researchAndDevelopmentExpensesAmount,
+      taxableCumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );
 
@@ -133,38 +144,43 @@ export const taxReport: ResolverFn<
 export const taxReportYearMapper: TaxReportYearResolvers = {
   id: parent => `profit-and-loss-year-${parent.year}`,
   year: parent => parent.year,
-  profitBeforeTax: parent => ({
-    amount: formatFinancialAmount(parent.profitBeforeTax.amount, DEFAULT_LOCAL_CURRENCY),
+  profitBeforeTax: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.profitBeforeTax.amount, defaultLocalCurrency),
     records: parent.profitBeforeTax.records,
   }),
-  researchAndDevelopmentExpensesByRecords: parent => ({
+  researchAndDevelopmentExpensesByRecords: (
+    parent,
+    _,
+    { adminContext: { defaultLocalCurrency } },
+  ) => ({
     amount: formatFinancialAmount(
       parent.researchAndDevelopmentExpensesByRecords.amount,
-      DEFAULT_LOCAL_CURRENCY,
+      defaultLocalCurrency,
     ),
     records: parent.researchAndDevelopmentExpensesByRecords.records,
   }),
-  researchAndDevelopmentExpensesForTax: parent =>
-    formatFinancialAmount(parent.researchAndDevelopmentExpensesForTax, DEFAULT_LOCAL_CURRENCY),
+  researchAndDevelopmentExpensesForTax: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.researchAndDevelopmentExpensesForTax, defaultLocalCurrency),
 
-  fines: parent => ({
-    amount: formatFinancialAmount(parent.fines.amount, DEFAULT_LOCAL_CURRENCY),
+  fines: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.fines.amount, defaultLocalCurrency),
     records: parent.fines.records,
   }),
-  untaxableGifts: parent => ({
-    amount: formatFinancialAmount(parent.untaxableGifts.amount, DEFAULT_LOCAL_CURRENCY),
+  untaxableGifts: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.untaxableGifts.amount, defaultLocalCurrency),
     records: parent.untaxableGifts.records,
   }),
-  businessTripsExcessExpensesAmount: parent =>
-    formatFinancialAmount(parent.businessTripsExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
-  salaryExcessExpensesAmount: parent =>
-    formatFinancialAmount(parent.salaryExcessExpensesAmount, DEFAULT_LOCAL_CURRENCY),
-  reserves: parent => ({
-    amount: formatFinancialAmount(parent.reserves.amount, DEFAULT_LOCAL_CURRENCY),
+  businessTripsExcessExpensesAmount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.businessTripsExcessExpensesAmount, defaultLocalCurrency),
+  salaryExcessExpensesAmount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.salaryExcessExpensesAmount, defaultLocalCurrency),
+  reserves: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.reserves.amount, defaultLocalCurrency),
     records: parent.reserves.records,
   }),
-  taxableIncome: parent => formatFinancialAmount(parent.taxableIncome, DEFAULT_LOCAL_CURRENCY),
+  taxableIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.taxableIncome, defaultLocalCurrency),
   taxRate: parent => parent.taxRate,
-  annualTaxExpense: parent =>
-    formatFinancialAmount(parent.annualTaxExpense, DEFAULT_LOCAL_CURRENCY),
+  annualTaxExpense: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.annualTaxExpense, defaultLocalCurrency),
 };

@@ -6,11 +6,6 @@ import type { IGetAllFinancialEntitiesResult } from '@modules/financial-entities
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
-  DEFAULT_LOCAL_CURRENCY,
-  DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID,
-  DEVELOPMENT_LOCAL_TAX_CATEGORY_ID,
-} from '@shared/constants';
-import {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReportDifferences,
   QueryCorporateTaxRulingComplianceReportArgs,
@@ -62,6 +57,13 @@ function handleLedgerSingleSide(
   financialEntitiesDict: Map<string, IGetAllFinancialEntitiesResult>,
   financialEntityId: string,
   amount: number,
+  {
+    adminContext: {
+      general: {
+        taxCategories: { developmentForeignTaxCategoryId, developmentLocalTaxCategoryId },
+      },
+    },
+  }: GraphQLModules.Context,
 ) {
   const financialEntity = financialEntitiesDict.get(financialEntityId);
 
@@ -81,9 +83,9 @@ function handleLedgerSingleSide(
     reportAmounts.researchAndDevelopmentExpenses -= amount;
 
     if (rndType === ExpenseType.DevOps) {
-      if (financialEntityId === DEVELOPMENT_FOREIGN_TAX_CATEGORY_ID) {
+      if (financialEntityId === developmentForeignTaxCategoryId) {
         reportAmounts.foreignDevelopmentExpenses -= amount;
-      } else if (financialEntityId === DEVELOPMENT_LOCAL_TAX_CATEGORY_ID) {
+      } else if (financialEntityId === developmentLocalTaxCategoryId) {
         reportAmounts.localDevelopmentExpenses -= amount;
       }
     }
@@ -146,7 +148,11 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
   RequireFields<QueryCorporateTaxRulingComplianceReportArgs, 'years'>
-> = async (_, { years }, { injector }) => {
+> = async (_, { years }, context) => {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency },
+  } = context;
   years.map(year => {
     if (year < 2000 || year > new Date().getFullYear()) {
       throw new GraphQLError('Invalid year');
@@ -190,22 +196,46 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
 
     if (record.credit_entity1) {
       const amount = Number(record.credit_local_amount1);
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.credit_entity1, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.credit_entity1,
+        amount,
+        context,
+      );
     }
 
     if (record.credit_entity2) {
       const amount = Number(record.credit_local_amount2);
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.credit_entity2, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.credit_entity2,
+        amount,
+        context,
+      );
     }
 
     if (record.debit_entity1) {
       const amount = Number(record.debit_local_amount1) * -1;
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.debit_entity1, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.debit_entity1,
+        amount,
+        context,
+      );
     }
 
     if (record.debit_entity2) {
       const amount = Number(record.debit_local_amount2) * -1;
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.debit_entity2, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.debit_entity2,
+        amount,
+        context,
+      );
     }
   });
 
@@ -214,28 +244,28 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
     yearlyReports.push({
       id: `corporate-tax-ruling-compliant-report-${year}`,
       year,
-      totalIncome: formatFinancialAmount(reportAmounts.totalIncome, DEFAULT_LOCAL_CURRENCY),
+      totalIncome: formatFinancialAmount(reportAmounts.totalIncome, defaultLocalCurrency),
       businessTripRndExpenses: formatFinancialAmount(
         reportAmounts.businessTripRndExpenses,
-        DEFAULT_LOCAL_CURRENCY,
+        defaultLocalCurrency,
       ),
       foreignDevelopmentExpenses: formatFinancialAmount(
         reportAmounts.foreignDevelopmentExpenses,
-        DEFAULT_LOCAL_CURRENCY,
+        defaultLocalCurrency,
       ),
       foreignDevelopmentRelativeToRnd: validateForeignDevelopmentOfRnd(
         reportAmounts.foreignDevelopmentExpenses / reportAmounts.researchAndDevelopmentExpenses,
       ),
       localDevelopmentExpenses: formatFinancialAmount(
         reportAmounts.localDevelopmentExpenses,
-        DEFAULT_LOCAL_CURRENCY,
+        defaultLocalCurrency,
       ),
       localDevelopmentRelativeToRnd: validateLocalDevelopmentOfRnd(
         reportAmounts.localDevelopmentExpenses / reportAmounts.researchAndDevelopmentExpenses,
       ),
       researchAndDevelopmentExpenses: formatFinancialAmount(
         reportAmounts.researchAndDevelopmentExpenses,
-        DEFAULT_LOCAL_CURRENCY,
+        defaultLocalCurrency,
       ),
       rndRelativeToIncome: validateRndOfIncome(
         reportAmounts.researchAndDevelopmentExpenses / reportAmounts.totalIncome,
@@ -273,7 +303,10 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
   context,
   info,
 ) => {
-  const { injector } = context;
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency },
+  } = context;
 
   const [charges, financialEntities] = await Promise.all([
     injector
@@ -296,7 +329,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
 
   const ledgerRecords = await Promise.all(
     charges.map(charge =>
-      ledgerGenerationByCharge(charge)(
+      ledgerGenerationByCharge(charge, context)(
         charge,
         { insertLedgerRecordsIfNotExists: false },
         context,
@@ -330,22 +363,46 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
   ledgerRecords.map(record => {
     if (record.credit_entity1) {
       const amount = Number(record.credit_local_amount1);
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.credit_entity1, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.credit_entity1,
+        amount,
+        context,
+      );
     }
 
     if (record.credit_entity2) {
       const amount = Number(record.credit_local_amount2);
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.credit_entity2, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.credit_entity2,
+        amount,
+        context,
+      );
     }
 
     if (record.debit_entity1) {
       const amount = Number(record.debit_local_amount1) * -1;
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.debit_entity1, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.debit_entity1,
+        amount,
+        context,
+      );
     }
 
     if (record.debit_entity2) {
       const amount = Number(record.debit_local_amount2) * -1;
-      handleLedgerSingleSide(reportAmounts, financialEntitiesDict, record.debit_entity2, amount);
+      handleLedgerSingleSide(
+        reportAmounts,
+        financialEntitiesDict,
+        record.debit_entity2,
+        amount,
+        context,
+      );
     }
   });
 
@@ -353,31 +410,31 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
     id: `corporate-tax-ruling-compliant-report-suggestions-${year}`,
     totalIncome: areNumbersEqual(reportAmounts.totalIncome, totalIncome.raw)
       ? null
-      : formatFinancialAmount(reportAmounts.totalIncome, DEFAULT_LOCAL_CURRENCY),
+      : formatFinancialAmount(reportAmounts.totalIncome, defaultLocalCurrency),
     businessTripRndExpenses: areNumbersEqual(
       reportAmounts.businessTripRndExpenses,
       businessTripRndExpenses.raw,
     )
       ? null
-      : formatFinancialAmount(reportAmounts.businessTripRndExpenses, DEFAULT_LOCAL_CURRENCY),
+      : formatFinancialAmount(reportAmounts.businessTripRndExpenses, defaultLocalCurrency),
     foreignDevelopmentExpenses: areNumbersEqual(
       reportAmounts.foreignDevelopmentExpenses,
       foreignDevelopmentExpenses.raw,
     )
       ? null
-      : formatFinancialAmount(reportAmounts.foreignDevelopmentExpenses, DEFAULT_LOCAL_CURRENCY),
+      : formatFinancialAmount(reportAmounts.foreignDevelopmentExpenses, defaultLocalCurrency),
     localDevelopmentExpenses: areNumbersEqual(
       reportAmounts.localDevelopmentExpenses,
       localDevelopmentExpenses.raw,
     )
       ? null
-      : formatFinancialAmount(reportAmounts.localDevelopmentExpenses, DEFAULT_LOCAL_CURRENCY),
+      : formatFinancialAmount(reportAmounts.localDevelopmentExpenses, defaultLocalCurrency),
     researchAndDevelopmentExpenses: areNumbersEqual(
       reportAmounts.researchAndDevelopmentExpenses,
       researchAndDevelopmentExpenses.raw,
     )
       ? null
-      : formatFinancialAmount(reportAmounts.researchAndDevelopmentExpenses, DEFAULT_LOCAL_CURRENCY),
+      : formatFinancialAmount(reportAmounts.researchAndDevelopmentExpenses, defaultLocalCurrency),
     foreignDevelopmentRelativeToRnd: ruleDifferences(
       foreignDevelopmentRelativeToRnd,
       validateForeignDevelopmentOfRnd(

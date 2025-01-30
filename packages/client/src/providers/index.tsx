@@ -29,7 +29,7 @@ export function Providers({ children }: { children?: ReactNode }): ReactElement 
 
   return (
     <MantineProvider
-      withNormalizeCSS
+      // withNormalizeCSS
       withGlobalStyles
       theme={{
         fontFamily: 'Roboto, sans-serif',

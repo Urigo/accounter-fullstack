@@ -56,7 +56,7 @@ export function TagsInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {fields?.map((tag, index) => (
           <div key={tag.id} className=" flex items-center gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 control={control}
                 name={`${tagsPath}.${index}.id` as Path<T>}

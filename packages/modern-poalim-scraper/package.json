@@ -8,26 +8,28 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
+    "dev": "yarn build && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
     "format": "prettier \"**/*.ts\" --write",
     "json2ts": "json2ts -i src/schemas -o src/__generated__",
     "postbuild": "cp -r src/__generated__ dist/__generated__",
     "prebuild": "yarn json2ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },
   "dependencies": {
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
-    "inquirer": "12.3.1",
+    "date-fns": "4.1.0",
+    "inquirer": "12.3.3",
     "node-fetch": "3.3.2",
-    "puppeteer": "24.0.0",
+    "puppeteer": "24.1.1",
     "uuid": "11.0.5"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.7",
     "@types/node-fetch": "3.0.3",
     "@types/uuid": "10.0.0",
-    "json-schema-to-typescript": "15.0.3"
+    "json-schema-to-typescript": "15.0.4"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

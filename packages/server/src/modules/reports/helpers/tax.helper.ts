@@ -7,7 +7,6 @@ import { BusinessTripProto } from '@modules/business-trips/types.js';
 import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
 import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
-import { FINE_TAX_CATEGORY_ID, UNTAXABLE_GIFTS_TAX_CATEGORY_ID } from '@shared/constants';
 import { TimelessDateString } from '@shared/types';
 import { CommentaryProto } from '../types.js';
 import {
@@ -17,12 +16,21 @@ import {
 } from './profit-and-loss.helper.js';
 
 export async function calculateTaxAmounts(
-  injector: Injector,
+  context: GraphQLModules.Context,
   year: number,
   decoratedLedgerRecords: DecoratedLedgerRecord[],
-  researchAndDevelopmentExpensesAmount: number,
+  yearlyResearchAndDevelopmentExpensesAmount: number,
+  researchAndDevelopmentExpensesForTax: number,
   profitBeforeTaxAmount: number,
 ) {
+  const {
+    injector,
+    adminContext: {
+      general: {
+        taxCategories: { fineTaxCategoryId, untaxableGiftsTaxCategoryId },
+      },
+    },
+  } = context;
   const taxRateVariablesPromise = injector
     .get(CorporateTaxesProvider)
     .getCorporateTaxesByDateLoader.load(`${year}-01-01` as TimelessDateString);
@@ -35,7 +43,7 @@ export async function calculateTaxAmounts(
     .then(
       async businessTrips =>
         await Promise.all(
-          businessTrips.map(trip => businessTripSummary(injector, trip as BusinessTripProto)),
+          businessTrips.map(trip => businessTripSummary(context, trip as BusinessTripProto)),
         ),
     );
   const [taxRateVariables, businessTrips] = await Promise.all([
@@ -46,8 +54,6 @@ export async function calculateTaxAmounts(
   if (!taxRateVariables) {
     throw new GraphQLError('No tax rate for year');
   }
-
-  const researchAndDevelopmentExpensesForTax = researchAndDevelopmentExpensesAmount / 3;
 
   let finesAmount = 0;
   const finesRecords = new Map<
@@ -66,7 +72,7 @@ export async function calculateTaxAmounts(
     }
   >();
   decoratedLedgerRecords.map(record => {
-    if (record.credit_entity1 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
+    if (record.credit_entity1 === untaxableGiftsTaxCategoryId) {
       const amount = Number(record.credit_local_amount1);
       updateRecords(
         untaxableGiftsRecords,
@@ -76,7 +82,7 @@ export async function calculateTaxAmounts(
       );
       untaxableGiftsAmount += amount;
     }
-    if (record.credit_entity2 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
+    if (record.credit_entity2 === untaxableGiftsTaxCategoryId) {
       const amount = Number(record.credit_local_amount2);
       updateRecords(
         untaxableGiftsRecords,
@@ -86,7 +92,7 @@ export async function calculateTaxAmounts(
       );
       untaxableGiftsAmount += amount;
     }
-    if (record.debit_entity1 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
+    if (record.debit_entity1 === untaxableGiftsTaxCategoryId) {
       const amount = -Number(record.debit_local_amount1);
       updateRecords(
         untaxableGiftsRecords,
@@ -96,7 +102,7 @@ export async function calculateTaxAmounts(
       );
       untaxableGiftsAmount += amount;
     }
-    if (record.debit_entity2 === UNTAXABLE_GIFTS_TAX_CATEGORY_ID) {
+    if (record.debit_entity2 === untaxableGiftsTaxCategoryId) {
       const amount = -Number(record.debit_local_amount2);
       updateRecords(
         untaxableGiftsRecords,
@@ -107,22 +113,22 @@ export async function calculateTaxAmounts(
       untaxableGiftsAmount += amount;
     }
 
-    if (record.credit_entity1 === FINE_TAX_CATEGORY_ID) {
+    if (record.credit_entity1 === fineTaxCategoryId) {
       const amount = Number(record.credit_local_amount1);
       updateRecords(finesRecords, amount, record.credit_entity_sort_code1!, record.credit_entity1);
       finesAmount += amount;
     }
-    if (record.credit_entity2 === FINE_TAX_CATEGORY_ID) {
+    if (record.credit_entity2 === fineTaxCategoryId) {
       const amount = Number(record.credit_local_amount2);
       updateRecords(finesRecords, amount, record.credit_entity_sort_code2!, record.credit_entity2);
       finesAmount += amount;
     }
-    if (record.debit_entity1 === FINE_TAX_CATEGORY_ID) {
+    if (record.debit_entity1 === fineTaxCategoryId) {
       const amount = -Number(record.debit_local_amount1);
       updateRecords(finesRecords, amount, record.debit_entity_sort_code1!, record.debit_entity1);
       finesAmount += amount;
     }
-    if (record.debit_entity2 === FINE_TAX_CATEGORY_ID) {
+    if (record.debit_entity2 === fineTaxCategoryId) {
       const amount = -Number(record.debit_local_amount2);
       updateRecords(finesRecords, amount, record.debit_entity_sort_code2!, record.debit_entity2);
       finesAmount += amount;
@@ -156,16 +162,16 @@ export async function calculateTaxAmounts(
   let businessTripsExcessExpensesAmount = 0;
   businessTrips.map(summary => {
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
-    businessTripsExcessExpensesAmount += amount;
+    businessTripsExcessExpensesAmount -= amount;
   });
   const salaryExcessExpensesAmount = 0; // TODO: get amounts directly from accountant
   const reserves = amountBySortCodeValidation(decoratedLedgerRecords, sortCode => sortCode === 931);
 
   const taxableIncomeAmount =
     profitBeforeTaxAmount -
-    researchAndDevelopmentExpensesAmount -
+    yearlyResearchAndDevelopmentExpensesAmount -
     fines.amount -
-    untaxableGifts.amount +
+    untaxableGifts.amount -
     businessTripsExcessExpensesAmount -
     salaryExcessExpensesAmount -
     reserves.amount +

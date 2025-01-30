@@ -1,14 +1,14 @@
 {
   "transforms": [
     {
-      "mode": "sql",
-      "include": "**/*.sql",
-      "emitTemplate": "src/__generated__/{{name}}.types.ts"
-    },
-    {
       "mode": "ts",
       "include": "**/providers/*.provider.ts",
       "emitTemplate": "{{dir}}/../__generated__/{{name.replace('.provider','')}}.types.ts"
+    },
+    {
+      "mode": "ts",
+      "include": "./plugins/admin-context-plugin.ts",
+      "emitTemplate": "{{dir}}/__generated__/{{name}}.types.ts"
     }
   ],
   "srcDir": "./packages/server/src/",

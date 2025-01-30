@@ -145,7 +145,7 @@ export const EditSalaryRecordModalContent = ({
     [onDone, updateSalaryRecord],
   );
 
-  if (!salaryRecord) {
+  if (!salaryRecord?.employer?.id || !salaryRecord?.employee?.id) {
     // eslint-disable-next-line react/jsx-no-useless-fragment
     return <></>;
   }
@@ -158,8 +158,8 @@ export const EditSalaryRecordModalContent = ({
     compensationsEmployerAmount: salaryRecord?.compensationsAmount?.raw,
     compensationsEmployerPercentage: salaryRecord?.compensationsPercentage,
     directPaymentAmount: salaryRecord?.directAmount?.raw,
-    employer: salaryRecord?.employer?.id,
-    employeeId: salaryRecord?.employee?.id,
+    employer: salaryRecord.employer.id,
+    employeeId: salaryRecord.employee.id,
     gift: salaryRecord?.gift?.raw,
     globalAdditionalHours: salaryRecord?.globalAdditionalHoursAmount?.raw,
     healthPaymentAmount: salaryRecord?.healthInsuranceAmount?.raw,

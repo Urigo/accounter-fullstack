@@ -1,7 +1,5 @@
 import { ReactElement, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { Charge } from './components/all-charges/charge.js';
-import { AllCharges } from './components/all-charges/index.js';
 import { BusinessTransactionsSingle } from './components/business-transactions/business-transactions-single.js';
 import { BusinessTransactionsSummery } from './components/business-transactions/index.js';
 import { BusinessTrip } from './components/business-trips/business-trip.js';
@@ -18,7 +16,11 @@ import { ProfitAndLossReport } from './components/reports/profit-and-loss-report
 import { TaxReport } from './components/reports/tax-report/index.js';
 import { TrialBalanceReport } from './components/reports/trial-balance-report/index.js';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.js';
+import { YearlyLedgerReport } from './components/reports/yearly-ledger/index.js';
 import { Salaries } from './components/salaries/index.js';
+import { AllCharges } from './components/screens/charges/all-charges.js';
+import { Charge } from './components/screens/charges/charge.js';
+import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { TagsManager } from './components/tags/index.js';
 import { FiltersContext } from './providers/filters-context.js';
 
@@ -30,8 +32,8 @@ export function App(): ReactElement {
       <DashboardLayout filtersContext={filtersContext}>
         <Routes>
           <Route path="/" element={<AllCharges />} />
-          <Route path="all-charges" element={<AllCharges />} /> {/* deprecated */}
           <Route path="charges" element={<AllCharges />} />
+          <Route path="missing-info-charges" element={<MissingInfoCharges />} />
           <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
           <Route path="charges/:chargeId" element={<Charge />} />
           <Route path="businesses" element={<Businesses />} />
@@ -55,6 +57,7 @@ export function App(): ReactElement {
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
             <Route path="tax" element={<TaxReport />} />
             <Route path="tax/:year" element={<TaxReport />} />
+            <Route path="yearly-ledger" element={<YearlyLedgerReport />} />
             <Route
               path="corporate-tax-ruling-compliance"
               element={<CorporateTaxRulingComplianceReport />}

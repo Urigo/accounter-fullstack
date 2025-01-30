@@ -1,7 +1,6 @@
 import { format } from 'date-fns';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   dateToTimelessDateString,
   formatFinancialAmount,
@@ -70,28 +69,28 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     documentDate: raw => optionalDateToTimelessDateString(raw.documentDate),
     documentSerial: raw => raw.documentSerial,
     image: raw => raw.documentUrl,
-    localAmount: raw =>
+    localAmount: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
       raw.eventLocalAmount
-        ? formatFinancialAmount(raw.eventLocalAmount, DEFAULT_LOCAL_CURRENCY)
+        ? formatFinancialAmount(raw.eventLocalAmount, defaultLocalCurrency)
         : null,
-    localVatAfterDeduction: raw =>
+    localVatAfterDeduction: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
       raw.localVatAfterDeduction
-        ? formatFinancialAmount(raw.localVatAfterDeduction, DEFAULT_LOCAL_CURRENCY)
+        ? formatFinancialAmount(raw.localVatAfterDeduction, defaultLocalCurrency)
         : null,
-    roundedLocalVatAfterDeduction: raw =>
+    roundedLocalVatAfterDeduction: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
       raw.roundedVATToAdd
-        ? formatFinancialIntAmount(raw.roundedVATToAdd, DEFAULT_LOCAL_CURRENCY)
+        ? formatFinancialIntAmount(raw.roundedVATToAdd, defaultLocalCurrency)
         : null,
-    taxReducedLocalAmount: raw =>
+    taxReducedLocalAmount: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
       raw.localAmountBeforeVAT
-        ? formatFinancialIntAmount(raw.localAmountBeforeVAT, DEFAULT_LOCAL_CURRENCY)
+        ? formatFinancialIntAmount(raw.localAmountBeforeVAT, defaultLocalCurrency)
         : null,
     taxReducedForeignAmount: raw =>
       raw.foreignAmountBeforeVAT
         ? formatFinancialIntAmount(raw.foreignAmountBeforeVAT, raw.currencyCode)
         : null,
-    localVat: raw =>
-      raw.localVat ? formatFinancialAmount(raw.localVat, DEFAULT_LOCAL_CURRENCY) : null,
+    localVat: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
+      raw.localVat ? formatFinancialAmount(raw.localVat, defaultLocalCurrency) : null,
     foreignVat: raw =>
       raw.foreignVat ? formatFinancialAmount(raw.foreignVat, raw.currencyCode) : null,
     foreignVatAfterDeduction: raw =>

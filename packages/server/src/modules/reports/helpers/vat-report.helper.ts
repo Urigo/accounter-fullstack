@@ -1,10 +1,9 @@
-import { Injector } from 'graphql-modules';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
-import { DECREASED_VAT_RATIO, DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
+import { DECREASED_VAT_RATIO } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
 import type { AccountantStatus } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
@@ -41,8 +40,12 @@ export type RawVatReportRecord = {
 
 export async function adjustTaxRecord(
   rawRecord: VatReportRecordSources,
-  injector: Injector,
+  context: GraphQLModules.Context,
 ): Promise<RawVatReportRecord> {
+  const {
+    injector,
+    adminContext: { defaultLocalCurrency },
+  } = context;
   try {
     const { charge, doc, business } = rawRecord;
     const currency = formatCurrency(doc.currency_code);
@@ -61,7 +64,7 @@ export async function adjustTaxRecord(
     // get exchange rate
     const rate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, DEFAULT_LOCAL_CURRENCY, doc.date);
+      .getExchangeRates(currency, defaultLocalCurrency, doc.date);
 
     const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
     const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
@@ -79,8 +82,8 @@ export async function adjustTaxRecord(
       documentSerial: doc.serial_number,
       documentUrl: doc.image_url,
       documentAmount: String(creditInvoiceFactor * totalAmount),
-      foreignVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? null : vatAmount,
-      localVat: doc.currency_code === DEFAULT_LOCAL_CURRENCY ? vatAmount : null,
+      foreignVat: doc.currency_code === defaultLocalCurrency ? null : vatAmount,
+      localVat: doc.currency_code === defaultLocalCurrency ? vatAmount : null,
       isProperty: charge.is_property,
       vatNumber: business.vat_number,
       isExpense:

@@ -53,7 +53,7 @@ export const ModifySalaryRecord = ({
   const [{ data: employeesData, fetching: employeesFetching, error: employeesError }] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: userContext?.ownerId,
+      employerId: userContext?.ownerId ?? '',
     },
   });
 
@@ -162,8 +162,8 @@ export const ModifySalaryRecord = ({
   }, [employeesData, setTrainingFunds]);
 
   useEffect(() => {
-    if (!defaultValues?.employer) {
-      setValue('employer', userContext?.ownerId, { shouldDirty: true, shouldTouch: true });
+    if (!defaultValues?.employer && userContext?.ownerId) {
+      setValue('employer', userContext.ownerId, { shouldDirty: true, shouldTouch: true });
     }
   }, [setValue, defaultValues?.employer, userContext?.ownerId]);
 
@@ -840,14 +840,14 @@ export const ModifySalaryRecord = ({
         <button
           type="submit"
           onClick={(): (() => Promise<void>) => handleSalaryRecordSubmit(onSalaryRecordSubmit)}
-          className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+          className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
           disabled={isModifying || Object.keys(dirtySalaryRecordFields).length === 0}
         >
           Accept
         </button>
         <button
           type="button"
-          className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+          className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
           onClick={() => onDone()}
         >
           Cancel

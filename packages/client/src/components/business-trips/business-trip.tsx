@@ -25,7 +25,7 @@ type Props = {
 
 export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
   const match = useMatch('business-trips/:businessTripId');
-  const id = businessTripId || match?.params.businessTripId;
+  const id = businessTripId ?? match?.params.businessTripId ?? '';
   const [{ data, fetching }] = useQuery({
     query: BusinessTripScreenDocument,
     variables: {

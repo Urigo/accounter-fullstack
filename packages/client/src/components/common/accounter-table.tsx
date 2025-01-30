@@ -74,7 +74,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
         {props.pagination && <Pagination className="flex-auto" {...props.pagination} />}
         {props.showButton === true ? (
           <button
-            className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-none hover:bg-indigo-600 rounded text-sm"
+            className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-sm"
             type="button"
             onClick={(): void => {
               setIsShowAll(prev => !prev);

@@ -2,7 +2,6 @@ import auth from 'basic-auth';
 import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
 import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
-import { DEFAULT_FINANCIAL_ENTITY_ID } from '@shared/constants';
 import type { Role } from '@shared/gql-types';
 import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
@@ -65,7 +64,7 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
 
     return {
       username: user.name,
-      userId: DEFAULT_FINANCIAL_ENTITY_ID, // TODO: replace with actual authentication
+      userId: env.authorization.adminBusinessId, // TODO: replace with actual authentication
       role,
     };
   } catch (e) {

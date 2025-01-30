@@ -161,16 +161,16 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         .get(BusinessTripCarRentalExpensesProvider)
         .getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(dbBusinessTrip.id);
     },
-    summary: async (dbBusinessTrip, _, { injector }) =>
-      businessTripSummary(injector, dbBusinessTrip),
-    uncategorizedTransactions: async (dbBusinessTrip, _, { injector }) => {
+    summary: async (dbBusinessTrip, _, context) => businessTripSummary(context, dbBusinessTrip),
+    uncategorizedTransactions: async (dbBusinessTrip, _, context) => {
+      const { injector } = context;
       const transactions = await injector
         .get(BusinessTripExpensesProvider)
         .getTransactionsByBusinessTripId(dbBusinessTrip.id);
 
       const transactionCategorizeInfo = await Promise.all(
         transactions.map(async transaction => {
-          const matchInfo = await getTransactionMatchedAmount(injector, transaction).catch(_ => ({
+          const matchInfo = await getTransactionMatchedAmount(context, transaction).catch(_ => ({
             isFullyMatched: false,
             amount: 0,
             errors: ["Error matching transaction's amount"],

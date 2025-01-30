@@ -13,7 +13,7 @@ import { ActionIcon, TextInput } from '@mantine/core';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
-  flightPathPath: ArrayPath<T>;
+  flightPathPath: Path<T>;
   flightPathData?: string[];
   fetchingAttendees?: boolean;
 };
@@ -26,10 +26,10 @@ export function FlightPathInput<T extends FieldValues>({
   const { control, watch, trigger } = formManager;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: flightPathPath,
+    name: flightPathPath as ArrayPath<T>,
   });
 
-  const watchFieldArray = watch(flightPathPath as Path<T>);
+  const watchFieldArray = watch(flightPathPath);
   const controlledFields = fields.map((field, index) => {
     return {
       ...field,
@@ -47,7 +47,7 @@ export function FlightPathInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 name={`${flightPathPath}.${index}` as Path<T>}
                 control={control}
@@ -70,7 +70,7 @@ export function FlightPathInput<T extends FieldValues>({
                 size={20}
                 onClick={(): void => {
                   remove(index);
-                  trigger(flightPathPath as Path<T>);
+                  trigger(flightPathPath);
                 }}
               />
             </ActionIcon>
@@ -81,7 +81,7 @@ export function FlightPathInput<T extends FieldValues>({
             size={20}
             onClick={(): void => {
               append({} as FieldArray<T, ArrayPath<T>>);
-              trigger(flightPathPath as Path<T>);
+              trigger(flightPathPath);
             }}
           />
         </ActionIcon>

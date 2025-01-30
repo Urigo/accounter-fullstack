@@ -13,8 +13,8 @@ import { TimelessDateString } from '../helpers/dates.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { UserContext } from '../providers/user-provider.js';
-import { AllChargesTable } from './all-charges/all-charges-table.js';
-import { ChargesFilters } from './all-charges/charges-filters.js';
+import { ChargesFilters } from './charges/charges-filters.js';
+import { ChargesTable } from './charges/charges-table.js';
 import {
   EditChargeModal,
   InsertDocumentModal,
@@ -31,7 +31,7 @@ import { PageLayout } from './layout/page-layout.js';
       progress
       charge {
         id
-        ...AllChargesTableFields
+        ...ChargesTableFields
       }
     }
   }
@@ -61,7 +61,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
+          byOwners: userContext?.ownerId ? [userContext.ownerId] : [],
           sortBy: {
             field: ChargeSortByField.Date,
             asc: false,
@@ -137,7 +137,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
     <PageLayout title="Charges Ledger Validation" description="Manage charges">
       {fetching && <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />}
       {!fetching && (
-        <AllChargesTable
+        <ChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}

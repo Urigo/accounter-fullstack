@@ -16,6 +16,8 @@ import {
 import type {
   FilteredColumns,
   IGetPoalimForeignTransactionsQuery,
+  IInsertPoalimCadTransactionsParams,
+  IInsertPoalimCadTransactionsQuery,
   IInsertPoalimEurTransactionsParams,
   IInsertPoalimEurTransactionsQuery,
   IInsertPoalimGbpTransactionsParams,
@@ -45,7 +47,7 @@ export type NormalizedForeignTransaction = ForeignTransaction & {
   branchNumber: number;
   bankNumber: number;
 };
-type ForeignCurrency = 'usd' | 'eur' | 'gbp';
+type ForeignCurrency = 'usd' | 'eur' | 'gbp' | 'cad';
 type ForeignCurrenciesContext = {
   transactionsByCurrencies?: Partial<{
     [key in ForeignCurrency]: NormalizedForeignTransaction[];
@@ -58,7 +60,9 @@ type InsertionTransactionParams<T extends ForeignCurrency> = T extends 'usd'
     ? IInsertPoalimEurTransactionsParams
     : T extends 'gbp'
       ? IInsertPoalimGbpTransactionsParams
-      : never;
+      : T extends 'cad'
+        ? IInsertPoalimCadTransactionsParams
+        : never;
 
 const getPoalimForeignTransactions = sql<IGetPoalimForeignTransactionsQuery>`
   SELECT *, 'usd' as currency
@@ -69,12 +73,112 @@ const getPoalimForeignTransactions = sql<IGetPoalimForeignTransactionsQuery>`
   UNION ALL
   SELECT *, 'gbp' as currency
   FROM accounter_schema.poalim_gbp_account_transactions
+  UNION ALL
+  SELECT *, 'cad' as currency
+  FROM accounter_schema.poalim_cad_account_transactions
   WHERE account_number = $accountNumber
   AND branch_number = $branchNumber
   AND bank_number = $bankNumber
   AND executing_date = $executingDate
   AND value_date = $valueDate
   AND reference_number = $referenceNumber;`;
+
+const insertPoalimCadTransactions = sql<IInsertPoalimCadTransactionsQuery>`
+  insert into accounter_schema.poalim_cad_account_transactions (metadata_attributes_original_event_key,
+                                                                metadata_attributes_contra_branch_number,
+                                                                metadata_attributes_contra_account_number,
+                                                                metadata_attributes_contra_bank_number,
+                                                                metadata_attributes_contra_account_field_name_lable,
+                                                                metadata_attributes_data_group_code,
+                                                                metadata_attributes_currency_rate,
+                                                                metadata_attributes_contra_currency_code,
+                                                                metadata_attributes_rate_fixing_code,
+                                                                executing_date,
+                                                                formatted_executing_date,
+                                                                value_date,
+                                                                formatted_value_date,
+                                                                original_system_id,
+                                                                activity_description,
+                                                                event_amount,
+                                                                current_balance,
+                                                                reference_catenated_number,
+                                                                reference_number,
+                                                                currency_rate,
+                                                                event_details,
+                                                                rate_fixing_code,
+                                                                contra_currency_code,
+                                                                event_activity_type_code,
+                                                                transaction_type,
+                                                                rate_fixing_short_description,
+                                                                currency_long_description,
+                                                                activity_type_code,
+                                                                event_number,
+                                                                validity_date,
+                                                                comments,
+                                                                comment_existence_switch,
+                                                                account_name,
+                                                                contra_bank_number,
+                                                                contra_branch_number,
+                                                                contra_account_number,
+                                                                original_event_key,
+                                                                contra_account_field_name_lable,
+                                                                data_group_code,
+                                                                rate_fixing_description,
+                                                                url_address_niar,
+                                                                currency_swift_code,
+                                                                url_address,
+                                                                bank_number,
+                                                                branch_number,
+                                                                account_number)
+  values $$transactions(metadataAttributesOriginalEventKey,
+                        metadataAttributesContraBranchNumber,
+                        metadataAttributesContraAccountNumber,
+                        metadataAttributesContraBankNumber,
+                        metadataAttributesContraAccountFieldNameLable,
+                        metadataAttributesDataGroupCode,
+                        metadataAttributesCurrencyRate,
+                        metadataAttributesContraCurrencyCode,
+                        metadataAttributesRateFixingCode,
+                        executingDate,
+                        formattedExecutingDate,
+                        valueDate,
+                        formattedValueDate,
+                        originalSystemId,
+                        activityDescription,
+                        eventAmount,
+                        currentBalance,
+                        referenceCatenatedNumber,
+                        referenceNumber,
+                        currencyRate,
+                        eventDetails,
+                        rateFixingCode,
+                        contraCurrencyCode,
+                        eventActivityTypeCode,
+                        transactionType,
+                        rateFixingShortDescription,
+                        currencyLongDescription,
+                        activityTypeCode,
+                        eventNumber,
+                        validityDate,
+                        comments,
+                        commentExistenceSwitch,
+                        accountName,
+                        contraBankNumber,
+                        contraBranchNumber,
+                        contraAccountNumber,
+                        originalEventKey,
+                        contraAccountFieldNameLable,
+                        dataGroupCode,
+                        rateFixingDescription,
+                        urlAddressNiar,
+                        currencySwiftCode,
+                        urlAddress,
+                        bankNumber,
+                        branchNumber,
+                        accountNumber
+
+  )
+  RETURNING id, account_number, activity_description, event_activity_type_code, event_amount, executing_date;`;
 
 const insertPoalimEurTransactions = sql<IInsertPoalimEurTransactionsQuery>`
   insert into accounter_schema.poalim_eur_account_transactions (metadata_attributes_original_event_key,
@@ -454,6 +558,9 @@ async function normalizeForeignTransactionsForAccount(
         case 27:
           accountCurrency = 'gbp';
           break;
+        case 140:
+          accountCurrency = 'cad';
+          break;
         default:
           throw new Error(`New Poalim account currency - ${foreignAccountsArray.currencyCode}`);
       }
@@ -656,6 +763,7 @@ async function insertTransactions<
   }
   if (transactionsToInsert.length > 0) {
     let insertPoalimIlsTransactions: TaggedQuery<
+      | IInsertPoalimCadTransactionsQuery
       | IInsertPoalimEurTransactionsQuery
       | IInsertPoalimGbpTransactionsQuery
       | IInsertPoalimUsdTransactionsQuery
@@ -669,6 +777,9 @@ async function insertTransactions<
         break;
       case 'gbp':
         insertPoalimIlsTransactions = insertPoalimGbpTransactions;
+        break;
+      case 'cad':
+        insertPoalimIlsTransactions = insertPoalimCadTransactions;
         break;
       default:
         throw new Error('Invalid currency');

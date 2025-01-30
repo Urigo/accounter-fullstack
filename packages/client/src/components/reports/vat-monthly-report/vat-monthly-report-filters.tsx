@@ -15,7 +15,7 @@ import {
 import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { chargesTypeFilterOptions } from '../../all-charges/charges-filters.js';
+import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
 
 interface VatMonthlyReportFilterFormProps {
@@ -114,20 +114,20 @@ function VatMonthlyReportFilterForm({
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
           >
             Filter
           </button>
           <button
             type="button"
-            className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-none hover:bg-orange-600 rounded text-lg"
+            className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
             onClick={clearFilter}
           >
             Clear
           </button>
           <button
             type="button"
-            className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-none hover:bg-rose-600 rounded text-lg"
+            className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
             onClick={closeModal}
           >
             Cancel
@@ -154,7 +154,7 @@ export function VatMonthlyReportFilter({
 
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
-      financialEntityId: userContext?.ownerId,
+      financialEntityId: userContext?.ownerId ?? filter.financialEntityId,
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
       toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
     };

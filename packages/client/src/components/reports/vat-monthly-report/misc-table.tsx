@@ -3,14 +3,14 @@ import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { AllChargesTable } from '../../all-charges/all-charges-table.js';
+import { ChargesTable } from '../../charges/charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VatReportMiscTableFields on VatReportResult {
     differentMonthDoc {
       id
-      ...AllChargesTableFields
+      ...ChargesTableFields
     }
   }
 `;
@@ -52,7 +52,7 @@ export const MiscTable = ({
         Misc Charges (which are not on the above tables)
       </span>
       {isOpened && chargesData && (
-        <AllChargesTable
+        <ChargesTable
           setEditChargeId={setEditCharge}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}

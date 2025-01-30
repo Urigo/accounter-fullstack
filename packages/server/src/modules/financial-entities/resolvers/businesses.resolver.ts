@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { DEFAULT_FINANCIAL_ENTITY_ID, UUID_REGEX } from '@shared/constants';
+import { UUID_REGEX } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
@@ -155,12 +155,16 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         };
       }
     },
-    insertNewBusiness: async (_, { fields }, { injector }) => {
+    insertNewBusiness: async (
+      _,
+      { fields },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       try {
         const [financialEntity] = await injector
           .get(FinancialEntitiesProvider)
           .insertFinancialEntity({
-            ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+            ownerId: defaultAdminBusinessId,
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
@@ -205,7 +209,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         if (fields.taxCategory) {
           const texCategoryParams: IUpdateBusinessTaxCategoryParams = {
             businessId: financialEntity.id,
-            ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+            ownerId: defaultAdminBusinessId,
             taxCategoryId: fields.taxCategory,
           };
           taxCategoryPromise = injector
@@ -287,9 +291,13 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         throw new GraphQLError(`Failed to merge businesses`);
       }
     },
-    batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
+    batchGenerateBusinessesOutOfTransactions: async (
+      _,
+      __,
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
-        ownerIDs: [DEFAULT_FINANCIAL_ENTITY_ID, '1bd4bd60-50df-4a1a-b31b-c20457e8cd2b'],
+        ownerIDs: [defaultAdminBusinessId],
       });
       const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
       const [transactions, businesses] = await Promise.all([
@@ -387,7 +395,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           const financialEntity = await injector
             .get(FinancialEntitiesProvider)
             .insertFinancialEntitiesLoader.load({
-              ownerId: DEFAULT_FINANCIAL_ENTITY_ID,
+              ownerId: defaultAdminBusinessId,
               name: description,
               type: 'business',
               sortCode: null,

@@ -13,7 +13,7 @@ import { ActionIcon, TextInput } from '@mantine/core';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
-  phrasesPath: ArrayPath<T>;
+  phrasesPath: Path<T>;
 };
 
 export function PhrasesInput<T extends FieldValues>({
@@ -23,10 +23,10 @@ export function PhrasesInput<T extends FieldValues>({
   const { control, watch } = formManager;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: phrasesPath,
+    name: phrasesPath as ArrayPath<T>,
   });
 
-  const watchPhrasesArray = watch(phrasesPath as Path<T>);
+  const watchPhrasesArray = watch(phrasesPath);
   const controlledFields = fields.map((field, index) => {
     return {
       id: field.id,
@@ -40,7 +40,7 @@ export function PhrasesInput<T extends FieldValues>({
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields.map((phrase, index) => (
           <div key={phrase.id} className=" flex items-center gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-sm">
+            <div className="w-full mt-1 relative rounded-md shadow-xs">
               <Controller
                 name={`${phrasesPath}.${index}` as Path<T>}
                 control={control}

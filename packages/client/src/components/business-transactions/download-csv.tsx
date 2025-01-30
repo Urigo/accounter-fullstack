@@ -1,9 +1,8 @@
 import type { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { FileDown } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { Currency } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, type TimelessDateString } from '../../helpers/index.js';
+import { DownloadCSVButton } from '../common/index.js';
 import type { ExtendedTransaction } from './business-extended-info.js';
 
 interface Props {
@@ -19,24 +18,10 @@ export const DownloadCSV = ({
   fromDate,
   toDate,
 }: Props): ReactElement => {
-  const downloadCSV = (): void => {
-    const csvData = new Blob([convertToCSV(transactions)], { type: 'text/csv;charset=utf-8' });
-    const csvURL = URL.createObjectURL(csvData);
-    const link = document.createElement('a');
-    link.href = csvURL;
-    link.download = `business_${businessName}_transactions${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const csvData = convertToCSV(transactions);
+  const fileName = `business_${businessName}_transactions${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
 
-  return (
-    <button onClick={downloadCSV}>
-      <Tooltip label="Download CSV" position="top">
-        <FileDown />
-      </Tooltip>
-    </button>
-  );
+  return <DownloadCSVButton data={csvData} fileName={fileName} />;
 };
 
 const convertToCSV = (transactions: Array<ExtendedTransaction>): string => {
@@ -78,8 +63,6 @@ function getAmountsFromForeignCurrencies(
     } else {
       amounts += ',,';
     }
-    const currencySymbol = currencyCodeToSymbol(currency);
-    amounts += `${currency}(${currencySymbol}) Amount,${currency}(${currencySymbol}) Balance,`;
   });
   return amounts;
 }

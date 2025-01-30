@@ -44,23 +44,23 @@ export const SalariesTable = ({
       <div className="bg-white py-4 md:py-7 px-4 md:px-8 xl:px-10">
         <div className="sm:flex items-center justify-between">
           <div className="flex items-center">
-            <div className="rounded-full focus:outline-none focus:ring-2  focus:bg-indigo-50 focus:ring-indigo-800">
+            <div className="rounded-full focus:outline-hidden focus:ring-2  focus:bg-indigo-50 focus:ring-indigo-800">
               <div className="py-2 px-8 bg-indigo-100 text-indigo-700 rounded-full">
                 <p>All</p>
               </div>
             </div>
-            <div className="rounded-full focus:outline-none focus:ring-2 focus:bg-indigo-50 focus:ring-indigo-800 ml-4 sm:ml-8">
+            <div className="rounded-full focus:outline-hidden focus:ring-2 focus:bg-indigo-50 focus:ring-indigo-800 ml-4 sm:ml-8">
               <div className="py-2 px-8 text-gray-600 hover:text-indigo-700 hover:bg-indigo-100 rounded-full ">
                 <p>Done</p>
               </div>
             </div>
-            <div className="rounded-full focus:outline-none focus:ring-2 focus:bg-indigo-50 focus:ring-indigo-800 ml-4 sm:ml-8">
+            <div className="rounded-full focus:outline-hidden focus:ring-2 focus:bg-indigo-50 focus:ring-indigo-800 ml-4 sm:ml-8">
               <div className="py-2 px-8 text-gray-600 hover:text-indigo-700 hover:bg-indigo-100 rounded-full ">
                 <p>Pending</p>
               </div>
             </div>
           </div>
-          <button className="focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-indigo-700 hover:bg-indigo-600 focus:outline-none rounded">
+          <button className="focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-indigo-700 hover:bg-indigo-600 focus:outline-hidden rounded-sm">
             <p className="text-sm font-medium leading-none text-white">Add Task</p>
           </button>
         </div>

@@ -111,7 +111,11 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
 
   // form management
   const useFormManager = useForm<UpdateBusinessInput>({
-    defaultValues: { ...business, sortCode: business?.sortCode?.id },
+    defaultValues: {
+      ...business,
+      taxCategory: business.taxCategory?.id,
+      sortCode: business?.sortCode?.id,
+    },
   });
 
   const {
@@ -120,7 +124,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
   } = useFormManager;
 
   const onBusinessSubmit: SubmitHandler<UpdateBusinessInput> = data => {
-    if (!business) {
+    if (!business || !userContext?.ownerId) {
       return;
     }
 
@@ -137,7 +141,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
 
       updateDbBusiness({
         businessId: business.id,
-        ownerId: userContext?.ownerId,
+        ownerId: userContext.ownerId,
         fields: dataToUpdate,
       }).then(() => refetchBusiness());
     }
@@ -168,7 +172,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
             <button
               type="submit"
               onClick={(): (() => Promise<void>) => handleBusinessSubmit(onBusinessSubmit)}
-              className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+              className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
               disabled={isBusinessLoading || Object.keys(dirtyBusinessFields).length === 0}
             >
               Update

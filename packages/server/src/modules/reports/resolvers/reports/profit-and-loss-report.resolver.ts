@@ -3,7 +3,6 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
-import { DEFAULT_LOCAL_CURRENCY } from '@shared/constants';
 import {
   ProfitAndLossReportYearResolvers,
   QueryProfitAndLossReportArgs,
@@ -133,45 +132,47 @@ export const profitAndLossReport: ResolverFn<
 export const profitAndLossReportYearMapper: ProfitAndLossReportYearResolvers = {
   id: parent => `profit-and-loss-year-${parent.year}`,
   year: parent => parent.year,
-  revenue: parent => ({
-    amount: formatFinancialAmount(parent.revenue.amount, DEFAULT_LOCAL_CURRENCY),
+  revenue: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.revenue.amount, defaultLocalCurrency),
     records: parent.revenue.records,
   }),
-  costOfSales: parent => ({
-    amount: formatFinancialAmount(parent.costOfSales.amount, DEFAULT_LOCAL_CURRENCY),
+  costOfSales: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.costOfSales.amount, defaultLocalCurrency),
     records: parent.costOfSales.records,
   }),
-  grossProfit: parent => formatFinancialAmount(parent.grossProfit, DEFAULT_LOCAL_CURRENCY),
-  researchAndDevelopmentExpenses: parent => ({
+  grossProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.grossProfit, defaultLocalCurrency),
+  researchAndDevelopmentExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
     amount: formatFinancialAmount(
       parent.researchAndDevelopmentExpenses.amount,
-      DEFAULT_LOCAL_CURRENCY,
+      defaultLocalCurrency,
     ),
     records: parent.researchAndDevelopmentExpenses.records,
   }),
-  marketingExpenses: parent => ({
-    amount: formatFinancialAmount(parent.marketingExpenses.amount, DEFAULT_LOCAL_CURRENCY),
+  marketingExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.marketingExpenses.amount, defaultLocalCurrency),
     records: parent.marketingExpenses.records,
   }),
-  managementAndGeneralExpenses: parent => ({
-    amount: formatFinancialAmount(
-      parent.managementAndGeneralExpenses.amount,
-      DEFAULT_LOCAL_CURRENCY,
-    ),
+  managementAndGeneralExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.managementAndGeneralExpenses.amount, defaultLocalCurrency),
     records: parent.managementAndGeneralExpenses.records,
   }),
-  operatingProfit: parent => formatFinancialAmount(parent.operatingProfit, DEFAULT_LOCAL_CURRENCY),
-  financialExpenses: parent => ({
-    amount: formatFinancialAmount(parent.financialExpenses.amount, DEFAULT_LOCAL_CURRENCY),
+  operatingProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.operatingProfit, defaultLocalCurrency),
+  financialExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.financialExpenses.amount, defaultLocalCurrency),
     records: parent.financialExpenses.records,
   }),
-  otherIncome: parent => ({
-    amount: formatFinancialAmount(parent.otherIncome.amount, DEFAULT_LOCAL_CURRENCY),
+  otherIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.otherIncome.amount, defaultLocalCurrency),
     records: parent.otherIncome.records,
   }),
-  profitBeforeTax: parent => formatFinancialAmount(parent.profitBeforeTax, DEFAULT_LOCAL_CURRENCY),
-  tax: parent => formatFinancialAmount(parent.tax, DEFAULT_LOCAL_CURRENCY),
-  netProfit: parent => formatFinancialAmount(parent.netProfit, DEFAULT_LOCAL_CURRENCY),
+  profitBeforeTax: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.profitBeforeTax, defaultLocalCurrency),
+  tax: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.tax, defaultLocalCurrency),
+  netProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.netProfit, defaultLocalCurrency),
 };
 
 export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
@@ -186,7 +187,8 @@ export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
         return res;
       });
   },
-  amount: parent => formatFinancialAmount(parent.amount, DEFAULT_LOCAL_CURRENCY),
+  amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.amount, defaultLocalCurrency),
 };
 
 export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers = {
@@ -201,5 +203,6 @@ export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers
         return res;
       });
   },
-  amount: parent => formatFinancialAmount(parent.amount, DEFAULT_LOCAL_CURRENCY),
+  amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
+    formatFinancialAmount(parent.amount, defaultLocalCurrency),
 };

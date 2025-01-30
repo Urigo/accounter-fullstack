@@ -78,7 +78,7 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
         <div className="flex justify-right gap-5 mt-5">
           <button
             type="button"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg"
+            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
             disabled={fetching || Object.keys(dirtyFields).length === 0}
             onClick={handleSubmit(onSubmit)}
           >

@@ -1,9 +1,8 @@
 import type { ReactElement } from 'react';
-import { FileDown } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
-import { TimelessDateString } from '../../../helpers/dates.js';
-import { ExtendedSortCode } from './trial-balance-report-sort-code.js';
-import { SortCodeGroup } from './trial-balance-table.js';
+import type { TimelessDateString } from '../../../helpers/dates.js';
+import { DownloadCSVButton } from '../../common/index.js';
+import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
+import type { SortCodeGroup } from './trial-balance-table.js';
 
 interface Props {
   data: Record<number, SortCodeGroup>;
@@ -12,24 +11,10 @@ interface Props {
 }
 
 export const DownloadCSV = ({ data, fromDate, toDate }: Props): ReactElement => {
-  const downloadCSV = (): void => {
-    const csvData = new Blob([convertToCSV(data)], { type: 'text/csv;charset=utf-8' });
-    const csvURL = URL.createObjectURL(csvData);
-    const link = document.createElement('a');
-    link.href = csvURL;
-    link.download = `trial_balance_report${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const csvData = convertToCSV(data);
+  const fileName = `trial_balance_report${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
 
-  return (
-    <button onClick={downloadCSV}>
-      <Tooltip label="Download CSV" position="top">
-        <FileDown />
-      </Tooltip>
-    </button>
-  );
+  return <DownloadCSVButton data={csvData} fileName={fileName} />;
 };
 
 const convertToCSV = (sortCodesGroups: Record<number, SortCodeGroup>): string => {

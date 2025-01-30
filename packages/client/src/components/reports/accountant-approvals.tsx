@@ -3,19 +3,19 @@ import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Progress } from '@mantine/core';
 import {
-  AccountantApprovalsAllChargesDocument,
+  AccountantApprovalsChargesTableDocument,
   ChargeFilter,
   ChargeSortByField,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.jsx';
-import { ChargesFilters } from '../all-charges/charges-filters.js';
+import { ChargesFilters } from '../charges/charges-filters.js';
 import { PageLayout } from '../layout/page-layout.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AccountantApprovalsAllCharges($page: Int, $limit: Int, $filters: ChargeFilter) {
+  query AccountantApprovalsChargesTable($page: Int, $limit: Int, $filters: ChargeFilter) {
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
@@ -33,7 +33,7 @@ export const AccountantApprovals = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: [userContext?.ownerId],
+          byOwners: userContext?.ownerId ? [userContext?.ownerId] : [],
           sortBy: {
             field: ChargeSortByField.Date,
             asc: false,
@@ -42,7 +42,7 @@ export const AccountantApprovals = (): ReactElement => {
   );
 
   const [{ data, fetching }] = useQuery({
-    query: AccountantApprovalsAllChargesDocument,
+    query: AccountantApprovalsChargesTableDocument,
     variables: {
       filters: filter,
       page: 1,

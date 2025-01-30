@@ -1,14 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import {
-  ETANA_BUSINESS_ID,
-  ETHERSCAN_BUSINESS_ID,
-  ISRACARD_BUSINESS_ID,
-  KRAKEN_BUSINESS_ID,
-  POALIM_BUSINESS_ID,
-  SWIFT_BUSINESS_ID,
-} from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
 import type { TransactionsModule } from '../types.js';
@@ -36,43 +28,69 @@ function sortPhrasesByPriority(
 const missingInfoSuggestions = async (
   DbTransaction: ResolversParentTypes['CommonTransaction'],
   _: object,
-  { injector }: GraphQLModules.Context,
+  { injector, adminContext }: GraphQLModules.Context,
   __: GraphQLResolveInfo,
 ): Promise<Maybe<Suggestion>> => {
+  const {
+    poalimBusinessId,
+    etherScanBusinessId,
+    krakenBusinessId,
+    etanaBusinessId,
+    isracardBusinessId,
+  } = adminContext.financialAccounts;
   if (DbTransaction.business_id) {
     return null;
   }
 
   if (DbTransaction.is_fee) {
     if (DbTransaction.source_description?.includes('Swift')) {
+      const { swiftBusinessId } = adminContext.financialAccounts;
+      if (!swiftBusinessId) {
+        throw new Error('Swift business is not set');
+      }
       return {
-        business: SWIFT_BUSINESS_ID,
+        business: swiftBusinessId,
       };
     }
     switch (DbTransaction.source_origin) {
       case 'ETANA': {
+        if (!etanaBusinessId) {
+          throw new Error('Etana business is not set');
+        }
         return {
-          business: ETANA_BUSINESS_ID,
+          business: etanaBusinessId,
         };
       }
       case 'ETHERSCAN': {
+        if (!etherScanBusinessId) {
+          throw new Error('EtherScan business is not set');
+        }
         return {
-          business: ETHERSCAN_BUSINESS_ID,
+          business: etherScanBusinessId,
         };
       }
       case 'KRAKEN': {
+        if (!krakenBusinessId) {
+          throw new Error('Kraken business is not set');
+        }
         return {
-          business: KRAKEN_BUSINESS_ID,
+          business: krakenBusinessId,
         };
       }
       case 'POALIM': {
+        if (!poalimBusinessId) {
+          throw new Error('Poalim business is not set');
+        }
         return {
-          business: POALIM_BUSINESS_ID,
+          business: poalimBusinessId,
         };
       }
       case 'ISRACARD': {
+        if (!isracardBusinessId) {
+          throw new Error('Isracard business is not set');
+        }
         return {
-          business: ISRACARD_BUSINESS_ID,
+          business: isracardBusinessId,
         };
       }
     }
@@ -122,34 +140,40 @@ const missingInfoSuggestions = async (
 
   switch (DbTransaction.source_origin) {
     case 'ETANA': {
+      if (!etanaBusinessId) {
+        throw new Error('Etana business is not set');
+      }
       if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
         return {
-          business: ETANA_BUSINESS_ID,
+          business: etanaBusinessId,
         };
       }
       const amount = formatAmount(DbTransaction.amount);
-      if (amount < 0) {
+      if (poalimBusinessId && amount < 0) {
         return {
-          business: POALIM_BUSINESS_ID,
+          business: poalimBusinessId,
         };
       }
-      if (amount > 0) {
+      if (krakenBusinessId && amount > 0) {
         return {
-          business: KRAKEN_BUSINESS_ID,
+          business: krakenBusinessId,
         };
       }
       break;
     }
     case 'ETHERSCAN': {
+      if (!etherScanBusinessId) {
+        throw new Error('EtherScan business is not set');
+      }
       if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
         return {
-          business: ETHERSCAN_BUSINESS_ID,
+          business: etherScanBusinessId,
         };
       }
       const amount = formatAmount(DbTransaction.amount);
-      if (amount < 0) {
+      if (krakenBusinessId && amount < 0) {
         return {
-          business: KRAKEN_BUSINESS_ID,
+          business: krakenBusinessId,
         };
       }
       if (amount > 0) {
@@ -160,24 +184,27 @@ const missingInfoSuggestions = async (
       break;
     }
     case 'KRAKEN': {
+      if (!krakenBusinessId) {
+        throw new Error('Kraken business is not set');
+      }
       if (
         DbTransaction.is_fee ||
         /\bfee\b/.test(description.toLowerCase()) ||
         /\btrade\b/.test(description.toLowerCase())
       ) {
         return {
-          business: KRAKEN_BUSINESS_ID,
+          business: krakenBusinessId,
         };
       }
       const amount = formatAmount(DbTransaction.amount);
-      if (amount < 0) {
+      if (etanaBusinessId && amount < 0) {
         return {
-          business: ETANA_BUSINESS_ID,
+          business: etanaBusinessId,
         };
       }
-      if (amount > 0) {
+      if (etherScanBusinessId && amount > 0) {
         return {
-          business: ETHERSCAN_BUSINESS_ID,
+          business: etherScanBusinessId,
         };
       }
       break;
@@ -185,16 +212,17 @@ const missingInfoSuggestions = async (
   }
 
   if (
-    description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-    description.includes('F.C.COM') ||
-    description.includes('ע.מפעולות-ישיר') ||
-    description.includes('ריבית חובה') ||
-    description.includes('FEE')
+    poalimBusinessId &&
+    (description.includes('ע\' העברת מט"ח') ||
+      (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      description.includes('F.C.COM') ||
+      description.includes('ע.מפעולות-ישיר') ||
+      description.includes('ריבית חובה') ||
+      description.includes('FEE'))
   ) {
     return {
-      business: POALIM_BUSINESS_ID,
+      business: poalimBusinessId,
     };
   }
   if (description.includes('דותן שמחה') || description.includes('שמחה דותן')) {
@@ -303,26 +331,27 @@ const missingInfoSuggestions = async (
     };
   }
   if (
-    description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-    description.includes('F.C.COM') ||
-    description.includes('ע.מפעולות-ישיר') ||
-    description.includes('ריבית חובה') ||
-    description.includes('FEE')
+    poalimBusinessId &&
+    (description.includes('ע\' העברת מט"ח') ||
+      (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      description.includes('F.C.COM') ||
+      description.includes('ע.מפעולות-ישיר') ||
+      description.includes('ריבית חובה') ||
+      description.includes('FEE'))
   ) {
     return {
-      business: POALIM_BUSINESS_ID,
+      business: poalimBusinessId,
     };
   }
-  if (description.includes('ריבית זכות')) {
+  if (poalimBusinessId && description.includes('ריבית זכות')) {
     return {
-      business: POALIM_BUSINESS_ID,
+      business: poalimBusinessId,
     };
   }
-  if (description.includes('פועלים- דמי כרטיס')) {
+  if (poalimBusinessId && description.includes('פועלים- דמי כרטיס')) {
     return {
-      business: POALIM_BUSINESS_ID,
+      business: poalimBusinessId,
     };
   }
   if (description.includes('אריה קריסטל')) {
