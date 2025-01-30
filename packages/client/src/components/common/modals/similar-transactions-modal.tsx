@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'urql';
 import {
   ColumnDef,
@@ -52,7 +53,7 @@ type Transaction = {
   }
 `;
 
-export const columns: ColumnDef<Transaction>[] = [
+const columns: ColumnDef<Transaction>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -130,6 +131,7 @@ export function SimilarTransactionsModal({
 
   useEffect(() => {
     if (open && counterpartyId) {
+      console.log('fetching similar transactions', transactionId);
       fetchSimilarTransactions();
     }
   }, [open, counterpartyId, fetchSimilarTransactions]);
@@ -157,17 +159,19 @@ export function SimilarTransactionsModal({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onDialogChange}>
+    <Dialog open={open && !!counterpartyId} onOpenChange={onDialogChange}>
       <DialogContent>
-        {fetching ? (
-          <AccounterLoader />
-        ) : (
-          <SimilarTransactionsTable
-            data={transactions}
-            counterpartyId={counterpartyId!}
-            onOpenChange={onDialogChange}
-          />
-        )}
+        <ErrorBoundary fallback={<div>Error fetching similar transactions</div>}>
+          {fetching ? (
+            <AccounterLoader />
+          ) : counterpartyId ? (
+            <SimilarTransactionsTable
+              data={transactions}
+              counterpartyId={counterpartyId}
+              onOpenChange={onDialogChange}
+            />
+          ) : null}
+        </ErrorBoundary>
       </DialogContent>
     </Dialog>
   );
@@ -184,6 +188,8 @@ function SimilarTransactionsTable({
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
+
+  console.log('🚀 ~ data:', data);
 
   const table = useReactTable({
     data,
@@ -217,13 +223,13 @@ function SimilarTransactionsTable({
     onOpenChange(false);
   }, [updateTransaction, onOpenChange, table, counterpartyId]);
 
-  useEffect(() => {
-    if (!data.length) {
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 2000);
-    }
-  }, [data.length, onOpenChange]);
+  // useEffect(() => {
+  //   if (!data.length) {
+  //     setTimeout(() => {
+  //       onOpenChange(false);
+  //     }, 2000);
+  //   }
+  // }, [data.length, onOpenChange]);
 
   if (!data.length) {
     return (
