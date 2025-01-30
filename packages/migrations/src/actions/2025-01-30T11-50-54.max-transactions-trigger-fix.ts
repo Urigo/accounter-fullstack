@@ -25,6 +25,10 @@ BEGIN
     FROM accounter_schema.financial_accounts
     WHERE account_number = NEW.short_card_number;
 
+    IF account_id_var IS NULL THEN
+        RAISE EXCEPTION 'No matching account found for card number: %', NEW.short_card_number;
+    END IF;
+
     -- check if matching charge exists:
     -- TBD
 
@@ -52,13 +56,17 @@ BEGIN
                     (
                         CASE
                             WHEN NEW.original_currency = 'ILS' THEN 'ILS'
-                            -- use ILS as default:
-                            ELSE 'ILS' END
+                            ELSE RAISE EXCEPTION 'Unknown currency: %', NEW.original_currency; END
                         ) as accounter_schema.currency
             ),
             NEW.purchase_date,
             NEW.payment_date,
-            NEW.actual_payment_amount * -1,
+            CASE  
+                WHEN NEW.actual_payment_amount IS NULL THEN  
+                    RAISE EXCEPTION 'Transaction amount cannot be null'  
+                ELSE  
+                    NEW.actual_payment_amount * -1  
+            END,  
             0);
 
     RETURN NEW;
