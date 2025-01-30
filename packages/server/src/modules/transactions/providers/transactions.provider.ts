@@ -4,6 +4,8 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { Optional, TimelessDateString } from '@shared/types';
 import type {
+  IGetSimilarTransactionsParams,
+  IGetSimilarTransactionsQuery,
   IGetTransactionsByChargeIdsQuery,
   IGetTransactionsByChargeIdsResult,
   IGetTransactionsByFiltersParams,
@@ -71,6 +73,19 @@ const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequir
     SELECT *
     FROM accounter_schema.transactions
     WHERE business_id IS NULL;`;
+
+const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
+    SELECT *
+    FROM accounter_schema.extended_transactions
+    WHERE (CASE WHEN $withMissingInfo IS TRUE THEN
+      business_id IS NULL
+   ELSE
+      TRUE
+   END)
+      AND (
+        (source_details IS NOT NULL AND source_details <> '' AND source_details = $details)
+        OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
+      );`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -181,6 +196,17 @@ export class TransactionsProvider {
 
   public async getTransactionsByMissingRequiredInfo() {
     return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider);
+  }
+
+  public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
+    try {
+      return getSimilarTransactions.run(params, this.dbProvider) as Promise<
+        IGetTransactionsByIdsResult[]
+      >;
+    } catch (error) {
+      console.error('Error fetching similar transactions:', error);
+      throw new Error('Failed to fetch similar transactions');
+    }
   }
 
   public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
