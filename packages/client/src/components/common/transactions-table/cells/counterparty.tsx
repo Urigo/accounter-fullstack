@@ -42,6 +42,7 @@ type Props = {
 export function Counterparty({ data, onChange, enableEdit }: Props): ReactElement {
   const { get } = useUrlQuery();
   const {
+    id,
     counterparty,
     missingInfoSuggestions,
     id: transactionId,
@@ -65,10 +66,9 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
           counterpartyId,
         },
       });
-      onChange?.();
       setSimilarTransactionsOpen(true);
     },
-    [transactionId, updateTransaction, onChange],
+    [transactionId, updateTransaction],
   );
 
   const encodedFilters = get('chargesFilters');
@@ -147,9 +147,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
       </div>
 
       <SimilarTransactionsModal
-        counterpartyId={counterparty?.id}
+        transactionId={id}
+        counterpartyId={counterparty?.id ?? selectedBusinessId}
         open={similarTransactionsOpen}
         onOpenChange={setSimilarTransactionsOpen}
+        onClose={onChange}
       />
     </td>
   );

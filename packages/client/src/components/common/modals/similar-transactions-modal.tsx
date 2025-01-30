@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+import { useQuery } from 'urql';
 import {
   ColumnDef,
   flexRender,
@@ -9,47 +11,46 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction';
-import { Button } from '../../ui/button';
-import { Card } from '../../ui/card';
-import { Checkbox } from '../../ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { SimilarTransactionsDocument } from '../../../gql/graphql.js';
+import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { Button } from '../../ui/button.js';
+import { Card } from '../../ui/card.js';
+import { Checkbox } from '../../ui/checkbox.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
+import { AccounterLoader } from '../index.js';
 
-export type Transaction = {
+type Transaction = {
   id: string;
-  cardType: string;
-  date: string;
-  amount: number;
+  amountRaw: number;
+  amountFormatted: string;
+  sourceDescription: string;
+  eventDate: Date;
+  effectiveDate?: Date;
+  accountType: string;
+  accountName: string;
 };
 
-// TODO: load real txs
-const data: Transaction[] = [
-  {
-    id: '1',
-    cardType: 'Visa',
-    date: '01-01-2000',
-    amount: 100,
-  },
-  {
-    id: '2',
-    cardType: 'Visa',
-    date: '08-01-2000',
-    amount: 0.01,
-  },
-  {
-    id: '3',
-    cardType: 'Visa',
-    date: '01-02-2000',
-    amount: 100,
-  },
-  {
-    id: '4',
-    cardType: 'Visa',
-    date: '01-01-2025',
-    amount: 0.01,
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query SimilarTransactions($transactionId: UUID!, $withMissingInfo: Boolean!) {
+    similarTransactions(transactionId: $transactionId, withMissingInfo: $withMissingInfo) {
+      id
+      account {
+        id
+        name
+        type
+      }
+      amount {
+        formatted
+        raw
+      }
+      effectiveDate
+      eventDate
+      sourceDescription
+    }
+  }
+`;
 
 export const columns: ColumnDef<Transaction>[] = [
   {
@@ -74,51 +75,110 @@ export const columns: ColumnDef<Transaction>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'cardType',
-    header: 'Card Type',
-    cell: ({ row }) => <div>{row.getValue('cardType')}</div>,
+    accessorKey: 'accountType',
+    header: 'Account Type',
+    cell: ({ row }) => <div>{row.getValue('accountType')}</div>,
   },
   {
-    accessorKey: 'date',
-    header: 'Date',
-    cell: ({ row }) => <div>{row.getValue('date')}</div>,
+    accessorKey: 'accountName',
+    header: 'Account Name',
+    cell: ({ row }) => <div>{row.getValue('accountName')}</div>,
   },
   {
-    accessorKey: 'amount',
+    accessorKey: 'amountRaw',
     header: 'Amount',
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue('amount'));
-      const formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(amount);
-      return <div>{formatted}</div>;
-    },
+    cell: ({ row }) => <div>{row.getValue('amountFormatted')}</div>,
+  },
+  {
+    accessorKey: 'sourceDescription',
+    header: 'Description',
+    cell: ({ row }) => <div>{row.getValue('sourceDescription')}</div>,
+  },
+  {
+    accessorKey: 'eventDate',
+    header: 'Event Date',
+    cell: ({ row }) => <div>{format(row.getValue('eventDate'), 'yyyy-MM-dd')}</div>,
+  },
+  {
+    accessorKey: 'valueDate',
+    header: 'Value Date',
+    cell: ({ row }) => <div>{format(row.getValue('valueDate'), 'yyyy-MM-dd')}</div>,
   },
 ];
 
 export function SimilarTransactionsModal({
+  transactionId,
   counterpartyId,
   open,
   onOpenChange,
+  onClose,
 }: {
-  counterpartyId: string;
+  transactionId: string;
+  counterpartyId?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClose?: () => void;
 }) {
+  const [{ data, fetching }, fetchSimilarTransactions] = useQuery({
+    pause: true,
+    query: SimilarTransactionsDocument,
+    variables: {
+      transactionId,
+      withMissingInfo: true,
+    },
+  });
+
+  useEffect(() => {
+    if (open && counterpartyId) {
+      fetchSimilarTransactions();
+    }
+  }, [open, counterpartyId, fetchSimilarTransactions]);
+
+  function onDialogChange(open: boolean) {
+    onOpenChange(open);
+    if (!open) {
+      onClose?.();
+    }
+  }
+
+  const transactions = useMemo(
+    () =>
+      data?.similarTransactions.map(t => ({
+        id: t.id,
+        amountRaw: t.amount.raw,
+        amountFormatted: t.amount.formatted,
+        sourceDescription: t.sourceDescription,
+        eventDate: new Date(t.eventDate),
+        effectiveDate: t.effectiveDate ? new Date(t.effectiveDate) : undefined,
+        accountType: t.account.type,
+        accountName: t.account.name,
+      })) ?? [],
+    [data],
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onDialogChange}>
       <DialogContent>
-        <SimilarTransactionsTable counterpartyId={counterpartyId} onOpenChange={onOpenChange} />
+        {fetching ? (
+          <AccounterLoader />
+        ) : (
+          <SimilarTransactionsTable
+            data={transactions}
+            counterpartyId={counterpartyId!}
+            onOpenChange={onDialogChange}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
 function SimilarTransactionsTable({
+  data,
   counterpartyId,
   onOpenChange,
 }: {
+  data: Transaction[];
   counterpartyId: string;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -143,17 +203,30 @@ function SimilarTransactionsTable({
   const onApproveSelected = useCallback(async () => {
     const ids = table.getSelectedRowModel().rows.map(row => row.original.id);
 
-    for (const id of ids) {
-      await updateTransaction({
-        transactionId: id,
-        fields: {
-          counterpartyId,
-        },
-      });
-    }
+    await Promise.all(
+      ids.map(id =>
+        updateTransaction({
+          transactionId: id,
+          fields: {
+            counterpartyId,
+          },
+        }),
+      ),
+    );
 
     onOpenChange(false);
   }, [updateTransaction, onOpenChange, table, counterpartyId]);
+
+  if (!data.length) {
+    setTimeout(() => {
+      onOpenChange(false);
+    }, 2000);
+    return (
+      <DialogHeader className="flex flex-row items-center justify-between">
+        <DialogTitle>No similar transactions found</DialogTitle>
+      </DialogHeader>
+    );
+  }
 
   return (
     <>
