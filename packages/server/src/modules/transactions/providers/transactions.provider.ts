@@ -199,9 +199,14 @@ export class TransactionsProvider {
   }
 
   public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
-    return getSimilarTransactions.run(params, this.dbProvider) as Promise<
-      IGetTransactionsByIdsResult[]
-    >;
+    try {
+      return getSimilarTransactions.run(params, this.dbProvider) as Promise<
+        IGetTransactionsByIdsResult[]
+      >;
+    } catch (error) {
+      console.error('Error fetching similar transactions:', error);
+      throw new Error('Failed to fetch similar transactions');
+    }
   }
 
   public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {

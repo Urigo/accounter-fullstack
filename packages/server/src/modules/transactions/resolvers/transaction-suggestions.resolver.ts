@@ -434,16 +434,20 @@ function missingInfoSuggestionsWrapper(
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   Query: {
     similarTransactions: async (_, { transactionId, withMissingInfo = false }, { injector }) => {
+      if (!transactionId?.trim()) {
+        throw new GraphQLError('Transaction ID is required');
+      }
+
       const mainTransaction = await injector
         .get(TransactionsProvider)
         .getTransactionByIdLoader.load(transactionId)
         .catch(e => {
-          console.log('Error fetching transaction', transactionId, e);
+          console.error('Error fetching transaction', { transactionId, error: e });
           throw new GraphQLError('Error fetching transaction');
         });
 
       if (!mainTransaction) {
-        throw new Error(`Transaction not found`);
+        throw new GraphQLError(`Transaction not found: ${transactionId}`);
       }
 
       const similarTransactions = await injector
@@ -454,7 +458,12 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
           withMissingInfo,
         })
         .catch(e => {
-          console.log('Error fetching similar transactions', transactionId, e);
+          console.error('Error fetching similar transactions:', {
+            transactionId,
+            details: mainTransaction.source_details,
+            counterAccount: mainTransaction.counter_account,
+            error: e.message,
+          });
           throw new GraphQLError('Error fetching similar transactions');
         });
       return similarTransactions;
