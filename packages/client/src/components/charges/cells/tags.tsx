@@ -75,7 +75,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   );
 
   return (
-    <td>
+    <div>
       <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
         <ListCapsule
           items={tags.map(t => (
@@ -102,6 +102,6 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
           disabled={fetching}
         />
       )}
-    </td>
+    </div>
   );
 };

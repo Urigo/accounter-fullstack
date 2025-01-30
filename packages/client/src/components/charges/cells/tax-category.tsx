@@ -55,10 +55,8 @@ export const TaxCategory = ({ data }: Props): ReactElement => {
   }
 
   return (
-    <td>
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-        {taxCategory?.name ?? 'N/A'}
-      </Indicator>
-    </td>
+    <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+      {taxCategory?.name ?? 'N/A'}
+    </Indicator>
   );
 };

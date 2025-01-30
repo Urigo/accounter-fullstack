@@ -40,27 +40,23 @@ export const Amount = ({ data }: Props): ReactElement => {
   }, [charge.__typename, validCreditCardAmount]);
 
   return (
-    <td>
-      <div>
-        <Indicator
-          inline
-          size={12}
-          disabled={isValid}
-          processing={isValidating}
-          color="red"
-          zIndex="auto"
-        >
-          <p
-            className={
-              (charge.totalAmount?.raw ?? 0) > 0
-                ? 'whitespace-nowrap text-green-700'
-                : 'whitespace-nowrap text-red-500'
-            }
-          >
-            {charge.totalAmount?.formatted}
-          </p>
-        </Indicator>
-      </div>
-    </td>
+    <Indicator
+      inline
+      size={12}
+      disabled={isValid}
+      processing={isValidating}
+      color="red"
+      zIndex="auto"
+    >
+      <p
+        className={
+          (charge.totalAmount?.raw ?? 0) > 0
+            ? 'whitespace-nowrap text-green-700'
+            : 'whitespace-nowrap text-red-500'
+        }
+      >
+        {charge.totalAmount?.formatted}
+      </p>
+    </Indicator>
   );
 };

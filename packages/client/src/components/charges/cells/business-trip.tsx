@@ -28,18 +28,16 @@ export const BusinessTrip = ({ data }: Props): ReactElement => {
   }
 
   return (
-    <td>
-      <a
-        href={`/business-trips/${charge.businessTrip?.id}`}
-        target="_blank"
-        rel="noreferrer"
-        onClick={event => event.stopPropagation()}
-      >
-        <NavLink
-          label={charge.businessTrip?.name}
-          className="[&>*>.mantine-NavLink-label]:font-semibold"
-        />
-      </a>
-    </td>
+    <a
+      href={`/business-trips/${charge.businessTrip?.id}`}
+      target="_blank"
+      rel="noreferrer"
+      onClick={event => event.stopPropagation()}
+    >
+      <NavLink
+        label={charge.businessTrip?.name}
+        className="[&>*>.mantine-NavLink-label]:font-semibold"
+      />
+    </a>
   );
 };

@@ -13,6 +13,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady } from '../../gql/index.js';
 import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
+import { TableCell, TableRow } from '../ui/table.js';
 import {
   AccountantApproval,
   Amount,
@@ -132,16 +133,22 @@ export const ChargesTableRow = ({
 
   return (
     <>
-      <tr
+      <TableRow
         onClick={() => {
           if (hasExtendedInfo) {
             setOpened(prev => !prev);
           }
         }}
       >
-        <TypeCell data={charge} />
-        <DateCell data={charge} />
-        <Amount data={charge} />
+        <TableCell>
+          <TypeCell data={charge} />
+        </TableCell>
+        <TableCell>
+          <DateCell data={charge} />
+        </TableCell>
+        <TableCell>
+          <Amount data={charge} />
+        </TableCell>
         <Vat data={charge} />
 
         {isFragmentReady(
@@ -149,9 +156,11 @@ export const ChargesTableRow = ({
           ChargesTableEntityFieldsFragmentDoc,
           charge,
         ) ? (
-          <Counterparty data={charge} />
+          <TableCell>
+            <Counterparty data={charge} />
+          </TableCell>
         ) : (
-          <td />
+          <TableCell />
         )}
 
         <Description data={charge} onChange={onChange} />
@@ -161,9 +170,11 @@ export const ChargesTableRow = ({
           ChargesTableTagsFieldsFragmentDoc,
           charge,
         ) ? (
-          <Tags data={charge} onChange={onChange} />
+          <TableCell>
+            <Tags data={charge} onChange={onChange} />
+          </TableCell>
         ) : (
-          <td />
+          <TableCell />
         )}
 
         {isFragmentReady(
@@ -171,9 +182,11 @@ export const ChargesTableRow = ({
           ChargesTableTaxCategoryFieldsFragmentDoc,
           charge,
         ) ? (
-          <TaxCategory data={charge} />
+          <TableCell>
+            <TaxCategory data={charge} />
+          </TableCell>
         ) : (
-          <td />
+          <TableCell />
         )}
 
         {isFragmentReady(
@@ -181,15 +194,21 @@ export const ChargesTableRow = ({
           ChargesTableBusinessTripFieldsFragmentDoc,
           charge,
         ) ? (
-          <BusinessTrip data={charge} />
+          <TableCell>
+            <BusinessTrip data={charge} />
+          </TableCell>
         ) : (
-          <td />
+          <TableCell />
         )}
 
-        <MoreInfo data={charge} />
-        <AccountantApproval data={charge} onChange={onChange} />
+        <TableCell>
+          <MoreInfo data={charge} />
+        </TableCell>
+        <TableCell>
+          <AccountantApproval data={charge} onChange={onChange} />
+        </TableCell>
 
-        <td>
+        <TableCell>
           <div className="flex flex-col gap-2">
             <EditMiniButton
               onClick={event => {
@@ -204,8 +223,8 @@ export const ChargesTableRow = ({
               />
             )}
           </div>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           <div className="flex flex-col gap-2">
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
@@ -222,16 +241,16 @@ export const ChargesTableRow = ({
               />
             )}
           </div>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {hasExtendedInfo && opened && (
-        <tr>
-          <td colSpan={13}>
+        <TableRow>
+          <TableCell colSpan={13}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} />
             </Paper>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

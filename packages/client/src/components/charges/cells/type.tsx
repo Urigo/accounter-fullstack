@@ -61,11 +61,11 @@ export const TypeCell = ({ data }: Props): ReactElement => {
     }
   }, [__typename]);
   return (
-    <td>
+    <div>
       <div>{type.text}</div>
       <ThemeIcon radius="xl" size="xl">
         {type.icon}
       </ThemeIcon>
-    </td>
+    </div>
   );
 };

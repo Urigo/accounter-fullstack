@@ -22,9 +22,5 @@ export const DateCell = ({ data }: Props): ReactElement => {
   const { minDebitDate, minEventDate, minDocumentsDate } = charge;
   const displayDate = minDebitDate || minEventDate || minDocumentsDate;
 
-  return (
-    <td>
-      <div>{displayDate && format(new Date(displayDate), 'dd/MM/yy')}</div>
-    </td>
-  );
+  return <div>{displayDate && format(new Date(displayDate), 'dd/MM/yy')}</div>;
 };
