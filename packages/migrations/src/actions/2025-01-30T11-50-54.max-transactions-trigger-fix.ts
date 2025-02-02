@@ -20,8 +20,7 @@ BEGIN
     RETURNING id INTO merged_id;
 
     -- get account and owner IDs
-    SELECT INTO account_id_var, owner_id_var id,
-                                             owner
+    SELECT id, owner INTO account_id_var, owner_id_var
     FROM accounter_schema.financial_accounts
     WHERE account_number = NEW.short_card_number;
 
@@ -45,6 +44,14 @@ BEGIN
     -- check if new record contains fees
     -- TBD
 
+    IF NOT(NEW.original_currency = 'ILS') THEN
+        RAISE EXCEPTION 'Unknown currency: %', NEW.original_currency;
+    END IF;
+    
+    IF (NEW.actual_payment_amount IS NULL) THEN
+        RAISE EXCEPTION 'Transaction amount cannot be null';
+    END IF;
+
     -- create new transaction
     INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
                                                event_date, debit_date, amount, current_balance)
@@ -56,17 +63,13 @@ BEGIN
                     (
                         CASE
                             WHEN NEW.original_currency = 'ILS' THEN 'ILS'
-                            ELSE RAISE EXCEPTION 'Unknown currency: %', NEW.original_currency; END
+                            -- use ILS as default:
+                            ELSE 'ILS' END
                         ) as accounter_schema.currency
             ),
             NEW.purchase_date,
             NEW.payment_date,
-            CASE  
-                WHEN NEW.actual_payment_amount IS NULL THEN  
-                    RAISE EXCEPTION 'Transaction amount cannot be null'  
-                ELSE  
-                    NEW.actual_payment_amount * -1  
-            END,  
+            NEW.actual_payment_amount * -1,
             0);
 
     RETURN NEW;
