@@ -83,6 +83,7 @@ module.exports = {
                 'VatReportRecord',
                 'VacationDays',
                 'ValidationData',
+                'YearlyLedgerReportFinancialEntityInfo',
                 'YearOfRelevance',
               ],
             },

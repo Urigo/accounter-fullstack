@@ -4,10 +4,12 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
 import { getCacheInstance } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
   IDeleteLedgerRecordsQuery,
+  IGetLedgerBalanceToDateQuery,
   IGetLedgerRecordsByChargesIdsQuery,
   IGetLedgerRecordsByDatesParams,
   IGetLedgerRecordsByDatesQuery,
@@ -40,6 +42,24 @@ const getLedgerRecordsByDates = sql<IGetLedgerRecordsByDatesQuery>`
     FROM accounter_schema.ledger_records
     WHERE invoice_date BETWEEN $fromDate AND $toDate
     AND owner_id = $ownerId;`;
+
+const getLedgerBalanceToDate = sql<IGetLedgerBalanceToDateQuery>`
+    WITH grouped_entities AS (SELECT credit_entity1 AS entity_id, credit_local_amount1 AS amount, invoice_date
+                              FROM accounter_schema.ledger_records
+                              UNION
+                              SELECT credit_entity1, credit_local_amount1, invoice_date
+                              FROM accounter_schema.ledger_records
+                              UNION
+                              SELECT debit_entity1, debit_local_amount1 * -1, invoice_date
+                              FROM accounter_schema.ledger_records
+                              UNION
+                              SELECT debit_entity2, debit_local_amount2 * -1, invoice_date
+                              FROM accounter_schema.ledger_records)
+    SELECT entity_id, sum(amount)
+    FROM grouped_entities
+    WHERE invoice_date < $date
+      AND entity_id IS NOT NULL
+    GROUP BY entity_id;`;
 
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
@@ -264,6 +284,10 @@ export class LedgerProvider {
       { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
       this.dbProvider,
     );
+  }
+
+  public getLedgerBalanceToDate(date: TimelessDateString) {
+    return getLedgerBalanceToDate.run({ date }, this.dbProvider);
   }
 
   public updateLedgerRecord(params: IUpdateLedgerRecordParams) {

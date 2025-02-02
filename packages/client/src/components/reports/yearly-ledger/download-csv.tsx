@@ -6,129 +6,124 @@ import { DownloadCSVButton } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment LedgerCsvFields on LedgerRecord {
+  fragment LedgerCsvFields on YearlyLedgerReport {
     id
-    invoiceDate
-    valueDate
-    description
-    reference
-    debitAccount1 {
-      id
-      name
-    }
-    debitAmount1 {
-      raw
-      currency
-    }
-    localCurrencyDebitAmount1 {
-      raw
-      currency
-    }
-    debitAccount2 {
-      id
-      name
-    }
-    debitAmount2 {
-      raw
-    }
-    localCurrencyDebitAmount2 {
-      raw
-    }
-    creditAccount1 {
-      id
-      name
-    }
-    creditAmount1 {
-      raw
-    }
-    localCurrencyCreditAmount1 {
-      raw
-    }
-    creditAccount2 {
-      id
-      name
-    }
-    creditAmount2 {
-      raw
-    }
-    localCurrencyCreditAmount2 {
-      raw
+    year
+    financialEntitiesInfo {
+      entity {
+        id
+        name
+        sortCode {
+          id
+        }
+      }
+      openingBalance {
+        raw
+      }
+      totalCredit {
+        raw
+      }
+      totalDebit {
+        raw
+      }
+      closingBalance {
+        raw
+      }
+      records {
+        id
+        amount {
+          raw
+          formatted
+        }
+        invoiceDate
+        valueDate
+        description
+        reference
+        counterParty {
+          id
+          name
+        }
+        balance
+      }
     }
   }
 `;
 
 interface Props {
-  data: FragmentType<typeof LedgerCsvFieldsFragmentDoc>[];
+  data?: FragmentType<typeof LedgerCsvFieldsFragmentDoc>;
   year: number;
 }
 
 export const DownloadCSV = ({ data, year }: Props): ReactElement => {
-  const ledgerRecords = data.map(rawRecord =>
-    getFragmentData(LedgerCsvFieldsFragmentDoc, rawRecord),
-  );
+  if (!data) {
+    return <div />;
+  }
+  const report = getFragmentData(LedgerCsvFieldsFragmentDoc, data);
 
-  const csvData = convertToCSV(ledgerRecords);
+  const csvData = convertToCSV(report);
   const fileName = `${year}_ledger`;
 
   return <DownloadCSVButton data={csvData} fileName={fileName} />;
 };
 
 type DataStructure<T> = { key: string; valueFn: (record: T) => string | number }[];
-const dataRow: DataStructure<LedgerCsvFieldsFragment> = [
+const dataRow: DataStructure<
+  LedgerCsvFieldsFragment['financialEntitiesInfo'][number]['records'][number]
+> = [
+  { key: '', valueFn: () => '' },
+  { key: '', valueFn: () => '' },
+  {
+    key: 'Counterparty',
+    valueFn: record => sanitizeString(record.counterParty?.name ?? ''),
+  },
   { key: 'Invoice Date', valueFn: record => format(record.invoiceDate, 'yyyy-MM-dd') },
   { key: 'Value Date', valueFn: record => format(record.valueDate, 'yyyy-MM-dd') },
-  {
-    key: 'Description',
-    valueFn: record => (record.description ? `"${sanitizeString(record.description)}"` : ''),
-  },
   {
     key: 'Reference',
     valueFn: record => (record.reference ? `"${sanitizeString(record.reference)}"` : ''),
   },
   {
-    key: 'Currency',
-    valueFn: record => record.debitAmount1?.currency ?? record.localCurrencyDebitAmount1.currency,
+    key: 'Description',
+    valueFn: record => (record.description ? `"${sanitizeString(record.description)}"` : ''),
   },
   {
-    key: 'Debit1 Account',
-    valueFn: record =>
-      record.debitAccount1?.name ? `"${sanitizeString(record.debitAccount1.name)}"` : '',
+    key: 'Debit Amount',
+    valueFn: record => (record.amount.raw < 0 ? record.amount.raw.toFixed(2) : ''),
   },
-  { key: 'Debit1 Amount', valueFn: record => record.debitAmount1?.raw ?? '' },
-  { key: 'Debit1 Amount (ILS)', valueFn: record => record.localCurrencyDebitAmount1?.raw ?? '' },
   {
-    key: 'Debit2 Account',
-    valueFn: record =>
-      record.debitAccount2?.name ? `"${sanitizeString(record.debitAccount2.name)}"` : '',
+    key: 'Credit Amount',
+    valueFn: record => (record.amount.raw >= 0 ? record.amount.raw.toFixed(2) : ''),
   },
-  { key: 'Debit2 Amount', valueFn: record => record.debitAmount2?.raw ?? '' },
-  { key: 'Debit2 Amount (ILS)', valueFn: record => record.localCurrencyDebitAmount2?.raw ?? '' },
   {
-    key: 'Credit1 Account',
-    valueFn: record =>
-      record.creditAccount1?.name ? `"${sanitizeString(record.creditAccount1.name)}"` : '',
+    key: 'Balance',
+    valueFn: record => record.balance.toFixed(2),
   },
-  { key: 'Credit1 Amount', valueFn: record => record.creditAmount1?.raw ?? '' },
-  { key: 'Credit1 Amount (ILS)', valueFn: record => record.localCurrencyCreditAmount1?.raw ?? '' },
-  {
-    key: 'Credit2 Account',
-    valueFn: record =>
-      record.creditAccount2?.name ? `"${sanitizeString(record.creditAccount2.name)}"` : '',
-  },
-  { key: 'Credit2 Amount', valueFn: record => record.creditAmount2?.raw ?? '' },
-  { key: 'Credit2 Amount (ILS)', valueFn: record => record.localCurrencyCreditAmount2?.raw ?? '' },
 ];
 
-const convertToCSV = (ledgerRecords: LedgerCsvFieldsFragment[]): string => {
-  const rows = [
-    dataRow.map(({ key }) => key).join(','),
-    ...ledgerRecords.map(record => dataRow.map(({ valueFn }) => valueFn(record)).join(',')),
-  ];
+const convertToCSV = (ledgerRecords: LedgerCsvFieldsFragment): string => {
+  const rows = [dataRow.map(({ key }) => key).join(',')];
+  ledgerRecords.financialEntitiesInfo.map(financialEntityInfo => {
+    const openingRow1 = `${sanitizeString(financialEntityInfo.entity.name)},${financialEntityInfo.entity.sortCode?.id}`;
+    const openingRow2 = `,Opening Balance,,,,,,,,${financialEntityInfo.openingBalance.raw.toFixed(2)}`;
+    const closingRow1 = `Total,${sanitizeString(financialEntityInfo.entity.name)},,,,,,,${financialEntityInfo.totalDebit.raw.toFixed(2)} Debit,`;
+    const closingRow2 = `,,,,,,,,${financialEntityInfo.totalCredit.raw.toFixed(2)} Credit,${financialEntityInfo.closingBalance.raw.toFixed(2)}`;
+    const closingRow3 = `,,,,,,,,${(financialEntityInfo.totalCredit.raw - financialEntityInfo.totalDebit.raw).toFixed(2)} Diff,`;
+
+    rows.push(
+      openingRow1,
+      openingRow2,
+      ...financialEntityInfo.records.map(record =>
+        dataRow.map(({ valueFn }) => valueFn(record)).join(','),
+      ),
+      closingRow1,
+      closingRow2,
+      closingRow3,
+    );
+  });
   return rows.join('\r\n');
 };
 
 function sanitizeString(desc: string): string {
-  let itemDesc = '';
-  itemDesc = desc.replace(/"/g, '""');
+  const itemDesc = desc.replace(/"/g, '""').replace(/,/g, '.');
   return itemDesc;
 }
