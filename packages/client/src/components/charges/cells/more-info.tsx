@@ -76,71 +76,65 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   const ledgerStatus = useMemo(() => metadata?.invalidLedger, [metadata?.invalidLedger]);
 
   return (
-    <td>
-      <DragFile chargeId={id}>
-        <ListCapsule
-          items={[
-            {
-              extraClassName:
-                metadata?.transactionsCount || !shouldHaveTransactions
-                  ? undefined
-                  : 'bg-yellow-400',
-              content: (
-                <Indicator
-                  key="transactions"
-                  inline
-                  size={12}
-                  disabled={!isTransactionsError}
-                  color="red"
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Transactions: {metadata?.transactionsCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-            },
-            {
-              content: (
-                <Indicator
-                  key="ledger"
-                  inline
-                  size={12}
-                  processing={isProcessingLedger}
-                  disabled={ledgerStatus === 'VALID'}
-                  color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Ledger Records: {metadata?.ledgerCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-            },
-            {
-              content: (
-                <Indicator
-                  key="documents"
-                  inline
-                  size={12}
-                  disabled={!isDocumentsError}
-                  color="red"
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Documents: {metadata?.documentsCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-              extraClassName:
-                !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
-                !shouldHaveDocuments
-                  ? undefined
-                  : 'bg-yellow-400',
-            },
-          ]}
-        />
-      </DragFile>
-    </td>
+    <DragFile chargeId={id}>
+      <ListCapsule
+        items={[
+          {
+            extraClassName:
+              metadata?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
+            content: (
+              <Indicator
+                key="transactions"
+                inline
+                size={12}
+                disabled={!isTransactionsError}
+                color="red"
+                zIndex="auto"
+              >
+                <div className="whitespace-nowrap">
+                  Transactions: {metadata?.transactionsCount ?? 0}
+                </div>
+              </Indicator>
+            ),
+          },
+          {
+            content: (
+              <Indicator
+                key="ledger"
+                inline
+                size={12}
+                processing={isProcessingLedger}
+                disabled={ledgerStatus === 'VALID'}
+                color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
+                zIndex="auto"
+              >
+                <div className="whitespace-nowrap">
+                  Ledger Records: {metadata?.ledgerCount ?? 0}
+                </div>
+              </Indicator>
+            ),
+          },
+          {
+            content: (
+              <Indicator
+                key="documents"
+                inline
+                size={12}
+                disabled={!isDocumentsError}
+                color="red"
+                zIndex="auto"
+              >
+                <div className="whitespace-nowrap">Documents: {metadata?.documentsCount ?? 0}</div>
+              </Indicator>
+            ),
+            extraClassName:
+              !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
+              !shouldHaveDocuments
+                ? undefined
+                : 'bg-yellow-400',
+          },
+        ]}
+      />
+    </DragFile>
   );
 };

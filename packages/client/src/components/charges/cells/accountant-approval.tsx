@@ -29,16 +29,14 @@ export function AccountantApproval({ data, onChange }: Props): ReactElement {
   }, [status, charge.accountantApproval]);
 
   return (
-    <td>
-      <UpdateAccountantStatus
-        value={status}
-        onChange={status =>
-          updateChargeAccountantApproval({
-            chargeId: charge.id,
-            status,
-          }).then(onChange)
-        }
-      />
-    </td>
+    <UpdateAccountantStatus
+      value={status}
+      onChange={status =>
+        updateChargeAccountantApproval({
+          chargeId: charge.id,
+          status,
+        }).then(onChange)
+      }
+    />
   );
 }

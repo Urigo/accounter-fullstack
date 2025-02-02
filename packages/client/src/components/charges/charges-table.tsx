@@ -1,7 +1,8 @@
 import { Dispatch, ReactElement, SetStateAction } from 'react';
-import { Table } from '@mantine/core';
 import { ChargesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { Card } from '../ui/card.js';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { ChargesTableRow } from './charges-row.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -47,51 +48,54 @@ export const ChargesTable = ({
   const charges = data?.map(charge => getFragmentData(ChargesTableFieldsFragmentDoc, charge)) ?? [];
 
   return (
-    <Table striped highlightOnHover>
-      <thead className="sticky top-0 z-20">
-        <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
-          <th>Type</th>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Vat</th>
-          <th>Counterparty</th>
-          <th>Description</th>
-          <th>Tags</th>
-          <th>Tax Category</th>
-          <th>Business Trip</th>
-          <th>More Info</th>
-          <th>Accountant Approval</th>
-          <th>Edit</th>
-          <th>More Info</th>
-        </tr>
-      </thead>
-      <tbody>
-        {charges?.map(charge => (
-          <ChargesTableRow
-            key={charge.id}
-            data={charge}
-            setEditCharge={(onChange: () => void): void =>
-              setEditChargeId({ id: charge.id, onChange })
-            }
-            setInsertDocument={(onChange: () => void): void =>
-              setInsertDocument({ id: charge.id, onChange })
-            }
-            setMatchDocuments={(): void =>
-              setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
-            }
-            setUploadDocument={(onChange: () => void): void =>
-              setUploadDocument({ id: charge.id, onChange })
-            }
-            toggleMergeCharge={
-              toggleMergeCharge
-                ? (onChange: () => void): void => toggleMergeCharge(charge.id, onChange)
-                : undefined
-            }
-            isSelectedForMerge={mergeSelectedCharges?.has(charge.id) ?? false}
-            isAllOpened={isAllOpened}
-          />
-        ))}
-      </tbody>
-    </Table>
+    // <Table striped highlightOnHover>
+    <Card>
+      <Table>
+        <TableHeader className="sticky top-0 z-20">
+          <TableRow className="title-font tracking-wider font-medium text-gray-900 text-sm rounded-tl rounded-bl">
+            <TableHead>Type</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Vat</TableHead>
+            <TableHead>Counterparty</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Tags</TableHead>
+            <TableHead>Tax Category</TableHead>
+            <TableHead>Business Trip</TableHead>
+            <TableHead>More Info</TableHead>
+            <TableHead>Accountant Approval</TableHead>
+            <TableHead>Edit</TableHead>
+            <TableHead>More Info</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {charges?.map(charge => (
+            <ChargesTableRow
+              key={charge.id}
+              data={charge}
+              setEditCharge={(onChange: () => void): void =>
+                setEditChargeId({ id: charge.id, onChange })
+              }
+              setInsertDocument={(onChange: () => void): void =>
+                setInsertDocument({ id: charge.id, onChange })
+              }
+              setMatchDocuments={(): void =>
+                setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
+              }
+              setUploadDocument={(onChange: () => void): void =>
+                setUploadDocument({ id: charge.id, onChange })
+              }
+              toggleMergeCharge={
+                toggleMergeCharge
+                  ? (onChange: () => void): void => toggleMergeCharge(charge.id, onChange)
+                  : undefined
+              }
+              isSelectedForMerge={mergeSelectedCharges?.has(charge.id) ?? false}
+              isAllOpened={isAllOpened}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
   );
 };
