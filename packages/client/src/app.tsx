@@ -11,6 +11,7 @@ import { MonthlyIncomeExpenseChart } from './components/charts/monthly-income-ex
 import { DocumentsReport } from './components/documents/index.js';
 import { DashboardLayout } from './components/layout/dashboard-layout.js';
 import { AccountantApprovals } from './components/reports/accountant-approvals.js';
+import { ContoReport } from './components/reports/conto/index.js';
 import { CorporateTaxRulingComplianceReport } from './components/reports/corporate-tax-ruling-compliance-report/index.js';
 import { ProfitAndLossReport } from './components/reports/profit-and-loss-report/index.js';
 import { TaxReport } from './components/reports/tax-report/index.js';
@@ -52,6 +53,7 @@ export function App(): ReactElement {
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
+            <Route path="conto" element={<ContoReport />} />
             <Route path="vat-monthly" element={<VatMonthlyReport />} />
             <Route path="profit-and-loss" element={<ProfitAndLossReport />} />
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
