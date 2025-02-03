@@ -76,6 +76,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
+    // batchUploadDocuments: async (_, { documents }, { injector }) => {},
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
 
