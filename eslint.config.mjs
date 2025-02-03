@@ -133,6 +133,7 @@ export default [
               'VatReportRecord',
               'VacationDays',
               'ValidationData',
+              'YearlyLedgerReportFinancialEntityInfo',
               'YearOfRelevance',
             ],
           },

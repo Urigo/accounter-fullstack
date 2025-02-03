@@ -22,6 +22,7 @@ import {
   reportCommentarySubRecordMapper,
 } from './reports/profit-and-loss-report.resolver.js';
 import { taxReport, taxReportYearMapper } from './reports/tax-report.js';
+import { yearlyLedgerReport } from './reports/yearly-ledger-report.resolver.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
@@ -52,6 +53,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     profitAndLossReport,
     taxReport,
     corporateTaxRulingComplianceReport,
+    yearlyLedgerReport,
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,

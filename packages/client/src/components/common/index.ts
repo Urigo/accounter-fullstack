@@ -1,6 +1,7 @@
 export * from './accounter-table.js';
 export * from './buttons/index.js';
 export * from './common-wrappers.js';
+export * from './data-table-pagination.js';
 export * from './divider.js';
 export * from './forms/index.js';
 export * from './hover-handler.js';
