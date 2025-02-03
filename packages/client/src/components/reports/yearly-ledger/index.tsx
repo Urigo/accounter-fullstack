@@ -196,6 +196,8 @@ export const YearlyLedgerReport = (): ReactElement => {
     },
   });
 
+  const currentPage = table.getState().pagination.pageIndex;
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex items-center justify-end gap-10 space-x-2 py-4">
@@ -214,7 +216,7 @@ export const YearlyLedgerReport = (): ReactElement => {
         </div>
       </div>,
     );
-  }, [year, fetching, setFiltersContext, reportData, table]);
+  }, [year, fetching, setFiltersContext, reportData, table, currentPage]);
 
   return (
     <PageLayout title="Yearly Ledger Report">
