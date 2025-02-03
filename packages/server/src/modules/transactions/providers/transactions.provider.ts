@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { Optional, TimelessDateString } from '@shared/types';
@@ -85,7 +85,7 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
       AND (
         (source_details IS NOT NULL AND source_details <> '' AND source_details = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
-      );`;
+      ) AND owner_id = $ownerId;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -150,11 +150,18 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class TransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  adminBusinessId: string;
+
+  constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.Context,
+    private dbProvider: DBProvider,
+  ) {
+    this.adminBusinessId = this.context.currentUser.userId;
+  }
 
   private async batchTransactionsByIds(ids: readonly string[]) {
     const transactions = await getTransactionsByIds.run(
@@ -198,11 +205,12 @@ export class TransactionsProvider {
     return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider);
   }
 
-  public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
+  public async getSimilarTransactions(params: Omit<IGetSimilarTransactionsParams, 'ownerId'>) {
     try {
-      return getSimilarTransactions.run(params, this.dbProvider) as Promise<
-        IGetTransactionsByIdsResult[]
-      >;
+      return getSimilarTransactions.run(
+        { ...params, ownerId: this.adminBusinessId },
+        this.dbProvider,
+      ) as Promise<IGetTransactionsByIdsResult[]>;
     } catch (error) {
       console.error('Error fetching similar transactions:', error);
       throw new Error('Failed to fetch similar transactions');

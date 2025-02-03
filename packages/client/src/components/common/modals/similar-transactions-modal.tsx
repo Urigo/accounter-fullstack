@@ -138,9 +138,9 @@ export function SimilarTransactionsModal({
     }
   }, [open, counterpartyId, fetchSimilarTransactions, transactionId]);
 
-  function onDialogChange(open: boolean) {
-    onOpenChange(open);
-    if (!open) {
+  function onDialogChange(openState: boolean) {
+    onOpenChange(openState);
+    if (open && !openState) {
       onClose?.();
     }
   }
@@ -223,19 +223,13 @@ function SimilarTransactionsTable({
   }, [updateTransaction, onOpenChange, table, counterpartyId]);
 
   useEffect(() => {
-    if (!data.length) {
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 2000);
+    if (data.length === 0) {
+      onOpenChange(false);
     }
   }, [data.length, onOpenChange]);
 
   if (!data.length) {
-    return (
-      <DialogHeader className="flex flex-row items-center justify-between">
-        <DialogTitle>No similar transactions found</DialogTitle>
-      </DialogHeader>
-    );
+    return;
   }
 
   return (
@@ -262,23 +256,15 @@ function SimilarTransactionsTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map(row => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
+            {table.getRowModel().rows.map(row => (
+              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </Card>

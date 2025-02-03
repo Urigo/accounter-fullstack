@@ -75,7 +75,7 @@ const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransa
     AND btt.id IS NULL;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripExpensesProvider {
