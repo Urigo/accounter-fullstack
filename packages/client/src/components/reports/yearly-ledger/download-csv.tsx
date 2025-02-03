@@ -88,7 +88,7 @@ const dataRow: DataStructure<
   },
   {
     key: 'Debit Amount',
-    valueFn: record => (record.amount.raw < 0 ? record.amount.raw.toFixed(2) : ''),
+    valueFn: record => (record.amount.raw < 0 ? Math.abs(record.amount.raw).toFixed(2) : ''),
   },
   {
     key: 'Credit Amount',
@@ -105,7 +105,7 @@ const convertToCSV = (ledgerRecords: LedgerCsvFieldsFragment): string => {
   ledgerRecords.financialEntitiesInfo.map(financialEntityInfo => {
     const openingRow1 = `${sanitizeString(financialEntityInfo.entity.name)},${financialEntityInfo.entity.sortCode?.id}`;
     const openingRow2 = `,Opening Balance,,,,,,,,${financialEntityInfo.openingBalance.raw.toFixed(2)}`;
-    const closingRow1 = `Total,${sanitizeString(financialEntityInfo.entity.name)},,,,,,,${financialEntityInfo.totalDebit.raw.toFixed(2)} Debit,`;
+    const closingRow1 = `Total,${sanitizeString(financialEntityInfo.entity.name)},,,,,,,${Math.abs(financialEntityInfo.totalDebit.raw).toFixed(2)} Debit,`;
     const closingRow2 = `,,,,,,,,${financialEntityInfo.totalCredit.raw.toFixed(2)} Credit,${financialEntityInfo.closingBalance.raw.toFixed(2)}`;
     const closingRow3 = `,,,,,,,,${(financialEntityInfo.totalCredit.raw - financialEntityInfo.totalDebit.raw).toFixed(2)} Diff,`;
 
