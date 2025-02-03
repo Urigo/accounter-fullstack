@@ -1,5 +1,6 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
+import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
@@ -87,6 +88,7 @@ export async function createGraphQLApp(env: Environment) {
       CloudinaryProvider,
       GreenInvoiceProvider,
       CoinMarketCapProvider,
+      AnthropicProvider,
       {
         provide: ENVIRONMENT,
         useValue: env,
