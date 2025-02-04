@@ -5,6 +5,7 @@ import {
   Currency as GreenInvoiceCurrency,
 } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -77,6 +78,34 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
     // batchUploadDocuments: async (_, { documents }, { injector }) => {},
+    batchUploadDocumentsFromGoogleDrive: async (_, { sharedFolderUrl }, context) => {
+      const {
+        injector,
+        adminContext: { defaultAdminBusinessId },
+      } = context;
+
+      const files = await injector
+        .get(GoogleDriveProvider)
+        .fetchFilesFromSharedFolder(sharedFolderUrl);
+
+      const newDocuments = [];
+      for (const file of files) {
+        const newDocument = await getDocumentFromFile(context, file);
+
+        // generate new charge
+        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId: defaultAdminBusinessId,
+          userDescription: 'New uploaded document',
+        });
+        if (!newCharge) {
+          throw new GraphQLError(`Failed to generate new charge for new document`);
+        }
+        newDocuments.push({ ...newDocument, chargeId: newCharge?.id });
+      }
+
+      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
 
