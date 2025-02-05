@@ -65,7 +65,7 @@ export async function getOcrData(
   const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file);
 
   if (!draft) {
-    throw new Error('No data returned from Green Invoice');
+    throw new Error('No data returned from Anthropic OCR');
   }
 
   let isOwnerIssuer: boolean | null = null;
