@@ -112,6 +112,20 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       { sharedFolderUrl, chargeId, isSensitive },
       context,
     ) => {
+      const isValidGoogleDriveUrl = (url: string): boolean => {
+        try {
+          const parsedUrl = new URL(url);
+          return parsedUrl.hostname === 'drive.google.com' &&
+                 parsedUrl.pathname.includes('/folders/');
+        } catch {
+          return false;
+        }
+      };
+
+      if (!isValidGoogleDriveUrl(sharedFolderUrl)) {
+        throw new GraphQLError('Invalid Google Drive folder URL');
+      }
+
       const {
         injector,
         adminContext: { defaultAdminBusinessId },
