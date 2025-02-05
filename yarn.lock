@@ -2099,17 +2099,6 @@
     tslib "2.8.1"
     zod "3.24.1"
 
-"@graphql-hive/core@0.8.2":
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/core/-/core-0.8.2.tgz#de9584fbc41f191351f9fba58df6139173be521b"
-  integrity sha512-wIOq0EMtfBojZrOdlvITlKmlHHwhxxsU9XZ+D82W0vC81sB2koO1G7HiCZIJPrgUREDpuZgT662lNfhfNggDlQ==
-  dependencies:
-    "@graphql-tools/utils" "^10.0.0"
-    "@whatwg-node/fetch" "0.9.21"
-    async-retry "1.3.3"
-    lodash.sortby "4.7.0"
-    tiny-lru "8.0.2"
-
 "@graphql-hive/core@0.8.4":
   version "0.8.4"
   resolved "https://registry.yarnpkg.com/@graphql-hive/core/-/core-0.8.4.tgz#ced9e77c7a464188523154339025263c542a87a6"
@@ -2129,14 +2118,13 @@
     "@graphql-tools/utils" "^10.7.0"
     tslib "^2.8.1"
 
-"@graphql-hive/yoga@0.39.0":
-  version "0.39.0"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.39.0.tgz#64e11701dfb8f178a71086d39e356a029d94a45b"
-  integrity sha512-STvrWZJHiCL3zgBUfYWfXZ02B9aDh3Qq3d5YO4c9UOLjGk+MTJ4nUpWgnmFQxp/txtz4W2Wme8H5fOD1oZMgxQ==
+"@graphql-hive/yoga@0.39.4":
+  version "0.39.4"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.39.4.tgz#b7f6135c6d1d66663ae4e3bc6716173a2cc93249"
+  integrity sha512-vRkFkW9q0j2zsmbqDBxdJttc1iF6EIhf3zmWsNNlMvJcKDpEQ7sJcnUXU+bWq5Pv1cQMn9D3xaDKh65SevKUbA==
   dependencies:
-    "@graphql-hive/core" "0.8.2"
+    "@graphql-hive/core" "0.8.4"
     "@graphql-yoga/plugin-persisted-operations" "^3.9.0"
-    tiny-lru "8.0.2"
 
 "@graphql-inspector/audit-command@5.0.8":
   version "5.0.8"
@@ -6835,14 +6823,6 @@
     "@whatwg-node/node-fetch" "^0.7.7"
     urlpattern-polyfill "^10.0.0"
 
-"@whatwg-node/fetch@0.9.21":
-  version "0.9.21"
-  resolved "https://registry.yarnpkg.com/@whatwg-node/fetch/-/fetch-0.9.21.tgz#24a08c441126ae2d0f94544e718bdb4a8c2b5ad0"
-  integrity sha512-Wt0jPb+04JjobK0pAAN7mEHxVHcGA9HoP3OyCsZtyAecNQeADXCZ1MihFwVwjsgaRYuGVmNlsCmLxlG6mor8Gw==
-  dependencies:
-    "@whatwg-node/node-fetch" "^0.5.23"
-    urlpattern-polyfill "^10.0.0"
-
 "@whatwg-node/fetch@^0.9.0", "@whatwg-node/fetch@^0.9.18":
   version "0.9.23"
   resolved "https://registry.yarnpkg.com/@whatwg-node/fetch/-/fetch-0.9.23.tgz#eeb953f5fbf6b83ba944cc71a0eef59d8164b01d"
@@ -6850,16 +6830,6 @@
   dependencies:
     "@whatwg-node/node-fetch" "^0.6.0"
     urlpattern-polyfill "^10.0.0"
-
-"@whatwg-node/node-fetch@^0.5.23":
-  version "0.5.27"
-  resolved "https://registry.yarnpkg.com/@whatwg-node/node-fetch/-/node-fetch-0.5.27.tgz#e6e1448029c5fe58eae25a6f8c740434504077f5"
-  integrity sha512-0OaMj5W4fzWimRSFq07qFiWfquaUMNB+695GwE76LYKVuah+jwCdzSgsIOtwPkiyJ35w0XGhXmJPiIJCdLwopg==
-  dependencies:
-    "@kamilkisiela/fast-url-parser" "^1.1.4"
-    busboy "^1.6.0"
-    fast-querystring "^1.1.1"
-    tslib "^2.6.3"
 
 "@whatwg-node/node-fetch@^0.6.0":
   version "0.6.0"
