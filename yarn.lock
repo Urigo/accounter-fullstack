@@ -2061,10 +2061,10 @@
     graphql-depth-limit "^1.1.0"
     lodash.lowercase "^4.3.0"
 
-"@graphql-hive/cli@0.46.1":
-  version "0.46.1"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.46.1.tgz#c193244f0fc51d34463fdcec3d63fdd066bf1560"
-  integrity sha512-Tkbqa0NYjrPRhzXTYXTZm+euCIMfZjnLM073a0iWwf3wqOD2BTBnQLoat/Ypydu4pe3bCsI0MzzUTJR+0JjZQg==
+"@graphql-hive/cli@0.47.0":
+  version "0.47.0"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.47.0.tgz#ff746e26f9500798a821da1d32a7eaeb4e64c7fe"
+  integrity sha512-r1coIPHZG6x1qpE1O6Bwc2QfYVWi0vWktTgXU9iB0t9/6rUrBmDoSUD39r/AYthM0+IzF1oYF49lzpMTpAYDXg==
   dependencies:
     "@graphql-hive/core" "0.8.4"
     "@graphql-inspector/core" "5.1.0-alpha-20231208113249-34700c8a"
