@@ -62,12 +62,20 @@ const HiveModel = zod.union([
   zod.void(),
 ]);
 
+const GoogleModel = zod.union([
+  zod.object({
+    GOOGLE_DRIVE_API_KEY: zod.string(),
+  }),
+  zod.void(),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
+  google: GoogleModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -96,6 +104,7 @@ const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
+const google = extractConfig(configs.google);
 
 export const env = {
   postgres: {
@@ -121,5 +130,8 @@ export const env = {
   },
   hive: {
     hiveToken: hive?.HIVE_TOKEN,
+  },
+  google: {
+    driveApiKey: google?.GOOGLE_DRIVE_API_KEY,
   },
 } as const;

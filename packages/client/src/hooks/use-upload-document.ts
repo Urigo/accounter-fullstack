@@ -14,6 +14,9 @@ import {
       ... on UploadDocumentSuccessfulResult {
         document {
           id
+          charge {
+            id
+          }
         }
       }
       ... on CommonError {

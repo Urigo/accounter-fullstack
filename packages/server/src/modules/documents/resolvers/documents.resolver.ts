@@ -5,8 +5,8 @@ import {
   Currency as GreenInvoiceCurrency,
 } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
-import type { ChargesTypes } from '@modules/charges';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
@@ -23,9 +23,11 @@ import {
   getGreenInvoiceDocumentType,
   normalizeDocumentType,
 } from '../helpers/green-invoice.helper.js';
+import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type {
   DocumentsModule,
+  IGetAllDocumentsResult,
   IInsertDocumentsParams,
   IInsertDocumentsResult,
   IUpdateDocumentParams,
@@ -35,7 +37,6 @@ import {
   commonDocumentsFields,
   commonFinancialDocumentsFields,
 } from './common.js';
-import { uploadDocument } from './document-handling.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers &
   Pick<
@@ -57,22 +58,114 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     },
   },
   Mutation: {
-    uploadDocument,
+    uploadDocument: async (_, { file, chargeId }, context) => {
+      const { injector } = context;
+
+      try {
+        const newDocument = await getDocumentFromFile(context, file, chargeId);
+
+        const res = await injector
+          .get(DocumentsProvider)
+          .insertDocuments({ document: [{ ...newDocument }] });
+
+        return { document: res[0] as IGetAllDocumentsResult };
+      } catch (e) {
+        const message = (e as Error)?.message ?? 'Unknown error';
+        return {
+          __typename: 'CommonError',
+          message: `Error uploading document: ${message}`,
+        };
+      }
+    },
+    batchUploadDocuments: async (_, { documents, isSensitive, chargeId }, context) => {
+      const {
+        injector,
+        adminContext: { defaultAdminBusinessId },
+      } = context;
+
+      if (!chargeId) {
+        // generate new charge
+        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId: defaultAdminBusinessId,
+          userDescription: 'New uploaded documents',
+        });
+        if (!newCharge) {
+          throw new GraphQLError(`Failed to generate new charge for new document`);
+        }
+        chargeId = newCharge.id;
+      }
+
+      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      await Promise.all(
+        documents.map(async document => {
+          // get new document data
+          const newDocument = await getDocumentFromFile(context, document, chargeId, isSensitive);
+          newDocuments.push(newDocument);
+        }),
+      );
+
+      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    },
+    batchUploadDocumentsFromGoogleDrive: async (
+      _,
+      { sharedFolderUrl, chargeId, isSensitive },
+      context,
+    ) => {
+      const isValidGoogleDriveUrl = (url: string): boolean => {
+        try {
+          const parsedUrl = new URL(url);
+          return (
+            parsedUrl.hostname === 'drive.google.com' && parsedUrl.pathname.includes('/folders/')
+          );
+        } catch {
+          return false;
+        }
+      };
+
+      if (!isValidGoogleDriveUrl(sharedFolderUrl)) {
+        throw new GraphQLError('Invalid Google Drive folder URL');
+      }
+
+      const {
+        injector,
+        adminContext: { defaultAdminBusinessId },
+      } = context;
+
+      const files = await injector
+        .get(GoogleDriveProvider)
+        .fetchFilesFromSharedFolder(sharedFolderUrl);
+
+      if (!chargeId) {
+        // generate new charge
+        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId: defaultAdminBusinessId,
+          userDescription: 'New uploaded documents',
+        });
+        if (!newCharge) {
+          throw new GraphQLError(`Failed to generate new charge for new document`);
+        }
+        chargeId = newCharge.id;
+      }
+
+      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      await Promise.all(
+        files.map(async file => {
+          // get new document data
+          const newDocument = await getDocumentFromFile(context, file, chargeId, isSensitive);
+          newDocuments.push(newDocument);
+        }),
+      );
+
+      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
-        let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+        let chargeId: string | undefined = undefined;
 
-        if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
-          // case new charge ID
-          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(fields.chargeId);
-          if (!charge) {
-            throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
-          }
-        }
-
-        let chargeId = fields.chargeId;
         if (fields.chargeId === EMPTY_UUID) {
           // case unlinked from charge
           const document = await injector
@@ -120,6 +213,15 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               };
             }
           }
+        } else if (fields.chargeId) {
+          // case new charge ID
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(fields.chargeId);
+          if (!charge) {
+            throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
+          }
+          chargeId = charge.id;
         }
 
         const adjustedFields: IUpdateDocumentParams = {
@@ -235,7 +337,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
-    fetchIncomeDocuments: async (_, { ownerId }, { injector, currentUser }) => {
+    fetchIncomeDocuments: async (
+      _,
+      { ownerId },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       const data = await injector.get(GreenInvoiceProvider).searchDocuments({
         input: { pageSize: 100, sort: 'creationDate' },
       });
@@ -303,8 +409,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
             const counterpartyId = business?.business_id ?? null;
 
-            console.log('Generated charge:', charge.id);
-
             // insert document
             const rawDocument: IInsertDocumentsParams['document']['0'] = {
               image: imageUrl,
@@ -318,8 +422,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               chargeId: charge.id,
               vatReportDateOverride: null,
               noVatAmount: null,
-              creditorId: isOwnerCreditor ? currentUser.userId : counterpartyId,
-              debtorId: isOwnerCreditor ? counterpartyId : currentUser.userId,
+              creditorId: isOwnerCreditor ? defaultAdminBusinessId : counterpartyId,
+              debtorId: isOwnerCreditor ? counterpartyId : defaultAdminBusinessId,
             };
 
             const newDocumentPromise = injector
