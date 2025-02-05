@@ -77,7 +77,36 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
-    // batchUploadDocuments: async (_, { documents }, { injector }) => {},
+    batchUploadDocuments: async (_, { documents, isSensitive, chargeId }, context) => {
+      const {
+        injector,
+        adminContext: { defaultAdminBusinessId },
+      } = context;
+
+      if (!chargeId) {
+        // generate new charge
+        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+          ownerId: defaultAdminBusinessId,
+          userDescription: 'New uploaded documents',
+        });
+        if (!newCharge) {
+          throw new GraphQLError(`Failed to generate new charge for new document`);
+        }
+        chargeId = newCharge.id;
+      }
+
+      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      await Promise.all(
+        documents.map(async document => {
+          // get new document data
+          const newDocument = await getDocumentFromFile(context, document, chargeId, isSensitive);
+          newDocuments.push(newDocument);
+        }),
+      );
+
+      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    },
     batchUploadDocumentsFromGoogleDrive: async (
       _,
       { sharedFolderUrl, chargeId, isSensitive },
