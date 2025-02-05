@@ -39,14 +39,14 @@ export async function getOcrData(
   file: File | Blob,
   isSensitive: boolean | null = true,
 ): Promise<OcrData> {
-  const validateNumber = (value: any): number | null => {
-    return typeof value === 'number' && !isNaN(value) ? value : null;
+  const validateNumber = (value: unknown): number | null => {
+    return typeof value === 'number' && !Number.isNaN(value) ? value : null;
   };
 
   const validateDate = (value: string | null): Date | null => {
     if (!value) return null;
     const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
+    return Number.isNaN(date.getTime()) ? null : date;
   };
 
   if (isSensitive) {
