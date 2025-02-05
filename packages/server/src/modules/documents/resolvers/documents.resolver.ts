@@ -115,8 +115,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const isValidGoogleDriveUrl = (url: string): boolean => {
         try {
           const parsedUrl = new URL(url);
-          return parsedUrl.hostname === 'drive.google.com' &&
-                 parsedUrl.pathname.includes('/folders/');
+          return (
+            parsedUrl.hostname === 'drive.google.com' && parsedUrl.pathname.includes('/folders/')
+          );
         } catch {
           return false;
         }
