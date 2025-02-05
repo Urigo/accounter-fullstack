@@ -2106,9 +2106,9 @@
     tslib "^2.8.1"
 
 "@graphql-hive/yoga@^0.39.0":
-  version "0.39.3"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.39.3.tgz#d78aba161781009c9566e0b49b7c385cea06c9f7"
-  integrity sha512-Lun6OXNNOkMfQqLyVF8E/sYpHWBHCkW30QvTvaG1i/x7TGoOiDij5BsvJwTimlMXyNw8FxfS+SBdUTUFK0Kwvg==
+  version "0.39.4"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/yoga/-/yoga-0.39.4.tgz#b7f6135c6d1d66663ae4e3bc6716173a2cc93249"
+  integrity sha512-vRkFkW9q0j2zsmbqDBxdJttc1iF6EIhf3zmWsNNlMvJcKDpEQ7sJcnUXU+bWq5Pv1cQMn9D3xaDKh65SevKUbA==
   dependencies:
     "@graphql-hive/core" "0.8.4"
     "@graphql-yoga/plugin-persisted-operations" "^3.9.0"
