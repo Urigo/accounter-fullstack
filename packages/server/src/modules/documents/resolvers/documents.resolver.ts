@@ -78,7 +78,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
     // batchUploadDocuments: async (_, { documents }, { injector }) => {},
-    batchUploadDocumentsFromGoogleDrive: async (_, { sharedFolderUrl }, context) => {
+    batchUploadDocumentsFromGoogleDrive: async (
+      _,
+      { sharedFolderUrl, chargeId, isSensitive },
+      context,
+    ) => {
       const {
         injector,
         adminContext: { defaultAdminBusinessId },
@@ -88,20 +92,26 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         .get(GoogleDriveProvider)
         .fetchFilesFromSharedFolder(sharedFolderUrl);
 
-      const newDocuments = [];
-      for (const file of files) {
-        const newDocument = await getDocumentFromFile(context, file);
-
+      if (!chargeId) {
         // generate new charge
         const [newCharge] = await injector.get(ChargesProvider).generateCharge({
           ownerId: defaultAdminBusinessId,
-          userDescription: 'New uploaded document',
+          userDescription: 'New uploaded documents',
         });
         if (!newCharge) {
           throw new GraphQLError(`Failed to generate new charge for new document`);
         }
-        newDocuments.push({ ...newDocument, chargeId: newCharge?.id });
+        chargeId = newCharge.id;
       }
+
+      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      await Promise.all(
+        files.map(async file => {
+          // get new document data
+          const newDocument = await getDocumentFromFile(context, file, chargeId, isSensitive);
+          newDocuments.push(newDocument);
+        }),
+      );
 
       const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));

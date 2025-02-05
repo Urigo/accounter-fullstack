@@ -24,7 +24,7 @@ export const uploadToCloudinary = async (injector: Injector, file: File | Blob) 
 };
 
 type OcrData = {
-  isOwnerCreditor: boolean;
+  isOwnerIssuer: boolean | null;
   counterpartyId: string | null;
   documentType: DocumentType;
   serial: string | null;
@@ -37,18 +37,37 @@ type OcrData = {
 export async function getOcrData(
   injector: Injector,
   file: File | Blob,
-  _isSensitive: boolean = true,
+  isSensitive: boolean | null = true,
 ): Promise<OcrData> {
+  if (isSensitive) {
+    return {
+      isOwnerIssuer: null,
+      counterpartyId: null,
+      documentType: DocumentType.Unprocessed,
+      serial: null,
+      date: null,
+      amount: null,
+      currency: null,
+      vat: null,
+    };
+  }
+
   const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file);
 
   if (!draft) {
     throw new Error('No data returned from Green Invoice');
   }
 
-  const isOwnerCreditor = (draft.fullAmount ?? 0) > 0 && draft.type !== DocumentType.CreditInvoice;
+  let isOwnerIssuer: boolean | null = null;
+  if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
+    isOwnerIssuer = false;
+  }
+  if (draft.issuer?.toLocaleLowerCase().includes('the guild')) {
+    isOwnerIssuer = true;
+  }
 
   return {
-    isOwnerCreditor,
+    isOwnerIssuer,
     counterpartyId: null,
     documentType: draft.type ?? DocumentType.Unprocessed,
     serial: draft.referenceCode,
@@ -59,16 +78,51 @@ export async function getOcrData(
   };
 }
 
+function figureOutSides(
+  documentType: DocumentType,
+  isOwnerIssuer: boolean | null,
+  defaultAdminBusinessId: string,
+  counterPartyId: string | null,
+): { creditorId: string | null; debtorId: string | null } {
+  if (documentType === DocumentType.Unprocessed || documentType === DocumentType.Other) {
+    return { creditorId: null, debtorId: null };
+  }
+
+  let res: {
+    creditorId: string | null;
+    debtorId: string | null;
+  } = {
+    creditorId: counterPartyId,
+    debtorId: defaultAdminBusinessId,
+  };
+
+  if (isOwnerIssuer === true) {
+    res = {
+      creditorId: res.debtorId,
+      debtorId: res.creditorId,
+    };
+  }
+
+  if (documentType === DocumentType.CreditInvoice) {
+    res = {
+      creditorId: res.debtorId,
+      debtorId: res.creditorId,
+    };
+  }
+
+  return res;
+}
+
 export async function getDocumentFromFile(
   context: GraphQLModules.ModuleContext,
   file: File | Blob,
   chargeId?: string | null,
-  isSensitive?: boolean,
+  isSensitive?: boolean | null,
 ): Promise<IInsertDocumentsParams['document'][number]> {
   try {
     const {
       injector,
-      adminContext: { defaultAdminBusinessId },
+      // adminContext: { defaultAdminBusinessId },
     } = context;
     const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
       uploadToCloudinary(injector, file),
@@ -78,6 +132,13 @@ export async function getDocumentFromFile(
     if (!ocrData) {
       throw new Error('No data returned from Green Invoice');
     }
+
+    const sides = figureOutSides(
+      ocrData.documentType,
+      ocrData.isOwnerIssuer,
+      context.adminContext.defaultAdminBusinessId,
+      ocrData.counterpartyId,
+    );
 
     const newDocument: IInsertDocumentsParams['document'][number] = {
       image: imageUrl ?? null,
@@ -91,8 +152,7 @@ export async function getDocumentFromFile(
       chargeId: chargeId ?? null,
       vatReportDateOverride: null,
       noVatAmount: null,
-      creditorId: ocrData.isOwnerCreditor ? ocrData.counterpartyId : defaultAdminBusinessId,
-      debtorId: ocrData.isOwnerCreditor ? defaultAdminBusinessId : ocrData.counterpartyId,
+      ...sides,
     };
 
     return newDocument;

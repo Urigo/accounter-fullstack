@@ -80,15 +80,11 @@ export class AnthropicProvider {
    * @returns Base64 encoded text
    */
   private async extractPDFText(pdfFile: File | Blob): Promise<string> {
-    // Basic PDF text extraction (fallback method)
     const arrayBuffer = await pdfFile.arrayBuffer();
-    const textDecoder = new TextDecoder('utf-8');
-
-    // Convert buffer to base64 string of first few kilobytes
-    const bufferView = new Uint8Array(arrayBuffer);
-    const partialText = textDecoder.decode(bufferView.slice(0, 4096));
-
-    return Buffer.from(partialText).toString('base64');
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''),
+    );
+    return base64Data;
   }
 
   /**
@@ -138,7 +134,7 @@ export class AnthropicProvider {
 
       // Process the first (or only) content
       const response = await this.client.messages.create({
-        model: 'claude-3-opus-20240229',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 4096,
         messages: [
           {
