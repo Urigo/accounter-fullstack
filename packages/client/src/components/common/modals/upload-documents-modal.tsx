@@ -86,6 +86,10 @@ export function UploadDocumentsModal({
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
+    defaultValues: {
+      method: 'local-files',
+      isSensitive: false,
+    },
   });
 
   const onTabChange = (value: z.infer<typeof FormSchema>['method']) => {
