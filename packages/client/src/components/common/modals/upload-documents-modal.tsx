@@ -9,12 +9,14 @@ import { useUploadDocumentsFromGoogleDrive } from '../../../hooks/use-upload-doc
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
 import { Button } from '../../ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card.js';
+import { Checkbox } from '../../ui/checkbox.js';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.js';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip.js';
 
-const fileSizeLimit = 10 * 1024 * 1024; // 5MB
+const fileSizeLimit = 10 * 1024 * 1024; // 10MB
 
 // Document Schema
 export const DOCUMENT_SCHEMA = z
@@ -45,6 +47,7 @@ const FormSchema = z
       .optional(),
     documents: z.array(DOCUMENT_SCHEMA).optional(),
     method: z.enum(['local-files', 'google-drive']),
+    isSensitive: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (
@@ -106,6 +109,7 @@ export function UploadDocumentsModal({
             uploadExecution = uploadMultipleDocuments({
               documents: data.documents,
               chargeId,
+              isSensitive: data.isSensitive,
             });
           } else {
             form.setError('documents', { message: 'At least one document is required' });
@@ -116,6 +120,7 @@ export function UploadDocumentsModal({
             uploadExecution = uploadDocumentsFromGoogleDrive({
               sharedFolderUrl: data.googleDriveUrl,
               chargeId,
+              isSensitive: data.isSensitive,
             });
           } else {
             form.setError('googleDriveUrl', { message: 'The Google Drive URL is required' });
@@ -228,11 +233,42 @@ export function UploadDocumentsModal({
                   </Card>
                 </TabsContent>
               </Tabs>
+              <FormMessage />
               <DialogFooter>
-                <FormMessage />
-                <Button disabled={uploading} type="submit">
-                  Upload
-                </Button>
+                <div className="flex w-full flex-row justify-between items-center">
+                  <FormField
+                    control={form.control}
+                    name="isSensitive"
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <FormItem className="flex flex-row gap-2 items-center">
+                              <FormControl>
+                                <Checkbox
+                                  {...field}
+                                  checked={value}
+                                  onCheckedChange={value => onChange(!!value)}
+                                  className="mt-2"
+                                />
+                              </FormControl>
+                              <FormLabel>Is sensitive</FormLabel>
+                            </FormItem>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <div className="flex flex-col items-center">
+                              <p>Sensitive content will not go</p>
+                              <p>through OCR to prevent data leaks</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  />
+                  <Button disabled={uploading} type="submit">
+                    Upload
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           </Form>
