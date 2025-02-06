@@ -127,10 +127,15 @@ export function UploadDocumentsModal({
           }
           break;
       }
-      await uploadExecution.then(() => {
+      try {
+        await uploadExecution;
         onChange?.();
         onOpenChange(false);
-      });
+      } catch (error) {
+        form.setError('root', {
+          message: error instanceof Error ? error.message : 'Failed to upload documents',
+        });
+      }
     },
     [
       chargeId,
