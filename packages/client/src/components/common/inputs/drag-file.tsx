@@ -32,11 +32,7 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
       activateOnKeyboard={false}
       radius={0}
       padding={0}
-       padding={0}
-       maxFiles={Infinity}
-       loading={uploading}
-       sx={() => ({
-         border: 0,
+      maxFiles={Infinity}
       loading={uploading}
       sx={() => ({
         border: 0,
