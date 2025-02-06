@@ -262,8 +262,8 @@ export function UploadDocumentsModal({
                           </TooltipTrigger>
                           <TooltipContent side="right">
                             <div className="flex flex-col items-center">
-                              <p>Sensitive content will not go</p>
-                              <p>through OCR to prevent data leaks</p>
+                              <p>Sensitive content will not be processed</p>
+                              <p>by OCR to protect confidential data</p>
                             </div>
                           </TooltipContent>
                         </Tooltip>

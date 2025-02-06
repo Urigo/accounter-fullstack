@@ -109,7 +109,7 @@ export const useUploadMultipleDocuments = (): UseUploadMultipleDocuments => {
             );
             notifications.update({
               id: NOTIFICATION_ID,
-              title: 'Upload Success!',
+              title: 'Upload Successful!',
               autoClose: documents.length > 0 ? false : 5000,
               message:
                 documents.length > 0
@@ -130,7 +130,7 @@ export const useUploadMultipleDocuments = (): UseUploadMultipleDocuments => {
             notifications.update({
               id: NOTIFICATION_ID,
               title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+              message: 'An unexpected error occurred while uploading documents.',
               color: 'red',
               autoClose: 5000,
             });
