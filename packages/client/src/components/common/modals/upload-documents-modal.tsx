@@ -195,6 +195,7 @@ export function UploadDocumentsModal({
                                 }}
                               />
                             </FormControl>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -219,6 +220,7 @@ export function UploadDocumentsModal({
                             <FormControl>
                               <Input {...field} required placeholder="Folder URL" />
                             </FormControl>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
