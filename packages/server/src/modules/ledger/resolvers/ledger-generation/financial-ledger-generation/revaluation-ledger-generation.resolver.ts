@@ -4,6 +4,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
@@ -109,9 +110,10 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     );
 
     const errors: Set<string> = new Set();
+    const entriesPromises: Promise<void>[] = [];
     const ledgerEntries: LedgerProto[] = [];
 
-    foreignAccounts.map(async account => {
+    const foreignAccountsLedger = foreignAccounts.map(async account => {
       const rate = exchangeRates.get(formatCurrency(account.currency));
       if (!rate) {
         errors.add(
@@ -165,6 +167,18 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
 
       ledgerEntries.push(ledgerEntry);
     });
+    entriesPromises.push(...foreignAccountsLedger);
+
+    // generate ledger from misc expenses
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        ledgerEntries.push(entry);
+      });
+    });
+    entriesPromises.push(expensesLedgerPromise);
+
+    await Promise.all(entriesPromises);
 
     if (insertLedgerRecordsIfNotExists) {
       await storeInitialGeneratedRecords(charge, ledgerEntries, context);

@@ -1,5 +1,6 @@
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   decorateLedgerRecords,
@@ -131,6 +132,14 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     };
 
     const ledgerEntries = [ledgerEntry];
+
+    // generate ledger from misc expenses
+    await generateMiscExpensesLedger(charge, context).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        ledgerEntries.push(entry);
+      });
+    });
 
     if (insertLedgerRecordsIfNotExists) {
       await storeInitialGeneratedRecords(charge, ledgerEntries, context);
