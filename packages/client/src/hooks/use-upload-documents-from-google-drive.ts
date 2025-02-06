@@ -135,6 +135,14 @@ export const useUploadDocumentsFromGoogleDrive = (): UseUploadDocumentsFromGoogl
             notifications.update({
               id: NOTIFICATION_ID,
               title: 'Error!',
+              message: 'An unexpected error occurred while uploading documents.',
+              color: 'red',
+              autoClose: 5000,
+            });
+            return reject(new Error('Unexpected error during upload'));
+          });
+              id: NOTIFICATION_ID,
+              title: 'Error!',
               message: 'Oh no!, we have an error! 🤥',
               color: 'red',
               autoClose: 5000,
