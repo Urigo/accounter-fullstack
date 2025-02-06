@@ -14,7 +14,6 @@ import {
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
-  UploadDocumentModal,
 } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
 
@@ -44,9 +43,6 @@ export const AllCharges = (): ReactElement => {
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
   );
-  const [uploadDocument, setUploadDocument] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
     Array<{ id: string; onChange: () => void }>
@@ -130,7 +126,6 @@ export const AllCharges = (): ReactElement => {
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
           toggleMergeCharge={toggleMergeCharge}
           mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
           data={data?.allCharges?.nodes}
@@ -149,13 +144,6 @@ export const AllCharges = (): ReactElement => {
           chargeId={insertDocument.id}
           onChange={insertDocument.onChange}
           close={(): void => setInsertDocument(undefined)}
-        />
-      )}
-      {uploadDocument && (
-        <UploadDocumentModal
-          chargeId={uploadDocument.id}
-          close={() => setUploadDocument(undefined)}
-          onChange={uploadDocument.onChange}
         />
       )}
       {matchDocuments && (

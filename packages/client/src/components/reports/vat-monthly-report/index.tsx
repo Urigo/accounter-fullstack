@@ -16,7 +16,6 @@ import {
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
-  UploadDocumentModal,
 } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { BusinessTripsTable } from './business-trips-table.js';
@@ -64,9 +63,6 @@ export const VatMonthlyReport = (): ReactElement => {
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
   );
-  const [uploadDocument, setUploadDocument] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
   const [editCharge, setEditCharge] = useState<{ id: string; onChange: () => void } | undefined>(
     undefined,
   );
@@ -142,7 +138,6 @@ export const VatMonthlyReport = (): ReactElement => {
             data={data?.vatReport}
             setEditCharge={setEditCharge}
             setInsertDocument={setInsertDocument}
-            setUploadDocument={setUploadDocument}
             setMatchDocuments={setMatchDocuments}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
@@ -152,7 +147,6 @@ export const VatMonthlyReport = (): ReactElement => {
             data={data?.vatReport}
             setEditCharge={setEditCharge}
             setInsertDocument={setInsertDocument}
-            setUploadDocument={setUploadDocument}
             setMatchDocuments={setMatchDocuments}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
@@ -162,7 +156,6 @@ export const VatMonthlyReport = (): ReactElement => {
             data={data?.vatReport}
             setEditCharge={setEditCharge}
             setInsertDocument={setInsertDocument}
-            setUploadDocument={setUploadDocument}
             setMatchDocuments={setMatchDocuments}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
@@ -179,12 +172,6 @@ export const VatMonthlyReport = (): ReactElement => {
             <InsertDocumentModal
               chargeId={insertDocument.id}
               close={() => setInsertDocument(undefined)}
-            />
-          )}
-          {uploadDocument && (
-            <UploadDocumentModal
-              chargeId={uploadDocument?.id}
-              close={() => setUploadDocument(undefined)}
             />
           )}
           {matchDocuments && (

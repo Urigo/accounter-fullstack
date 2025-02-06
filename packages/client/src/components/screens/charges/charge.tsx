@@ -8,7 +8,6 @@ import {
   EditChargeModal,
   InsertDocumentModal,
   MatchDocumentModal,
-  UploadDocumentModal,
 } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -39,9 +38,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
     undefined,
   );
-  const [uploadDocument, setUploadDocument] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
 
   const [{ data, fetching }] = useQuery({
     query: ChargeScreenDocument,
@@ -63,7 +59,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
           data={data?.chargesByIDs}
           isAllOpened
         />
@@ -80,13 +75,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
           chargeId={insertDocument.id}
           onChange={insertDocument.onChange}
           close={(): void => setInsertDocument(undefined)}
-        />
-      )}
-      {uploadDocument && (
-        <UploadDocumentModal
-          chargeId={uploadDocument.id}
-          close={() => setUploadDocument(undefined)}
-          onChange={uploadDocument.onChange}
         />
       )}
       {matchDocuments && (

@@ -27,7 +27,6 @@ interface Props {
       | undefined
     >
   >;
-  setUploadDocument: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   toggleMergeCharge?: (chargeId: string, onChange: () => void) => void;
   mergeSelectedCharges?: Set<string>;
   data?: FragmentType<typeof ChargesTableFieldsFragmentDoc>[];
@@ -38,7 +37,6 @@ export const ChargesTable = ({
   setEditChargeId,
   setInsertDocument,
   setMatchDocuments,
-  setUploadDocument,
   toggleMergeCharge,
   mergeSelectedCharges,
   data,
@@ -78,9 +76,6 @@ export const ChargesTable = ({
             }
             setMatchDocuments={(): void =>
               setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
-            }
-            setUploadDocument={(onChange: () => void): void =>
-              setUploadDocument({ id: charge.id, onChange })
             }
             toggleMergeCharge={
               toggleMergeCharge

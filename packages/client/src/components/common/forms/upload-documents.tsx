@@ -1,6 +1,6 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { FileInput, Loader } from '@mantine/core';
-import { useUploadDocument } from '../../../hooks/use-upload-document.js';
+import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
 
 type Props = {
   chargeId: string;
@@ -8,26 +8,27 @@ type Props = {
   onChange: () => void;
 };
 
-export const UploadDocument = ({ chargeId, closeModal, onChange }: Props): ReactElement => {
-  const { fetching, uploadDocument } = useUploadDocument();
-  const [value, setValue] = useState<File | null>(null);
+export const UploadDocuments = ({ chargeId, closeModal, onChange }: Props): ReactElement => {
+  const { uploading, uploadMultipleDocuments } = useUploadMultipleDocuments();
+  const [value, setValue] = useState<File[] | undefined>(undefined);
 
   const onSubmit = useCallback(async () => {
     if (!value) return;
-    uploadDocument({
-      file: value,
+    uploadMultipleDocuments({
+      documents: value,
       chargeId,
     }).then(() => {
       onChange();
       closeModal();
     });
-  }, [uploadDocument, closeModal, onChange, value, chargeId]);
+  }, [uploadMultipleDocuments, closeModal, onChange, value, chargeId]);
 
   return (
     <div className="px-5 w-max h-max justify-items-center">
       <FileInput
-        icon={fetching && <Loader />}
+        icon={uploading && <Loader />}
         value={value}
+        multiple
         onChange={setValue}
         clearable
         label="File Upload"
@@ -36,7 +37,7 @@ export const UploadDocument = ({ chargeId, closeModal, onChange }: Props): React
         <button
           type="submit"
           className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-          disabled={fetching || !value}
+          disabled={uploading || !value}
           onClick={onSubmit}
         >
           Accept
