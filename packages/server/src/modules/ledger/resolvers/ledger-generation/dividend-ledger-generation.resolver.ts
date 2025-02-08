@@ -262,13 +262,21 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const entriesPromises = [...feeTransactionsPromises, ...coreLedgerEntriesPromises];
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        miscLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context)
+      .then(entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          miscLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        });
+      })
+      .catch(e => {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          errors.add(`Failed to generate misc expenses ledger: ${e.message}`);
+        }
       });
-    });
     entriesPromises.push(expensesLedgerPromise);
 
     await Promise.all(entriesPromises);
