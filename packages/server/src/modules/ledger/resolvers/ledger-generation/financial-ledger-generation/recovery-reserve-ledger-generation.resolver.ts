@@ -1,4 +1,5 @@
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { calculateRecoveryReserveAmount } from '@modules/ledger/helpers/recovery-reserve.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -75,6 +76,14 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
     };
 
     const ledgerEntries = [ledgerEntry];
+
+    // generate ledger from misc expenses
+    await generateMiscExpensesLedger(charge, context).then(entries => {
+      entries.map(entry => {
+        entry.ownerId = charge.owner_id;
+        ledgerEntries.push(entry);
+      });
+    });
 
     if (insertLedgerRecordsIfNotExists) {
       await storeInitialGeneratedRecords(charge, ledgerEntries, context);
