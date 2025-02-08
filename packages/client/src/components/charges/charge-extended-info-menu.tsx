@@ -6,14 +6,18 @@ import { useDisclosure } from '@mantine/hooks';
 import { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
-import { ConfirmationModal, InsertMiscExpense, UploadPayrollFile } from '../common/index.js';
+import {
+  ConfirmationModal,
+  InsertMiscExpense,
+  UploadDocumentsModal,
+  UploadPayrollFile,
+} from '../common/index.js';
 
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
   chargeType: ChargesTableRowFieldsFragment['__typename'];
   setInsertDocument: () => void;
   setMatchDocuments: () => void;
-  setUploadDocument: () => void;
   onChange?: () => void;
 }
 
@@ -24,7 +28,6 @@ export function ChargeExtendedInfoMenu({
   chargeType,
   setInsertDocument,
   setMatchDocuments,
-  setUploadDocument,
   onChange,
 }: ChargeExtendedInfoMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
@@ -36,6 +39,8 @@ export function ChargeExtendedInfoMenu({
     useDisclosure(false);
   const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
     useDisclosure(false);
+
+  const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
   function onDelete(): void {
     deleteCharge({
@@ -96,11 +101,11 @@ export function ChargeExtendedInfoMenu({
             icon={<FilePlus2 size={14} />}
             onClick={(event: ClickEvent): void => {
               event.stopPropagation();
-              setUploadDocument();
+              setUploadDocumentsOpen(true);
               closeMenu();
             }}
           >
-            Upload Document
+            Upload Documents
           </Menu.Item>
           <Menu.Item
             icon={<Search size={14} />}
@@ -204,6 +209,12 @@ export function ChargeExtendedInfoMenu({
           chargeId={chargeId}
         />
       </Modal>
+      <UploadDocumentsModal
+        open={uploadDocumentsOpen}
+        onOpenChange={setUploadDocumentsOpen}
+        onChange={onChange}
+        chargeId={chargeId}
+      />
     </>
   );
 }

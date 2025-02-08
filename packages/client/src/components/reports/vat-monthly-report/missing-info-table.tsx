@@ -21,9 +21,6 @@ interface Props {
   setInsertDocument: React.Dispatch<
     React.SetStateAction<{ id: string; onChange: () => void } | undefined>
   >;
-  setUploadDocument: React.Dispatch<
-    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
-  >;
   setMatchDocuments: React.Dispatch<
     React.SetStateAction<{ id: string; ownerId: string } | undefined>
   >;
@@ -35,7 +32,6 @@ export const MissingInfoTable = ({
   data,
   setEditCharge,
   setInsertDocument,
-  setUploadDocument,
   setMatchDocuments,
   toggleMergeCharge,
   mergeSelectedCharges,
@@ -56,7 +52,6 @@ export const MissingInfoTable = ({
           setEditChargeId={setEditCharge}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
-          setUploadDocument={setUploadDocument}
           data={chargesData.missingInfo}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}

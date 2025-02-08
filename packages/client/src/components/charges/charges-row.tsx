@@ -69,7 +69,6 @@ interface Props {
   setEditCharge: (onChange: () => void) => void;
   setInsertDocument: (onChange: () => void) => void;
   setMatchDocuments: () => void;
-  setUploadDocument: (onChange: () => void) => void;
   toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: ChargesTableFieldsFragment;
@@ -80,7 +79,6 @@ export const ChargesTableRow = ({
   setEditCharge,
   setInsertDocument,
   setMatchDocuments,
-  setUploadDocument,
   toggleMergeCharge,
   isSelectedForMerge,
   data,
@@ -212,7 +210,7 @@ export const ChargesTableRow = ({
               chargeType={charge.__typename}
               setInsertDocument={() => setInsertDocument(onChange)}
               setMatchDocuments={setMatchDocuments}
-              setUploadDocument={() => setUploadDocument(onChange)}
+              onChange={onChange}
             />
             {hasExtendedInfo && (
               <ToggleExpansionButton
