@@ -22,7 +22,7 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
 
   return (
     <Dropzone
-      onDrop={documents => uploadMultipleDocuments({ documents, chargeId })}
+      onDrop={documents => uploadMultipleDocuments({ documents, chargeId, isSensitive: false })}
       onReject={(files): void =>
         onFail(
           `Rejected Files:\n${files.map(file => `"${file.file.name}": ${file.errors}`).join('\n')}`,

@@ -138,15 +138,18 @@ export function SimilarTransactionsModal({
     }
   }, [open, counterpartyId, fetchSimilarTransactions, transactionId]);
 
-  function onDialogChange(openState: boolean) {
-    onOpenChange(openState);
-    if (open && !openState) {
-      onClose?.();
-    }
-  }
+  const onDialogChange = useCallback(
+    (openState: boolean) => {
+      onOpenChange(openState);
+      if (open && !openState) {
+        onClose?.();
+      }
+    },
+    [onOpenChange, onClose, open],
+  );
 
-  const transactions = useMemo(
-    () =>
+  const transactions = useMemo(() => {
+    const transactions =
       data?.similarTransactions.map(t => ({
         id: t.id,
         amountRaw: t.amount.raw,
@@ -156,12 +159,18 @@ export function SimilarTransactionsModal({
         valueDate: t.effectiveDate ? new Date(t.effectiveDate) : undefined,
         accountType: t.account.type,
         accountName: t.account.name,
-      })) ?? [],
-    [data],
-  );
+      })) ?? [];
+    if (data && transactions.length === 0) {
+      onDialogChange(false);
+    }
+    return transactions;
+  }, [data, onDialogChange]);
 
   return (
-    <Dialog open={open && !!counterpartyId} onOpenChange={onDialogChange}>
+    <Dialog
+      open={open && !!counterpartyId && transactions.length > 0}
+      onOpenChange={onDialogChange}
+    >
       <DialogContent className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
         <ErrorBoundary fallback={<div>Error fetching similar transactions</div>}>
           {fetching ? (
