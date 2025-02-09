@@ -143,7 +143,7 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
 
   const { amount: costOfSalesAmount, records: costOfSalesRecords } = amountBySortCodeValidation(
     decoratedLedgerRecords,
-    sortCode => sortCode === 910,
+    sortCode => [910, 911, 912].includes(sortCode),
   );
 
   const grossProfitAmount = revenueAmount + costOfSalesAmount;
@@ -152,7 +152,7 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     amount: researchAndDevelopmentExpensesAmount,
     records: researchAndDevelopmentExpensesRecords,
   } = amountBySortCodeValidation(decoratedLedgerRecords, sortCode =>
-    [920, 921, 930].includes(sortCode),
+    [920, 921, 922, 923, 924, 930].includes(sortCode),
   );
 
   const { amount: marketingExpensesAmount, records: marketingExpensesRecords } =
@@ -161,7 +161,10 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
   const {
     amount: managementAndGeneralExpensesAmount,
     records: managementAndGeneralExpensesRecords,
-  } = amountBySortCodeValidation(decoratedLedgerRecords, sortCode => [940, 945].includes(sortCode));
+  } = amountBySortCodeValidation(
+    decoratedLedgerRecords,
+    sortCode => sortCode >= 940 && sortCode <= 948, // 940, 941, 942, 943, 944, 945, 946, 947, 948
+  );
 
   const operatingProfitAmount =
     grossProfitAmount +
