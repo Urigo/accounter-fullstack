@@ -8,8 +8,9 @@ import { Button } from '../../ui/button.js';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { ExternalNode } from './external-node.js';
+import { CustomData } from './types.js';
 
-const sampleData: NodeModel<object>[] = [
+const sampleData: NodeModel<CustomData>[] = [
   {
     id: 1,
     parent: 0,
@@ -54,7 +55,7 @@ const sampleData: NodeModel<object>[] = [
   },
 ];
 
-const externalNodesData: NodeModel<object>[] = [
+const externalNodesData: NodeModel<CustomData>[] = [
   {
     id: 101,
     parent: 0,
@@ -82,7 +83,7 @@ export const ContoReport: React.FC = () => {
   const [externalNodes, setExternalNodes] = useState(externalNodesData);
   const [lastId, setLastId] = useState(105);
 
-  const handleDrop = (newTree: NodeModel<object>[], options: DropOptions) => {
+  const handleDrop = (newTree: NodeModel<CustomData>[], options: DropOptions) => {
     const { dropTargetId, monitor } = options;
     const itemType = monitor.getItemType();
 
@@ -100,7 +101,7 @@ export const ContoReport: React.FC = () => {
   };
 
   const handleAddExternalNode = () => {
-    const node: NodeModel<object> = {
+    const node: NodeModel<CustomData> = {
       id: lastId,
       parent: 0,
       text: `External node ${lastId - 100}`,
@@ -108,6 +109,21 @@ export const ContoReport: React.FC = () => {
 
     setExternalNodes([...externalNodes, node]);
     setLastId(lastId + 1);
+  };
+
+  const handleTextChange = (id: NodeModel['id'], value: string) => {
+    const newTree = tree.map(node => {
+      if (node.id === id) {
+        return {
+          ...node,
+          text: value,
+        };
+      }
+
+      return node;
+    });
+
+    setTree(newTree);
   };
 
   return (
@@ -132,11 +148,19 @@ export const ContoReport: React.FC = () => {
             tree={tree}
             extraAcceptTypes={[NativeTypes.TEXT]}
             classes={{
-              root: 'box-border h-full pt-24 pi-8 pb-8',
+              root: 'box-border h-full pt-24 px-8 pb-8',
               draggingSource: 'opacity-o.3',
               dropTarget: 'bg-indigo-100',
             }}
-            render={(node, options) => <CustomNode node={node} {...options} />}
+            render={(node, { depth, isOpen, onToggle }) => (
+              <CustomNode
+                node={node}
+                depth={depth}
+                isOpen={isOpen}
+                onToggle={onToggle}
+                onTextChange={handleTextChange}
+              />
+            )}
             dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
             onDrop={handleDrop}
           />
