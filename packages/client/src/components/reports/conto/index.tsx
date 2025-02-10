@@ -1,141 +1,147 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useQuery } from 'urql';
-import { DndContext, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
-import { ContoReportDocument } from '../../../gql/graphql.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
-import { FiltersContext } from '../../../providers/filters-context.js';
-import { PageLayout } from '../../layout/page-layout.js';
-import { TrialBalanceReportFilters } from '../trial-balance-report/trial-balance-report-filters.js';
-import { Draggable } from './draggable.js';
-import { Droppable } from './droppable.js';
-import { SortableTree } from './temp/sortable-tree.js';
+import React, { useState } from 'react';
+import { CirclePlus } from 'lucide-react';
+import { DndProvider } from 'react-dnd';
+import { NativeTypes } from 'react-dnd-html5-backend';
+import { getBackendOptions, MultiBackend, Tree } from '@minoru/react-dnd-treeview';
+import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
+import { Button } from '../../ui/button.js';
+import { CustomDragPreview } from './custom-drag-preview.js';
+import { CustomNode } from './custom-node.js';
+import { ExternalNode } from './external-node.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ContoReport($filters: BusinessTransactionsFilter) {
-    businessTransactionsSumFromLedgerRecords(filters: $filters) {
-      ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
-        businessTransactionsSum {
-          business {
-            id
-            name
-            sortCode {
-              id
-              name
-            }
-          }
-          credit {
-            formatted
-            raw
-          }
-          debit {
-            formatted
-            raw
-          }
-          total {
-            formatted
-            raw
-          }
-        }
-      }
-      ... on CommonError {
-        __typename
-      }
+const sampleData: NodeModel<object>[] = [
+  {
+    id: 1,
+    parent: 0,
+    droppable: true,
+    text: 'Folder 1',
+  },
+  {
+    id: 2,
+    parent: 1,
+    droppable: false,
+    text: 'File 1-1',
+  },
+  {
+    id: 3,
+    parent: 1,
+    droppable: false,
+    text: 'File 1-2',
+  },
+  {
+    id: 4,
+    parent: 0,
+    droppable: true,
+    text: 'Folder 2',
+  },
+  {
+    id: 5,
+    parent: 4,
+    droppable: true,
+    text: 'Folder 2-1',
+  },
+  {
+    id: 6,
+    parent: 5,
+    droppable: false,
+    text: 'File 2-1-1',
+  },
+  {
+    id: 7,
+    parent: 0,
+    droppable: false,
+    text: 'File 3',
+  },
+];
+
+const externalNodesData: NodeModel<object>[] = [
+  {
+    id: 101,
+    parent: 0,
+    text: 'External node 1',
+  },
+  {
+    id: 102,
+    parent: 0,
+    text: 'External node 2',
+  },
+  {
+    id: 103,
+    parent: 0,
+    text: 'External node 3',
+  },
+  {
+    id: 104,
+    parent: 0,
+    text: 'External node 4',
+  },
+];
+
+export const ContoReport: React.FC = () => {
+  const [tree, setTree] = useState(sampleData);
+  const [externalNodes, setExternalNodes] = useState(externalNodesData);
+  const [lastId, setLastId] = useState(105);
+
+  const handleDrop = (newTree: NodeModel<object>[], options: DropOptions) => {
+    const { dropTargetId, monitor } = options;
+    const itemType = monitor.getItemType();
+
+    if (itemType === NativeTypes.TEXT) {
+      const nodeJson = monitor.getItem().text;
+      const node = JSON.parse(nodeJson);
+
+      node.parent = dropTargetId;
+      setTree([...newTree, node]);
+      setExternalNodes(externalNodes.filter(exnode => exnode.id !== node.id));
+      return;
     }
-  }
-`;
 
-const Wrapper = ({ children }: { children: React.ReactNode }) => (
-  <div
-    style={{
-      maxWidth: 600,
-      padding: 10,
-      margin: '0 auto',
-      marginTop: '10%',
-    }}
-  >
-    {children}
-  </div>
-);
+    setTree(newTree);
+  };
 
-export const ContoReport = (): ReactElement => {
-  const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<TrialBalanceReportFilters>(
-    get('trialBalanceReportFilters')
-      ? (JSON.parse(
-          decodeURIComponent(get('trialBalanceReportFilters') as string),
-        ) as TrialBalanceReportFilters)
-      : {},
-  );
-  const { setFiltersContext } = useContext(FiltersContext);
-  const [parent, setParent] = useState<UniqueIdentifier | null>(null);
+  const handleAddExternalNode = () => {
+    const node: NodeModel<object> = {
+      id: lastId,
+      parent: 0,
+      text: `External node ${lastId - 100}`,
+    };
 
-  // fetch data
-  const [{ data, fetching }] = useQuery({
-    query: ContoReportDocument,
-    variables: {
-      filters: {
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-        ownerIds: filter?.ownerIds,
-        businessIDs: filter?.businessIDs,
-      },
-    },
-  });
+    setExternalNodes([...externalNodes, node]);
+    setLastId(lastId + 1);
+  };
 
-  const records = useMemo(() => {
-    if (
-      !data?.businessTransactionsSumFromLedgerRecords ||
-      !('businessTransactionsSum' in data.businessTransactionsSumFromLedgerRecords)
-    ) {
-      return [];
-    }
-    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum;
-  }, [data]);
-
-  useEffect(() => {
-    setFiltersContext(
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
-      </div>,
-    );
-  }, [filter, setFilter, setFiltersContext]);
-
-  // function handleDragEnd(event: DragEndEvent) {
-  //   const { over } = event;
-
-  //   console.log('over', over.id);
-
-  //   // If the item is dropped over a container, set it as the parent
-  //   // otherwise reset the parent to `null`
-  //   setParent(over ? over.id : null);
-  // }
-
-  // const draggableMarkup = <Draggable id="draggable">Drag Me</Draggable>;
-
-  // const containers = ['A', 'B', 'C'];
   return (
-    <PageLayout title="Yearly Ledger Report">
-      {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : (
-        <div className="flex flex-col gap-4 rounded-md border">
-          <Wrapper>
-            <SortableTree collapsible indicator removable />
-          </Wrapper>
-          {/* <DndContext onDragEnd={handleDragEnd}>
-            {parent === null ? draggableMarkup : null}
-            {containers.map(id => (
-              // We updated the Droppable component so it would accept an `id`
-              // prop and pass it to `useDroppable`
-              <Droppable key={id} id={id}>
-                {parent === id ? draggableMarkup : 'Drop here'}
-              </Droppable>
-            ))}
-          </DndContext> */}
+    <div className="grid h-full grid-cols-[auto_1fr]">
+      <div className="border-r border-solid corder-color-zinc-100 grid grid-rows-[64px_1fr] p-8 relative">
+        <div>
+          <Button variant="outline" onClick={handleAddExternalNode} className="gap-2">
+            <CirclePlus />
+            Add node
+          </Button>
         </div>
-      )}
-    </PageLayout>
+        <div>
+          {externalNodes.map(node => (
+            <ExternalNode key={node.id} node={node} />
+          ))}
+        </div>
+      </div>
+      <div>
+        <DndProvider backend={MultiBackend} options={getBackendOptions()} debugMode>
+          <Tree
+            rootId={0}
+            tree={tree}
+            extraAcceptTypes={[NativeTypes.TEXT]}
+            classes={{
+              root: 'box-border h-full pt-24 pi-8 pb-8',
+              draggingSource: 'opacity-o.3',
+              dropTarget: 'bg-indigo-100',
+            }}
+            render={(node, options) => <CustomNode node={node} {...options} />}
+            dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
+            onDrop={handleDrop}
+          />
+        </DndProvider>
+      </div>
+    </div>
   );
 };
