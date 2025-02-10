@@ -8,6 +8,7 @@ import { Button } from '../../ui/button.js';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { ExternalNode } from './external-node.js';
+import { Placeholder } from './palceholder.js';
 import { CustomData } from './types.js';
 
 const sampleData: NodeModel<CustomData>[] = [
@@ -142,15 +143,15 @@ export const ContoReport: React.FC = () => {
         </div>
       </div>
       <div>
-        <DndProvider backend={MultiBackend} options={getBackendOptions()} debugMode>
+        <DndProvider backend={MultiBackend} options={getBackendOptions()}>
           <Tree
             rootId={0}
             tree={tree}
             extraAcceptTypes={[NativeTypes.TEXT]}
             classes={{
               root: 'box-border h-full pt-24 px-8 pb-8',
-              draggingSource: 'opacity-o.3',
-              dropTarget: 'bg-indigo-100',
+              draggingSource: 'opacity-30',
+              placeholder: 'relative',
             }}
             render={(node, { depth, isOpen, onToggle }) => (
               <CustomNode
@@ -163,6 +164,16 @@ export const ContoReport: React.FC = () => {
             )}
             dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
             onDrop={handleDrop}
+            sort={false}
+            insertDroppableFirst={false}
+            canDrop={(_tree, { dragSource, dropTargetId }) => {
+              if (dragSource?.parent === dropTargetId) {
+                return true;
+              }
+              return;
+            }}
+            dropTargetOffset={10}
+            placeholderRender={(node, { depth }) => <Placeholder node={node} depth={depth} />}
           />
         </DndProvider>
       </div>
