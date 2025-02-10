@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "0.9.14",
-    "@pgtyped/cli": "2.3.0",
+    "@pgtyped/cli": "2.4.2",
     "@pgtyped/runtime": "2.3.0",
     "@sinclair/typebox": "0.34.16",
     "date-fns": "4.1.0",
