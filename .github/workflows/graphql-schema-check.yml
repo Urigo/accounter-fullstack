@@ -40,9 +40,23 @@ jobs:
         run: echo "safeFlag=--forceSafe" >> $GITHUB_OUTPUT
         id: pr-label-check
 
+      - name: Debug file paths
+        run: |
+          echo "Current directory:"
+           pwd
+           echo "\nListing directory structure:"
+           ls -la
+           echo "\nChecking modules directory:"
+           ls -R packages/server/src/modules/
+           echo "\nFinding graphql files:"
+           find . -name "*.graphql.ts"
+
       - name: schema check
         env:
           HIVE_TOKEN: ${{ secrets.hiveToken }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
-          hive schema:check "packages/server/src/modules/*/typeDefs/*.graphql.ts" ${{steps.pr-label-check.outputs.safeFlag }} --github
+          hive schema:check 'packages/server/src/modules/*/typeDefs/*.graphql.ts' \
+            --registry.accessToken $HIVE_TOKEN \
+            --service="legacy" \
+            --github

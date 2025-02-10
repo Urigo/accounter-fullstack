@@ -59,6 +59,12 @@ export type AccounterContext = YogaInitialContext & {
   };
 };
 
+export type UserType = {
+  username: string;
+  userId: string;
+  role?: Role;
+};
+
 type addZero<T> = T | 0;
 type oneToFour = 1 | 2 | 3 | 4;
 type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;

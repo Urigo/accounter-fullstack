@@ -1,17 +1,71 @@
-import { useExtendContext } from 'graphql-yoga';
+import NodeCache from 'node-cache';
 import pg from 'pg';
 import { sql } from '@pgtyped/runtime';
-import type { Currency } from '@shared/enums';
-import { formatCurrency, getCacheInstance } from '@shared/helpers';
-import type { Environment } from '@shared/types';
-import { env } from '../environment.js';
-import type {
-  IGetAdminBusinessContextQuery,
-  IGetAdminBusinessContextResult,
-} from './__generated__/admin-context-plugin.types.js';
-import type { UserType } from './auth-plugin.js';
+import { env } from '../../../packages/server/src/environment.js';
 
-const getAdminBusinessContext = sql<IGetAdminBusinessContextQuery>`
+export enum Currency {
+  Eth = 'ETH',
+  Eur = 'EUR',
+  Gbp = 'GBP',
+  Cad = 'CAD',
+  Grt = 'GRT',
+  Ils = 'ILS',
+  Usd = 'USD',
+  Usdc = 'USDC',
+}
+
+export function getCacheInstance(options?: NodeCache.Options) {
+  const instance = new NodeCache(options);
+
+  return {
+    get: instance.get.bind(instance),
+    set: instance.set.bind(instance),
+    delete: instance.del.bind(instance),
+    clear: instance.flushAll.bind(instance),
+  };
+}
+
+export function formatCurrency<T extends boolean = false>(
+  raw: string | null = null,
+  nullable?: T,
+): Currency | (T extends true ? null : never) {
+  switch (raw) {
+    case 'GBP':
+      return Currency.Gbp;
+    case 'לש':
+      return Currency.Gbp;
+    case 'USD':
+      return Currency.Usd;
+    case '$':
+      return Currency.Usd;
+    case 'EUR':
+      return Currency.Eur;
+    case 'אירו':
+      return Currency.Eur;
+    case 'CAD':
+      return Currency.Cad;
+    case 'ILS':
+      return Currency.Ils;
+    case 'GRT':
+      return Currency.Grt;
+    case 'USDC':
+      return Currency.Usdc;
+    case 'ETH':
+      return Currency.Eth;
+    case null:
+      return Currency.Ils;
+    case undefined:
+      return Currency.Ils;
+    default:
+      if (nullable) {
+        return null as T extends true ? null : never;
+      }
+      console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
+      return Currency.Ils;
+  }
+}
+
+const getAdminBusinessContext = sql`
   SELECT *
   FROM accounter_schema.user_context
   WHERE owner_id = $adminBusinessId`;
@@ -107,8 +161,8 @@ const cache = getCacheInstance({
   stdTTL: 60,
 });
 
-async function fetchContext(adminBusinessId: string) {
-  const context = cache.get<IGetAdminBusinessContextResult>(adminBusinessId);
+export async function fetchContext(adminBusinessId: string) {
+  const context = cache.get(adminBusinessId);
   if (context) {
     return context;
   }
@@ -138,8 +192,8 @@ async function fetchContext(adminBusinessId: string) {
     await client.end();
   }
 }
-
-function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminContext {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export function normalizeContext(rawContext: any): AdminContext {
   const dividendPaymentBusinessIds = [
     '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
     '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
@@ -266,12 +320,3 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
     },
   };
 }
-
-export const adminContextPlugin = () =>
-  useExtendContext(async (contextSoFar: { env: Environment; currentUser: UserType }) => {
-    const rawContext = await fetchContext(contextSoFar.currentUser.userId);
-    const adminContext = normalizeContext(rawContext);
-    return {
-      adminContext,
-    };
-  });
