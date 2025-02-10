@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { CirclePlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { NativeTypes } from 'react-dnd-html5-backend';
 import { getBackendOptions, MultiBackend, Tree } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
+import { FiltersContext } from '../../../providers/filters-context.js';
 import { Button } from '../../ui/button.js';
+import { Label } from '../../ui/label.js';
+import { Switch } from '../../ui/switch.js';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { ExternalNode } from './external-node.js';
@@ -80,9 +83,11 @@ const externalNodesData: NodeModel<CustomData>[] = [
 ];
 
 export const ContoReport: React.FC = () => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState(sampleData);
   const [externalNodes, setExternalNodes] = useState(externalNodesData);
   const [lastId, setLastId] = useState(105);
+  const [enableDnd, setEnableDnd] = useState(false);
 
   const handleDrop = (newTree: NodeModel<CustomData>[], options: DropOptions) => {
     const { dropTargetId, monitor } = options;
@@ -105,6 +110,7 @@ export const ContoReport: React.FC = () => {
     const node: NodeModel<CustomData> = {
       id: lastId,
       parent: 0,
+      droppable: true,
       text: `External node ${lastId - 100}`,
     };
 
@@ -126,6 +132,21 @@ export const ContoReport: React.FC = () => {
 
     setTree(newTree);
   };
+
+  useEffect(() => {
+    const handleClickSwitch = () => {
+      setEnableDnd(prevState => !prevState);
+    };
+
+    setFiltersContext(
+      <div className="flex flex-row gap-2">
+        <div className="flex items-center space-x-2">
+          <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
+          <Label htmlFor="enable-dnd">Form is {enableDnd ? 'editable' : 'locked'}</Label>
+        </div>
+      </div>,
+    );
+  }, [setFiltersContext, enableDnd]);
 
   return (
     <div className="grid h-full grid-cols-[auto_1fr]">
@@ -166,7 +187,11 @@ export const ContoReport: React.FC = () => {
             onDrop={handleDrop}
             sort={false}
             insertDroppableFirst={false}
+            canDrag={() => enableDnd}
             canDrop={(_tree, { dragSource, dropTargetId }) => {
+              if (!enableDnd) {
+                return false;
+              }
               if (dragSource?.parent === dropTargetId) {
                 return true;
               }
