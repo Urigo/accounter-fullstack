@@ -1,15 +1,11 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Download, FolderPlus } from 'lucide-react';
+import { FolderPlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
-import {
-  AllSortCodesDocument,
-  BusinessTransactionsFilter,
-  ContoReportDocument,
-} from '../../../gql/graphql.js';
+import { AllSortCodesDocument, ContoReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Button } from '../../ui/button.js';
@@ -17,7 +13,8 @@ import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
 import { ContentTooltip } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
-import { ContoReportFilters } from './conto-report-filters.js';
+import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
+import { DownloadCSV } from './download-csv.js';
 import { TreeView } from './tree-view.js';
 import { CustomData } from './types.js';
 
@@ -57,7 +54,7 @@ import { CustomData } from './types.js';
 `;
 
 const BANK_TREE_ROOT_ID = 'bank';
-const REPORT_TREE_ROOT_ID = 'report';
+export const REPORT_TREE_ROOT_ID = 'report';
 export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
 
 const template: NodeModel<CustomData>[] = [
@@ -331,15 +328,6 @@ const template: NodeModel<CustomData>[] = [
     text: 'Equity',
     data: {
       hebrewText: 'הון',
-    },
-  },
-  {
-    id: 'template-120',
-    parent: 'template-12',
-    droppable: true,
-    text: 'Share Capital',
-    data: {
-      hebrewText: 'הון  מניות',
     },
   },
   {
@@ -647,11 +635,11 @@ export const ContoReport: React.FC = () => {
   const [enableDnd, setEnableDnd] = useState(false);
   const { toast } = useToast();
   const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<BusinessTransactionsFilter>(
+  const [filter, setFilter] = useState<ContoReportFiltersType>(
     get(CONTO_REPORT_FILTERS_KEY)
       ? (JSON.parse(
           decodeURIComponent(get(CONTO_REPORT_FILTERS_KEY) as string),
-        ) as BusinessTransactionsFilter)
+        ) as ContoReportFiltersType)
       : {},
   );
   const [
@@ -667,7 +655,6 @@ export const ContoReport: React.FC = () => {
         fromDate: filter?.fromDate,
         toDate: filter?.toDate,
         ownerIds: filter?.ownerIds,
-        businessIDs: filter?.businessIDs,
       },
     },
   });
@@ -749,9 +736,7 @@ export const ContoReport: React.FC = () => {
 
     setFiltersContext(
       <div className="flex flex-row gap-2">
-        <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
-          <Download size={20} />
-        </Button>
+        <DownloadCSV tree={tree} filters={filter} />
         <ContentTooltip content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
             <FolderPlus size={20} />
@@ -764,7 +749,7 @@ export const ContoReport: React.FC = () => {
         </div>
       </div>,
     );
-  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode]);
+  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree]);
 
   const sortCodes = useMemo(() => {
     if (sortCodesData?.allSortCodes) {
@@ -821,6 +806,9 @@ export const ContoReport: React.FC = () => {
 
   useEffect(() => {
     businessesSum.map(businessSum => {
+      if (!filter.isShowZeroedAccounts && Math.abs(businessSum.total.raw) < 0.005) {
+        return;
+      }
       if (tree.some(node => node.id === businessSum.business.id)) {
         if (
           tree.some(
@@ -861,7 +849,7 @@ export const ContoReport: React.FC = () => {
         },
       ]);
     });
-  }, [sortCodesData, setTree, businessesSum, tree, sortCodeMap]);
+  }, [sortCodesData, setTree, businessesSum, tree, sortCodeMap, filter.isShowZeroedAccounts]);
 
   useEffect(() => {
     if (sortCodesError) {
