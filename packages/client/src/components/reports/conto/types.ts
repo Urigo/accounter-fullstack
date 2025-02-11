@@ -1,4 +1,4 @@
 export type CustomData = {
-  fileType: string;
-  fileSize: string;
+  associatedSortCodes?: number[];
+  hebrewText?: string;
 };

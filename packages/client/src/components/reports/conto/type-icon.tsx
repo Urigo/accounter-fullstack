@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Folder } from 'lucide-react';
+import { Archive, IdCard } from 'lucide-react';
 
 type Props = {
   droppable: boolean;
@@ -7,8 +7,8 @@ type Props = {
 
 export const TypeIcon: React.FC<Props> = props => {
   if (props.droppable) {
-    return <Folder />;
+    return <Archive />;
   }
 
-  return <FileText />;
+  return <IdCard />;
 };
