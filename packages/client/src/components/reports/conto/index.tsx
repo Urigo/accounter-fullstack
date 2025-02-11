@@ -1,9 +1,8 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CirclePlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
-import { NativeTypes } from 'react-dnd-html5-backend';
 import { useQuery } from 'urql';
-import { getBackendOptions, MultiBackend, Tree } from '@minoru/react-dnd-treeview';
+import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import {
   AllSortCodesDocument,
@@ -17,10 +16,7 @@ import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
 import { useToast } from '../../ui/use-toast.js';
 import { TrialBalanceReportFilters } from '../trial-balance-report/trial-balance-report-filters.js';
-import { CustomDragPreview } from './custom-drag-preview.js';
-import { CustomNode } from './custom-node.js';
-import { ExternalNode } from './external-node.js';
-import { Placeholder } from './palceholder.js';
+import { TreeView } from './tree-view.js';
 import { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -58,10 +54,13 @@ import { CustomData } from './types.js';
   }
 `;
 
+const BANK_TREE_ROOT_ID = 'bank';
+const REPORT_TREE_ROOT_ID = 'report';
+
 const template: NodeModel<CustomData>[] = [
   {
     id: 'template-0',
-    parent: 0,
+    parent: REPORT_TREE_ROOT_ID,
     droppable: true,
     text: 'Assets',
     data: {
@@ -224,7 +223,7 @@ const template: NodeModel<CustomData>[] = [
   },
   {
     id: 'template-1',
-    parent: 0,
+    parent: REPORT_TREE_ROOT_ID,
     droppable: true,
     text: 'Liabilities and Equity',
     data: {
@@ -638,34 +637,9 @@ const template: NodeModel<CustomData>[] = [
   },
 ];
 
-const externalNodesData: NodeModel<CustomData>[] = [
-  {
-    id: 999_999,
-    parent: 0,
-    text: 'External node 1',
-    droppable: true,
-  },
-  {
-    id: 102,
-    parent: 0,
-    text: 'External node 2',
-  },
-  {
-    id: 103,
-    parent: 0,
-    text: 'External node 3',
-  },
-  {
-    id: 104,
-    parent: 0,
-    text: 'External node 4',
-  },
-];
-
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>(template);
-  const [externalNodes, setExternalNodes] = useState<NodeModel<CustomData>[]>([]);
   const [lastId, setLastId] = useState(105);
   const [enableDnd, setEnableDnd] = useState(false);
   const { toast } = useToast();
@@ -700,48 +674,49 @@ export const ContoReport: React.FC = () => {
     query: AllSortCodesDocument,
   });
 
-  const handleDrop = (newTree: NodeModel<CustomData>[], options: DropOptions) => {
-    const { dropTargetId, monitor } = options;
-    const itemType = monitor.getItemType();
+  const handleDrop = useCallback(
+    (_newTree: NodeModel<CustomData>[], { dragSourceId, dropTargetId }: DropOptions) => {
+      setTree(
+        tree.map(node => {
+          if (node.id === dragSourceId) {
+            return {
+              ...node,
+              parent: dropTargetId,
+            };
+          }
 
-    if (itemType === NativeTypes.TEXT) {
-      const nodeJson = monitor.getItem().text;
-      const node = JSON.parse(nodeJson);
+          return node;
+        }),
+      );
+    },
+    [setTree, tree],
+  );
 
-      node.parent = dropTargetId;
-      setTree([...newTree, node]);
-      setExternalNodes(externalNodes.filter(exnode => exnode.id !== node.id));
-      return;
-    }
-
-    setTree(newTree);
-  };
-
-  const handleAddExternalNode = () => {
+  const handleAddBankNode = useCallback(() => {
     const node: NodeModel<CustomData> = {
       id: lastId,
-      parent: 0,
+      parent: BANK_TREE_ROOT_ID,
       droppable: true,
-      text: `External node ${lastId - 100}`,
+      text: 'New Category',
     };
 
-    setExternalNodes([...externalNodes, node]);
     setLastId(lastId + 1);
-  };
+    setTree([...tree, node]);
+  }, [setTree, tree, lastId]);
 
   const handleTextChange = (id: NodeModel['id'], value: string) => {
-    const newTree = tree.map(node => {
-      if (node.id === id) {
-        return {
-          ...node,
-          text: value,
-        };
-      }
+    setTree(
+      tree.map(node => {
+        if (node.id === id) {
+          return {
+            ...node,
+            text: value,
+          };
+        }
 
-      return node;
-    });
-
-    setTree(newTree);
+        return node;
+      }),
+    );
   };
 
   useEffect(() => {
@@ -751,6 +726,10 @@ export const ContoReport: React.FC = () => {
 
     setFiltersContext(
       <div className="flex flex-row gap-2">
+        <Button variant="outline" onClick={handleAddBankNode} className="gap-2">
+          <CirclePlus />
+          Add node
+        </Button>
         <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
@@ -758,7 +737,7 @@ export const ContoReport: React.FC = () => {
         </div>
       </div>,
     );
-  }, [setFiltersContext, enableDnd, filter, setFilter]);
+  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode]);
 
   const sortCodes = useMemo(() => {
     if (sortCodesData?.allSortCodes.length) {
@@ -791,86 +770,42 @@ export const ContoReport: React.FC = () => {
 
   useEffect(() => {
     sortCodes.map(sortCode => {
-      if (
-        tree.find(node => node.id === sortCode.id) ||
-        externalNodes.find(node => node.id === sortCode.id)
-      ) {
+      if (tree.find(node => node.id === sortCode.id)) {
         return;
       }
 
-      if (sortCodeMap.has(sortCode.id)) {
-        const parentId = sortCodeMap.get(sortCode.id)!;
-        setTree(tree => [
-          ...tree,
-          {
-            id: sortCode.id,
-            parent: parentId,
-            droppable: true,
-            text: sortCode.name!,
-          },
-        ]);
-        return;
-      }
-      setExternalNodes(externalNodes => [
-        ...externalNodes,
+      const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
+      setTree(tree => [
+        ...tree,
         {
           id: sortCode.id,
-          parent: 0,
+          parent: parentId ?? BANK_TREE_ROOT_ID,
           droppable: true,
           text: sortCode.name!,
         },
       ]);
     });
-  }, [sortCodesData, setTree, sortCodes, tree, externalNodes, sortCodeMap]);
+  }, [sortCodesData, setTree, sortCodes, tree, sortCodeMap]);
 
   useEffect(() => {
     businessesSum.map(businessSum => {
-      if (
-        tree.find(node => node.id === businessSum.business.id) ||
-        externalNodes.find(node => node.id === businessSum.business.id)
-      ) {
+      if (tree.some(node => node.id === businessSum.business.id)) {
         return;
       }
 
-      if (businessSum.business.sortCode) {
-        if (tree.find(node => node.id === businessSum.business.sortCode?.id)) {
-          setTree(tree => [
-            ...tree,
-            {
-              id: businessSum.business.id,
-              parent: businessSum.business.sortCode!.id,
-              droppable: false,
-              text: businessSum.business.name,
-            },
-          ]);
-          return;
-        }
-
-        if (externalNodes.find(node => node.id === businessSum.business.sortCode?.id)) {
-          setExternalNodes(tree => [
-            ...tree,
-            {
-              id: businessSum.business.id,
-              parent: businessSum.business.sortCode!.id,
-              droppable: false,
-              text: businessSum.business.name,
-            },
-          ]);
-          return;
-        }
-      }
-
-      setExternalNodes(externalNodes => [
-        ...externalNodes,
+      setTree(tree => [
+        ...tree,
         {
           id: businessSum.business.id,
-          parent: 0,
+          parent: tree.find(node => node.id === businessSum.business.sortCode?.id)
+            ? businessSum.business.sortCode!.id
+            : BANK_TREE_ROOT_ID,
           droppable: false,
           text: businessSum.business.name,
         },
       ]);
     });
-  }, [sortCodesData, setTree, businessesSum, tree, externalNodes, sortCodeMap]);
+  }, [sortCodesData, setTree, businessesSum, tree, sortCodeMap]);
 
   useEffect(() => {
     if (sortCodesError) {
@@ -894,60 +829,31 @@ export const ContoReport: React.FC = () => {
     }
   }, [businessesSumError, toast]);
 
+  const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
+  const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);
+
   return (
-    <div className="grid h-full grid-cols-[auto_1fr]">
-      <div className="border-r border-solid corder-color-zinc-100 grid grid-rows-[64px_1fr] p-8 relative">
-        <div>
-          <Button variant="outline" onClick={handleAddExternalNode} className="gap-2">
-            <CirclePlus />
-            Add node
-          </Button>
-        </div>
-        <div>
-          {externalNodes.map(node => (
-            <ExternalNode key={node.id} node={node} />
-          ))}
-        </div>
-      </div>
-      <div>
-        <DndProvider backend={MultiBackend} options={getBackendOptions()}>
-          <Tree
-            rootId={0}
-            tree={tree}
-            extraAcceptTypes={[NativeTypes.TEXT]}
-            classes={{
-              root: 'box-border h-full pt-24 px-8 pb-8',
-              draggingSource: 'opacity-30',
-              placeholder: 'relative',
-            }}
-            render={(node, { depth, isOpen, onToggle }) => (
-              <CustomNode
-                node={node}
-                depth={depth}
-                isOpen={isOpen}
-                onToggle={onToggle}
-                onTextChange={handleTextChange}
-              />
-            )}
-            dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
+    <DndProvider backend={MultiBackend} options={getBackendOptions()}>
+      <div className="h-full grid grid-cols-[auto_1fr]">
+        <div className="border-r border-solid corder-color-zinc-100 relative">
+          <TreeView
+            rootId={BANK_TREE_ROOT_ID}
+            tree={bankTree}
             onDrop={handleDrop}
-            sort={false}
-            insertDroppableFirst={false}
-            canDrag={() => enableDnd}
-            canDrop={(_tree, { dragSource, dropTargetId }) => {
-              if (!enableDnd) {
-                return false;
-              }
-              if (dragSource?.parent === dropTargetId) {
-                return true;
-              }
-              return;
-            }}
-            dropTargetOffset={10}
-            placeholderRender={(node, { depth }) => <Placeholder node={node} depth={depth} />}
+            handleTextChange={handleTextChange}
+            enableDnd={enableDnd}
           />
-        </DndProvider>
+        </div>
+        <div>
+          <TreeView
+            rootId={REPORT_TREE_ROOT_ID}
+            tree={reportTree}
+            onDrop={handleDrop}
+            handleTextChange={handleTextChange}
+            enableDnd={enableDnd}
+          />
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 };
