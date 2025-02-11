@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Pencil, X } from 'lucide-react';
+import { Check, Ellipsis, X } from 'lucide-react';
 import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import { Button } from '../../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
 import { TypeIcon } from './type-icon.js';
 import { CustomData } from './types.js';
@@ -52,18 +60,15 @@ export const CustomNode: React.FC<Props> = props => {
       style={{ paddingInlineStart: indent }}
       {...dragOverProps}
     >
-      <div
-        className={`items-center text-[0] flex h-6 justify-center w-6 ease-linear duration-100 ${props.isOpen ? 'rotate-90' : 'rotate-0'}`} // expandIconWrapper
-      >
-        {props.node.droppable && (
-          <button className="cursor-pointer" onClick={handleToggle}>
-            <ArrowRight />
-          </button>
-        )}
-      </div>
-      <TypeIcon droppable={droppable || false} />
+      {props.node.droppable ? (
+        <button className="cursor-pointer" onClick={handleToggle}>
+          <TypeIcon droppable={droppable || false} open={props.isOpen} />
+        </button>
+      ) : (
+        <TypeIcon droppable={droppable || false} open={props.isOpen} />
+      )}
       <div className="ps-2">
-        {visibleInput ? (
+        {visibleInput && droppable ? (
           <div className="items-center grid grid-cols-[repeat(3,auto)] justify-start ">
             <Input className="text-sm py-2 w-48" value={labelText} onChange={handleChangeText} />
             <IconButton className="p-1" onClick={handleSubmit} disabled={labelText === ''}>
@@ -78,9 +83,32 @@ export const CustomNode: React.FC<Props> = props => {
             <Typography variant="body2" className="pr-4">
               {props.node.text}
             </Typography>
-            <IconButton className="p-1" onClick={handleShowInput}>
-              <Pencil className="text-xl" />
-            </IconButton>
+            {droppable && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-1">
+                    <Ellipsis size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuGroup>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        console.log(props.node);
+                        handleShowInput();
+                      }}
+                    >
+                      <DropdownMenuItem>
+                        Edit Category
+                        {/* <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut> */}
+                      </DropdownMenuItem>
+                    </Button>
+                  </DropdownMenuGroup>
+                  {/* <DropdownMenuSeparator /> */}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )}
       </div>
