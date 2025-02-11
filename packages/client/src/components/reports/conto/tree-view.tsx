@@ -16,7 +16,7 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
     onDrop={props.onDrop}
     rootId={props.rootId}
     classes={{
-      root: 'box-border h-full p-8',
+      root: 'box-border h-full p-4',
       draggingSource: 'opacity-30',
       placeholder: 'relative',
     }}

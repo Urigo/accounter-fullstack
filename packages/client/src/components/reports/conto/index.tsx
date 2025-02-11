@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { CirclePlus } from 'lucide-react';
+import { FolderPlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
@@ -14,6 +14,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
+import { ContentTooltip } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
 import { TrialBalanceReportFilters } from '../trial-balance-report/trial-balance-report-filters.js';
 import { TreeView } from './tree-view.js';
@@ -726,10 +727,11 @@ export const ContoReport: React.FC = () => {
 
     setFiltersContext(
       <div className="flex flex-row gap-2">
-        <Button variant="outline" onClick={handleAddBankNode} className="gap-2">
-          <CirclePlus />
-          Add node
-        </Button>
+        <ContentTooltip content="Add new category">
+          <Button variant="outline" onClick={handleAddBankNode} className="gap-2">
+            <FolderPlus />
+          </Button>
+        </ContentTooltip>
         <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
@@ -782,6 +784,9 @@ export const ContoReport: React.FC = () => {
           parent: parentId ?? BANK_TREE_ROOT_ID,
           droppable: true,
           text: sortCode.name!,
+          data: {
+            sortCode: sortCode.id,
+          },
         },
       ]);
     });
@@ -802,6 +807,9 @@ export const ContoReport: React.FC = () => {
             : BANK_TREE_ROOT_ID,
           droppable: false,
           text: businessSum.business.name,
+          data: {
+            value: businessSum.total.raw,
+          },
         },
       ]);
     });

@@ -3,6 +3,7 @@ import { Check, Ellipsis, X } from 'lucide-react';
 import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
 import {
   DropdownMenu,
@@ -14,6 +15,12 @@ import {
 import { Input } from '../../ui/input.js';
 import { TypeIcon } from './type-icon.js';
 import { CustomData } from './types.js';
+
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'ILS',
+  trailingZeroDisplay: 'stripIfInteger',
+});
 
 type Props = {
   node: NodeModel<CustomData>;
@@ -85,10 +92,22 @@ export const CustomNode: React.FC<Props> = props => {
             </IconButton>
           </div>
         ) : (
-          <div className="items-center grid grid-cols-[repeat(3,auto)] justify-start ">
-            <Typography variant="body2" className="pr-4">
+          <div className="items-center grid grid-cols-[repeat(4,auto)] justify-start ">
+            <Typography variant="body2" className="pr-2">
               {props.node.text}
             </Typography>
+            {props.node.data?.sortCode && (
+              <Badge variant="outline">Sort Code {props.node.data?.sortCode}</Badge>
+            )}
+            <Badge>
+              {formatter.format(
+                props.node.data?.value == null
+                  ? props.descendants
+                      .filter(d => !d.droppable)
+                      .reduce((partialSum, d) => partialSum + (d.data?.value ?? 0), 0)
+                  : props.node.data.value,
+              )}
+            </Badge>
             {droppable && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
