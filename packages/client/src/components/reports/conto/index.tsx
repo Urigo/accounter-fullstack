@@ -17,7 +17,7 @@ import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
 import { ContentTooltip } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
-import { TrialBalanceReportFilters } from '../trial-balance-report/trial-balance-report-filters.js';
+import { ContoReportFilters } from './conto-report-filters.js';
 import { TreeView } from './tree-view.js';
 import { CustomData } from './types.js';
 
@@ -58,6 +58,7 @@ import { CustomData } from './types.js';
 
 const BANK_TREE_ROOT_ID = 'bank';
 const REPORT_TREE_ROOT_ID = 'report';
+export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
 
 const template: NodeModel<CustomData>[] = [
   {
@@ -647,9 +648,9 @@ export const ContoReport: React.FC = () => {
   const { toast } = useToast();
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
-    get('contoReportFilters')
+    get(CONTO_REPORT_FILTERS_KEY)
       ? (JSON.parse(
-          decodeURIComponent(get('contoReportFilters') as string),
+          decodeURIComponent(get(CONTO_REPORT_FILTERS_KEY) as string),
         ) as BusinessTransactionsFilter)
       : {},
   );
@@ -756,7 +757,7 @@ export const ContoReport: React.FC = () => {
             <FolderPlus size={20} />
           </Button>
         </ContentTooltip>
-        <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
+        <ContoReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
           <Label htmlFor="enable-dnd">Form is {enableDnd ? 'editable' : 'locked'}</Label>
