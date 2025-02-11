@@ -693,6 +693,26 @@ export const ContoReport: React.FC = () => {
     [setTree, tree],
   );
 
+  const handleDeleteCategory = useCallback(
+    (id: NodeModel['id']) => {
+      setTree(
+        tree
+          .filter(node => node.id !== id)
+          .map(node => {
+            if (node.parent === id) {
+              return {
+                ...node,
+                parent: BANK_TREE_ROOT_ID,
+              };
+            }
+
+            return node;
+          }),
+      );
+    },
+    [setTree, tree],
+  );
+
   const handleAddBankNode = useCallback(() => {
     const node: NodeModel<CustomData> = {
       id: lastId,
@@ -849,6 +869,7 @@ export const ContoReport: React.FC = () => {
             tree={bankTree}
             onDrop={handleDrop}
             handleTextChange={handleTextChange}
+            handleDeleteCategory={handleDeleteCategory}
             enableDnd={enableDnd}
           />
         </div>
@@ -858,6 +879,7 @@ export const ContoReport: React.FC = () => {
             tree={reportTree}
             onDrop={handleDrop}
             handleTextChange={handleTextChange}
+            handleDeleteCategory={handleDeleteCategory}
             enableDnd={enableDnd}
           />
         </div>

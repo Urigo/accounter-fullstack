@@ -8,6 +8,7 @@ import type { CustomData } from './types.js';
 type Props<T> = Pick<TreeProps<T>, 'tree' | 'onDrop' | 'rootId'> & {
   enableDnd: boolean;
   handleTextChange: (id: NodeModel['id'], value: string) => void;
+  handleDeleteCategory: (id: NodeModel['id']) => void;
 };
 
 export const TreeView: React.FC<Props<CustomData>> = props => (
@@ -27,6 +28,7 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
         isOpen={isOpen}
         onToggle={onToggle}
         onTextChange={props.handleTextChange}
+        onDeleteCategory={props.handleDeleteCategory}
         descendants={getDescendants(props.tree, node.id)}
       />
     )}

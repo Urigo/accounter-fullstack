@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Ellipsis, X } from 'lucide-react';
+import { Check, Ellipsis, Pencil, Trash, X } from 'lucide-react';
 import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -10,6 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
@@ -28,6 +29,7 @@ type Props = {
   isOpen: boolean;
   onToggle: (id: NodeModel['id']) => void;
   onTextChange: (id: NodeModel['id'], value: string) => void;
+  onDeleteCategory: (id: NodeModel['id']) => void;
   descendants: NodeModel<CustomData>[];
 };
 
@@ -61,6 +63,8 @@ export const CustomNode: React.FC<Props> = props => {
   };
 
   const dragOverProps = useDragOver(id, props.isOpen, props.onToggle);
+
+  const isCategory = droppable && !props.node.data?.sortCode;
 
   return (
     <div
@@ -119,8 +123,18 @@ export const CustomNode: React.FC<Props> = props => {
                   <DropdownMenuGroup>
                     <DropdownMenuItem onClick={handleShowInput}>
                       Edit Category
-                      {/* <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut> */}
+                      <DropdownMenuShortcut>
+                        <Pencil size={15} />
+                      </DropdownMenuShortcut>
                     </DropdownMenuItem>
+                    {isCategory && (
+                      <DropdownMenuItem onClick={() => props.onDeleteCategory(id)}>
+                        Delete Category
+                        <DropdownMenuShortcut>
+                          <Trash size={15} color="red" />
+                        </DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuGroup>
                   {/* <DropdownMenuSeparator /> */}
                 </DropdownMenuContent>
