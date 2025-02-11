@@ -1,9 +1,10 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { FolderPlus } from 'lucide-react';
+import { Download, FolderPlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
+import { Typography } from '@mui/material';
 import {
   AllSortCodesDocument,
   BusinessTransactionsFilter,
@@ -747,9 +748,12 @@ export const ContoReport: React.FC = () => {
 
     setFiltersContext(
       <div className="flex flex-row gap-2">
+        <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
+          <Download size={20} />
+        </Button>
         <ContentTooltip content="Add new category">
-          <Button variant="outline" onClick={handleAddBankNode} className="gap-2">
-            <FolderPlus />
+          <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
+            <FolderPlus size={20} />
           </Button>
         </ContentTooltip>
         <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
@@ -762,7 +766,8 @@ export const ContoReport: React.FC = () => {
   }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode]);
 
   const sortCodes = useMemo(() => {
-    if (sortCodesData?.allSortCodes.length) {
+    if (sortCodesData?.allSortCodes) {
+      setTree(template);
       const sortCodes = sortCodesData.allSortCodes
         .filter(code => !!code.name)
         .sort((a, b) => (a.id > b.id ? 1 : -1));
@@ -777,6 +782,7 @@ export const ContoReport: React.FC = () => {
       businessTransactionsSumData?.businessTransactionsSumFromLedgerRecords.__typename !==
         'CommonError'
     ) {
+      setTree(template);
       return businessTransactionsSumData.businessTransactionsSumFromLedgerRecords
         .businessTransactionsSum;
     }
@@ -815,6 +821,27 @@ export const ContoReport: React.FC = () => {
   useEffect(() => {
     businessesSum.map(businessSum => {
       if (tree.some(node => node.id === businessSum.business.id)) {
+        if (
+          tree.some(
+            node =>
+              node.id === businessSum.business.id && node.data?.value !== businessSum.total.raw,
+          )
+        ) {
+          setTree(
+            tree.map(node => {
+              if (node.id === businessSum.business.id) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    value: businessSum.total.raw,
+                  },
+                };
+              }
+              return node;
+            }),
+          );
+        }
         return;
       }
 
@@ -864,6 +891,9 @@ export const ContoReport: React.FC = () => {
     <DndProvider backend={MultiBackend} options={getBackendOptions()}>
       <div className="h-full grid grid-cols-[auto_1fr]">
         <div className="border-r border-solid corder-color-zinc-100 relative">
+          <Typography variant="h5" className="px-4">
+            Bank
+          </Typography>
           <TreeView
             rootId={BANK_TREE_ROOT_ID}
             tree={bankTree}
@@ -874,6 +904,9 @@ export const ContoReport: React.FC = () => {
           />
         </div>
         <div>
+          <Typography variant="h5" className="px-4">
+            Report
+          </Typography>
           <TreeView
             rootId={REPORT_TREE_ROOT_ID}
             tree={reportTree}
