@@ -9,9 +9,9 @@ type Props = {
 export const TypeIcon: React.FC<Props> = props => {
   if (props.droppable) {
     if (props.open) {
-      return <FolderOpen />;
+      return <FolderOpen size={30} />;
     }
-    return <Folder />;
+    return <Folder size={30} />;
   }
 
   return <IdCard />;

@@ -21,6 +21,7 @@ type Props = {
   isOpen: boolean;
   onToggle: (id: NodeModel['id']) => void;
   onTextChange: (id: NodeModel['id'], value: string) => void;
+  descendants: NodeModel<CustomData>[];
 };
 
 export const CustomNode: React.FC<Props> = props => {
@@ -63,6 +64,11 @@ export const CustomNode: React.FC<Props> = props => {
       {props.node.droppable ? (
         <button className="cursor-pointer" onClick={handleToggle}>
           <TypeIcon droppable={droppable || false} open={props.isOpen} />
+          {!props.isOpen && (
+            <div className="relative -top-5 font-bold text-xs">
+              {props.descendants.filter(d => !d.droppable).length}
+            </div>
+          )}
         </button>
       ) : (
         <TypeIcon droppable={droppable || false} open={props.isOpen} />
@@ -92,18 +98,10 @@ export const CustomNode: React.FC<Props> = props => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuGroup>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        console.log(props.node);
-                        handleShowInput();
-                      }}
-                    >
-                      <DropdownMenuItem>
-                        Edit Category
-                        {/* <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut> */}
-                      </DropdownMenuItem>
-                    </Button>
+                    <DropdownMenuItem onClick={handleShowInput}>
+                      Edit Category
+                      {/* <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut> */}
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                   {/* <DropdownMenuSeparator /> */}
                 </DropdownMenuContent>

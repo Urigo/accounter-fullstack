@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tree, type NodeModel, type TreeProps } from '@minoru/react-dnd-treeview';
+import { getDescendants, Tree, type NodeModel, type TreeProps } from '@minoru/react-dnd-treeview';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { Placeholder } from './palceholder.js';
@@ -27,6 +27,7 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
         isOpen={isOpen}
         onToggle={onToggle}
         onTextChange={props.handleTextChange}
+        descendants={getDescendants(props.tree, node.id)}
       />
     )}
     dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
