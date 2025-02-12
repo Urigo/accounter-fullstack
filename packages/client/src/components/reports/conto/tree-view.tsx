@@ -1,5 +1,11 @@
-import React from 'react';
-import { getDescendants, Tree, type NodeModel, type TreeProps } from '@minoru/react-dnd-treeview';
+import React, { useCallback } from 'react';
+import {
+  getDescendants,
+  Tree,
+  type DragLayerMonitorProps,
+  type NodeModel,
+  type TreeProps,
+} from '@minoru/react-dnd-treeview';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { Placeholder } from './palceholder.js';
@@ -21,18 +27,26 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
       draggingSource: 'opacity-30',
       placeholder: 'relative',
     }}
-    render={(node, { depth, isOpen, onToggle }) => (
-      <CustomNode
-        node={node}
-        depth={depth}
-        isOpen={isOpen}
-        onToggle={onToggle}
-        onTextChange={props.handleTextChange}
-        onDeleteCategory={props.handleDeleteCategory}
-        descendants={getDescendants(props.tree, node.id)}
-      />
+    render={useCallback(
+      (node: NodeModel<CustomData>, { depth, isOpen, onToggle }) => (
+        <CustomNode
+          node={node}
+          depth={depth}
+          isOpen={isOpen}
+          onToggle={onToggle}
+          onTextChange={props.handleTextChange}
+          onDeleteCategory={props.handleDeleteCategory}
+          descendants={getDescendants(props.tree, node.id)}
+        />
+      ),
+      [props.tree, props.handleTextChange, props.handleDeleteCategory],
     )}
-    dragPreviewRender={monitorProps => <CustomDragPreview monitorProps={monitorProps} />}
+    dragPreviewRender={useCallback(
+      (monitorProps: DragLayerMonitorProps<CustomData>) => (
+        <CustomDragPreview monitorProps={monitorProps} />
+      ),
+      [],
+    )}
     sort={false}
     insertDroppableFirst={false}
     canDrag={() => props.enableDnd}
