@@ -4,49 +4,62 @@ import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Indicator, MultiSelect, Switch } from '@mantine/core';
+import { Indicator, MultiSelect } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import { AllBusinessesDocument, BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../ui/dialog.js';
+import { Label } from '../../ui/label.js';
+import { Switch } from '../../ui/switch.js';
+import { useToast } from '../../ui/use-toast.js';
+import { CONTO_REPORT_FILTERS_KEY } from './index.js';
 
-export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
+export type ContoReportFiltersType = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;
 };
 
-interface TrialBalanceReportFilterFormProps {
-  filter: TrialBalanceReportFilters;
-  setFilter: (filter: TrialBalanceReportFilters) => void;
+interface ContoReportFilterFormProps {
+  filter: ContoReportFiltersType;
+  setFilter: (filter: ContoReportFiltersType) => void;
   closeModal: () => void;
 }
 
-function TrialBalanceReportFilterForm({
+function ContoReportFilterForm({
   filter,
   setFilter,
   closeModal,
-}: TrialBalanceReportFilterFormProps): ReactElement {
-  const [isShowZeroedAccounts, setIsShowZeroedAccounts] = useState<boolean>(false);
-  const { control, handleSubmit } = useForm<TrialBalanceReportFilters>({
+}: ContoReportFilterFormProps): ReactElement {
+  const [isShowZeroedAccounts, setIsShowZeroedAccounts] = useState<boolean>(
+    filter.isShowZeroedAccounts ?? false,
+  );
+  const { control, handleSubmit } = useForm<ContoReportFiltersType>({
     defaultValues: { ...filter },
   });
   const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
     query: AllBusinessesDocument,
   });
-
+  const { toast } = useToast();
   const { userContext } = useContext(UserContext);
 
   useEffect(() => {
     if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching businesses! 🤥',
+      console.error(businessesError);
+      toast({
+        title: 'Error',
+        description: 'Unable to fetch businesses',
+        variant: 'destructive',
       });
     }
-  }, [businessesError]);
+  }, [toast, businessesError]);
 
   const businesses = useMemo(() => {
     return (
@@ -59,7 +72,7 @@ function TrialBalanceReportFilterForm({
     );
   }, [businessesData]);
 
-  const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
+  const onSubmit: SubmitHandler<ContoReportFiltersType> = data => {
     data.isShowZeroedAccounts = isShowZeroedAccounts ?? false;
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
     if (data.toDate?.trim() === '') data.toDate = undefined;
@@ -75,7 +88,7 @@ function TrialBalanceReportFilterForm({
   return (
     <>
       {businessesLoading ? <div>Loading...</div> : <div />}
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
         <Controller
           name="ownerIds"
           control={control}
@@ -87,24 +100,6 @@ function TrialBalanceReportFilterForm({
               value={field.value ?? (userContext?.ownerId ? [userContext?.ownerId] : undefined)}
               disabled={businessesLoading}
               label="Owners"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="businessIDs"
-          control={control}
-          defaultValue={undefined}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={businesses}
-              value={field.value ?? undefined}
-              disabled={businessesLoading}
-              label="Businesses"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
@@ -138,7 +133,6 @@ function TrialBalanceReportFilterForm({
               label="From Date"
               error={fieldState.error?.message}
               required
-              popoverProps={{ withinPortal: true }}
             />
           )}
         />
@@ -167,19 +161,16 @@ function TrialBalanceReportFilterForm({
               label="To Date"
               error={fieldState.error?.message}
               required
-              popoverProps={{ withinPortal: true }}
             />
           )}
         />
-        <Switch
-          defaultChecked={filter.isShowZeroedAccounts ?? false}
-          onChange={(event): void => setIsShowZeroedAccounts(event.currentTarget.checked)}
-          color="gray"
-          onLabel={<p>show</p>}
-          offLabel={<p>remove</p>}
-          label="Show zeroed accounts"
-          labelPosition="left"
-        />
+        <div className="flex items-center space-x-2">
+          <Switch
+            checked={isShowZeroedAccounts ?? false}
+            onCheckedChange={(): void => setIsShowZeroedAccounts(value => !value)}
+          />
+          <Label htmlFor="enable-dnd">Show zeroed accounts</Label>
+        </div>
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
@@ -207,27 +198,24 @@ function TrialBalanceReportFilterForm({
   );
 }
 
-interface TrialBalanceReportFilterProps {
-  filter: TrialBalanceReportFilters;
-  setFilter: (filter: TrialBalanceReportFilters) => void;
+interface ContoReportFilterProps {
+  filter: ContoReportFiltersType;
+  setFilter: (filter: ContoReportFiltersType) => void;
 }
 
-export function TrialBalanceReportFilters({
-  filter,
-  setFilter,
-}: TrialBalanceReportFilterProps): ReactElement {
+export function ContoReportFilters({ filter, setFilter }: ContoReportFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: TrialBalanceReportFilters): boolean {
+  function isFilterApplied(filter: ContoReportFiltersType): boolean {
     const changed = Object.entries(filter ?? {}).filter(
       ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
 
-  function onSetFilter(newFilter: TrialBalanceReportFilters): void {
+  function onSetFilter(newFilter: ContoReportFiltersType): void {
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
@@ -238,30 +226,31 @@ export function TrialBalanceReportFilters({
   // update url on filter change
   useEffect(() => {
     const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-    const oldFilter = get('trialBalanceReportFilters');
+    const oldFilter = get(CONTO_REPORT_FILTERS_KEY);
     if (newFilter !== oldFilter) {
-      set('trialBalanceReportFilters', newFilter);
+      set(CONTO_REPORT_FILTERS_KEY, newFilter);
     }
   }, [filter, get, set]);
 
   return (
-    <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <TrialBalanceReportFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
-      <Indicator inline size={16} disabled={!isFiltered}>
-        <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
-          <Filter size={20} />
-        </Button>
-      </Indicator>
-    </>
+    <Dialog open={opened} onOpenChange={setOpened}>
+      <DialogTrigger asChild>
+        <Indicator inline size={16} disabled={!isFiltered}>
+          <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
+            <Filter size={20} />
+          </Button>
+        </Indicator>
+      </DialogTrigger>
+      <DialogContent className="w-100 max-w-screen-md">
+        <DialogHeader>
+          <DialogTitle>Conto report filters</DialogTitle>
+        </DialogHeader>
+        <ContoReportFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }

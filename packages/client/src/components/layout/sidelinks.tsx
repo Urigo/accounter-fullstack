@@ -75,6 +75,12 @@ export const sidelinks: SideLink[] = [
         icon: <Scale size={18} />,
       },
       {
+        title: 'Conto Report',
+        label: '',
+        href: '/reports/conto',
+        icon: <Scale size={18} />,
+      },
+      {
         title: 'Profit and Loss Report',
         label: '',
         href: '/reports/profit-and-loss',
