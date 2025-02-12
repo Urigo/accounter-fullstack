@@ -103,3 +103,13 @@ For Poalim Bank and Discount Bank accounts, your account may appear under multip
    ```
    GOOGLE_DRIVE_API_KEY=your_api_key_here
    ```
+
+### Enable OCR (with Anthropic)
+
+1. Sign up for an Anthropic API key at
+   [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+2. Add to your `.env`:
+   ```
+   ANTHROPIC_API_KEY=your_api_key_here
+   ```
+3. OCR functionality will now be available for processing images and documents
