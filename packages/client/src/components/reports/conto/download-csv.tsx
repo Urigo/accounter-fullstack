@@ -69,8 +69,9 @@ function recursiveRowHandler(
   let maxDepth = depth;
   const rows: Row[] = [];
   nodes.map(node => {
+    const sortCodePrefix = node.data?.sortCode ? ` (${node.data?.sortCode})` : '';
     const mainRow = {
-      content: node.text + node.data?.sortCode ? ` (${node.data?.sortCode})` : '',
+      content: node.text + sortCodePrefix,
       depth,
       amount: node.data?.value ?? '',
     };

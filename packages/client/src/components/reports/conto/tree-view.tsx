@@ -43,7 +43,7 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
       if (dragSource?.parent === dropTargetId) {
         return true;
       }
-      return;
+      return false;
     }}
     dropTargetOffset={10}
     placeholderRender={(node, { depth }) => <Placeholder node={node} depth={depth} />}

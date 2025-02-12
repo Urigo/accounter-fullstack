@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { FolderPlus } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { useQuery } from 'urql';
@@ -775,11 +775,14 @@ export const ContoReport: React.FC = () => {
     return [];
   }, [businessTransactionsSumData]);
 
-  const sortCodeMap = new Map<number, string | number>();
-  template.map(({ data, id }) => {
-    if (data?.associatedSortCodes?.length) {
-      data.associatedSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
-    }
+  const sortCodeMap = useRef(() => {
+    const sortCodeMap = new Map<number, string | number>();
+    template.map(({ data, id }) => {
+      if (data?.associatedSortCodes?.length) {
+        data.associatedSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
+      }
+    });
+    return sortCodeMap;
   });
 
   useEffect(() => {
@@ -788,7 +791,7 @@ export const ContoReport: React.FC = () => {
         return;
       }
 
-      const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
+      const parentId = sortCodeMap.current().get(sortCode.id) ?? undefined;
       setTree(tree => [
         ...tree,
         {
