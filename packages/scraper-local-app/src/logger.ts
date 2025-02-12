@@ -1,22 +1,24 @@
 export class Logger {
   log: typeof console.log;
   error: typeof console.error;
-
-  public reLog: () => Promise<void>;
+  private logQueue: Array<() => void>;
 
   constructor() {
-    this.reLog = async () => {
-      Promise.resolve();
-    };
+    this.logQueue = [];
     this.log = (...input) => {
-      const prevLog = this.reLog;
-      this.reLog = async () => prevLog().then(() => console.log(...input));
+      this.logQueue.push(() => console.log(...input));
       console.log(...input);
     };
     this.error = (...input) => {
-      const prevLog = this.reLog;
-      this.reLog = async () => prevLog().then(() => console.error(...input));
+      this.logQueue.push(() => console.error(...input));
       console.error(...input);
     };
   }
+
+  public reLog = async (): Promise<void> => {
+    for (const logFn of this.logQueue) {
+      logFn();
+    }
+    return Promise.resolve();
+  };
 }
