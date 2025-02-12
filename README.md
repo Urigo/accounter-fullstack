@@ -87,3 +87,19 @@ For Poalim Bank and Discount Bank accounts, your account may appear under multip
 - Your account number and bank number remain the same
 - The same account might be associated with 2-3 different branch numbers
 - You can configure all relevant branch numbers in the `scripts/seed.ts` file
+
+### Enable Google Drive
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project or select existing one
+3. Enable Google Drive API:
+   - Navigate to "APIs & Services" > "Library"
+   - Search for and enable "Google Drive API"
+4. Create API key:
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "API Key"
+   - Restrict the key to Google Drive API only
+5. Add to your `.env`:
+   ```
+   GOOGLE_DRIVE_API_KEY=your_api_key_here
+   ```
