@@ -10,6 +10,7 @@ import {
   Handshake,
   ParkingMeter,
   PlaneTakeoff,
+  Puzzle,
   Receipt,
   ReceiptText,
   RectangleEllipsis,
@@ -78,7 +79,7 @@ export const sidelinks: SideLink[] = [
         title: 'Conto Report',
         label: '',
         href: '/reports/conto',
-        icon: <Scale size={18} />,
+        icon: <Puzzle size={18} />,
       },
       {
         title: 'Profit and Loss Report',
