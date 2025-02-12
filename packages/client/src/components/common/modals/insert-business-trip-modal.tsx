@@ -1,7 +1,8 @@
 import { ReactElement } from 'react';
 import { WorldUpload } from 'tabler-icons-react';
-import { ActionIcon, Modal, Tooltip } from '@mantine/core';
+import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { ActionIcon } from '../../ui/action-icon.js';
 import { InsertBusinessTrip } from '../index.js';
 
 interface Props {

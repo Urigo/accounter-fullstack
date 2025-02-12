@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { ActionIcon } from '../../ui/action-icon.js';
 import { ConfirmationModal } from '../index.js';
 
 interface Props {

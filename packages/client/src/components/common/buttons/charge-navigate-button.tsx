@@ -1,15 +1,13 @@
 import { ReactElement } from 'react';
 import { ExternalLink } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
-import { PolymorphicComponentProps } from '@mantine/utils';
+import { Tooltip } from '@mantine/core';
+import { ActionIcon } from '../../ui/action-icon.js';
 
-export function ChargeNavigateButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps> & { chargeId: string },
-): ReactElement {
+export function ChargeNavigateButton(props: { chargeId: string }): ReactElement {
   return (
     <Tooltip label="To Charge">
       <ActionIcon
-        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+        onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
           event.stopPropagation();
           window.open(`/charges/${props.chargeId}`, '_blank', 'noreferrer');
         }}
