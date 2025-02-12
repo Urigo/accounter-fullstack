@@ -14,6 +14,7 @@ import type { CustomData } from './types.js';
 type Props<T> = Pick<TreeProps<T>, 'tree' | 'onDrop' | 'rootId'> & {
   enableDnd: boolean;
   handleTextChange: (id: NodeModel['id'], value: string) => void;
+  handleIsOpenChange: (id: NodeModel['id'], value: boolean) => void;
   handleDeleteCategory: (id: NodeModel['id']) => void;
 };
 
@@ -33,13 +34,16 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
           node={node}
           depth={depth}
           isOpen={isOpen}
-          onToggle={onToggle}
+          onToggle={() => {
+            onToggle();
+            props.handleIsOpenChange(node.id, !isOpen);
+          }}
           onTextChange={props.handleTextChange}
           onDeleteCategory={props.handleDeleteCategory}
           descendants={getDescendants(props.tree, node.id)}
         />
       ),
-      [props.tree, props.handleTextChange, props.handleDeleteCategory],
+      [props.tree, props.handleTextChange, props.handleDeleteCategory, props.handleIsOpenChange],
     )}
     dragPreviewRender={useCallback(
       (monitorProps: DragLayerMonitorProps<CustomData>) => (
@@ -61,5 +65,6 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
     }}
     dropTargetOffset={10}
     placeholderRender={(node, { depth }) => <Placeholder node={node} depth={depth} />}
+    initialOpen={props.tree.filter(node => node.data?.isOpen).map(node => node.id)}
   />
 );

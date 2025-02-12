@@ -1,6 +1,9 @@
 export type CustomData = {
-  associatedSortCodes?: number[];
   hebrewText?: string;
   value?: number;
   sortCode?: number;
+  isOpen: boolean;
+  descendantSortCodes?: number[];
+  descendantFinancialEntities?: string[];
+  mergedSortCodes?: number[];
 };

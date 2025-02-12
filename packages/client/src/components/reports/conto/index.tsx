@@ -14,6 +14,7 @@ import { Switch } from '../../ui/switch.js';
 import { ContentTooltip } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
+import { SaveTemplate } from './conto-report-save-template.js';
 import { DownloadCSV } from './download-csv.js';
 import { TreeView } from './tree-view.js';
 import { CustomData } from './types.js';
@@ -65,6 +66,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Assets',
     data: {
       hebrewText: 'נכסים',
+      isOpen: false,
     },
   },
   {
@@ -74,6 +76,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Current Assets',
     data: {
       hebrewText: 'נכסים שוטפים',
+      isOpen: false,
     },
   },
   {
@@ -83,7 +86,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Cash and Cash Equivalents',
     data: {
       hebrewText: 'מזומנים ושווי מזומנים',
-      associatedSortCodes: [110],
+      isOpen: false,
+      descendantSortCodes: [110],
     },
   },
   {
@@ -93,7 +97,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Foreign Currency Deposits',
     data: {
       hebrewText: 'פקדונות מט"ח',
-      associatedSortCodes: [111, 115],
+      isOpen: false,
+      descendantSortCodes: [111, 115],
     },
   },
   {
@@ -103,7 +108,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accounts Receivable',
     data: {
       hebrewText: 'לקוחות',
-      associatedSortCodes: [300, 310],
+      isOpen: false,
+      descendantSortCodes: [300, 310],
     },
   },
   {
@@ -113,6 +119,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Debtors and Debit Balances',
     data: {
       hebrewText: 'חייבים ויתרות חובה',
+      isOpen: false,
     },
   },
   {
@@ -122,7 +129,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Prepaid Expenses',
     data: {
       hebrewText: 'הוצאות מראש',
-      associatedSortCodes: [150],
+      isOpen: false,
+      descendantSortCodes: [150],
     },
   },
   {
@@ -132,7 +140,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Government Institutions (Debit)',
     data: {
       hebrewText: 'מוסדות ממשלתיים (חובה)',
-      associatedSortCodes: [510, 515],
+      isOpen: false,
+      descendantSortCodes: [510, 515],
     },
   },
   {
@@ -142,6 +151,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Other Receivables',
     data: {
       hebrewText: 'חייבים אחרים',
+      isOpen: false,
     },
   },
   {
@@ -151,7 +161,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accrued Income',
     data: {
       hebrewText: 'הכנסות לקבל',
-      associatedSortCodes: [160],
+      isOpen: false,
+      descendantSortCodes: [160],
     },
   },
   {
@@ -161,7 +172,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Related Parties (Debit)',
     data: {
       hebrewText: 'צדדים קשורים (חובה)',
-      associatedSortCodes: [650],
+      isOpen: false,
+      descendantSortCodes: [650],
     },
   },
   {
@@ -171,6 +183,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Non-Current Assets',
     data: {
       hebrewText: 'נכסים לא שוטפים',
+      isOpen: false,
     },
   },
   {
@@ -180,7 +193,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Subsidiary Companies',
     data: {
       hebrewText: 'חברות מוחזקות',
-      associatedSortCodes: [190],
+      isOpen: false,
+      descendantSortCodes: [190],
     },
   },
   {
@@ -190,6 +204,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Fixed Assets',
     data: {
       hebrewText: 'רכוש קבוע',
+      isOpen: false,
     },
   },
   {
@@ -199,6 +214,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Fixed Assets, Net',
     data: {
       hebrewText: 'רכוש קבוע, נטו',
+      isOpen: false,
     },
   },
   {
@@ -208,7 +224,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Cost',
     data: {
       hebrewText: 'עלות',
-      associatedSortCodes: [200],
+      isOpen: false,
+      descendantSortCodes: [200],
     },
   },
   {
@@ -218,7 +235,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accumulated Depreciation',
     data: {
       hebrewText: 'פחת נצבר',
-      associatedSortCodes: [210],
+      isOpen: false,
+      descendantSortCodes: [210],
     },
   },
   {
@@ -228,6 +246,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Liabilities and Equity',
     data: {
       hebrewText: 'התחייבויות והון',
+      isOpen: false,
     },
   },
   {
@@ -237,6 +256,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Current Liabilities',
     data: {
       hebrewText: 'התחייבויות שוטפות',
+      isOpen: false,
     },
   },
   {
@@ -246,7 +266,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accounts Payable and Service Providers',
     data: {
       hebrewText: 'ספקים ונותני שירותים',
-      associatedSortCodes: [130, 400, 425],
+      isOpen: false,
+      descendantSortCodes: [130, 400, 425],
     },
   },
   {
@@ -256,6 +277,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Creditors and Credit Balances',
     data: {
       hebrewText: 'זכאים ויתרות זכות',
+      isOpen: false,
     },
   },
   {
@@ -265,7 +287,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Employees and Payroll Institutions',
     data: {
       hebrewText: 'עובדים ומוסדות בגין שכר',
-      associatedSortCodes: [512, 500, 520],
+      isOpen: false,
+      descendantSortCodes: [512, 500, 520],
     },
   },
 
@@ -276,7 +299,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Provision for Vacation and Recovery Pay',
     data: {
       hebrewText: 'הפרשה לחופשה והבראה',
-      associatedSortCodes: [501],
+      isOpen: false,
+      descendantSortCodes: [501],
     },
   },
 
@@ -287,7 +311,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Government Institutions (Credit)',
     data: {
       hebrewText: 'מוסדות ממשלתיים (זכות)',
-      associatedSortCodes: [508],
+      isOpen: false,
+      descendantSortCodes: [508],
     },
   },
 
@@ -298,7 +323,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accrued Expenses',
     data: {
       hebrewText: 'הוצאות לשלם',
-      associatedSortCodes: [600],
+      isOpen: false,
+      descendantSortCodes: [600],
     },
   },
 
@@ -309,7 +335,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Related Parties (Credit)',
     data: {
       hebrewText: 'צדדים קשורים (זכות)',
-      associatedSortCodes: [650],
+      isOpen: false,
+      descendantSortCodes: [650],
     },
   },
   {
@@ -319,6 +346,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Non-Current Liabilities',
     data: {
       hebrewText: 'התחייבויות לא שוטפות',
+      isOpen: false,
     },
   },
   {
@@ -328,6 +356,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Equity',
     data: {
       hebrewText: 'הון',
+      isOpen: false,
     },
   },
   {
@@ -337,6 +366,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Share Capital',
     data: {
       hebrewText: 'הון  מניות',
+      isOpen: false,
     },
   },
   {
@@ -346,6 +376,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Common Shares',
     data: {
       hebrewText: 'מניות רגילות',
+      isOpen: false,
     },
   },
   {
@@ -355,6 +386,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Retained Earnings',
     data: {
       hebrewText: 'יתרת עודפים',
+      isOpen: false,
     },
   },
   {
@@ -364,6 +396,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Accumulated Profit at Beginning of Year',
     data: {
       hebrewText: 'רווח מצטבר לתחילת שנה',
+      isOpen: false,
     },
   },
   {
@@ -373,7 +406,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Dividends Distributed',
     data: {
       hebrewText: 'דיבידנד שחולק',
-      associatedSortCodes: [750],
+      isOpen: false,
+      descendantSortCodes: [750],
     },
   },
   {
@@ -383,6 +417,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Profit and Loss',
     data: {
       hebrewText: 'רווח והפסד',
+      isOpen: false,
     },
   },
   {
@@ -392,7 +427,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Revenue',
     data: {
       hebrewText: 'הכנסות',
-      associatedSortCodes: [800, 810],
+      isOpen: false,
+      descendantSortCodes: [800, 810],
     },
   },
   {
@@ -402,7 +438,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Operating Expenses',
     data: {
       hebrewText: 'הוצאות תפעול',
-      associatedSortCodes: [910],
+      isOpen: false,
+      descendantSortCodes: [910],
     },
   },
   {
@@ -412,7 +449,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Subcontractors',
     data: {
       hebrewText: 'קבלני משנה',
-      associatedSortCodes: [911],
+      isOpen: false,
+      descendantSortCodes: [911],
     },
   },
   {
@@ -422,7 +460,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Miscellaneous',
     data: {
       hebrewText: 'אחרות',
-      associatedSortCodes: [912],
+      isOpen: false,
+      descendantSortCodes: [912],
     },
   },
   {
@@ -432,6 +471,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'Research and Development Expenses',
     data: {
       hebrewText: 'הוצאות מחקר ופיתוח',
+      isOpen: false,
     },
   },
   {
@@ -441,7 +481,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Salaries and Related Expenses',
     data: {
       hebrewText: 'משכורות ונלוות לשכר',
-      associatedSortCodes: [930, 931],
+      isOpen: false,
+      descendantSortCodes: [930, 931],
     },
   },
 
@@ -452,7 +493,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Computing/IT',
     data: {
       hebrewText: 'מחשוב',
-      associatedSortCodes: [922],
+      isOpen: false,
+      descendantSortCodes: [922],
     },
   },
 
@@ -463,7 +505,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Foreign Travel',
     data: {
       hebrewText: 'נסיעות לחו"ל',
-      associatedSortCodes: [921],
+      isOpen: false,
+      descendantSortCodes: [921],
     },
   },
 
@@ -474,7 +517,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Depreciation',
     data: {
       hebrewText: 'פחת',
-      associatedSortCodes: [923],
+      isOpen: false,
+      descendantSortCodes: [923],
     },
   },
   {
@@ -484,7 +528,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Subcontractors',
     data: {
       hebrewText: 'קבלני משנה',
-      associatedSortCodes: [924],
+      isOpen: false,
+      descendantSortCodes: [924],
     },
   },
   {
@@ -494,6 +539,7 @@ const template: NodeModel<CustomData>[] = [
     text: 'General and Administrative Expenses',
     data: {
       hebrewText: 'הוצאות הנהלה וכלליות',
+      isOpen: false,
     },
   },
   {
@@ -503,7 +549,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Rent',
     data: {
       hebrewText: 'שכר דירה',
-      associatedSortCodes: [941],
+      isOpen: false,
+      descendantSortCodes: [941],
     },
   },
   {
@@ -513,7 +560,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Office Maintenance',
     data: {
       hebrewText: 'אחזקת משרד',
-      associatedSortCodes: [942],
+      isOpen: false,
+      descendantSortCodes: [942],
     },
   },
   {
@@ -523,7 +571,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Professional Services',
     data: {
       hebrewText: 'שרותים מקצועיים',
-      associatedSortCodes: [943],
+      isOpen: false,
+      descendantSortCodes: [943],
     },
   },
   {
@@ -533,7 +582,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Marketing',
     data: {
       hebrewText: 'שיווק',
-      associatedSortCodes: [935],
+      isOpen: false,
+      descendantSortCodes: [935],
     },
   },
   {
@@ -543,7 +593,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Insurance',
     data: {
       hebrewText: 'בטוחים',
-      associatedSortCodes: [944],
+      isOpen: false,
+      descendantSortCodes: [944],
     },
   },
   {
@@ -553,7 +604,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Foreign Travel',
     data: {
       hebrewText: 'נסיעות לחו"ל',
-      associatedSortCodes: [936, 945],
+      isOpen: false,
+      descendantSortCodes: [936, 945],
     },
   },
   {
@@ -563,7 +615,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Membership Fees',
     data: {
       hebrewText: 'דמי חבר',
-      associatedSortCodes: [946],
+      isOpen: false,
+      descendantSortCodes: [946],
     },
   },
   {
@@ -573,7 +626,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Taxes and Levies',
     data: {
       hebrewText: 'מיסים ואגרות',
-      associatedSortCodes: [947],
+      isOpen: false,
+      descendantSortCodes: [947],
     },
   },
   {
@@ -583,7 +637,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Depreciation',
     data: {
       hebrewText: 'פחת',
-      associatedSortCodes: [948],
+      isOpen: false,
+      descendantSortCodes: [948],
     },
   },
   {
@@ -593,7 +648,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Miscellaneous',
     data: {
       hebrewText: 'אחרות',
-      associatedSortCodes: [940],
+      isOpen: false,
+      descendantSortCodes: [940],
     },
   },
   {
@@ -603,7 +659,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Financial Income (Expenses), Net',
     data: {
       hebrewText: 'הכנסות (הוצאות) מימון, נטו',
-      associatedSortCodes: [990],
+      isOpen: false,
+      descendantSortCodes: [990],
     },
   },
   {
@@ -613,7 +670,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Other Income',
     data: {
       hebrewText: 'הכנסות אחרות',
-      associatedSortCodes: [995],
+      isOpen: false,
+      descendantSortCodes: [995],
     },
   },
   {
@@ -623,7 +681,8 @@ const template: NodeModel<CustomData>[] = [
     text: 'Income Tax',
     data: {
       hebrewText: 'מיסים על הכנסה',
-      associatedSortCodes: [999],
+      isOpen: false,
+      descendantSortCodes: [999],
     },
   },
 ];
@@ -645,7 +704,7 @@ export const ContoReport: React.FC = () => {
   const [
     {
       data: businessTransactionsSumData,
-      fetching: _businessTransactionsSumFetching,
+      fetching: businessTransactionsSumFetching,
       error: businessesSumError,
     },
   ] = useQuery({
@@ -660,19 +719,62 @@ export const ContoReport: React.FC = () => {
   });
 
   // Sort codes array handle
-  const [{ data: sortCodesData, fetching: _fetchingSortCodes, error: sortCodesError }] = useQuery({
+  const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
     query: AllSortCodesDocument,
   });
 
   const handleDrop = useCallback(
-    (_newTree: NodeModel<CustomData>[], { dragSourceId, dropTargetId }: DropOptions) => {
+    (
+      newTree: NodeModel<CustomData>[],
+      { dragSourceId, dropTargetId, dragSource }: DropOptions<CustomData>,
+    ) => {
+      // this is a workaround to enable sorting in case of multiple trees:
+      const targetTreeNodesSet = new Set(newTree.map(node => node.id));
+      const dragSourceParentId = dragSource?.parent;
+      const isSortCode = dragSource?.data?.sortCode != null;
+      const isFinancialEntity = dragSource?.data?.value != null;
       setTree(
-        tree.map(node => {
+        [...newTree, ...tree.filter(node => !targetTreeNodesSet.has(node.id))].map(node => {
           if (node.id === dragSourceId) {
             return {
               ...node,
               parent: dropTargetId,
             };
+          }
+
+          if (isSortCode || isFinancialEntity) {
+            if (node.id === dropTargetId) {
+              return {
+                ...node,
+                data: {
+                  isOpen: true,
+                  ...node.data,
+                  descendantFinancialEntities: isFinancialEntity
+                    ? [...(node.data?.descendantFinancialEntities ?? []), dragSourceId as string]
+                    : node.data?.descendantFinancialEntities,
+                  descendantSortCodes: isSortCode
+                    ? [...(node.data?.descendantSortCodes ?? []), dragSourceId as number]
+                    : node.data?.descendantSortCodes,
+                },
+              };
+            }
+            if (node.id === dragSourceParentId) {
+              return {
+                ...node,
+                data: {
+                  isOpen: true,
+                  ...node.data,
+                  descendantFinancialEntities:
+                    isFinancialEntity && node.data?.descendantFinancialEntities?.length
+                      ? node.data.descendantFinancialEntities.filter(id => id !== dragSourceId)
+                      : node.data?.descendantFinancialEntities,
+                  descendantSortCodes:
+                    isFinancialEntity && node.data?.descendantSortCodes?.length
+                      ? node.data.descendantSortCodes.filter(id => id !== dragSourceId)
+                      : node.data?.descendantSortCodes,
+                },
+              };
+            }
           }
 
           return node;
@@ -729,6 +831,24 @@ export const ContoReport: React.FC = () => {
     );
   };
 
+  const handleIsOpenChange = (id: NodeModel['id'], value: boolean) => {
+    setTree(
+      tree.map(node => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              isOpen: value,
+            },
+          };
+        }
+
+        return node;
+      }),
+    );
+  };
+
   useEffect(() => {
     const handleClickSwitch = () => {
       setEnableDnd(prevState => !prevState);
@@ -737,6 +857,7 @@ export const ContoReport: React.FC = () => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <DownloadCSV tree={tree} filters={filter} />
+        <SaveTemplate tree={tree} />
         <ContentTooltip content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
             <FolderPlus size={20} />
@@ -778,8 +899,8 @@ export const ContoReport: React.FC = () => {
   const sortCodeMap = useRef(() => {
     const sortCodeMap = new Map<number, string | number>();
     template.map(({ data, id }) => {
-      if (data?.associatedSortCodes?.length) {
-        data.associatedSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
+      if (data?.descendantSortCodes?.length) {
+        data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
       }
     });
     return sortCodeMap;
@@ -801,6 +922,7 @@ export const ContoReport: React.FC = () => {
           text: sortCode.name!,
           data: {
             sortCode: sortCode.id,
+            isOpen: false,
           },
         },
       ]);
@@ -823,6 +945,7 @@ export const ContoReport: React.FC = () => {
                   data: {
                     ...node.data,
                     value,
+                    isOpen: false,
                   },
                 };
               }
@@ -844,6 +967,7 @@ export const ContoReport: React.FC = () => {
           text: businessSum.business.name,
           data: {
             value,
+            isOpen: false,
           },
         },
       ]);
@@ -875,6 +999,17 @@ export const ContoReport: React.FC = () => {
   const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
   const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);
 
+  if (
+    (!sortCodesData && fetchingSortCodes) ||
+    (!businessTransactionsSumData && businessTransactionsSumFetching)
+  ) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <Typography variant="h5">Loading...</Typography>
+      </div>
+    );
+  }
+
   return (
     <DndProvider backend={MultiBackend} options={getBackendOptions()}>
       <div className="h-full grid grid-cols-[auto_1fr]">
@@ -888,6 +1023,7 @@ export const ContoReport: React.FC = () => {
             onDrop={handleDrop}
             handleTextChange={handleTextChange}
             handleDeleteCategory={handleDeleteCategory}
+            handleIsOpenChange={handleIsOpenChange}
             enableDnd={enableDnd}
           />
         </div>
@@ -901,6 +1037,7 @@ export const ContoReport: React.FC = () => {
             onDrop={handleDrop}
             handleTextChange={handleTextChange}
             handleDeleteCategory={handleDeleteCategory}
+            handleIsOpenChange={handleIsOpenChange}
             enableDnd={enableDnd}
           />
         </div>
