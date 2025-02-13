@@ -58,20 +58,9 @@ export class AnthropicProvider {
    * @returns Base64 encoded string
    */
   private async fileToBase64(fileOrBlob: File | Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          // Remove data URL prefix and get base64
-          const base64 = reader.result.split(',')[1] || reader.result;
-          resolve(base64);
-        } else {
-          reject(new Error('Failed to convert file to base64'));
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(fileOrBlob);
-    });
+    const buffer = await fileOrBlob.arrayBuffer();
+    const base64string = Buffer.from(buffer).toString('base64');
+    return base64string;
   }
 
   /**
