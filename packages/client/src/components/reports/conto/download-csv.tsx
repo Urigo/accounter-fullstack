@@ -36,7 +36,7 @@ function getDatesString(fromDate?: string | null, toDate?: string | null): strin
   return '';
 }
 
-type Row = { content: string; depth: number; amount: number | string };
+type Row = { content: string; depth: number; amount: number | string; suffix: string | number };
 
 const convertToCSV = (tree: NodeModel<CustomData>[]): string => {
   const parentNodes = tree.filter(node => node.parent === REPORT_TREE_ROOT_ID);
@@ -44,7 +44,7 @@ const convertToCSV = (tree: NodeModel<CustomData>[]): string => {
     return 'No Report Data';
   }
 
-  const rows: Row[] = [{ content: 'Account', depth: 0, amount: 'ILS Amount' }];
+  const rows: Row[] = [{ content: 'Account', depth: 0, amount: 'ILS Amount', suffix: '' }];
 
   const { rows: nodesRows, maxDepth } = recursiveRowHandler(parentNodes, tree, 0);
   rows.push(...nodesRows);
@@ -52,7 +52,7 @@ const convertToCSV = (tree: NodeModel<CustomData>[]): string => {
   return rows
     .map(
       row =>
-        `${','.repeat(row.depth)}${sanitizeString(row.content)}${','.repeat(maxDepth - row.depth)},${sanitizeString(row.amount)}`,
+        `${','.repeat(row.depth)}${sanitizeString(row.content)},${sanitizeString(row.suffix ?? '')}${','.repeat(maxDepth - row.depth)},${sanitizeString(row.amount)}`,
     )
     .join('\r\n');
 };
@@ -72,21 +72,22 @@ function recursiveRowHandler(
   nodes.map(node => {
     if (node.data?.value != null) {
       sum += node.data.value;
-      const onlyRow = {
+      const onlyRow: Row = {
         content: node.text,
         depth,
         amount: node.data.value,
+        suffix: '',
       };
       rows.push(onlyRow);
       return;
     }
 
-    const sortCodePrefix = node.data?.sortCode ? ` (${node.data?.sortCode})` : '';
     const children = getDescendants(tree, node.id);
     const directChildren = children.filter(child => child.parent === node.id);
 
-    const mainRow = {
-      content: node.text + sortCodePrefix,
+    const mainRow: Row = {
+      content: node.text,
+      suffix: node.data?.sortCode ?? '',
       depth,
       amount: children.reduce((acc, child) => acc + (child.data?.value ?? 0), 0),
     };
@@ -107,6 +108,9 @@ function recursiveRowHandler(
 }
 
 function sanitizeString(content: string | number): string | number {
+  if (content === '') {
+    return '';
+  }
   if (!Number.isNaN(Number(content))) {
     return Number(content).toFixed(2);
   }
