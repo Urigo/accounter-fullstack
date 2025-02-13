@@ -198,7 +198,7 @@ export function ChargeExtendedInfoMenu({
         centered
         opened={uploadSalariesOpened}
         onClose={closeUploadSalaries}
-        title="Insert Misc Expense"
+        title="Upload Payroll File"
         onClick={event => event.stopPropagation()}
       >
         <UploadPayrollFile

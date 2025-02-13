@@ -809,16 +809,12 @@ export const ContoReport: React.FC = () => {
 
   useEffect(() => {
     businessesSum.map(businessSum => {
-      if (!filter.isShowZeroedAccounts && Math.abs(businessSum.total.raw) < 0.005) {
+      const value = businessSum.total.raw * -1;
+      if (!filter.isShowZeroedAccounts && Math.abs(value) < 0.005) {
         return;
       }
       if (tree.some(node => node.id === businessSum.business.id)) {
-        if (
-          tree.some(
-            node =>
-              node.id === businessSum.business.id && node.data?.value !== businessSum.total.raw,
-          )
-        ) {
+        if (tree.some(node => node.id === businessSum.business.id && node.data?.value !== value)) {
           setTree(
             tree.map(node => {
               if (node.id === businessSum.business.id) {
@@ -826,7 +822,7 @@ export const ContoReport: React.FC = () => {
                   ...node,
                   data: {
                     ...node.data,
-                    value: businessSum.total.raw,
+                    value,
                   },
                 };
               }
@@ -847,7 +843,7 @@ export const ContoReport: React.FC = () => {
           droppable: false,
           text: businessSum.business.name,
           data: {
-            value: businessSum.total.raw,
+            value,
           },
         },
       ]);
