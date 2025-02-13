@@ -1,4 +1,5 @@
 import { Inject, Injectable, Scope } from 'graphql-modules';
+import stripIndent from 'strip-indent';
 import Anthropic from '@anthropic-ai/sdk';
 import { DocumentBlockParam, ImageBlockParam } from '@anthropic-ai/sdk/resources';
 import { Currency, DocumentType } from '@shared/enums';
@@ -132,7 +133,7 @@ export class AnthropicProvider {
               mediaBlock,
               {
                 type: 'text',
-                text: `Please analyze the provided document(s) and extract the following information into a JSON object with this structure:
+                text: stripIndent(`Please analyze the provided document(s) and extract the following information into a JSON object with this structure:
 
                     {
                     // One of the following options [${Object.values(DocumentType).join(', ')}] or null
@@ -166,7 +167,7 @@ export class AnthropicProvider {
                     3. Ensure numbers are returned as numbers, not strings
                     4. Format dates in YYYY-MM-DD format
                     5. Use 3-letter ISO currency codes
-                    6. Include any special characters (like dashes) in the referenceCode`,
+                    6. Include any special characters (like dashes) in the referenceCode`),
               },
             ],
           },
