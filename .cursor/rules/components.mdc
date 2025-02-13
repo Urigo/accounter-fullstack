@@ -8,9 +8,8 @@ globs: packages/client/src/components/**/*.tsx
 1. **File Organization**
    ```typescript
    import { ReactElement } from 'react';
-   import { ComponentProps } from './types';
    
-   export function ComponentName({ prop1, prop2 }: ComponentProps): ReactElement {
+   export function ComponentName({ prop1, prop2 }: { prop1: string, prop2: number }) {
      return (
        // JSX
      );
@@ -22,14 +21,9 @@ globs: packages/client/src/components/**/*.tsx
 ### shadcn/ui Usage
 1. **Component Imports**
    ```typescript
-   import {
-     Button,
-     Card,
-     Input,
-     Select,
-     Dialog,
-     Form
-   } from "@/components/ui";
+   import { Button } from './ui/button.js';
+   import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form.js';
+   import { Input } from './ui/input.js';
    ```
 
 2. **Tailwind Classes**
@@ -51,10 +45,12 @@ globs: packages/client/src/components/**/*.tsx
 1. **Form Implementation**
    ```tsx
    import { useForm } from 'react-hook-form';
+   import { z } from 'zod';
    import { zodResolver } from '@hookform/resolvers/zod';
-   import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-   import { Input } from '@/components/ui/input';
-   import { formSchema } from './schema';
+   import { Form, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form.js';
+   import { Input } from '../../components/ui/input.js';
+
+   const formSchema = z.object({ fieldName: z.string() });
    
    export function FormComponent(): ReactElement {
      const form = useForm({
@@ -95,7 +91,7 @@ globs: packages/client/src/components/**/*.tsx
 
 2. **Error States**
    ```tsx
-   import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+   import { Alert, AlertTitle, AlertDescription } from '../../components/ui/alert.js';
    
    {error && (
      <Alert variant="destructive">
@@ -155,7 +151,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "../components/ui/dialog.js";
 
 export function DialogComponent(): ReactElement {
   return (
