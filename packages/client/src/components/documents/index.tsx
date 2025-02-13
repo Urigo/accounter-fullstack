@@ -5,8 +5,9 @@ import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { AccounterTable, Button, PopUpModal } from '../common/index.js';
+import { AccounterTable, PopUpModal, UploadDocumentsModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Button } from '../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -62,18 +63,28 @@ import { PageLayout } from '../layout/page-layout.js';
 `;
 
 export const DocumentsReport = (): ReactElement => {
-  const [{ data, fetching }] = useQuery({ query: DocumentsDocument });
+  const [{ data, fetching }, reexecuteQuery] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const { setFiltersContext } = useContext(FiltersContext);
 
   setFiltersContext(null);
 
   return (
-    <PageLayout title="Documents" description="All documents">
+    <PageLayout
+      title="Documents"
+      description="All documents"
+      headerActions={<Button onClick={() => setUploadModalOpen(true)}>Upload Documents</Button>}
+    >
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <>
+          <UploadDocumentsModal
+            open={uploadModalOpen}
+            onOpenChange={setUploadModalOpen}
+            onChange={reexecuteQuery}
+          />
           {openedImage && (
             <PopUpModal
               modalSize="45%"
@@ -104,12 +115,11 @@ export const DocumentsReport = (): ReactElement => {
                 title: 'File',
                 value: doc =>
                   doc.file && (
-                    <Button
-                      target="_blank"
-                      rel="noreferrer"
-                      herf={doc.file?.toString()}
-                      title="Open Link"
-                    />
+                    <Button variant="outline" size="sm" asChild>
+                      <a target="_blank" rel="noreferrer" href={doc.file?.toString()}>
+                        Open
+                      </a>
+                    </Button>
                   ),
               },
               {
@@ -165,7 +175,7 @@ export const DocumentsReport = (): ReactElement => {
                       ]}
                     />
                   ) : (
-                    'No Realted Transaction'
+                    'No Related Transaction'
                   ),
                 style: { whiteSpace: 'nowrap' },
               },
