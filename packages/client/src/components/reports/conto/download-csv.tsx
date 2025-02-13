@@ -61,24 +61,38 @@ function recursiveRowHandler(
   nodes: NodeModel<CustomData>[],
   tree: NodeModel<CustomData>[],
   depth: number,
-): { rows: Row[]; maxDepth: number } {
+): { rows: Row[]; maxDepth: number; sum: number } {
   if (nodes.length === 0) {
-    return { rows: [], maxDepth: depth };
+    return { rows: [], maxDepth: depth, sum: 0 };
   }
 
   let maxDepth = depth;
   const rows: Row[] = [];
+  let sum = 0;
   nodes.map(node => {
+    if (node.data?.value != null) {
+      sum += node.data.value;
+      const onlyRow = {
+        content: node.text,
+        depth,
+        amount: node.data.value,
+      };
+      rows.push(onlyRow);
+      return;
+    }
+
     const sortCodePrefix = node.data?.sortCode ? ` (${node.data?.sortCode})` : '';
+    const children = getDescendants(tree, node.id);
+    const directChildren = children.filter(child => child.parent === node.id);
+
     const mainRow = {
       content: node.text + sortCodePrefix,
       depth,
-      amount: node.data?.value ?? '',
+      amount: children.reduce((acc, child) => acc + (child.data?.value ?? 0), 0),
     };
     rows.push(mainRow);
 
-    const children = getDescendants(tree, node.id);
-    const childrenRows = recursiveRowHandler(children, tree, depth + 1);
+    const childrenRows = recursiveRowHandler(directChildren, tree, depth + 1);
     rows.push(...childrenRows.rows);
     if (childrenRows.maxDepth > maxDepth) {
       maxDepth = childrenRows.maxDepth;
@@ -88,6 +102,7 @@ function recursiveRowHandler(
   return {
     rows,
     maxDepth,
+    sum,
   };
 }
 
