@@ -36,7 +36,13 @@ function getDatesString(fromDate?: string | null, toDate?: string | null): strin
   return '';
 }
 
-type Row = { content: string; depth: number; amount: number | string; suffix: string | number };
+type Row = {
+  content: string;
+  depth: number;
+  amount: number | string;
+  suffix: string | number;
+  type: 'CATEGORY' | 'SORT_CODE' | 'FINANCIAL_ENTITY';
+};
 
 const convertToCSV = (tree: NodeModel<CustomData>[]): string => {
   const parentNodes = tree.filter(node => node.parent === REPORT_TREE_ROOT_ID);
@@ -44,16 +50,30 @@ const convertToCSV = (tree: NodeModel<CustomData>[]): string => {
     return 'No Report Data';
   }
 
-  const rows: Row[] = [{ content: 'Account', depth: 0, amount: 'ILS Amount', suffix: '' }];
+  const rows: Row[] = [
+    { content: 'Account', depth: 0, amount: 'ILS Amount', suffix: '', type: 'CATEGORY' },
+  ];
 
   const { rows: nodesRows, maxDepth } = recursiveRowHandler(parentNodes, tree, 0);
   rows.push(...nodesRows);
 
   return rows
-    .map(
-      row =>
-        `${','.repeat(row.depth)}${sanitizeString(row.content)},${sanitizeString(row.suffix ?? '')}${','.repeat(maxDepth - row.depth)},${sanitizeString(row.amount)}`,
-    )
+    .map(row => {
+      const { depth } = row;
+      let pre = depth;
+      let post = maxDepth - depth;
+      switch (row.type) {
+        case 'SORT_CODE':
+          pre = maxDepth - 1;
+          post = 1;
+          break;
+        case 'FINANCIAL_ENTITY':
+          pre = maxDepth;
+          post = 0;
+          break;
+      }
+      return `${','.repeat(pre)}${sanitizeString(row.content)},${sanitizeString(row.suffix ?? '')}${','.repeat(post)},${sanitizeString(row.amount)}`;
+    })
     .join('\r\n');
 };
 
@@ -77,6 +97,7 @@ function recursiveRowHandler(
         depth,
         amount: node.data.value,
         suffix: '',
+        type: 'FINANCIAL_ENTITY',
       };
       rows.push(onlyRow);
       return;
@@ -90,6 +111,7 @@ function recursiveRowHandler(
       suffix: node.data?.sortCode ?? '',
       depth,
       amount: children.reduce((acc, child) => acc + (child.data?.value ?? 0), 0),
+      type: node.data?.sortCode ? 'SORT_CODE' : 'CATEGORY',
     };
     rows.push(mainRow);
 
