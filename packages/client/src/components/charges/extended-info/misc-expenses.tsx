@@ -75,7 +75,7 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
             </td>
             <td>
               <EditMiscExpenseModal onDone={onChange} data={expense} />
-              <DeleteMiscExpenseButton miscExpenseId={expense.id} />
+              <DeleteMiscExpenseButton miscExpenseId={expense.id} onChange={onChange} />
             </td>
           </tr>
         ))}
