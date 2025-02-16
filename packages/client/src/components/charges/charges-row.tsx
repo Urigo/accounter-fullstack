@@ -134,6 +134,7 @@ export const ChargesTableRow = ({
         onClick={() => {
           if (hasExtendedInfo) {
             setOpened(prev => !prev);
+            onChange();
           }
         }}
       >
