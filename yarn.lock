@@ -4138,50 +4138,50 @@
     "@parcel/watcher-win32-ia32" "2.5.1"
     "@parcel/watcher-win32-x64" "2.5.1"
 
-"@pgtyped/cli@2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@pgtyped/cli/-/cli-2.3.0.tgz#1daf826bef23f4c8dd84bc9558bb49089ee08db3"
-  integrity sha512-mSCx3BQW4IkfMyAOdCJZSYo2+G6rRaP05TkIMCLxTl+qiAyDyPiTwnYHCfcLV9ZHvloZ03UEUMLyOySapq5eyw==
+"@pgtyped/cli@2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@pgtyped/cli/-/cli-2.4.2.tgz#f7c5837e2f1fc0c04f89ce338e88247420d9521f"
+  integrity sha512-MvSaP2T1QWeeYGkD/gcFimEvSFQR4V1rbRH/oc+f2ueUj1MpRnXS/TsRzoZg6MV46TOH93KNe5c02Bo6OHQNwA==
   dependencies:
-    "@pgtyped/parser" "^2.3.0"
-    "@pgtyped/query" "^2.3.0"
-    "@pgtyped/wire" "^2.3.0"
-    camel-case "^4.1.1"
+    "@pgtyped/parser" "^2.4.2"
+    "@pgtyped/query" "^2.4.2"
+    "@pgtyped/wire" "^2.4.2"
+    camel-case "^5.0.0"
     chalk "^4.0.0"
-    chokidar "^3.3.1"
+    chokidar "^4.0.0"
     debug "^4.1.1"
     fp-ts "^2.5.3"
     fs-extra "^11.0.0"
-    glob "^10.3.7"
+    glob "^11.0.0"
     io-ts "^2.2.20"
     io-ts-reporters "^2.0.1"
     nunjucks "3.2.4"
-    pascal-case "^3.1.1"
+    pascal-case "^4.0.0"
     piscina "^4.0.0"
-    tinypool "^0.8.0"
+    tinypool "^1.0.0"
     ts-parse-database-url "^1.0.3"
     yargs "^17.0.1"
 
-"@pgtyped/parser@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@pgtyped/parser/-/parser-2.3.0.tgz#9f6e8d7d52c85f266114f38c90b54b2a6691fffc"
-  integrity sha512-KJ/rXbHnq0aRdyVo4RjIivXJMnOJjaxmk060uAqLVzgOVy2xF2lZ2GAykH1JSCRpRbpikUOtb4QE7dkbownB6g==
+"@pgtyped/parser@^2.3.0", "@pgtyped/parser@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@pgtyped/parser/-/parser-2.4.2.tgz#d7d6e171d8c4cbcddbedebba970c114fad250cea"
+  integrity sha512-LbK90cz+CAjG+jsiKS5FNVkb97Ys5xZa1xmSIq7N2zYz1vX04hr6xNhDUSjbC8C/YnFm1S+d2D6BbHMgzsBilw==
   dependencies:
     antlr4ts "0.5.0-alpha.4"
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/query@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@pgtyped/query/-/query-2.3.0.tgz#c6b86f4173d7e8c172866d27b146ec667d84c842"
-  integrity sha512-Ko+JqkeU+bNlQK1PiL/+KitNj4fBNIvgJPBeRJGbNyRidTNuMSBFnd+DLjnhWP8bEu8e0b+mm9nECcmbbBNrpA==
+"@pgtyped/query@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@pgtyped/query/-/query-2.4.2.tgz#2ac84adc1b94ddb1dbce1b222c9fcbb535470dc7"
+  integrity sha512-5eBMA2iP1YoQX1ceYSK/uEdSz+xt43W4LriBxsW+LLLiUKZm8J6Ys7qlyda/D5bPn1Ep3+wK8XibD0ercKPUcw==
   dependencies:
-    "@pgtyped/runtime" "^2.3.0"
-    "@pgtyped/wire" "^2.3.0"
+    "@pgtyped/runtime" "^2.4.2"
+    "@pgtyped/wire" "^2.4.2"
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/runtime@2.3.0", "@pgtyped/runtime@^2.3.0":
+"@pgtyped/runtime@2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@pgtyped/runtime/-/runtime-2.3.0.tgz#b74af5ed3b47df487bd582fc3d6ea243b0a49ded"
   integrity sha512-B8RMUeX+zsaXfKOuR3w3Vku5YLSQ8rw+YUYc2IyAFzlQJZpAQDkkAVM0abgGNQE8bOK1wuE+nHJawWuVy+I8bA==
@@ -4190,10 +4190,19 @@
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/wire@^2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@pgtyped/wire/-/wire-2.3.0.tgz#f5c05dddcc09a2206cd7183bf17dee5be341d3a6"
-  integrity sha512-bUJXVeSphcZvk8nSyIz42oZhthQK/zvDWC6JPgLZ3zjTknOGTFLIyLJomTpbfy0CHdEpNMEeF64hh4rU1uQyiA==
+"@pgtyped/runtime@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@pgtyped/runtime/-/runtime-2.4.2.tgz#5044f041e1de2ac5e3ee86c3931a39ec78f687aa"
+  integrity sha512-W1fK475KjmkhleK4Be7swblT5Kqykxc/APe57r8cgmxLzbT/x9Q3BjOLBJhBPxp1gKFZGgQyxtELPOaNl/66jg==
+  dependencies:
+    "@pgtyped/parser" "^2.4.2"
+    chalk "^4.1.0"
+    debug "^4.1.1"
+
+"@pgtyped/wire@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@pgtyped/wire/-/wire-2.4.2.tgz#1671972610d1b7bc17c7aad92d21ed698afa3b66"
+  integrity sha512-tR5x4nDVDVnzpmNg58WLKrbc32uK4EJYtowqQoDzv8icmBKfMJAbYnPhCOwPVXvdmGoVcdHOhWbRsKNCcoKeiQ==
   dependencies:
     debug "^4.1.1"
 
@@ -7747,13 +7756,20 @@ callsites@^3.0.0:
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==
 
-camel-case@^4.1.1, camel-case@^4.1.2:
+camel-case@^4.1.2:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/camel-case/-/camel-case-4.1.2.tgz#9728072a954f805228225a6deea6b38461e1bd5a"
   integrity sha512-gxGWBrTT1JuMx6R+o5PTXMmUnhnVzLQ9SNutD4YqKtI6ap897t3tKECYla6gCWEkplXnlNybEkZg9GEGxKFCgw==
   dependencies:
     pascal-case "^3.1.2"
     tslib "^2.0.3"
+
+camel-case@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/camel-case/-/camel-case-5.0.0.tgz#88b2f6a9050488aedb092bad79c86f2097c00b1c"
+  integrity sha512-AKcwhlfnTqKiYjkjZ0CSRjIGgUDEZQHqBBkdwrSxFPzRQDriAUxXNn+rFN7Qvb5nkPg6Hxncp44G1/zz88M5xw==
+  dependencies:
+    no-case "^4.0.0"
 
 camelcase@^5.0.0:
   version "5.3.1"
@@ -7933,7 +7949,7 @@ check-error@^2.1.1:
   resolved "https://registry.yarnpkg.com/check-error/-/check-error-2.1.1.tgz#87eb876ae71ee388fa0471fe423f494be1d96ccc"
   integrity sha512-OAlb+T7V4Op9OwdkjmguYRqncdlx5JiofwOAUkmTF+jNdHwzTaTs4sRAGpzLF3oOz5xAyDGrPgeIDFQmDOTiJw==
 
-chokidar@^3.3.1, chokidar@^3.5.2, chokidar@^3.5.3:
+chokidar@^3.5.2, chokidar@^3.5.3:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.6.0.tgz#197c6cc669ef2a8dc5e7b4d97ee4e092c3eb0d5b"
   integrity sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==
@@ -7948,7 +7964,7 @@ chokidar@^3.3.1, chokidar@^3.5.2, chokidar@^3.5.3:
   optionalDependencies:
     fsevents "~2.3.2"
 
-chokidar@^4.0.1:
+chokidar@^4.0.0, chokidar@^4.0.1:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-4.0.3.tgz#7be37a4c03c9aee1ecfe862a4a23b2c70c205d30"
   integrity sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==
@@ -10245,7 +10261,7 @@ glob@11.0.1, glob@^11.0.0:
     package-json-from-dist "^1.0.0"
     path-scurry "^2.0.0"
 
-glob@^10.0.0, glob@^10.2.2, glob@^10.3.10, glob@^10.3.7:
+glob@^10.0.0, glob@^10.2.2, glob@^10.3.10:
   version "10.4.5"
   resolved "https://registry.yarnpkg.com/glob/-/glob-10.4.5.tgz#f4d9f0b90ffdbab09c9d77f5f29b4262517b0956"
   integrity sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==
@@ -12703,6 +12719,11 @@ no-case@^3.0.4:
     lower-case "^2.0.2"
     tslib "^2.0.3"
 
+no-case@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/no-case/-/no-case-4.0.0.tgz#d728c0ca7e7a5475e392738d94113c29509e5232"
+  integrity sha512-WmS3EUGw+vXHlTgiUPi3NzbZNwH6+uGX0QLGgqG+aFSJ5rkX/Ee0nuwHBJfZTfQwwR8lGO819NEIwQ7CGhkdEQ==
+
 node-addon-api@^5.0.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-5.1.0.tgz#49da1ca055e109a23d537e9de43c09cca21eb762"
@@ -13300,13 +13321,20 @@ parse-json@^7.0.0:
     lines-and-columns "^2.0.3"
     type-fest "^3.8.0"
 
-pascal-case@3.1.2, pascal-case@^3.1.1, pascal-case@^3.1.2:
+pascal-case@3.1.2, pascal-case@^3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/pascal-case/-/pascal-case-3.1.2.tgz#b48e0ef2b98e205e7c1dae747d0b1508237660eb"
   integrity sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==
   dependencies:
     no-case "^3.0.4"
     tslib "^2.0.3"
+
+pascal-case@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/pascal-case/-/pascal-case-4.0.0.tgz#35ceb76ac8d5a83dae542bdefd861758005757d5"
+  integrity sha512-DPrSBfN1ivlJ5WwTdcBfCfmOHZXjaeW+b8DMHXcUWiR8wmO92T6N8elBsJj/v3g+INObw8Zx/q6eFAjA1w071Q==
+  dependencies:
+    no-case "^4.0.0"
 
 password-prompt@^1.1.3:
   version "1.1.3"
@@ -15611,12 +15639,7 @@ tinyglobby@^0.2.9:
     fdir "^6.4.2"
     picomatch "^4.0.2"
 
-tinypool@^0.8.0:
-  version "0.8.4"
-  resolved "https://registry.yarnpkg.com/tinypool/-/tinypool-0.8.4.tgz#e217fe1270d941b39e98c625dcecebb1408c9aa8"
-  integrity sha512-i11VH5gS6IFeLY3gMBQ00/MmLncVP7JLXOw1vlgkytLmJK7QnEr7NXf0LBdxfmNPAeyetukOk0bOYrJrFGjYJQ==
-
-tinypool@^1.0.2:
+tinypool@^1.0.0, tinypool@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/tinypool/-/tinypool-1.0.2.tgz#706193cc532f4c100f66aa00b01c42173d9051b2"
   integrity sha512-al6n+QEANGFOMf/dmUMsuS5/r9B06uwlyNjZZql/zv8J7ybHCgoihBNORZCY2mzUuAnomQa2JdhyHKzZxPCrFA==
