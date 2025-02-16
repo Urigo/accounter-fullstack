@@ -112,7 +112,7 @@ export const ExpensesRow = ({
         <tr>
           <td colSpan={17}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
-              <ChargeExtendedInfo chargeID={expenseItem.chargeId} />
+              <ChargeExtendedInfo chargeID={expenseItem.chargeId} fetching={!!expenseItem} />
             </Paper>
           </td>
         </tr>
