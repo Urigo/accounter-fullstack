@@ -112,7 +112,6 @@ function ContoReportFilterForm({
           control={control}
           defaultValue={filter.fromDate}
           rules={{
-            required: 'Required',
             pattern: {
               value: TIMELESS_DATE_REGEX,
               message: 'Date must be im format yyyy-mm-dd',
@@ -132,7 +131,6 @@ function ContoReportFilterForm({
               value={field.value ? new Date(field.value) : undefined}
               label="From Date"
               error={fieldState.error?.message}
-              required
             />
           )}
         />
@@ -160,7 +158,6 @@ function ContoReportFilterForm({
               value={field.value ? new Date(field.value) : undefined}
               label="To Date"
               error={fieldState.error?.message}
-              required
             />
           )}
         />
