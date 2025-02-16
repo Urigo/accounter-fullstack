@@ -2081,12 +2081,12 @@
     graphql-depth-limit "^1.1.0"
     lodash.lowercase "^4.3.0"
 
-"@graphql-hive/cli@0.47.0":
-  version "0.47.0"
-  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.47.0.tgz#ff746e26f9500798a821da1d32a7eaeb4e64c7fe"
-  integrity sha512-r1coIPHZG6x1qpE1O6Bwc2QfYVWi0vWktTgXU9iB0t9/6rUrBmDoSUD39r/AYthM0+IzF1oYF49lzpMTpAYDXg==
+"@graphql-hive/cli@0.48.3":
+  version "0.48.3"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/cli/-/cli-0.48.3.tgz#6441108f662c7f83960b5b482458f2127ca7b1c6"
+  integrity sha512-7LLmBgH3fsnpv6i1jDiW7K9HQmotG7OwXTsP/1tahz8e68Cy4LCIS0k9iH7LALDMoYJSbJeeWoYAnkYYaNvAYA==
   dependencies:
-    "@graphql-hive/core" "0.8.4"
+    "@graphql-hive/core" "0.9.1"
     "@graphql-inspector/core" "5.1.0-alpha-20231208113249-34700c8a"
     "@graphql-tools/code-file-loader" "~8.1.0"
     "@graphql-tools/graphql-file-loader" "~8.0.0"
@@ -2098,7 +2098,7 @@
     "@oclif/core" "^3.26.6"
     "@oclif/plugin-help" "6.0.22"
     "@oclif/plugin-update" "4.2.13"
-    "@theguild/federation-composition" "0.14.3"
+    "@theguild/federation-composition" "0.14.4"
     colors "1.4.0"
     env-ci "7.3.0"
     graphql "^16.8.1"
@@ -2110,6 +2110,17 @@
   version "0.8.4"
   resolved "https://registry.yarnpkg.com/@graphql-hive/core/-/core-0.8.4.tgz#ced9e77c7a464188523154339025263c542a87a6"
   integrity sha512-K3BNr6lCNG2LrqXmTRI0JJh4YVAwosY5ctMi0WvmJ9vW20PFY7DP52bd/Rr7VDPGxZi5gCDerK418BUTyAP6UQ==
+  dependencies:
+    "@graphql-tools/utils" "^10.0.0"
+    "@whatwg-node/fetch" "0.10.1"
+    async-retry "1.3.3"
+    lodash.sortby "4.7.0"
+    tiny-lru "8.0.2"
+
+"@graphql-hive/core@0.9.1":
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/@graphql-hive/core/-/core-0.9.1.tgz#9fe057d5f0357a601181b211ef7b9f40bc5ae1f7"
+  integrity sha512-bXoaQSUFxxUhgYoMiQz820BrpV/tn3zI6FrZho/1HcfT1zxxJPYBsEElm9xGcg2rFter5WX28xX4JZ7kzqTdKg==
   dependencies:
     "@graphql-tools/utils" "^10.0.0"
     "@whatwg-node/fetch" "0.10.1"
@@ -6341,10 +6352,10 @@
     eslint-plugin-unicorn "56.0.1"
     eslint-plugin-yml "1.16.0"
 
-"@theguild/federation-composition@0.14.3":
-  version "0.14.3"
-  resolved "https://registry.yarnpkg.com/@theguild/federation-composition/-/federation-composition-0.14.3.tgz#b3b3c630113313fc3ada02d20c2af0ea402d2e6e"
-  integrity sha512-tcs6j+4mOyaRP2cbkdRk/3qCyKUM/FGhzXt3hGup/d7us309ts8r9F+f41IKjc0A8tVYR5b+YB9VW8hqy9vygg==
+"@theguild/federation-composition@0.14.4":
+  version "0.14.4"
+  resolved "https://registry.yarnpkg.com/@theguild/federation-composition/-/federation-composition-0.14.4.tgz#e6a3f5b8ee2590a4651b8625c523ddf274af68d4"
+  integrity sha512-ocudzlA2lAdJ8ozNX/d/MkMtuXFP5ifdIg3dL+zkOXHXqf7AqgRNUkaurgss43XIcukxcIpfCGoBNjJxXwFmYw==
   dependencies:
     constant-case "^3.0.0"
     debug "4.3.4"
