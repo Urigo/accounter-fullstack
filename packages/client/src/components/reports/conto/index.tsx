@@ -631,7 +631,7 @@ const template: NodeModel<CustomData>[] = [
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>(template);
-  const [lastId, setLastId] = useState(105);
+  const [lastId, setLastId] = useState(1);
   const [enableDnd, setEnableDnd] = useState(false);
   const { toast } = useToast();
   const { get } = useUrlQuery();
@@ -704,7 +704,7 @@ export const ContoReport: React.FC = () => {
 
   const handleAddBankNode = useCallback(() => {
     const node: NodeModel<CustomData> = {
-      id: lastId,
+      id: `synthetic-${lastId}`,
       parent: BANK_TREE_ROOT_ID,
       droppable: true,
       text: 'New Category',
