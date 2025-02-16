@@ -1,5 +1,166 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.7.3
+
+### Patch Changes
+
+- [#1510](https://github.com/Urigo/accounter-fullstack/pull/1510)
+  [`e5acaa1`](https://github.com/Urigo/accounter-fullstack/commit/e5acaa1fd5e4bc3027d308425a235ba55d93902f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.13)
+    (from `0.106.12`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.105.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.105.9)
+    (from `0.105.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.9)
+    (from `0.108.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.105.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.105.9)
+    (from `0.105.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.103.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.103.9)
+    (from `0.103.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.103.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.103.9)
+    (from `0.103.8`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.103.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.103.9)
+    (from `0.103.8`, in `dependencies`)
+
+- [#1511](https://github.com/Urigo/accounter-fullstack/pull/1511)
+  [`6afccff`](https://github.com/Urigo/accounter-fullstack/commit/6afccfff0e669c7e57ba4b7faea13d5cb6995fec)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.14)
+    (from `0.106.13`, in `dependencies`)
+
+- [#1551](https://github.com/Urigo/accounter-fullstack/pull/1551)
+  [`3edcf26`](https://github.com/Urigo/accounter-fullstack/commit/3edcf268807300fe70dfe5a57f6241677768c496)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.15)
+    (from `0.106.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.105.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.105.10)
+    (from `0.105.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.10)
+    (from `0.108.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.105.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.105.10)
+    (from `0.105.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.103.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.103.10)
+    (from `0.103.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.103.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.103.10)
+    (from `0.103.9`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.103.10` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.103.10)
+    (from `0.103.9`, in `dependencies`)
+
+- [#1552](https://github.com/Urigo/accounter-fullstack/pull/1552)
+  [`745dfe6`](https://github.com/Urigo/accounter-fullstack/commit/745dfe6a644ed43c6a2bb02814bb08182edbd465)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.16)
+    (from `0.106.15`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.105.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.105.11)
+    (from `0.105.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.105.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.105.11)
+    (from `0.105.10`, in `dependencies`)
+
+- [#1573](https://github.com/Urigo/accounter-fullstack/pull/1573)
+  [`16d7c0a`](https://github.com/Urigo/accounter-fullstack/commit/16d7c0ab3965699cda4e9fa1b32838932d127622)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.17)
+    (from `0.106.16`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.105.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.105.12)
+    (from `0.105.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.11)
+    (from `0.108.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.105.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.105.12)
+    (from `0.105.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.103.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.103.11)
+    (from `0.103.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.103.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.103.11)
+    (from `0.103.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.103.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.103.11)
+    (from `0.103.10`, in `dependencies`)
+
+- [#1587](https://github.com/Urigo/accounter-fullstack/pull/1587)
+  [`6d56b87`](https://github.com/Urigo/accounter-fullstack/commit/6d56b87180d569a263fc382b1614a0f27145a3ba)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.12)
+    (from `0.108.11`, in `dependencies`)
+
+- [#1596](https://github.com/Urigo/accounter-fullstack/pull/1596)
+  [`c845a24`](https://github.com/Urigo/accounter-fullstack/commit/c845a24450cecedf40b9e32568a5008cd0d63da9)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.13)
+    (from `0.108.12`, in `dependencies`)
+
+- [#1600](https://github.com/Urigo/accounter-fullstack/pull/1600)
+  [`6c9a985`](https://github.com/Urigo/accounter-fullstack/commit/6c9a98525f1423b46f90b66baea71a0c8705df72)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.13)
+    (from `0.108.12`, in `dependencies`)
+
+- [#1629](https://github.com/Urigo/accounter-fullstack/pull/1629)
+  [`424065e`](https://github.com/Urigo/accounter-fullstack/commit/424065ea0311f8293b3b5f00d69b0fc561e47442)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.106.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.106.18)
+    (from `0.106.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.105.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.105.13)
+    (from `0.105.12`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.14)
+    (from `0.108.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.105.13` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.105.13)
+    (from `0.105.12`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.103.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.103.12)
+    (from `0.103.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.103.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.103.12)
+    (from `0.103.11`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.103.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.103.12)
+    (from `0.103.11`, in `dependencies`)
+
+- [#1666](https://github.com/Urigo/accounter-fullstack/pull/1666)
+  [`53d22fc`](https://github.com/Urigo/accounter-fullstack/commit/53d22fcaf5481a19c026a361931bd4df67d98f8f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.108.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.108.15)
+    (from `0.108.14`, in `dependencies`)
+
 ## 0.7.2
 
 ### Patch Changes
