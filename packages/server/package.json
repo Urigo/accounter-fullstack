@@ -23,7 +23,7 @@
     "@anthropic-ai/sdk": "0.36.3",
     "@envelop/generic-auth": "8.0.1",
     "@envelop/graphql-modules": "6.0.0",
-    "@graphql-hive/yoga": "0.39.4",
+    "@graphql-hive/yoga": "0.40.1",
     "@graphql-yoga/plugin-defer-stream": "3.11.0",
     "@pgtyped/cli": "2.4.2",
     "@pgtyped/runtime": "2.3.0",
