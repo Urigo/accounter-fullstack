@@ -1,0 +1,174 @@
+---
+description: Standards and patterns for React components in the Accounter project
+globs: packages/client/src/components/**/*.tsx
+---
+# React Components Guidelines
+
+## Component Structure
+1. **File Organization**
+   ```typescript
+   import { ReactElement } from 'react';
+   import { ComponentProps } from './types';
+   
+   export function ComponentName({ prop1, prop2 }: ComponentProps): ReactElement {
+     return (
+       // JSX
+     );
+   }
+   ```
+
+## UI Components
+
+### shadcn/ui Usage
+1. **Component Imports**
+   ```typescript
+   import {
+     Button,
+     Card,
+     Input,
+     Select,
+     Dialog,
+     Form
+   } from "@/components/ui";
+   ```
+
+2. **Tailwind Classes**
+   - Prefer core Tailwind utility classes
+   ```tsx
+   // ✅ CORRECT
+   <div className="h-64 w-full p-4">
+   
+   // ❌ WRONG
+   <div className="h-[500px] w-[42rem] p-[15px]">
+   ```
+
+3. **Component Installation**
+   ```bash
+   npx shadcn-ui@latest add [component-name]
+   ```
+
+### Form Components
+1. **Form Implementation**
+   ```tsx
+   import { useForm } from 'react-hook-form';
+   import { zodResolver } from '@hookform/resolvers/zod';
+   import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+   import { Input } from '@/components/ui/input';
+   import { formSchema } from './schema';
+   
+   export function FormComponent(): ReactElement {
+     const form = useForm({
+       resolver: zodResolver(formSchema)
+     });
+     
+     return (
+       <Form {...form}>
+         <form onSubmit={form.handleSubmit(onSubmit)}>
+           <FormField
+             control={form.control}
+             name="fieldName"
+             render={({ field }) => (
+               <FormItem>
+                 <FormLabel>Label</FormLabel>
+                 <Input {...field} />
+                 <FormMessage />
+               </FormItem>
+             )}
+           />
+         </form>
+       </Form>
+     );
+   }
+   ```
+
+## Error Handling
+1. **Loading States**
+   ```tsx
+   import { Loader2 } from 'lucide-react';
+   
+   {fetching ? (
+     <Loader2 className="h-10 w-10 animate-spin" />
+   ) : (
+     // Content
+   )}
+   ```
+
+2. **Error States**
+   ```tsx
+   import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+   
+   {error && (
+     <Alert variant="destructive">
+       <AlertTitle>Error</AlertTitle>
+       <AlertDescription>{error.message}</AlertDescription>
+     </Alert>
+   )}
+   ```
+
+## GraphQL Integration
+1. **Queries**
+   ```typescript
+   const [{ data, fetching, error }] = useQuery({
+     query: YourQueryDocument,
+     variables: {
+       // variables
+     }
+   });
+   ```
+
+2. **Mutations**
+   ```typescript
+   const [{ fetching }, executeMutation] = useMutation(YourMutationDocument);
+   ```
+
+## Performance
+1. **Memoization**
+   ```typescript
+   const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+   ```
+
+2. **Callbacks**
+   ```typescript
+   const handleClick = useCallback(() => {
+     // handler logic
+   }, [dependencies]);
+   ```
+
+## Accessibility
+1. **ARIA Attributes**
+   ```typescript
+   <Button
+     aria-label="Close dialog"
+     aria-expanded={isOpen}
+     onClick={onClose}
+   >
+     Close
+   </Button>
+   ```
+
+## Dialog Components
+```tsx
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+export function DialogComponent(): ReactElement {
+  return (
+    <Dialog>
+      <DialogTrigger>Open</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Title</DialogTitle>
+          <DialogDescription>Description</DialogDescription>
+        </DialogHeader>
+        {/* Content */}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
