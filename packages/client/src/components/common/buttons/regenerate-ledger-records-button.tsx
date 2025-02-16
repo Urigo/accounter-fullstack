@@ -1,19 +1,16 @@
 import { ReactElement, useState } from 'react';
 import { RefreshDot } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
+import { ActionIcon } from '../../ui/action-icon.js';
 import { ConfirmationModal } from '../index.js';
 
 type Props = {
   chargeId: string;
   onChange: () => void;
-} & ActionIconProps;
+};
 
-export function RegenerateLedgerRecordsButton({
-  chargeId,
-  onChange,
-  ...buttonProps
-}: Props): ReactElement {
+export function RegenerateLedgerRecordsButton({ chargeId, onChange }: Props): ReactElement {
   const [opened, setOpened] = useState(false);
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
 
@@ -34,11 +31,10 @@ export function RegenerateLedgerRecordsButton({
       />
       <Tooltip label="Regenerate Ledger">
         <ActionIcon
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+          onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
             event.stopPropagation();
             setOpened(true);
           }}
-          {...buttonProps}
         >
           <RefreshDot size={20} />
         </ActionIcon>
