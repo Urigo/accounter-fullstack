@@ -57,14 +57,14 @@ const AuthorizationModel = zod.object({
 
 const HiveModel = zod.union([
   zod.object({
-    HIVE_TOKEN: zod.string(),
+    HIVE_TOKEN: zod.string().optional(),
   }),
   zod.void(),
 ]);
 
 const GoogleModel = zod.union([
   zod.object({
-    GOOGLE_DRIVE_API_KEY: zod.string(),
+    GOOGLE_DRIVE_API_KEY: zod.string().optional(),
   }),
   zod.void(),
 ]);
