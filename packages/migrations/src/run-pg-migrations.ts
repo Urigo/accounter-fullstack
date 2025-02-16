@@ -73,6 +73,7 @@ import migration_2025_01_21T13_37_41_add_poalim_cad from './actions/2025-01-21T1
 import migration_2025_01_21T21_50_26_add_max_creditcard_source from './actions/2025-01-21T21-50-26.add-max-creditcard-source.js';
 import migration_2025_01_29T17_31_52_add_counter_account_to_extended_transaction from './actions/2025-01-29T17-31-52.add-counter-account-to-extended-transaction.js';
 import migration_2025_01_30T11_50_54_max_transactions_trigger_fix from './actions/2025-01-30T11-50-54.max-transactions-trigger-fix.js';
+import migration_2025_02_13T14_40_22_update_poalim_column_length_restriction from './actions/2025-02-13T14-40-22.update-poalim-column-length-restriction.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -153,5 +154,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_01_21T21_50_26_add_max_creditcard_source,
       migration_2025_01_29T17_31_52_add_counter_account_to_extended_transaction,
       migration_2025_01_30T11_50_54_max_transactions_trigger_fix,
+      migration_2025_02_13T14_40_22_update_poalim_column_length_restriction,
     ],
   });
