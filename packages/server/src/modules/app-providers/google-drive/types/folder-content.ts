@@ -13,8 +13,8 @@ const filesSchema = z.array(fileSchema);
 
 export const folderContentSchema = z.object({
   files: filesSchema,
-  kind: z.string(),
-  incompleteSearch: z.boolean(),
+  kind: z.string().optional(),
+  incompleteSearch: z.boolean().optional(),
 });
 
 export type DriveFolderContent = z.infer<typeof folderContentSchema>;

@@ -152,8 +152,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       await Promise.all(
         files.map(async file => {
           // get new document data
-          const newDocument = await getDocumentFromFile(context, file, chargeId, isSensitive);
-          newDocuments.push(newDocument);
+          try {
+            const newDocument = await getDocumentFromFile(context, file, chargeId, isSensitive);
+            newDocuments.push(newDocument);
+          } catch (error) {
+            // Skip this file and continue with other files
+            console.error(error);
+          }
         }),
       );
 

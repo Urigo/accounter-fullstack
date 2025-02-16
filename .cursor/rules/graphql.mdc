@@ -1,0 +1,233 @@
+---
+description: Standards and patterns for developing GraphQL endpoints, resolvers, and types
+globs: packages/server/src/modules/**/*.ts", "packages/server/src/modules/*/typeDefs/*.graphql.ts
+---
+# GraphQL Development Guidelines
+
+## Adding New Types
+
+1. **Create Type Definition**
+   ```typescript
+   // packages/server/src/modules/example/typeDefs/example.graphql.ts
+   import { gql } from 'graphql-modules';
+
+   export const typeDefs = gql`
+     type Example {
+       id: UUID!
+       name: String!
+       description: String
+       createdAt: DateTime!
+       owner: LtdFinancialEntity!
+     }
+
+     input CreateExampleInput {
+       name: String!
+       description: String
+       ownerId: UUID!
+     }
+
+     extend type Query {
+       example(id: UUID!): Example
+       allExamples: [Example!]!
+     }
+
+     extend type Mutation {
+       createExample(input: CreateExampleInput!): Example!
+     }
+   `;
+   ```
+
+2. **Register Module**
+   ```typescript
+   // packages/server/src/modules/example/module.ts
+   import { createModule } from 'graphql-modules';
+   import { resolvers } from './resolvers';
+   import { typeDefs } from './typeDefs/example.graphql';
+
+   export const exampleModule = createModule({
+     id: 'example',
+     dirname: __dirname,
+     typeDefs,
+     resolvers,
+   });
+   ```
+
+## Implementing Resolvers
+
+1. **Query Resolvers**
+   ```typescript
+   // packages/server/src/modules/example/resolvers/queries/
+   import { QueryResolvers } from '../../../../__generated__/types';
+
+   export const example: QueryResolvers['example'] = async (
+     _parent,
+     { id },
+     { injector }
+   ) => {
+     const provider = injector.get(ExampleProvider);
+     return provider.getExampleById(id);
+   };
+
+   export const allExamples: QueryResolvers['allExamples'] = async (
+     _parent,
+     _args,
+     { injector }
+   ) => {
+     const provider = injector.get(ExampleProvider);
+     return provider.getAllExamples();
+   };
+   ```
+
+2. **Mutation Resolvers**
+   ```typescript
+   // packages/server/src/modules/example/resolvers/mutations/
+   import { MutationResolvers } from '../../../../__generated__/types';
+
+   export const createExample: MutationResolvers['createExample'] = async (
+     _parent,
+     { input },
+     { injector }
+   ) => {
+     const provider = injector.get(ExampleProvider);
+     return provider.createExample(input);
+   };
+   ```
+
+3. **Field Resolvers**
+   ```typescript
+   // packages/server/src/modules/example/resolvers/example.ts
+   import { ExampleResolvers } from '../../../__generated__/types';
+
+   export const Example: ExampleResolvers = {
+     owner: async (parent, _args, { injector }) => {
+       const provider = injector.get(FinancialEntitiesProvider);
+       return provider.getEntityById(parent.ownerId);
+     }
+   };
+   ```
+
+## Data Providers
+
+1. **Provider Implementation**
+   ```typescript
+   // packages/server/src/modules/example/providers/example.provider.ts
+   import { Injectable } from 'graphql-modules';
+   import { DatabaseService } from '../../database/database.service';
+
+   @Injectable()
+   export class ExampleProvider {
+     constructor(private db: DatabaseService) {}
+
+     async getExampleById(id: string) {
+       const result = await this.db.query(
+         'SELECT * FROM examples WHERE id = $1',
+         [id]
+       );
+       return result.rows[0];
+     }
+
+     async createExample(input: CreateExampleInput) {
+       const result = await this.db.query(
+         'INSERT INTO examples (name, description, owner_id) VALUES ($1, $2, $3) RETURNING *',
+         [input.name, input.description, input.ownerId]
+       );
+       return result.rows[0];
+     }
+   }
+   ```
+
+## Type Generation
+
+1. **Generate Types**
+   ```bash
+   yarn generate
+   ```
+   This will:
+   - Generate TypeScript types from GraphQL schema
+   - Update resolver types
+   - Create client-side query types
+
+2. **Watch Mode**
+   ```bash
+   yarn generate:watch
+   ```
+   For development, watches for changes and regenerates types
+
+## GraphQL Schema Best Practices
+
+1. **Naming Conventions**
+   - Use PascalCase for types
+   - Use camelCase for fields and arguments
+   - Use ALL_CAPS for enums
+   ```graphql
+   type BusinessTransaction {
+     id: UUID!
+     transactionDate: DateTime!
+     transactionType: TransactionType!
+     status: TransactionStatus!
+   }
+
+   enum TransactionStatus {
+     PENDING
+     COMPLETED
+     FAILED
+   }
+   ```
+
+2. **Input Types**
+   - Use descriptive names for input types
+   - Group related fields in separate input types
+   ```graphql
+   input CreateTransactionInput {
+     date: DateTime!
+     amount: AmountInput!
+     metadata: TransactionMetadataInput
+   }
+
+   input AmountInput {
+     value: Float!
+     currency: Currency!
+   }
+   ```
+
+3. **Error Handling**
+   - Use union types for operation results
+   ```graphql
+   type CommonError {
+     message: String!
+   }
+
+   union CreateTransactionResult = Transaction | CommonError
+   ```
+
+## Client-Side Integration
+
+1. **Define Operations**
+   ```typescript
+   // packages/client/src/gql/example.graphql.ts
+   export const ExampleQuery = gql`
+     query Example($id: UUID!) {
+       example(id: $id) {
+         id
+         name
+         description
+         owner {
+           id
+           name
+         }
+       }
+     }
+   `;
+   ```
+
+2. **Use Generated Types**
+   ```typescript
+   import { ExampleQuery } from '../gql/graphql';
+   
+   function ExampleComponent({ id }: { id: string }) {
+     const [{ data }] = useQuery<ExampleQuery>({
+       query: ExampleQueryDocument,
+       variables: { id }
+     });
+   }
+   ```
