@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { FileDown } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
+import { Button } from '../../ui/button';
 
 interface Props {
   data: string;
@@ -21,9 +22,9 @@ function csvDownload(data: string, fileName: string): void {
 export const DownloadCSVButton = ({ data, fileName }: Props): ReactElement => {
   return (
     <Tooltip label="Download CSV" position="top">
-      <button onClick={() => csvDownload(data, fileName)}>
-        <FileDown />
-      </button>
+      <Button variant="outline" onClick={() => csvDownload(data, fileName)} className="p-2">
+        <FileDown size={20} />
+      </Button>
     </Tooltip>
   );
 };

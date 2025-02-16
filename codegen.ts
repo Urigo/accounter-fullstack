@@ -52,7 +52,6 @@ const config: CodegenConfig = {
           TransactionDirection: '@shared/enums#TransactionDirection',
         },
         mappers: {
-          MiscExpense: '@modules/misc-expenses/types.js#IGetExpensesByChargeIdsResult',
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
@@ -93,6 +92,7 @@ const config: CodegenConfig = {
           DepreciationRecord: '@modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
+          DynamicReportInfo: '@modules/reports/types.js#IGetTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
           IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
@@ -103,6 +103,7 @@ const config: CodegenConfig = {
           LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargesIdsResult',
           Ledger: '@shared/types#LedgerRecordsProto',
           LtdFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
+          MiscExpense: '@modules/misc-expenses/types.js#IGetExpensesByChargeIdsResult',
           MonthlyVatCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           OtherDocument: '@modules/documents/types.js#IGetAllDocumentsResult',
           PersonalFinancialEntity: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
