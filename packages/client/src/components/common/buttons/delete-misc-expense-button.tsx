@@ -6,9 +6,10 @@ import { ConfirmationModal } from '../index.js';
 
 interface Props {
   miscExpenseId: string;
+  onChange?: () => void;
 }
 
-export function DeleteMiscExpenseButton({ miscExpenseId }: Props): ReactElement {
+export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): ReactElement {
   const [opened, setOpened] = useState(false);
   const { deleteMiscExpense } = useDeleteMiscExpense();
 
@@ -16,6 +17,7 @@ export function DeleteMiscExpenseButton({ miscExpenseId }: Props): ReactElement 
     deleteMiscExpense({
       id: miscExpenseId,
     });
+    onChange?.();
     setOpened(false);
   }
 
