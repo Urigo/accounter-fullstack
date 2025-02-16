@@ -8,6 +8,7 @@ import { TransactionsTable } from '../common/index.js';
   fragment ChargeTableTransactionsFields on Charge {
     id
     transactions {
+      id
       ...TransactionForTransactionsTableFields
     }
   }
