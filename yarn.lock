@@ -4244,7 +4244,7 @@
     ts-parse-database-url "^1.0.3"
     yargs "^17.0.1"
 
-"@pgtyped/parser@^2.3.0", "@pgtyped/parser@^2.4.2":
+"@pgtyped/parser@^2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@pgtyped/parser/-/parser-2.4.2.tgz#d7d6e171d8c4cbcddbedebba970c114fad250cea"
   integrity sha512-LbK90cz+CAjG+jsiKS5FNVkb97Ys5xZa1xmSIq7N2zYz1vX04hr6xNhDUSjbC8C/YnFm1S+d2D6BbHMgzsBilw==
@@ -4263,16 +4263,7 @@
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/runtime@2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@pgtyped/runtime/-/runtime-2.3.0.tgz#b74af5ed3b47df487bd582fc3d6ea243b0a49ded"
-  integrity sha512-B8RMUeX+zsaXfKOuR3w3Vku5YLSQ8rw+YUYc2IyAFzlQJZpAQDkkAVM0abgGNQE8bOK1wuE+nHJawWuVy+I8bA==
-  dependencies:
-    "@pgtyped/parser" "^2.3.0"
-    chalk "^4.1.0"
-    debug "^4.1.1"
-
-"@pgtyped/runtime@^2.4.2":
+"@pgtyped/runtime@2.4.2", "@pgtyped/runtime@^2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@pgtyped/runtime/-/runtime-2.4.2.tgz#5044f041e1de2ac5e3ee86c3931a39ec78f687aa"
   integrity sha512-W1fK475KjmkhleK4Be7swblT5Kqykxc/APe57r8cgmxLzbT/x9Q3BjOLBJhBPxp1gKFZGgQyxtELPOaNl/66jg==
