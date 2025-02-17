@@ -13,12 +13,17 @@ export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): Rea
   const [opened, setOpened] = useState(false);
   const { deleteMiscExpense } = useDeleteMiscExpense();
 
-  function onDelete(): void {
-    deleteMiscExpense({
-      id: miscExpenseId,
-    });
-    onChange?.();
-    setOpened(false);
+  async function onDelete(): Promise<void> {
+    try {
+      await deleteMiscExpense({
+        id: miscExpenseId,
+      });
+      onChange?.();
+      setOpened(false);
+    } catch (error) {
+      // Handle error appropriately
+      console.error('Failed to delete misc expense:', error);
+    }
   }
 
   return (
