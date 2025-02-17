@@ -7,7 +7,9 @@ import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
 import {
   AllSortCodesDocument,
+  AllSortCodesQuery,
   ContoReportDocument,
+  ContoReportQuery,
   TemplateForContoReportDocument,
 } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -85,6 +87,100 @@ import { CustomData } from './types.js';
 const BANK_TREE_ROOT_ID = 'bank';
 export const REPORT_TREE_ROOT_ID = 'report';
 export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
+
+function buildSortCodeFinancialEntitiesMaps(tree: NodeModel<CustomData>[]) {
+  const sortCodeMap = new Map<number, string | number>();
+  const financialEntitiesMap = new Map<string, string | number>();
+  tree.map(({ data, id }) => {
+    if (data?.descendantSortCodes?.length) {
+      data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
+    }
+    if (data?.descendantFinancialEntities?.length) {
+      data.descendantFinancialEntities.map(financialEntity =>
+        financialEntitiesMap.set(financialEntity, id),
+      );
+    }
+  });
+  return { sortCodeMap, financialEntitiesMap };
+}
+
+function updateSortCodesTreeNodes(
+  tree: NodeModel<CustomData>[],
+  sortCodes: AllSortCodesQuery['allSortCodes'],
+  sortCodeMap: Map<number, string | number>,
+) {
+  const newTree = [...tree];
+  sortCodes.map(sortCode => {
+    if (newTree.find(node => node.id === sortCode.id)) {
+      return;
+    }
+
+    const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
+    newTree.push({
+      id: sortCode.id,
+      parent: parentId ?? BANK_TREE_ROOT_ID,
+      droppable: true,
+      text: sortCode.name!,
+      data: {
+        sortCode: sortCode.id,
+        isOpen: false,
+      },
+    });
+  });
+
+  return newTree;
+}
+
+function updateFinancialEntitiesTreeNodes(
+  tree: NodeModel<CustomData>[],
+  businessesSum: Extract<
+    NonNullable<ContoReportQuery['businessTransactionsSumFromLedgerRecords']>,
+    { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
+  >['businessTransactionsSum'],
+  financialEntitiesMap: Map<string, string | number>,
+  isShowZeroedAccounts?: boolean,
+) {
+  const newTree = [...tree];
+  businessesSum.map(businessSum => {
+    const value = businessSum.total.raw * -1;
+    if (!isShowZeroedAccounts && Math.abs(value) < 0.005) {
+      return;
+    }
+    const node = newTree.find(node => node.id === businessSum.business.id);
+    if (node) {
+      if (node.data?.value !== value) {
+        node.data = {
+          ...node.data,
+          isOpen: false,
+          value,
+        };
+      }
+      return;
+    }
+
+    let parent = financialEntitiesMap.get(businessSum.business.id);
+    if (!parent) {
+      if (newTree.find(node => node.id === businessSum.business.sortCode?.id)) {
+        parent = businessSum.business.sortCode!.id;
+      } else {
+        parent = BANK_TREE_ROOT_ID;
+      }
+    }
+
+    newTree.push({
+      id: businessSum.business.id,
+      parent,
+      droppable: false,
+      text: businessSum.business.name,
+      data: {
+        value,
+        isOpen: false,
+      },
+    });
+  });
+
+  return newTree;
+}
 
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
@@ -290,7 +386,6 @@ export const ContoReport: React.FC = () => {
     );
   }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree, templateName]);
 
-  // adding sort codes cards to main tree
   const sortCodes = useMemo(() => {
     if (sortCodesData?.allSortCodes) {
       const sortCodes = sortCodesData.allSortCodes
@@ -301,7 +396,6 @@ export const ContoReport: React.FC = () => {
     return [];
   }, [sortCodesData]);
 
-  // adding financial entities cards to main tree
   const businessesSum = useMemo(() => {
     if (
       businessTransactionsSumData &&
@@ -316,75 +410,20 @@ export const ContoReport: React.FC = () => {
 
   const reorderTree = useCallback(() => {
     setTree(tree => {
-      const sortCodeMap = new Map<number, string | number>();
-      const financialEntitiesMap = new Map<string, string | number>();
-      tree.map(({ data, id }) => {
-        if (data?.descendantSortCodes?.length) {
-          data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
-        }
-        if (data?.descendantFinancialEntities?.length) {
-          data.descendantFinancialEntities.map(financialEntity =>
-            financialEntitiesMap.set(financialEntity, id),
-          );
-        }
-      });
+      const { sortCodeMap, financialEntitiesMap } = buildSortCodeFinancialEntitiesMaps(tree);
 
-      sortCodes.map(sortCode => {
-        if (tree.find(node => node.id === sortCode.id)) {
-          return;
-        }
+      // update / add sort codes nodes
+      const treeWithSortCodes = updateSortCodesTreeNodes(tree, sortCodes, sortCodeMap);
 
-        const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
-        tree.push({
-          id: sortCode.id,
-          parent: parentId ?? BANK_TREE_ROOT_ID,
-          droppable: true,
-          text: sortCode.name!,
-          data: {
-            sortCode: sortCode.id,
-            isOpen: false,
-          },
-        });
-      });
+      // update / add financial entities nodes
+      const treeWithFinancialEntities = updateFinancialEntitiesTreeNodes(
+        treeWithSortCodes,
+        businessesSum,
+        financialEntitiesMap,
+        filter.isShowZeroedAccounts,
+      );
 
-      businessesSum.map(businessSum => {
-        const value = businessSum.total.raw * -1;
-        if (!filter.isShowZeroedAccounts && Math.abs(value) < 0.005) {
-          return;
-        }
-        const node = tree.find(node => node.id === businessSum.business.id);
-        if (node) {
-          if (node.data?.value !== value) {
-            node.data = {
-              ...node.data,
-              isOpen: false,
-              value,
-            };
-          }
-          return;
-        }
-
-        let parent = financialEntitiesMap.get(businessSum.business.id);
-        if (!parent) {
-          if (tree.find(node => node.id === businessSum.business.sortCode?.id)) {
-            parent = businessSum.business.sortCode!.id;
-          } else {
-            parent = BANK_TREE_ROOT_ID;
-          }
-        }
-
-        tree.push({
-          id: businessSum.business.id,
-          parent,
-          droppable: false,
-          text: businessSum.business.name,
-          data: {
-            value,
-            isOpen: false,
-          },
-        });
-      });
-      return tree;
+      return treeWithFinancialEntities;
     });
   }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, setTree]);
 
