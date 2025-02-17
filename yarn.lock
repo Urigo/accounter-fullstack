@@ -2500,7 +2500,7 @@
     "@graphql-tools/utils" "^10.8.0"
     tslib "^2.4.0"
 
-"@graphql-mesh/runtime@0.105.13", "@graphql-mesh/runtime@^0.105.13":
+"@graphql-mesh/runtime@0.105.13":
   version "0.105.13"
   resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.105.13.tgz#617e9e4814dbe13a1d80c863999a44d9a71ddb52"
   integrity sha512-XzSiqaDwOz2vc1/A4OBS4Slp8ppaVoFhLQn3HO0ovnf+aftZVf0Zf0Rvgx3PiqIYkprQJlRI+/xwkkxHvGAA+Q==
@@ -2516,6 +2516,27 @@
     "@graphql-tools/delegate" "^10.0.28"
     "@graphql-tools/executor" "^1.3.2"
     "@graphql-tools/utils" "^10.6.0"
+    "@graphql-tools/wrap" "^10.0.28"
+    "@whatwg-node/fetch" "^0.10.0"
+    graphql-jit "^0.8.7"
+    tslib "^2.4.0"
+
+"@graphql-mesh/runtime@^0.105.13":
+  version "0.105.18"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.105.18.tgz#52b559a90ba3e7a711b34fe413da7ea6bda73045"
+  integrity sha512-uT0oBLd0JuZOMW9ylWAK7BikEqrfJlpGjOD9G4KBazMlO8aF15iNRw/oUFSvdg8kMdylpQjSqgpz0qeyog1a8Q==
+  dependencies:
+    "@envelop/core" "^5.0.0"
+    "@envelop/extended-validation" "^4.0.0"
+    "@envelop/graphql-jit" "^8.0.0"
+    "@graphql-mesh/cross-helpers" "^0.4.10"
+    "@graphql-mesh/string-interpolation" "^0.5.8"
+    "@graphql-mesh/types" "^0.103.17"
+    "@graphql-mesh/utils" "^0.103.17"
+    "@graphql-tools/batch-delegate" "^9.0.9"
+    "@graphql-tools/delegate" "^10.0.28"
+    "@graphql-tools/executor" "^1.3.2"
+    "@graphql-tools/utils" "^10.8.0"
     "@graphql-tools/wrap" "^10.0.28"
     "@whatwg-node/fetch" "^0.10.0"
     graphql-jit "^0.8.7"
@@ -7859,9 +7880,9 @@ camelcase@^5.0.0:
   integrity sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==
 
 caniuse-lite@^1.0.30001579, caniuse-lite@^1.0.30001646, caniuse-lite@^1.0.30001688, caniuse-lite@^1.0.30001698:
-  version "1.0.30001699"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001699.tgz#a102cf330d153bf8c92bfb5be3cd44c0a89c8c12"
-  integrity sha512-b+uH5BakXZ9Do9iK+CkDmctUSEqZl+SP056vc5usa0PL+ev5OHw003rZXcnjNDv3L8P5j6rwT6C0BPKSikW08w==
+  version "1.0.30001700"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001700.tgz#26cd429cf09b4fd4e745daf4916039c794d720f6"
+  integrity sha512-2S6XIXwaE7K7erT8dY+kLQcpa5ms63XlRkMkReXjle+kf6c5g38vyMl+Z5y8dSxOFDhcFe+nxnn261PLxBSQsQ==
 
 capital-case@^1.0.4:
   version "1.0.4"
