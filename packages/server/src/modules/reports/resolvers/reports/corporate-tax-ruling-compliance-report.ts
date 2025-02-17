@@ -37,7 +37,7 @@ function rndTaxCategoryType(sortCode?: number | null): ExpenseType | null {
   if (!sortCode) {
     return null;
   }
-  if ([920, 922, 923, 924].includes(sortCode)) {
+  if ([920, 922, 923, 924, 925].includes(sortCode)) {
     // R&D expenses
     return ExpenseType.DevOps;
   }
