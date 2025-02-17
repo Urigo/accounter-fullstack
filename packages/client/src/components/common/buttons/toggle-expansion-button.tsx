@@ -1,6 +1,7 @@
 import { ReactElement } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
+import { ActionIcon } from '../../ui/action-icon.js';
 
 export function ToggleExpansionButton(props: {
   toggleExpansion: (value: React.SetStateAction<boolean>) => void;
@@ -12,8 +13,8 @@ export function ToggleExpansionButton(props: {
   return (
     <Tooltip label="Expand info">
       <ActionIcon
-        variant="default"
-        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        variant="outline"
+        onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
           event.stopPropagation();
           toggleExpansion(i => {
             if (onClickAction) {
