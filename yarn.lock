@@ -3782,10 +3782,10 @@
     delaunator "^5.0.1"
     robust-predicates "^3.0.2"
 
-"@mui/x-charts@7.26.0":
-  version "7.26.0"
-  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.26.0.tgz#b771e3d1ef418a72c8091bbc9f15e41a86fe800a"
-  integrity sha512-fla1pbMuyHhbWeDo6j5Vz8FHULdPnqACqQrXeLXo9p5kuJpcT9m28DQ1E3YmQ6xGD9NuaxiZdOaITT9PA2zMFQ==
+"@mui/x-charts@7.27.0":
+  version "7.27.0"
+  resolved "https://registry.yarnpkg.com/@mui/x-charts/-/x-charts-7.27.0.tgz#cf70df4020030e26607c25cc86cef3e85d8d4f44"
+  integrity sha512-EIT5zbClc8n14qBvCD7jYSVI4jWAWajY7g8gznf5rggCJuv08IHfmi23q6afax73q6yTAi30qeUmcqttqXV4DQ==
   dependencies:
     "@babel/runtime" "^7.25.7"
     "@mui/utils" "^5.16.6 || ^6.0.0"
