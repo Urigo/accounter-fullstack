@@ -85,7 +85,7 @@ export const CustomNode: React.FC<Props> = props => {
         <TypeIcon droppable={droppable || false} open={props.isOpen} />
       )}
       <div className="ps-2">
-        {visibleInput && droppable ? (
+        {visibleInput && isCategory ? (
           <div className="items-center grid grid-cols-[repeat(3,auto)] justify-start ">
             <Input className="text-sm py-2 w-48" value={labelText} onChange={handleChangeText} />
             <IconButton className="p-1" onClick={handleSubmit} disabled={labelText === ''}>
@@ -112,7 +112,7 @@ export const CustomNode: React.FC<Props> = props => {
                   : props.node.data.value,
               )}
             </Badge>
-            {droppable && (
+            {isCategory && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="p-1">

@@ -101,6 +101,7 @@ export default [
               'ConversionRate',
               'DateRange',
               'DocumentSuggestions',
+              'DynamicReportNodeData',
               'ExchangeRates',
               'FinancialAmount',
               'FinancialIntAmount',
