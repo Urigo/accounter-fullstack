@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 const dynamicReportNodeData = z
   .object({
-    descendantSortCodes: z.array(z.number()).optional(),
-    descendantFinancialEntities: z.array(z.string()).optional(),
-    mergedSortCodes: z.array(z.number()).optional(),
+    descendantSortCodes: z.union([z.array(z.number()), z.null()]).optional(),
+    descendantFinancialEntities: z.union([z.array(z.string().uuid()), z.null()]).optional(),
+    mergedSortCodes: z.union([z.array(z.number()), z.null()]).optional(),
     isOpen: z.boolean(),
     hebrewText: z.string().optional(),
   })

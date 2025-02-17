@@ -28,7 +28,7 @@ export default gql`
 
   " a single node of dynamic report template "
   type DynamicReportNode {
-    id: String!
+    id: ID!
     parent: String!
     text: String!
     droppable: Boolean!

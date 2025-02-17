@@ -1,11 +1,15 @@
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { FolderPlus } from 'lucide-react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { FolderPlus, Loader2 } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
-import { AllSortCodesDocument, ContoReportDocument } from '../../../gql/graphql.js';
+import {
+  AllSortCodesDocument,
+  ContoReportDocument,
+  TemplateForContoReportDocument,
+} from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Button } from '../../ui/button.js';
@@ -14,6 +18,7 @@ import { Switch } from '../../ui/switch.js';
 import { ContentTooltip } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
+import { ManageTemplates } from './conto-report-manage-templates.js';
 import { SaveTemplate } from './conto-report-save-template.js';
 import { DownloadCSV } from './download-csv.js';
 import { TreeView } from './tree-view.js';
@@ -54,644 +59,39 @@ import { CustomData } from './types.js';
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query TemplateForContoReport($name: String!) {
+    dynamicReport(name: $name) {
+      id
+      name
+      template {
+        id
+        parent
+        text
+        droppable
+        data {
+          descendantSortCodes
+          descendantFinancialEntities
+          mergedSortCodes
+          isOpen
+          hebrewText
+        }
+      }
+    }
+  }
+`;
+
 const BANK_TREE_ROOT_ID = 'bank';
 export const REPORT_TREE_ROOT_ID = 'report';
 export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
 
-const template: NodeModel<CustomData>[] = [
-  {
-    id: 'template-0',
-    parent: REPORT_TREE_ROOT_ID,
-    droppable: true,
-    text: 'Assets',
-    data: {
-      hebrewText: 'נכסים',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-00',
-    parent: 'template-0',
-    droppable: true,
-    text: 'Current Assets',
-    data: {
-      hebrewText: 'נכסים שוטפים',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-000',
-    parent: 'template-00',
-    droppable: true,
-    text: 'Cash and Cash Equivalents',
-    data: {
-      hebrewText: 'מזומנים ושווי מזומנים',
-      isOpen: false,
-      descendantSortCodes: [110],
-    },
-  },
-  {
-    id: 'template-001',
-    parent: 'template-00',
-    droppable: true,
-    text: 'Foreign Currency Deposits',
-    data: {
-      hebrewText: 'פקדונות מט"ח',
-      isOpen: false,
-      descendantSortCodes: [111, 115],
-    },
-  },
-  {
-    id: 'template-002',
-    parent: 'template-00',
-    droppable: true,
-    text: 'Accounts Receivable',
-    data: {
-      hebrewText: 'לקוחות',
-      isOpen: false,
-      descendantSortCodes: [300, 310],
-    },
-  },
-  {
-    id: 'template-003',
-    parent: 'template-00',
-    droppable: true,
-    text: 'Debtors and Debit Balances',
-    data: {
-      hebrewText: 'חייבים ויתרות חובה',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-template-0030',
-    parent: 'template-003',
-    droppable: true,
-    text: 'Prepaid Expenses',
-    data: {
-      hebrewText: 'הוצאות מראש',
-      isOpen: false,
-      descendantSortCodes: [150],
-    },
-  },
-  {
-    id: 'template-template-0031',
-    parent: 'template-003',
-    droppable: true,
-    text: 'Government Institutions (Debit)',
-    data: {
-      hebrewText: 'מוסדות ממשלתיים (חובה)',
-      isOpen: false,
-      descendantSortCodes: [510, 515],
-    },
-  },
-  {
-    id: 'template-template-0032',
-    parent: 'template-003',
-    droppable: true,
-    text: 'Other Receivables',
-    data: {
-      hebrewText: 'חייבים אחרים',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-template-0033',
-    parent: 'template-003',
-    droppable: true,
-    text: 'Accrued Income',
-    data: {
-      hebrewText: 'הכנסות לקבל',
-      isOpen: false,
-      descendantSortCodes: [160],
-    },
-  },
-  {
-    id: 'template-template-0034',
-    parent: 'template-003',
-    droppable: true,
-    text: 'Related Parties (Debit)',
-    data: {
-      hebrewText: 'צדדים קשורים (חובה)',
-      isOpen: false,
-      descendantSortCodes: [650],
-    },
-  },
-  {
-    id: 'template-01',
-    parent: 'template-0',
-    droppable: true,
-    text: 'Non-Current Assets',
-    data: {
-      hebrewText: 'נכסים לא שוטפים',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-010',
-    parent: 'template-01',
-    droppable: true,
-    text: 'Subsidiary Companies',
-    data: {
-      hebrewText: 'חברות מוחזקות',
-      isOpen: false,
-      descendantSortCodes: [190],
-    },
-  },
-  {
-    id: 'template-02',
-    parent: 'template-0',
-    droppable: true,
-    text: 'Fixed Assets',
-    data: {
-      hebrewText: 'רכוש קבוע',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-020',
-    parent: 'template-02',
-    droppable: true,
-    text: 'Fixed Assets, Net',
-    data: {
-      hebrewText: 'רכוש קבוע, נטו',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-0200',
-    parent: 'template-020',
-    droppable: true,
-    text: 'Cost',
-    data: {
-      hebrewText: 'עלות',
-      isOpen: false,
-      descendantSortCodes: [200],
-    },
-  },
-  {
-    id: 'template-0201',
-    parent: 'template-020',
-    droppable: true,
-    text: 'Accumulated Depreciation',
-    data: {
-      hebrewText: 'פחת נצבר',
-      isOpen: false,
-      descendantSortCodes: [210],
-    },
-  },
-  {
-    id: 'template-1',
-    parent: REPORT_TREE_ROOT_ID,
-    droppable: true,
-    text: 'Liabilities and Equity',
-    data: {
-      hebrewText: 'התחייבויות והון',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-10',
-    parent: 'template-1',
-    droppable: true,
-    text: 'Current Liabilities',
-    data: {
-      hebrewText: 'התחייבויות שוטפות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-100',
-    parent: 'template-10',
-    droppable: true,
-    text: 'Accounts Payable and Service Providers',
-    data: {
-      hebrewText: 'ספקים ונותני שירותים',
-      isOpen: false,
-      descendantSortCodes: [130, 400, 425],
-    },
-  },
-  {
-    id: 'template-101',
-    parent: 'template-10',
-    droppable: true,
-    text: 'Creditors and Credit Balances',
-    data: {
-      hebrewText: 'זכאים ויתרות זכות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1010',
-    parent: 'template-101',
-    droppable: true,
-    text: 'Employees and Payroll Institutions',
-    data: {
-      hebrewText: 'עובדים ומוסדות בגין שכר',
-      isOpen: false,
-      descendantSortCodes: [512, 500, 520],
-    },
-  },
-
-  {
-    id: 'template-1011',
-    parent: 'template-101',
-    droppable: true,
-    text: 'Provision for Vacation and Recovery Pay',
-    data: {
-      hebrewText: 'הפרשה לחופשה והבראה',
-      isOpen: false,
-      descendantSortCodes: [501],
-    },
-  },
-
-  {
-    id: 'template-1012',
-    parent: 'template-101',
-    droppable: true,
-    text: 'Government Institutions (Credit)',
-    data: {
-      hebrewText: 'מוסדות ממשלתיים (זכות)',
-      isOpen: false,
-      descendantSortCodes: [508],
-    },
-  },
-
-  {
-    id: 'template-1013',
-    parent: 'template-101',
-    droppable: true,
-    text: 'Accrued Expenses',
-    data: {
-      hebrewText: 'הוצאות לשלם',
-      isOpen: false,
-      descendantSortCodes: [600],
-    },
-  },
-
-  {
-    id: 'template-1014',
-    parent: 'template-101',
-    droppable: true,
-    text: 'Related Parties (Credit)',
-    data: {
-      hebrewText: 'צדדים קשורים (זכות)',
-      isOpen: false,
-      descendantSortCodes: [650],
-    },
-  },
-  {
-    id: 'template-11',
-    parent: 'template-1',
-    droppable: true,
-    text: 'Non-Current Liabilities',
-    data: {
-      hebrewText: 'התחייבויות לא שוטפות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-12',
-    parent: 'template-1',
-    droppable: true,
-    text: 'Equity',
-    data: {
-      hebrewText: 'הון',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-120',
-    parent: 'template-12',
-    droppable: true,
-    text: 'Share Capital',
-    data: {
-      hebrewText: 'הון  מניות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1200',
-    parent: 'template-120',
-    droppable: true,
-    text: 'Common Shares',
-    data: {
-      hebrewText: 'מניות רגילות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-121',
-    parent: 'template-12',
-    droppable: true,
-    text: 'Retained Earnings',
-    data: {
-      hebrewText: 'יתרת עודפים',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1210',
-    parent: 'template-121',
-    droppable: true,
-    text: 'Accumulated Profit at Beginning of Year',
-    data: {
-      hebrewText: 'רווח מצטבר לתחילת שנה',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1211',
-    parent: 'template-121',
-    droppable: true,
-    text: 'Dividends Distributed',
-    data: {
-      hebrewText: 'דיבידנד שחולק',
-      isOpen: false,
-      descendantSortCodes: [750],
-    },
-  },
-  {
-    id: 'template-13',
-    parent: 'template-1',
-    droppable: true,
-    text: 'Profit and Loss',
-    data: {
-      hebrewText: 'רווח והפסד',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-131',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Revenue',
-    data: {
-      hebrewText: 'הכנסות',
-      isOpen: false,
-      descendantSortCodes: [800, 810],
-    },
-  },
-  {
-    id: 'template-132',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Operating Expenses',
-    data: {
-      hebrewText: 'הוצאות תפעול',
-      isOpen: false,
-      descendantSortCodes: [910],
-    },
-  },
-  {
-    id: 'template-1320',
-    parent: 'template-132',
-    droppable: true,
-    text: 'Subcontractors',
-    data: {
-      hebrewText: 'קבלני משנה',
-      isOpen: false,
-      descendantSortCodes: [911],
-    },
-  },
-  {
-    id: 'template-1321',
-    parent: 'template-132',
-    droppable: true,
-    text: 'Miscellaneous',
-    data: {
-      hebrewText: 'אחרות',
-      isOpen: false,
-      descendantSortCodes: [912],
-    },
-  },
-  {
-    id: 'template-133',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Research and Development Expenses',
-    data: {
-      hebrewText: 'הוצאות מחקר ופיתוח',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1330',
-    parent: 'template-133',
-    droppable: true,
-    text: 'Salaries and Related Expenses',
-    data: {
-      hebrewText: 'משכורות ונלוות לשכר',
-      isOpen: false,
-      descendantSortCodes: [930, 931],
-    },
-  },
-
-  {
-    id: 'template-1331',
-    parent: 'template-133',
-    droppable: true,
-    text: 'Computing/IT',
-    data: {
-      hebrewText: 'מחשוב',
-      isOpen: false,
-      descendantSortCodes: [922],
-    },
-  },
-
-  {
-    id: 'template-1332',
-    parent: 'template-133',
-    droppable: true,
-    text: 'Foreign Travel',
-    data: {
-      hebrewText: 'נסיעות לחו"ל',
-      isOpen: false,
-      descendantSortCodes: [921],
-    },
-  },
-
-  {
-    id: 'template-1333',
-    parent: 'template-133',
-    droppable: true,
-    text: 'Depreciation',
-    data: {
-      hebrewText: 'פחת',
-      isOpen: false,
-      descendantSortCodes: [923],
-    },
-  },
-  {
-    id: 'template-1334',
-    parent: 'template-133',
-    droppable: true,
-    text: 'Subcontractors',
-    data: {
-      hebrewText: 'קבלני משנה',
-      isOpen: false,
-      descendantSortCodes: [924],
-    },
-  },
-  {
-    id: 'template-134',
-    parent: 'template-13',
-    droppable: true,
-    text: 'General and Administrative Expenses',
-    data: {
-      hebrewText: 'הוצאות הנהלה וכלליות',
-      isOpen: false,
-    },
-  },
-  {
-    id: 'template-1340',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Rent',
-    data: {
-      hebrewText: 'שכר דירה',
-      isOpen: false,
-      descendantSortCodes: [941],
-    },
-  },
-  {
-    id: 'template-1341',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Office Maintenance',
-    data: {
-      hebrewText: 'אחזקת משרד',
-      isOpen: false,
-      descendantSortCodes: [942],
-    },
-  },
-  {
-    id: 'template-1342',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Professional Services',
-    data: {
-      hebrewText: 'שרותים מקצועיים',
-      isOpen: false,
-      descendantSortCodes: [943],
-    },
-  },
-  {
-    id: 'template-1343',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Marketing',
-    data: {
-      hebrewText: 'שיווק',
-      isOpen: false,
-      descendantSortCodes: [935],
-    },
-  },
-  {
-    id: 'template-1344',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Insurance',
-    data: {
-      hebrewText: 'בטוחים',
-      isOpen: false,
-      descendantSortCodes: [944],
-    },
-  },
-  {
-    id: 'template-1345',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Foreign Travel',
-    data: {
-      hebrewText: 'נסיעות לחו"ל',
-      isOpen: false,
-      descendantSortCodes: [936, 945],
-    },
-  },
-  {
-    id: 'template-1346',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Membership Fees',
-    data: {
-      hebrewText: 'דמי חבר',
-      isOpen: false,
-      descendantSortCodes: [946],
-    },
-  },
-  {
-    id: 'template-1347',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Taxes and Levies',
-    data: {
-      hebrewText: 'מיסים ואגרות',
-      isOpen: false,
-      descendantSortCodes: [947],
-    },
-  },
-  {
-    id: 'template-1348',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Depreciation',
-    data: {
-      hebrewText: 'פחת',
-      isOpen: false,
-      descendantSortCodes: [948],
-    },
-  },
-  {
-    id: 'template-1349',
-    parent: 'template-134',
-    droppable: true,
-    text: 'Miscellaneous',
-    data: {
-      hebrewText: 'אחרות',
-      isOpen: false,
-      descendantSortCodes: [940],
-    },
-  },
-  {
-    id: 'template-135',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Financial Income (Expenses), Net',
-    data: {
-      hebrewText: 'הכנסות (הוצאות) מימון, נטו',
-      isOpen: false,
-      descendantSortCodes: [990],
-    },
-  },
-  {
-    id: 'template-136',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Other Income',
-    data: {
-      hebrewText: 'הכנסות אחרות',
-      isOpen: false,
-      descendantSortCodes: [995],
-    },
-  },
-  {
-    id: 'template-137',
-    parent: 'template-13',
-    droppable: true,
-    text: 'Income Tax',
-    data: {
-      hebrewText: 'מיסים על הכנסה',
-      isOpen: false,
-      descendantSortCodes: [999],
-    },
-  },
-];
-
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [tree, setTree] = useState<NodeModel<CustomData>[]>(template);
+  const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
   const [lastId, setLastId] = useState(1);
   const [enableDnd, setEnableDnd] = useState(false);
+  const [templateName, setTemplateName] = useState<string | undefined>(undefined);
   const { toast } = useToast();
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<ContoReportFiltersType>(
@@ -722,6 +122,16 @@ export const ContoReport: React.FC = () => {
   const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
     query: AllSortCodesDocument,
   });
+
+  // new template structure fetch
+  const [{ data: templateData, fetching: fetchingTemplate, error: templateError }, fetchTemplate] =
+    useQuery({
+      query: TemplateForContoReportDocument,
+      variables: {
+        name: templateName ?? '',
+      },
+      pause: true,
+    });
 
   const handleDrop = useCallback(
     (
@@ -850,6 +260,13 @@ export const ContoReport: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!!templateName && templateName !== '') {
+      fetchTemplate();
+    }
+  }, [templateName, fetchTemplate]);
+
+  // footer context
+  useEffect(() => {
     const handleClickSwitch = () => {
       setEnableDnd(prevState => !prevState);
     };
@@ -857,6 +274,7 @@ export const ContoReport: React.FC = () => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <DownloadCSV tree={tree} filters={filter} />
+        <ManageTemplates template={templateName} setTemplate={setTemplateName} />
         <SaveTemplate tree={tree} />
         <ContentTooltip content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
@@ -870,11 +288,11 @@ export const ContoReport: React.FC = () => {
         </div>
       </div>,
     );
-  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree]);
+  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree, templateName]);
 
+  // adding sort codes cards to main tree
   const sortCodes = useMemo(() => {
     if (sortCodesData?.allSortCodes) {
-      setTree(template);
       const sortCodes = sortCodesData.allSortCodes
         .filter(code => !!code.name)
         .sort((a, b) => (a.id > b.id ? 1 : -1));
@@ -883,39 +301,41 @@ export const ContoReport: React.FC = () => {
     return [];
   }, [sortCodesData]);
 
+  // adding financial entities cards to main tree
   const businessesSum = useMemo(() => {
     if (
       businessTransactionsSumData &&
       businessTransactionsSumData?.businessTransactionsSumFromLedgerRecords.__typename !==
         'CommonError'
     ) {
-      setTree(template);
       return businessTransactionsSumData.businessTransactionsSumFromLedgerRecords
         .businessTransactionsSum;
     }
     return [];
   }, [businessTransactionsSumData]);
 
-  const sortCodeMap = useRef(() => {
-    const sortCodeMap = new Map<number, string | number>();
-    template.map(({ data, id }) => {
-      if (data?.descendantSortCodes?.length) {
-        data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
-      }
-    });
-    return sortCodeMap;
-  });
+  const reorderTree = useCallback(() => {
+    setTree(tree => {
+      const sortCodeMap = new Map<number, string | number>();
+      const financialEntitiesMap = new Map<string, string | number>();
+      tree.map(({ data, id }) => {
+        if (data?.descendantSortCodes?.length) {
+          data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
+        }
+        if (data?.descendantFinancialEntities?.length) {
+          data.descendantFinancialEntities.map(financialEntity =>
+            financialEntitiesMap.set(financialEntity, id),
+          );
+        }
+      });
 
-  useEffect(() => {
-    sortCodes.map(sortCode => {
-      if (tree.find(node => node.id === sortCode.id)) {
-        return;
-      }
+      sortCodes.map(sortCode => {
+        if (tree.find(node => node.id === sortCode.id)) {
+          return;
+        }
 
-      const parentId = sortCodeMap.current().get(sortCode.id) ?? undefined;
-      setTree(tree => [
-        ...tree,
-        {
+        const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
+        tree.push({
           id: sortCode.id,
           parent: parentId ?? BANK_TREE_ROOT_ID,
           droppable: true,
@@ -924,56 +344,68 @@ export const ContoReport: React.FC = () => {
             sortCode: sortCode.id,
             isOpen: false,
           },
-        },
-      ]);
-    });
-  }, [sortCodesData, setTree, sortCodes, tree, sortCodeMap]);
+        });
+      });
 
-  useEffect(() => {
-    businessesSum.map(businessSum => {
-      const value = businessSum.total.raw * -1;
-      if (!filter.isShowZeroedAccounts && Math.abs(value) < 0.005) {
-        return;
-      }
-      if (tree.some(node => node.id === businessSum.business.id)) {
-        if (tree.some(node => node.id === businessSum.business.id && node.data?.value !== value)) {
-          setTree(
-            tree.map(node => {
-              if (node.id === businessSum.business.id) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    value,
-                    isOpen: false,
-                  },
-                };
-              }
-              return node;
-            }),
-          );
+      businessesSum.map(businessSum => {
+        const value = businessSum.total.raw * -1;
+        if (!filter.isShowZeroedAccounts && Math.abs(value) < 0.005) {
+          return;
         }
-        return;
-      }
+        const node = tree.find(node => node.id === businessSum.business.id);
+        if (node) {
+          if (node.data?.value !== value) {
+            node.data = {
+              ...node.data,
+              isOpen: false,
+              value,
+            };
+          }
+          return;
+        }
 
-      setTree(tree => [
-        ...tree,
-        {
+        let parent = financialEntitiesMap.get(businessSum.business.id);
+        if (!parent) {
+          if (tree.find(node => node.id === businessSum.business.sortCode?.id)) {
+            parent = businessSum.business.sortCode!.id;
+          } else {
+            parent = BANK_TREE_ROOT_ID;
+          }
+        }
+
+        tree.push({
           id: businessSum.business.id,
-          parent: tree.find(node => node.id === businessSum.business.sortCode?.id)
-            ? businessSum.business.sortCode!.id
-            : BANK_TREE_ROOT_ID,
+          parent,
           droppable: false,
           text: businessSum.business.name,
           data: {
             value,
             isOpen: false,
           },
-        },
-      ]);
+        });
+      });
+      return tree;
     });
-  }, [sortCodesData, setTree, businessesSum, tree, sortCodeMap, filter.isShowZeroedAccounts]);
+  }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, setTree]);
 
+  // On new template, update main tree
+  useEffect(() => {
+    if (!fetchingTemplate && templateData) {
+      const template = templateData.dynamicReport.template.map(node => ({
+        ...node,
+        data: { ...node.data, hebrewText: node.data.hebrewText },
+      }));
+      setTree(template);
+      reorderTree();
+    }
+  }, [templateData, fetchingTemplate, reorderTree]);
+
+  // trigger tree reorder on sort codes / financial entities / relevant filters change
+  useEffect(() => {
+    reorderTree();
+  }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, reorderTree]);
+
+  // error handling
   useEffect(() => {
     if (sortCodesError) {
       console.error(sortCodesError);
@@ -996,23 +428,44 @@ export const ContoReport: React.FC = () => {
     }
   }, [businessesSumError, toast]);
 
+  useEffect(() => {
+    if (templateError) {
+      console.error(templateError);
+      toast({
+        title: 'Error',
+        description: 'Unable to fetch template',
+        variant: 'destructive',
+      });
+    }
+  }, [templateError, toast]);
+
   const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
   const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);
 
-  if (
-    (!sortCodesData && fetchingSortCodes) ||
-    (!businessTransactionsSumData && businessTransactionsSumFetching)
-  ) {
-    return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Typography variant="h5">Loading...</Typography>
-      </div>
-    );
-  }
+  const fetching = useMemo(
+    () =>
+      (!sortCodesData && fetchingSortCodes) ||
+      (!businessTransactionsSumData && businessTransactionsSumFetching),
+    [
+      sortCodesData,
+      fetchingSortCodes,
+      businessTransactionsSumData,
+      businessTransactionsSumFetching,
+    ],
+  );
 
   return (
     <DndProvider backend={MultiBackend} options={getBackendOptions()}>
-      <div className="h-full grid grid-cols-[auto_1fr]">
+      <div className="h-full grid grid-cols-[auto_1fr] relative">
+        {fetching && (
+          <div className="absolute bg-white/60 z-10 h-full w-full flex items-center justify-center">
+            <div className="flex items-center">
+              <span className="text-3xl mr-4">
+                <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+              </span>
+            </div>
+          </div>
+        )}
         <div className="border-r border-solid corder-color-zinc-100 relative">
           <Typography variant="h5" className="px-4">
             Bank

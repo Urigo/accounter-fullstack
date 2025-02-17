@@ -101,6 +101,9 @@ export class DynamicReportProvider {
   }
 
   public insertTemplate(params: IInsertTemplateParams) {
+    if (params.ownerId) {
+      this.invalidateByOwnerId(params.ownerId);
+    }
     return insertTemplate.run(params, this.dbProvider);
   }
 
@@ -118,10 +121,7 @@ export class DynamicReportProvider {
   }
 
   public async invalidateByNameAndOwnerId(name: string, ownerId: string) {
-    const template = await this.cache.get(`template-owner-${ownerId}-${name}`);
-    if (template) {
-      await this.cache.delete(`template-owner-${ownerId}-${name}`);
-    }
+    this.cache.delete(`templates-owner-${ownerId}`);
     this.cache.delete(`template-owner-${ownerId}-${name}`);
   }
 

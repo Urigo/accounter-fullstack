@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { CloudUpload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -36,10 +36,18 @@ function ContoReportTemplateSaveForm({
   setFetching,
   closeModal,
 }: ContoReportTemplateSaveFormProps): ReactElement {
+  const template = useMemo(() => {
+    const strippedTree = tree.filter(
+      node => node.data?.sortCode == null && node.data?.value == null,
+    );
+    const template = JSON.stringify(strippedTree);
+    return template;
+  }, [tree]);
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: `template-${format(new Date(), 'yyyy-MM-dd')}`,
+      template,
     },
   });
   const { insertDynamicReportTemplate, fetching } = useInsertDynamicReportTemplate();
@@ -47,10 +55,6 @@ function ContoReportTemplateSaveForm({
   const onSubmit = useCallback(
     async (data: z.infer<typeof FormSchema>) => {
       try {
-        const strippedTree = tree.filter(
-          node => node.data?.sortCode == null && node.data?.value == null,
-        );
-        const template = JSON.stringify(strippedTree);
         await insertDynamicReportTemplate({ ...data, template });
         closeModal();
       } catch (error) {
@@ -60,7 +64,7 @@ function ContoReportTemplateSaveForm({
         });
       }
     },
-    [closeModal, form, insertDynamicReportTemplate, tree],
+    [closeModal, form, insertDynamicReportTemplate, template],
   );
 
   useEffect(() => {
