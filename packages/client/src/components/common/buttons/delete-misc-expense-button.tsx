@@ -2,6 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { useDeleteMiscExpense } from '../../../hooks/use-delete-misc-expense.js';
+import { useToast } from '../../ui/use-toast.js';
 import { ConfirmationModal } from '../index.js';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): ReactElement {
   const [opened, setOpened] = useState(false);
   const { deleteMiscExpense } = useDeleteMiscExpense();
+  const { toast } = useToast();
 
   async function onDelete(): Promise<void> {
     try {
@@ -21,8 +23,13 @@ export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): Rea
       onChange?.();
       setOpened(false);
     } catch (error) {
-      // Handle error appropriately
-      console.error('Failed to delete misc expense:', error);
+      const message = 'Failed to delete misc expense';
+      console.error(`${message}: ${error}`);
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive',
+      });
     }
   }
 

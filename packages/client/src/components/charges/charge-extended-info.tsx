@@ -107,8 +107,9 @@ export function ChargeExtendedInfo({
   useEffect(() => {
     if (chargeID !== chargeId) {
       setChargeId(chargeID);
+      refetchExtensionInfo();
     }
-  }, [chargeID, chargeId]);
+  }, [chargeID, chargeId, refetchExtensionInfo]);
 
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
