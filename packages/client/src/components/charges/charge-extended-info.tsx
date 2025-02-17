@@ -66,11 +66,13 @@ import { LedgerRecordTable } from './ledger-records/ledger-record-table.jsx';
 interface Props {
   chargeID: string;
   onChange?: () => void;
+  fetching: boolean;
 }
 
 export function ChargeExtendedInfo({
   chargeID,
   onChange = (): void => void 0,
+  fetching: parentFetching,
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
@@ -97,14 +99,17 @@ export function ChargeExtendedInfo({
   }, [data]);
 
   useEffect(() => {
-    refetchExtensionInfo();
-  }, [chargeId, refetchExtensionInfo]);
+    if (parentFetching) {
+      refetchExtensionInfo();
+    }
+  }, [parentFetching, refetchExtensionInfo]);
 
   useEffect(() => {
     if (chargeID !== chargeId) {
       setChargeId(chargeID);
+      refetchExtensionInfo();
     }
-  }, [chargeID, chargeId]);
+  }, [chargeID, chargeId, refetchExtensionInfo]);
 
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;

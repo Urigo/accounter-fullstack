@@ -89,7 +89,7 @@ export const ChargesTableRow = ({
     getFragmentData(ChargesTableRowFieldsFragmentDoc, data),
   );
 
-  const [{ data: newData }, fetchCharge] = useQuery({
+  const [{ data: newData, fetching }, fetchCharge] = useQuery({
     query: ChargeForRowDocument,
     pause: true,
     variables: {
@@ -134,6 +134,7 @@ export const ChargesTableRow = ({
         onClick={() => {
           if (hasExtendedInfo) {
             setOpened(prev => !prev);
+            onChange();
           }
         }}
       >
@@ -226,7 +227,7 @@ export const ChargesTableRow = ({
         <tr>
           <td colSpan={13}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
-              <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} />
+              <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} fetching={fetching} />
             </Paper>
           </td>
         </tr>
