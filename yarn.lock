@@ -4220,6 +4220,30 @@
     "@parcel/watcher-win32-ia32" "2.5.1"
     "@parcel/watcher-win32-x64" "2.5.1"
 
+"@pgtyped/cli@2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@pgtyped/cli/-/cli-2.3.0.tgz#1daf826bef23f4c8dd84bc9558bb49089ee08db3"
+  integrity sha512-mSCx3BQW4IkfMyAOdCJZSYo2+G6rRaP05TkIMCLxTl+qiAyDyPiTwnYHCfcLV9ZHvloZ03UEUMLyOySapq5eyw==
+  dependencies:
+    "@pgtyped/parser" "^2.3.0"
+    "@pgtyped/query" "^2.3.0"
+    "@pgtyped/wire" "^2.3.0"
+    camel-case "^4.1.1"
+    chalk "^4.0.0"
+    chokidar "^3.3.1"
+    debug "^4.1.1"
+    fp-ts "^2.5.3"
+    fs-extra "^11.0.0"
+    glob "^10.3.7"
+    io-ts "^2.2.20"
+    io-ts-reporters "^2.0.1"
+    nunjucks "3.2.4"
+    pascal-case "^3.1.1"
+    piscina "^4.0.0"
+    tinypool "^0.8.0"
+    ts-parse-database-url "^1.0.3"
+    yargs "^17.0.1"
+
 "@pgtyped/cli@2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@pgtyped/cli/-/cli-2.4.2.tgz#f7c5837e2f1fc0c04f89ce338e88247420d9521f"
@@ -4253,7 +4277,7 @@
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/query@^2.4.2":
+"@pgtyped/query@^2.3.0", "@pgtyped/query@^2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@pgtyped/query/-/query-2.4.2.tgz#2ac84adc1b94ddb1dbce1b222c9fcbb535470dc7"
   integrity sha512-5eBMA2iP1YoQX1ceYSK/uEdSz+xt43W4LriBxsW+LLLiUKZm8J6Ys7qlyda/D5bPn1Ep3+wK8XibD0ercKPUcw==
@@ -4281,7 +4305,7 @@
     chalk "^4.1.0"
     debug "^4.1.1"
 
-"@pgtyped/wire@^2.4.2":
+"@pgtyped/wire@^2.3.0", "@pgtyped/wire@^2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@pgtyped/wire/-/wire-2.4.2.tgz#1671972610d1b7bc17c7aad92d21ed698afa3b66"
   integrity sha512-tR5x4nDVDVnzpmNg58WLKrbc32uK4EJYtowqQoDzv8icmBKfMJAbYnPhCOwPVXvdmGoVcdHOhWbRsKNCcoKeiQ==
@@ -7838,7 +7862,7 @@ callsites@^3.0.0:
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==
 
-camel-case@^4.1.2:
+camel-case@^4.1.1, camel-case@^4.1.2:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/camel-case/-/camel-case-4.1.2.tgz#9728072a954f805228225a6deea6b38461e1bd5a"
   integrity sha512-gxGWBrTT1JuMx6R+o5PTXMmUnhnVzLQ9SNutD4YqKtI6ap897t3tKECYla6gCWEkplXnlNybEkZg9GEGxKFCgw==
@@ -8031,7 +8055,7 @@ check-error@^2.1.1:
   resolved "https://registry.yarnpkg.com/check-error/-/check-error-2.1.1.tgz#87eb876ae71ee388fa0471fe423f494be1d96ccc"
   integrity sha512-OAlb+T7V4Op9OwdkjmguYRqncdlx5JiofwOAUkmTF+jNdHwzTaTs4sRAGpzLF3oOz5xAyDGrPgeIDFQmDOTiJw==
 
-chokidar@^3.5.2, chokidar@^3.5.3:
+chokidar@^3.3.1, chokidar@^3.5.2, chokidar@^3.5.3:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.6.0.tgz#197c6cc669ef2a8dc5e7b4d97ee4e092c3eb0d5b"
   integrity sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==
@@ -10344,7 +10368,7 @@ glob@11.0.1, glob@^11.0.0:
     package-json-from-dist "^1.0.0"
     path-scurry "^2.0.0"
 
-glob@^10.0.0, glob@^10.2.2, glob@^10.3.10:
+glob@^10.0.0, glob@^10.2.2, glob@^10.3.10, glob@^10.3.7:
   version "10.4.5"
   resolved "https://registry.yarnpkg.com/glob/-/glob-10.4.5.tgz#f4d9f0b90ffdbab09c9d77f5f29b4262517b0956"
   integrity sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==
@@ -13404,7 +13428,7 @@ parse-json@^7.0.0:
     lines-and-columns "^2.0.3"
     type-fest "^3.8.0"
 
-pascal-case@3.1.2, pascal-case@^3.1.2:
+pascal-case@3.1.2, pascal-case@^3.1.1, pascal-case@^3.1.2:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/pascal-case/-/pascal-case-3.1.2.tgz#b48e0ef2b98e205e7c1dae747d0b1508237660eb"
   integrity sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==
@@ -15722,6 +15746,11 @@ tinyglobby@^0.2.9:
     fdir "^6.4.2"
     picomatch "^4.0.2"
 
+tinypool@^0.8.0:
+  version "0.8.4"
+  resolved "https://registry.yarnpkg.com/tinypool/-/tinypool-0.8.4.tgz#e217fe1270d941b39e98c625dcecebb1408c9aa8"
+  integrity sha512-i11VH5gS6IFeLY3gMBQ00/MmLncVP7JLXOw1vlgkytLmJK7QnEr7NXf0LBdxfmNPAeyetukOk0bOYrJrFGjYJQ==
+
 tinypool@^1.0.0, tinypool@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/tinypool/-/tinypool-1.0.2.tgz#706193cc532f4c100f66aa00b01c42173d9051b2"
@@ -16672,7 +16701,6 @@ ws@^8.12.0, ws@^8.17.1, ws@^8.18.0, ws@^8.5.0:
 
 "xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz":
   version "0.20.2"
-  uid "0f64eeed3f1a46e64724620c3553f2dbd3cd2d7d"
   resolved "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz#0f64eeed3f1a46e64724620c3553f2dbd3cd2d7d"
 
 xtend@^4.0.0:
