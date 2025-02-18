@@ -173,9 +173,9 @@ export const ModifyMiscExpenseFields = ({
         control={control}
         rules={{
           required: isInsert ? 'Required' : undefined,
-          pattern: {
-            value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+          validate: (value?: Date | null) => {
+            if (!value) return true;
+            return !Number.isNaN(value.getTime()) || 'Invalid date and time format';
           },
         }}
         render={({ field }): ReactElement => {
