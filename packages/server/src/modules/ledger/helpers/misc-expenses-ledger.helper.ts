@@ -35,6 +35,9 @@ export async function generateMiscExpensesLedger(
       amount = exchangeRate * amount;
     }
 
+    // For negative amounts, we switch the creditor and debtor sides to maintain correct accounting entries
+    const shouldSwitchSides = amount < 0;
+
     const entry: LedgerProto = {
       id: EMPTY_UUID,
       chargeId: expense.charge_id,
@@ -44,8 +47,8 @@ export async function generateMiscExpensesLedger(
         creditAmount1: Math.abs(foreignAmount),
         debitAmount1: Math.abs(foreignAmount),
       }),
-      creditAccountID1: expense.creditor_id,
-      debitAccountID1: expense.debtor_id,
+      creditAccountID1: shouldSwitchSides ? expense.debtor_id : expense.creditor_id,
+      debitAccountID1: shouldSwitchSides ? expense.creditor_id : expense.debtor_id,
       localCurrencyCreditAmount1: Math.abs(amount),
       localCurrencyDebitAmount1: Math.abs(amount),
       description: expense.description ?? undefined,

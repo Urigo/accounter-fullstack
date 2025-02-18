@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { format } from 'date-fns';
 import { TableMiscExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.jsx';
@@ -68,7 +69,7 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
               <div>{expense.invoiceDate}</div>
             </td>
             <td>
-              <div>{expense.valueDate}</div>
+              <div>{expense.valueDate && format(new Date(expense.valueDate), 'yyyy-MM-dd')}</div>
             </td>
             <td>
               <div>{expense.description}</div>

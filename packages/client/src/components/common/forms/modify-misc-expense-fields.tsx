@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
+import { DatePickerInput, DateTimePicker } from '@mantine/dates';
 import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
@@ -173,19 +173,26 @@ export const ModifyMiscExpenseFields = ({
         control={control}
         rules={{
           required: isInsert ? 'Required' : undefined,
-          pattern: {
-            value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+          validate: (value?: Date | null) => {
+            if (!value) return true;
+            return !Number.isNaN(value.getTime()) || 'Invalid date and time format';
           },
         }}
-        render={({ field }): ReactElement => (
-          <DatePickerInput
-            {...field}
-            required={isInsert}
-            label="Value Date"
-            popoverProps={{ withinPortal: true }}
-          />
-        )}
+        render={({ field }): ReactElement => {
+          return (
+            <DateTimePicker
+              {...field}
+              onPointerEnterCapture={(): void => {}}
+              onPointerLeaveCapture={(): void => {}}
+              required={isInsert}
+              label="Value Date"
+              placeholder="Pick date and time"
+              valueFormat="DD/MM/YYYY HH:mm:ss"
+              popoverProps={{ withinPortal: true }}
+              withSeconds
+            />
+          );
+        }}
       />
       <Controller
         name="description"
