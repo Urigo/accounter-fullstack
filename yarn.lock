@@ -9319,10 +9319,10 @@ eslint-compat-utils@^0.6.0:
   dependencies:
     semver "^7.5.4"
 
-eslint-config-flat-gitignore@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/eslint-config-flat-gitignore/-/eslint-config-flat-gitignore-2.0.0.tgz#c7dab107c8ddf6390b7d61f878a6e061488e3370"
-  integrity sha512-9iH+DZO94uxsw5iFjzqa9GfahA5oK3nA1GoJK/6u8evAtooYJMwuSWiLcGDfrdLoqdQ5/kqFJKKuMY/+SAasvg==
+eslint-config-flat-gitignore@2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-flat-gitignore/-/eslint-config-flat-gitignore-2.1.0.tgz#8b93caa703977f04dee11e4c3c8303432462921c"
+  integrity sha512-cJzNJ7L+psWp5mXM7jBX+fjHtBvvh06RBlcweMhKD8jWqQw0G78hOW5tpVALGHGFPsBV+ot2H+pdDGJy6CV8pA==
   dependencies:
     "@eslint/compat" "^1.2.5"
 
