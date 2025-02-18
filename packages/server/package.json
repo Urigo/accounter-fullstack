@@ -41,7 +41,8 @@
     "node-cache": "5.1.2",
     "node-xlsx": "0.24.0",
     "pg": "8.13.1",
-    "reflect-metadata": "0.2.2"
+    "reflect-metadata": "0.2.2",
+    "strip-indent": "4.0.0"
   },
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
