@@ -123,7 +123,7 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     amount: dbExpense => formatFinancialAmount(dbExpense.amount, dbExpense.currency),
     description: dbExpense => dbExpense.description,
     invoiceDate: dbExpense => dateToTimelessDateString(dbExpense.invoice_date),
-    valueDate: dbExpense => dateToTimelessDateString(dbExpense.value_date),
+    valueDate: dbExpense => dbExpense.value_date,
   },
   BankDepositCharge: commonChargeFields,
   BusinessTripCharge: commonChargeFields,

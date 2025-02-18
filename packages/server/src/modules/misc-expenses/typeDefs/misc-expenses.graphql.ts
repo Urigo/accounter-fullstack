@@ -22,7 +22,7 @@ export default gql`
     debtor: FinancialEntity!
     amount: FinancialAmount!
     description: String
-    valueDate: TimelessDate!
+    valueDate: DateTime!
     invoiceDate: TimelessDate!
   }
 
