@@ -1,0 +1,9 @@
+---
+description: How to install packages
+globs: 
+---
+# Package installation 
+
+- We use `yarn`
+- We have a monorepo, so we need to install packages in the right place. e.g. `packages/client` or `packages/server`
+- Install exact versions
