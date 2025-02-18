@@ -85,7 +85,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
         }
     )[] = [];
 
-    if (isTransactionsError || metadata?.transactionsCount || !shouldHaveTransactions) {
+    if (isTransactionsError || metadata?.transactionsCount || shouldHaveTransactions) {
       items.push({
         extraClassName:
           metadata?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
