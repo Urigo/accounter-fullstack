@@ -5,6 +5,7 @@ import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-char
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -891,6 +892,18 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (err) {
         console.error(err);
         return 'INVALID';
+      }
+    },
+    miscExpensesCount: async (DbCharge, _, { injector }) => {
+      try {
+        return injector
+          .get(MiscExpensesProvider)
+          .getExpensesByChargeIdLoader.load(DbCharge.id)
+          .then(res => res.length);
+      } catch (err) {
+        const message = 'Error loading misc expenses';
+        console.error(`${message}: ${err}`);
+        throw new GraphQLError(message);
       }
     },
     optionalBusinesses: DbCharge =>
