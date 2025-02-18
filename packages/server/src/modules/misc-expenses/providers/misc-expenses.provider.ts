@@ -24,7 +24,7 @@ const getExpensesByChargeIds = sql<IGetExpensesByChargeIdsQuery>`
 const getExpensesByIds = sql<IGetExpensesByIdsQuery>`
   SELECT *
   FROM accounter_schema.misc_expenses
-  WHERE id = $$ids;`;
+  WHERE id IN $$ids;`;
 
 const getExpensesByFinancialEntityIds = sql<IGetExpensesByFinancialEntityIdsQuery>`
 SELECT *
@@ -155,41 +155,58 @@ export class MiscExpensesProvider {
     },
   );
 
-  public updateExpense(params: IUpdateExpenseParams) {
-    if (params.miscExpenseId) this.invalidateById(params.miscExpenseId);
+  public async updateExpense(params: IUpdateExpenseParams) {
+    if (params.miscExpenseId) await this.invalidateById(params.miscExpenseId);
     return updateExpense.run(params, this.dbProvider);
   }
 
-  public insertExpense(params: IInsertExpenseParams) {
-    if (params.chargeId) this.invalidateByChargeId(params.chargeId);
+  public async insertExpense(params: IInsertExpenseParams) {
+    if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
     return insertExpense.run(params, this.dbProvider);
   }
 
-  public deleteMiscExpense(params: IDeleteExpenseParams) {
-    if (params.id) this.invalidateById(params.id);
+  public async deleteMiscExpense(params: IDeleteExpenseParams) {
+    if (params.id) await this.invalidateById(params.id);
     return deleteExpense.run(params, this.dbProvider);
   }
 
   public async invalidateByChargeId(chargeId: string) {
-    const expenses = await this.getExpensesByChargeIdLoader.load(chargeId);
-    await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
-    this.cache.delete(`misc-expenses-charge-${chargeId}`);
+    try {
+      const expenses = await this.getExpensesByChargeIdLoader.load(chargeId);
+      await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
+      this.cache.delete(`misc-expenses-charge-${chargeId}`);
+    } catch (error) {
+      console.error(error);
+      throw new Error(`Error invalidating misc expense by charge id: ${chargeId}`);
+    }
   }
 
   public async invalidateByFinancialEntityId(financialEntityId: string) {
-    const expenses = await this.getExpensesByFinancialEntityIdLoader.load(financialEntityId);
-    await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
-    this.cache.delete(`misc-expenses-financial-entity-${financialEntityId}`);
+    try {
+      const expenses = await this.getExpensesByFinancialEntityIdLoader.load(financialEntityId);
+      await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
+      this.cache.delete(`misc-expenses-financial-entity-${financialEntityId}`);
+    } catch (error) {
+      console.error(error);
+      throw new Error(
+        `Error invalidating misc expense by financial entity id: ${financialEntityId}`,
+      );
+    }
   }
 
   public async invalidateById(id: string) {
-    const expense = await this.getExpensesByIdLoader.load(id);
-    if (expense) {
-      this.cache.delete(`misc-expenses-charge-${expense.charge_id}`);
-      this.cache.delete(`misc-expenses-financial-entity-${expense.creditor_id}`);
-      this.cache.delete(`misc-expenses-financial-entity-${expense.debtor_id}`);
+    try {
+      const expense = await this.getExpensesByIdLoader.load(id);
+      if (expense) {
+        this.cache.delete(`misc-expenses-charge-${expense.charge_id}`);
+        this.cache.delete(`misc-expenses-financial-entity-${expense.creditor_id}`);
+        this.cache.delete(`misc-expenses-financial-entity-${expense.debtor_id}`);
+      }
+      this.cache.delete(`misc-expenses-${id}`);
+    } catch (error) {
+      console.error(error);
+      throw new Error(`Error invalidating misc expense by id: ${id}`);
     }
-    this.cache.delete(`misc-expenses-${id}`);
   }
 
   public clearCache() {

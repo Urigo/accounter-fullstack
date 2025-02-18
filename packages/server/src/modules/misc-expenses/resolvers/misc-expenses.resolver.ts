@@ -12,8 +12,9 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
       try {
         return await injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(chargeId);
       } catch (e) {
-        console.error('Error fetching misc expenses', e);
-        throw new GraphQLError((e as Error)?.message ?? 'Error fetching misc expenses');
+        const message = 'Error fetching misc expenses by charge';
+        console.error(`${message}: ${e}`);
+        throw new GraphQLError(message);
       }
     },
   },
@@ -25,13 +26,14 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           .insertExpense(fields)
           .then(res => {
             if (!res.length) {
-              throw new GraphQLError('Error inserting misc expense');
+              throw new Error('Error inserting misc expense');
             }
             return res[0];
           });
       } catch (e) {
-        console.error('Error inserting misc expense', e);
-        throw new GraphQLError((e as Error)?.message ?? 'Error inserting misc expense');
+        const message = 'Error inserting misc expense';
+        console.error(`${message}: ${e}`);
+        throw new GraphQLError(message);
       }
     },
     updateMiscExpense: async (_, { id, fields }, { injector }) => {
@@ -41,13 +43,14 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           .updateExpense({ miscExpenseId: id, ...fields })
           .then(res => {
             if (!res.length) {
-              throw new GraphQLError('Error updating misc expense');
+              throw new Error('Error updating misc expense');
             }
             return res[0];
           });
       } catch (e) {
-        console.error('Error updating misc expense', e);
-        throw new GraphQLError((e as Error)?.message ?? 'Error updating misc expense');
+        const message = 'Error updating misc expense';
+        console.error(`${message}: ${e}`);
+        throw new GraphQLError(message);
       }
     },
     deleteMiscExpense: async (_, { id }, { injector }) => {
@@ -57,44 +60,66 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           .deleteMiscExpense({ id })
           .then(() => true);
       } catch (e) {
-        console.error('Error deleting misc expense', e);
-        throw new GraphQLError((e as Error)?.message ?? 'Error deleting misc expense');
+        const message = 'Error deleting misc expense';
+        console.error(`${message}: ${e}`);
+        throw new GraphQLError(message);
       }
     },
   },
   MiscExpense: {
     id: dbExpense => dbExpense.id,
     chargeId: dbExpense => dbExpense.charge_id,
-    charge: async (dbExpense, _, { injector }) =>
-      injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(dbExpense.charge_id)
-        .then(charge => {
-          if (!charge) {
-            throw new GraphQLError(`Charge ID="${dbExpense.charge_id}" not found`);
-          }
-          return charge;
-        }),
-    creditor: async (dbExpense, _, { injector }) =>
-      injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(dbExpense.creditor_id)
-        .then(entity => {
-          if (!entity) {
-            throw new GraphQLError(`Financial entity ID="${dbExpense.creditor_id}" not found`);
-          }
-          return entity;
-        }),
-    debtor: async (dbExpense, _, { injector }) =>
-      injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(dbExpense.debtor_id)
-        .then(entity => {
-          if (!entity) {
-            throw new GraphQLError(`Financial entity ID="${dbExpense.debtor_id}" not found`);
-          }
-          return entity;
-        }),
+    charge: async (dbExpense, _, { injector }) => {
+      try {
+        return injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(dbExpense.charge_id)
+          .then(charge => {
+            if (!charge) {
+              throw new Error(`Charge ID="${dbExpense.charge_id}" not found`);
+            }
+            return charge;
+          });
+      } catch (error) {
+        const message = 'Error fetching misc expense charge';
+        console.error(`${message}: ${error}`);
+        throw new GraphQLError(message);
+      }
+    },
+    creditor: async (dbExpense, _, { injector }) => {
+      try {
+        return injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(dbExpense.creditor_id)
+          .then(entity => {
+            if (!entity) {
+              throw new Error(`Financial entity ID="${dbExpense.creditor_id}" not found`);
+            }
+            return entity;
+          });
+      } catch (error) {
+        const message = 'Error fetching misc expense creditor';
+        console.error(`${message}: ${error}`);
+        throw new GraphQLError(message);
+      }
+    },
+    debtor: async (dbExpense, _, { injector }) => {
+      try {
+        return injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(dbExpense.debtor_id)
+          .then(entity => {
+            if (!entity) {
+              throw new Error(`Financial entity ID="${dbExpense.debtor_id}" not found`);
+            }
+            return entity;
+          });
+      } catch (error) {
+        const message = 'Error fetching misc expense debtor';
+        console.error(`${message}: ${error}`);
+        throw new GraphQLError(message);
+      }
+    },
     amount: dbExpense => formatFinancialAmount(dbExpense.amount, dbExpense.currency),
     description: dbExpense => dbExpense.description,
     invoiceDate: dbExpense => dateToTimelessDateString(dbExpense.invoice_date),
