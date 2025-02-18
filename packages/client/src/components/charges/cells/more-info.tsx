@@ -13,6 +13,7 @@ import { DragFile, ListCapsule } from '../../common/index.js';
       transactionsCount
       documentsCount
       ledgerCount
+      miscExpensesCount
       isSalary
       ... on ChargeMetadata @defer {
         invalidLedger
@@ -75,71 +76,101 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
   const isProcessingLedger = useMemo(() => !metadata?.invalidLedger, [metadata?.invalidLedger]);
   const ledgerStatus = useMemo(() => metadata?.invalidLedger, [metadata?.invalidLedger]);
 
+  const list = useMemo(() => {
+    const items: (
+      | React.ReactNode
+      | {
+          content: React.ReactNode;
+          extraClassName?: string;
+        }
+    )[] = [];
+
+    if (isTransactionsError || metadata?.transactionsCount || shouldHaveTransactions) {
+      items.push({
+        extraClassName:
+          metadata?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
+        content: (
+          <Indicator
+            key="transactions"
+            inline
+            size={12}
+            disabled={!isTransactionsError}
+            color="red"
+            zIndex="auto"
+          >
+            <div className="whitespace-nowrap">
+              Transactions: {metadata?.transactionsCount ?? 0}
+            </div>
+          </Indicator>
+        ),
+      });
+    }
+
+    items.push({
+      content: (
+        <Indicator
+          key="ledger"
+          inline
+          size={12}
+          processing={isProcessingLedger}
+          disabled={ledgerStatus === 'VALID'}
+          color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
+          zIndex="auto"
+        >
+          <div className="whitespace-nowrap">Ledger Records: {metadata?.ledgerCount ?? 0}</div>
+        </Indicator>
+      ),
+    });
+
+    if (isDocumentsError || metadata?.documentsCount) {
+      items.push({
+        content: (
+          <Indicator
+            key="documents"
+            inline
+            size={12}
+            disabled={!isDocumentsError}
+            color="red"
+            zIndex="auto"
+          >
+            <div className="whitespace-nowrap">Documents: {metadata?.documentsCount ?? 0}</div>
+          </Indicator>
+        ),
+        extraClassName:
+          !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
+          !shouldHaveDocuments
+            ? undefined
+            : 'bg-yellow-400',
+      });
+    }
+
+    if (metadata?.miscExpensesCount) {
+      items.push({
+        content: (
+          <div className="whitespace-nowrap">Misc Expenses: {metadata?.miscExpensesCount ?? 0}</div>
+        ),
+      });
+    }
+
+    return items;
+  }, [
+    metadata?.transactionsCount,
+    metadata?.ledgerCount,
+    metadata?.documentsCount,
+    metadata?.miscExpensesCount,
+    shouldHaveDocuments,
+    shouldHaveTransactions,
+    isTransactionsError,
+    isDocumentsError,
+    validationData?.missingInfo,
+    ledgerStatus,
+    isProcessingLedger,
+  ]);
+
   return (
     <td>
       <DragFile chargeId={id}>
-        <ListCapsule
-          items={[
-            {
-              extraClassName:
-                metadata?.transactionsCount || !shouldHaveTransactions
-                  ? undefined
-                  : 'bg-yellow-400',
-              content: (
-                <Indicator
-                  key="transactions"
-                  inline
-                  size={12}
-                  disabled={!isTransactionsError}
-                  color="red"
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Transactions: {metadata?.transactionsCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-            },
-            {
-              content: (
-                <Indicator
-                  key="ledger"
-                  inline
-                  size={12}
-                  processing={isProcessingLedger}
-                  disabled={ledgerStatus === 'VALID'}
-                  color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Ledger Records: {metadata?.ledgerCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-            },
-            {
-              content: (
-                <Indicator
-                  key="documents"
-                  inline
-                  size={12}
-                  disabled={!isDocumentsError}
-                  color="red"
-                  zIndex="auto"
-                >
-                  <div className="whitespace-nowrap">
-                    Documents: {metadata?.documentsCount ?? 0}
-                  </div>
-                </Indicator>
-              ),
-              extraClassName:
-                !validationData?.missingInfo?.includes(MissingChargeInfo.Documents) ||
-                !shouldHaveDocuments
-                  ? undefined
-                  : 'bg-yellow-400',
-            },
-          ]}
-        />
+        <ListCapsule items={list} />
       </DragFile>
     </td>
   );

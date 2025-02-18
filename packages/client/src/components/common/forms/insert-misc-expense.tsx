@@ -1,5 +1,6 @@
 import { ReactElement, useCallback } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { Loader2 } from 'tabler-icons-react';
 import { InsertMiscExpenseInput } from '../../../gql/graphql.js';
 import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
 import { ModifyMiscExpenseFields } from './index.js';
@@ -70,7 +71,16 @@ export const InsertForm = ({
 
   return (
     <form>
-      <div className="px-5 flex flex-col gap-5">
+      <div className="px-5 flex flex-col gap-5 relative">
+        {fetching && (
+          <div className="absolute bg-white/60 z-10 h-full w-full flex items-center justify-center">
+            <div className="flex items-center">
+              <span className="text-3xl mr-4">
+                <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+              </span>
+            </div>
+          </div>
+        )}
         <ModifyMiscExpenseFields
           formManager={formManager as Parameters<typeof ModifyMiscExpenseFields>[0]['formManager']}
           isInsert
