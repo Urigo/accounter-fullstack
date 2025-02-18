@@ -69,7 +69,7 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
               <div>{expense.invoiceDate}</div>
             </td>
             <td>
-              <div>{format(expense.valueDate, 'yyyy-MM-dd')}</div>
+              <div>{expense.valueDate && format(new Date(expense.valueDate), 'yyyy-MM-dd')}</div>
             </td>
             <td>
               <div>{expense.description}</div>
