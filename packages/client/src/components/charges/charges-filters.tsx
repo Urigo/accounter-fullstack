@@ -1,4 +1,12 @@
-import { Dispatch, ReactElement, SetStateAction, useCallback, useEffect, useState } from 'react';
+import {
+  Dispatch,
+  ReactElement,
+  SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -24,6 +32,7 @@ import {
 } from '../../gql/graphql.js';
 import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { UserContext } from '../../providers/user-provider.js';
 import { accountantApprovalInputData, PopUpModal, SelectTagItem } from '../common/index.js';
 
 interface ChargesFiltersFormProps {
@@ -58,8 +67,16 @@ function ChargesFiltersForm({
   setFilter,
   closeModal,
 }: ChargesFiltersFormProps): ReactElement {
+  const { userContext } = useContext(UserContext);
   const { control, handleSubmit, watch, setValue } = useForm<ChargeFilter>({
-    defaultValues: { ...filter },
+    defaultValues: {
+      byOwners: userContext?.ownerId ? [userContext.ownerId] : undefined,
+      sortBy: {
+        field: ChargeSortByField.Date,
+        asc: false,
+      },
+      ...filter,
+    },
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
@@ -410,6 +427,7 @@ interface ChargesFiltersProps {
   activePage: number;
   totalPages?: number;
   setPage: Dispatch<SetStateAction<number>>;
+  initiallyOpened?: boolean;
 }
 
 export function ChargesFilters({
@@ -418,8 +436,9 @@ export function ChargesFilters({
   activePage,
   setPage,
   totalPages = 1,
+  initiallyOpened = false,
 }: ChargesFiltersProps): ReactElement {
-  const [opened, setOpened] = useState(false);
+  const [opened, setOpened] = useState(initiallyOpened);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
@@ -445,6 +464,7 @@ export function ChargesFilters({
 
   const onSetFilter = useCallback(
     (newFilter: ChargeFilter) => {
+      console.log(newFilter, filter);
       // looks for actual changes before triggering update
       if (!equal(newFilter, filter)) {
         setFilter(newFilter);

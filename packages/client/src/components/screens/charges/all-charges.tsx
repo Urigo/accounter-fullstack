@@ -1,12 +1,11 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { AllChargesDocument, ChargeFilter, ChargeSortByField } from '../../../gql/graphql.js';
+import { AllChargesDocument, ChargeFilter } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { UserContext } from '../../../providers/user-provider.jsx';
 import { ChargesFilters } from '../../charges/charges-filters.js';
 import { ChargesTable } from '../../charges/charges-table.js';
 import {
@@ -48,19 +47,20 @@ export const AllCharges = (): ReactElement => {
     Array<{ id: string; onChange: () => void }>
   >([]);
   const { get } = useUrlQuery();
-  const { userContext } = useContext(UserContext);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
-  const [filter, setFilter] = useState<ChargeFilter>(
-    get('chargesFilters')
-      ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
-      : {
-          byOwners: userContext?.ownerId ? [userContext.ownerId] : undefined,
-          sortBy: {
-            field: ChargeSortByField.Date,
-            asc: false,
-          },
-        },
-  );
+  const uriFilters = get('chargesFilters');
+  const initialFilters = useMemo(() => {
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as ChargeFilter;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [uriFilters]);
+  const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
 
   const toggleMergeCharge = useCallback(
     (chargeId: string, onChange: () => void) => {
@@ -73,14 +73,22 @@ export const AllCharges = (): ReactElement => {
     [mergeSelectedCharges],
   );
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, fetchCharges] = useQuery({
     query: AllChargesDocument,
     variables: {
       filters: filter,
       page: activePage,
       limit: 100,
     },
+    pause: true,
   });
+
+  // refetch charges on filter change
+  useEffect(() => {
+    if (filter) {
+      fetchCharges();
+    }
+  }, [filter, fetchCharges]);
 
   function onResetMerge(): void {
     setMergeSelectedCharges([]);
@@ -90,11 +98,12 @@ export const AllCharges = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <ChargesFilters
-          filter={filter}
+          filter={filter ?? {}}
           setFilter={setFilter}
           activePage={activePage}
           setPage={setActivePage}
           totalPages={data?.allCharges?.pageInfo.totalPages}
+          initiallyOpened={!filter}
         />
         <Tooltip label="Expand all accounts">
           <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
@@ -115,6 +124,7 @@ export const AllCharges = (): ReactElement => {
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
+    initialFilters,
   ]);
 
   return (

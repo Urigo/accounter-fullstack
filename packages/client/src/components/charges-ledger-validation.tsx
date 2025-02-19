@@ -78,12 +78,13 @@ export const ChargesLedgerValidation = (): ReactElement => {
     [mergeSelectedCharges],
   );
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, validateLedger] = useQuery({
     query: ChargesLedgerValidationDocument,
     variables: {
       filters: filter,
       //   limit: 1000,
     },
+    pause: true,
   });
 
   function onResetMerge(): void {
@@ -98,6 +99,14 @@ export const ChargesLedgerValidation = (): ReactElement => {
     [data?.chargesWithLedgerChanges],
   );
 
+  const onFilterChange = useCallback(
+    (newFilter: ChargeFilter): void => {
+      setFilter(newFilter);
+      validateLedger();
+    },
+    [setFilter, validateLedger],
+  );
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5 items-center">
@@ -108,7 +117,13 @@ export const ChargesLedgerValidation = (): ReactElement => {
           animate={progress < 100}
           className="min-w-52"
         />
-        <ChargesFilters filter={filter} setFilter={setFilter} activePage={1} setPage={() => {}} />
+        <ChargesFilters
+          filter={filter}
+          setFilter={onFilterChange}
+          activePage={1}
+          setPage={() => {}}
+          initiallyOpened
+        />
         <Tooltip label="Expand all accounts">
           <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
             {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
@@ -123,10 +138,10 @@ export const ChargesLedgerValidation = (): ReactElement => {
     filter,
     isAllOpened,
     setFiltersContext,
-    setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
     progress,
+    onFilterChange,
   ]);
 
   return (
