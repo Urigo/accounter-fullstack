@@ -78,7 +78,7 @@ export async function calculateTaxAmounts(
   >();
   decoratedLedgerRecords.map(record => {
     if (record.credit_entity1 === untaxableGiftsTaxCategoryId) {
-      const amount = Number(record.credit_local_amount1);
+      const amount = -Number(record.credit_local_amount1);
       updateRecords(
         untaxableGiftsRecords,
         amount,
@@ -88,7 +88,7 @@ export async function calculateTaxAmounts(
       untaxableGiftsAmount += amount;
     }
     if (record.credit_entity2 === untaxableGiftsTaxCategoryId) {
-      const amount = Number(record.credit_local_amount2);
+      const amount = -Number(record.credit_local_amount2);
       updateRecords(
         untaxableGiftsRecords,
         amount,
@@ -98,7 +98,7 @@ export async function calculateTaxAmounts(
       untaxableGiftsAmount += amount;
     }
     if (record.debit_entity1 === untaxableGiftsTaxCategoryId) {
-      const amount = -Number(record.debit_local_amount1);
+      const amount = Number(record.debit_local_amount1);
       updateRecords(
         untaxableGiftsRecords,
         amount,
@@ -108,7 +108,7 @@ export async function calculateTaxAmounts(
       untaxableGiftsAmount += amount;
     }
     if (record.debit_entity2 === untaxableGiftsTaxCategoryId) {
-      const amount = -Number(record.debit_local_amount2);
+      const amount = Number(record.debit_local_amount2);
       updateRecords(
         untaxableGiftsRecords,
         amount,
@@ -119,22 +119,22 @@ export async function calculateTaxAmounts(
     }
 
     if (record.credit_entity1 === fineTaxCategoryId) {
-      const amount = Number(record.credit_local_amount1);
+      const amount = -Number(record.credit_local_amount1);
       updateRecords(finesRecords, amount, record.credit_entity_sort_code1!, record.credit_entity1);
       finesAmount += amount;
     }
     if (record.credit_entity2 === fineTaxCategoryId) {
-      const amount = Number(record.credit_local_amount2);
+      const amount = -Number(record.credit_local_amount2);
       updateRecords(finesRecords, amount, record.credit_entity_sort_code2!, record.credit_entity2);
       finesAmount += amount;
     }
     if (record.debit_entity1 === fineTaxCategoryId) {
-      const amount = -Number(record.debit_local_amount1);
+      const amount = Number(record.debit_local_amount1);
       updateRecords(finesRecords, amount, record.debit_entity_sort_code1!, record.debit_entity1);
       finesAmount += amount;
     }
     if (record.debit_entity2 === fineTaxCategoryId) {
-      const amount = -Number(record.debit_local_amount2);
+      const amount = Number(record.debit_local_amount2);
       updateRecords(finesRecords, amount, record.debit_entity_sort_code2!, record.debit_entity2);
       finesAmount += amount;
     }
@@ -167,21 +167,26 @@ export async function calculateTaxAmounts(
   let businessTripsExcessExpensesAmount = 0;
   businessTrips.map(summary => {
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
-    businessTripsExcessExpensesAmount -= amount;
+    businessTripsExcessExpensesAmount += amount;
   });
   const salaryExcessExpensesAmount = amountByFinancialEntityIdValidation(
     decoratedLedgerRecords,
     financialEntityId => financialEntityId === salaryExcessExpensesTaxCategoryId,
+    true,
   );
-  const reserves = amountBySortCodeValidation(decoratedLedgerRecords, sortCode => sortCode === 931);
+  const reserves = amountBySortCodeValidation(
+    decoratedLedgerRecords,
+    sortCode => sortCode === 931,
+    true,
+  );
 
   const taxableIncomeAmount =
-    profitBeforeTaxAmount -
-    yearlyResearchAndDevelopmentExpensesAmount -
-    fines.amount -
-    untaxableGifts.amount -
-    businessTripsExcessExpensesAmount -
-    salaryExcessExpensesAmount -
+    profitBeforeTaxAmount +
+    yearlyResearchAndDevelopmentExpensesAmount +
+    fines.amount +
+    untaxableGifts.amount +
+    businessTripsExcessExpensesAmount +
+    salaryExcessExpensesAmount +
     reserves.amount +
     researchAndDevelopmentExpensesForTax;
 
