@@ -163,6 +163,7 @@ export const ModifyMiscExpenseFields = ({
               }}
               value={date}
               label="Invoice Date"
+              valueFormat="DD/MM/YYYY"
               popoverProps={{ withinPortal: true }}
             />
           );
