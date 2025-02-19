@@ -15,10 +15,6 @@ export interface AuthDirective {
   [key: string]: unknown;
 }
 
-export interface AuthContext {
-  request: Request;
-}
-
 export interface ValidateUserArgs {
   user: UserType | null;
   fieldDirectives?: { auth?: Array<{ role?: Role }> };
@@ -31,7 +27,7 @@ export interface ValidateUserType {
     auth?: AuthDirective[];
     [key: string]: unknown[] | undefined;
   };
-  user: UserType | null;
+  user: UserType | null | undefined | Record<string, unknown>;
 }
 
 export interface AccounterGatewayContext extends GatewayContext {

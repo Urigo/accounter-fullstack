@@ -168,4 +168,4 @@ process.on('SIGTERM', async () => {
 
 // Initial setup
 console.log('🚀 Starting gateway in watch mode...');
-setTimeout(() => generateSupergraph().then(watchGatewayFiles).catch(console.error), 2000);
+setTimeout(() => generateSupergraph().then(watchGatewayFiles).catch(console.error), 3000);

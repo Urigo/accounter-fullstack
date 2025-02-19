@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
 import { env } from '../../../packages/server/src/environment.js';
 import { UserType } from '../../../packages/server/src/shared/types/index.js';
-import { AuthContext, AuthDirective, Role, ValidateUserArgs, ValidateUserType } from './types.js';
+import { AuthDirective, Role, ValidateUserType } from './types.js';
 
 function getAuthorizedUsers(): Record<string, string> {
   try {
@@ -45,7 +45,8 @@ function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
       return undefined;
   }
 }
-export function resolveUser(context: AuthContext): UserType | null {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export function resolveUser(context: any): UserType | null {
   try {
     const user = getUserFromRequest(context.request);
     const role = getUserRole(user);
@@ -76,7 +77,8 @@ export function getAcceptableRoles(role?: Role) {
       return [];
   }
 }
-export function validateUser({ user, fieldDirectives, parentType }: ValidateUserArgs) {
+
+export function validateUser({ user, fieldDirectives, parentType }: ValidateUserType) {
   if (!user || !Object.keys(user).length) {
     return new GraphQLError(`Unauthenticated!`);
   }
@@ -86,6 +88,7 @@ export function validateUser({ user, fieldDirectives, parentType }: ValidateUser
     return;
   }
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const role = fieldDirectives?.auth?.find((arg: AuthDirective) => 'role' in arg)?.role;
   const acceptableRoles = getAcceptableRoles(role);
 
