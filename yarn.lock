@@ -7,48 +7,48 @@
   resolved "https://registry.yarnpkg.com/@0no-co/graphql.web/-/graphql.web-1.1.1.tgz#6670b0897ee222e10f46c3b45fe5b43b90504fcd"
   integrity sha512-F2i3xdycesw78QCOBHmpTn7eaD2iNXGwB2gkfwxcOfBbeauYpr8RBSyJOkDrFtKtVRMclg8Sg3n1ip0ACyUuag==
 
-"@ai-sdk/anthropic@1.1.8":
-  version "1.1.8"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/anthropic/-/anthropic-1.1.8.tgz#b93f82b575a3b3b47f6ad6750bee7b2fb8516b64"
-  integrity sha512-QD8c3ShPIpXaqjCDq9tCBI9iI/GeZETnP/DxgA8wRTs13Sqx6HcLh1eKTaGyePOtJvRx5XBcR+wSdeZZcaeUQQ==
+"@ai-sdk/anthropic@1.1.9":
+  version "1.1.9"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/anthropic/-/anthropic-1.1.9.tgz#4028880f4900e105b033b3acca5942a653d11f57"
+  integrity sha512-oPZ0r1XyXHWYwOSFnUTRdPMjX3SOfmZjgb1YaRYQk5Zhrcm8DcmZLkdXBkIXbfMeeOnT+bidqGbQSejXEzk/FQ==
   dependencies:
-    "@ai-sdk/provider" "1.0.7"
-    "@ai-sdk/provider-utils" "2.1.8"
+    "@ai-sdk/provider" "1.0.8"
+    "@ai-sdk/provider-utils" "2.1.9"
 
-"@ai-sdk/provider-utils@2.1.8":
-  version "2.1.8"
-  resolved "https://registry.npmjs.org/@ai-sdk/provider-utils/-/provider-utils-2.1.8.tgz"
-  integrity sha512-1j9niMUAFlCBdYRYJr1yoB5kwZcRFBVuBiL1hhrf0ONFNrDiJYA6F+gROOuP16NHhezMfTo60+GeeV1xprHFjg==
+"@ai-sdk/provider-utils@2.1.9":
+  version "2.1.9"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.1.9.tgz#aa1693212dbd7f36d593d20a1139bc421dfe2bda"
+  integrity sha512-NerKjTuuUUs6glJGaentaXEBH52jRM0pR+cRCzc7aWke/K5jYBD6Frv1JYBpcxS7gnnCqSQZR9woiyS+6jrdjw==
   dependencies:
-    "@ai-sdk/provider" "1.0.7"
+    "@ai-sdk/provider" "1.0.8"
     eventsource-parser "^3.0.0"
     nanoid "^3.3.8"
     secure-json-parse "^2.7.0"
 
-"@ai-sdk/provider@1.0.7":
-  version "1.0.7"
-  resolved "https://registry.npmjs.org/@ai-sdk/provider/-/provider-1.0.7.tgz"
-  integrity sha512-q1PJEZ0qD9rVR+8JFEd01/QM++csMT5UVwYXSN2u54BrVw/D8TZLTeg2FEfKK00DgAx0UtWd8XOhhwITP9BT5g==
+"@ai-sdk/provider@1.0.8":
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-1.0.8.tgz#9029dfe8b2698e43c3012524fd1192dd546c6a6c"
+  integrity sha512-f9jSYwKMdXvm44Dmab1vUBnfCDSFfI5rOtvV1W9oKB7WYHR5dGvCC6x68Mk3NUfrdmNoMVHGoh6JT9HCVMlMow==
   dependencies:
     json-schema "^0.4.0"
 
-"@ai-sdk/react@1.1.16":
-  version "1.1.16"
-  resolved "https://registry.npmjs.org/@ai-sdk/react/-/react-1.1.16.tgz"
-  integrity sha512-4Jx1piCte2+YoDd6ZdwM0Mw29046edw7MMNICImCPv2s7sfwFwe4c1t8waA4PYRefuETmzheqjh80kafQYJf8g==
+"@ai-sdk/react@1.1.17":
+  version "1.1.17"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.1.17.tgz#ba7982cba0dec4eca593569f9e1d811529b95f71"
+  integrity sha512-NAuEflFvjw1uh1AOmpyi7rBF4xasWsiWUb86JQ8ScjDGxoGDYEdBnaHOxUpooLna0dGNbSPkvDMnVRhoLKoxPQ==
   dependencies:
-    "@ai-sdk/provider-utils" "2.1.8"
-    "@ai-sdk/ui-utils" "1.1.14"
+    "@ai-sdk/provider-utils" "2.1.9"
+    "@ai-sdk/ui-utils" "1.1.15"
     swr "^2.2.5"
     throttleit "2.1.0"
 
-"@ai-sdk/ui-utils@1.1.14":
-  version "1.1.14"
-  resolved "https://registry.npmjs.org/@ai-sdk/ui-utils/-/ui-utils-1.1.14.tgz"
-  integrity sha512-JQXcnPRnDfeH1l503s/8+SxJdmgyUKC3QvKjOpTV6Z/LyRWJZrruBoZnVB1OrL9o/WHEguC+rD+p9udv281KzQ==
+"@ai-sdk/ui-utils@1.1.15":
+  version "1.1.15"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.1.15.tgz#13ce822c008237abd83a65362b13b04fe39d311d"
+  integrity sha512-NsV/3CMmjc4m53snzRdtZM6teTQUXIKi8u0Kf7GBruSzaMSuZ4DWaAAlUshhR3p2FpZgtsogW+vYG1/rXsGu+Q==
   dependencies:
-    "@ai-sdk/provider" "1.0.7"
-    "@ai-sdk/provider-utils" "2.1.8"
+    "@ai-sdk/provider" "1.0.8"
+    "@ai-sdk/provider-utils" "2.1.9"
     zod-to-json-schema "^3.24.1"
 
 "@ampproject/remapping@^2.2.0":
@@ -1413,10 +1413,18 @@
     "@envelop/types" "5.0.0"
     tslib "^2.5.0"
 
-"@envelop/extended-validation@^4.0.0", "@envelop/extended-validation@^4.1.0":
+"@envelop/extended-validation@^4.1.0":
   version "4.1.0"
   resolved "https://registry.npmjs.org/@envelop/extended-validation/-/extended-validation-4.1.0.tgz"
   integrity sha512-S90LQanW+xg3Lkp2sNiHa2KJnXXpKLucKys05Wk5zpiV0vL0SDX+/cuV+tnDhShWJucunAGi34n8xFCXsUUOkA==
+  dependencies:
+    "@graphql-tools/utils" "^10.0.0"
+    tslib "^2.5.0"
+
+"@envelop/extended-validation@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@envelop/extended-validation/-/extended-validation-5.0.0.tgz#ff7f73674d62725dac323906a42f2b251d994abd"
+  integrity sha512-UULqLKd16a6tyaQV+mFqNIVK4LoYgUvpRi+SeqiJXFuPz8Xd0jZzoMtSUXtoFe328cFId2JFhiwBBd1sszO3PQ==
   dependencies:
     "@graphql-tools/utils" "^10.0.0"
     tslib "^2.5.0"
@@ -1431,10 +1439,10 @@
     "@graphql-tools/utils" "^10.5.1"
     tslib "^2.5.0"
 
-"@envelop/graphql-jit@^8.0.0":
-  version "8.0.4"
-  resolved "https://registry.npmjs.org/@envelop/graphql-jit/-/graphql-jit-8.0.4.tgz"
-  integrity sha512-3vchsMVsPyCmBMDkRPvjAqhJjyunQW7wZ5zXx6q+gfiEVcaetDJZwK+0ODo+IOxO5eNHqQ9u4Z2QiRTCCuvXgA==
+"@envelop/graphql-jit@^9.0.0":
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/@envelop/graphql-jit/-/graphql-jit-9.0.0.tgz#e805b1afe29648d7dc7fa18ab754b4d81576ee15"
+  integrity sha512-XC5BrpspGXUj5PPfG4cNw+LqU/X8816n2UQa5q8YLbsOgp8qAAUgWzrvY1+Ts1FLWXnLtJ6iFJPl83sc3bYbLA==
   dependencies:
     graphql-jit "0.8.7"
     tslib "^2.5.0"
@@ -2391,10 +2399,10 @@
     localforage "1.10.0"
     tslib "^2.4.0"
 
-"@graphql-mesh/cli@0.98.23":
-  version "0.98.23"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.98.23.tgz#360d82d0ea353c01eb7818a5168745dfc315af22"
-  integrity sha512-WcyGZURaGRc8U50yEoU2lQ9Vbq41Yc5DMmOmucnAcEL5XLqRjRQ6ITDfVpnFq+KjaNcIUI9iFGmyqot1dvdIgw==
+"@graphql-mesh/cli@0.98.24":
+  version "0.98.24"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/cli/-/cli-0.98.24.tgz#52e4b0d841c0f29c8eb4b3fdea8c991f0890810f"
+  integrity sha512-RFfy0geO4TLH6L+TcQar2qHWPGGEvNFjDZ6B5Tx88dTGdRE9XZ/CZuD8X40w3rdvhgABC+PNXfCxSjQTWlzwQw==
   dependencies:
     "@graphql-codegen/core" "^4.0.0"
     "@graphql-codegen/typed-document-node" "^5.0.0"
@@ -2402,11 +2410,11 @@
     "@graphql-codegen/typescript-generic-sdk" "^3.1.0"
     "@graphql-codegen/typescript-operations" "^4.0.0"
     "@graphql-codegen/typescript-resolvers" "^4.0.0"
-    "@graphql-mesh/config" "^0.106.23"
+    "@graphql-mesh/config" "^0.106.24"
     "@graphql-mesh/cross-helpers" "^0.4.10"
-    "@graphql-mesh/http" "^0.105.18"
+    "@graphql-mesh/http" "^0.105.19"
     "@graphql-mesh/include" "^0.2.16"
-    "@graphql-mesh/runtime" "^0.105.18"
+    "@graphql-mesh/runtime" "^0.105.19"
     "@graphql-mesh/store" "^0.103.17"
     "@graphql-mesh/types" "^0.103.17"
     "@graphql-mesh/utils" "^0.103.17"
@@ -2428,17 +2436,17 @@
     ws "^8.17.1"
     yargs "^17.7.1"
 
-"@graphql-mesh/config@0.106.23", "@graphql-mesh/config@^0.106.23":
-  version "0.106.23"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.106.23.tgz#c0d69e1f9155bdd5b166fb8831f4bf7f585fa72b"
-  integrity sha512-M6MChbC1TAKZ48LYIwF+zEwSTriao8FM8itGwNXo86PcnThXgAZhLjaq0z1zJGhVE7OJBVPb8jSvynxBy+Yl0g==
+"@graphql-mesh/config@0.106.24", "@graphql-mesh/config@^0.106.24":
+  version "0.106.24"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/config/-/config-0.106.24.tgz#939caef5a607e261be28fbd05e35e48e7f72f913"
+  integrity sha512-La5YYpPt/x/BUHC/3HlwkaI0S7RSm+l2JxHBYYHSQGw4LZoXTkoXgbp326VfEgg5eIYDWX9sEO6EYbzPH448Dw==
   dependencies:
     "@envelop/core" "^5.0.0"
     "@graphql-mesh/cache-localforage" "^0.103.18"
     "@graphql-mesh/cross-helpers" "^0.4.10"
     "@graphql-mesh/merger-bare" "^0.104.20"
     "@graphql-mesh/merger-stitching" "^0.104.17"
-    "@graphql-mesh/runtime" "^0.105.18"
+    "@graphql-mesh/runtime" "^0.105.19"
     "@graphql-mesh/store" "^0.103.17"
     "@graphql-mesh/types" "^0.103.17"
     "@graphql-mesh/utils" "^0.103.17"
@@ -2461,13 +2469,13 @@
     "@graphql-tools/utils" "^10.8.0"
     path-browserify "1.0.1"
 
-"@graphql-mesh/http@0.105.18", "@graphql-mesh/http@^0.105.18":
-  version "0.105.18"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.105.18.tgz#995b5c73cd8b44a2fef21e09738fc3f47073f9f6"
-  integrity sha512-B2PRH18uNSq+CSbfxUSdY6ZhYzCeL3lvyFJTo4yuR62PPAM5hLIdaWSm0gtSsBHxPf2ESGM2Kyg8T/dP2/HHzw==
+"@graphql-mesh/http@0.105.19", "@graphql-mesh/http@^0.105.19":
+  version "0.105.19"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/http/-/http-0.105.19.tgz#391becfb5e3dc016a8c137db02bb5e9cf267d627"
+  integrity sha512-Vi0oidlDYrYEF1pyDdJnAbGNNPUOLbMdocgaQhbSzTMhKYX3pxZkz1QXSmC886wjFsT0mX25C9Y/YH1nBwNBFw==
   dependencies:
     "@graphql-mesh/cross-helpers" "^0.4.10"
-    "@graphql-mesh/runtime" "^0.105.18"
+    "@graphql-mesh/runtime" "^0.105.19"
     "@graphql-mesh/types" "^0.103.17"
     "@graphql-mesh/utils" "^0.103.17"
     "@graphql-tools/utils" "^10.8.0"
@@ -2528,14 +2536,14 @@
     "@graphql-tools/utils" "^10.8.0"
     tslib "^2.4.0"
 
-"@graphql-mesh/runtime@0.105.18", "@graphql-mesh/runtime@^0.105.18":
-  version "0.105.18"
-  resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.105.18.tgz#52b559a90ba3e7a711b34fe413da7ea6bda73045"
-  integrity sha512-uT0oBLd0JuZOMW9ylWAK7BikEqrfJlpGjOD9G4KBazMlO8aF15iNRw/oUFSvdg8kMdylpQjSqgpz0qeyog1a8Q==
+"@graphql-mesh/runtime@0.105.19", "@graphql-mesh/runtime@^0.105.19":
+  version "0.105.19"
+  resolved "https://registry.yarnpkg.com/@graphql-mesh/runtime/-/runtime-0.105.19.tgz#626ea8e83182ed9d3ede56c21ee0f8021fdaf93b"
+  integrity sha512-f8upottjnevh/oFKAcZOxyaogGL3u+7KB02irg2+9JB6aW65rW+aMui4+lx0guIPzp23Zo33ch19ZGVwu6b3Pg==
   dependencies:
     "@envelop/core" "^5.0.0"
-    "@envelop/extended-validation" "^4.0.0"
-    "@envelop/graphql-jit" "^8.0.0"
+    "@envelop/extended-validation" "^5.0.0"
+    "@envelop/graphql-jit" "^9.0.0"
     "@graphql-mesh/cross-helpers" "^0.4.10"
     "@graphql-mesh/string-interpolation" "^0.5.8"
     "@graphql-mesh/types" "^0.103.17"
@@ -7060,15 +7068,15 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
-ai@4.1.41:
-  version "4.1.41"
-  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.41.tgz#916b584cfb4176da645432662ea631d636c5417c"
-  integrity sha512-qQ5eVm5ivTij0/auLaoggfW3Y+IgWL0uNCCH79P8eUODeJTTqCRvB0B3iz9xl9b4uqOPcgZCVELgLfVODnCJ9g==
+ai@4.1.42:
+  version "4.1.42"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.42.tgz#79f9b02c2d18c3779485c3e09d6fd7c89c7258a8"
+  integrity sha512-frwlnev2ur3pMjGcPamgyVyr4pXbhabt3VUyZrILM9V1gC7jcG1+BP3Vjp54Im0szSZCADHoebtvA7zXTYiEHw==
   dependencies:
-    "@ai-sdk/provider" "1.0.7"
-    "@ai-sdk/provider-utils" "2.1.8"
-    "@ai-sdk/react" "1.1.16"
-    "@ai-sdk/ui-utils" "1.1.14"
+    "@ai-sdk/provider" "1.0.8"
+    "@ai-sdk/provider-utils" "2.1.9"
+    "@ai-sdk/react" "1.1.17"
+    "@ai-sdk/ui-utils" "1.1.15"
     "@opentelemetry/api" "1.9.0"
     jsondiffpatch "0.6.0"
 
@@ -13658,7 +13666,7 @@ postcss@8.4.31:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-postcss@^8.5.1:
+postcss@^8.5.2:
   version "8.5.2"
   resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.2.tgz#e7b99cb9d2ec3e8dd424002e7c16517cb2b846bd"
   integrity sha512-MjOadfU3Ys9KYoX0AdkBlFEF1Vx37uCCeN4ZHnmwm9FfpbsGWMZeBLMmmpY+6Ocqod7mkdZ0DT31OlbsFrLlkA==
@@ -16363,13 +16371,13 @@ vite-tsconfig-paths@5.1.4:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@6.1.0, "vite@^5.0.0 || ^6.0.0":
-  version "6.1.0"
-  resolved "https://registry.npmjs.org/vite/-/vite-6.1.0.tgz"
-  integrity sha512-RjjMipCKVoR4hVfPY6GQTgveinjNuyLw+qruksLDvA5ktI1150VmcMBKmQaEWJhg/j6Uaf6dNCNA0AfdzUb/hQ==
+vite@6.1.1, "vite@^5.0.0 || ^6.0.0":
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-6.1.1.tgz#c1f221749298357b9230782a04483e60ad83c8db"
+  integrity sha512-4GgM54XrwRfrOp297aIYspIti66k56v16ZnqHvrIM7mG+HjDlAwS7p+Srr7J6fGvEdOJ5JcQ/D9T7HhtdXDTzA==
   dependencies:
     esbuild "^0.24.2"
-    postcss "^8.5.1"
+    postcss "^8.5.2"
     rollup "^4.30.1"
   optionalDependencies:
     fsevents "~2.3.3"
