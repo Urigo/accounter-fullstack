@@ -42,6 +42,7 @@ export type AdminContext = {
       balanceCancellationTaxCategoryId: string;
       developmentForeignTaxCategoryId: string;
       developmentLocalTaxCategoryId: string;
+      salaryExcessExpensesTaxCategoryId: string;
     };
   };
   crossYear: {
@@ -262,6 +263,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
         balanceCancellationTaxCategoryId: rawContext.balance_cancellation_tax_category_id,
         developmentForeignTaxCategoryId: rawContext.development_foreign_tax_category_id,
         developmentLocalTaxCategoryId: rawContext.development_local_tax_category_id,
+        salaryExcessExpensesTaxCategoryId: rawContext.salary_excess_expenses_tax_category_id,
       },
     },
   };

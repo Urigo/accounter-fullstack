@@ -75,6 +75,7 @@ import migration_2025_01_29T17_31_52_add_counter_account_to_extended_transaction
 import migration_2025_01_30T11_50_54_max_transactions_trigger_fix from './actions/2025-01-30T11-50-54.max-transactions-trigger-fix.js';
 import migration_2025_02_14T11_50_44_dynamic_report_templates_table from './actions/2025-02-12T11-50-44.dynamic-report-templates-table.js';
 import migration_2025_02_13T14_40_22_update_poalim_column_length_restriction from './actions/2025-02-13T14-40-22.update-poalim-column-length-restriction.js';
+import migration_2025_02_19T15_12_33_add_to_context_salary_excess_expenses from './actions/2025-02-19T15-12-33.add-to-context-salary-excess-expenses.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -157,5 +158,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_01_30T11_50_54_max_transactions_trigger_fix,
       migration_2025_02_13T14_40_22_update_poalim_column_length_restriction,
       migration_2025_02_14T11_50_44_dynamic_report_templates_table,
+      migration_2025_02_19T15_12_33_add_to_context_salary_excess_expenses,
     ],
   });

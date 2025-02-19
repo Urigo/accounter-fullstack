@@ -8,11 +8,6 @@ import {
 export type MigrationExecutor = {
   name: string;
   /**
-   * Run the database migration outside a transaction.
-   * E.g. if you want to set a costly index or need to run any other costly SQL that would block the database users too long.
-   **/
-  noTransaction?: true;
-  /**
    * You can either return a SQL query to run or instead use the connection within the function to run custom logic.
    * You can also return an array of named steps so you can see the progress in the logs.
    */
@@ -90,11 +85,7 @@ export async function runMigrations(args: {
   await seedMigrationsIfNotExists({ connection: args.slonik });
 
   for (const migration of args.migrations) {
-    if (migration.noTransaction === true) {
-      await runMigration(args.slonik, migration);
-    } else {
-      await args.slonik.transaction(connection => runMigration(connection, migration));
-    }
+    await args.slonik.transaction(connection => runMigration(connection, migration));
 
     if (args.runTo && args.runTo === migration.name) {
       console.log(`reached migration '${migration.name}'. Stopping.`);
