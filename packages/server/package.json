@@ -20,7 +20,7 @@
   "dependencies": {
     "@accounter/green-invoice-graphql": "^0.7.2",
     "@accounter/pcn874-generator": "^0.4.1",
-    "@ai-sdk/anthropic": "1.1.8",
+    "@ai-sdk/anthropic": "1.1.9",
     "@envelop/generic-auth": "8.0.1",
     "@envelop/graphql-modules": "6.0.0",
     "@graphql-hive/yoga": "0.40.1",
@@ -28,7 +28,7 @@
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@whatwg-node/fetch": "0.10.3",
-    "ai": "4.1.41",
+    "ai": "4.1.42",
     "basic-auth": "2.0.1",
     "bcrypt": "5.1.1",
     "cloudinary": "2.5.1",
