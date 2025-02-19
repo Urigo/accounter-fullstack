@@ -10537,15 +10537,15 @@ graphql-jit@0.8.7, graphql-jit@^0.8.7:
     lodash.merge "4.6.2"
     lodash.mergewith "4.6.2"
 
-graphql-modules@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.npmjs.org/graphql-modules/-/graphql-modules-2.4.0.tgz"
-  integrity sha512-2KgsHC/ivsdiEWX97MA3V0eAo6TE8BhPW9BZgYzhivNDfz+3UUTCxZ0/GpSXXScolfoGyo0m3lVlXXg0zQk5ew==
+graphql-modules@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/graphql-modules/-/graphql-modules-3.0.0.tgz#d70e4a37f7585f6d4280bc16da885066e494196f"
+  integrity sha512-ADQRySHp7SMqLHsv/NMkEBqOcyAC5bT6bTYuQemjmvSsF+gj1iQbzNF1pjy1lsE6UWxvRRzZN+sovp85Z6c3Vw==
   dependencies:
     "@graphql-tools/schema" "^10.0.0"
     "@graphql-tools/wrap" "^10.0.0"
     "@graphql-typed-document-node/core" "^3.1.0"
-    ramda "^0.29.0"
+    ramda "^0.30.0"
 
 graphql-request@^6.0.0:
   version "6.1.0"
@@ -14070,10 +14070,10 @@ railroad-diagrams@^1.0.0:
   resolved "https://registry.npmjs.org/railroad-diagrams/-/railroad-diagrams-1.0.0.tgz"
   integrity sha512-cz93DjNeLY0idrCNOH6PviZGRN9GJhsdm9hpn1YCS879fj4W+x5IFJhhkRZcwVgMmFF7R82UA/7Oh+R8lLZg6A==
 
-ramda@^0.29.0:
-  version "0.29.1"
-  resolved "https://registry.npmjs.org/ramda/-/ramda-0.29.1.tgz"
-  integrity sha512-OfxIeWzd4xdUNxlWhgFazxsA/nl3mS4/jGZI5n00uWOoSSFRhC1b6gl6xvmzUamgmqELraWp0J/qqVlXYPDPyA==
+ramda@^0.30.0:
+  version "0.30.1"
+  resolved "https://registry.yarnpkg.com/ramda/-/ramda-0.30.1.tgz#7108ac95673062b060025052cd5143ae8fc605bf"
+  integrity sha512-tEF5I22zJnuclswcZMc8bDIrwRHRzf+NqVEmqg50ShAZMP7MWeR/RGDthfM/p+BlqvF2fXAzpn8i+SJcYD3alw==
 
 randexp@0.4.6:
   version "0.4.6"
