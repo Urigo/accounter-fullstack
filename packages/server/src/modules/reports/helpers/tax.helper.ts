@@ -10,6 +10,7 @@ import { DepreciationProvider } from '@modules/depreciation/providers/depreciati
 import { TimelessDateString } from '@shared/types';
 import { CommentaryProto } from '../types.js';
 import {
+  amountByFinancialEntityIdValidation,
   amountBySortCodeValidation,
   DecoratedLedgerRecord,
   updateRecords,
@@ -27,7 +28,11 @@ export async function calculateTaxAmounts(
     injector,
     adminContext: {
       general: {
-        taxCategories: { fineTaxCategoryId, untaxableGiftsTaxCategoryId },
+        taxCategories: {
+          fineTaxCategoryId,
+          untaxableGiftsTaxCategoryId,
+          salaryExcessExpensesTaxCategoryId,
+        },
       },
     },
   } = context;
@@ -164,7 +169,10 @@ export async function calculateTaxAmounts(
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
     businessTripsExcessExpensesAmount -= amount;
   });
-  const salaryExcessExpensesAmount = 0; // TODO: get amounts directly from accountant
+  const salaryExcessExpensesAmount = amountByFinancialEntityIdValidation(
+    decoratedLedgerRecords,
+    financialEntityId => financialEntityId === salaryExcessExpensesTaxCategoryId,
+  );
   const reserves = amountBySortCodeValidation(decoratedLedgerRecords, sortCode => sortCode === 931);
 
   const taxableIncomeAmount =

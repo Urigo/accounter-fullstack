@@ -135,6 +135,29 @@ export function amountBySortCodeValidation(
   return { amount, records };
 }
 
+export function amountByFinancialEntityIdValidation(
+  unfilteredRecords: DecoratedLedgerRecord[],
+  validation: (financialEntityId: string) => boolean,
+): number {
+  let amount = 0;
+  unfilteredRecords.map(record => {
+    if (record.credit_entity1 && validation(record.credit_entity1)) {
+      amount += Number(record.credit_local_amount1);
+    }
+    if (record.credit_entity2 && validation(record.credit_entity2)) {
+      amount += Number(record.credit_local_amount2);
+    }
+    if (record.debit_entity1 && validation(record.debit_entity1)) {
+      amount -= Number(record.debit_local_amount1);
+    }
+    if (record.debit_entity2 && validation(record.debit_entity2)) {
+      amount -= Number(record.debit_local_amount2);
+    }
+  });
+
+  return amount;
+}
+
 export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedgerRecord[]) {
   const { amount: revenueAmount, records: revenueRecords } = amountBySortCodeValidation(
     decoratedLedgerRecords,
