@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
 import { env } from '../../../packages/server/src/environment.js';
 import { UserType } from '../../../packages/server/src/shared/types/index.js';
-import { AuthDirective, Role, ValidateUserType } from './types.js';
+import { Role, ValidateUserType } from './types.js';
 
 function getAuthorizedUsers(): Record<string, string> {
   try {
@@ -67,11 +67,11 @@ export function resolveUser(context: any): UserType | null {
   }
 }
 
-export function getAcceptableRoles(role?: Role) {
+export function getAcceptableRoles(role?: string) {
   switch (role) {
-    case 'ACCOUNTANT':
-      return ['ACCOUNTANT'];
     case 'ADMIN':
+      return ['ADMIN'];
+    case 'ACCOUNTANT':
       return ['ACCOUNTANT', 'ADMIN'];
     default:
       return [];
@@ -79,7 +79,7 @@ export function getAcceptableRoles(role?: Role) {
 }
 
 export function validateUser({ user, fieldDirectives, parentType }: ValidateUserType) {
-  if (!user || !Object.keys(user).length) {
+  if (!user) {
     return new GraphQLError(`Unauthenticated!`);
   }
 
@@ -88,14 +88,10 @@ export function validateUser({ user, fieldDirectives, parentType }: ValidateUser
     return;
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const role = fieldDirectives?.auth?.find((arg: AuthDirective) => 'role' in arg)?.role;
+  const role = fieldDirectives?.auth?.find(arg => 'role' in arg)?.role;
   const acceptableRoles = getAcceptableRoles(role);
 
-  if ('role' in user && acceptableRoles.includes(user.role as string)) {
-    return;
-  }
-  if ('role' in user && user.role === 'ADMIN') {
+  if (user.role && acceptableRoles.includes(user.role as string)) {
     return;
   }
   return new GraphQLError(`No permissions!`);

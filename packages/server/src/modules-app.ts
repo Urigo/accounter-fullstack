@@ -1,5 +1,6 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
+import { AdminContext } from 'plugins/admin-context-plugin.js';
 import { buildSubgraphSchema } from '@apollo/subgraph';
 import { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper/resolverMap.js';
 import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
@@ -9,7 +10,6 @@ import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
 import { vatModule } from '@modules/vat/index.js';
-import { Currency } from '@shared/gql-types';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -107,90 +107,3 @@ export async function createGraphQLApp(env: Environment) {
     ],
   });
 }
-
-export type AdminContext = {
-  defaultLocalCurrency: Currency;
-  defaultCryptoConversionFiatCurrency: Currency;
-  defaultAdminBusinessId: string;
-  defaultTaxCategoryId: string;
-  authorities: {
-    vatBusinessId: string;
-    inputVatTaxCategoryId: string;
-    outputVatTaxCategoryId: string;
-    taxBusinessId: string;
-    taxExpensesTaxCategoryId: string;
-    socialSecurityBusinessId: string;
-    vatReportExcludedBusinessNames: string[];
-  };
-  general: {
-    taxCategories: {
-      exchangeRateTaxCategoryId: string;
-      incomeExchangeRateTaxCategoryId: string;
-      exchangeRevaluationTaxCategoryId: string;
-      feeTaxCategoryId: string;
-      generalFeeTaxCategoryId: string;
-      fineTaxCategoryId: string;
-      untaxableGiftsTaxCategoryId: string;
-      balanceCancellationTaxCategoryId: string;
-      developmentForeignTaxCategoryId: string;
-      developmentLocalTaxCategoryId: string;
-    };
-  };
-  crossYear: {
-    expensesToPayTaxCategoryId: string;
-    expensesInAdvanceTaxCategoryId: string;
-    incomeToCollectTaxCategoryId: string;
-    incomeInAdvanceTaxCategoryId: string;
-  };
-  financialAccounts: {
-    poalimBusinessId: string | null;
-    discountBusinessId: string | null;
-    swiftBusinessId: string | null;
-    isracardBusinessId: string | null;
-    amexBusinessId: string | null;
-    calBusinessId: string | null;
-    etanaBusinessId: string | null;
-    krakenBusinessId: string | null;
-    etherScanBusinessId: string | null;
-    bankAccountIds: string[];
-    creditCardIds: string[];
-    internalWalletsIds: string[];
-  };
-  bankDeposits: {
-    bankDepositBusinessId: string | null;
-    bankDepositInterestIncomeTaxCategoryId: string | null;
-  };
-  salaries: {
-    zkufotExpensesTaxCategoryId: string | null;
-    zkufotIncomeTaxCategoryId: string | null;
-    socialSecurityExpensesTaxCategoryId: string | null;
-    salaryExpensesTaxCategoryId: string | null;
-    trainingFundExpensesTaxCategoryId: string | null;
-    compensationFundExpensesTaxCategoryId: string | null;
-    pensionExpensesTaxCategoryId: string | null;
-    batchedEmployeesBusinessId: string | null;
-    batchedFundsBusinessId: string | null;
-    salaryBatchedBusinessIds: string[];
-    taxDeductionsBusinessId: string | null;
-    recoveryReserveExpensesTaxCategoryId: string | null;
-    recoveryReserveTaxCategoryId: string | null;
-    vacationReserveExpensesTaxCategoryId: string | null;
-    vacationReserveTaxCategoryId: string | null;
-  };
-  businessTrips: {
-    businessTripTaxCategoryId: string | null;
-    businessTripTagId: string | null;
-  };
-  dividends: {
-    dividendWithholdingTaxBusinessId: string | null;
-    dividendTaxCategoryId: string | null;
-    dividendPaymentBusinessIds: string[];
-    dividendBusinessIds: string[];
-  };
-  depreciation: {
-    accumulatedDepreciationTaxCategoryId: string | null;
-    rndDepreciationExpensesTaxCategoryId: string | null;
-    gnmDepreciationExpensesTaxCategoryId: string | null;
-    marketingDepreciationExpensesTaxCategoryId: string | null;
-  };
-};
