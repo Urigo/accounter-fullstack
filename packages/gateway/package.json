@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@graphql-hive/gateway": "1.10.3",
+    "@graphql-yoga/plugin-defer-stream": "3.12.0",
     "@theguild/federation-composition": "0.14.4",
     "graphql": "16.10.0"
   },

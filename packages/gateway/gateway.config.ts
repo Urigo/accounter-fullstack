@@ -1,4 +1,5 @@
 import { defineConfig } from '@graphql-hive/gateway';
+import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { env } from '../server/src/environment.js';
 import { AUTH_ROLE, AUTH_USER_ID, AUTH_USERNAME } from '../server/src/shared/constants.js';
 import { UserType } from '../server/src/shared/types/index.js';
@@ -20,7 +21,7 @@ export const gatewayConfig = defineConfig({
     extractScopes: (user: UserType) => getAcceptableRoles(user.role),
   },
   plugins: _ctx => {
-    return [useForwordAuthInfoToSubgraph()];
+    return [useForwordAuthInfoToSubgraph(), useDeferStream()];
   },
 });
 
