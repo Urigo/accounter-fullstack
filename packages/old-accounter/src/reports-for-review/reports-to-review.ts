@@ -103,9 +103,9 @@ export const reportToReview = async (query: any): Promise<string> => {
   let counter = 1;
   let reportToReviewHTMLTemplate = '';
   let incomeSum = 0;
-  let outcomeSum = 0;
+  let expensesSum = 0;
   let VATincome = 0;
-  let VAToutcome = 0;
+  let VATexpense = 0;
   for (const transaction of reportToReview.rows) {
     if (
       transaction.debit_amount_1 &&
@@ -115,10 +115,10 @@ export const reportToReview = async (query: any): Promise<string> => {
       transaction.details != '0'
     ) {
       if (transaction.debit_amount_1) {
-        outcomeSum += parseFloat(transaction.debit_amount_1);
+        expensesSum += parseFloat(transaction.debit_amount_1);
       }
       if (transaction.debit_amount_2) {
-        outcomeSum += parseFloat(transaction.debit_amount_2);
+        expensesSum += parseFloat(transaction.debit_amount_2);
       }
       if (transaction.credit_amount_1) {
         incomeSum += parseFloat(transaction.credit_amount_1);
@@ -128,7 +128,7 @@ export const reportToReview = async (query: any): Promise<string> => {
       }
 
       if (transaction.debit_amount_2) {
-        VAToutcome += parseFloat(transaction.debit_amount_2);
+        VATexpense += parseFloat(transaction.debit_amount_2);
       }
       if (transaction.credit_amount_2) {
         VATincome += parseFloat(transaction.credit_amount_2);
@@ -267,7 +267,7 @@ export const reportToReview = async (query: any): Promise<string> => {
   reportToReviewHTMLTemplate = `
       <div>
       סהכ סכום חובה  :  <br>
-      ${(Math.round(outcomeSum * 100) / 100).toFixed(2)}
+      ${(Math.round(expensesSum * 100) / 100).toFixed(2)}
       </div>
       <div>
       סהכ סכום זכות  :  <br>
@@ -276,7 +276,7 @@ export const reportToReview = async (query: any): Promise<string> => {
 
       <div>
      2סהכ חובה  : <br>
-      ${(Math.round(VAToutcome * 100) / 100).toFixed(2)}
+      ${(Math.round(VATexpense * 100) / 100).toFixed(2)}
       </div>
       <div>
      2סהכ זכות  :  <br>

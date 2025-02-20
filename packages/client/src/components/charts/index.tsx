@@ -243,29 +243,29 @@ export const ChartPage = (): ReactElement => {
 
     // for each item in the convertedData array, return the total income and total expenses. Income is when raw is positive, expenses is when raw is negative
     const incomeAndExpenses = convertedTransactions.map(item => {
-      const [income, outcome] = item.converted.reduce(
-        ([income, outcome], transaction) => {
+      const [income, expenses] = item.converted.reduce(
+        ([income, expenses], transaction) => {
           if (!transaction.amount.raw) {
-            return [income, outcome];
+            return [income, expenses];
           }
           if (transaction.amount.raw > 0) {
-            return [numberToDecimalJS(income + transaction.amount.raw), outcome];
+            return [numberToDecimalJS(income + transaction.amount.raw), expenses];
           }
           if (transaction.amount.raw < 0) {
-            return [income, numberToDecimalJS(outcome - transaction.amount.raw)];
+            return [income, numberToDecimalJS(expenses - transaction.amount.raw)];
           }
-          return [income, outcome];
+          return [income, expenses];
         },
         [0, 0],
       );
       return {
         date: item.month,
         income,
-        outcome,
+        expenses,
       };
     });
 
-    // take the incomeAndExpenses array and sort it by month and return the total income and outcome for month and the month name and year
+    // take the incomeAndExpenses array and sort it by month and return the total income and expenses for month and the month name and year
     return incomeAndExpenses
       .sort((a, b) => {
         const aDate = new Date(a.date);
@@ -279,7 +279,7 @@ export const ChartPage = (): ReactElement => {
         return {
           date: month + ' ' + year,
           income: item.income,
-          outcome: item.outcome,
+          expenses: item.expenses,
         };
       });
   }, [data]);
@@ -288,12 +288,12 @@ export const ChartPage = (): ReactElement => {
     .map(i => i.income)
     .reduce((acc, curr) => numberToDecimalJS(acc + curr), 0);
   const totalExpenses = overviewData
-    .map(i => i.outcome)
+    .map(i => i.expenses)
     .reduce((acc, curr) => numberToDecimalJS(acc + curr), 0);
   const totalBalance = numberToDecimalJS(totalIncome - totalExpenses);
 
   return (
-    <PageLayout title="Charts" description="Income and Outcome">
+    <PageLayout title="Charts" description="Income and Expenses">
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
@@ -308,7 +308,7 @@ export const ChartPage = (): ReactElement => {
                 number: totalIncome.toLocaleString(),
               },
               {
-                title: 'Outcome',
+                title: 'Expenses',
                 number: totalExpenses.toLocaleString(),
               },
               {
@@ -319,10 +319,10 @@ export const ChartPage = (): ReactElement => {
           />
           <Card>
             <CardHeader>
-              <CardTitle>Income and Outcome</CardTitle>
+              <CardTitle>Income and Expenses</CardTitle>
             </CardHeader>
             <CardContent>
-              <BarChart type="bar" datasetsTitle={['Income', 'Outcome']} data={overviewData} />
+              <BarChart type="bar" datasetsTitle={['Income', 'Expenses']} data={overviewData} />
             </CardContent>
           </Card>
         </>
