@@ -6,6 +6,7 @@ import {
   type NodeModel,
   type TreeProps,
 } from '@minoru/react-dnd-treeview';
+import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
 import { Placeholder } from './palceholder.js';
@@ -16,13 +17,23 @@ type Props<T> = Pick<TreeProps<T>, 'tree' | 'onDrop' | 'rootId'> & {
   handleTextChange: (id: NodeModel['id'], value: string) => void;
   handleIsOpenChange: (id: NodeModel['id'], value: boolean) => void;
   handleDeleteCategory: (id: NodeModel['id']) => void;
+  filter: ContoReportFiltersType;
 };
 
-export const TreeView: React.FC<Props<CustomData>> = props => (
+export const TreeView: React.FC<Props<CustomData>> = ({
+  tree,
+  onDrop,
+  rootId,
+  handleIsOpenChange,
+  handleTextChange,
+  handleDeleteCategory,
+  filter,
+  enableDnd,
+}) => (
   <Tree
-    tree={props.tree}
-    onDrop={props.onDrop}
-    rootId={props.rootId}
+    tree={tree}
+    onDrop={onDrop}
+    rootId={rootId}
     classes={{
       root: 'box-border h-full p-4',
       draggingSource: 'opacity-30',
@@ -36,14 +47,15 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
           isOpen={isOpen}
           onToggle={() => {
             onToggle();
-            props.handleIsOpenChange(node.id, !isOpen);
+            handleIsOpenChange(node.id, !isOpen);
           }}
-          onTextChange={props.handleTextChange}
-          onDeleteCategory={props.handleDeleteCategory}
-          descendants={getDescendants(props.tree, node.id)}
+          onTextChange={handleTextChange}
+          onDeleteCategory={handleDeleteCategory}
+          descendants={getDescendants(tree, node.id)}
+          filter={filter}
         />
       ),
-      [props.tree, props.handleTextChange, props.handleDeleteCategory, props.handleIsOpenChange],
+      [tree, handleTextChange, handleDeleteCategory, handleIsOpenChange, filter],
     )}
     dragPreviewRender={useCallback(
       (monitorProps: DragLayerMonitorProps<CustomData>) => (
@@ -53,9 +65,9 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
     )}
     sort={false}
     insertDroppableFirst={false}
-    canDrag={() => props.enableDnd}
+    canDrag={() => enableDnd}
     canDrop={(_tree, { dragSource, dropTargetId }) => {
-      if (!props.enableDnd) {
+      if (!enableDnd) {
         return false;
       }
       if (dragSource?.parent === dropTargetId) {
@@ -65,6 +77,6 @@ export const TreeView: React.FC<Props<CustomData>> = props => (
     }}
     dropTargetOffset={10}
     placeholderRender={(node, { depth }) => <Placeholder node={node} depth={depth} />}
-    initialOpen={props.tree.filter(node => node.data?.isOpen).map(node => node.id)}
+    initialOpen={tree.filter(node => node.data?.isOpen).map(node => node.id)}
   />
 );

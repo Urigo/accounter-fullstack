@@ -517,6 +517,7 @@ export const ContoReport: React.FC = () => {
             handleDeleteCategory={handleDeleteCategory}
             handleIsOpenChange={handleIsOpenChange}
             enableDnd={enableDnd}
+            filter={filter}
           />
         </div>
         <div>
@@ -531,6 +532,7 @@ export const ContoReport: React.FC = () => {
             handleDeleteCategory={handleDeleteCategory}
             handleIsOpenChange={handleIsOpenChange}
             enableDnd={enableDnd}
+            filter={filter}
           />
         </div>
       </div>
