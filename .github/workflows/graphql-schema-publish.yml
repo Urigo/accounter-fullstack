@@ -1,3 +1,4 @@
+name: Publish Schema
 on:
   workflow_call:
     secrets:
@@ -9,14 +10,42 @@ jobs:
     runs-on: ubuntu-latest
     environment: accounter-fullstack
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: schema publish
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.8.0'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate Supergraph Schema
+        run: |
+          # First generate any necessary GraphQL files
+          yarn generate
+
+          # Then generate the supergraph schema
+          cd packages/gateway
+          yarn tsx supergraph.ts
+          cd ../..
+
+          # Verify the schema was generated
+          if [ ! -f supergraph.graphql ]; then
+            echo "Error: supergraph.graphql was not generated"
+            exit 1
+          fi
+
+      - name: Install Hive CLI
+        run: curl -sSL https://graphql-hive.com/install.sh | sh
+
+      - name: Publish Schema to Hive
         env:
           HIVE_TOKEN: ${{ secrets.hiveToken }}
         run: |
-          curl -sSL https://graphql-hive.com/install.sh | sh
-          hive schema:publish "packages/server/src/modules/*/typeDefs/*.graphql.ts" --github
+          # Publish the generated supergraph schema
+          hive schema:publish "./supergraph.graphql" --github
