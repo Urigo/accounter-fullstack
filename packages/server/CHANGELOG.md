@@ -1,5 +1,170 @@
 # @accounter/server
 
+## 0.0.4
+
+### Patch Changes
+
+- [#1535](https://github.com/Urigo/accounter-fullstack/pull/1535)
+  [`6cb4e98`](https://github.com/Urigo/accounter-fullstack/commit/6cb4e98a6b1acac126a4f496ad4a08da2cc6c966)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`dotenv-cli@8.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/8.0.0)
+    (from `7.4.4`, in `dependencies`)
+
+- [#1543](https://github.com/Urigo/accounter-fullstack/pull/1543)
+  [`777920c`](https://github.com/Urigo/accounter-fullstack/commit/777920c6e076538e99fec4a20853529a968be26e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.10.8` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.10.8)
+    (from `3.10.6`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.10.8` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.10.8) (from `5.10.6`,
+    in `dependencies`)
+
+- [#1564](https://github.com/Urigo/accounter-fullstack/pull/1564)
+  [`b080d4c`](https://github.com/Urigo/accounter-fullstack/commit/b080d4c0e3553f8a7240a131db44d7f2bf8b3491)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.10.9` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.10.9)
+    (from `3.10.8`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.10.9` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.10.9) (from `5.10.8`,
+    in `dependencies`)
+
+- [#1587](https://github.com/Urigo/accounter-fullstack/pull/1587)
+  [`6d56b87`](https://github.com/Urigo/accounter-fullstack/commit/6d56b87180d569a263fc382b1614a0f27145a3ba)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.3` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.3)
+    (from `0.10.1`, in `dependencies`)
+
+- [#1603](https://github.com/Urigo/accounter-fullstack/pull/1603)
+  [`f2d556e`](https://github.com/Urigo/accounter-fullstack/commit/f2d556e1174c8e704e60a2ac36d1c117b675cc27)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.10.10` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.10.10)
+    (from `3.10.9`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.10.10` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.10.10) (from
+    `5.10.9`, in `dependencies`)
+
+- [#1632](https://github.com/Urigo/accounter-fullstack/pull/1632)
+  [`84afa0a`](https://github.com/Urigo/accounter-fullstack/commit/84afa0a41f08a819714f6ba04bca8e18fd9c5f07)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.10.11` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.10.11)
+    (from `3.10.10`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.10.11` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.10.11) (from
+    `5.10.10`, in `dependencies`)
+
+- [#1674](https://github.com/Urigo/accounter-fullstack/pull/1674)
+  [`b5fca56`](https://github.com/Urigo/accounter-fullstack/commit/b5fca56e69aff166b67a7d9ccaadac58207c613d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-hive/yoga@0.39.0` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.39.0)
+    (from `^0.39.0`, in `dependencies`)
+  - Added dependency
+    [`@anthropic-ai/sdk@0.36.3` ↗︎](https://www.npmjs.com/package/@anthropic-ai/sdk/v/0.36.3) (to
+    `dependencies`)
+
+- [#1683](https://github.com/Urigo/accounter-fullstack/pull/1683)
+  [`0ff1300`](https://github.com/Urigo/accounter-fullstack/commit/0ff13003f72c88bca26d2cba6eca52c64269c8da)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-hive/yoga@0.39.4` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.39.4)
+    (from `0.39.0`, in `dependencies`)
+
+- [#1688](https://github.com/Urigo/accounter-fullstack/pull/1688)
+  [`340ddb6`](https://github.com/Urigo/accounter-fullstack/commit/340ddb63a9728d41cabeddffc428e48d90db89c4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.11.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.11.0)
+    (from `3.10.11`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.11.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.11.0) (from
+    `5.10.11`, in `dependencies`)
+
+- [#1700](https://github.com/Urigo/accounter-fullstack/pull/1700)
+  [`5185005`](https://github.com/Urigo/accounter-fullstack/commit/5185005c5c7ddc711ebc93b1c6215ee3a59fe345)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@pgtyped/cli@2.4.2` ↗︎](https://www.npmjs.com/package/@pgtyped/cli/v/2.4.2) (from `2.3.0`, in
+    `dependencies`)
+
+- [#1706](https://github.com/Urigo/accounter-fullstack/pull/1706)
+  [`eaf31e9`](https://github.com/Urigo/accounter-fullstack/commit/eaf31e9cfe56ac1f2a954dc986148fcb38d1e63b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`pg@8.13.3` ↗︎](https://www.npmjs.com/package/pg/v/8.13.3) (from `8.13.1`,
+    in `dependencies`)
+
+- [#1707](https://github.com/Urigo/accounter-fullstack/pull/1707)
+  [`e2e424f`](https://github.com/Urigo/accounter-fullstack/commit/e2e424fe7b82b0319bdf65312ead7d1bd85cd256)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-hive/yoga@0.40.1` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.40.1)
+    (from `0.39.4`, in `dependencies`)
+
+- [#1751](https://github.com/Urigo/accounter-fullstack/pull/1751)
+  [`b3f9a2e`](https://github.com/Urigo/accounter-fullstack/commit/b3f9a2ecaa4f5ec81fad5566902ff57963c98676)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.12.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.12.0)
+    (from `3.11.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.12.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.12.0) (from `5.11.0`,
+    in `dependencies`)
+
+- [#1757](https://github.com/Urigo/accounter-fullstack/pull/1757)
+  [`ddae74a`](https://github.com/Urigo/accounter-fullstack/commit/ddae74ac7f9911fb6b6ad2bdadb934973fcec7a9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.1.9` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.1.9) (from
+    `1.1.8`, in `dependencies`)
+  - Updated dependency [`ai@4.1.42` ↗︎](https://www.npmjs.com/package/ai/v/4.1.42) (from `4.1.41`,
+    in `dependencies`)
+
+- [#1762](https://github.com/Urigo/accounter-fullstack/pull/1762)
+  [`f71389a`](https://github.com/Urigo/accounter-fullstack/commit/f71389a90c6912af2ae9feea4a0c2ae1139f5725)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`graphql-modules@3.0.0` ↗︎](https://www.npmjs.com/package/graphql-modules/v/3.0.0) (from
+    `2.4.0`, in `dependencies`)
+
+- [#1767](https://github.com/Urigo/accounter-fullstack/pull/1767)
+  [`44e9a17`](https://github.com/Urigo/accounter-fullstack/commit/44e9a1761305e199b686b3d04ba8b038985a9fc6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.1.44` ↗︎](https://www.npmjs.com/package/ai/v/4.1.44) (from `4.1.42`,
+    in `dependencies`)
+- Updated dependencies
+  [[`e5acaa1`](https://github.com/Urigo/accounter-fullstack/commit/e5acaa1fd5e4bc3027d308425a235ba55d93902f),
+  [`6afccff`](https://github.com/Urigo/accounter-fullstack/commit/6afccfff0e669c7e57ba4b7faea13d5cb6995fec),
+  [`3edcf26`](https://github.com/Urigo/accounter-fullstack/commit/3edcf268807300fe70dfe5a57f6241677768c496),
+  [`745dfe6`](https://github.com/Urigo/accounter-fullstack/commit/745dfe6a644ed43c6a2bb02814bb08182edbd465),
+  [`16d7c0a`](https://github.com/Urigo/accounter-fullstack/commit/16d7c0ab3965699cda4e9fa1b32838932d127622),
+  [`6d56b87`](https://github.com/Urigo/accounter-fullstack/commit/6d56b87180d569a263fc382b1614a0f27145a3ba),
+  [`c845a24`](https://github.com/Urigo/accounter-fullstack/commit/c845a24450cecedf40b9e32568a5008cd0d63da9),
+  [`6c9a985`](https://github.com/Urigo/accounter-fullstack/commit/6c9a98525f1423b46f90b66baea71a0c8705df72),
+  [`424065e`](https://github.com/Urigo/accounter-fullstack/commit/424065ea0311f8293b3b5f00d69b0fc561e47442),
+  [`53d22fc`](https://github.com/Urigo/accounter-fullstack/commit/53d22fcaf5481a19c026a361931bd4df67d98f8f),
+  [`eaf31e9`](https://github.com/Urigo/accounter-fullstack/commit/eaf31e9cfe56ac1f2a954dc986148fcb38d1e63b),
+  [`ddae74a`](https://github.com/Urigo/accounter-fullstack/commit/ddae74ac7f9911fb6b6ad2bdadb934973fcec7a9)]:
+  - @accounter/green-invoice-graphql@0.7.3
+
 ## 0.0.3
 
 ### Patch Changes
