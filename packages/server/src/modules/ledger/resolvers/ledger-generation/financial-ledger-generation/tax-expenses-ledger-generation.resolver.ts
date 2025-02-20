@@ -110,7 +110,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       context,
       year,
       decoratedLedgerByYear.get(year) ?? [],
-      researchAndDevelopmentExpensesAmount,
+      researchAndDevelopmentExpensesAmount * -1,
       taxableCumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTaxAmount,
     );
