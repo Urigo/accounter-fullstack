@@ -67,7 +67,7 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
     const suggestedOwner = document.missingInfoSuggestions.owner;
     const suggestedCounterparty = document.missingInfoSuggestions.counterparty;
     if (document.missingInfoSuggestions?.isIncome == null) {
-      // case when we don't know if it's income or outcome
+      // case when we don't know if it's income or expense
       if (document.creditor?.id) {
         const creditorId = document.creditor.id;
         if (suggestedOwner?.id === creditorId && suggestedCounterparty) {
@@ -83,7 +83,7 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
       // case when it's income and we have counterparty
       return suggestedCounterparty;
     } else if (!document.missingInfoSuggestions.isIncome && suggestedOwner) {
-      // case when it's outcome and we have owner
+      // case when it's expense and we have owner
       return suggestedOwner;
     }
     return undefined;

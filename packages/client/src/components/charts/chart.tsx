@@ -5,7 +5,7 @@ interface BarChartProps {
   data: {
     date: string;
     income?: number;
-    outcome?: number;
+    expenses?: number;
   }[];
   datasetsTitle?: string[];
   type: ChartConfiguration['type'];
@@ -34,8 +34,8 @@ export const BarChart: React.FC<BarChartProps> = ({ data, datasetsTitle, type })
                 data: data.map(item => item.income ?? null),
               },
               {
-                label: datasetsTitle ? datasetsTitle[1] : 'Outcome',
-                data: data.map(item => item.outcome ?? null),
+                label: datasetsTitle ? datasetsTitle[1] : 'Expense',
+                data: data.map(item => item.expenses ?? null),
               },
             ],
           },
