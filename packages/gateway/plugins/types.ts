@@ -15,12 +15,6 @@ export interface AuthDirective {
   [key: string]: unknown;
 }
 
-export interface ValidateUserArgs {
-  user: UserType | null;
-  fieldDirectives?: { auth?: Array<{ role?: Role }> };
-  parentType: { name: string };
-}
-
 export interface ValidateUserType {
   parentType: GraphQLObjectType | GraphQLInterfaceType;
   fieldDirectives?: {
@@ -46,13 +40,3 @@ export interface PluginFetchParams {
 }
 
 export type AccounterGatewayPlugin = GatewayPlugin<AccounterGatewayContext>;
-
-// Helper type to ensure type safety when accessing directives
-export type DirectiveArgs<T> = {
-  [K in keyof T]: T[K] extends Array<infer U> ? U : never;
-};
-
-// Type guard for checking if user exists
-export function isUserType(user: UserType | null): user is UserType {
-  return user !== null && 'role' in user && 'username' in user && 'userId' in user;
-}
