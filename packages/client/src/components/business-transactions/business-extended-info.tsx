@@ -61,7 +61,7 @@ export type ExtendedTransaction = Extract<
 
 interface Props {
   businessID: string;
-  filter?: BusinessTransactionsFilter;
+  filter?: Pick<BusinessTransactionsFilter, 'fromDate' | 'ownerIds' | 'toDate'>;
 }
 
 export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {

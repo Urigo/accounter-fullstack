@@ -509,6 +509,7 @@ async function createAdminBusinessContext(
         'Balance Cancellation',
         'Development Foreign',
         'Development Local',
+        'Salary Excess Expenses',
       ],
     },
     crossYear: {
@@ -783,6 +784,7 @@ async function createAdminBusinessContext(
     bank_deposit_business_id: findId('Bank Deposit', 'business', true),
     dividend_withholding_tax_business_id: findId('Dividends Withholding Tax', 'business', true),
     dividend_tax_category_id: findId('Dividend', 'tax_category', true),
+    salary_excess_expenses_tax_category_id: findId('Salary Excess Expenses', 'tax_category'),
   };
 
   // insert user context
