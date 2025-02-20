@@ -158,13 +158,14 @@ export async function handleCrossYearLedgerEntries(
 
       const isYearOfRelevancePrior =
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
-      const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
-        ? isYearOfRelevancePrior
-          ? expensesToPayTaxCategoryId
-          : expensesInAdvanceTaxCategoryId
-        : isYearOfRelevancePrior
-          ? incomeToCollectTaxCategoryId
-          : incomeInAdvanceTaxCategoryId;
+      const mediateTaxCategory =
+        !!adjustedEntry.isCreditorCounterparty === !!adjustedEntry.isCreditInvoice
+          ? isYearOfRelevancePrior
+            ? incomeToCollectTaxCategoryId
+            : incomeInAdvanceTaxCategoryId
+          : isYearOfRelevancePrior
+            ? expensesToPayTaxCategoryId
+            : expensesInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
@@ -215,13 +216,14 @@ export async function handleCrossYearLedgerEntries(
 
       const isYearOfRelevancePrior =
         adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
-      const mediateTaxCategory = adjustedEntry.isCreditorCounterparty
-        ? isYearOfRelevancePrior
-          ? expensesToPayTaxCategoryId
-          : expensesInAdvanceTaxCategoryId
-        : isYearOfRelevancePrior
-          ? incomeToCollectTaxCategoryId
-          : incomeInAdvanceTaxCategoryId;
+      const mediateTaxCategory =
+        !!adjustedEntry.isCreditorCounterparty === !!adjustedEntry.isCreditInvoice
+          ? isYearOfRelevancePrior
+            ? incomeToCollectTaxCategoryId
+            : incomeInAdvanceTaxCategoryId
+          : isYearOfRelevancePrior
+            ? expensesToPayTaxCategoryId
+            : expensesInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
         ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }

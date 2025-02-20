@@ -49,6 +49,7 @@ export interface LedgerProto {
   valueDate: Date;
   currency: Currency;
   isCreditorCounterparty: boolean;
+  isCreditInvoice?: boolean;
   ownerId: string;
   currencyRate?: number;
   chargeId: string;
