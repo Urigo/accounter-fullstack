@@ -7068,10 +7068,10 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
-ai@4.1.44:
-  version "4.1.44"
-  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.44.tgz#ecb8133f7ec6a9fb2e8d31f2337f736358fc0350"
-  integrity sha512-2THAHlSdZkRemTu7XinH5wckO3QprrniKg31fczgg4RKvsow0OztsLalwcIGoo69S0WN4BErNKkBisT+wXREZg==
+ai@4.1.45:
+  version "4.1.45"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.45.tgz#f5a73246713316264c3137934924ec16538b92e1"
+  integrity sha512-nQkxQ2zCD+O/h8zJ+PxmBv9coyMaG1uP9kGJvhNaGAA25hbZRQWL0NbTsSJ/QMOUraXKLa+6fBm3VF1NkJK9Kg==
   dependencies:
     "@ai-sdk/provider" "1.0.8"
     "@ai-sdk/provider-utils" "2.1.9"
@@ -9824,11 +9824,11 @@ fast-uri@^3.0.1:
   integrity sha512-Atfo14OibSv5wAp4VWNsFYE1AchQRTv9cBGWET4pZWHzYshFSS9NQI6I57rdKn9croWVMbYFbLhJ+yJvmZIIHw==
 
 fast-xml-parser@^5.0.0:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-5.0.3.tgz#aee7133c6561ec6155083cd4cd9da705d6452ba4"
-  integrity sha512-I1OW1Uhq5Q2ucdddCUSGHT8n+kToAE/1vj8SC/Tq7Ebrbe+/EYVQdxrgL0ZmIWWZbDc2/jrFsSV5gvUirQSgXg==
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-5.0.5.tgz#999ac4b4281bc86682e6098639d2390c22f3896a"
+  integrity sha512-u0Q7Q/gfUDxiHxbATLGmNXYRBE3v7s+WWnW5h4Ru7FT6eYHm8MflhiEHucVTHFt7zvq1kYArQ+n9m2pjkVBeLg==
   dependencies:
-    strnum "^2.0.2"
+    strnum "^2.0.4"
 
 fastq@^1.6.0:
   version "1.19.0"
@@ -15407,10 +15407,10 @@ strip-json-comments@^3.1.1:
   resolved "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-3.1.1.tgz"
   integrity sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==
 
-strnum@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/strnum/-/strnum-2.0.2.tgz#cb4662222913ed1c5e0bd694d0b62a80a4bdb3b7"
-  integrity sha512-FHl2fmHvonQrrw9/5xzBqBOcIpdES1mkNSl617CKEu5HRB5P6v/4JtGohPPMZ7+7EmVn6HElt7/9Vl8N4vO63A==
+strnum@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/strnum/-/strnum-2.0.4.tgz#7b2ace8a55d8c92a41c2d339ddb1bc306f337820"
+  integrity sha512-qrXhLMohxtEPKMlajtNaOp5zvAQUo6L3fNcdiJKzWH98kGfklqGwmxhFjM7DzxsuoVM7rJeiYr+lEcu4Jlu9UQ==
 
 styled-jsx@5.1.6:
   version "5.1.6"
