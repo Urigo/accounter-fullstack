@@ -1,5 +1,9 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
+import { AdminContext } from 'plugins/admin-context-plugin.js';
+import { buildSubgraphSchema } from '@apollo/subgraph';
+import { GraphQLResolverMap } from '@apollo/subgraph/dist/schema-helper/resolverMap.js';
+import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
@@ -28,10 +32,8 @@ import { salariesModule } from './modules/salaries/index.js';
 import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
-import type { AdminContext } from './plugins/admin-context-plugin.js';
-import type { UserType } from './plugins/auth-plugin.js';
 import { ENVIRONMENT } from './shared/tokens.js';
-import type { Environment } from './shared/types/index.js';
+import type { Environment, UserType } from './shared/types/index.js';
 
 const { Pool } = postgres;
 
@@ -48,6 +50,12 @@ declare global {
 
 export async function createGraphQLApp(env: Environment) {
   return createApplication({
+    schemaBuilder: ({ typeDefs, resolvers }) => {
+      return buildSubgraphSchema({
+        typeDefs: mergeTypeDefs(typeDefs),
+        resolvers: mergeResolvers(resolvers) as unknown as GraphQLResolverMap<unknown>,
+      });
+    },
     modules: [
       commonModule,
       accountantApprovalModule,

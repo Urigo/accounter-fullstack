@@ -1,16 +1,9 @@
 import auth from 'basic-auth';
 import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
-import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
-import type { Role } from '@shared/gql-types';
-import { AccounterContext } from '@shared/types';
-import { env } from '../environment.js';
-
-export type UserType = {
-  username: string;
-  userId: string;
-  role?: Role;
-};
+import { env } from '../../../packages/server/src/environment.js';
+import { UserType } from '../../../packages/server/src/shared/types/index.js';
+import { Role, ValidateUserType } from './types.js';
 
 function getAuthorizedUsers(): Record<string, string> {
   try {
@@ -52,8 +45,8 @@ function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
       return undefined;
   }
 }
-
-const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export function resolveUser(context: any): UserType | null {
   try {
     const user = getUserFromRequest(context.request);
     const role = getUserRole(user);
@@ -72,9 +65,9 @@ const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context =
 
     return null;
   }
-};
+}
 
-const getAcceptableRoles = (role?: string) => {
+export function getAcceptableRoles(role?: string) {
   switch (role) {
     case 'ADMIN':
       return ['ADMIN'];
@@ -83,9 +76,9 @@ const getAcceptableRoles = (role?: string) => {
     default:
       return [];
   }
-};
+}
 
-const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentType }) => {
+export function validateUser({ user, fieldDirectives, parentType }: ValidateUserType) {
   if (!user) {
     return new GraphQLError(`Unauthenticated!`);
   }
@@ -98,16 +91,8 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentT
   const role = fieldDirectives?.auth?.find(arg => 'role' in arg)?.role;
   const acceptableRoles = getAcceptableRoles(role);
 
-  if (user.role && acceptableRoles.includes(user.role)) {
+  if (user.role && acceptableRoles.includes(user.role as string)) {
     return;
   }
   return new GraphQLError(`No permissions!`);
-};
-
-export const authPlugin = () =>
-  useGenericAuth({
-    resolveUserFn,
-    validateUser,
-    mode: 'protect-granular',
-    extractScopes: user => getAcceptableRoles(user?.role),
-  });
+}
