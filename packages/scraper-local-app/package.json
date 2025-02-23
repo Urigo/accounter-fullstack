@@ -23,7 +23,7 @@
     "@accounter/modern-poalim-scraper": "0.9.14",
     "@pgtyped/cli": "2.4.2",
     "@pgtyped/runtime": "2.3.0",
-    "@sinclair/typebox": "0.34.27",
+    "@sinclair/typebox": "0.34.28",
     "date-fns": "4.1.0",
     "dotenv": "16.4.7",
     "dotenv-cli": "8.0.0",
