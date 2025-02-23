@@ -60,8 +60,8 @@ export async function ledgerEntryFromDocument(
   let foreignVatAmount: number | null = null;
   let vatTaxCategory: string | null = null;
 
+  const isCreditInvoice = document.type === 'CREDIT_INVOICE';
   if (vatAmount) {
-    const isCreditInvoice = document.type === 'CREDIT_INVOICE';
     amountWithoutVat = amountWithoutVat - vatAmount;
     vatTaxCategory =
       isCreditorCounterparty === isCreditInvoice ? inputVatTaxCategoryId : outputVatTaxCategoryId;
@@ -154,6 +154,7 @@ export async function ledgerEntryFromDocument(
     description: undefined,
     reference: document.serial_number ?? undefined,
     isCreditorCounterparty,
+    isCreditInvoice,
     ownerId,
     chargeId,
   };
