@@ -17,6 +17,8 @@ import type {
   IGetTaxCategoryByIDsQuery,
   IInsertBusinessTaxCategoryParams,
   IInsertBusinessTaxCategoryQuery,
+  IInsertTaxCategoryParams,
+  IInsertTaxCategoryQuery,
   IReplaceTaxCategoriesQuery,
   IUpdateBusinessTaxCategoryParams,
   IUpdateBusinessTaxCategoryQuery,
@@ -100,6 +102,11 @@ WHERE
   AND business_id = $businessId
 RETURNING *;
 `;
+
+const insertTaxCategory = sql<IInsertTaxCategoryQuery>`
+  INSERT INTO accounter_schema.tax_categories (id, hashavshevet_name)
+  VALUES ($id, $hashavshevetName)
+  RETURNING *;`;
 
 const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
   INSERT INTO accounter_schema.business_tax_category_match (business_id, owner_id, tax_category_id)
@@ -279,6 +286,11 @@ export class TaxCategoriesProvider {
   public updateBusinessTaxCategory(params: IUpdateBusinessTaxCategoryParams) {
     if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
     return updateBusinessTaxCategory.run(params, this.dbProvider);
+  }
+
+  public insertTaxCategory(params: IInsertTaxCategoryParams) {
+    this.cache.delete('all-tax-categories');
+    return insertTaxCategory.run(params, this.dbProvider);
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {

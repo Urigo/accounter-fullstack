@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
+import { InsertNewBusinessInput } from '../../../gql/graphql.js';
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 type ModalProps = {
@@ -10,10 +10,6 @@ type ModalProps = {
 
 export function InsertBusinessFields({ useFormManager, setFetching }: ModalProps): ReactElement {
   return (
-    <ModifyBusinessFields
-      isInsert
-      useFormManager={useFormManager as UseFormReturn<UpdateBusinessInput, unknown, undefined>}
-      setFetching={setFetching}
-    />
+    <ModifyBusinessFields isInsert useFormManager={useFormManager} setFetching={setFetching} />
   );
 }

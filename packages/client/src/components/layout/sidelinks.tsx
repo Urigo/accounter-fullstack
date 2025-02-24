@@ -6,9 +6,10 @@ import {
   Book,
   BookOpenCheck,
   Calculator,
+  Factory,
   Files,
   HandCoins,
-  Handshake,
+  IdCard,
   ParkingMeter,
   PlaneTakeoff,
   Puzzle,
@@ -118,13 +119,13 @@ export const sidelinks: SideLink[] = [
     title: 'Financial Entities',
     label: '',
     href: '',
-    icon: <Handshake size={18} />,
+    icon: <IdCard size={18} />,
     sub: [
       {
         title: 'Businesses',
         label: '',
         href: '/businesses',
-        icon: <Handshake size={18} />,
+        icon: <Factory size={18} />,
       },
       {
         title: 'Business Transactions',

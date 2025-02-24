@@ -45,43 +45,6 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
       };
     },
   },
-  Mutation: {
-    updateTaxCategory: async (_, { taxCategoryId, fields }, { injector }) => {
-      if (hasFinancialEntitiesCoreProperties(fields)) {
-        await injector
-          .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({ ...fields, financialEntityId: taxCategoryId });
-      }
-      const adjustedFields: IUpdateTaxCategoryParams = {
-        hashavshevetName: fields.hashavshevetName,
-        taxCategoryId,
-      };
-      try {
-        if (fields.hashavshevetName) {
-          await injector
-            .get(TaxCategoriesProvider)
-            .updateTaxCategory(adjustedFields)
-            .catch((e: Error) => {
-              console.error(e);
-              throw new Error(`Update core tax category fields error`);
-            });
-        }
-
-        const updatedTaxCategory = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByIdLoader.load(taxCategoryId);
-        if (!updatedTaxCategory) {
-          throw new Error(`Updated tax category not found`);
-        }
-        return updatedTaxCategory;
-      } catch (e) {
-        return {
-          __typename: 'CommonError',
-          message: `Failed to update tax category ID="${taxCategoryId}": ${(e as Error).message}`,
-        };
-      }
-    },
-  },
   FinancialEntity: {
     __resolveType: async (parent, { injector }) => {
       if (!parent) {

@@ -15,9 +15,11 @@ import {
 } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { DataTablePagination } from '../common/index.js';
+import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { useToast } from '../ui/use-toast.js';
 import { Name } from './cells/name.js';
 import { SortCode } from './cells/sort-code.js';
 
@@ -70,10 +72,15 @@ const columns: ColumnDef<RowType>[] = [
       );
     },
   },
+  {
+    id: 'edit',
+    cell: ({ row }) => <EditTaxCategory taxCategoryId={row.original.id} />,
+  },
 ];
 
 export const TaxCategories = (): ReactElement => {
-  const [{ data, fetching }] = useQuery({
+  const { toast } = useToast();
+  const [{ data, fetching, error }] = useQuery({
     query: AllTaxCategoriesForScreenDocument,
   });
   const { setFiltersContext } = useContext(FiltersContext);
@@ -105,6 +112,16 @@ export const TaxCategories = (): ReactElement => {
     );
   }, [setFiltersContext, table, pagination]);
 
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Error fetching tax categories',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
+
   return (
     <PageLayout title={`Tax Categories (${taxCategories.length})`} description="All tax categories">
       {fetching ? (
@@ -128,15 +145,23 @@ export const TaxCategories = (): ReactElement => {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+              {table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center py-8">
+                    No tax categories found
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
