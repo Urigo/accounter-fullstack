@@ -1,9 +1,8 @@
 import { Resolvers } from '@shared/gql-types';
-import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IUpdateTaxCategoryParams } from '../types.js';
+import type { FinancialEntitiesModule } from '../types.js';
 import { commonDocumentsFields, commonTransactionFields, ledgerCounterparty } from './common.js';
 
 export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
