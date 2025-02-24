@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { InsertTaxCategoryInput } from '../../../gql/graphql.js';
+import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
+import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { useInsertTaxCategory } from '../../../hooks/use-insert-tax-category.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -59,14 +59,16 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
       <div className="flex flex-col gap-4 my-4">
         <ModifyTaxCategoryFields
           isInsert
-          useFormManager={useFormManager}
+          useFormManager={
+            useFormManager as UseFormReturn<UpdateTaxCategoryInput, unknown, undefined>
+          }
           setFetching={setFetching}
         />
       </div>
 
       <div className="flex justify-end mt-4">
         <Button type="submit" disabled={addingInProcess || fetching}>
-          Update
+          Add Tax Category
         </Button>
       </div>
     </form>

@@ -289,8 +289,14 @@ export class TaxCategoriesProvider {
   }
 
   public insertTaxCategory(params: IInsertTaxCategoryParams) {
+    if (!params.id) {
+      throw new Error('Missing required parameters');
+    }
     this.cache.delete('all-tax-categories');
-    return insertTaxCategory.run(params, this.dbProvider);
+    return insertTaxCategory.run(params, this.dbProvider).catch(error => {
+      console.error(`Failed to insert tax category: ${error.message}`);
+      throw error;
+    });
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
