@@ -23,8 +23,8 @@ import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { TagsManager } from './components/tags/index.js';
-import { FiltersContext } from './providers/filters-context.js';
 import { TaxCategories } from './components/tax-categories/index.js';
+import { FiltersContext } from './providers/filters-context.js';
 
 export function App(): ReactElement {
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
