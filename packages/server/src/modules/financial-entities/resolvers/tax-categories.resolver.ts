@@ -15,15 +15,13 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     },
     taxCategory: async (_, { id }, { injector }) => {
       try {
-        return injector
+        const res = await injector
           .get(TaxCategoriesProvider)
-          .taxCategoryByIdLoader.load(id)
-          .then(res => {
-            if (!res) {
-              throw new Error(`Nothing received from DB`);
-            }
-            return res;
-          });
+          .taxCategoryByIdLoader.load(id);
+        if (!res) {
+          throw new Error('Nothing received from DB');
+        }
+        return res;
       } catch (error) {
         const message = `Tax category with ID="${id}" not found`;
         console.error(`${message}: ${error}`);
