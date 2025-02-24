@@ -374,8 +374,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       const mightRequireExchangeRateRecord =
         (hasMultipleDates && !!foreignCurrencyCount) || foreignCurrencyCount >= 2;
-      const unbalancedBusinesses = unbalancedEntities.filter(({ entityId }) =>
-        financialEntities.some(fe => fe.id === entityId && fe.type === 'business'),
+      const unbalancedBusinesses = unbalancedEntities.filter(
+        ({ entityId }) =>
+          financialEntities.some(fe => fe.id === entityId && fe.type === 'business') &&
+          !allowedUnbalancedBusinesses.has(entityId),
       );
 
       if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
