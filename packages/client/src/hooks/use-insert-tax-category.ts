@@ -1,5 +1,5 @@
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import {
   InsertTaxCategoryDocument,
   InsertTaxCategoryMutation,
@@ -25,6 +25,8 @@ type UseInsertTaxCategory = {
   ) => Promise<InsertTaxCategorySuccessfulResult>;
 };
 
+const NOTIFICATION_ID = 'insertTaxCategory';
+
 export const useInsertTaxCategory = (): UseInsertTaxCategory => {
   // TODO: add authentication
   // TODO: add local data update method after insert
@@ -36,30 +38,48 @@ export const useInsertTaxCategory = (): UseInsertTaxCategory => {
     insertTaxCategory: (
       variables: InsertTaxCategoryMutationVariables,
     ): Promise<InsertTaxCategorySuccessfulResult> =>
-      new Promise<InsertTaxCategorySuccessfulResult>((resolve, reject) =>
-        mutate(variables).then(res => {
+      new Promise<InsertTaxCategorySuccessfulResult>((resolve, reject) => {
+        notifications.show({
+          id: NOTIFICATION_ID,
+          loading: true,
+          title: 'Adding Tax Category',
+          message: 'Please wait...',
+          autoClose: false,
+          withCloseButton: true,
+        });
+
+        return mutate(variables).then(res => {
           if (res.error) {
-            console.error(`Error creating business [${variables.fields.name}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+            const message = 'Error creating tax category';
+            console.error(`${message}: ${res.error}`);
+            notifications.update({
+              id: NOTIFICATION_ID,
+              message,
+              color: 'red',
+              autoClose: 5000,
             });
             return reject(res.error.message);
           }
           if (!res.data) {
-            console.error(`Error creating business [${variables.fields.name}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+            console.error('Error creating tax category: No data received');
+            notifications.update({
+              id: NOTIFICATION_ID,
+              title: 'Error creating tax category',
+              message: 'No data received',
+              color: 'red',
+              autoClose: 5000,
             });
-            return reject('No data returned');
+            return reject('No data received');
           }
-          showNotification({
-            title: 'Insert Success!',
-            message: 'Your document was added! 🎉',
+          notifications.update({
+            id: NOTIFICATION_ID,
+            title: 'Creation Successful!',
+            autoClose: 5000,
+            message: `${res.data.insertTaxCategory.name} was created`,
+            withCloseButton: true,
           });
           return resolve(res.data.insertTaxCategory);
-        }),
-      ),
+        });
+      }),
   };
 };

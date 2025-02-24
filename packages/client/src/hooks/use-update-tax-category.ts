@@ -47,7 +47,7 @@ export const useUpdateTaxCategory = (): UseUpdateTaxCategory => {
         notifications.show({
           id: NOTIFICATION_ID,
           loading: true,
-          title: 'Uploading Documents',
+          title: 'Uploading Tax Category',
           message: 'Please wait...',
           autoClose: false,
           withCloseButton: true,
