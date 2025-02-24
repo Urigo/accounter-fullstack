@@ -146,11 +146,15 @@ export async function handleCrossYearLedgerEntries(
 
     let description: string | undefined = undefined;
     if (charge.business_id) {
-      const mainBusiness = await injector
-        .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(charge.business_id);
-      if (mainBusiness) {
-        description = `Main counterparty: ${mainBusiness.name}`;
+      try {
+        const mainBusiness = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(charge.business_id);
+        if (mainBusiness) {
+          description = `Main counterparty: ${mainBusiness.name}`;
+        }
+      } catch (error) {
+        console.error('Failed to load financial entity:', error);
       }
     }
 
