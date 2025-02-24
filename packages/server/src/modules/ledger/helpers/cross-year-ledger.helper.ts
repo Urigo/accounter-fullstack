@@ -1,5 +1,6 @@
 import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
@@ -143,6 +144,20 @@ export async function handleCrossYearLedgerEntries(
       defaultLocalCurrency,
     );
 
+    let description: string | undefined = undefined;
+    if (charge.business_id) {
+      try {
+        const mainBusiness = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.load(charge.business_id);
+        if (mainBusiness) {
+          description = `Main counterparty: ${mainBusiness.name}`;
+        }
+      } catch (error) {
+        console.error('Failed to load financial entity:', error);
+      }
+    }
+
     for (const spreadRecord of spreadRecords) {
       const amounts =
         getPartialEntryAmounts(adjustedEntry, spreadRecord.amount, defaultLocalCurrency) ??
@@ -179,7 +194,7 @@ export async function handleCrossYearLedgerEntries(
             ? { creditAccountID1: mediateTaxCategory }
             : { debitAccountID1: mediateTaxCategory }),
           ...yearOfRelevanceDates,
-          ...(isYearOfRelevancePrior ? { vat: undefined } : {}),
+          ...(isYearOfRelevancePrior ? { vat: undefined, description } : {}),
         },
         {
           // second chronological entry
@@ -188,7 +203,7 @@ export async function handleCrossYearLedgerEntries(
           ...(adjustedEntry.isCreditorCounterparty
             ? { debitAccountID1: mediateTaxCategory }
             : { creditAccountID1: mediateTaxCategory }),
-          ...(isYearOfRelevancePrior ? {} : { vat: undefined }),
+          ...(isYearOfRelevancePrior ? {} : { vat: undefined, description }),
         },
       );
     }
