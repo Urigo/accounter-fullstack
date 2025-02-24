@@ -84,8 +84,13 @@ function handleTransaction(transaction: ExtendedTransaction, currencies: Array<C
   return transactionString;
 }
 
-function sanitizeString(desc: string): string {
-  let itemDesc = '';
-  itemDesc = desc.replace(/"/g, '""');
-  return itemDesc;
+function sanitizeString(content: string | number): string | number {
+  if (content === '') {
+    return '';
+  }
+  if (!Number.isNaN(Number(content))) {
+    return Number(content).toFixed(2);
+  }
+  const cleanContent = (content as string).replace(/"/g, '""').replace(/,/g, '.');
+  return cleanContent;
 }
