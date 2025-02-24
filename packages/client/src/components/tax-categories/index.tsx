@@ -14,7 +14,7 @@ import {
   AllTaxCategoriesForScreenQuery,
 } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { DataTablePagination } from '../common/index.js';
+import { DataTablePagination, InsertTaxCategory } from '../common/index.js';
 import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
@@ -80,7 +80,7 @@ const columns: ColumnDef<RowType>[] = [
 
 export const TaxCategories = (): ReactElement => {
   const { toast } = useToast();
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, refetchTaxCategories] = useQuery({
     query: AllTaxCategoriesForScreenDocument,
   });
   const { setFiltersContext } = useContext(FiltersContext);
@@ -123,7 +123,11 @@ export const TaxCategories = (): ReactElement => {
   }, [error, toast]);
 
   return (
-    <PageLayout title={`Tax Categories (${taxCategories.length})`} description="All tax categories">
+    <PageLayout
+      title={`Tax Categories (${taxCategories.length})`}
+      description="All tax categories"
+      headerActions={<InsertTaxCategory onAdd={() => refetchTaxCategories()} />}
+    >
       {fetching ? (
         <div className="flex flex-row justify-center">
           <Loader2 className="h-10 w-10 animate-spin mr-2" />
