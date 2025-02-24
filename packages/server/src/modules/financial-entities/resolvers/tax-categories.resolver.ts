@@ -15,9 +15,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     },
     taxCategory: async (_, { id }, { injector }) => {
       try {
-        const res = await injector
-          .get(TaxCategoriesProvider)
-          .taxCategoryByIdLoader.load(id);
+        const res = await injector.get(TaxCategoriesProvider).taxCategoryByIdLoader.load(id);
         if (!res) {
           throw new Error('Nothing received from DB');
         }
@@ -88,7 +86,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
           })
           .catch((e: Error) => {
             console.error(e);
-            return [];
+            throw new Error(`Failed to create financial entity: ${e.message}`);
           });
 
         if (!financialEntity) {
