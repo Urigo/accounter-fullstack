@@ -4,6 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     taxCategories: [TaxCategory!]! @auth(role: ACCOUNTANT)
+    taxCategory(id: UUID!): TaxCategory! @auth(role: ACCOUNTANT)
     taxCategoryByBusinessId(businessId: UUID!, ownerId: UUID!): TaxCategory @auth(role: ACCOUNTANT) # TODO: get owner from server context
   }
 
@@ -64,9 +65,9 @@ export default gql`
   extend type Mutation {
     updateTaxCategory(
       taxCategoryId: UUID!
-      ownerId: UUID!
       fields: UpdateTaxCategoryInput!
     ): UpdateTaxCategoryResponse! @auth(role: ACCOUNTANT)
+    insertTaxCategory(fields: InsertTaxCategoryInput!): TaxCategory! @auth(role: ACCOUNTANT)
   }
 
   " result type for updateBusiness "
@@ -77,6 +78,13 @@ export default gql`
     name: String
     sortCode: Int
 
+    hashavshevetName: String
+  }
+
+  " input for insertTaxCategory "
+  input InsertTaxCategoryInput {
+    name: String!
+    sortCode: Int
     hashavshevetName: String
   }
 `;

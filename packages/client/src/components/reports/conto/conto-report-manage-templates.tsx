@@ -122,7 +122,6 @@ function ContoReportTemplates({
       },
       {
         id: 'actions',
-        enableHiding: false,
         cell: ({ row }) => {
           const { name } = row.original;
 

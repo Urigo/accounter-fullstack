@@ -12,6 +12,7 @@ export * from './insert-business-trip-modal.js';
 export * from './insert-document-modal.js';
 export * from './insert-misc-expense-modal.js';
 export * from './insert-salary-record-modal.js';
+export * from './insert-tax-category.js';
 export * from './match-document-modal.js';
 export * from './modal.js';
 export * from './pull-documents-modal.js';

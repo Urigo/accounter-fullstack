@@ -163,8 +163,8 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
           </div>
           <div className="flex-row px-10 h-max justify-start block">
             <ModifyBusinessFields
-              useFormManager={useFormManager}
               isInsert={false}
+              useFormManager={useFormManager}
               setFetching={setFetching}
             />
           </div>
