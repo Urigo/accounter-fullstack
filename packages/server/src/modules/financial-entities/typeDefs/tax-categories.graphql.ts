@@ -83,7 +83,7 @@ export default gql`
 
   " input for insertTaxCategory "
   input InsertTaxCategoryInput {
-    name: String
+    name: String!
     sortCode: Int
     hashavshevetName: String
   }
