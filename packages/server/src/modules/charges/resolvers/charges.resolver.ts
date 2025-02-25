@@ -82,6 +82,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           chargeType: filters?.chargesType,
           businessIds: filters?.byBusinesses,
           withoutInvoice: filters?.withoutInvoice,
+          withoutReceipt: filters?.withoutReceipt,
           withoutDocuments: filters?.withoutDocuments,
           withoutTransactions: filters?.withoutTransactions,
           withoutLedger: filters?.withoutLedger,

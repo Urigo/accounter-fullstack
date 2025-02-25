@@ -367,6 +367,12 @@ function ChargesFiltersForm({
             />
 
             <Switch
+              defaultChecked={filter.withoutReceipt ?? false}
+              onChange={(event): void => setValue('withoutReceipt', event.currentTarget.checked)}
+              label="Without Receipts"
+            />
+
+            <Switch
               defaultChecked={filter.withoutDocuments ?? false}
               onChange={(event): void => setValue('withoutDocuments', event.currentTarget.checked)}
               label="Without Documents"
