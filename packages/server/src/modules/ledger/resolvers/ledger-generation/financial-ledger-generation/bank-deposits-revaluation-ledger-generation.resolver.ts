@@ -96,7 +96,10 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     const currencies: Currency[] = Object.entries(bankDepositsBalance)
       .filter(
         ([key, value]) =>
-          Object.values(Currency).includes(key as Currency) && (value as CurrencySum).total !== 0,
+          Object.values(Currency).includes(key as Currency) &&
+          ((value as CurrencySum).total !== 0 ||
+            (value as CurrencySum).debit !== 0 ||
+            (value as CurrencySum).credit !== 0),
       )
       .map(([key]) => key as Currency);
 
