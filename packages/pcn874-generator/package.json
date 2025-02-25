@@ -45,10 +45,9 @@
     "accounter"
   ],
   "scripts": {
-    "build": "bob build",
+    "build": "yarn lint && bob build",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
-    "prebuild": "yarn lint",
     "prepublish": "yarn build",
     "start": "node ./dist"
   },

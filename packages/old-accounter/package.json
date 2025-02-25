@@ -17,7 +17,7 @@
     "start": "node dist/old-accounter/src/index.js"
   },
   "dependencies": {
-    "@accounter/modern-poalim-scraper": "0.9.14",
+    "@accounter/modern-poalim-scraper": "workspace:^",
     "date-fns": "4.1.0",
     "dotenv": "16.4.7",
     "fast-xml-parser": "^5.0.0",

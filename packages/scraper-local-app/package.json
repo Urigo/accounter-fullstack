@@ -6,21 +6,18 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "tsup src/index.ts",
+    "build": "yarn validate-env && yarn generate && yarn typecheck && tsup src/index.ts",
     "dev": "yarn build --watch --onSuccess \"node dist/index.js\"",
     "generate": "dotenv -e ../../.env yarn pgtyped",
-    "generate:watch": "dotenv -e ../../.env yarn pgtyped:watch",
-    "pgtyped": "DATABASE_URL=$(node --experimental-strip-types scripts/set-db-url.ts) pgtyped -c $(node --experimental-strip-types scripts/generate-local-pgconfig.ts)",
-    "pgtyped:watch": "yarn pgtyped -w",
-    "prebuild": "yarn validate-env && yarn generate && yarn typecheck",
-    "prepgtyped": "rimraf **/__generated__/*.types.ts",
-    "prestart": "yarn build",
-    "start": "node dist/index.js",
+    "pgtyped": "ayrn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node --experimental-strip-types scripts/set-db-url.ts) pgtyped -c $(node --experimental-strip-types scripts/generate-local-pgconfig.ts)",
+    "scraper:generate:watch": "dotenv -e ../../.env yarn pgtyped:watch",
+    "scraper:pgtyped:watch": "yarn pgtyped -w",
+    "start": "yarn build && node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "validate-env": "if [ ! -f \"./src/env.ts\" ] ; then cp ./src/env.template.ts ./src/env.ts ; fi"
+    "validate-env": "/bin/sh -c 'if [ ! -f \"./src/env.ts\" ] ; then cp ./src/env.template.ts ./src/env.ts ; fi'"
   },
   "dependencies": {
-    "@accounter/modern-poalim-scraper": "0.9.14",
+    "@accounter/modern-poalim-scraper": "workspace:^",
     "@pgtyped/cli": "2.4.2",
     "@pgtyped/runtime": "2.3.0",
     "@sinclair/typebox": "0.34.28",
@@ -33,6 +30,7 @@
   "devDependencies": {
     "@types/listr": "0.14.9",
     "@types/pg": "8.11.11",
+    "rimraf": "6.0.1",
     "tsup": "8.3.6"
   },
   "publishConfig": {

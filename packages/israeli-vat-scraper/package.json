@@ -48,11 +48,9 @@
     "build": "bob build",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "prebuild": "exit 0",
+    "lint-fix": "eslint . --fix",
     "prepublish": "yarn build",
-    "prestart": "yarn build",
-    "start": "node --experimental-json-modules dist/index.js",
+    "start": "yarn build && node --experimental-json-modules dist/index.js",
     "test": "node dist/dev-tests/e2e.js"
   },
   "dependencies": {
