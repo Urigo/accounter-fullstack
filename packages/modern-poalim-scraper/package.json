@@ -7,12 +7,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "yarn json2ts && tsc && cp -r src/__generated__ dist/__generated__",
     "dev": "yarn build && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
     "format": "prettier \"**/*.ts\" --write",
     "json2ts": "json2ts -i src/schemas -o src/__generated__",
-    "postbuild": "cp -r src/__generated__ dist/__generated__",
-    "prebuild": "yarn json2ts",
     "start": "node dist/index.js",
     "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },

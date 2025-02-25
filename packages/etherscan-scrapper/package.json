@@ -4,9 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsup src/index.ts",
+    "build": "yarn typecheck && tsup src/index.ts",
     "dev": "yarn build --watch --onSuccess \"node dist/index.js\"",
-    "prebuild": "yarn typecheck",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },

@@ -61,7 +61,7 @@ runs:
     - name: Run DB Migrations
       shell: bash
       if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}
-      run: yarn --cwd packages/migrations db:init
+      run: yarn db:init
 
     - name: Generate GraphQL Types
       if: ${{ inputs.codegen == 'true' }}

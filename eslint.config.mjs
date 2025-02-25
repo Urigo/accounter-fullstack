@@ -26,6 +26,8 @@ export default [
       '**/.*rc.*js',
       '**/.bob/',
       '**/tsup.config.ts',
+      '.pnp.*',
+      '.yarn/*',
     ],
   },
   ...compat.extends('@theguild'),

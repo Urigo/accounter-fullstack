@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc && vite build",
     "dev": "vite",
-    "generate": "cd ../../ && yarn generate:graphql && cd packages/client",
+    "generate": "yarn generate:graphql",
     "preview": "vite preview"
   },
   "dependencies": {
