@@ -58,6 +58,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           chargeType: filters?.chargesType,
           businessIds: filters?.byBusinesses,
           withoutInvoice: filters?.withoutInvoice,
+          withoutReceipt: filters?.withoutReceipt,
           withoutDocuments: filters?.withoutDocuments,
           withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
