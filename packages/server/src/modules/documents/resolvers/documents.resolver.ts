@@ -537,7 +537,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             attachment: true,
             client: {
               id: businessGreenInvoiceMatch.green_invoice_id,
-              emails: [...(businessGreenInvoiceMatch.emails ?? []), 'uri@the-guild.dev'],
+              emails: [...(businessGreenInvoiceMatch.emails ?? []), 'ap@the-guild.dev'],
             },
             income: [
               {
