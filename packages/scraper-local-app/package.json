@@ -9,7 +9,7 @@
     "build": "yarn validate-env && yarn generate && yarn typecheck && tsup src/index.ts",
     "dev": "yarn build --watch --onSuccess \"node dist/index.js\"",
     "generate": "dotenv -e ../../.env yarn pgtyped",
-    "pgtyped": "ayrn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node --experimental-strip-types scripts/set-db-url.ts) pgtyped -c $(node --experimental-strip-types scripts/generate-local-pgconfig.ts)",
+    "pgtyped": "yarn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node --experimental-strip-types scripts/set-db-url.ts) pgtyped -c $(node --experimental-strip-types scripts/generate-local-pgconfig.ts)",
     "scraper:generate:watch": "dotenv -e ../../.env yarn pgtyped:watch",
     "scraper:pgtyped:watch": "yarn pgtyped -w",
     "start": "yarn build && node dist/index.js",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
-    "@pgtyped/cli": "2.4.2",
+    "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@sinclair/typebox": "0.34.28",
     "date-fns": "4.1.0",
