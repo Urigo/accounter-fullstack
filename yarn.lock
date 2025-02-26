@@ -279,7 +279,7 @@ __metadata:
   dependencies:
     "@accounter/green-invoice-graphql": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:1.1.10"
+    "@ai-sdk/anthropic": "npm:1.1.11"
     "@envelop/generic-auth": "npm:9.0.1"
     "@envelop/graphql-modules": "npm:7.0.2"
     "@graphql-hive/yoga": "npm:0.40.1"
@@ -314,15 +314,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:1.1.10":
-  version: 1.1.10
-  resolution: "@ai-sdk/anthropic@npm:1.1.10"
+"@ai-sdk/anthropic@npm:1.1.11":
+  version: 1.1.11
+  resolution: "@ai-sdk/anthropic@npm:1.1.11"
   dependencies:
     "@ai-sdk/provider": "npm:1.0.9"
     "@ai-sdk/provider-utils": "npm:2.1.10"
   peerDependencies:
     zod: ^3.0.0
-  checksum: 10c0/a2240eed1636a80c605cad4cc8da5e6d7c89ec37b3c908482ca5e57807a1ace50a38639587a1e264c7664ecc035cbf8300022944605f11876deee994f95a788d
+  checksum: 10c0/0b2db8fdfef8423f532c253a178057dde34f29d0ec41ebf369a8072b59b9f1e49dea715893b4db9d0e58c556c4c711055a7dcd2a0842fdbbdc157656abdc7b7c
   languageName: node
   linkType: hard
 
