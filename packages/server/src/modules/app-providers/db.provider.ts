@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import postgres, { type QueryResultBase, type QueryResultRow } from 'pg';
 import 'reflect-metadata';
 
-type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[] };
+type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[]; rowCount: number };
 
 @Injectable({
   scope: Scope.Singleton,
