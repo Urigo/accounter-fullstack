@@ -54,7 +54,7 @@
     "@graphql-hive/cli": "0.48.3",
     "@graphql-inspector/cli": "5.0.8",
     "@parcel/watcher": "^2.4.1",
-    "@pgtyped/cli": "2.3.0",
+    "@pgtyped/cli": "2.4.2",
     "@pgtyped/runtime": "2.3.0",
     "@theguild/eslint-config": "0.13.2",
     "@theguild/prettier-config": "3.0.0",
