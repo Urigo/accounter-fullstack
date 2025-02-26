@@ -18,64 +18,95 @@ import { RuleCell } from './rule-cell.js';
       id
       year
       totalIncome {
-        ...CorporateTaxRulingReportAmountCellFields
+        formatted
+        raw
+        currency
       }
       researchAndDevelopmentExpenses {
-        ...CorporateTaxRulingReportAmountCellFields
+        formatted
+        raw
+        currency
       }
       rndRelativeToIncome {
         rule
         ...CorporateTaxRulingReportRuleCellFields
       }
       localDevelopmentExpenses {
-        ...CorporateTaxRulingReportAmountCellFields
+        formatted
+        raw
+        currency
       }
       localDevelopmentRelativeToRnd {
         rule
         ...CorporateTaxRulingReportRuleCellFields
       }
       foreignDevelopmentExpenses {
-        ...CorporateTaxRulingReportAmountCellFields
+        formatted
+        raw
+        currency
       }
       foreignDevelopmentRelativeToRnd {
         rule
         ...CorporateTaxRulingReportRuleCellFields
       }
       businessTripRndExpenses {
-        ...CorporateTaxRulingReportAmountCellFields
+        formatted
+        raw
+        currency
       }
       ... on CorporateTaxRulingComplianceReport @defer {
         differences {
           id
           totalIncome {
-            ...CorporateTaxRulingReportAmountCellFields
+            formatted
+            raw
+            currency
           }
           researchAndDevelopmentExpenses {
-            ...CorporateTaxRulingReportAmountCellFields
+            formatted
+            raw
+            currency
           }
           rndRelativeToIncome {
             ...CorporateTaxRulingReportRuleCellFields
           }
           localDevelopmentExpenses {
-            ...CorporateTaxRulingReportAmountCellFields
+            formatted
+            raw
+            currency
           }
           localDevelopmentRelativeToRnd {
             ...CorporateTaxRulingReportRuleCellFields
           }
           foreignDevelopmentExpenses {
-            ...CorporateTaxRulingReportAmountCellFields
+            formatted
+            raw
+            currency
           }
           foreignDevelopmentRelativeToRnd {
             ...CorporateTaxRulingReportRuleCellFields
           }
           businessTripRndExpenses {
-            ...CorporateTaxRulingReportAmountCellFields
+            formatted
+            raw
+            currency
           }
         }
       }
     }
   }
 `;
+
+const formatter = (amount: number, currency: string) =>
+  new Intl.NumberFormat('en-EN', { style: 'currency', currency }).format(amount);
+
+function multipleOptionalFormatter(amounts: number[], currency: string) {
+  if (amounts.length === 0) return undefined;
+  return formatter(
+    amounts.reduce((acc, curr) => acc + curr, 0),
+    currency,
+  );
+}
 
 export const CorporateTaxRulingComplianceReport = (): ReactElement => {
   const match = useMatch('/reports/corporate-tax-ruling-compliance/:year');
@@ -129,6 +160,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       </Indicator>
                     </th>
                   ))}
+                  <th key="sum">Summary</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,22 +169,58 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                   {yearlyReports.map(report => (
                     <AmountCell
                       key={report.year}
-                      originalAmountData={report.totalIncome}
-                      diffAmountData={report.differences?.totalIncome ?? undefined}
+                      originalAmount={report.totalIncome.formatted}
+                      diffAmount={report.differences?.totalIncome?.formatted ?? undefined}
                     />
                   ))}
+                  <AmountCell
+                    key="sum"
+                    originalAmount={formatter(
+                      yearlyReports
+                        .map(report => report.totalIncome.raw)
+                        .reduce((acc, curr) => acc + curr, 0),
+                      yearlyReports[0].totalIncome.currency,
+                    )}
+                    diffAmount={multipleOptionalFormatter(
+                      yearlyReports
+                        .map(
+                          report => report.differences?.totalIncome?.raw ?? report.totalIncome.raw,
+                        )
+                        .filter(value => !!value) as number[],
+                      yearlyReports[0].totalIncome.currency,
+                    )}
+                  />
                 </tr>
                 <tr>
                   <td>Total R&D Expensess</td>
                   {yearlyReports.map(report => (
                     <AmountCell
                       key={report.year}
-                      originalAmountData={report.researchAndDevelopmentExpenses}
-                      diffAmountData={
-                        report.differences?.researchAndDevelopmentExpenses ?? undefined
+                      originalAmount={report.researchAndDevelopmentExpenses.formatted}
+                      diffAmount={
+                        report.differences?.researchAndDevelopmentExpenses?.formatted ?? undefined
                       }
                     />
                   ))}
+                  <AmountCell
+                    key="sum"
+                    originalAmount={formatter(
+                      yearlyReports
+                        .map(report => report.researchAndDevelopmentExpenses.raw)
+                        .reduce((acc, curr) => acc + curr, 0),
+                      yearlyReports[0].researchAndDevelopmentExpenses.currency,
+                    )}
+                    diffAmount={multipleOptionalFormatter(
+                      yearlyReports
+                        .map(
+                          report =>
+                            report.differences?.researchAndDevelopmentExpenses?.raw ??
+                            report.researchAndDevelopmentExpenses.raw,
+                        )
+                        .filter(value => !!value) as number[],
+                      yearlyReports[0].researchAndDevelopmentExpenses.currency,
+                    )}
+                  />
                 </tr>
                 <tr>
                   <th>
@@ -172,16 +240,38 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       diffRuleData={report.differences?.rndRelativeToIncome ?? undefined}
                     />
                   ))}
+                  <td />
                 </tr>
                 <tr>
                   <td>Local Development Expenses</td>
                   {yearlyReports.map(report => (
                     <AmountCell
                       key={report.year}
-                      originalAmountData={report.localDevelopmentExpenses}
-                      diffAmountData={report.differences?.localDevelopmentExpenses ?? undefined}
+                      originalAmount={report.localDevelopmentExpenses.formatted}
+                      diffAmount={
+                        report.differences?.localDevelopmentExpenses?.formatted ?? undefined
+                      }
                     />
                   ))}
+                  <AmountCell
+                    key="sum"
+                    originalAmount={formatter(
+                      yearlyReports
+                        .map(report => report.localDevelopmentExpenses.raw)
+                        .reduce((acc, curr) => acc + curr, 0),
+                      yearlyReports[0].localDevelopmentExpenses.currency,
+                    )}
+                    diffAmount={multipleOptionalFormatter(
+                      yearlyReports
+                        .map(
+                          report =>
+                            report.differences?.localDevelopmentExpenses?.raw ??
+                            report.localDevelopmentExpenses.raw,
+                        )
+                        .filter(value => !!value) as number[],
+                      yearlyReports[0].localDevelopmentExpenses.currency,
+                    )}
+                  />
                 </tr>
                 <tr>
                   <th>
@@ -201,16 +291,38 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       diffRuleData={report.differences?.localDevelopmentRelativeToRnd ?? undefined}
                     />
                   ))}
+                  <td />
                 </tr>
                 <tr>
                   <td>Foreign Development Expenses</td>
                   {yearlyReports.map(report => (
                     <AmountCell
                       key={report.year}
-                      originalAmountData={report.foreignDevelopmentExpenses}
-                      diffAmountData={report.differences?.foreignDevelopmentExpenses ?? undefined}
+                      originalAmount={report.foreignDevelopmentExpenses.formatted}
+                      diffAmount={
+                        report.differences?.foreignDevelopmentExpenses?.formatted ?? undefined
+                      }
                     />
                   ))}
+                  <AmountCell
+                    key="sum"
+                    originalAmount={formatter(
+                      yearlyReports
+                        .map(report => report.foreignDevelopmentExpenses.raw)
+                        .reduce((acc, curr) => acc + curr, 0),
+                      yearlyReports[0].foreignDevelopmentExpenses.currency,
+                    )}
+                    diffAmount={multipleOptionalFormatter(
+                      yearlyReports
+                        .map(
+                          report =>
+                            report.differences?.foreignDevelopmentExpenses?.raw ??
+                            report.foreignDevelopmentExpenses.raw,
+                        )
+                        .filter(value => !!value) as number[],
+                      yearlyReports[0].foreignDevelopmentExpenses.currency,
+                    )}
+                  />
                 </tr>
                 <tr>
                   <th>
@@ -232,16 +344,38 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                       }
                     />
                   ))}
+                  <td />
                 </tr>
                 <tr>
                   <td>R&D Business Trips Expenses</td>
                   {yearlyReports.map(report => (
                     <AmountCell
                       key={report.year}
-                      originalAmountData={report.businessTripRndExpenses}
-                      diffAmountData={report.differences?.businessTripRndExpenses ?? undefined}
+                      originalAmount={report.businessTripRndExpenses.formatted}
+                      diffAmount={
+                        report.differences?.businessTripRndExpenses?.formatted ?? undefined
+                      }
                     />
                   ))}
+                  <AmountCell
+                    key="sum"
+                    originalAmount={formatter(
+                      yearlyReports
+                        .map(report => report.businessTripRndExpenses.raw)
+                        .reduce((acc, curr) => acc + curr, 0),
+                      yearlyReports[0].businessTripRndExpenses.currency,
+                    )}
+                    diffAmount={multipleOptionalFormatter(
+                      yearlyReports
+                        .map(
+                          report =>
+                            report.differences?.businessTripRndExpenses?.raw ??
+                            report.businessTripRndExpenses.raw,
+                        )
+                        .filter(value => !!value) as number[],
+                      yearlyReports[0].businessTripRndExpenses.currency,
+                    )}
+                  />
                 </tr>
               </tbody>
             </Table>
