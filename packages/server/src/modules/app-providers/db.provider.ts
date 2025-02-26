@@ -18,6 +18,8 @@ export class DBProvider {
     if (!this.pool) {
       throw new Error('DB connection not initialized');
     }
-    return this.pool.query(queryStatement, values);
+    return this.pool
+      .query(queryStatement, values)
+      .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
   }
 }
