@@ -24,7 +24,7 @@
     "@envelop/graphql-modules": "7.0.2",
     "@graphql-hive/yoga": "0.40.1",
     "@graphql-yoga/plugin-defer-stream": "3.12.1",
-    "@pgtyped/cli": "2.4.2",
+    "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@whatwg-node/fetch": "0.10.5",
     "ai": "4.1.46",
