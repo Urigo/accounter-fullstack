@@ -1,9 +1,13 @@
 on:
   workflow_call:
+    inputs:
+      subgraphUrl:
+        description: 'URL for the subgraph endpoint'
+        required: false
+        type: string
+        default: 'http://localhost:4001/subgraphs/legacy'
     secrets:
       hiveDevRegistryToken:
-        required: true
-      subgraphUrl:
         required: true
 
 env:
@@ -58,10 +62,10 @@ jobs:
       - name: Hive - Subgraph Schema Check
         env:
           HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
-          SUBGRAPH_URL: ${{ secrets.subgraphUrl }}
+          SUBGRAPH_URL: ${{ inputs.subgraphUrl }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
-           hive schema:check \
+          hive schema:check \
           --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
           --service="legacy" \
           --url="${SUBGRAPH_URL}" \

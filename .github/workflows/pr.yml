@@ -40,9 +40,10 @@ jobs:
   subgraph-federation-check:
     name: Generate Legacy Subgraph Schema
     uses: ./.github/workflows/graphql-subgraph-federation-check.yml
+    with:
+      subgraphUrl: 'http://localhost:4001/subgraphs/legacy'
     secrets:
       hiveDevRegistryToken: ${{ secrets.HIVE_DEV_REGISTRY_TOKEN }}
-      subgraphUrl: 'http://localhost:4001/subgraphs/legacy'
 
   validate-schema:
     name: Validate GraphQL schema
