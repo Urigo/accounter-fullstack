@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { writeFileSync } from 'node:fs';
 import { printSchemaWithDirectives } from '@graphql-tools/utils';
-import { env } from './src/environment.js';
-import { createGraphQLApp } from './src/modules-app.js';
+import { env } from '../src/environment.js';
+import { createGraphQLApp } from '../src/modules-app.js';
 
 async function main() {
   console.info('Starting subgraph schema generation...');

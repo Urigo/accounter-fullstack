@@ -7,7 +7,7 @@
   "main": "./src/index.mts",
   "scripts": {
     "build": "tsc && tsc-alias",
-    "build-subgraph-schema": "tsx generate-subgraph-schema.ts",
+    "build-subgraph-schema": "tsx scripts/generate-subgraph-schema.ts",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
