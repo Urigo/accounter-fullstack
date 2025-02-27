@@ -178,6 +178,7 @@ __metadata:
     "@types/node": "npm:22.13.4"
     graphql: "npm:16.10.0"
     node-cache: "npm:5.1.2"
+    tsc-alias: "npm:1.8.11"
     tsx: "npm:4.19.3"
     typescript: "npm:5.7.3"
   languageName: unknown
