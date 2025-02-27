@@ -68,5 +68,5 @@ jobs:
           hive schema:check \
           --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
           --service="legacy" \
-          --url=${SUBGRAPH_URL} \
+          --url= ${SUBGRAPH_URL} \
           packages/server/legacy-subgraph.graphql
