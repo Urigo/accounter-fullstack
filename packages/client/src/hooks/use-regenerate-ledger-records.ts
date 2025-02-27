@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import {
   RegenerateLedgerDocument,
   RegenerateLedgerMutation,
@@ -33,53 +34,78 @@ type UseRegenerateLedgerRecords = {
   regenerateLedgerRecords: (variables: RegenerateLedgerMutationVariables) => Promise<Ledger>;
 };
 
+const NOTIFICATION_ID = 'regenerateLedgerRecords';
+
 export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(RegenerateLedgerDocument);
 
-  return {
-    fetching,
-    regenerateLedgerRecords: (variables: RegenerateLedgerMutationVariables): Promise<Ledger> =>
-      new Promise<Ledger>((resolve, reject) =>
-        mutate(variables).then(res => {
+  const regenerate = useCallback(
+    (variables: RegenerateLedgerMutationVariables): Promise<Ledger> => {
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
+      return new Promise<Ledger>((resolve, reject) => {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Regenerating Ledger',
+          message: 'Please wait...',
+          autoClose: false,
+          withCloseButton: true,
+        });
+
+        return mutate(variables).then(res => {
           if (res.error) {
-            console.error(
-              `Error regenerating ledger for charge ID [${variables.chargeId}]: ${res.error}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+            const message = 'Error regenerating ledger';
+            console.error(`${message} for charge ID [${variables.chargeId}]: ${res.error}`);
+            notifications.update({
+              id: notificationId,
+              message,
+              color: 'red',
+              autoClose: 5000,
             });
             return reject(res.error.message);
           }
           if (!res.data) {
-            console.error(
-              `Error regenerating ledger for charge ID [${variables.chargeId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+            const message = 'Error regenerating ledger';
+            console.error(`${message}: No data received`);
+            notifications.update({
+              id: notificationId,
+              message,
+              color: 'red',
+              autoClose: 5000,
             });
-            return reject('No data returned');
+            return reject(message);
           }
           if (res.data.regenerateLedgerRecords.__typename === 'CommonError') {
-            console.error(
-              `Error regenerating ledger for charge ID [${variables.chargeId}]: ${res.data.regenerateLedgerRecords.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
+            const message = 'Error regenerating ledger';
+            console.error(`${message}: ${res.data.regenerateLedgerRecords.message}`);
+            notifications.update({
+              id: notificationId,
+              message,
+              color: 'red',
+              autoClose: 5000,
             });
             return reject(res.data.regenerateLedgerRecords.message);
           }
-          showNotification({
-            title: 'Regenerate Success!',
+          notifications.update({
+            id: notificationId,
+            title: 'Regenerate Successful!',
+            autoClose: 5000,
             message: 'Ledger records were regenerated',
+            withCloseButton: true,
           });
           return resolve(res.data.regenerateLedgerRecords);
-        }),
-      ),
+        });
+      });
+    },
+    [mutate],
+  );
+
+  return {
+    fetching,
+    regenerateLedgerRecords: (variables: RegenerateLedgerMutationVariables): Promise<Ledger> =>
+      regenerate(variables),
   };
 };

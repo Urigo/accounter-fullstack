@@ -10,7 +10,7 @@ import { FragmentType, getFragmentData } from '../../gql/index.js';
     ... on Charge @defer {
       errorsLedger: ledger {
         ... on Ledger @defer {
-          validate(shouldInsertLedgerInNew: false) {
+          validate {
             ... on LedgerValidation @defer {
               errors
             }

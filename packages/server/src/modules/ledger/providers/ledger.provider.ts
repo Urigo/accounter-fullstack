@@ -14,13 +14,21 @@ import type {
   IGetLedgerRecordsByDatesParams,
   IGetLedgerRecordsByDatesQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
+  IGetLedgerRecordsByIdsQuery,
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsQuery,
+  ILockLedgerRecordsQuery,
   IReplaceLedgerRecordsChargeIdParams,
   IReplaceLedgerRecordsChargeIdQuery,
   IUpdateLedgerRecordParams,
   IUpdateLedgerRecordQuery,
 } from '../types.js';
+
+const getLedgerRecordsByIds = sql<IGetLedgerRecordsByIdsQuery>`
+SELECT *
+FROM accounter_schema.ledger_records
+WHERE id IN $$ids
+AND owner_id = $ownerId;`;
 
 const getLedgerRecordsByChargesIds = sql<IGetLedgerRecordsByChargesIdsQuery>`
     SELECT *
@@ -213,6 +221,16 @@ const replaceLedgerRecordsChargeId = sql<IReplaceLedgerRecordsChargeIdQuery>`
   RETURNING *
 `;
 
+const lockLedgerRecords = sql<ILockLedgerRecordsQuery>`
+  UPDATE accounter_schema.ledger_records
+    SET
+    locked = TRUE
+  WHERE
+    invoice_date <= $date
+    OR value_date <= $date
+  RETURNING *
+`;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -231,6 +249,25 @@ export class LedgerProvider {
     this.adminBusinessId = this.context.adminContext.defaultAdminBusinessId;
     this.localCurrency = this.context.adminContext.defaultLocalCurrency;
   }
+
+  private async batchLedgerRecordsByIds(ids: readonly string[]) {
+    const ledgerRecords = await getLedgerRecordsByIds.run(
+      {
+        ids,
+        ownerId: this.adminBusinessId,
+      },
+      this.dbProvider,
+    );
+    return ids.map(id => ledgerRecords.find(record => record.id === id));
+  }
+
+  public getLedgerRecordsByIdLoader = new DataLoader(
+    (ledgerIds: readonly string[]) => this.batchLedgerRecordsByIds(ledgerIds),
+    {
+      cacheKeyFn: key => `ledger-${key}`,
+      cacheMap: this.cache,
+    },
+  );
 
   private async batchLedgerRecordsByChargesIds(ids: readonly string[]) {
     const ledgerRecords = await getLedgerRecordsByChargesIds.run(
@@ -290,7 +327,15 @@ export class LedgerProvider {
     return getLedgerBalanceToDate.run({ date }, this.dbProvider);
   }
 
-  public updateLedgerRecord(params: IUpdateLedgerRecordParams) {
+  public async updateLedgerRecord(params: IUpdateLedgerRecordParams) {
+    // validate non are locked
+    if (params.ledgerId) {
+      const record = await this.getLedgerRecordsByIdLoader.load(params.ledgerId);
+      if (record?.locked) {
+        throw new Error('Cannot update locked ledger record');
+      }
+    }
+
     this.clearCache();
     return updateLedgerRecord.run(
       { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
@@ -307,7 +352,18 @@ export class LedgerProvider {
   }
 
   private async deleteLedgerRecordsByIds(ids: readonly string[]) {
-    this.clearCache();
+    // validate non are locked
+    const records = await this.getLedgerRecordsByIdLoader.loadMany(ids);
+    records.map(record => {
+      if (record instanceof Error) {
+        throw record;
+      }
+      if (record?.locked) {
+        throw new Error('Cannot delete locked ledger record');
+      }
+    });
+
+    await this.clearCache();
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
@@ -324,6 +380,17 @@ export class LedgerProvider {
   );
 
   private async deleteLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
+    // validate non are locked
+    const records = await this.getLedgerRecordsByChargesIdLoader.loadMany(chargeIds);
+    records.map(record => {
+      if (record instanceof Error) {
+        throw record;
+      }
+      if (record.some(r => r.locked)) {
+        throw new Error('Cannot delete locked ledger record');
+      }
+    });
+
     this.clearCache();
     await deleteLedgerRecordsByChargeIds.run(
       {
@@ -343,6 +410,11 @@ export class LedgerProvider {
   public replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
     this.clearCache();
     return replaceLedgerRecordsChargeId.run(params, this.dbProvider);
+  }
+
+  public lockLedgerRecords(date: TimelessDateString) {
+    this.clearCache();
+    return lockLedgerRecords.run({ date }, this.dbProvider);
   }
 
   public clearCache() {
