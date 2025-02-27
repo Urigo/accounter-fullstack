@@ -23,6 +23,7 @@
     "gateway:watch": "yarn --cwd packages/gateway watch",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
     "generate-subgraph": "cd packages/server && yarn build-subgraph-schema",
+    "generate-supergraph": "cd packages/gateway && yarn build-supergraph-schema",
     "generate:all": "yarn generate",
     "generate:graphql": "yarn generate:graphql:clear; graphql-codegen",
     "generate:graphql:clear": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
@@ -42,7 +43,6 @@
     "start": "yarn --cwd packages/old-accounter start",
     "subgraphs:build": "yarn --cwd packages/server build",
     "subgraphs:dev": "yarn --cwd packages/server dev",
-    "generate-supergraph": "cd packages/gateway && yarn build-supergraph-schema",
     "test": "vitest"
   },
   "dependencies": {

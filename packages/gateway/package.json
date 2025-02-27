@@ -8,10 +8,10 @@
   },
   "scripts": {
     "build": "exit 0",
+    "build-supergraph-schema": "tsx generate-supergraph.ts",
     "clean": "killall -9 node || true",
     "dev": "hive-gateway supergraph",
-    "watch": "tsx watch --clear-screen=false supergraph.ts",
-    "build-supergraph-schema": "tsx generate-supergraph.ts"
+    "watch": "tsx watch --clear-screen=false supergraph.ts"
   },
   "dependencies": {
     "@graphql-hive/gateway": "1.10.4",
