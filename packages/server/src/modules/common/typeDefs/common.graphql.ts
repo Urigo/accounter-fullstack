@@ -7,8 +7,10 @@ export default gql`
       url: "https://specs.apollo.dev/federation/v2.4"
       import: ["@key", "@shareable", "@composeDirective"]
     )
-    @link(url: "https://myspecs.dev/myDirective/v2.0", import: ["@auth"])
+    @link(url: "https://myspecs.dev/myDirective/v2.0", import: ["@auth", "@defer", "@stream"])
     @composeDirective(name: "@auth")
+    @composeDirective(name: "@defer")
+    @composeDirective(name: "@stream")
 
   "Authorization directive"
   directive @auth(role: Role!) on FIELD_DEFINITION
