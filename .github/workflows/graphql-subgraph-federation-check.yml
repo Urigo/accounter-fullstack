@@ -41,7 +41,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Generate GraphQL schema
+      - name: Generate GraphQL Subgraph Schema
         run: yarn generate-subgraph
 
       - name: Verify file exists

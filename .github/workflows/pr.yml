@@ -38,7 +38,7 @@ jobs:
     uses: ./.github/workflows/lint.yml
 
   subgraph-federation-check:
-    name: Generate Legacy Subgraph Schema
+    name: Generate Legacy Subgraph Schema Anc Hive Check
     uses: ./.github/workflows/graphql-subgraph-federation-check.yml
     secrets:
       hiveDevRegistryToken: ${{ secrets.HIVE_DEV_REGISTRY_TOKEN }}

@@ -19,7 +19,7 @@ const LEGACY_SUBGRAPH_URL =
 let gatewayProcess: ChildProcess | null = null;
 let isRestarting = false;
 
-interface ServiceConfig {
+export interface ServiceConfig {
   name: string;
   typeDefs: DocumentNode;
   url: string;
@@ -88,7 +88,7 @@ async function startGateway(port: number): Promise<void> {
   });
 }
 
-async function generateSupergraph(): Promise<void> {
+async function generateSupergraphWithWatchMode(): Promise<void> {
   try {
     const mainSchema = parse(readFileSync(SCHEMA_PATH, 'utf-8'));
 
@@ -142,7 +142,7 @@ async function watchGatewayFiles(): Promise<void> {
       isRestarting = true;
 
       try {
-        await generateSupergraph();
+        await generateSupergraphWithWatchMode();
       } catch (error) {
         console.error('Error while regenerating supergraph:', error);
       }
@@ -168,4 +168,7 @@ process.on('SIGTERM', async () => {
 
 // Initial setup
 console.log('🚀 Starting gateway in watch mode...');
-setTimeout(() => generateSupergraph().then(watchGatewayFiles).catch(console.error), 3000);
+setTimeout(
+  () => generateSupergraphWithWatchMode().then(watchGatewayFiles).catch(console.error),
+  3000,
+);
