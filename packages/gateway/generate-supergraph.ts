@@ -13,7 +13,7 @@ const SUPERGRAPH_PATH = join(__dirname, '../../supergraph.graphql');
 const LEGACY_SUBGRAPH_URL =
   process.env.LEGACY_SUBGRAPH_URL ?? 'http://localhost:4001/subgraphs/legacy';
 
-export async function generateSupergraph(): Promise<void> {
+async function main(): Promise<void> {
   try {
     const mainSchema = parse(readFileSync(SCHEMA_PATH, 'utf-8'));
 
@@ -39,3 +39,8 @@ export async function generateSupergraph(): Promise<void> {
     process.exit(1);
   }
 }
+
+main().catch(e => {
+  console.error('Supergraph generation failed:', e);
+  process.exit(1);
+});

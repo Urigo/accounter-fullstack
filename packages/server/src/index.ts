@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import 'reflect-metadata';
 import { useGraphQLModules } from '@envelop/graphql-modules';
+import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { AUTH_ROLE, AUTH_USER_ID, AUTH_USERNAME } from '@shared/constants';
 import { Role } from '@shared/gql-types';
 import { AccounterContext, UserType } from '@shared/types';
@@ -20,7 +21,7 @@ async function main() {
       title: 'Legacy Subgraph',
     },
     landingPage: true,
-    plugins: [adminContextPlugin(), useGraphQLModules(application)],
+    plugins: [adminContextPlugin(), useGraphQLModules(application), useDeferStream()],
     context: (yogaContext): AccounterContext => {
       const headers = yogaContext.request.headers;
       const authRole = headers.get(AUTH_ROLE) as Role;
