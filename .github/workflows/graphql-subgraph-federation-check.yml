@@ -3,6 +3,8 @@ on:
     secrets:
       hiveDevRegistryToken:
         required: true
+      subgraphUrl:
+        required: true
 
 env:
   NODE_NO_WARNINGS: true
@@ -19,7 +21,7 @@ env:
   DEFAULT_FINANCIAL_ENTITY_ID: 00000000-0000-0000-0000-000000000000
 
 jobs:
-  generate-legacy-subgraph:
+  subgraph-federation-check:
     name: Generate Legacy Subgraph Schema
     runs-on: ubuntu-latest
     environment: accounter-fullstack
@@ -53,13 +55,14 @@ jobs:
           name: legacy-subgraph-graphql
           path: packages/server/legacy-subgraph.graphql
 
-      - name: Hive - Schema Check
+      - name: Hive - Subgraph Schema Check
         env:
           HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
+          SUBGRAPH_URL: ${{ secrets.subgraphUrl }}
         run: |
           curl -sSL https://graphql-hive.com/install.sh | sh
            hive schema:check \
           --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
           --service="legacy" \
-          --url="http://localhost:4001/subgraphs/legacy" \
+          --url="${SUBGRAPH_URL}" \
           packages/server/legacy-subgraph.graphql
