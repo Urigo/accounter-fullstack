@@ -66,7 +66,7 @@ __metadata:
     pg: "npm:8.13.3"
     rimraf: "npm:6.0.1"
     tsup: "npm:8.4.0"
-    typescript: "npm:5.7.3"
+    typescript: "npm:5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -311,7 +311,7 @@ __metadata:
     rimraf: "npm:6.0.1"
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.11"
-    typescript: "npm:5.7.3"
+    typescript: "npm:5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -10353,7 +10353,7 @@ __metadata:
     rimraf: "npm:6.0.1"
     ts-node: "npm:10.9.2"
     tsx: "npm:4.19.3"
-    typescript: "npm:5.7.3"
+    typescript: "npm:5.8.2"
     vite-tsconfig-paths: "npm:5.1.4"
     vitest: "npm:3.0.7"
   languageName: unknown
@@ -22716,7 +22716,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.7.3, typescript@npm:^5, typescript@npm:^5.4.2":
+"typescript@npm:5.8.2":
+  version: 5.8.2
+  resolution: "typescript@npm:5.8.2"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5c4f6fbf1c6389b6928fe7b8fcd5dc73bb2d58cd4e3883f1d774ed5bd83b151cbac6b7ecf11723de56d4676daeba8713894b1e9af56174f2f9780ae7848ec3c6
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^5, typescript@npm:^5.4.2":
   version: 5.7.3
   resolution: "typescript@npm:5.7.3"
   bin:
@@ -22726,7 +22736,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>":
+  version: 5.8.2
+  resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5448a08e595cc558ab321e49d4cac64fb43d1fa106584f6ff9a8d8e592111b373a995a1d5c7f3046211c8a37201eb6d0f1566f15cdb7a62a5e3be01d087848e2
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.2#optional!builtin<compat/typescript>":
   version: 5.7.3
   resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
   bin:
