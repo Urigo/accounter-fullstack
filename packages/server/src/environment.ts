@@ -61,7 +61,6 @@ const HiveModel = zod.union([
     HIVE_GATEWAY_PORT: NumberFromString.optional(),
     HIVE_SUBGRAPH_PORT: NumberFromString.optional(),
     HIVE_DEV_REGISTRY_TOKEN: zod.string().optional(),
-    HIVE_MAIN_REGISTRY_TOKEN: zod.string(),
     HIVE_STAGING_REGISTRY_TOKEN: zod.string().optional(),
   }),
   zod.void(),
@@ -138,7 +137,6 @@ export const env = {
     hiveGatewayPort: hive?.HIVE_GATEWAY_PORT ?? 4000,
     hiveSubgraphPort: hive?.HIVE_SUBGRAPH_PORT ?? 4001,
     hiveDevRegistryToken: hive?.HIVE_DEV_REGISTRY_TOKEN,
-    hiveMainRegistryToken: hive?.HIVE_MAIN_REGISTRY_TOKEN ?? '',
     hiveStagingRegistryToken: hive?.HIVE_STAGING_REGISTRY_TOKEN,
   },
   google: {
