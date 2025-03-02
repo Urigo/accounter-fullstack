@@ -1,5 +1,5 @@
-import { AUTH_ROLE, AUTH_USER_ID, AUTH_USERNAME } from '../server/src/shared/constants';
-import { AccounterGatewayPlugin } from './plugins/types';
+import { AUTH_ROLE, AUTH_USER_ID, AUTH_USERNAME } from '../server/src/shared/constants.js';
+import { AccounterGatewayPlugin } from './plugins/types.js';
 
 export function useForwordAuthInfoToSubgraph(): AccounterGatewayPlugin {
   return {
