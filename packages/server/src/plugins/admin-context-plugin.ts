@@ -2,6 +2,7 @@ import { useExtendContext } from 'graphql-yoga';
 import pg from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
+import type { Role } from '@shared/gql-types';
 import { formatCurrency, getCacheInstance } from '@shared/helpers';
 import type { Environment } from '@shared/types';
 import { env } from '../environment.js';
@@ -9,7 +10,12 @@ import type {
   IGetAdminBusinessContextQuery,
   IGetAdminBusinessContextResult,
 } from './__generated__/admin-context-plugin.types.js';
-import type { UserType } from './auth-plugin.js';
+
+type UserType = {
+  username: string;
+  userId: string;
+  role?: Role;
+};
 
 const getAdminBusinessContext = sql<IGetAdminBusinessContextQuery>`
   SELECT *

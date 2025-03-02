@@ -13,3 +13,7 @@ export const AVERAGE_MONTHLY_WORK_HOURS = 182;
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 
 export const DIVIDEND_WITHHOLDING_TAX_PERCENTAGE = 0.2;
+
+export const AUTH_ROLE = 'x-auth-role';
+export const AUTH_USERNAME = 'x-auth-username';
+export const AUTH_USER_ID = 'x-auth-user-id';

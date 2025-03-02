@@ -1,0 +1,64 @@
+on:
+  workflow_call:
+    secrets:
+      hiveDevRegistryToken:
+        required: true
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
+  CLOUDINARY_NAME: name
+  CLOUDINARY_API_KEY: key
+  CLOUDINARY_API_SECRET: secret
+  GREEN_INVOICE_ID: id
+  GREEN_INVOICE_SECRET: secret
+  DEFAULT_FINANCIAL_ENTITY_ID: 00000000-0000-0000-0000-000000000000
+
+jobs:
+  subgraph-federation-check:
+    name: Generate Legacy Subgraph Schema
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      - name: Generate GraphQL Subgraph Schema
+        run: yarn generate-subgraph
+
+      - name: Verify file exists
+        run: ls -l packages/server/legacy-subgraph.graphql
+
+      - name: Upload generated schema as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-subgraph-graphql
+          path: packages/server/legacy-subgraph.graphql
+
+      - name: Hive - Subgraph Schema Check
+        env:
+          HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+          hive schema:check \
+          --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
+          --service="legacy" \
+          packages/server/legacy-subgraph.graphql

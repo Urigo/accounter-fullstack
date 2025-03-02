@@ -58,6 +58,10 @@ const AuthorizationModel = zod.object({
 const HiveModel = zod.union([
   zod.object({
     HIVE_TOKEN: zod.string().optional(),
+    HIVE_GATEWAY_PORT: NumberFromString.optional(),
+    HIVE_SUBGRAPH_PORT: NumberFromString.optional(),
+    HIVE_DEV_REGISTRY_TOKEN: zod.string().optional(),
+    HIVE_STAGING_REGISTRY_TOKEN: zod.string().optional(),
   }),
   zod.void(),
 ]);
@@ -130,6 +134,10 @@ export const env = {
   },
   hive: {
     hiveToken: hive?.HIVE_TOKEN,
+    hiveGatewayPort: hive?.HIVE_GATEWAY_PORT ?? 4000,
+    hiveSubgraphPort: hive?.HIVE_SUBGRAPH_PORT ?? 4001,
+    hiveDevRegistryToken: hive?.HIVE_DEV_REGISTRY_TOKEN,
+    hiveStagingRegistryToken: hive?.HIVE_STAGING_REGISTRY_TOKEN,
   },
   google: {
     driveApiKey: google?.GOOGLE_DRIVE_API_KEY,

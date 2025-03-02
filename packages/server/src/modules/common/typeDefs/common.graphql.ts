@@ -2,7 +2,20 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
-  " query root "
+  extend schema
+    @link(
+      url: "https://specs.apollo.dev/federation/v2.4"
+      import: ["@key", "@shareable", "@composeDirective"]
+    )
+    @link(url: "https://myspecs.dev/myDirective/v2.0", import: ["@auth", "@defer", "@stream"])
+    @composeDirective(name: "@auth")
+    @composeDirective(name: "@defer")
+    @composeDirective(name: "@stream")
+
+  "Authorization directive"
+  directive @auth(role: Role!) on FIELD_DEFINITION
+
+  "query root "
   type Query {
     ping: Boolean
   }
@@ -25,9 +38,6 @@ export default gql`
     ADMIN
     ACCOUNTANT
   }
-
-  " Authorization directive"
-  directive @auth(role: Role!) on FIELD_DEFINITION
 
   # Scalars
 
