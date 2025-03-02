@@ -32,7 +32,7 @@ export const useDeleteDocument = (): UseDeleteDocument => {
         notifications.show({
           id: notificationId,
           loading: true,
-          title: 'Regenerating Ledger',
+          title: 'Deleting Document',
           message: 'Please wait...',
           autoClose: false,
           withCloseButton: true,
