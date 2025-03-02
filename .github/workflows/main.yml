@@ -10,22 +10,21 @@ jobs:
     name: Lint
     uses: ./.github/workflows/lint.yml
 
-  graphql-breaking-changes:
-    name: Hive schema check
-    uses: ./.github/workflows/graphql-schema-check.yml
+  subgraph-federation-check:
+    name: Generate Legacy Subgraph Schema And Hive Check
+    uses: ./.github/workflows/graphql-subgraph-federation-check.yml
     secrets:
-      hiveToken: ${{ secrets.HIVE_TOKEN }}
+      hiveDevRegistryToken: ${{ secrets.HIVE_DEV_REGISTRY_TOKEN }}
 
   validate-schema:
     name: Validate GraphQL schema
     uses: ./.github/workflows/graphql-validation.yml
 
-  schema-publish:
-    name: schema publish
-    needs: [graphql-breaking-changes, validate-schema]
-    uses: ./.github/workflows/graphql-schema-publish.yml
+  subgraph-federation-publish:
+    name: Generate Legacy Subgraph Schema And Hive Publish
+    uses: ./.github/workflows/graphql-subgraph-federation-publish.yml
     secrets:
-      hiveToken: ${{ secrets.HIVE_TOKEN }}
+      hiveMainRegistryToken: ${{ secrets.HIVE_MAIN_REGISTRY_TOKEN }}
 
   client-publish:
     name: client publish
