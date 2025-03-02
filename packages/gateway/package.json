@@ -12,7 +12,7 @@
     "build-supergraph-schema": "tsx generate-supergraph.ts",
     "clean": "killall -9 node || true",
     "dev": "hive-gateway supergraph",
-    "start": "hive-gateway supergraph",
+    "start": "yarn run build-supergraph-schema && hive-gateway supergraph ../../supergraph.graphql",
     "watch": "tsx watch --clear-screen=false supergraph.ts"
   },
   "dependencies": {
