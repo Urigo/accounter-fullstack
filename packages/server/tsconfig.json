@@ -13,6 +13,7 @@
       "@shared/tokens": ["./shared/tokens.js"],
       "@shared/constants": ["./shared/constants.js"],
       "@shared/helpers": ["./shared/helpers/index.js"],
+      "@shared/errors": ["./shared/errors.js"],
       "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/index.js"],
       "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"]
     }

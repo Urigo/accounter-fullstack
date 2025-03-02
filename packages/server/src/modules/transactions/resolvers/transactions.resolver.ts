@@ -96,6 +96,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               postUpdateActions = async () =>
                 deleteCharges([charge.id], injector)
                   .catch(e => {
+                    if (e instanceof GraphQLError) {
+                      throw e;
+                    }
                     console.error(e);
                     throw new GraphQLError(
                       `Failed to delete the empty former charge ID="${charge.id}"`,
@@ -157,6 +160,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         return transaction as IGetTransactionsByIdsResult;
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        console.error(e);
         return {
           __typename: 'CommonError',
           message: (e as Error)?.message ?? 'Unknown error',

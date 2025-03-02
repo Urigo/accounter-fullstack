@@ -33,6 +33,9 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .get(LedgerProvider)
         .deleteLedgerRecordsByChargeIdLoader.load(chargeId)
         .catch(e => {
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
           console.error(e);
           throw new Error(`Failed to clear ledger records`);
         });
@@ -63,6 +66,9 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         clearUnbalancedBusinessesPromise,
       ]);
     } catch (e) {
+      if (e instanceof GraphQLError) {
+        throw e;
+      }
       throw new GraphQLError(`Charge ID="${chargeId}" deletion error: ${e}`);
     }
   }
@@ -70,6 +76,9 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
   try {
     await injector.get(ChargesProvider).deleteChargesByIds({ chargeIds });
   } catch (e) {
+    if (e instanceof GraphQLError) {
+      throw e;
+    }
     console.error(`Failed to delete charge IDs="${chargeIds}"`, e);
     throw new GraphQLError(`Failed to delete charge IDs=[${chargeIds}]`);
   }

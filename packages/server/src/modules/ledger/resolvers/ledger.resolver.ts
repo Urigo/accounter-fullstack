@@ -212,6 +212,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           .get(LedgerProvider)
           .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
           .catch(e => {
+            if (e instanceof GraphQLError) {
+              throw e;
+            }
             console.error(e.message);
             throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
           })
@@ -226,6 +229,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             }),
           )
           .catch(e => {
+            if (e instanceof GraphQLError) {
+              throw e;
+            }
             console.error(e.message);
             throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
           });
@@ -239,6 +245,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                   ) as IInsertLedgerRecordsParams['ledgerRecords'],
                 })
                 .catch(e => {
+                  if (e instanceof GraphQLError) {
+                    throw e;
+                  }
                   console.error(e.message);
                   throw new Error(
                     `Failed to insert new ledger records for charge ID="${chargeId}"`,
@@ -250,6 +259,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             .get(LedgerProvider)
             .deleteLedgerRecordsByIdLoader.load(record.id)
             .catch(e => {
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
               console.error(e.message);
               throw new Error(`Failed to delete ledger records for charge ID="${chargeId}"`);
             }),
@@ -262,6 +274,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           errors: generated.errors,
         };
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
         return {
           __typename: 'CommonError',
           message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,

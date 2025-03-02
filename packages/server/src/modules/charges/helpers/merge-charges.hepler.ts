@@ -58,6 +58,9 @@ export const mergeChargesExecutor = async (
     // delete charge
     await deleteCharges([...chargeIdsToMerge], injector);
   } catch (e) {
+    if (e instanceof GraphQLError) {
+      throw e;
+    }
     throw new GraphQLError(`Failed to merge charges: ${e}`);
   }
 };

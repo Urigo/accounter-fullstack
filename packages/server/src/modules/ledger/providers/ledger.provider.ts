@@ -3,6 +3,7 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
+import { LedgerLockError } from '@shared/errors';
 import { getCacheInstance } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
@@ -332,7 +333,7 @@ export class LedgerProvider {
     if (params.ledgerId) {
       const record = await this.getLedgerRecordsByIdLoader.load(params.ledgerId);
       if (record?.locked) {
-        throw new Error('Cannot update locked ledger record');
+        throw new LedgerLockError();
       }
     }
 
@@ -359,7 +360,7 @@ export class LedgerProvider {
         throw record;
       }
       if (record?.locked) {
-        throw new Error('Cannot delete locked ledger record');
+        throw new LedgerLockError();
       }
     });
 
@@ -387,7 +388,7 @@ export class LedgerProvider {
         throw record;
       }
       if (record.some(r => r.locked)) {
-        throw new Error('Cannot delete locked ledger record');
+        throw new LedgerLockError();
       }
     });
 

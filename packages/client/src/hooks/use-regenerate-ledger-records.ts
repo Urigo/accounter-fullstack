@@ -6,6 +6,7 @@ import {
   RegenerateLedgerMutation,
   RegenerateLedgerMutationVariables,
 } from '../gql/graphql.js';
+import { useHandleKnownErrors } from './use-handle-known-errors.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,6 +42,7 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(RegenerateLedgerDocument);
+  const { handleKnownErrors } = useHandleKnownErrors();
 
   const regenerate = useCallback(
     (variables: RegenerateLedgerMutationVariables): Promise<Ledger> => {
@@ -56,38 +58,20 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
         });
 
         return mutate(variables).then(res => {
-          if (res.error) {
-            const message = 'Error regenerating ledger';
-            console.error(`${message} for charge ID [${variables.chargeId}]: ${res.error}`);
-            notifications.update({
-              id: notificationId,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(res.error.message);
+          const message = 'Error regenerating ledger';
+          const data = handleKnownErrors(res, reject, message, notificationId);
+          if (!data) {
+            return;
           }
-          if (!res.data) {
-            const message = 'Error regenerating ledger';
-            console.error(`${message}: No data received`);
+          if (data.regenerateLedgerRecords.__typename === 'CommonError') {
+            console.error(`${message}: ${data.regenerateLedgerRecords.message}`);
             notifications.update({
               id: notificationId,
               message,
               color: 'red',
               autoClose: 5000,
             });
-            return reject(message);
-          }
-          if (res.data.regenerateLedgerRecords.__typename === 'CommonError') {
-            const message = 'Error regenerating ledger';
-            console.error(`${message}: ${res.data.regenerateLedgerRecords.message}`);
-            notifications.update({
-              id: notificationId,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(res.data.regenerateLedgerRecords.message);
+            return reject(data.regenerateLedgerRecords.message);
           }
           notifications.update({
             id: notificationId,
@@ -96,11 +80,11 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
             message: 'Ledger records were regenerated',
             withCloseButton: true,
           });
-          return resolve(res.data.regenerateLedgerRecords);
+          return resolve(data.regenerateLedgerRecords);
         });
       });
     },
-    [mutate],
+    [mutate, handleKnownErrors],
   );
 
   return {

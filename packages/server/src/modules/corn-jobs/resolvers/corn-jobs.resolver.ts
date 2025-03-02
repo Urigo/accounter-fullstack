@@ -161,6 +161,9 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
             .filter(charge => charge) as IGetChargesByIdsResult[],
         };
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
         return {
           success: false,
           errors: [(e as Error)?.message ?? 'Unknown error'],

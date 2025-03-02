@@ -209,6 +209,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
                 try {
                   await deleteCharges([charge.id], injector);
                 } catch (e) {
+                  if (e instanceof GraphQLError) {
+                    throw e;
+                  }
                   console.error(e);
                   throw new GraphQLError(
                     `Failed to delete the empty former charge ID="${charge.id}"`,
@@ -259,6 +262,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           document: res[0],
         };
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
         return {
           __typename: 'CommonError',
           message: (e as Error)?.message ?? 'Unknown error',
@@ -266,29 +272,36 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       }
     },
     deleteDocument: async (_, { documentId }, { injector }) => {
-      const document = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByIdLoader.load(documentId);
-      if (!document) {
-        throw new GraphQLError(`Document ID="${documentId}" not found`);
-      }
-      const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
-      if (res.length === 1) {
-        if (document.charge_id) {
-          const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(document.charge_id);
-          if (charge && !charge.documents_count && !charge.transactions_count) {
-            await deleteCharges([charge.id], injector);
-          }
+      try {
+        const document = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByIdLoader.load(documentId);
+        if (!document) {
+          throw new GraphQLError(`Document ID="${documentId}" not found`);
         }
-        return true;
+        const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
+        if (res.length === 1) {
+          if (document.charge_id) {
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(document.charge_id);
+            if (charge && !charge.documents_count && !charge.transactions_count) {
+              await deleteCharges([charge.id], injector);
+            }
+          }
+          return true;
+        }
+        throw new GraphQLError(
+          res.length === 0
+            ? 'Document not found'
+            : `More than one document found and deleted: ${res}`,
+        );
+      } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new GraphQLError(`Failed to delete document ID="${documentId}": ${e}`);
       }
-      throw new GraphQLError(
-        res.length === 0
-          ? 'Document not found'
-          : `More than one document found and deleted: ${res}`,
-      );
     },
     insertDocument: async (_, { record }, { injector }) => {
       try {
