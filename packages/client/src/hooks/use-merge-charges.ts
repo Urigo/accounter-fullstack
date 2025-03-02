@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import {
   MergeChargesDocument,
   MergeChargesMutation,
   MergeChargesMutationVariables,
 } from '../gql/graphql.js';
+import { useHandleKnownErrors } from './use-handle-known-errors.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,51 +43,60 @@ type UseMergeCharges = {
   mergeCharges: (variables: MergeChargesMutationVariables) => Promise<Charge>;
 };
 
+const NOTIFICATION_ID = 'mergeCharges';
+
 export const useMergeCharges = (): UseMergeCharges => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
 
   const [{ fetching }, mutate] = useMutation(MergeChargesDocument);
+  const { handleKnownErrors } = useHandleKnownErrors();
+
+  const mergeCharges = useCallback(
+    async (variables: MergeChargesMutationVariables): Promise<Charge> => {
+      const notificationId = `${NOTIFICATION_ID}-${typeof variables.chargeIdsToMerge === 'string' ? variables.chargeIdsToMerge : variables.chargeIdsToMerge.join('|')}`;
+      return new Promise<Charge>((resolve, reject) => {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Merging Charges',
+          message: 'Please wait...',
+          autoClose: false,
+          withCloseButton: true,
+        });
+
+        return mutate(variables).then(res => {
+          const message = `Error merging into charge ID [${variables.baseChargeID}]`;
+          const data = handleKnownErrors(res, reject, message, notificationId);
+          if (!data) {
+            return;
+          }
+          if (data.mergeCharges.__typename === 'CommonError') {
+            console.error(`${message}: ${data.mergeCharges.message}`);
+            notifications.update({
+              id: notificationId,
+              message,
+              color: 'red',
+              autoClose: 5000,
+            });
+            return reject(data.mergeCharges.message);
+          }
+          notifications.update({
+            id: notificationId,
+            title: 'Update Success!',
+            autoClose: 5000,
+            message: 'Charges were merged',
+            withCloseButton: true,
+          });
+          return resolve(data.mergeCharges.charge);
+        });
+      });
+    },
+    [handleKnownErrors, mutate],
+  );
 
   return {
     fetching,
-    mergeCharges: (variables: MergeChargesMutationVariables): Promise<Charge> =>
-      new Promise<Charge>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error merging into charge ID [${variables.baseChargeID}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error merging into charge ID [${variables.baseChargeID}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.mergeCharges.__typename === 'CommonError') {
-            console.error(
-              `Error merging into charge ID [${variables.baseChargeID}]: ${res.data.mergeCharges.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.mergeCharges.message);
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.mergeCharges.charge);
-        }),
-      ),
+    mergeCharges,
   };
 };

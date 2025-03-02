@@ -212,6 +212,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           .get(LedgerProvider)
           .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
           .catch(e => {
+            if (e instanceof GraphQLError) {
+              throw e;
+            }
             console.error(e.message);
             throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
           })
@@ -226,6 +229,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             }),
           )
           .catch(e => {
+            if (e instanceof GraphQLError) {
+              throw e;
+            }
             console.error(e.message);
             throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
           });
@@ -239,6 +245,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                   ) as IInsertLedgerRecordsParams['ledgerRecords'],
                 })
                 .catch(e => {
+                  if (e instanceof GraphQLError) {
+                    throw e;
+                  }
                   console.error(e.message);
                   throw new Error(
                     `Failed to insert new ledger records for charge ID="${chargeId}"`,
@@ -250,11 +259,14 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             .get(LedgerProvider)
             .deleteLedgerRecordsByIdLoader.load(record.id)
             .catch(e => {
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
               console.error(e.message);
               throw new Error(`Failed to delete ledger records for charge ID="${chargeId}"`);
             }),
         );
-        await Promise.all([updatePromise, insertPromise, removePromises]);
+        await Promise.all([updatePromise, insertPromise, ...removePromises]);
 
         return {
           records: toUpdate,
@@ -262,10 +274,22 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           errors: generated.errors,
         };
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
         return {
           __typename: 'CommonError',
           message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
         };
+      }
+    },
+    lockLedgerRecords: async (_, { date }, { injector }) => {
+      try {
+        await injector.get(LedgerProvider).lockLedgerRecords(date);
+        return true;
+      } catch (error) {
+        console.error(`Error locking ledger records for ${date}: ${error}`);
+        return false;
       }
     },
   },
@@ -362,13 +386,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         financialEntities,
       );
     },
-    validate: async ({ charge, records }, { shouldInsertLedgerInNew }, context, info) => {
-      const insertLedgerRecordsIfNotExists =
-        shouldInsertLedgerInNew == null ? true : shouldInsertLedgerInNew;
+    validate: async ({ charge, records }, _, context, info) => {
       try {
         const generated = await ledgerGenerationByCharge(charge, context)(
           charge,
-          { insertLedgerRecordsIfNotExists },
+          { insertLedgerRecordsIfNotExists: false },
           context,
           info,
         );

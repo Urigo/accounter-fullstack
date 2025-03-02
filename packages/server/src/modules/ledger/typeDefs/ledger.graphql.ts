@@ -11,6 +11,7 @@ export default gql`
 
   extend type Mutation {
     regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords! @auth(role: ACCOUNTANT)
+    lockLedgerRecords(date: TimelessDate!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " represent atomic movement of funds "
@@ -91,7 +92,7 @@ export default gql`
   type Ledger {
     records: [LedgerRecord!]!
     balance: LedgerBalanceInfo
-    validate(shouldInsertLedgerInNew: Boolean): LedgerValidation!
+    validate: LedgerValidation!
   }
 
   " ledger validation info"

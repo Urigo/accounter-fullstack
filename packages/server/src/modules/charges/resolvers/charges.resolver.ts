@@ -377,6 +377,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         return { charge };
       } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
         return {
           __typename: 'CommonError',
           message:
@@ -387,16 +390,24 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-      }
-      if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
-        throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
-      }
+      try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+        }
+        if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+          throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
+        }
 
-      await deleteCharges([chargeId], injector);
-      return true;
+        await deleteCharges([chargeId], injector);
+        return true;
+      } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        console.error(e);
+        throw new GraphQLError(`Error deleting charge ID="${chargeId}"`);
+      }
     },
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector, adminContext } = context;

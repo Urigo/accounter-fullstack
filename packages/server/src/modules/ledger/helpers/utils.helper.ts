@@ -317,6 +317,7 @@ export function ledgerProtoToRecordsConverter(
       reference1: record.reference ?? null,
       updated_at: new Date(),
       value_date: record.valueDate,
+      locked: false,
     };
     return adjustedRecord;
   });
