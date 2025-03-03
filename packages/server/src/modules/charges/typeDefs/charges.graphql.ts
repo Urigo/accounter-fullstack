@@ -17,7 +17,7 @@ export default gql`
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
       fields: UpdateChargeInput
-    ): MergeChargeResult! @auth(role: ADMIN)
+    ): MergeChargeResult! @auth(role: ACCOUNTANT)
     deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
