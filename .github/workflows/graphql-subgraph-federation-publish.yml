@@ -53,12 +53,15 @@ jobs:
           name: legacy-subgraph-graphql
           path: packages/server/legacy-subgraph.graphql
 
+      - name: Install Hive CLI
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+
       - name: Hive - Subgraph Schema Publish
         env:
           HIVE_MAIN_REGISTRY_TOKEN: ${{ secrets.hiveMainRegistryToken }}
         run: |
-          curl -sSL https://graphql-hive.com/install.sh | sh
-          hive schema:check \
+          hive schema:publish \
           --registry.accessToken "${HIVE_MAIN_REGISTRY_TOKEN}" \
           --service="legacy" \
           --url"https://accounter-federeation.onrender.com/subgraphs/legacy" \

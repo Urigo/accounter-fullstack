@@ -53,11 +53,14 @@ jobs:
           name: legacy-subgraph-graphql
           path: packages/server/legacy-subgraph.graphql
 
+      - name: Intall Hive CLI
+        run: |
+          curl -sSL https://graphql-hive.com/install.sh | sh
+
       - name: Hive - Subgraph Schema Check
         env:
           HIVE_DEV_REGISTRY_TOKEN: ${{ secrets.hiveDevRegistryToken }}
         run: |
-          curl -sSL https://graphql-hive.com/install.sh | sh
           hive schema:check \
           --registry.accessToken "${HIVE_DEV_REGISTRY_TOKEN}" \
           --service="legacy" \

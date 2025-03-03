@@ -11,8 +11,8 @@
     "build": "exit 0",
     "build-supergraph-schema": "tsx generate-supergraph.ts",
     "clean": "killall -9 node || true",
-    "dev": "hive-gateway supergraph",
-    "start": "yarn run build-supergraph-schema && hive-gateway supergraph",
+    "dev": "yarn run build-supergraph-schema && hive-gateway supergraph",
+    "start": "hive-gateway supergraph",
     "watch": "tsx watch --clear-screen=false supergraph.ts"
   },
   "dependencies": {

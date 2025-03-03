@@ -7,8 +7,13 @@ import { getAcceptableRoles, resolveUser, validateUser } from './plugins/auth.js
 import { ValidateUserType } from './plugins/types.js';
 
 export const gatewayConfig = defineConfig({
-  supergraph: '../../supergraph.graphql',
-  port: env.hive.hiveGatewayPort,
+  supergraph: env.accounter.acconterEnv
+    ? {
+        type: 'hive',
+        endpoint: 'https://cdn.graphql-hive.com/artifacts/v1/1766c3d3-f0ba-46ff-8252-1ec116d07123',
+        key: env.hive.hiveMainRegistryToken || '',
+      }
+    : '../../supergraph.graphql',
   graphqlEndpoint: '/graphql',
   genericAuth: {
     mode: 'protect-granular',

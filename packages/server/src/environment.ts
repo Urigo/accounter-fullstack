@@ -62,6 +62,14 @@ const HiveModel = zod.union([
     HIVE_SUBGRAPH_PORT: NumberFromString.optional(),
     HIVE_DEV_REGISTRY_TOKEN: zod.string().optional(),
     HIVE_STAGING_REGISTRY_TOKEN: zod.string().optional(),
+    HIVE_MAIN_REGISTRY_TOKEN: zod.string().optional(),
+  }),
+  zod.void(),
+]);
+
+const AccounterEnv = zod.union([
+  zod.object({
+    ACCOUNTER_ENV: zod.string().optional(),
   }),
   zod.void(),
 ]);
@@ -80,6 +88,7 @@ const configs = {
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
   google: GoogleModel.safeParse(process.env),
+  accounter: AccounterEnv.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -108,6 +117,7 @@ const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
+const accounter = extractConfig(configs.accounter);
 const google = extractConfig(configs.google);
 
 export const env = {
@@ -134,12 +144,16 @@ export const env = {
   },
   hive: {
     hiveToken: hive?.HIVE_TOKEN,
-    hiveGatewayPort: hive?.HIVE_GATEWAY_PORT ?? 4000,
-    hiveSubgraphPort: hive?.HIVE_SUBGRAPH_PORT ?? 4001,
+    hiveGatewayPort: hive?.HIVE_GATEWAY_PORT,
+    hiveSubgraphPort: hive?.HIVE_SUBGRAPH_PORT,
     hiveDevRegistryToken: hive?.HIVE_DEV_REGISTRY_TOKEN,
     hiveStagingRegistryToken: hive?.HIVE_STAGING_REGISTRY_TOKEN,
+    hiveMainRegistryToken: hive?.HIVE_MAIN_REGISTRY_TOKEN,
   },
   google: {
     driveApiKey: google?.GOOGLE_DRIVE_API_KEY,
+  },
+  accounter: {
+    acconterEnv: accounter?.ACCOUNTER_ENV,
   },
 } as const;
