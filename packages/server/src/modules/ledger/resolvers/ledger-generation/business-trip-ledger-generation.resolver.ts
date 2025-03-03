@@ -516,9 +516,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     );
 
     if (mightRequireExchangeRateRecord && unbalancedBusinesses.length === 1) {
-      const transactionEntry = financialAccountLedgerEntries[0];
-
-      const entryDate = getExchangeDates(financialAccountLedgerEntries);
+      const entryDate = getExchangeDates(
+        financialAccountLedgerEntries.length
+          ? financialAccountLedgerEntries
+          : accountingLedgerEntries,
+      );
 
       const { entityId, balance } = unbalancedBusinesses[0];
       const amount = Math.abs(balance.raw);
@@ -556,7 +558,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       if (validation === true) {
         if (exchangeRateTaxCategory) {
           const ledgerEntry: StrictLedgerProto = {
-            id: transactionEntry.id + '|fee', // NOTE: this field is dummy
+            id: 'exchange-ledger', // NOTE: this field is dummy
             creditAccountID1: isCreditorCounterparty ? entityId : exchangeRateTaxCategory,
             localCurrencyCreditAmount1: amount,
             debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategory : entityId,
@@ -566,7 +568,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             invoiceDate: entryDate,
             valueDate: entryDate,
             currency: defaultLocalCurrency,
-            ownerId: transactionEntry.ownerId,
+            ownerId: charge.owner_id,
             chargeId,
           };
           miscLedgerEntries.push(ledgerEntry);
