@@ -1,4 +1,5 @@
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';
 import { generateLedgerRecordsForRecoveryReserveExpenses } from './financial-ledger-generation/recovery-reserve-ledger-generation.resolver.js';
@@ -16,6 +17,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   const {
     adminContext: {
+      defaultTaxCategoryId,
       authorities: { taxExpensesTaxCategoryId },
       bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
       depreciation: { accumulatedDepreciationTaxCategoryId },
@@ -70,6 +72,13 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
         );
       case bankDepositInterestIncomeTaxCategoryId:
         return generateLedgerRecordsForBankDepositsRevaluation(
+          charge,
+          { insertLedgerRecordsIfNotExists },
+          context,
+          info,
+        );
+      case defaultTaxCategoryId:
+        return generateLedgerRecordsForBalance(
           charge,
           { insertLedgerRecordsIfNotExists },
           context,
