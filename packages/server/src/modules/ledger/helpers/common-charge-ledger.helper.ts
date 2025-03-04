@@ -324,7 +324,7 @@ export function isRefundCharge(description?: string | null): boolean {
   );
 }
 
-export function getExchangeDates(financialAccountLedgerEntries: StrictLedgerProto[]): Date {
+export function getExchangeDates(financialAccountLedgerEntries: LedgerProto[]): Date {
   const timeValue = Math.max(
     ...financialAccountLedgerEntries.map(entry => entry.valueDate.getTime()),
   );
