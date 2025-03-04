@@ -41,7 +41,7 @@
     "@radix-ui/react-tooltip": "1.1.8",
     "@tanstack/react-query": "5.66.11",
     "@tanstack/react-table": "8.21.2",
-    "@urql/exchange-auth": "2.2.0",
+    "@urql/exchange-auth": "2.2.1",
     "chart.js": "4.4.8",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -63,7 +63,7 @@
     "strip-indent": "4.0.0",
     "tabler-icons-react": "1.56.0",
     "tailwind-merge": "3.0.2",
-    "urql": "4.2.1",
+    "urql": "4.2.2",
     "zod": "3.24.2",
     "zustand": "5.0.3"
   },
