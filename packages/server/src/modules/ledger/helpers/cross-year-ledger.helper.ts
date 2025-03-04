@@ -136,7 +136,10 @@ export async function handleCrossYearLedgerEntries(
   }, 0);
 
   // handle current year auto-added spread record if amounts do not match
-  if (yearsWithoutSpecifiedAmountCount === 0 && predefinedAmount !== entriesAmount) {
+  if (
+    yearsWithoutSpecifiedAmountCount === 0 &&
+    Math.abs(predefinedAmount - entriesAmount) < 0.005
+  ) {
     const chargeDate = charge.documents_min_date;
     if (
       chargeDate &&
