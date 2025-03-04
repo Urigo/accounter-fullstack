@@ -130,6 +130,29 @@ export async function handleCrossYearLedgerEntries(
     }
   });
 
+  const entriesAmount = accountingLedgerEntries.reduce((acc, entry) => {
+    const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
+    return acc + mainAmount;
+  }, 0);
+
+  // handle current year auto-added spread record if amounts do not match
+  if (yearsWithoutSpecifiedAmountCount === 0 && predefinedAmount !== entriesAmount) {
+    const chargeDate = charge.documents_min_date;
+    if (
+      chargeDate &&
+      !spreadRecords.some(r => r.year_of_relevance.getFullYear() === chargeDate.getFullYear())
+    ) {
+      spreadRecords.push({
+        charge_id: charge.id,
+        year_of_relevance: chargeDate,
+        amount: null,
+      });
+      yearsWithoutSpecifiedAmountCount += 1;
+    } else {
+      throw new Error('Spread amounts do not match ledger entries amounts');
+    }
+  }
+
   let description: string | undefined = undefined;
   if (charge.business_id) {
     try {
@@ -211,11 +234,7 @@ export async function handleCrossYearLedgerEntries(
     const spreadRecord = spreadRecords[0];
     const yearDate = spreadRecord.year_of_relevance;
 
-    validateEntriesAmountsMatchesSpread(
-      spreadRecord.amount,
-      accountingLedgerEntries,
-      defaultLocalCurrency,
-    );
+    validateEntriesAmountsMatchesSpread(spreadRecord.amount, entriesAmount);
 
     for (const entry of accountingLedgerEntries) {
       const { adjustedEntry, vatEntries } = splitVatPayments(entry, context);
@@ -346,8 +365,7 @@ function getEntryMainAmount(entry: LedgerProto, defaultLocalCurrency: Currency):
 
 function validateEntriesAmountsMatchesSpread(
   spreadStringifiedAmount: string | null,
-  entries: LedgerProto[],
-  defaultLocalCurrency: Currency,
+  entriesAmount: number,
 ): void {
   if (spreadStringifiedAmount === null) {
     return;
@@ -356,11 +374,6 @@ function validateEntriesAmountsMatchesSpread(
   if (Number.isNaN(spreadAmount)) {
     return;
   }
-
-  const entriesAmount = entries.reduce((acc, entry) => {
-    const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
-    return acc + mainAmount;
-  }, 0);
 
   if (spreadAmount !== entriesAmount) {
     throw new LedgerError('Spread amount does not match ledger entries amounts');
