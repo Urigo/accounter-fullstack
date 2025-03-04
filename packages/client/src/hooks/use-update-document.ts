@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useMutation } from 'urql';
 import { notifications, showNotification } from '@mantine/notifications';
 import {
@@ -45,25 +46,21 @@ export const useUpdateDocument = (): UseUpdateDocument => {
   const [{ fetching }, mutate] = useMutation(UpdateDocumentDocument);
   const { handleKnownErrors } = useHandleKnownErrors();
 
-  return {
-    fetching,
-    updateDocument: (
-      variables: UpdateDocumentMutationVariables,
-    ): Promise<UpdateDocumentSuccessfulResult> =>
-      new Promise<UpdateDocumentSuccessfulResult>((resolve, reject) => {
-        const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-        const message = `Error updating document ID [${variables.documentId}]`;
+  const updateDocument = useCallback(
+    async (variables: UpdateDocumentMutationVariables): Promise<UpdateDocumentSuccessfulResult> => {
+      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
 
+      return new Promise<UpdateDocumentSuccessfulResult>((resolve, reject) => {
+        notifications.show({
+          id: notificationId,
+          loading: true,
+          title: 'Updating document',
+          message: 'Please wait...',
+          autoClose: false,
+          withCloseButton: true,
+        });
         return mutate(variables).then(res => {
-          notifications.show({
-            id: notificationId,
-            loading: true,
-            title: 'Updating document',
-            message: 'Please wait...',
-            autoClose: false,
-            withCloseButton: true,
-          });
-
+          const message = `Error updating document ID [${variables.documentId}]`;
           const data = handleKnownErrors(res, reject, message, notificationId);
           if (data) {
             if (data.updateDocument.__typename === 'CommonError') {
@@ -81,6 +78,13 @@ export const useUpdateDocument = (): UseUpdateDocument => {
             return resolve(data.updateDocument);
           }
         });
-      }),
+      });
+    },
+    [handleKnownErrors, mutate],
+  );
+
+  return {
+    fetching,
+    updateDocument,
   };
 };
