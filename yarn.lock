@@ -214,7 +214,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.17.1"
     pino-pretty: "npm:13.0.0"
-    puppeteer: "npm:24.3.0"
+    puppeteer: "npm:24.3.1"
   languageName: unknown
   linkType: soft
 
@@ -244,7 +244,7 @@ __metadata:
     inquirer: "npm:12.4.2"
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
-    puppeteer: "npm:24.3.0"
+    puppeteer: "npm:24.3.1"
     uuid: "npm:11.1.0"
   languageName: unknown
   linkType: soft
@@ -9844,12 +9844,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:22.13.8, @types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
+"@types/node@npm:*, @types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
   version: 22.13.8
   resolution: "@types/node@npm:22.13.8"
   dependencies:
     undici-types: "npm:~6.20.0"
   checksum: 10c0/bfc92b734a9dce6ac5daee0a52feccdf5dcb3804d895e4bc5384e2f4644612b8801725cd03c8c3c0888fb5eeb16b875877ac44b77641e0196dc1a837b1c2a366
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:22.13.9":
+  version: 22.13.9
+  resolution: "@types/node@npm:22.13.9"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/eb6acd04169a076631dcaab712128d492cd17a1b3f10daae4a377f3d439c860c3cd3e32f4ef221671f56183b976ac7c4089f4193457314a88675ead4663438a4
   languageName: node
   linkType: hard
 
@@ -10401,7 +10410,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.3.0"
     "@theguild/eslint-config": "npm:0.13.2"
     "@theguild/prettier-config": "npm:3.0.0"
-    "@types/node": "npm:22.13.8"
+    "@types/node": "npm:22.13.9"
     bob-the-bundler: "npm:^7.0.1"
     concurrently: "npm:9.1.2"
     eslint: "npm:9.21.0"
@@ -11759,6 +11768,18 @@ __metadata:
   peerDependencies:
     devtools-protocol: "*"
   checksum: 10c0/b2292b11dec9c83f19a43c6631c4906aa17de00738faa430139703bb2da327069a31617d7b549b3dd4aff457fa3a28b4d0296569e0aa3656e7867994c16e5a10
+  languageName: node
+  linkType: hard
+
+"chromium-bidi@npm:2.1.2":
+  version: 2.1.2
+  resolution: "chromium-bidi@npm:2.1.2"
+  dependencies:
+    mitt: "npm:^3.0.1"
+    zod: "npm:^3.24.1"
+  peerDependencies:
+    devtools-protocol: "*"
+  checksum: 10c0/2a62674a99c4c0fb7dd50770f0477366d6fcf7e2f94d1188c74e73da741e7878bd2078a55e1081be4bffd87d5797eae7c03b9c0346caf481b71eda280c11a36a
   languageName: node
   linkType: hard
 
@@ -19824,7 +19845,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:24.3.0":
+"puppeteer-core@npm:24.3.1":
+  version: 24.3.1
+  resolution: "puppeteer-core@npm:24.3.1"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.7.1"
+    chromium-bidi: "npm:2.1.2"
+    debug: "npm:^4.4.0"
+    devtools-protocol: "npm:0.0.1402036"
+    typed-query-selector: "npm:^2.12.0"
+    ws: "npm:^8.18.1"
+  checksum: 10c0/6c465bc48d884f2b917c17d3674d0215da019db1f9588a9944bc6a3a93fe9ad2e396dfae977551bdc9623fc959bde7d9e829987a89e49d2c335f1dc1e5bf8670
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:*":
   version: 24.3.0
   resolution: "puppeteer@npm:24.3.0"
   dependencies:
@@ -19837,6 +19872,22 @@ __metadata:
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
   checksum: 10c0/a7a65116436b3f5ad9772634373d55c662935f7522c61c5104e17bb0e440ea9818b08f9fc44e16260a98c98872a4a6523b8e244838ea1be94bfc22eb1bca9ead
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:24.3.1":
+  version: 24.3.1
+  resolution: "puppeteer@npm:24.3.1"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.7.1"
+    chromium-bidi: "npm:2.1.2"
+    cosmiconfig: "npm:^9.0.0"
+    devtools-protocol: "npm:0.0.1402036"
+    puppeteer-core: "npm:24.3.1"
+    typed-query-selector: "npm:^2.12.0"
+  bin:
+    puppeteer: lib/cjs/puppeteer/node/cli.js
+  checksum: 10c0/76b133c93a71f3da8b8ca5cec2e3e2c60e57fa1c8c28a7b946de7e4a8fc691e9e45aab68d102edf130853406c4dabd75879bb60afd16a0fe8cd48f15383232bd
   languageName: node
   linkType: hard
 
