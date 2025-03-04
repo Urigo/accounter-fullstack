@@ -280,7 +280,7 @@ __metadata:
   dependencies:
     "@accounter/green-invoice-graphql": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:1.1.13"
+    "@ai-sdk/anthropic": "npm:1.1.14"
     "@envelop/generic-auth": "npm:9.0.1"
     "@envelop/graphql-modules": "npm:7.0.2"
     "@graphql-hive/yoga": "npm:0.40.1"
@@ -291,7 +291,7 @@ __metadata:
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
     "@whatwg-node/fetch": "npm:0.10.5"
-    ai: "npm:4.1.50"
+    ai: "npm:4.1.51"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:5.1.1"
     cloudinary: "npm:2.5.1"
@@ -315,15 +315,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:1.1.13":
-  version: 1.1.13
-  resolution: "@ai-sdk/anthropic@npm:1.1.13"
+"@ai-sdk/anthropic@npm:1.1.14":
+  version: 1.1.14
+  resolution: "@ai-sdk/anthropic@npm:1.1.14"
   dependencies:
     "@ai-sdk/provider": "npm:1.0.9"
     "@ai-sdk/provider-utils": "npm:2.1.10"
   peerDependencies:
     zod: ^3.0.0
-  checksum: 10c0/f6f0a84f793fc19e6f7f74f60b00d92777ca142884e65d3f037f671ac91c4e217018072d4800bca3acbb1252c7da37a41c70bd4750c9bf08b9ab6483ffdc0eed
+  checksum: 10c0/3dcbb59dfcc631e732758a7526c7170f002cc4839489fed1d8ab254561d13c5da063a055231b0e46ac3b70105e40860516f237e0ca47a7b25c526d138a3f9edd
   languageName: node
   linkType: hard
 
@@ -10485,9 +10485,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:4.1.50":
-  version: 4.1.50
-  resolution: "ai@npm:4.1.50"
+"ai@npm:4.1.51":
+  version: 4.1.51
+  resolution: "ai@npm:4.1.51"
   dependencies:
     "@ai-sdk/provider": "npm:1.0.9"
     "@ai-sdk/provider-utils": "npm:2.1.10"
@@ -10503,7 +10503,7 @@ __metadata:
       optional: true
     zod:
       optional: true
-  checksum: 10c0/a5d3613026e70fa428801c4811c635756b7e14902919ab4aa5aee4e6d23b1b60c20720fff26406fc86b71b68b7ff94e30a9d806308f912d3a3f2b6666ca061e1
+  checksum: 10c0/e9166be8b05ff42ff5e2b748ee79e09f230e7937a31fdb61b283f79a97df15a21edae523dbb8634891af547e560c14cbfc14d9aaf19210d5243cc504d44b9800
   languageName: node
   linkType: hard
 
