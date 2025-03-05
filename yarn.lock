@@ -291,7 +291,7 @@ __metadata:
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
     "@whatwg-node/fetch": "npm:0.10.5"
-    ai: "npm:4.1.51"
+    ai: "npm:4.1.52"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:5.1.1"
     cloudinary: "npm:2.5.1"
@@ -10508,9 +10508,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:4.1.51":
-  version: 4.1.51
-  resolution: "ai@npm:4.1.51"
+"ai@npm:4.1.52":
+  version: 4.1.52
+  resolution: "ai@npm:4.1.52"
   dependencies:
     "@ai-sdk/provider": "npm:1.0.9"
     "@ai-sdk/provider-utils": "npm:2.1.10"
@@ -10526,7 +10526,7 @@ __metadata:
       optional: true
     zod:
       optional: true
-  checksum: 10c0/e9166be8b05ff42ff5e2b748ee79e09f230e7937a31fdb61b283f79a97df15a21edae523dbb8634891af547e560c14cbfc14d9aaf19210d5243cc504d44b9800
+  checksum: 10c0/bab07689bacc9d3c81f28321ad7139e09756a919ef29af67e4dace188bfa6b62c1deed8805af06450194027fa4ff5fd55a4fc8511de4fcb39ce42af32d71f511
   languageName: node
   linkType: hard
 
