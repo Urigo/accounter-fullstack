@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useMutation } from 'urql';
-import { notifications, showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import {
   UpdateDocumentDocument,
   UpdateDocumentMutation,
@@ -65,15 +65,20 @@ export const useUpdateDocument = (): UseUpdateDocument => {
           if (data) {
             if (data.updateDocument.__typename === 'CommonError') {
               console.error(`${message}: ${data.updateDocument.message}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
+              notifications.update({
+                id: notificationId,
+                message,
+                color: 'red',
+                autoClose: 5000,
               });
               return reject(data.updateDocument.message);
             }
-            showNotification({
-              title: 'Update Success!',
-              message: 'Hey there, your update is awesome!',
+            notifications.update({
+              id: notificationId,
+              title: 'Update Successful!',
+              autoClose: 5000,
+              message: 'Document is updated',
+              withCloseButton: true,
             });
             return resolve(data.updateDocument);
           }
