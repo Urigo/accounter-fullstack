@@ -6,8 +6,6 @@ import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
-export const BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION = 'Bank deposits revaluation of currency';
-
 export const generateLedgerRecordsForBalance: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
