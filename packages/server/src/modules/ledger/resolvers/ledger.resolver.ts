@@ -390,7 +390,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       try {
         const generated = await ledgerGenerationByCharge(charge, context)(
           charge,
-          { insertLedgerRecordsIfNotExists: false },
+          { insertLedgerRecordsIfNotExists: records.length === 0 },
           context,
           info,
         );
