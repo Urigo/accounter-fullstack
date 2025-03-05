@@ -281,8 +281,8 @@ __metadata:
     "@accounter/green-invoice-graphql": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
     "@ai-sdk/anthropic": "npm:1.1.14"
-    "@envelop/generic-auth": "npm:9.1.0"
-    "@envelop/graphql-modules": "npm:7.1.0"
+    "@envelop/generic-auth": "npm:9.1.1"
+    "@envelop/graphql-modules": "npm:7.1.1"
     "@graphql-hive/yoga": "npm:0.40.1"
     "@graphql-yoga/plugin-defer-stream": "npm:3.12.2"
     "@pgtyped/cli": "npm:2.3.0"
@@ -2289,31 +2289,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envelop/extended-validation@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "@envelop/extended-validation@npm:5.1.0"
+"@envelop/extended-validation@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "@envelop/extended-validation@npm:5.1.1"
   dependencies:
     "@graphql-tools/utils": "npm:^10.0.0"
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@envelop/core": ^5.2.0
+    "@envelop/core": ^5.2.1
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/276ec9fecc02154329b5c17f9fb8ed5a776e8be0d8c6478ad7e0127ed4d48d0630e319157c1239a3f28546dcf366a913733857df83b030ffdfcfe98eac2b4a95
+  checksum: 10c0/dfe542cfdb5985f43c5b51ae39b5f83a64db9d34a27a1feb01cc2770d3fdda26eda95df14aa9845ff82a4ae099f1b1b7bab640b287308f4a95082ab49a1f0164
   languageName: node
   linkType: hard
 
-"@envelop/generic-auth@npm:9.1.0":
-  version: 9.1.0
-  resolution: "@envelop/generic-auth@npm:9.1.0"
+"@envelop/generic-auth@npm:9.1.1":
+  version: 9.1.1
+  resolution: "@envelop/generic-auth@npm:9.1.1"
   dependencies:
-    "@envelop/extended-validation": "npm:^5.1.0"
+    "@envelop/extended-validation": "npm:^5.1.1"
     "@graphql-tools/executor": "npm:^1.3.6"
     "@graphql-tools/utils": "npm:^10.5.1"
+    "@whatwg-node/promise-helpers": "npm:^1.2.1"
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@envelop/core": ^5.2.0
+    "@envelop/core": ^5.2.1
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/2cd6d485f37828596593807152ba0212de4319f815948fc97148cd22b970f2a052c33e862488e49a926d5dde7b5222fe74bf97a44fca1ff5b226595a84651b9b
+  checksum: 10c0/bbe78730b208961bec059dbc1a3338c1379a5c80233133d3f317bef2b300aa1c8183c56ed7e02b0454fc5c0b28dfdfb63cece50b5ddb81c7ab6f8348863cf525
   languageName: node
   linkType: hard
 
@@ -2331,16 +2332,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envelop/graphql-modules@npm:7.1.0":
-  version: 7.1.0
-  resolution: "@envelop/graphql-modules@npm:7.1.0"
+"@envelop/graphql-modules@npm:7.1.1":
+  version: 7.1.1
+  resolution: "@envelop/graphql-modules@npm:7.1.1"
   dependencies:
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@envelop/core": ^5.2.0
+    "@envelop/core": ^5.2.1
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-modules: ^1 || ^2.0.0 || ^3.0.0
-  checksum: 10c0/00562ab93d379ab0895d9a9785c223a6c16a63668690a44429ac68f8f0c4ada47b223f8e0d39c897beeb93dbf77606ee294f6a690ed3490f383615cababe7464
+  checksum: 10c0/cdfa2167510c9dd2b5678e13a380c81ce3328e1c8a9cdb0b66a6329f5b43723a0440f267db41edce778013af469696175a0201e6cff97f5398b2531cfe97315f
   languageName: node
   linkType: hard
 
@@ -10339,6 +10340,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.6.3"
   checksum: 10c0/fe0e14fc8dd987bbb3b90db9191887783140e0753dc322cfb245070da378b295bd12d3b45bddfe26f537022dbb43026051090a42fe4e15e523c9b9e785b177b4
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/promise-helpers@npm:^1.2.1":
+  version: 1.2.3
+  resolution: "@whatwg-node/promise-helpers@npm:1.2.3"
+  dependencies:
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/c95eecfcc19f6a97973cd925f5bf114449c25008ca1c10af0ad4f395a4324b6767b30f7f262b88e747311d78c66e9a9a79fc1a8e5c689f8f5fa839d096e2a4a4
   languageName: node
   linkType: hard
 
