@@ -73,25 +73,6 @@ export default gql`
     optionalVAT: Boolean
   }
 
-  " financial charge "
-  type FinancialCharge implements Charge {
-    id: UUID!
-    vat: FinancialAmount
-    withholdingTax: FinancialAmount
-    totalAmount: FinancialAmount
-    property: Boolean
-    conversion: Boolean
-    salary: Boolean
-    isInvoicePaymentDifferentCurrency: Boolean
-    userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    metadata: ChargeMetadata
-    yearsOfRelevance: [YearOfRelevance!]
-    optionalVAT: Boolean
-  }
-
   " charge with conversion transactions "
   type ConversionCharge implements Charge {
     id: UUID!
