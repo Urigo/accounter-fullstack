@@ -77,6 +77,7 @@ import migration_2025_02_14T11_50_44_dynamic_report_templates_table from './acti
 import migration_2025_02_13T14_40_22_update_poalim_column_length_restriction from './actions/2025-02-13T14-40-22.update-poalim-column-length-restriction.js';
 import migration_2025_02_19T15_12_33_add_to_context_salary_excess_expenses from './actions/2025-02-19T15-12-33.add-to-context-salary-excess-expenses.js';
 import migration_2025_02_26T19_27_56_add_to_context_ledger_lock from './actions/2025-02-26T19-27-56.add-to-context-ledger-lock.js';
+import migration_2025_03_04T16_29_18_update_charges_view_add_no_doc_req_flag from './actions/2025-03-04T16-29-18.update-charges-view-add-no-doc-req-flag.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -161,5 +162,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_02_14T11_50_44_dynamic_report_templates_table,
       migration_2025_02_19T15_12_33_add_to_context_salary_excess_expenses,
       migration_2025_02_26T19_27_56_add_to_context_ledger_lock,
+      migration_2025_03_04T16_29_18_update_charges_view_add_no_doc_req_flag,
     ],
   });
