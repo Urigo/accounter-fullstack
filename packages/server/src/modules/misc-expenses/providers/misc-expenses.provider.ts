@@ -12,6 +12,8 @@ import type {
   IGetExpensesByIdsQuery,
   IInsertExpenseParams,
   IInsertExpenseQuery,
+  IInsertExpensesParams,
+  IInsertExpensesQuery,
   IUpdateExpenseParams,
   IUpdateExpenseQuery,
 } from '../types.js';
@@ -73,6 +75,11 @@ const updateExpense = sql<IUpdateExpenseQuery>`
 const insertExpense = sql<IInsertExpenseQuery>`
   INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
   VALUES ($chargeId, $creditorId, $debtorId, $amount, $currency, $description, $invoiceDate, $valueDate)
+  RETURNING *;`;
+
+const insertExpenses = sql<IInsertExpensesQuery>`
+  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
+  VALUES $$miscExpenses(chargeId, creditorId, debtorId, amount, currency, description, invoiceDate, valueDate)
   RETURNING *;`;
 
 const deleteExpense = sql<IDeleteExpenseQuery>`
@@ -163,6 +170,16 @@ export class MiscExpensesProvider {
   public async insertExpense(params: IInsertExpenseParams) {
     if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
     return insertExpense.run(params, this.dbProvider);
+  }
+
+  public async insertExpenses(params: IInsertExpensesParams) {
+    const chargeIds = Array.from(
+      new Set(params.miscExpenses.map(({ chargeId }) => chargeId)),
+    ).filter(id => !!id) as string[];
+    if (chargeIds.length) {
+      await Promise.all(chargeIds.map(chargeId => this.invalidateByChargeId(chargeId)));
+    }
+    return insertExpenses.run(params, this.dbProvider);
   }
 
   public async deleteMiscExpense(params: IDeleteExpenseParams) {

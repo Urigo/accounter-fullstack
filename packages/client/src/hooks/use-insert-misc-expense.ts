@@ -8,8 +8,8 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation InsertMiscExpense($fields: InsertMiscExpenseInput!) {
-    insertMiscExpense(fields: $fields) {
+  mutation InsertMiscExpense($chargeId: UUID!, $fields: InsertMiscExpenseInput!) {
+    insertMiscExpense(chargeId: $chargeId, fields: $fields) {
       id
     }
   }

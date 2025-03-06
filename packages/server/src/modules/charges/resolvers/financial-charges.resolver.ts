@@ -193,28 +193,28 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
           description,
         );
 
-        const addBalanceRecordsPromises: Array<Promise<void>> = balanceRecords.map(async record => {
-          if (!record.debtorId && !record.creditorId) {
-            throw new GraphQLError(
-              'Balance record must include at least one counterparty (debtor or creditor)',
-            );
-          }
-          await injector
-            .get(MiscExpensesProvider)
-            .insertExpense({ ...record, chargeId: charge.id })
-            .catch(() => {
-              throw new GraphQLError('Error adding balance records');
-            });
-        });
+        await Promise.all(
+          balanceRecords.map(async record => {
+            if (!record.debtorId && !record.creditorId) {
+              throw new GraphQLError(
+                'Balance record must include at least one counterparty (debtor or creditor)',
+              );
+            }
+            await injector
+              .get(MiscExpensesProvider)
+              .insertExpense({ ...record, chargeId: charge.id })
+              .catch(() => {
+                throw new GraphQLError('Error adding balance records');
+              });
+          }),
+        );
 
-        const generateLedgerPromise = generateLedgerRecordsForFinancialCharge(
+        await generateLedgerRecordsForFinancialCharge(
           charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
-
-        await Promise.all([...addBalanceRecordsPromises, generateLedgerPromise]);
 
         return charge;
       } catch (e) {

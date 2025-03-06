@@ -17,7 +17,7 @@ export default gql`
       @auth(role: ACCOUNTANT)
     generateBalanceCharge(
       description: String!
-      balanceRecords: [BalanceRecordInput!]!
+      balanceRecords: [InsertMiscExpenseInput!]!
     ): FinancialCharge! @auth(role: ACCOUNTANT)
   }
 
@@ -38,16 +38,5 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
-  }
-
-  " input variables for generateBalanceCharge "
-  input BalanceRecordInput {
-    creditorId: UUID
-    debtorId: UUID
-    amount: Float!
-    currency: Currency!
-    description: String
-    valueDate: DateTime!
-    invoiceDate: TimelessDate!
   }
 `;
