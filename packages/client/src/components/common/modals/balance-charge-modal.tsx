@@ -399,7 +399,7 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         </form>
       </Form>
       <DialogFooter>
-        <Button onClick={handleSubmit(onSubmit)}>Insert new expenses</Button>
+        <Button onClick={handleSubmit(onSubmit)}>Create Balance Charge</Button>
       </DialogFooter>
     </>
   );
