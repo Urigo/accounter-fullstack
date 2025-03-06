@@ -9,7 +9,8 @@ interface Props {
 }
 
 function csvDownload(data: string, fileName: string): void {
-  const csvData = new Blob([data], { type: 'text/csv;charset=utf-8' });
+  const BOM = new Uint8Array([0xef, 0xbb, 0xbf]);
+  const csvData = new Blob([BOM, data], { type: 'text/csv;charset=UTF-8' });
   const csvURL = URL.createObjectURL(csvData);
   const link = document.createElement('a');
   link.href = csvURL;
