@@ -9,7 +9,10 @@ export default gql`
   extend type Mutation {
     updateMiscExpense(id: UUID!, fields: UpdateMiscExpenseInput!): MiscExpense!
       @auth(role: ACCOUNTANT)
-    insertMiscExpense(fields: InsertMiscExpenseInput!): MiscExpense! @auth(role: ACCOUNTANT)
+    insertMiscExpense(chargeId: UUID!, fields: InsertMiscExpenseInput!): MiscExpense!
+      @auth(role: ACCOUNTANT)
+    insertMiscExpenses(chargeId: UUID!, expenses: [InsertMiscExpenseInput!]!): Charge!
+      @auth(role: ACCOUNTANT)
     deleteMiscExpense(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
   }
 
@@ -40,7 +43,6 @@ export default gql`
 
   " input variables for insertMiscExpense "
   input InsertMiscExpenseInput {
-    chargeId: UUID!
     creditorId: UUID!
     debtorId: UUID!
     amount: Float!

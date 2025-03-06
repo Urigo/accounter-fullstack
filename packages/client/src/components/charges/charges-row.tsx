@@ -39,6 +39,7 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
         documentsCount
         ledgerCount
         transactionsCount
+        miscExpensesCount
       }
     }
     ...ChargesTableAccountantApprovalFields
@@ -119,12 +120,14 @@ export const ChargesTableRow = ({
       !!(
         charge.metadata?.documentsCount ||
         charge.metadata?.transactionsCount ||
-        charge.metadata?.ledgerCount
+        charge.metadata?.ledgerCount ||
+        charge.metadata?.miscExpensesCount
       ),
     [
       charge.metadata?.documentsCount,
       charge.metadata?.transactionsCount,
       charge.metadata?.ledgerCount,
+      charge.metadata?.miscExpensesCount,
     ],
   );
 

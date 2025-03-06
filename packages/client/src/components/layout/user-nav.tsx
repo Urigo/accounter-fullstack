@@ -1,9 +1,10 @@
-import { JSX } from 'react';
+import { JSX, useState } from 'react';
 import { User2Icon } from 'lucide-react';
 import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { CornJobsConfirmation, LogoutButton, PullDocumentsModal } from '../common/index.js';
+import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { Avatar } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
 import {
@@ -19,6 +20,7 @@ export function UserNav(): JSX.Element {
   const [cornJobsOpened, { close: closeCornJobs, open: openCornJobs }] = useDisclosure(false);
   const [pullDocumentsOpened, { close: closePullDocuments, open: openPullDocuments }] =
     useDisclosure(false);
+  const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
 
   return (
     <>
@@ -38,6 +40,11 @@ export function UserNav(): JSX.Element {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem>
+            <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
+              Add Balance Charge
+            </Button>
+          </DropdownMenuItem>
           <DropdownMenuItem>
             <Tooltip label="Pull Green Invoice Documents">
               <ActionIcon size={30} onClick={openPullDocuments}>
@@ -59,6 +66,12 @@ export function UserNav(): JSX.Element {
       </DropdownMenu>
       <CornJobsConfirmation close={closeCornJobs} opened={cornJobsOpened} />
       <PullDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
+
+      <BalanceChargeModal
+        open={balanceChargeModalOpen}
+        onOpenChange={setBalanceChargeModalOpen}
+        onClose={() => setBalanceChargeModalOpen(false)}
+      />
     </>
   );
 }

@@ -19,17 +19,38 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     },
   },
   Mutation: {
-    insertMiscExpense: async (_, { fields }, { injector }) => {
+    insertMiscExpense: async (_, { chargeId, fields }, { injector }) => {
       try {
         return await injector
           .get(MiscExpensesProvider)
-          .insertExpense(fields)
+          .insertExpense({ ...fields, chargeId })
           .then(res => {
             if (!res.length) {
               throw new Error('Error inserting misc expense');
             }
             return res[0];
           });
+      } catch (e) {
+        const message = 'Error inserting misc expense';
+        console.error(`${message}: ${e}`);
+        throw new GraphQLError(message);
+      }
+    },
+    insertMiscExpenses: async (_, { chargeId, expenses }, { injector }) => {
+      try {
+        await injector.get(MiscExpensesProvider).insertExpenses({
+          miscExpenses: expenses.map(expense => ({
+            ...expense,
+            description: expense.description ?? null,
+            chargeId,
+          })),
+        });
+
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new Error(`Charge ID="${chargeId}" not found`);
+        }
+        return charge;
       } catch (e) {
         const message = 'Error inserting misc expense';
         console.error(`${message}: ${e}`);
