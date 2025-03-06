@@ -141,6 +141,7 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
         await generateBalanceCharge(data as GenerateBalanceChargeMutationVariables);
         onOpenChange(false);
       } catch (error) {
+        console.error(error);
         toast({
           title: 'Error',
           description: 'Failed to generate balance charge. Please try again.',
