@@ -98,7 +98,7 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
   const formManager = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
-  const { handleSubmit, control, setError } = formManager;
+  const { handleSubmit, control } = formManager;
 
   const [
     {
@@ -137,19 +137,6 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = useCallback(
     async data => {
-      let hasErrors = false;
-      data.balanceRecords.map((expense, i) => {
-        if (expense.creditorId === expense.debtorId) {
-          setError(`balanceRecords.${i}.debtorId`, {
-            type: 'manual',
-            message: 'Creditor and debtor cannot be the same',
-          });
-          hasErrors = true;
-        }
-      });
-      if (hasErrors) {
-        return;
-      }
       try {
         await generateBalanceCharge(data as GenerateBalanceChargeMutationVariables);
         onOpenChange(false);
@@ -162,7 +149,7 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
         });
       }
     },
-    [generateBalanceCharge, onOpenChange, toast, setError],
+    [generateBalanceCharge, onOpenChange, toast],
   );
 
   const { fields, append, remove } = useFieldArray({
@@ -223,6 +210,14 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
                         name={`balanceRecords.${index}.creditorId`}
                         rules={{
                           required: true,
+                          validate: value => {
+                            const debtorId = formManager.getValues(
+                              `balanceRecords.${index}.debtorId`,
+                            );
+                            return (
+                              value !== debtorId || 'Creditor and Debtor cannot be the same entity'
+                            );
+                          },
                         }}
                         render={({ field }) => (
                           <FormItem>
@@ -248,6 +243,15 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
                         name={`balanceRecords.${index}.debtorId`}
                         rules={{
                           required: true,
+                          validate: value => {
+                            const creditorId = formManager.getValues(
+                              `balanceRecords.${index}.creditorId`,
+                            );
+                            return (
+                              value !== creditorId ||
+                              'Creditor and Debtor cannot be the same entity'
+                            );
+                          },
                         }}
                         render={({ field }) => (
                           <FormItem>
