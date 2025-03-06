@@ -98,7 +98,7 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
   const formManager = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
-  const { handleSubmit, control } = formManager;
+  const { handleSubmit, control, setError } = formManager;
 
   const [
     {
@@ -137,6 +137,19 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = useCallback(
     async data => {
+      let hasErrors = false;
+      data.balanceRecords.map((expense, i) => {
+        if (expense.creditorId === expense.debtorId) {
+          setError(`balanceRecords.${i}.debtorId`, {
+            type: 'manual',
+            message: 'Creditor and debtor cannot be the same',
+          });
+          hasErrors = true;
+        }
+      });
+      if (hasErrors) {
+        return;
+      }
       try {
         await generateBalanceCharge(data as GenerateBalanceChargeMutationVariables);
         onOpenChange(false);
@@ -149,7 +162,7 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
         });
       }
     },
-    [generateBalanceCharge, onOpenChange, toast],
+    [generateBalanceCharge, onOpenChange, toast, setError],
   );
 
   const { fields, append, remove } = useFieldArray({
