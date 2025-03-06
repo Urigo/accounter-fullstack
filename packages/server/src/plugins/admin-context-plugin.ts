@@ -1,5 +1,6 @@
 import { useExtendContext } from 'graphql-yoga';
 import pg from 'pg';
+import type { Plugin } from '@envelop/types';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
 import { formatCurrency, getCacheInstance } from '@shared/helpers';
@@ -269,7 +270,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
   };
 }
 
-export const adminContextPlugin = () =>
+export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = () =>
   useExtendContext(async (contextSoFar: { env: Environment; currentUser: UserType }) => {
     const rawContext = await fetchContext(contextSoFar.currentUser.userId);
     const adminContext = normalizeContext(rawContext);
