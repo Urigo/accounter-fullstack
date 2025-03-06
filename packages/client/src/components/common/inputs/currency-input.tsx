@@ -60,16 +60,16 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
     }
   }
   return (
-    <div className="w-full flex flex-row ">
+    <div className="w-full flex flex-row min-w-[150px]">
       <NumberInput
-        className="w-full"
+        className="w-full min-w-[75px]"
         {...props}
         hideControls
         precision={precision ?? 2}
         error={error || currencyError}
       />
       <Select
-        className="w-1/2"
+        className="w-1/2 min-w-[75px]"
         {...currencyCodeProps}
         data={Object.keys(Currency).map(key => Currency[key as keyof typeof Currency])}
       />
