@@ -51,7 +51,7 @@ export function BalanceChargeModal({
   return (
     <Dialog open={open} onOpenChange={onDialogChange}>
       <DialogContent className="max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[1000px]">
-        <MiscExpensesForm onOpenChange={onDialogChange} />
+        <BalanceChargeForm onOpenChange={onDialogChange} />
       </DialogContent>
     </Dialog>
   );
@@ -90,7 +90,7 @@ const formSchema = z.object({
   balanceRecords: z.array(balanceRecordsSchema).nonempty('Must include at least one expense'),
 });
 
-function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
+function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => void }) {
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
