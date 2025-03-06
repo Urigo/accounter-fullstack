@@ -177,7 +177,8 @@ export async function calculateVacationReserveAmount(
       Number(employeeData.latestSalary.job_percentage) === 0;
     const latestSalaryAmount = isLatestSalaryHourly
       ? Number(employeeData.latestSalary.hourly_rate) * AVERAGE_MONTHLY_WORK_HOURS
-      : Number(employeeData.latestSalary.base_salary);
+      : Number(employeeData.latestSalary.base_salary) +
+        Number(employeeData.latestSalary.global_additional_hours);
     if (!latestSalaryAmount || Number.isNaN(latestSalaryAmount)) {
       throw new GraphQLError(
         `Employee ${employeeData.employee.first_name} has no valid salary amount for last month`,
