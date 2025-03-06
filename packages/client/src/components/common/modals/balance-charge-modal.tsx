@@ -137,10 +137,18 @@ function MiscExpensesForm({ onOpenChange }: { onOpenChange: (open: boolean) => v
 
   const onSubmit: SubmitHandler<z.infer<typeof formSchema>> = useCallback(
     async data => {
-      await generateBalanceCharge(data as GenerateBalanceChargeMutationVariables);
-      onOpenChange(false);
+      try {
+        await generateBalanceCharge(data as GenerateBalanceChargeMutationVariables);
+        onOpenChange(false);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to generate balance charge. Please try again.',
+          variant: 'destructive',
+        });
+      }
     },
-    [generateBalanceCharge, onOpenChange],
+    [generateBalanceCharge, onOpenChange, toast],
   );
 
   const { fields, append, remove } = useFieldArray({
