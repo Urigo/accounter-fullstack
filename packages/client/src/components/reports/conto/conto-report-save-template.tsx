@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NodeModel } from '@minoru/react-dnd-treeview';
 import { useInsertDynamicReportTemplate } from '../../../hooks/use-insert-dynamic-report-template.js';
+import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.jsx';
 import {
   Dialog,
@@ -17,7 +18,6 @@ import {
 } from '../../ui/dialog.jsx';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { TooltipContent } from '../../ui/tooltip.js';
 import { CustomData } from './types.js';
 
 const FormSchema = z.object({
@@ -111,7 +111,7 @@ export function SaveTemplate({ tree }: Props): ReactElement {
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
       <DialogTrigger asChild>
-        <TooltipContent content="Save template">
+        <Tooltip content="Save template">
           <Button
             variant="outline"
             disabled={fetching}
@@ -120,7 +120,7 @@ export function SaveTemplate({ tree }: Props): ReactElement {
           >
             <CloudUpload size={20} />
           </Button>
-        </TooltipContent>
+        </Tooltip>
       </DialogTrigger>
       <DialogContent className="w-100 max-w-screen-md">
         <DialogHeader>

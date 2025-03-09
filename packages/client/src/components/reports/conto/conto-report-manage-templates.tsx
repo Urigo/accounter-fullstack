@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table';
 import { AllContoReportsDocument, AllContoReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
+import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -33,7 +34,6 @@ import {
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
-import { TooltipContent } from '../../ui/tooltip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -261,11 +261,11 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
       <DialogTrigger asChild>
-        <TooltipContent content="Save template">
+        <Tooltip content="Save template">
           <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
             <CloudCog size={20} />
           </Button>
-        </TooltipContent>
+        </Tooltip>
       </DialogTrigger>
       <DialogContent className="max-w-screen-md">
         <DialogHeader>

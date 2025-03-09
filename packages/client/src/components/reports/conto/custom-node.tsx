@@ -13,6 +13,7 @@ import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
+import { Tooltip } from '../../common/index.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -24,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
-import { TooltipContent } from '../../ui/tooltip.js';
 import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { TypeIcon } from './type-icon.js';
 import { CustomData } from './types.js';
@@ -157,7 +157,7 @@ export const CustomNode: React.FC<Props> = props => {
               )}
               {!droppable && (
                 <div className="pl-2">
-                  <TooltipContent content="Expand records">
+                  <Tooltip content="Expand records">
                     <ActionIcon
                       variant="default"
                       onClick={(): void => setToggleLedger(i => !i)}
@@ -169,7 +169,7 @@ export const CustomNode: React.FC<Props> = props => {
                         <PanelTopOpenIcon size={20} />
                       )}
                     </ActionIcon>
-                  </TooltipContent>
+                  </Tooltip>
                 </div>
               )}
             </div>

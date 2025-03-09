@@ -14,10 +14,10 @@ import {
 } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { TooltipContent } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
@@ -372,11 +372,11 @@ export const ContoReport: React.FC = () => {
         <DownloadCSV tree={tree} filters={filter} />
         <ManageTemplates template={templateName} setTemplate={setTemplateName} />
         <SaveTemplate tree={tree} />
-        <TooltipContent content="Add new category">
+        <Tooltip content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
             <FolderPlus size={20} />
           </Button>
-        </TooltipContent>
+        </Tooltip>
         <ContoReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
