@@ -17,7 +17,7 @@ import {
 } from '../../ui/dialog.jsx';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { ContentTooltip } from '../../ui/tooltip.js';
+import { TooltipContent } from '../../ui/tooltip.js';
 import { CustomData } from './types.js';
 
 const FormSchema = z.object({
@@ -111,7 +111,7 @@ export function SaveTemplate({ tree }: Props): ReactElement {
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
       <DialogTrigger asChild>
-        <ContentTooltip content="Save template">
+        <TooltipContent content="Save template">
           <Button
             variant="outline"
             disabled={fetching}
@@ -120,7 +120,7 @@ export function SaveTemplate({ tree }: Props): ReactElement {
           >
             <CloudUpload size={20} />
           </Button>
-        </ContentTooltip>
+        </TooltipContent>
       </DialogTrigger>
       <DialogContent className="w-100 max-w-screen-md">
         <DialogHeader>

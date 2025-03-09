@@ -33,7 +33,7 @@ import {
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
-import { ContentTooltip } from '../../ui/tooltip.js';
+import { TooltipContent } from '../../ui/tooltip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -261,11 +261,11 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
       <DialogTrigger asChild>
-        <ContentTooltip content="Save template">
+        <TooltipContent content="Save template">
           <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
             <CloudCog size={20} />
           </Button>
-        </ContentTooltip>
+        </TooltipContent>
       </DialogTrigger>
       <DialogContent className="max-w-screen-md">
         <DialogHeader>

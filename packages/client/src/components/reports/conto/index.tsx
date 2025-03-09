@@ -17,7 +17,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { ContentTooltip } from '../../ui/tooltip.js';
+import { TooltipContent } from '../../ui/tooltip.js';
 import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
@@ -372,11 +372,11 @@ export const ContoReport: React.FC = () => {
         <DownloadCSV tree={tree} filters={filter} />
         <ManageTemplates template={templateName} setTemplate={setTemplateName} />
         <SaveTemplate tree={tree} />
-        <ContentTooltip content="Add new category">
+        <TooltipContent content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
             <FolderPlus size={20} />
           </Button>
-        </ContentTooltip>
+        </TooltipContent>
         <ContoReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />

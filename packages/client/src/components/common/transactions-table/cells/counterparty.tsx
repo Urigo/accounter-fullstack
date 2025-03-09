@@ -13,7 +13,7 @@ import { InsertBusiness } from '../../../common/modals/insert-business.js';
 import { SimilarTransactionsModal } from '../../../common/modals/similar-transactions-modal.js';
 import { Button } from '../../../ui/button.js';
 import { SelectWithSearch } from '../../../ui/select-with-search.js';
-import { ContentTooltip } from '../../../ui/tooltip.js';
+import { TooltipContent } from '../../../ui/tooltip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -140,7 +140,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               placeholder="Choose or create a business"
               empty={search ? <InsertBusiness description={search} onAdd={onAddBusiness} /> : null}
             />
-            <ContentTooltip content="Approve">
+            <TooltipContent content="Approve">
               <Button
                 variant="outline"
                 size="icon"
@@ -149,7 +149,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
               >
                 <CheckIcon className="size-4" />
               </Button>
-            </ContentTooltip>
+            </TooltipContent>
           </>
         )}
       </div>

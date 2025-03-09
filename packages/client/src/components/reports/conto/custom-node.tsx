@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
-import { ContentTooltip } from '../../ui/tooltip.js';
+import { TooltipContent } from '../../ui/tooltip.js';
 import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { TypeIcon } from './type-icon.js';
 import { CustomData } from './types.js';
@@ -157,7 +157,7 @@ export const CustomNode: React.FC<Props> = props => {
               )}
               {!droppable && (
                 <div className="pl-2">
-                  <ContentTooltip content="Expand records">
+                  <TooltipContent content="Expand records">
                     <ActionIcon
                       variant="default"
                       onClick={(): void => setToggleLedger(i => !i)}
@@ -169,7 +169,7 @@ export const CustomNode: React.FC<Props> = props => {
                         <PanelTopOpenIcon size={20} />
                       )}
                     </ActionIcon>
-                  </ContentTooltip>
+                  </TooltipContent>
                 </div>
               )}
             </div>

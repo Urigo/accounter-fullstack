@@ -16,7 +16,7 @@ export function PageLayout({
   headerActions,
 }: PageLayoutProps): JSX.Element {
   return (
-    <div className="flex flex-col gap-5 light">
+    <div className="flex flex-col gap-5">
       <div className="flex justify-between items-center">
         <Heading title={title} description={description} />
         {headerActions}
