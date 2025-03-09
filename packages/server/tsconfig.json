@@ -18,6 +18,6 @@
       "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"]
     }
   },
-  "exclude": ["**/__generated__"],
-  "include": ["src", "../green-invoice-graphql", "../pcn874-generator"]
+  "include": ["src", "../green-invoice-graphql/src", "../pcn874-generator/src"],
+  "exclude": ["**/__generated__", "**/dist/**"]
 }
