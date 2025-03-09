@@ -78,6 +78,7 @@ import migration_2025_02_13T14_40_22_update_poalim_column_length_restriction fro
 import migration_2025_02_19T15_12_33_add_to_context_salary_excess_expenses from './actions/2025-02-19T15-12-33.add-to-context-salary-excess-expenses.js';
 import migration_2025_02_26T19_27_56_add_to_context_ledger_lock from './actions/2025-02-26T19-27-56.add-to-context-ledger-lock.js';
 import migration_2025_03_04T16_29_18_update_charges_view_add_no_doc_req_flag from './actions/2025-03-04T16-29-18.update-charges-view-add-no-doc-req-flag.js';
+import migration_2025_03_09T18_21_06_bank_deposits_new_table from './actions/2025-03-09T18-21-06.bank-deposits-new-table.js';
 import migration_2025_03_10T16_21_31_charge_no_docs_flag from './actions/2025-03-10T16-21-31.charge-no-docs-flag.js';
 import migration_2025_03_13T13_24_43_deel_data from './actions/2025-03-13T13-24-43.deel-data.js';
 import migration_2025_03_19T12_05_43_deel_api_tables from './actions/2025-03-19T12-05-43.deel-api-tables.js';
@@ -203,5 +204,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_06_08T12_23_53_poalim_foreign_less_strict,
       migration_2025_06_09T18_11_34_convert_irs_codes_array_column_to_single,
       migration_2025_06_10T10_45_37_convert_irs_codes_array_column_to_single2,
+      migration_2025_03_09T18_21_06_bank_deposits_new_table,
     ],
   });
