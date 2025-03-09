@@ -130,15 +130,20 @@ export async function handleCrossYearLedgerEntries(
     }
   });
 
-  const entriesAmount = accountingLedgerEntries.reduce((acc, entry) => {
-    const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
-    return acc + mainAmount;
-  }, 0);
+  const entriesAmount = accountingLedgerEntries
+    .map(entry => {
+      const { adjustedEntry } = splitVatPayments(entry, context);
+      return adjustedEntry;
+    })
+    .reduce((acc, entry) => {
+      const mainAmount = getEntryMainAmount(entry, defaultLocalCurrency);
+      return acc + mainAmount;
+    }, 0);
 
   // handle current year auto-added spread record if amounts do not match
   if (
     yearsWithoutSpecifiedAmountCount === 0 &&
-    Math.abs(predefinedAmount - entriesAmount) < 0.005
+    Math.abs(predefinedAmount - entriesAmount) > 0.005
   ) {
     const chargeDate = charge.documents_min_date;
     if (
