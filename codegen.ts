@@ -53,6 +53,8 @@ const config: CodegenConfig = {
         },
         mappers: {
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
+          BankDepositFinancialAccount:
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           BankFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           Business: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',

@@ -36,8 +36,17 @@ export default gql`
     fourDigits: String!
   }
 
-  " represent a single credit card "
+  " represent a single crypto wallet "
   type CryptoWalletFinancialAccount implements FinancialAccount {
+    id: UUID!
+    name: String!
+    type: String!
+    " the external identifier of the wallet "
+    number: String!
+  }
+
+  " represent a single bank deposit account "
+  type BankDepositFinancialAccount implements FinancialAccount {
     id: UUID!
     name: String!
     type: String!

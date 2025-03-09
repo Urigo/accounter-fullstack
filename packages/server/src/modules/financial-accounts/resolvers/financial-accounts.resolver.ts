@@ -36,6 +36,15 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
         ? DbAccount.account_number.slice(-8)
         : DbAccount.account_number,
   },
+  BankDepositFinancialAccount: {
+    __isTypeOf: DbAccount => DbAccount.type === 'BANK_DEPOSIT_ACCOUNT',
+    ...commonFinancialAccountFields,
+    number: DbAccount => DbAccount.account_number,
+    name: DbAccount =>
+      DbAccount.account_number.length >= 20
+        ? DbAccount.account_number.slice(-8)
+        : DbAccount.account_number,
+  },
   ConversionTransaction: {
     ...commonTransactionFields,
   },

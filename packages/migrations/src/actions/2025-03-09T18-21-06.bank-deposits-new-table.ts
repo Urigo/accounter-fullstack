@@ -14,7 +14,7 @@ create table if not exists accounter_schema.poalim_deposits_account_transactions
             primary key,
     deposit_key text                           not null,
     date        date,
-    amount      numeric(9, 2)                  not null,
+    amount      numeric(11, 2)                  not null,
     currency    accounter_schema.currency      not null
 );
 
@@ -88,7 +88,7 @@ BEGIN
             charge_id_var,
             merged_id,
             new.currency,
-            new.data::text::date,
+            new.date::text::date,
             new.date::text::date,
             new.amount, 0)
     RETURNING id INTO transaction_id_var;
