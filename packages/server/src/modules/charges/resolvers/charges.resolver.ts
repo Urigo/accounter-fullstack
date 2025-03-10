@@ -212,6 +212,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
         optionalVAT: fields.optionalVAT,
+        optionalDocuments: fields.optionalDocuments,
         chargeId,
       };
       try {
@@ -353,6 +354,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             isProperty: fields?.isProperty,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             optionalVAT: fields?.optionalVAT,
+            optionalDocuments: fields?.optionalDocuments,
             ownerId: fields?.ownerId,
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,

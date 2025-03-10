@@ -52,6 +52,8 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     " flag for optional VAT "
     optionalVAT: Boolean
+    " flag for optional documents "
+    optionalDocuments: Boolean
   }
 
   " common charge "
@@ -71,6 +73,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge with conversion transactions "
@@ -90,6 +93,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge with conversion transactions "
@@ -109,6 +113,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of internal transfer "
@@ -128,6 +133,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of dividends "
@@ -147,6 +153,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of dividends "
@@ -166,6 +173,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of monthly VAT payment "
@@ -185,6 +193,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of bank deposits "
@@ -204,6 +213,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " charge of creditcard over bank account "
@@ -223,6 +233,7 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " input variables for charge filtering "
@@ -296,6 +307,7 @@ export default gql`
     businessTripID: UUID
     yearsOfRelevance: [YearOfRelevanceInput!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 
   " input variables for charge spread "

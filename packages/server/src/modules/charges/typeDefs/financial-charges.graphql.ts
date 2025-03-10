@@ -38,5 +38,6 @@ export default gql`
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
+    optionalDocuments: Boolean
   }
 `;

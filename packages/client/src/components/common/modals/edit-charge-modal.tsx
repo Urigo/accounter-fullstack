@@ -29,6 +29,7 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
         id
       }
       optionalVAT
+      optionalDocuments
       ... on BusinessTripCharge {
         businessTrip {
           id

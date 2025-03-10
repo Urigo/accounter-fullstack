@@ -127,6 +127,10 @@ const updateCharge = sql<IUpdateChargeQuery>`
   optional_vat = COALESCE(
     $optionalVAT,
     optional_vat
+  ),
+  documents_optional_flag = COALESCE(
+    $optionalDocuments,
+    documents_optional_flag
   )
   WHERE
     id = $chargeId
@@ -143,8 +147,8 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 `;
 
 const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_status, user_description, tax_category_id, optional_vat)
-  VALUES ($ownerId, $type, $isProperty, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT)
+  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag)
+  VALUES ($ownerId, $type, $isProperty, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments)
   RETURNING *;
 `;
 
@@ -307,6 +311,7 @@ export class ChargesProvider {
       isProperty: false,
       userDescription: null,
       optionalVAT: false,
+      optionalDocuments: false,
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };

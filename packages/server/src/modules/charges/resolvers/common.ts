@@ -34,6 +34,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       })) ?? null
     );
   },
+  optionalVAT: DbCharge => DbCharge.optional_vat,
+  optionalDocuments: DbCharge => DbCharge.documents_optional_flag,
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {

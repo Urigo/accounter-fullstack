@@ -34,6 +34,7 @@ import { AccounterLoader, ListCapsule } from '../index.js';
       isInvoicePaymentDifferentCurrency
       userDescription
       optionalVAT
+      optionalDocuments
     }
   }
 `;
@@ -65,6 +66,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedOptionalVAT, setSelectedOptionalVAT] = useState<
+    { id: string; value: boolean } | undefined
+  >(undefined);
+  const [selectedOptionalDocuments, setSelectedOptionalDocuments] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedConversion, setSelectedConversion] = useState<
@@ -128,11 +132,21 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         isProperty: selectedProperty.value,
       };
     }
-    if (selectedOptionalVAT && selectedOptionalVAT.value !== mainCharge.property) {
+    if (selectedOptionalVAT && selectedOptionalVAT.value !== mainCharge.optionalVAT) {
       fields ??= {};
       fields = {
         ...fields,
         optionalVAT: selectedOptionalVAT.value,
+      };
+    }
+    if (
+      selectedOptionalDocuments &&
+      selectedOptionalDocuments.value !== mainCharge.optionalDocuments
+    ) {
+      fields ??= {};
+      fields = {
+        ...fields,
+        optionalDocuments: selectedOptionalDocuments.value,
       };
     }
     if (selectedTags && selectedTags.value !== mainCharge.tags.map(tag => tag.name).join(',')) {
@@ -219,6 +233,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedOptionalVAT({
                           id: charge.id,
                           value: charge.optionalVAT ?? false,
+                        });
+                        setSelectedOptionalDocuments({
+                          id: charge.id,
+                          value: charge.optionalDocuments ?? false,
                         });
                         setSelectedCurrencyDiff({
                           id: charge.id,
@@ -377,6 +395,41 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.optionalVAT ? (
+                        <SquareCheck size={20} color="green" />
+                      ) : (
+                        <SquareX size={20} color="red" />
+                      )}
+                    </div>
+                  </button>
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <th>Optional Documents</th>
+              {charges.map(charge => (
+                <td key={charge.id}>
+                  <button
+                    className="w-full px-2"
+                    disabled={
+                      charge.optionalDocuments == null ||
+                      charge.optionalDocuments === selectedOptionalDocuments?.value
+                    }
+                    onClick={(): void => {
+                      setSelectedOptionalDocuments({
+                        id: charge.id,
+                        value: charge.optionalDocuments ?? false,
+                      });
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center px-2 py-2 border-x-2"
+                      style={
+                        selectedOptionalDocuments?.id === charge.id
+                          ? { background: '#228be633' }
+                          : {}
+                      }
+                    >
+                      {charge.optionalDocuments ? (
                         <SquareCheck size={20} color="green" />
                       ) : (
                         <SquareX size={20} color="red" />
