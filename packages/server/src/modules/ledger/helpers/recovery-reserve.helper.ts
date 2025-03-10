@@ -1,4 +1,4 @@
-import { differenceInYears, endOfMonth, endOfYear } from 'date-fns';
+import { differenceInYears, endOfDay, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import { RecoveryProvider } from '@modules/salaries/providers/recovery.provider.js';
@@ -242,14 +242,22 @@ export async function calculateRecoveryReserveAmount(
   }
 
   const prevRecoveryReserveAmount = recoveryLedgerRecords.reduce((acc, record) => {
-    if (
-      record.credit_entity1 !== recoveryReserveTaxCategoryId ||
-      record.debit_entity1 !== recoveryReserveExpensesTaxCategoryId ||
-      record.value_date.getTime() >= new Date(year, 11, 31).getTime()
-    ) {
+    if (endOfDay(record.value_date).getTime() >= new Date(year, 11, 31).getTime()) {
       return acc;
     }
-    return acc + Number(record.credit_local_amount1);
+    let factor = 0;
+    if (
+      record.credit_entity1 === recoveryReserveTaxCategoryId ||
+      record.debit_entity1 === recoveryReserveExpensesTaxCategoryId
+    ) {
+      factor = 1;
+    } else if (
+      record.credit_entity1 === recoveryReserveExpensesTaxCategoryId ||
+      record.debit_entity1 === recoveryReserveTaxCategoryId
+    ) {
+      factor = -1;
+    }
+    return acc + Number(record.credit_local_amount1) * factor;
   }, 0);
   recoveryReserveAmount -= prevRecoveryReserveAmount;
   reservePrompt += `\n- Prev reserve: ${prevRecoveryReserveAmount}`;
