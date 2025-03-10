@@ -45,6 +45,8 @@ export const TransactionsTable = ({
     getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
   );
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
+
+  console.log(transactions);
   return (
     <>
       <table className="w-full h-full">
