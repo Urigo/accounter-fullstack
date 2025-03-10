@@ -284,7 +284,7 @@ __metadata:
     "@ai-sdk/anthropic": "npm:1.1.15"
     "@envelop/generic-auth": "npm:9.1.3"
     "@envelop/graphql-modules": "npm:7.1.3"
-    "@graphql-hive/yoga": "npm:0.40.1"
+    "@graphql-hive/yoga": "npm:0.41.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.13.1"
     "@pgtyped/cli": "npm:2.3.0"
     "@pgtyped/runtime": "npm:2.3.0"
@@ -3163,6 +3163,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-hive/core@npm:0.10.0":
+  version: 0.10.0
+  resolution: "@graphql-hive/core@npm:0.10.0"
+  dependencies:
+    "@graphql-tools/utils": "npm:^10.0.0"
+    "@whatwg-node/fetch": "npm:0.10.1"
+    async-retry: "npm:1.3.3"
+    lodash.sortby: "npm:4.7.0"
+    tiny-lru: "npm:8.0.2"
+  peerDependencies:
+    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/7cd8fc7e8b6af91884bd9a1ce2cc19abb2660da77ebb5f9c05ba2a042ed7e6294dc858b3876f92f6ad52e838fdb6dbaa790393b9e510f494b36db9981d6def2e
+  languageName: node
+  linkType: hard
+
 "@graphql-hive/core@npm:0.9.1":
   version: 0.9.1
   resolution: "@graphql-hive/core@npm:0.9.1"
@@ -3178,16 +3193,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/yoga@npm:0.40.1":
-  version: 0.40.1
-  resolution: "@graphql-hive/yoga@npm:0.40.1"
+"@graphql-hive/yoga@npm:0.41.0":
+  version: 0.41.0
+  resolution: "@graphql-hive/yoga@npm:0.41.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.9.1"
+    "@graphql-hive/core": "npm:0.10.0"
     "@graphql-yoga/plugin-persisted-operations": "npm:^3.9.0"
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-yoga: ^5.10.8
-  checksum: 10c0/22eb19596aa846aaee494a77bb0ba8ed239194611e111835c0a12ea19504805a551563b1d34dd730007a483e364612baf7b06cf0d53d271c102deeed38c7bb28
+  checksum: 10c0/d52e8234bbccdf9fadac028c53a3754bdd427317222cada1f9935b408746cfc84e1726f5def510e82668119bf7a150218e2576f12a062561ed723285faf3b316
   languageName: node
   linkType: hard
 
