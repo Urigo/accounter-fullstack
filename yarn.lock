@@ -124,7 +124,7 @@ __metadata:
     embla-carousel-react: "npm:8.5.2"
     lucide-react: "npm:0.479.0"
     next: "npm:15.2.1"
-    next-themes: "npm:0.4.4"
+    next-themes: "npm:0.4.5"
     react: "npm:19.0.0"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.0.0"
@@ -16690,13 +16690,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next-themes@npm:0.4.4":
-  version: 0.4.4
-  resolution: "next-themes@npm:0.4.4"
+"next-themes@npm:0.4.5":
+  version: 0.4.5
+  resolution: "next-themes@npm:0.4.5"
   peerDependencies:
     react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
     react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
-  checksum: 10c0/45d82f968ccfc90f6e6e3cdb95962132f6d1e19eaf614c4e824fc5d079ec522dd50cc196c58da2f000d755b81dbb0caf378c4f512a9e6b6c0a0daa3f99f1a2c7
+  checksum: 10c0/62c9523fbe88a21dd86b220a1492f4e99467d9fdbbcb8ae61e0b5403cc49bdd094ee57b7e18e897c5c2c7509b993ad4a0234115d7ee962bdfb1e450081269f38
   languageName: node
   linkType: hard
 
