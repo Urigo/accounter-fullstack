@@ -39,6 +39,7 @@ export const validateCharge = async (
   const dbDocumentsAreValid = !charge.invalid_documents;
   const documentsNotRequired =
     business?.no_invoices_required === true ||
+    charge.documents_optional_flag ||
     [
       ChargeTypeEnum.Salary,
       ChargeTypeEnum.InternalTransfer,
