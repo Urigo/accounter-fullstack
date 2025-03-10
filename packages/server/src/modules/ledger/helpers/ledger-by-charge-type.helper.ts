@@ -110,10 +110,7 @@ export async function ledgerUnbalancedBusinessesByCharge(
     case 'InternalTransferCharge':
       return undefined;
     case 'DividendCharge':
-      ///////////
-      // TODO //
-      //////////
-      return undefined;
+      throw new Error('DividendCharge is not supported yet');
     case 'BusinessTripCharge': {
       const businessTripAttendees = await injector
         .get(BusinessTripAttendeesProvider)
@@ -129,15 +126,9 @@ export async function ledgerUnbalancedBusinessesByCharge(
     case 'BankDepositCharge':
       throw new Error('BankDepositCharge is not supported yet');
     case 'CreditcardBankCharge':
-      ///////////
-      // TODO //
-      //////////
-      return undefined;
+      throw new Error('CreditcardBankCharge is not supported yet');
     case 'FinancialCharge':
-      ///////////
-      // TODO //
-      //////////
-      return undefined;
+      throw new Error('FinancialCharge is not supported yet');
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
