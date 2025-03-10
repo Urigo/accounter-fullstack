@@ -11,6 +11,7 @@ import {
   getExchangeDates,
   ledgerEntryFromDocument,
 } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
+import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -584,8 +585,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     }
 
+    const crossYearLedgerEntries = await handleCrossYearLedgerEntries(
+      charge,
+      context,
+      accountingLedgerEntries,
+    );
+
     const records = [
-      ...financialAccountLedgerEntries,
+      ...(crossYearLedgerEntries ?? financialAccountLedgerEntries),
       ...feeFinancialAccountLedgerEntries,
       ...accountingLedgerEntries,
       ...miscLedgerEntries,
