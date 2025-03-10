@@ -49,7 +49,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       defaultLocalCurrency,
       defaultTaxCategoryId,
       general: {
-        taxCategories: { incomeExchangeRateTaxCategoryId },
+        taxCategories: { incomeExchangeRateTaxCategoryId, exchangeRateTaxCategoryId },
       },
     },
   } = context;
@@ -405,6 +405,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           if (isIncomeCharge) {
             exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
           }
+        } else if (charge.documents_optional_flag) {
+          exchangeRateTaxCategory = exchangeRateTaxCategoryId;
         }
 
         // validate exchange rate
