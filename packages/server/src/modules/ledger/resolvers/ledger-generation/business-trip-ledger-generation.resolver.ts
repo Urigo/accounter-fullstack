@@ -338,7 +338,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     if (
       Math.abs(transactionsTotalLocalAmount) > AMOUNT_REQUIRING_DOCUMENT &&
-      accountingLedgerEntries.length === 0
+      accountingLedgerEntries.length === 0 &&
+      !charge.documents_optional_flag
     ) {
       errors.add(
         `Charge of more than ${AMOUNT_REQUIRING_DOCUMENT} ${defaultLocalCurrency} requires a document`,
