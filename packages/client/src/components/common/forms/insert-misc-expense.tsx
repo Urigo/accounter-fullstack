@@ -17,12 +17,11 @@ export const InsertMiscExpense = ({
   chargeId,
 }: Props): ReactElement => {
   const { insertMiscExpense, fetching } = useInsertMiscExpense();
-
   const onInsertDone = useCallback(
-    async (data: InsertMiscExpenseInput) => {
+    async (fields: InsertMiscExpenseInput) => {
       await insertMiscExpense({
         chargeId,
-        fields: data,
+        fields,
       });
       onDone();
     },
@@ -30,31 +29,20 @@ export const InsertMiscExpense = ({
   );
 
   return (
-    <InsertForm
-      chargeId={chargeId}
-      defaultValues={defaultValues}
-      onInsertDone={onInsertDone}
-      fetching={fetching}
-    />
+    <InsertForm defaultValues={defaultValues} onInsertDone={onInsertDone} fetching={fetching} />
   );
 };
 
 type FormProps = {
-  onInsertDone: (data: InsertMiscExpenseInput & { chargeId: string }) => Promise<void>;
-  chargeId: string;
+  onInsertDone: (data: InsertMiscExpenseInput) => Promise<void>;
   defaultValues: Partial<InsertMiscExpenseInput>;
   fetching: boolean;
 };
 
-export const InsertForm = ({
-  onInsertDone,
-  chargeId,
-  defaultValues,
-  fetching,
-}: FormProps): ReactElement => {
+const InsertForm = ({ onInsertDone, defaultValues, fetching }: FormProps): ReactElement => {
   const onSubmit: SubmitHandler<InsertMiscExpenseInput> = data => {
     if (data && Object.keys(data).length > 0) {
-      onInsertDone({ ...data, chargeId });
+      onInsertDone(data);
     }
   };
 
