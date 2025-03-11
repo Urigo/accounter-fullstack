@@ -1,6 +1,6 @@
 import type { Injector } from 'graphql-modules';
-import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { LLMProvider } from '@modules/app-providers/llm.js';
 import { Currency, DocumentType } from '@shared/enums';
 import type { IInsertDocumentsParams } from '../types.js';
 
@@ -62,7 +62,7 @@ export async function getOcrData(
     };
   }
 
-  const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file);
+  const draft = await injector.get(LLMProvider).extractInvoiceDetails(file);
 
   if (!draft) {
     throw new Error('No data returned from Anthropic OCR');

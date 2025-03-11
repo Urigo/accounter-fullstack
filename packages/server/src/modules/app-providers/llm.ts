@@ -51,7 +51,9 @@ function isSupportedFileType(value: string): value is SupportedFileType {
   scope: Scope.Singleton,
   global: true,
 })
-export class AnthropicProvider {
+export class LLMProvider {
+  model = anthropic('claude-3-7-sonnet-latest');
+
   /**
    * Convert File or Blob to Base64
    * @param fileOrBlob File or Blob to convert
@@ -78,7 +80,7 @@ export class AnthropicProvider {
       const fileData = await this.fileToBase64(fileOrBlob);
 
       const { object, usage } = await generateObject({
-        model: anthropic('claude-3-5-sonnet-20241022'),
+        model: this.model,
         schema: documentDataSchema,
         messages: [
           {
