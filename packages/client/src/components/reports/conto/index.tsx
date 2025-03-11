@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FolderPlus, Loader2 } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
@@ -18,7 +19,6 @@ import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
 import { SaveTemplate } from './conto-report-save-template.js';
@@ -188,7 +188,6 @@ export const ContoReport: React.FC = () => {
   const [lastId, setLastId] = useState(1);
   const [enableDnd, setEnableDnd] = useState(false);
   const [templateName, setTemplateName] = useState<string | undefined>(undefined);
-  const { toast } = useToast();
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<ContoReportFiltersType>(
     get(CONTO_REPORT_FILTERS_KEY)
@@ -448,35 +447,29 @@ export const ContoReport: React.FC = () => {
   useEffect(() => {
     if (sortCodesError) {
       console.error(sortCodesError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch sort codes',
-        variant: 'destructive',
       });
     }
-  }, [sortCodesError, toast]);
+  }, [sortCodesError]);
 
   useEffect(() => {
     if (businessesSumError) {
       console.error(businessesSumError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch businesses summary',
-        variant: 'destructive',
       });
     }
-  }, [businessesSumError, toast]);
+  }, [businessesSumError]);
 
   useEffect(() => {
     if (templateError) {
       console.error(templateError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch template',
-        variant: 'destructive',
       });
     }
-  }, [templateError, toast]);
+  }, [templateError]);
 
   const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
   const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);

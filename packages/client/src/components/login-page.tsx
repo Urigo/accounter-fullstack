@@ -1,13 +1,13 @@
 import { ReactElement, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { userService } from '../services/user-service.js';
 import { Button } from './ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form.js';
 import { Input } from './ui/input.js';
-import { useToast } from './ui/use-toast.js';
 
 const formSchema = z.object({
   username: z.string().min(2).max(50),
@@ -19,7 +19,6 @@ export function LoginPage(): ReactElement {
     userService.logout();
   }, []);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,17 +33,13 @@ export function LoginPage(): ReactElement {
       userService.login(values.username, values.password).then(_user => {
         navigate('/');
       });
-      toast({
-        title: 'Success',
+      toast.success('Success', {
         description: 'You have successfully logged in.',
-        variant: 'default',
       });
     } catch (error) {
       console.error(error);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Invalid credentials. Please try again.',
-        variant: 'destructive',
       });
     }
   }

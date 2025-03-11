@@ -1,5 +1,6 @@
 import { ReactElement, useContext, useEffect } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import {
   ColumnDef,
@@ -19,7 +20,6 @@ import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { useToast } from '../ui/use-toast.js';
 import { Name } from './cells/name.js';
 import { SortCode } from './cells/sort-code.js';
 
@@ -79,7 +79,6 @@ const columns: ColumnDef<RowType>[] = [
 ];
 
 export const TaxCategories = (): ReactElement => {
-  const { toast } = useToast();
   const [{ data, fetching, error }, refetchTaxCategories] = useQuery({
     query: AllTaxCategoriesForScreenDocument,
   });
@@ -114,13 +113,11 @@ export const TaxCategories = (): ReactElement => {
 
   useEffect(() => {
     if (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Error fetching tax categories',
-        variant: 'destructive',
       });
     }
-  }, [error, toast]);
+  }, [error]);
 
   return (
     <PageLayout
