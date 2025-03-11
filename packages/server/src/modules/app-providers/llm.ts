@@ -32,7 +32,7 @@ const documentDataSchema = z.object({
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
 });
 
-type DocumentData = z.infer<typeof documentDataSchema>;
+export type DocumentData = z.infer<typeof documentDataSchema>;
 
 const SUPPORTED_FILE_TYPES = [
   'image/jpeg',
