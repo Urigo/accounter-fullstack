@@ -25,7 +25,7 @@
     "dotenv": "16.4.7",
     "dotenv-cli": "8.0.0",
     "listr": "0.14.3",
-    "pg": "8.13.3"
+    "pg": "8.14.0"
   },
   "devDependencies": {
     "@types/listr": "0.14.9",
