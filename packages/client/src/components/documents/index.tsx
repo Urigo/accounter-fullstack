@@ -1,9 +1,14 @@
-import { ReactElement, useContext, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
-import { DocumentsDocument, DocumentsQuery } from '../../gql/graphql.js';
+import {
+  DocumentsFilters,
+  DocumentsScreenDocument,
+  DocumentsScreenQuery,
+} from '../../gql/graphql.js';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterTable, PopUpModal, UploadDocumentsModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
@@ -11,8 +16,8 @@ import { Button } from '../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query Documents {
-    documents {
+  query DocumentsScreen($filters: DocumentsFilters!) {
+    documentsByFilters(filters: $filters) {
       id
       image
       file
@@ -63,12 +68,46 @@ import { Button } from '../ui/button.js';
 `;
 
 export const DocumentsReport = (): ReactElement => {
-  const [{ data, fetching }, reexecuteQuery] = useQuery({ query: DocumentsDocument });
   const [openedImage, setOpenedImage] = useState<string | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const { get } = useUrlQuery();
+  const uriFilters = get('chargesFilters');
+  const initialFilters = useMemo(() => {
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as DocumentsFilters;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [uriFilters]);
+  const [filter, setFilter] = useState<DocumentsFilters | undefined>(initialFilters);
   const { setFiltersContext } = useContext(FiltersContext);
 
-  setFiltersContext(null);
+  const [{ data, fetching }, refetchDocuments] = useQuery({
+    query: DocumentsScreenDocument,
+    variables: {
+      filters: filter ?? {},
+    },
+    pause: true,
+  });
+
+  // refetch charges on filter change
+  useEffect(() => {
+    if (filter) {
+      refetchDocuments();
+    }
+  }, [filter, refetchDocuments]);
+
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <DocumentsFilters filter={filter} setFilter={setFilter} initiallyOpened={!filter} />
+      </div>,
+    );
+  }, [fetching, filter, setFiltersContext, setFilter, initialFilters]);
 
   return (
     <PageLayout
@@ -83,7 +122,7 @@ export const DocumentsReport = (): ReactElement => {
           <UploadDocumentsModal
             open={uploadModalOpen}
             onOpenChange={setUploadModalOpen}
-            onChange={reexecuteQuery}
+            onChange={refetchDocuments}
           />
           {openedImage && (
             <PopUpModal
@@ -95,7 +134,7 @@ export const DocumentsReport = (): ReactElement => {
           )}
           <AccounterTable
             stickyHeader
-            items={data?.documents ?? ([] as DocumentsQuery['documents'])}
+            items={data?.documents ?? ([] as DocumentsScreenQuery['documents'])}
             columns={[
               { title: 'Type', value: doc => doc.__typename },
               {
