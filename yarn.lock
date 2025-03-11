@@ -56,7 +56,7 @@ __metadata:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@pgtyped/cli": "npm:2.3.0"
     "@pgtyped/runtime": "npm:2.3.0"
-    "@sinclair/typebox": "npm:0.34.29"
+    "@sinclair/typebox": "npm:0.34.30"
     "@types/listr": "npm:0.14.9"
     "@types/pg": "npm:8.11.11"
     date-fns: "npm:4.1.0"
@@ -7559,10 +7559,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sinclair/typebox@npm:0.34.29":
-  version: 0.34.29
-  resolution: "@sinclair/typebox@npm:0.34.29"
-  checksum: 10c0/90f41e78e1963abd91eaa4c8be792401b1482790650c7440752312bbf0f199196660defd8e30e2d10854289851baafe47799d0ce72aa43c273cd39a3e6f61204
+"@sinclair/typebox@npm:0.34.30":
+  version: 0.34.30
+  resolution: "@sinclair/typebox@npm:0.34.30"
+  checksum: 10c0/1d85b34bb727061290409e550ce5effb127d41060567d92ed187c61d7885dbf06b14e2623b6baff4164c418e29bf9f9eb0d3c21671257c3f6d36736a1fc05e98
   languageName: node
   linkType: hard
 
