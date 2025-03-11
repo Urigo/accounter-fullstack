@@ -115,4 +115,62 @@ export class LLMProvider {
       throw error;
     }
   }
+
+  /**
+   * Match a document to a transaction
+   * @param document The document to match
+   * @returns The matched transaction
+   */
+  async matchDocumentToTransaction(
+    document: DocumentData,
+    transactions: { id: string }[],
+  ): Promise<{ id: string } | null> {
+    const schema = z.object({
+      matchedTransactionId: z.string().nullable().describe('The ID of the matched transaction'),
+      rationale: z
+        .string()
+        .nullable()
+        .describe('Concise explanation of why the document was matched to the transaction'),
+    });
+
+    const { object, usage } = await generateObject({
+      model: this.model,
+      schema,
+      system: stripIndent(`
+        You are a helpful assistant that matches a document to a transaction for accounting purposes.
+        You will be given a document and a list of transactions.
+        You will need to match the document to the correct transaction.
+        It's possible that the document doesn't match any transaction. Return NULL if that's the case.
+      `),
+      prompt: stripIndent(`
+        Here is the data that was extracted from the document:
+        <document>
+        ${JSON.stringify(document)}
+        </document>
+
+        Here is the list of transactions:
+        <transactions>
+        ${transactions
+          .map(
+            transaction => `
+        <transaction>
+        ${JSON.stringify(transaction)}
+        </transaction>
+        `,
+          )
+          .join('\n')}
+        </transactions>
+      `),
+    });
+
+    console.log('Usage:', usage);
+    console.log('Result:', object);
+
+    const matchedTransactionId = object.matchedTransactionId;
+    const matchedTransaction = transactions.find(
+      transaction => transaction.id === matchedTransactionId,
+    );
+
+    return matchedTransaction ?? null;
+  }
 }
