@@ -109,7 +109,7 @@ const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTra
       invoiceDate: format(new Date(t.documentDate!), 'yyyyMMdd'),
       refGroup: '0000',
       refNumber: t.documentSerial ?? undefined,
-      totalVat: Math.round(Math.abs(Number(t.foreignVatAfterDeduction ?? 0))),
+      totalVat: Math.round(Math.abs(Number(t.roundedVATToAdd ?? 0))),
       invoiceSum: Math.round(Number(t.localAmountBeforeVAT)),
       isProperty: t.isProperty,
     });
