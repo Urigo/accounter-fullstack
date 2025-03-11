@@ -38,6 +38,8 @@ export const AccountantApprovals = (): ReactElement => {
             field: ChargeSortByField.Date,
             asc: false,
           },
+          toAnyDate: null,
+          fromAnyDate: null,
         },
   );
 

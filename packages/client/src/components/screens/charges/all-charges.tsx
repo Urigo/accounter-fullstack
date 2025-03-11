@@ -98,7 +98,7 @@ export const AllCharges = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <ChargesFilters
-          filter={filter ?? {}}
+          filter={filter}
           setFilter={setFilter}
           activePage={activePage}
           setPage={setActivePage}
@@ -129,9 +129,9 @@ export const AllCharges = (): ReactElement => {
 
   return (
     <PageLayout title="All Charges" description="Manage charges">
-      {!data?.allCharges.nodes || fetching ? (
+      {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : (
+      ) : data?.allCharges.nodes ? (
         <ChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
@@ -141,6 +141,8 @@ export const AllCharges = (): ReactElement => {
           data={data?.allCharges?.nodes}
           isAllOpened={isAllOpened}
         />
+      ) : (
+        <span>Please apply filters</span>
       )}
       {editChargeId && (
         <EditChargeModal

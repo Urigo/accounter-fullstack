@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { format } from 'date-fns';
+import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -30,6 +30,7 @@ import {
   ChargeFilterType,
   ChargeSortByField,
 } from '../../gql/graphql.js';
+import { TimelessDateString } from '../../helpers/dates.js';
 import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
@@ -75,6 +76,8 @@ function ChargesFiltersForm({
         field: ChargeSortByField.Date,
         asc: false,
       },
+      toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
+      fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
       ...filter,
     },
   });
@@ -428,7 +431,7 @@ function ChargesFiltersForm({
 }
 
 interface ChargesFiltersProps {
-  filter: ChargeFilter;
+  filter?: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;
   activePage: number;
   totalPages?: number;
@@ -437,7 +440,7 @@ interface ChargesFiltersProps {
 }
 
 export function ChargesFilters({
-  filter,
+  filter = {},
   setFilter,
   activePage,
   setPage,

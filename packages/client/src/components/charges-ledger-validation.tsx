@@ -1,18 +1,11 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { format, sub } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
-import {
-  ChargeFilter,
-  ChargesLedgerValidationDocument,
-  ChargeSortByField,
-} from '../gql/graphql.js';
-import { TimelessDateString } from '../helpers/dates.js';
+import { ChargeFilter, ChargesLedgerValidationDocument } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
-import { UserContext } from '../providers/user-provider.js';
 import { ChargesFilters } from './charges/charges-filters.js';
 import { ChargesTable } from './charges/charges-table.js';
 import {
@@ -52,20 +45,19 @@ export const ChargesLedgerValidation = (): ReactElement => {
     Array<{ id: string; onChange: () => void }>
   >([]);
   const { get } = useUrlQuery();
-  const { userContext } = useContext(UserContext);
-  const [filter, setFilter] = useState<ChargeFilter>(
-    get('chargesFilters')
-      ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
-      : {
-          byOwners: userContext?.ownerId ? [userContext.ownerId] : [],
-          sortBy: {
-            field: ChargeSortByField.Date,
-            asc: false,
-          },
-          toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
-          fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
-        },
-  );
+  const uriFilters = get('chargesFilters');
+  const initialFilters = useMemo(() => {
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as ChargeFilter;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [uriFilters]);
+  const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
 
   const toggleMergeCharge = useCallback(
     (chargeId: string, onChange: () => void) => {
@@ -87,6 +79,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
     pause: true,
   });
 
+  console.log(fetching, filter);
+
   function onResetMerge(): void {
     setMergeSelectedCharges([]);
   }
@@ -101,11 +95,17 @@ export const ChargesLedgerValidation = (): ReactElement => {
 
   const onFilterChange = useCallback(
     (newFilter: ChargeFilter): void => {
+      console.log('onFilterChange');
       setFilter(newFilter);
-      validateLedger();
     },
-    [setFilter, validateLedger],
+    [setFilter],
   );
+
+  useEffect(() => {
+    if (filter) {
+      validateLedger();
+    }
+  }, [filter, validateLedger]);
 
   useEffect(() => {
     setFiltersContext(
@@ -146,30 +146,32 @@ export const ChargesLedgerValidation = (): ReactElement => {
 
   return (
     <PageLayout title="Charges Ledger Validation" description="Manage charges">
-      {fetching && <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />}
-      {!fetching && (
-        <ChargesTable
-          setEditChargeId={setEditChargeId}
-          setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-          data={
-            data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ?? []
-          }
-          isAllOpened={isAllOpened}
-        />
-      )}
-      {!fetching && (
-        <div className="flex flex-row justify-center my-2">
-          {progress < 100 && <Loader />}
-          {progress === 100 &&
-            !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
-              <ThemeIcon radius="xl" size="xl" color="green">
-                <Check />
-              </ThemeIcon>
-            )}
-        </div>
+      {fetching ? (
+        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+      ) : (
+        <>
+          <ChargesTable
+            setEditChargeId={setEditChargeId}
+            setInsertDocument={setInsertDocument}
+            setMatchDocuments={setMatchDocuments}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
+            data={
+              data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ??
+              []
+            }
+            isAllOpened={isAllOpened}
+          />
+          <div className="flex flex-row justify-center my-2">
+            {progress > 0 && progress < 100 && <Loader />}
+            {progress === 100 &&
+              !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
+                <ThemeIcon radius="xl" size="xl" color="green">
+                  <Check />
+                </ThemeIcon>
+              )}
+          </div>
+        </>
       )}
       {editChargeId && (
         <EditChargeModal
