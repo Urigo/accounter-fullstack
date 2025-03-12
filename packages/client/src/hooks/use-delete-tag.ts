@@ -16,7 +16,7 @@ type UseDeleteTag = {
   deleteTag: (variables: DeleteTagMutationVariables & { name: string }) => Promise<void>;
 };
 
-const NOTIFICATION_ID = '________';
+const NOTIFICATION_ID = 'deleteTag';
 
 export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add authentication
