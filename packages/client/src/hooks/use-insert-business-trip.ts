@@ -22,7 +22,7 @@ type UseInsertBusinessTrip = {
   ) => Promise<InsertBusinessTripMutation['insertBusinessTrip'] | void>;
 };
 
-const NOTIFICATION_ID = '________';
+const NOTIFICATION_ID = 'insertBusinessTrip';
 
 export const useInsertBusinessTrip = (): UseInsertBusinessTrip => {
   // TODO: add authentication
