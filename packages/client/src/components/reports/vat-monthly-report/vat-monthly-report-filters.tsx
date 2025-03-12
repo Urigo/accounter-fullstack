@@ -2,17 +2,12 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
-import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import {
-  AllFinancialEntitiesDocument,
-  ChargeFilterType,
-  VatReportFilter,
-} from '../../../gql/graphql.js';
+import { ChargeFilterType, VatReportFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
+import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
@@ -32,17 +27,8 @@ function VatMonthlyReportFilterForm({
   const { control, handleSubmit, setValue } = useForm<VatReportFilter>({
     defaultValues: { ...filter },
   });
-  const [{ data: feData, fetching: feLoading, error: feError }] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
-
-  useEffect(() => {
-    if (feError) {
-      toast.error('Error', {
-        description: 'Oh no!, we have an error fetching financial entities! 🤥',
-      });
-    }
-  }, [feError]);
+  const { selectableFinancialEntities: financialEntities, fetching: feLoading } =
+    useGetFinancialEntities();
 
   const onSubmit: SubmitHandler<VatReportFilter> = data => {
     setFilter(data);
@@ -72,12 +58,7 @@ function VatMonthlyReportFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
-              data={
-                feData?.allFinancialEntities?.nodes.map(entity => ({
-                  value: entity.id,
-                  label: entity.name,
-                })) ?? []
-              }
+              data={financialEntities}
               value={field.value}
               disabled={feLoading}
               label="Financial Entities"

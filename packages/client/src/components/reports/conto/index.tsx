@@ -7,12 +7,12 @@ import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-d
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
 import {
-  AllSortCodesDocument,
   AllSortCodesQuery,
   ContoReportDocument,
   ContoReportQuery,
   TemplateForContoReportDocument,
 } from '../../../gql/graphql.js';
+import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Tooltip } from '../../common/index.js';
@@ -214,9 +214,7 @@ export const ContoReport: React.FC = () => {
   });
 
   // Sort codes array handle
-  const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
-    query: AllSortCodesDocument,
-  });
+  const { sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
 
   // new template structure fetch
   const [{ data: templateData, fetching: fetchingTemplate, error: templateError }, fetchTemplate] =
@@ -385,16 +383,6 @@ export const ContoReport: React.FC = () => {
     );
   }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree, templateName]);
 
-  const sortCodes = useMemo(() => {
-    if (sortCodesData?.allSortCodes) {
-      const sortCodes = sortCodesData.allSortCodes
-        .filter(code => !!code.name)
-        .sort((a, b) => (a.id > b.id ? 1 : -1));
-      return sortCodes;
-    }
-    return [];
-  }, [sortCodesData]);
-
   const businessesSum = useMemo(() => {
     if (
       businessTransactionsSumData &&
@@ -443,16 +431,6 @@ export const ContoReport: React.FC = () => {
     reorderTree();
   }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, reorderTree]);
 
-  // error handling
-  useEffect(() => {
-    if (sortCodesError) {
-      console.error(sortCodesError);
-      toast.error('Error', {
-        description: 'Unable to fetch sort codes',
-      });
-    }
-  }, [sortCodesError]);
-
   useEffect(() => {
     if (businessesSumError) {
       console.error(businessesSumError);
@@ -476,14 +454,9 @@ export const ContoReport: React.FC = () => {
 
   const fetching = useMemo(
     () =>
-      (!sortCodesData && fetchingSortCodes) ||
+      (!sortCodes && fetchingSortCodes) ||
       (!businessTransactionsSumData && businessTransactionsSumFetching),
-    [
-      sortCodesData,
-      fetchingSortCodes,
-      businessTransactionsSumData,
-      businessTransactionsSumFetching,
-    ],
+    [sortCodes, fetchingSortCodes, businessTransactionsSumData, businessTransactionsSumFetching],
   );
 
   return (

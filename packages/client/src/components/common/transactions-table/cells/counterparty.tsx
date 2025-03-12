@@ -1,12 +1,8 @@
-import { ReactElement, useCallback, useMemo, useState } from 'react';
+import { ReactElement, useCallback, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
-import { useQuery } from 'urql';
-import {
-  AllBusinessesDocument,
-  ChargeFilter,
-  TransactionsTableEntityFieldsFragmentDoc,
-} from '../../../../gql/graphql.js';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { InsertBusiness } from '../../../common/modals/insert-business.js';
@@ -107,20 +103,11 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [encodedFilters],
   );
 
-  const [{ data: businessesData }] = useQuery({ query: AllBusinessesDocument });
+  const { selectableBusinesses: selectOptions, fetching: businessesLoading } = useGetBusinesses();
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
 
   const [search, setSearch] = useState<string | null>(sourceDescription);
-
-  const selectOptions = useMemo(
-    () =>
-      businessesData?.allBusinesses?.nodes.map(node => ({
-        value: node.id,
-        label: node.name,
-      })) || [],
-    [businessesData],
-  );
 
   return (
     <td>
@@ -145,7 +132,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
                 variant="outline"
                 size="icon"
                 onClick={() => selectedBusinessId && updateBusiness(selectedBusinessId)}
-                disabled={fetching || !selectedBusinessId}
+                disabled={fetching || businessesLoading || !selectedBusinessId}
               >
                 <CheckIcon className="size-4" />
               </Button>

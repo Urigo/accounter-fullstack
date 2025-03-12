@@ -1,16 +1,11 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { toast } from 'sonner';
-import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import { DatePickerInput, DateTimePicker } from '@mantine/dates';
-import {
-  AllFinancialEntitiesDocument,
-  type InsertMiscExpenseInput,
-  type UpdateMiscExpenseInput,
-} from '../../../gql/graphql.js';
+import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
+import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
@@ -23,40 +18,9 @@ export const ModifyMiscExpenseFields = ({
   isInsert,
 }: Props<boolean>): ReactElement => {
   const { control } = formManager;
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
 
-  const [
-    {
-      data: financialEntitiesData,
-      fetching: fetchingFinancialEntities,
-      error: financialEntitiesError,
-    },
-  ] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
-
-  useEffect(() => {
-    if (financialEntitiesError) {
-      toast.error('Error', {
-        description: 'Oh no!, we have an error fetching financial entities! 🤥',
-      });
-    }
-  }, [financialEntitiesError]);
-
-  useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        financialEntitiesData.allFinancialEntities.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [financialEntitiesData, setFinancialEntities]);
+  const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
+    useGetFinancialEntities();
 
   return (
     <>
