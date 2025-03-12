@@ -2,11 +2,11 @@ import { ReactElement, useCallback, useContext, useEffect, useState } from 'reac
 import { format, startOfYear } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, MultiSelect } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -63,9 +63,8 @@ function SalariesFiltersForm({
 
   useEffect(() => {
     if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching employees! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching employees! 🤥',
       });
     }
   }, [financialEntitiesError]);

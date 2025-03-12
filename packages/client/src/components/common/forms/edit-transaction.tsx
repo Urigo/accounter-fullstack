@@ -1,10 +1,10 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
   EditTransactionDocument,
@@ -90,10 +90,8 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
 
   useEffect(() => {
     if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
-        color: 'red',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
   }, [financialEntitiesError]);

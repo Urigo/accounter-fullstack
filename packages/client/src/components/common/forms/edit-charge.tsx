@@ -1,8 +1,8 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessesDocument,
   AllBusinessTripsDocument,
@@ -84,10 +84,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
 
   useEffect(() => {
     if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching businesses! 🤥',
-      });
+      toast.error('Error', { description: 'An error occurred while fetching businesses.' });
     }
   }, [businessesError]);
 
@@ -113,10 +110,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
 
   useEffect(() => {
     if (taxCategoriesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tax categories! 🤥',
-      });
+      toast.error('Error', { description: 'An error occurred while fetching tax categories.' });
     }
   }, [taxCategoriesError]);
 
@@ -148,10 +142,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
 
   useEffect(() => {
     if (businessTripsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching business trips! 🤥',
-      });
+      toast.error('Error', { description: 'An error occurred while fetching business trips.' });
     }
   }, [businessTripsError]);
 

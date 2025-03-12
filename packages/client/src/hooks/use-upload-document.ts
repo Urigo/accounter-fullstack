@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UploadDocumentDocument,
   UploadDocumentMutation,
   UploadDocumentMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -35,58 +37,52 @@ type UseUploadDocument = {
   fetching: boolean;
   uploadDocument: (
     variables: UploadDocumentMutationVariables,
-  ) => Promise<UploadDocumentSuccessfulResult>;
+  ) => Promise<UploadDocumentSuccessfulResult | void>;
 };
+
+const NOTIFICATION_ID = 'uploadDocument';
 
 export const useUploadDocument = (): UseUploadDocument => {
   // TODO: add authentication
   // TODO: add local data update method after upload
 
   const [{ fetching }, mutate] = useMutation(UploadDocumentDocument);
+  const uploadDocument = useCallback(
+    async (variables: UploadDocumentMutationVariables) => {
+      const message =
+        'Error uploading document' + variables.chargeId
+          ? ` to charge ID [${variables.chargeId}]`
+          : '';
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
+      toast.loading('Uploading Document', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'uploadDocument');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Your document was added',
+          });
+          return data.uploadDocument;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    uploadDocument: (
-      variables: UploadDocumentMutationVariables,
-    ): Promise<UploadDocumentSuccessfulResult> =>
-      new Promise<UploadDocumentSuccessfulResult>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(
-              `Error uploading document to charge ID [${variables.chargeId}]: ${res.error}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error uploading document to charge ID [${variables.chargeId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.uploadDocument.__typename === 'CommonError') {
-            console.error(
-              `Error uploading document to charge ID [${variables.chargeId}]: ${res.data.uploadDocument.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.uploadDocument.message);
-          }
-          showNotification({
-            title: 'Upload Success!',
-            message: 'Your document was added! 🎉',
-          });
-          return resolve(res.data.uploadDocument);
-        }),
-      ),
+    uploadDocument,
   };
 };

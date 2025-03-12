@@ -1,10 +1,10 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import { DatePickerInput, DateTimePicker } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
   type InsertMiscExpenseInput,
@@ -39,10 +39,8 @@ export const ModifyMiscExpenseFields = ({
 
   useEffect(() => {
     if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
-        color: 'red',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
   }, [financialEntitiesError]);

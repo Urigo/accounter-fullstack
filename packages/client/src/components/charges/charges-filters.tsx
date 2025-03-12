@@ -10,6 +10,7 @@ import {
 import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import {
@@ -22,7 +23,6 @@ import {
   Switch,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
   AllTagsDocument,
@@ -114,18 +114,16 @@ function ChargesFiltersForm({
 
   useEffect(() => {
     if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
   }, [financialEntitiesError]);
 
   useEffect(() => {
     if (tagsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tags! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching tags! 🤥',
       });
     }
   }, [tagsError]);

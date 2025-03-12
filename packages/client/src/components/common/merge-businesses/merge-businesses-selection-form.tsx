@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   FetchMultipleBusinessesDocument,
   FetchMultipleBusinessesQuery,
@@ -49,16 +49,14 @@ export function MergeBusinessesSelectionForm({
 
   const onMergeBusinesses = useCallback(async () => {
     if (!mainBusiness) {
-      showNotification({
-        message: 'No main business selected',
-        color: 'red',
+      toast.error('Error', {
+        description: 'No main business selected',
       });
       return;
     }
     if (distinctBusinessIDs.length < 2) {
-      showNotification({
-        message: 'At least 2 businesses are required to execute a merge',
-        color: 'red',
+      toast.error('Error', {
+        description: 'At least 2 businesses are required to execute a merge',
       });
       return;
     }

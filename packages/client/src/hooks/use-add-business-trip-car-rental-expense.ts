@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   AddBusinessTripCarRentalExpenseDocument,
   AddBusinessTripCarRentalExpenseMutation,
   AddBusinessTripCarRentalExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,45 +19,48 @@ type UseAddBusinessTripCarRentalExpense = {
   fetching: boolean;
   addBusinessTripCarRentalExpense: (
     variables: AddBusinessTripCarRentalExpenseMutationVariables,
-  ) => Promise<AddBusinessTripCarRentalExpenseMutation['addBusinessTripCarRentalExpense']>;
+  ) => Promise<AddBusinessTripCarRentalExpenseMutation['addBusinessTripCarRentalExpense'] | void>;
 };
+
+const NOTIFICATION_ID = 'addBusinessTripCarRentalExpense';
 
 export const useAddBusinessTripCarRentalExpense = (): UseAddBusinessTripCarRentalExpense => {
   // TODO: add authentication
   // TODO: add local data update method after update
 
   const [{ fetching }, mutate] = useMutation(AddBusinessTripCarRentalExpenseDocument);
+  const addBusinessTripCarRentalExpense = useCallback(
+    async (variables: AddBusinessTripCarRentalExpenseMutationVariables) => {
+      const message = 'Error adding business trip car rental expense';
+      toast.loading('Adding car rental expense...', {
+        id: NOTIFICATION_ID,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, NOTIFICATION_ID);
+        if (data) {
+          toast.success('Success', {
+            id: NOTIFICATION_ID,
+            description: 'Car rental expense added',
+          });
+          return data.addBusinessTripCarRentalExpense;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: NOTIFICATION_ID,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    addBusinessTripCarRentalExpense: (
-      variables: AddBusinessTripCarRentalExpenseMutationVariables,
-    ): Promise<AddBusinessTripCarRentalExpenseMutation['addBusinessTripCarRentalExpense']> =>
-      new Promise<AddBusinessTripCarRentalExpenseMutation['addBusinessTripCarRentalExpense']>(
-        (resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(`Error adding business trip car rental expense: ${res.error}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, car rental expense was not added',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error('Error adding business trip car rental expense: No data returned');
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, car rental expense was not added',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Success!',
-              message: 'Business trip car rental expense was added! 🎉',
-            });
-            return resolve(res.data.addBusinessTripCarRentalExpense);
-          }),
-      ),
+    addBusinessTripCarRentalExpense,
   };
 };
