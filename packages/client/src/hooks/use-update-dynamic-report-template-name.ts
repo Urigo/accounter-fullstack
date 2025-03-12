@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import {
   UpdateDynamicReportTemplateNameDocument,
   UpdateDynamicReportTemplateNameMutation,
   UpdateDynamicReportTemplateNameMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -23,7 +25,7 @@ type UseUpdateDynamicReportTemplateName = {
   fetching: boolean;
   updateDynamicReportTemplateName: (
     variables: UpdateDynamicReportTemplateNameMutationVariables,
-  ) => Promise<UpdateDynamicReportTemplateName>;
+  ) => Promise<UpdateDynamicReportTemplateName | void>;
 };
 
 const NOTIFICATION_ID = 'updateDynamicReportTemplateName';
@@ -33,64 +35,39 @@ export const useUpdateDynamicReportTemplateName = (): UseUpdateDynamicReportTemp
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateDynamicReportTemplateNameDocument);
+  const updateDynamicReportTemplateName = useCallback(
+    async (variables: UpdateDynamicReportTemplateNameMutationVariables) => {
+      const message = `Error updating report template "${variables.name}" to "${variables.newName}"`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.name}`;
+      toast.loading('Updating report template name', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: `Report template "${data.updateDynamicReportTemplateName.name}" updated`,
+          });
+          return data.updateDynamicReportTemplateName;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateDynamicReportTemplateName: (
-      variables: UpdateDynamicReportTemplateNameMutationVariables,
-    ): Promise<UpdateDynamicReportTemplateName> =>
-      new Promise<UpdateDynamicReportTemplateName>((resolve, reject) => {
-        notifications.show({
-          id: NOTIFICATION_ID,
-          loading: true,
-          title: 'Updating report template name',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-
-        const genericErrorMessage = `Error updating report template "${variables.name}" to "${variables.newName}"`;
-
-        return mutate(variables)
-          .then(res => {
-            if (res.error) {
-              console.error(`${genericErrorMessage}: ${res.error}`);
-              notifications.update({
-                id: NOTIFICATION_ID,
-                message: genericErrorMessage,
-                color: 'red',
-                autoClose: 5000,
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error(`${genericErrorMessage}: No data returned`);
-              notifications.update({
-                id: NOTIFICATION_ID,
-                message: genericErrorMessage,
-                color: 'red',
-                autoClose: 5000,
-              });
-              return reject('No data returned');
-            }
-            notifications.update({
-              id: NOTIFICATION_ID,
-              autoClose: 5000,
-              message: `Report template "${res.data.updateDynamicReportTemplateName.name}" updated`,
-              withCloseButton: true,
-            });
-            return resolve(res.data.updateDynamicReportTemplateName);
-          })
-          .catch(error => {
-            console.error(`${genericErrorMessage}: ${error}`);
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Error!',
-              message: genericErrorMessage,
-              color: 'red',
-              autoClose: 5000,
-            });
-          });
-      }),
+    updateDynamicReportTemplateName,
   };
 };

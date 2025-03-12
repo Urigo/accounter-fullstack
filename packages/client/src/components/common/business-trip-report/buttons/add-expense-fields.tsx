@@ -1,10 +1,10 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AddBusinessTripFlightsExpenseInput,
   AttendeesByBusinessTripDocument,
@@ -50,9 +50,8 @@ export function AddExpenseFields({
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oops, we have an error fetching attendees',
+      toast.error('Error', {
+        description: 'Oops, we have an error fetching attendees',
       });
     }
   }, [error]);

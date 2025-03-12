@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   DeleteMiscExpenseDocument,
   DeleteMiscExpenseMutation,
   DeleteMiscExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,52 +19,49 @@ type UseDeleteMiscExpense = {
   fetching: boolean;
   deleteMiscExpense: (
     variables: DeleteMiscExpenseMutationVariables,
-  ) => Promise<DeleteMiscExpenseMutation['deleteMiscExpense']>;
+  ) => Promise<DeleteMiscExpenseMutation['deleteMiscExpense'] | void>;
 };
+
+const NOTIFICATION_ID = 'deleteMiscExpense';
 
 export const useDeleteMiscExpense = (): UseDeleteMiscExpense => {
   // TODO: add authentication
   // TODO: add local data update method after deletion
 
   const [{ fetching }, mutate] = useMutation(DeleteMiscExpenseDocument);
+  const deleteMiscExpense = useCallback(
+    async (variables: DeleteMiscExpenseMutationVariables) => {
+      const message = 'Error deleting misc expense';
+      const notificationId = `${NOTIFICATION_ID}-${variables.id}`;
+      toast.loading('Deleting misc expense', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Misc expense was deleted successfully',
+          });
+          return data.deleteMiscExpense;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    deleteMiscExpense: (
-      variables: DeleteMiscExpenseMutationVariables,
-    ): Promise<DeleteMiscExpenseMutation['deleteMiscExpense']> =>
-      new Promise<DeleteMiscExpenseMutation['deleteMiscExpense']>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error deleting misc expense: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error('Error deleting misc expense: No data returned');
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.deleteMiscExpense === false) {
-            console.error("Error deleting misc expense: Received 'false' from server");
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject("Received 'false' from server");
-          }
-          showNotification({
-            title: 'Deletion Success!',
-            message: 'Misc expense was deleted successfully! 🎉',
-          });
-          return resolve(res.data.deleteMiscExpense);
-        }),
-      ),
+    deleteMiscExpense,
   };
 };

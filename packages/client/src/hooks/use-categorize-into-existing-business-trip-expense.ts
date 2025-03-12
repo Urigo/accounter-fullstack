@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   CategorizeIntoExistingBusinessTripExpenseDocument,
   CategorizeIntoExistingBusinessTripExpenseMutation,
   CategorizeIntoExistingBusinessTripExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,9 +22,12 @@ type UseCategorizeIntoExistingBusinessTripExpense = {
   categorizeIntoExistingBusinessTripExpense: (
     variables: CategorizeIntoExistingBusinessTripExpenseMutationVariables,
   ) => Promise<
-    CategorizeIntoExistingBusinessTripExpenseMutation['categorizeIntoExistingBusinessTripExpense']
+    | CategorizeIntoExistingBusinessTripExpenseMutation['categorizeIntoExistingBusinessTripExpense']
+    | void
   >;
 };
+
+const NOTIFICATION_ID = 'categorizeIntoExistingBusinessTripExpense';
 
 export const useCategorizeIntoExistingBusinessTripExpense =
   (): UseCategorizeIntoExistingBusinessTripExpense => {
@@ -30,40 +35,39 @@ export const useCategorizeIntoExistingBusinessTripExpense =
     // TODO: add local data update method after update
 
     const [{ fetching }, mutate] = useMutation(CategorizeIntoExistingBusinessTripExpenseDocument);
+    const categorizeIntoExistingBusinessTripExpense = useCallback(
+      async (variables: CategorizeIntoExistingBusinessTripExpenseMutationVariables) => {
+        const message = 'Error updating business trip expense category';
+        const notificationId = NOTIFICATION_ID;
+        toast.loading('Updating business trip expense category', {
+          id: notificationId,
+        });
+        try {
+          const res = await mutate(variables);
+          const data = handleCommonErrors(res, message, notificationId);
+          if (data) {
+            toast.success('Success', {
+              id: notificationId,
+              description: 'Business trip expense category was updated',
+            });
+            return data.categorizeIntoExistingBusinessTripExpense;
+          }
+        } catch (e) {
+          console.error(`${message}: ${e}`);
+          toast.error('Error', {
+            id: notificationId,
+            description: message,
+            duration: 100_000,
+            closeButton: true,
+          });
+        }
+        return void 0;
+      },
+      [mutate],
+    );
 
     return {
       fetching,
-      categorizeIntoExistingBusinessTripExpense: (
-        variables: CategorizeIntoExistingBusinessTripExpenseMutationVariables,
-      ): Promise<
-        CategorizeIntoExistingBusinessTripExpenseMutation['categorizeIntoExistingBusinessTripExpense']
-      > =>
-        new Promise<
-          CategorizeIntoExistingBusinessTripExpenseMutation['categorizeIntoExistingBusinessTripExpense']
-        >((resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(`Error updating business trip expense category: ${res.error}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, expense category was not updated',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error('Error updating business trip expense category: No data returned');
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, expense category was not updated',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Update Success!',
-              message: 'Business trip expense category was updated! 🎉',
-            });
-            return resolve(res.data.categorizeIntoExistingBusinessTripExpense);
-          }),
-        ),
+      categorizeIntoExistingBusinessTripExpense,
     };
   };

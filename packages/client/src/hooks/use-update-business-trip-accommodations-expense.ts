@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateBusinessTripAccommodationsExpenseDocument,
   UpdateBusinessTripAccommodationsExpenseMutation,
   UpdateBusinessTripAccommodationsExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,9 +22,12 @@ type UseUpdateBusinessTripAccommodationsExpense = {
   updateBusinessTripAccommodationsExpense: (
     variables: UpdateBusinessTripAccommodationsExpenseMutationVariables,
   ) => Promise<
-    UpdateBusinessTripAccommodationsExpenseMutation['updateBusinessTripAccommodationsExpense']
+    | UpdateBusinessTripAccommodationsExpenseMutation['updateBusinessTripAccommodationsExpense']
+    | void
   >;
 };
+
+const NOTIFICATION_ID = 'updateBusinessTripAccommodationsExpense';
 
 export const useUpdateBusinessTripAccommodationsExpense =
   (): UseUpdateBusinessTripAccommodationsExpense => {
@@ -30,42 +35,39 @@ export const useUpdateBusinessTripAccommodationsExpense =
     // TODO: add local data update method after update
 
     const [{ fetching }, mutate] = useMutation(UpdateBusinessTripAccommodationsExpenseDocument);
+    const updateBusinessTripAccommodationsExpense = useCallback(
+      async (variables: UpdateBusinessTripAccommodationsExpenseMutationVariables) => {
+        const message = 'Error updating business trip accommodations expense';
+        const notificationId = NOTIFICATION_ID;
+        toast.loading('Updating trip accommodations expense', {
+          id: notificationId,
+        });
+        try {
+          const res = await mutate(variables);
+          const data = handleCommonErrors(res, message, notificationId);
+          if (data) {
+            toast.success('Success', {
+              id: notificationId,
+              description: 'Business trip accommodations expense was updated',
+            });
+            return data.updateBusinessTripAccommodationsExpense;
+          }
+        } catch (e) {
+          console.error(`${message}: ${e}`);
+          toast.error('Error', {
+            id: notificationId,
+            description: message,
+            duration: 100_000,
+            closeButton: true,
+          });
+        }
+        return void 0;
+      },
+      [mutate],
+    );
 
     return {
       fetching,
-      updateBusinessTripAccommodationsExpense: (
-        variables: UpdateBusinessTripAccommodationsExpenseMutationVariables,
-      ): Promise<
-        UpdateBusinessTripAccommodationsExpenseMutation['updateBusinessTripAccommodationsExpense']
-      > =>
-        new Promise<
-          UpdateBusinessTripAccommodationsExpenseMutation['updateBusinessTripAccommodationsExpense']
-        >((resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(`Error updating business trip accommodations expense: ${res.error}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, accommodations expense was not updated',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error(
-                'Error updating business trip accommodations expense: No data returned',
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, accommodations expense was not updated',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Update Success!',
-              message: 'Business trip accommodations expense was updated! 🎉',
-            });
-            return resolve(res.data.updateBusinessTripAccommodationsExpense);
-          }),
-        ),
+      updateBusinessTripAccommodationsExpense,
     };
   };

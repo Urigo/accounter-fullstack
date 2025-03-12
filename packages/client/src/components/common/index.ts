@@ -15,7 +15,6 @@ export * from './loader.js';
 export * from './merge-charges/index.js';
 export * from './merge-businesses/index.js';
 export * from './modals/index.js';
-export * from './notification.js';
 export * from './simple-grid.js';
 export * from './tooltip.js';
 export * from './transactions-table/index.js';

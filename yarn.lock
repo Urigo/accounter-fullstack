@@ -83,7 +83,6 @@ __metadata:
     "@mantine/dates": "npm:6.0.22"
     "@mantine/dropzone": "npm:6.0.22"
     "@mantine/hooks": "npm:6.0.22"
-    "@mantine/notifications": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.0"
     "@mui/material": "npm:6.4.7"
     "@mui/x-charts": "npm:7.27.1"
@@ -5264,21 +5263,6 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: 10c0/c9889e94070ca00f62b14e5d5fa3e74774e9d0c3cd30085a663a7ff39fa69e57654721fe32fcf80188fbd73d85a0379c4e2f192105dd5f94967cc2424fafb2cb
-  languageName: node
-  linkType: hard
-
-"@mantine/notifications@npm:6.0.22":
-  version: 6.0.22
-  resolution: "@mantine/notifications@npm:6.0.22"
-  dependencies:
-    "@mantine/utils": "npm:6.0.22"
-    react-transition-group: "npm:4.4.2"
-  peerDependencies:
-    "@mantine/core": 6.0.22
-    "@mantine/hooks": 6.0.22
-    react: ">=16.8.0"
-    react-dom: ">=16.8.0"
-  checksum: 10c0/83c694710eb4247f7fa60493d21ad28b8fabc8365593c3f2a0f32ac815433589cdba8c109b5c96858b658ad60afbb22b5e34151f321423ddc4e327c2d8d7a1d8
   languageName: node
   linkType: hard
 
@@ -18413,21 +18397,6 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
   checksum: 10c0/02dd38f6c40c4dd88b6c35370eaddc385c0a417c614b5ecb50d1121e99905da26fea9d5c05b580404b7f8a7d9a4964a8613654882be03963c36005779b96cca5
-  languageName: node
-  linkType: hard
-
-"react-transition-group@npm:4.4.2":
-  version: 4.4.2
-  resolution: "react-transition-group@npm:4.4.2"
-  dependencies:
-    "@babel/runtime": "npm:^7.5.5"
-    dom-helpers: "npm:^5.0.1"
-    loose-envify: "npm:^1.4.0"
-    prop-types: "npm:^15.6.2"
-  peerDependencies:
-    react: ">=16.6.0"
-    react-dom: ">=16.6.0"
-  checksum: 10c0/afaf835854526065d246532714a3833a7c5fbcf21303e1479008ff6f1ec1ae44ecd151f74f357c60511a1e49de65cb9b81bf4d7858b9ee19e636b9a62a6daaa4
   languageName: node
   linkType: hard
 

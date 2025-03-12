@@ -1,5 +1,6 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
 import {
@@ -7,7 +8,6 @@ import {
   InsertTaxCategoryInput,
   UpdateTaxCategoryInput,
 } from '../../../gql/graphql.js';
-import { useToast } from '../../ui/use-toast.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -23,7 +23,6 @@ export function ModifyTaxCategoryFields({
   useFormManager,
   setFetching,
 }: ModalProps<boolean>): ReactElement {
-  const { toast } = useToast();
   const { control } = useFormManager;
   const [sortCodes, setSortCodes] = useState<Array<{ value: string; label: string }>>([]);
 
@@ -34,13 +33,11 @@ export function ModifyTaxCategoryFields({
 
   useEffect(() => {
     if (sortCodesError) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: "Couldn't fetch sort codes",
-        variant: 'destructive',
       });
     }
-  }, [sortCodesError, toast]);
+  }, [sortCodesError]);
 
   useEffect(() => {
     if (sortCodesData?.allSortCodes.length) {

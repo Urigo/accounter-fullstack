@@ -1,8 +1,8 @@
 import { ReactElement, useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   FetchMultipleChargesDocument,
   FetchMultipleChargesQuery,
@@ -89,16 +89,14 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
 
   const onMergeCharges = useCallback(async () => {
     if (!mainCharge) {
-      showNotification({
-        message: 'No main charge selected',
-        color: 'red',
+      toast.error('Error', {
+        description: 'No main charge selected',
       });
       return;
     }
     if (distinctChargeIDs.length < 2) {
-      showNotification({
-        message: 'At least 2 charges are required to execute a merge',
-        color: 'red',
+      toast.error('Error', {
+        description: 'At least 2 charges are required to execute a merge',
       });
       return;
     }

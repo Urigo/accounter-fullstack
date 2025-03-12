@@ -2,11 +2,11 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Indicator, MultiSelect, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import { AllBusinessesDocument, BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -37,9 +37,8 @@ function BusinessTransactionsFilterForm({
 
   useEffect(() => {
     if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching businesses! 🤥',
+      toast.error('Error', {
+        description: 'An error occurred while fetching businesses.',
       });
     }
   }, [businessesError]);

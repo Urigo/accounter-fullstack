@@ -1,12 +1,12 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
 import { AllBusinessesDocument, InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useInsertBusinessTripAttendee } from '../../../../hooks/use-insert-business-trip-attendee.js';
@@ -69,9 +69,8 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oops, we have an error fetching businesses',
+      toast.error('Error', {
+        description: 'Oops, we have an error fetching businesses',
       });
     }
   }, [error]);

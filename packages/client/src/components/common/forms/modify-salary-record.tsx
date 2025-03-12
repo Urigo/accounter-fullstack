@@ -1,10 +1,10 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AllBusinessesDocument,
   AllEmployeesByEmployerDocument,
@@ -79,33 +79,29 @@ export const ModifySalaryRecord = ({
 
   useEffect(() => {
     if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error businesses entities! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error businesses entities! 🤥',
       });
     }
   }, [businessesError]);
   useEffect(() => {
     if (pensionFundsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching pension funds! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching pension funds! 🤥',
       });
     }
   }, [pensionFundsError]);
   useEffect(() => {
     if (trainingFundsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching training funds! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching training funds! 🤥',
       });
     }
   }, [trainingFundsError]);
   useEffect(() => {
     if (employeesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error employees! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error employees! 🤥',
       });
     }
   }, [employeesError]);

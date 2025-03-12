@@ -1,5 +1,6 @@
 import { forwardRef, ReactElement, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { LayoutGridAdd } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import {
@@ -14,7 +15,6 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
 import {
   CategorizeIntoExistingBusinessTripExpenseInput,
   UncategorizedTransactionsByBusinessTripDocument,
@@ -151,9 +151,8 @@ function ModalContent({
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oops, we have an error fetching transactions to categorize',
+      toast.error('Error', {
+        description: 'Oops, we have an error fetching transactions to categorize',
       });
     }
   }, [error]);

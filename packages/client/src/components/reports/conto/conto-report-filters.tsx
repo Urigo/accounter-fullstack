@@ -2,6 +2,7 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Indicator, MultiSelect } from '@mantine/core';
@@ -20,7 +21,6 @@ import {
 } from '../../ui/dialog.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { useToast } from '../../ui/use-toast.js';
 import { CONTO_REPORT_FILTERS_KEY } from './index.js';
 
 export type ContoReportFiltersType = BusinessTransactionsFilter & {
@@ -47,19 +47,16 @@ function ContoReportFilterForm({
   const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
     query: AllBusinessesDocument,
   });
-  const { toast } = useToast();
   const { userContext } = useContext(UserContext);
 
   useEffect(() => {
     if (businessesError) {
       console.error(businessesError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch businesses',
-        variant: 'destructive',
       });
     }
-  }, [toast, businessesError]);
+  }, [businessesError]);
 
   const businesses = useMemo(() => {
     return (

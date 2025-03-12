@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   DeleteBusinessTripAttendeeDocument,
   DeleteBusinessTripAttendeeMutation,
   DeleteBusinessTripAttendeeMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,45 +19,49 @@ type UseDeleteBusinessTripAttendee = {
   fetching: boolean;
   deleteBusinessTripAttendee: (
     variables: DeleteBusinessTripAttendeeMutationVariables,
-  ) => Promise<DeleteBusinessTripAttendeeMutation['deleteBusinessTripAttendee']>;
+  ) => Promise<DeleteBusinessTripAttendeeMutation['deleteBusinessTripAttendee'] | void>;
 };
+
+const NOTIFICATION_ID = 'deleteBusinessTripAttendee';
 
 export const useDeleteBusinessTripAttendee = (): UseDeleteBusinessTripAttendee => {
   // TODO: add authentication
   // TODO: add local data delete method after delete
 
   const [{ fetching }, mutate] = useMutation(DeleteBusinessTripAttendeeDocument);
+  const deleteBusinessTripAttendee = useCallback(
+    async (variables: DeleteBusinessTripAttendeeMutationVariables) => {
+      const message = 'Error removing business trip attendee';
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Removing business trip attendee', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Business trip attendee was removed',
+          });
+          return data.deleteBusinessTripAttendee;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    deleteBusinessTripAttendee: (
-      variables: DeleteBusinessTripAttendeeMutationVariables,
-    ): Promise<DeleteBusinessTripAttendeeMutation['deleteBusinessTripAttendee']> =>
-      new Promise<DeleteBusinessTripAttendeeMutation['deleteBusinessTripAttendee']>(
-        (resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(`Error removing business trip attendee: ${res.error}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, attendee was not removed',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error('Error removing business trip attendee: No data returned');
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, attendee was not removed',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Removal Success!',
-              message: 'Business trip attendee was removed! 🎉',
-            });
-            return resolve(res.data.deleteBusinessTripAttendee);
-          }),
-      ),
+    deleteBusinessTripAttendee,
   };
 };

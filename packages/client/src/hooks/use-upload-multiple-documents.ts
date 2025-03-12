@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications, showNotification } from '@mantine/notifications';
 import { NewDocumentsList } from '../components/common/new-documents-list.js';
 import {
   NewFetchedDocumentFieldsFragmentDoc,
@@ -8,6 +9,7 @@ import {
   UploadMultipleDocumentsMutationVariables,
 } from '../gql/graphql.js';
 import { FragmentType } from '../gql/index.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -36,7 +38,7 @@ type UseUploadMultipleDocuments = {
   uploading: boolean;
   uploadMultipleDocuments: (
     variables: UploadMultipleDocumentsMutationVariables,
-  ) => Promise<UploadMultipleDocuments>;
+  ) => Promise<UploadMultipleDocuments | void>;
 };
 
 const NOTIFICATION_ID = 'uploadMultipleDocuments';
@@ -46,95 +48,69 @@ export const useUploadMultipleDocuments = (): UseUploadMultipleDocuments => {
   // TODO: add local data update method after change
 
   const [{ fetching: uploading }, mutate] = useMutation(UploadMultipleDocumentsDocument);
+  const uploadMultipleDocuments = useCallback(
+    async (variables: UploadMultipleDocumentsMutationVariables) => {
+      const message = 'Error uploading documents';
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
+      toast.loading('Uploading Documents', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'batchUploadDocuments');
+        if (data) {
+          let hasError = false;
+          const documents = (
+            data.batchUploadDocuments.filter(singleRes => {
+              if ('message' in singleRes) {
+                console.error(`Error uploading document: ${singleRes.message}`);
+                hasError = true;
+                return false;
+              }
+              if (!('document' in singleRes)) {
+                return false;
+              }
+              return true;
+            }) as Extract<
+              UploadMultipleDocuments[number],
+              { __typename?: 'UploadDocumentSuccessfulResult' }
+            >[]
+          ).map(
+            ({ document }) => document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>,
+          );
+          toast.success('Upload Successful', {
+            id: notificationId,
+            description:
+              documents.length > 0
+                ? NewDocumentsList({ data: documents })
+                : 'No successful document uploads',
+            duration: documents.length > 0 ? Infinity : 5000,
+            closeButton: true,
+          });
+          if (hasError) {
+            toast.error('Some files failed to upload', {
+              duration: 100_000,
+              closeButton: true,
+            });
+          }
+          return documents as UploadMultipleDocuments;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     uploading,
-    uploadMultipleDocuments: (
-      variables: UploadMultipleDocumentsMutationVariables,
-    ): Promise<UploadMultipleDocuments> =>
-      new Promise<UploadMultipleDocuments>((resolve, reject) => {
-        notifications.show({
-          id: NOTIFICATION_ID,
-          loading: true,
-          title: 'Uploading Documents',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-
-        return mutate(variables)
-          .then(res => {
-            if (res.error) {
-              const message = 'Error uploading documents';
-              console.error(`${message}: ${res.error}`);
-              notifications.update({
-                id: NOTIFICATION_ID,
-                message,
-                color: 'red',
-                autoClose: 5000,
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error('Error uploading documents: No data returned');
-              notifications.update({
-                id: NOTIFICATION_ID,
-                title: 'Error uploading documents',
-                message: 'No data returned',
-                color: 'red',
-                autoClose: 5000,
-              });
-              return reject('No data returned');
-            }
-
-            let hasError = false;
-            const documents = (
-              res.data.batchUploadDocuments.filter(singleRes => {
-                if ('message' in singleRes) {
-                  console.error(`Error uploading document: ${singleRes.message}`);
-                  hasError = true;
-                  return false;
-                }
-                if (!('document' in singleRes)) {
-                  return false;
-                }
-                return true;
-              }) as Extract<
-                UploadMultipleDocuments[number],
-                { __typename?: 'UploadDocumentSuccessfulResult' }
-              >[]
-            ).map(
-              ({ document }) =>
-                document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>,
-            );
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Upload Successful!',
-              autoClose: documents.length > 0 ? false : 5000,
-              message:
-                documents.length > 0
-                  ? NewDocumentsList({ data: documents })
-                  : 'No successful document uploads',
-              withCloseButton: true,
-            });
-            if (hasError) {
-              showNotification({
-                message: 'Some files failed to upload',
-                color: 'red',
-                autoClose: 5000,
-              });
-            }
-            return resolve(documents as UploadMultipleDocuments);
-          })
-          .catch(() => {
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Error!',
-              message: 'An unexpected error occurred while uploading documents.',
-              color: 'red',
-              autoClose: 5000,
-            });
-          });
-      }),
+    uploadMultipleDocuments,
   };
 };

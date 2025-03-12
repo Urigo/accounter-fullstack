@@ -1,5 +1,5 @@
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import { AllCountriesDocument, AllCountriesQuery } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -26,9 +26,8 @@ export const useAllCountries = (): UseAllCountries => {
 
   if (error) {
     console.error(`Error fetching countries: ${error}`);
-    showNotification({
-      title: 'Error',
-      message: 'Unable to fetch countries',
+    toast.error('Error', {
+      description: 'Unable to fetch countries',
     });
   }
 

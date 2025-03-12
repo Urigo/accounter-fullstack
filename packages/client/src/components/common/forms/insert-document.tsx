@@ -1,6 +1,6 @@
 import { ReactElement, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { showNotification } from '@mantine/notifications';
+import { toast } from 'sonner';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
 import { useInsertDocument } from '../../../hooks/use-insert-document.js';
 import { SimpleGrid } from '../index.js';
@@ -25,9 +25,8 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
     if (data && Object.keys(data).length > 0) {
       if (data.vat) {
         if (!data.amount?.currency) {
-          showNotification({
-            title: 'Error!',
-            message: "Couldn't figure out the currency of the document",
+          toast.error('Error', {
+            description: "Couldn't figure out the currency of the document",
           });
           return;
         }

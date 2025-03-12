@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import { MergeBusinessesDocument, MergeBusinessesMutationVariables } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,7 +16,7 @@ import { MergeBusinessesDocument, MergeBusinessesMutationVariables } from '../gq
 
 type UseMergeBusinesses = {
   fetching: boolean;
-  mergeBusinesses: (variables: MergeBusinessesMutationVariables) => Promise<string>;
+  mergeBusinesses: (variables: MergeBusinessesMutationVariables) => Promise<string | void>;
 };
 
 const NOTIFICATION_ID = 'mergeBusinesses';
@@ -24,56 +26,39 @@ export const useMergeBusinesses = (): UseMergeBusinesses => {
   // TODO: add local data update method after chang e
 
   const [{ fetching }, mutate] = useMutation(MergeBusinessesDocument);
+  const mergeBusinesses = useCallback(
+    async (variables: MergeBusinessesMutationVariables) => {
+      const message = `Error merging into business ID [${variables.targetBusinessId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.targetBusinessId}`;
+      toast.loading('Merging Businesses', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Businesses merged',
+          });
+          return data.mergeBusinesses.id;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    mergeBusinesses: (variables: MergeBusinessesMutationVariables): Promise<string> => {
-      notifications.show({
-        id: NOTIFICATION_ID,
-        loading: true,
-        title: 'Merging Businesses',
-        message: 'Please wait...',
-        autoClose: false,
-        withCloseButton: true,
-      });
-      return new Promise<string>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(
-              `Error merging into business ID [${variables.targetBusinessId}]: ${res.error}`,
-            );
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error merging into business ID [${variables.targetBusinessId}]: No data returned`,
-            );
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject('No data returned');
-          }
-          notifications.update({
-            id: NOTIFICATION_ID,
-            title: 'Merge Success!',
-            autoClose: 5000,
-            message: undefined,
-            withCloseButton: true,
-          });
-          return resolve(res.data.mergeBusinesses.id);
-        }),
-      );
-    },
+    mergeBusinesses,
   };
 };

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Plus, XIcon } from 'lucide-react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,7 +27,6 @@ import {
 } from '../../ui/dialog.jsx';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
-import { useToast } from '../../ui/use-toast.js';
 import { CurrencyInput } from '../index.js';
 
 export function BalanceChargeModal({
@@ -94,7 +94,6 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
   const [financialEntities, setFinancialEntities] = useState<
     Array<{ value: string; label: string }>
   >([]);
-  const { toast } = useToast();
   const formManager = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -112,13 +111,11 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
 
   useEffect(() => {
     if (financialEntitiesError) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Error fetching financial entities',
-        variant: 'destructive',
       });
     }
-  }, [financialEntitiesError, toast]);
+  }, [financialEntitiesError]);
 
   useEffect(() => {
     if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
@@ -142,14 +139,12 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
         onOpenChange(false);
       } catch (error) {
         console.error(error);
-        toast({
-          title: 'Error',
+        toast.error('Error', {
           description: 'Failed to generate balance charge. Please try again.',
-          variant: 'destructive',
         });
       }
     },
-    [generateBalanceCharge, onOpenChange, toast],
+    [generateBalanceCharge, onOpenChange],
   );
 
   const { fields, append, remove } = useFieldArray({

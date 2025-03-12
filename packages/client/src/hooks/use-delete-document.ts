@@ -1,7 +1,8 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import { DeleteDocumentDocument, DeleteDocumentMutationVariables } from '../gql/graphql.js';
-import { useHandleKnownErrors } from './use-handle-known-errors.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,48 +23,39 @@ export const useDeleteDocument = (): UseDeleteDocument => {
   // TODO: add local data delete method after change
 
   const [{ fetching }, mutate] = useMutation(DeleteDocumentDocument);
-  const { handleKnownErrors } = useHandleKnownErrors();
+  const deleteDocument = useCallback(
+    async (variables: DeleteDocumentMutationVariables) => {
+      const message = `Error deleting document ID [${variables.documentId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
+      toast.loading('Deleting Document', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Document was deleted',
+          });
+          return data.deleteDocument;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return false;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    deleteDocument: (variables: DeleteDocumentMutationVariables): Promise<boolean> => {
-      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-      return new Promise<boolean>((resolve, reject) => {
-        notifications.show({
-          id: notificationId,
-          loading: true,
-          title: 'Deleting Document',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-
-        return mutate(variables).then(res => {
-          const message = `Error deleting document ID [${variables.documentId}]`;
-          const data = handleKnownErrors(res, reject, message, notificationId);
-          if (!data) {
-            return;
-          }
-          if (data.deleteDocument === false) {
-            console.error(message);
-            notifications.update({
-              id: notificationId,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(data.deleteDocument);
-          }
-          notifications.update({
-            id: notificationId,
-            title: 'Deletion Successful!',
-            autoClose: 5000,
-            message: 'Document was deleted',
-            withCloseButton: true,
-          });
-          resolve(data.deleteDocument);
-        });
-      });
-    },
+    deleteDocument,
   };
 };

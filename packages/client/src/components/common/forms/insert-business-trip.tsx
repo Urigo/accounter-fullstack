@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Loader } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { useInsertBusinessTrip } from '../../../hooks/use-insert-business-trip.js';
 import { ModifyBusinessTripFields } from './modify-business-trip-fields.js';
@@ -36,9 +36,8 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
 
     if (data && Object.keys(data).length > 0) {
       if (!data.name) {
-        showNotification({
-          title: 'Error!',
-          message: "Couldn't figure out the currency of the business",
+        toast.error('Error', {
+          description: 'Business name is required',
         });
         return;
       }

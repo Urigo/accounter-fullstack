@@ -1,11 +1,12 @@
-import { GraphQLError } from 'graphql';
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   InsertSalaryRecordDocument,
   InsertSalaryRecordMutation,
   InsertSalaryRecordMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,23 +35,36 @@ type SalaryRecord = Extract<
 
 type UseInsertSalaryRecord = {
   fetching: boolean;
-  insertSalaryRecord: (variables: InsertSalaryRecordMutationVariables) => Promise<SalaryRecord>;
+  insertSalaryRecord: (
+    variables: InsertSalaryRecordMutationVariables,
+  ) => Promise<SalaryRecord | void>;
 };
+
+const NOTIFICATION_ID = 'insertSalaryRecords';
 
 export const useInsertSalaryRecord = (): UseInsertSalaryRecord => {
   // TODO: add authentication
   // TODO: add local data insert method after change
 
   const [{ fetching }, mutate] = useMutation(InsertSalaryRecordDocument);
+  const insertSalaryRecord = useCallback(
+    async (variables: InsertSalaryRecordMutationVariables) => {
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Adding salary record', {
+        id: notificationId,
+      });
 
-  return {
-    fetching,
-    insertSalaryRecord: (variables: InsertSalaryRecordMutationVariables): Promise<SalaryRecord> => {
       if (
         !variables.salaryRecords ||
         (Array.isArray(variables.salaryRecords) && variables.salaryRecords.length === 0)
       ) {
-        throw new GraphQLError('No salary records to insert');
+        toast.error('Error', {
+          id: notificationId,
+          description: 'No salary records to insert',
+          duration: 100_000,
+          closeButton: true,
+        });
+        return void 0;
       }
       const salaryRecord = Array.isArray(variables.salaryRecords)
         ? variables.salaryRecords[0]
@@ -61,48 +75,43 @@ export const useInsertSalaryRecord = (): UseInsertSalaryRecord => {
         !salaryRecord?.employer ||
         !salaryRecord?.month
       ) {
-        throw new GraphQLError('Missing required salary record fields');
+        toast.error('Error', {
+          id: notificationId,
+          description: 'Missing required salary record fields',
+          duration: 100_000,
+          closeButton: true,
+        });
+        return void 0;
       }
 
-      return new Promise<SalaryRecord>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(
-              `Error updating salary record [${salaryRecord.month}] employee [${salaryRecord.employeeId}]: ${res.error}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error updating salary record [${salaryRecord.month}] employee [${salaryRecord.employeeId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.insertSalaryRecords.__typename === 'CommonError') {
-            console.error(
-              `Error updating salary record [${salaryRecord.month}] employee [${salaryRecord.employeeId}]: ${res.data.insertSalaryRecords.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.insertSalaryRecords.message);
-          }
-          showNotification({
-            title: 'Insert Success!',
-            message: 'Hey there, your insert is awesome!',
+      const message = `Error adding salary record [${salaryRecord.month}] employee [${salaryRecord.employeeId}]`;
+
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'insertSalaryRecords');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Salary record was added',
           });
-          return resolve(res.data.insertSalaryRecords.salaryRecords[0]);
-        }),
-      );
+          return data.insertSalaryRecords.salaryRecords[0];
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
     },
+    [mutate],
+  );
+
+  return {
+    fetching,
+    insertSalaryRecord,
   };
 };

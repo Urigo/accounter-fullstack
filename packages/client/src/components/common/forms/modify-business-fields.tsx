@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Divider, Select, SimpleGrid, Switch, TextInput, Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   AllSortCodesDocument,
   AllTaxCategoriesDocument,
@@ -38,9 +38,8 @@ export function ModifyBusinessFields({
 
   useEffect(() => {
     if (taxCategoriesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tax categories! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching tax categories! 🤥',
       });
     }
   }, [taxCategoriesError]);
@@ -65,9 +64,8 @@ export function ModifyBusinessFields({
 
   useEffect(() => {
     if (sortCodesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching sort codes! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching sort codes! 🤥',
       });
     }
   }, [sortCodesError]);

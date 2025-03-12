@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateBusinessTripTravelAndSubsistenceExpenseDocument,
   UpdateBusinessTripTravelAndSubsistenceExpenseMutation,
   UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,9 +22,12 @@ type UseUpdateBusinessTripTravelAndSubsistenceExpense = {
   updateBusinessTripTravelAndSubsistenceExpense: (
     variables: UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables,
   ) => Promise<
-    UpdateBusinessTripTravelAndSubsistenceExpenseMutation['updateBusinessTripTravelAndSubsistenceExpense']
+    | UpdateBusinessTripTravelAndSubsistenceExpenseMutation['updateBusinessTripTravelAndSubsistenceExpense']
+    | void
   >;
 };
+
+const NOTIFICATION_ID = 'updateBusinessTripTravelAndSubsistenceExpense';
 
 export const useUpdateBusinessTripTravelAndSubsistenceExpense =
   (): UseUpdateBusinessTripTravelAndSubsistenceExpense => {
@@ -32,44 +37,39 @@ export const useUpdateBusinessTripTravelAndSubsistenceExpense =
     const [{ fetching }, mutate] = useMutation(
       UpdateBusinessTripTravelAndSubsistenceExpenseDocument,
     );
+    const updateBusinessTripTravelAndSubsistenceExpense = useCallback(
+      async (variables: UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables) => {
+        const message = 'Error updating business trip travel&subsistence expense';
+        const notificationId = NOTIFICATION_ID;
+        toast.loading('Updating trip travel&subsistence expense', {
+          id: notificationId,
+        });
+        try {
+          const res = await mutate(variables);
+          const data = handleCommonErrors(res, message, notificationId);
+          if (data) {
+            toast.success('Success', {
+              id: notificationId,
+              description: 'Business trip travel&subsistence expense was updated',
+            });
+            return data.updateBusinessTripTravelAndSubsistenceExpense;
+          }
+        } catch (e) {
+          console.error(`${message}: ${e}`);
+          toast.error('Error', {
+            id: notificationId,
+            description: message,
+            duration: 100_000,
+            closeButton: true,
+          });
+        }
+        return void 0;
+      },
+      [mutate],
+    );
 
     return {
       fetching,
-      updateBusinessTripTravelAndSubsistenceExpense: (
-        variables: UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables,
-      ): Promise<
-        UpdateBusinessTripTravelAndSubsistenceExpenseMutation['updateBusinessTripTravelAndSubsistenceExpense']
-      > =>
-        new Promise<
-          UpdateBusinessTripTravelAndSubsistenceExpenseMutation['updateBusinessTripTravelAndSubsistenceExpense']
-        >((resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(
-                `Error updating business trip travel&subsistence expense: ${res.error}`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, travel&subsistence expense was not updated',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error(
-                'Error updating business trip travel&subsistence expense: No data returned',
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, travel&subsistence expense was not updated',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Update Success!',
-              message: 'Business trip travel&subsistence expense was updated! 🎉',
-            });
-            return resolve(res.data.updateBusinessTripTravelAndSubsistenceExpense);
-          }),
-        ),
+      updateBusinessTripTravelAndSubsistenceExpense,
     };
   };

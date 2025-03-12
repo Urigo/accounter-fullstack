@@ -1,10 +1,11 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateOrInsertSalaryRecordsDocument,
-  UpdateOrInsertSalaryRecordsMutation,
   UpdateOrInsertSalaryRecordsMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -33,56 +34,51 @@ type UseUpdateOrInsertSalaryRecords = {
   ) => Promise<{ month: string; employee?: { id: string } | null }[]>;
 };
 
+const NOTIFICATION_ID = 'insertOrUpdateSalaryRecords';
+
 export const useUpdateOrInsertSalaryRecords = (): UseUpdateOrInsertSalaryRecords => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateOrInsertSalaryRecordsDocument);
+  const updateOrInsertSalaryRecords = useCallback(
+    async (variables: UpdateOrInsertSalaryRecordsMutationVariables) => {
+      const message = 'Error updating salary records';
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Updating Salary Records', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(
+          res,
+          message,
+          notificationId,
+          'insertOrUpdateSalaryRecords',
+        );
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Salary records were updated',
+          });
+          return data.insertOrUpdateSalaryRecords.salaryRecords;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return [];
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateOrInsertSalaryRecords: (
-      variables: UpdateOrInsertSalaryRecordsMutationVariables,
-    ): Promise<{ month: string; employee?: { id: string } | null }[]> =>
-      new Promise<
-        Extract<
-          UpdateOrInsertSalaryRecordsMutation['insertOrUpdateSalaryRecords'],
-          { __typename: 'InsertSalaryRecordsSuccessfulResult' }
-        >['salaryRecords']
-      >((resolve, reject) =>
-        mutate(variables).then(res => {
-          if ('error' in res && res.error) {
-            console.error(`Error updating salary records: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error('Error updating salary records: No data returned');
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.insertOrUpdateSalaryRecords.__typename === 'CommonError') {
-            console.error(
-              `Error updating salary records: ${res.data.insertOrUpdateSalaryRecords.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.insertOrUpdateSalaryRecords.message);
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.insertOrUpdateSalaryRecords.salaryRecords);
-        }),
-      ),
+    updateOrInsertSalaryRecords,
   };
 };

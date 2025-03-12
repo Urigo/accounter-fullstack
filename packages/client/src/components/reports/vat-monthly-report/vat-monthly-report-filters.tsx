@@ -2,11 +2,11 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, lastDayOfMonth } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
   AllFinancialEntitiesDocument,
   ChargeFilterType,
@@ -38,9 +38,8 @@ function VatMonthlyReportFilterForm({
 
   useEffect(() => {
     if (feError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
   }, [feError]);

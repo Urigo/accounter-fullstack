@@ -1,9 +1,11 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
   CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,6 +21,8 @@ type UseCreditShareholdersBusinessTripTravelAndSubsistence = {
   ) => Promise<void>;
 };
 
+const NOTIFICATION_ID = 'creditShareholdersBusinessTripTravelAndSubsistence';
+
 export const useCreditShareholdersBusinessTripTnS =
   (): UseCreditShareholdersBusinessTripTravelAndSubsistence => {
     // TODO: add authentication
@@ -27,38 +31,38 @@ export const useCreditShareholdersBusinessTripTnS =
     const [{ fetching }, mutate] = useMutation(
       CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
     );
+    const creditShareholders = useCallback(
+      async (variables: CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables) => {
+        const message = `Error crediting shareholders for trip ID ${variables.businessTripId}`;
+        const notificationId = `${NOTIFICATION_ID}-${variables.businessTripId}`;
+        toast.loading('Crediting Shareholders', {
+          id: notificationId,
+        });
+        try {
+          const res = await mutate(variables);
+          const data = handleCommonErrors(res, message, notificationId);
+          if (data) {
+            toast.success('Shareholders Credited', {
+              id: notificationId,
+              description: `${data.creditShareholdersBusinessTripTravelAndSubsistence.length} Corresponding charges were successfully generated`,
+            });
+          }
+        } catch (e) {
+          console.error(`${message}: ${e}`);
+          toast.error('Error', {
+            id: notificationId,
+            description: message,
+            duration: 100_000,
+            closeButton: true,
+          });
+        }
+        return void 0;
+      },
+      [mutate],
+    );
 
     return {
       fetching,
-      creditShareholders: (
-        variables: CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables,
-      ): Promise<void> =>
-        new Promise<void>((resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(
-                `Error crediting shareholders for trip ID ${variables.businessTripId}: ${res.error}`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data?.creditShareholdersBusinessTripTravelAndSubsistence) {
-              console.error(`Error crediting shareholders for trip ID ${variables.businessTripId}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Shareholders Credited!',
-              message: `${res.data.creditShareholdersBusinessTripTravelAndSubsistence.length} Corresponding charges were successfully generated`,
-            });
-            return resolve();
-          }),
-        ),
+      creditShareholders,
     };
   };

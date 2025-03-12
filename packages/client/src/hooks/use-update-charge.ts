@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateChargeDocument,
   UpdateChargeMutation,
   UpdateChargeMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -30,52 +32,49 @@ type Charge = Extract<
 
 type UseUpdateCharge = {
   fetching: boolean;
-  updateCharge: (variables: UpdateChargeMutationVariables) => Promise<Charge>;
+  updateCharge: (variables: UpdateChargeMutationVariables) => Promise<Charge | void>;
 };
+
+const NOTIFICATION_ID = 'updateCharge';
 
 export const useUpdateCharge = (): UseUpdateCharge => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateChargeDocument);
+  const updateCharge = useCallback(
+    async (variables: UpdateChargeMutationVariables) => {
+      const message = `Error updating charge ID [${variables.chargeId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
+      toast.loading('Updating charge', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateCharge');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Charge updated',
+          });
+          return data.updateCharge.charge;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateCharge: (variables: UpdateChargeMutationVariables): Promise<Charge> =>
-      new Promise<Charge>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error updating charge ID [${variables.chargeId}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(`Error updating charge ID [${variables.chargeId}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.updateCharge.__typename === 'CommonError') {
-            console.error(
-              `Error updating charge ID [${variables.chargeId}]: ${res.data.updateCharge.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.updateCharge.message);
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.updateCharge.charge);
-        }),
-      ),
+    updateCharge,
   };
 };

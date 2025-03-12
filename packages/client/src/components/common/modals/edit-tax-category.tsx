@@ -1,6 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Edit } from 'lucide-react';
 import { SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Loader2 } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import {
@@ -17,7 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.jsx';
-import { useToast } from '../../ui/use-toast.js';
 import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -67,7 +67,6 @@ type ModalContentProps = {
 };
 
 function ModalContent({ taxCategoryId, close, onAdd }: ModalContentProps): ReactElement {
-  const { toast } = useToast();
   const [{ data, fetching }] = useQuery({
     query: TaxCategoryToUpdateDocument,
     variables: {
@@ -78,10 +77,8 @@ function ModalContent({ taxCategoryId, close, onAdd }: ModalContentProps): React
   const taxCategory = data?.taxCategory;
 
   if (!taxCategory && !fetching) {
-    toast({
-      title: 'Error',
+    toast.error('Error', {
       description: "Couldn'nt find tax category",
-      variant: 'destructive',
     });
   }
 
@@ -116,9 +113,11 @@ function EditTaxCategoryForm({
 
   const onSubmit: SubmitHandler<UpdateTaxCategoryInput> = data => {
     data.sortCode &&= parseInt(data.sortCode.toString());
-    updateTaxCategory({ fields: data, taxCategoryId: taxCategory.id }).then(({ id }) => {
-      onAdd?.(id);
-      close();
+    updateTaxCategory({ fields: data, taxCategoryId: taxCategory.id }).then(res => {
+      if (res?.id) {
+        onAdd?.(res.id);
+        close();
+      }
     });
   };
 

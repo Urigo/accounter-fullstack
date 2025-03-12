@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Modal, Select } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import { AllBusinessesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
 
@@ -38,9 +38,8 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
 
   useEffect(() => {
     if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
+      toast.error('Error', {
+        description: 'Oh no!, we have an error fetching financial entities! 🤥',
       });
     }
   }, [businessesError]);

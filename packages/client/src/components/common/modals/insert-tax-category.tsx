@@ -48,9 +48,11 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
 
   const onSubmit: SubmitHandler<InsertTaxCategoryInput> = data => {
     data.sortCode &&= parseInt(data.sortCode.toString());
-    insertTaxCategory({ fields: data }).then(({ id }) => {
-      onAdd?.(id);
-      close();
+    insertTaxCategory({ fields: data }).then(res => {
+      if (res?.id) {
+        onAdd?.(res.id);
+        close();
+      }
     });
   };
 
