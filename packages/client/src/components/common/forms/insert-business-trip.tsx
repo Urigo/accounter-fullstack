@@ -37,7 +37,7 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
     if (data && Object.keys(data).length > 0) {
       if (!data.name) {
         toast.error('Error', {
-          description: "Business name is required",
+          description: 'Business name is required',
         });
         return;
       }
