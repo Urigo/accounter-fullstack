@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   InsertBusinessDocument,
   InsertBusinessMutation,
   InsertBusinessMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -30,54 +32,49 @@ type UseInsertBusiness = {
   fetching: boolean;
   insertBusiness: (
     variables: InsertBusinessMutationVariables,
-  ) => Promise<InsertBusinessSuccessfulResult>;
+  ) => Promise<InsertBusinessSuccessfulResult | void>;
 };
+
+const NOTIFICATION_ID = 'insertNewBusiness';
 
 export const useInsertBusiness = (): UseInsertBusiness => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
   const [{ fetching }, mutate] = useMutation(InsertBusinessDocument);
+  const insertBusiness = useCallback(
+    async (variables: InsertBusinessMutationVariables) => {
+      const errorMessage = `Error creating business [${variables.fields.name}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.fields.name}`;
+      toast.loading('Creating Business...', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, errorMessage, notificationId, 'insertNewBusiness');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: `Business [${variables.fields.name}] was created`,
+          });
+          return data.insertNewBusiness;
+        }
+      } catch (e) {
+        console.error(`${errorMessage}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: errorMessage,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    insertBusiness: (
-      variables: InsertBusinessMutationVariables,
-    ): Promise<InsertBusinessSuccessfulResult> =>
-      new Promise<InsertBusinessSuccessfulResult>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error creating business [${variables.fields.name}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(`Error creating business [${variables.fields.name}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.insertNewBusiness.__typename === 'CommonError') {
-            console.error(
-              `Error creating business [${variables.fields.name}]: ${res.data.insertNewBusiness.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.insertNewBusiness.message);
-          }
-          showNotification({
-            title: 'Insert Success!',
-            message: 'Your document was added! 🎉',
-          });
-          return resolve(res.data.insertNewBusiness);
-        }),
-      ),
+    insertBusiness,
   };
 };

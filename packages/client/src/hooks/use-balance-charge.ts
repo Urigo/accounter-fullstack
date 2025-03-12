@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import {
   GenerateBalanceChargeDocument,
   GenerateBalanceChargeMutation,
   GenerateBalanceChargeMutationVariables,
 } from '../gql/graphql.js';
-import { useHandleKnownErrors } from './use-handle-known-errors.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -24,7 +24,7 @@ type UseGenerateBalanceCharge = {
   fetching: boolean;
   generateBalanceCharge: (
     variables: GenerateBalanceChargeMutationVariables,
-  ) => Promise<GenerateBalanceChargeMutation['generateBalanceCharge']>;
+  ) => Promise<GenerateBalanceChargeMutation['generateBalanceCharge'] | void>;
 };
 
 const NOTIFICATION_ID = 'generateBalanceCharge';
@@ -34,44 +34,35 @@ export const useGenerateBalanceCharge = (): UseGenerateBalanceCharge => {
   // TODO: add local data update method after insert
 
   const [{ fetching }, mutate] = useMutation(GenerateBalanceChargeDocument);
-  const { handleKnownErrors } = useHandleKnownErrors();
-
   const generateBalanceCharge = useCallback(
-    async (
-      variables: GenerateBalanceChargeMutationVariables,
-    ): Promise<GenerateBalanceChargeMutation['generateBalanceCharge']> => {
+    async (variables: GenerateBalanceChargeMutationVariables) => {
+      const message = 'Error generating charge';
       const notificationId = NOTIFICATION_ID;
-
-      return new Promise<GenerateBalanceChargeMutation['generateBalanceCharge']>(
-        (resolve, reject) => {
-          notifications.show({
+      toast.loading('Generating balance charge', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
             id: notificationId,
-            loading: true,
-            title: 'Generating balance charge',
-            message: 'Please wait...',
-            autoClose: false,
-            withCloseButton: true,
+            description: 'Balance charge was created',
           });
-
-          return mutate(variables).then(res => {
-            const message = 'Error generating charge';
-            const data = handleKnownErrors(res, reject, message, notificationId);
-            if (!data) {
-              return;
-            }
-            notifications.update({
-              id: notificationId,
-              title: 'Generation Successful!',
-              autoClose: 5000,
-              message: 'Balance charge was created',
-              withCloseButton: true,
-            });
-            return resolve(data.generateBalanceCharge);
-          });
-        },
-      );
+          return data.generateBalanceCharge;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
     },
-    [mutate, handleKnownErrors],
+    [mutate],
   );
 
   return {

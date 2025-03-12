@@ -57,9 +57,11 @@ function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormPro
 
   const onSubmit: SubmitHandler<InsertNewBusinessInput> = data => {
     data.sortCode &&= parseInt(data.sortCode.toString());
-    insertBusiness({ fields: data }).then(({ id }) => {
-      onAdd?.(id);
-      close();
+    insertBusiness({ fields: data }).then(res => {
+      if (res?.id) {
+        onAdd?.(res.id);
+        close();
+      }
     });
   };
 

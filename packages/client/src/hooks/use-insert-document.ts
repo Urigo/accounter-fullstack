@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   InsertDocumentDocument,
   InsertDocumentMutation,
   InsertDocumentMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,58 +34,49 @@ type UseInsertDocument = {
   fetching: boolean;
   insertDocument: (
     variables: InsertDocumentMutationVariables,
-  ) => Promise<InsertDocumentSuccessfulResult>;
+  ) => Promise<InsertDocumentSuccessfulResult | void>;
 };
+
+const NOTIFICATION_ID = 'insertDocument';
 
 export const useInsertDocument = (): UseInsertDocument => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
   const [{ fetching }, mutate] = useMutation(InsertDocumentDocument);
+  const insertDocument = useCallback(
+    async (variables: InsertDocumentMutationVariables) => {
+      const message = `Error inserting document to charge ID [${variables.record.chargeId}]`;
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Adding document', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'insertDocument');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Document added',
+          });
+          return data.insertDocument;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    insertDocument: (
-      variables: InsertDocumentMutationVariables,
-    ): Promise<InsertDocumentSuccessfulResult> =>
-      new Promise<InsertDocumentSuccessfulResult>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(
-              `Error inserting document to charge ID [${variables.record.chargeId}]: ${res.error}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error inserting document to charge ID [${variables.record.chargeId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.insertDocument.__typename === 'CommonError') {
-            console.error(
-              `Error inserting document to charge ID [${variables.record.chargeId}]: ${res.data.insertDocument.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.insertDocument.message);
-          }
-          showNotification({
-            title: 'Insert Success!',
-            message: 'Your document was added! 🎉',
-          });
-          return resolve(res.data.insertDocument);
-        }),
-      ),
+    insertDocument,
   };
 };

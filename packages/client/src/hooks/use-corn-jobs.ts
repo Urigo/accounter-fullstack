@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import {
   FlagForeignFeeTransactionsDocument,
   MergeChargesByTransactionReferenceDocument,
 } from '../gql/graphql.js';
-import { useHandleKnownErrors } from './use-handle-known-errors.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -44,96 +44,82 @@ export const useCornJobs = (): UseCornJobs => {
   const [{ fetching: executingMergeCharges }, mergeCharges] = useMutation(
     MergeChargesByTransactionReferenceDocument,
   );
-  const { handleKnownErrors } = useHandleKnownErrors();
-
-  const executeJobs = useCallback(async (): Promise<void> => {
-    let notificationId = `${NOTIFICATION_ID}-fees`;
-    return new Promise<void>((resolve, reject) => {
-      notifications.show({
-        id: notificationId,
-        loading: true,
-        title: 'Flagging Fees',
-        message: 'Please wait...',
-        autoClose: false,
-        withCloseButton: true,
-      });
-
-      return flagFees({}).then(res => {
-        const message = 'Error flagging foreign fee transactions';
-        const data = handleKnownErrors(res, reject, message, notificationId);
-        if (!data) {
-          return;
-        }
-        if (!data.flagForeignFeeTransactions.success) {
-          console.error(
-            `${message} ${
-              data.flagForeignFeeTransactions.errors
-                ? ':\n' + data.flagForeignFeeTransactions.errors?.join('\n')
-                : ''
-            }`,
-          );
-          notifications.update({
-            id: notificationId,
-            message,
-            color: 'red',
-            autoClose: 5000,
-          });
-          return reject(data.flagForeignFeeTransactions.errors);
-        }
-        notifications.update({
-          id: notificationId,
-          title: 'Fees flagged!',
-          autoClose: 5000,
-          message: 'Foreign fee transactions were successfully tagged',
-          withCloseButton: true,
-        });
-
-        // next task: auto merge charges
-        notificationId = `${NOTIFICATION_ID}-merge`;
-        notifications.show({
-          id: notificationId,
-          loading: true,
-          title: 'Merging Charges',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-        // eslint-disable-next-line promise/no-nesting
-        mergeCharges({}).then(res => {
-          const message = 'Error auto-merging charges';
-          const data = handleKnownErrors(res, reject, message, notificationId);
-          if (!data) {
-            return;
-          }
-          if (!data.mergeChargesByTransactionReference.success) {
-            console.error(
-              `${message} ${
-                data.mergeChargesByTransactionReference.errors
-                  ? ':\n' + data.mergeChargesByTransactionReference.errors?.join('\n')
-                  : ''
-              }`,
-            );
-            notifications.update({
-              id: notificationId,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(data.mergeChargesByTransactionReference.errors);
-          }
-          notifications.update({
-            id: notificationId,
-            title: 'Charges merged!',
-            autoClose: 5000,
-            message: 'Charges successfully auto-merged',
-            withCloseButton: true,
-          });
-
-          return resolve();
-        });
-      });
+  const executeJobs = useCallback(async () => {
+    let message = 'Error flagging foreign fee transactions';
+    const feeNotificationId = `${NOTIFICATION_ID}-fees`;
+    const mergeChargesNotificationId = `${NOTIFICATION_ID}-merge`;
+    toast.loading('Flagging Fees', {
+      id: feeNotificationId,
     });
-  }, [flagFees, mergeCharges, handleKnownErrors]);
+    try {
+      const flagFeesRes = await flagFees({});
+      const flagFeesData = handleCommonErrors(flagFeesRes, message, feeNotificationId);
+      if (!flagFeesData) {
+        return void 0;
+      }
+      if (!flagFeesData.flagForeignFeeTransactions.success) {
+        console.error(
+          `${message} ${
+            flagFeesData.flagForeignFeeTransactions.errors
+              ? ':\n' + flagFeesData.flagForeignFeeTransactions.errors?.join('\n')
+              : ''
+          }`,
+        );
+        toast.error('Error', {
+          id: feeNotificationId,
+          description: message,
+        });
+        return void 0;
+      }
+      toast.success('Success', {
+        id: feeNotificationId,
+        description: 'Foreign fee transactions were successfully tagged',
+      });
+
+      // next task: auto merge charges
+      message = 'Error auto-merging charges';
+      toast.loading('Merging Charges', {
+        id: mergeChargesNotificationId,
+      });
+      const mergeChargesRes = await mergeCharges({});
+      const mergeChargesData = handleCommonErrors(
+        mergeChargesRes,
+        message,
+        mergeChargesNotificationId,
+      );
+      if (!mergeChargesData) {
+        return void 0;
+      }
+      if (!mergeChargesData.mergeChargesByTransactionReference.success) {
+        console.error(
+          `${message} ${
+            mergeChargesData.mergeChargesByTransactionReference.errors
+              ? ':\n' + mergeChargesData.mergeChargesByTransactionReference.errors?.join('\n')
+              : ''
+          }`,
+        );
+        toast.error('Error', {
+          id: mergeChargesNotificationId,
+          description: message,
+        });
+        return void 0;
+      }
+      toast.success('Success', {
+        id: mergeChargesNotificationId,
+        description: 'Charges successfully auto-merged',
+      });
+    } catch (e) {
+      console.error(`${message}: ${e}`);
+      toast.dismiss(feeNotificationId);
+      toast.dismiss(mergeChargesNotificationId);
+      toast.error('Error', {
+        description: 'Error handling tasks',
+        duration: 100_000,
+        closeButton: true,
+      });
+    }
+    return void 0;
+  }, [flagFees, mergeCharges]);
 
   return {
     fetching: executingFlagFees || executingMergeCharges,

@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   AddDepreciationRecordDocument,
   AddDepreciationRecordMutation,
   AddDepreciationRecordMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -25,54 +27,49 @@ type UseAddDepreciationRecord = {
   fetching: boolean;
   addDepreciationRecord: (
     variables: AddDepreciationRecordMutationVariables,
-  ) => Promise<AddDepreciationRecordMutation['insertDepreciationRecord']>;
+  ) => Promise<AddDepreciationRecordMutation['insertDepreciationRecord'] | void>;
 };
+
+const NOTIFICATION_ID = 'insertDepreciationRecord';
 
 export const useAddDepreciationRecord = (): UseAddDepreciationRecord => {
   // TODO: add authentication
   // TODO: add local data update method after update
 
   const [{ fetching }, mutate] = useMutation(AddDepreciationRecordDocument);
+  const addDepreciationRecord = useCallback(
+    async (variables: AddDepreciationRecordMutationVariables) => {
+      const message = 'Error adding depreciation record';
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Adding depreciation record', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'insertDepreciationRecord');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Depreciation record was added',
+          });
+          return data.insertDepreciationRecord;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    addDepreciationRecord: (
-      variables: AddDepreciationRecordMutationVariables,
-    ): Promise<AddDepreciationRecordMutation['insertDepreciationRecord']> =>
-      new Promise<AddDepreciationRecordMutation['insertDepreciationRecord']>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error adding depreciation record: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oops, depreciation record was not added',
-            });
-            return reject(res.error.message);
-          }
-          if (res.data?.insertDepreciationRecord.__typename === 'CommonError') {
-            console.error(
-              `Error adding depreciation record: ${res.data.insertDepreciationRecord.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oops, depreciation record was not added',
-            });
-            return reject('No data returned');
-          }
-          if (!res.data?.insertDepreciationRecord.id) {
-            console.error('Error adding depreciation record: No data returned');
-            showNotification({
-              title: 'Error!',
-              message: 'Oops, depreciation record was not added',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Success!',
-            message: 'Depreciation record was added! 🎉',
-          });
-          return resolve(res.data.insertDepreciationRecord);
-        }),
-      ),
+    addDepreciationRecord,
   };
 };

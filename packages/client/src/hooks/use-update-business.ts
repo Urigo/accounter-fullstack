@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateBusinessDocument,
   UpdateBusinessMutation,
   UpdateBusinessMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -29,52 +31,49 @@ type Business = Extract<
 
 type UseUpdateBusiness = {
   fetching: boolean;
-  updateBusiness: (variables: UpdateBusinessMutationVariables) => Promise<Business>;
+  updateBusiness: (variables: UpdateBusinessMutationVariables) => Promise<Business | void>;
 };
+
+const NOTIFICATION_ID = 'updateBusiness';
 
 export const useUpdateBusiness = (): UseUpdateBusiness => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateBusinessDocument);
+  const updateBusiness = useCallback(
+    async (variables: UpdateBusinessMutationVariables) => {
+      const message = `Error updating business ID [${variables.businessId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.businessId}`;
+      toast.loading('Updating business', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateBusiness');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Business updated',
+          });
+          return data.updateBusiness;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateBusiness: (variables: UpdateBusinessMutationVariables): Promise<Business> =>
-      new Promise<Business>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error updating business ID [${variables.businessId}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(`Error updating business ID [${variables.businessId}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.updateBusiness.__typename === 'CommonError') {
-            console.error(
-              `Error updating business ID [${variables.businessId}]: ${res.data.updateBusiness.message}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.data.updateBusiness.message);
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.updateBusiness);
-        }),
-      ),
+    updateBusiness,
   };
 };

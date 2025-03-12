@@ -113,9 +113,11 @@ function EditTaxCategoryForm({
 
   const onSubmit: SubmitHandler<UpdateTaxCategoryInput> = data => {
     data.sortCode &&= parseInt(data.sortCode.toString());
-    updateTaxCategory({ fields: data, taxCategoryId: taxCategory.id }).then(({ id }) => {
-      onAdd?.(id);
-      close();
+    updateTaxCategory({ fields: data, taxCategoryId: taxCategory.id }).then(res => {
+      if (res?.id) {
+        onAdd?.(res.id);
+        close();
+      }
     });
   };
 

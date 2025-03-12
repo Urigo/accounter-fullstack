@@ -1,6 +1,5 @@
 import { ReactElement, ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
@@ -38,7 +37,6 @@ export function Providers({ children }: { children?: ReactNode }): ReactElement 
     >
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Notifications />
         <Toaster />
         <AuthGuard>
           <UrqlProvider>

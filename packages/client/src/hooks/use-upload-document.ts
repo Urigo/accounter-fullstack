@@ -63,7 +63,7 @@ export const useUploadDocument = (): UseUploadDocument => {
         if (data) {
           toast.success('Success', {
             id: notificationId,
-            description: 'Your document was added',
+            description: 'Document was added',
           });
           return data.uploadDocument;
         }
