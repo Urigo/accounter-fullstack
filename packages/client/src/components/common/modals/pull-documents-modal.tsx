@@ -1,10 +1,8 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { useQuery } from 'urql';
 import { Modal, Select } from '@mantine/core';
-import { AllBusinessesDocument } from '../../../gql/graphql.js';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 
 type ModalProps = {
   opened: boolean;
@@ -13,36 +11,11 @@ type ModalProps = {
 };
 
 export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
-  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
-  const [{ data, fetching: fetchingBusinesses, error: businessesError }] = useQuery({
-    query: AllBusinessesDocument,
-  });
+  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
 
   const { control, handleSubmit } = useForm<{ ownerId: string }>({
     defaultValues: { ownerId: '6a20aa69-57ff-446e-8d6a-1e96d095e988' },
   });
-
-  // On every new data fetch, reorder results by name
-  useEffect(() => {
-    if (data?.allBusinesses?.nodes.length) {
-      setBusinesses(
-        data.allBusinesses.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [data, setBusinesses]);
-
-  useEffect(() => {
-    if (businessesError) {
-      toast.error('Error', {
-        description: 'Oh no!, we have an error fetching financial entities! 🤥',
-      });
-    }
-  }, [businessesError]);
 
   const { fetchIncomeDocuments, fetching: fetchingDocuments } = useFetchIncomeDocuments();
 

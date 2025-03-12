@@ -1,13 +1,8 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { toast } from 'sonner';
-import { useQuery } from 'urql';
 import { Select, TextInput } from '@mantine/core';
-import {
-  AllSortCodesDocument,
-  InsertTaxCategoryInput,
-  UpdateTaxCategoryInput,
-} from '../../../gql/graphql.js';
+import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
+import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -24,33 +19,9 @@ export function ModifyTaxCategoryFields({
   setFetching,
 }: ModalProps<boolean>): ReactElement {
   const { control } = useFormManager;
-  const [sortCodes, setSortCodes] = useState<Array<{ value: string; label: string }>>([]);
 
   // Sort codes array handle
-  const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
-    query: AllSortCodesDocument,
-  });
-
-  useEffect(() => {
-    if (sortCodesError) {
-      toast.error('Error', {
-        description: "Couldn't fetch sort codes",
-      });
-    }
-  }, [sortCodesError]);
-
-  useEffect(() => {
-    if (sortCodesData?.allSortCodes.length) {
-      const sortCodes = sortCodesData.allSortCodes
-        .filter(code => !!code.name)
-        .map(code => ({
-          value: code.id.toString(),
-          label: `${code.id}: ${code.name}`,
-        }))
-        .sort((a, b) => (a.label > b.label ? 1 : -1));
-      setSortCodes(sortCodes);
-    }
-  }, [sortCodesData, setSortCodes]);
+  const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
 
   useEffect(() => {
     setFetching(fetchingSortCodes);

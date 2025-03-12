@@ -6,7 +6,6 @@ import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import {
-  AllBusinessesDocument,
   AllEmployeesByEmployerDocument,
   AllPensionFundsDocument,
   AllTrainingFundsDocument,
@@ -18,6 +17,7 @@ import {
   TimelessDateString,
   UUID_REGEX,
 } from '../../../helpers/index.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { CurrencyInput, SimpleGrid, TextInput } from '../index.js';
 
@@ -36,11 +36,7 @@ export const ModifySalaryRecord = ({
   onDone,
   isModifying,
 }: Props): ReactElement => {
-  const [{ data: businessesData, fetching: fetchingBusinesses, error: businessesError }] = useQuery(
-    {
-      query: AllBusinessesDocument,
-    },
-  );
+  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
   const [{ data: pensionFundsData, fetching: fetchingPensionFunds, error: pensionFundsError }] =
     useQuery({
       query: AllPensionFundsDocument,
@@ -57,7 +53,6 @@ export const ModifySalaryRecord = ({
     },
   });
 
-  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
   const [pensionFunds, setPensionFunds] = useState<Array<{ value: string; label: string }>>([]);
   const [trainingFunds, setTrainingFunds] = useState<Array<{ value: string; label: string }>>([]);
   const [employees, setEmployees] = useState<Array<{ value: string; label: string }>>([]);
@@ -77,13 +72,6 @@ export const ModifySalaryRecord = ({
     setValue,
   } = useFormManager;
 
-  useEffect(() => {
-    if (businessesError) {
-      toast.error('Error', {
-        description: 'Oh no!, we have an error businesses entities! 🤥',
-      });
-    }
-  }, [businessesError]);
   useEffect(() => {
     if (pensionFundsError) {
       toast.error('Error', {
@@ -106,19 +94,6 @@ export const ModifySalaryRecord = ({
     }
   }, [employeesError]);
 
-  // On every new data fetch, reorder results by name
-  useEffect(() => {
-    if (businessesData?.allBusinesses?.nodes.length) {
-      setBusinesses(
-        businessesData.allBusinesses.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [businessesData, setBusinesses]);
   useEffect(() => {
     if (pensionFundsData?.allPensionFunds?.length) {
       setPensionFunds(

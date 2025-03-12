@@ -1,9 +1,8 @@
 import { forwardRef, ReactElement, useEffect } from 'react';
 import { Controller, FieldValues, Path, UseFormReturn } from 'react-hook-form';
-import { useQuery } from 'urql';
 import { Group, Select, Text } from '@mantine/core';
-import { AllTagsDocument } from '../../../gql/graphql.js';
-import { EMPTY_UUID, sortTags } from '../../../helpers/index.js';
+import { EMPTY_UUID } from '../../../helpers/index.js';
+import { useGetTags } from '../../../hooks/use-get-tags.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -20,16 +19,7 @@ export function TagInput<T extends FieldValues>({
   label,
   required = false,
 }: Props<T>): ReactElement {
-  const [{ data, fetching }] = useQuery({
-    query: AllTagsDocument,
-  });
-
-  const allTags =
-    sortTags(data?.allTags ?? []).map(tag => ({
-      label: tag.name,
-      value: tag.id,
-      description: tag.namePath ? `${tag.namePath.join(' > ')} >` : undefined,
-    })) ?? [];
+  const { selectableTags: allTags, fetching } = useGetTags();
   allTags.push({
     label: 'None',
     value: EMPTY_UUID,

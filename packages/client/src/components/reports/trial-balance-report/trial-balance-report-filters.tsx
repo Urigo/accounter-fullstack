@@ -1,14 +1,13 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
-import { useQuery } from 'urql';
 import { Indicator, MultiSelect, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { AllBusinessesDocument, BusinessTransactionsFilter } from '../../../gql/graphql.js';
+import { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { PopUpModal } from '../../common/index.js';
@@ -33,30 +32,9 @@ function TrialBalanceReportFilterForm({
   const { control, handleSubmit } = useForm<TrialBalanceReportFilters>({
     defaultValues: { ...filter },
   });
-  const [{ data: businessesData, fetching: businessesLoading, error: businessesError }] = useQuery({
-    query: AllBusinessesDocument,
-  });
+  const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
 
   const { userContext } = useContext(UserContext);
-
-  useEffect(() => {
-    if (businessesError) {
-      toast.error('Error', {
-        description: 'Oh no!, we have an error fetching businesses! 🤥',
-      });
-    }
-  }, [businessesError]);
-
-  const businesses = useMemo(() => {
-    return (
-      businessesData?.allBusinesses?.nodes
-        .map(entity => ({
-          value: entity.id,
-          label: entity.name,
-        }))
-        .sort((a, b) => (a.label > b.label ? 1 : -1)) ?? []
-    );
-  }, [businessesData]);
 
   const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
     data.isShowZeroedAccounts = isShowZeroedAccounts ?? false;
