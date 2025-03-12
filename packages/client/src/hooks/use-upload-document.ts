@@ -49,10 +49,9 @@ export const useUploadDocument = (): UseUploadDocument => {
   const [{ fetching }, mutate] = useMutation(UploadDocumentDocument);
   const uploadDocument = useCallback(
     async (variables: UploadDocumentMutationVariables) => {
-      const message =
-        'Error uploading document' + variables.chargeId
-          ? ` to charge ID [${variables.chargeId}]`
-          : '';
+      const message = variables.chargeId
+        ? `Error uploading document to charge ID [${variables.chargeId}]`
+        : 'Error uploading document';
       const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
       toast.loading('Uploading Document', {
         id: notificationId,
