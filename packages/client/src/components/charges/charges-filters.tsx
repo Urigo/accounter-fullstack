@@ -175,7 +175,7 @@ function ChargesFiltersForm({
           <Controller
             name="fromAnyDate"
             control={control}
-            defaultValue={filter.fromDate}
+            defaultValue={filter.fromAnyDate}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
@@ -203,7 +203,7 @@ function ChargesFiltersForm({
           <Controller
             name="toAnyDate"
             control={control}
-            defaultValue={filter.toDate}
+            defaultValue={filter.toAnyDate}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
