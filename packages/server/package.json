@@ -27,7 +27,7 @@
     "@pgtyped/cli": "2.3.0",
     "@pgtyped/runtime": "2.3.0",
     "@whatwg-node/fetch": "0.10.5",
-    "ai": "4.1.58",
+    "ai": "4.1.60",
     "basic-auth": "2.0.1",
     "bcrypt": "5.1.1",
     "cloudinary": "2.6.0",
