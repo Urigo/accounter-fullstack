@@ -1,3 +1,4 @@
+import { getDeelEmployeeId } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -131,6 +132,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    const miscLedgerEntries: LedgerProto[] = [];
 
     // generate ledger from documents
     if (gotRelevantDocuments) {
@@ -157,7 +159,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           charge.owner_id,
           documentsTaxCategoryId!,
         )
-          .then(ledgerEntry => {
+          .then(async ledgerEntry => {
+            getDeelEmployeeId(context, document, ledgerEntry, miscLedgerEntries);
             accountingLedgerEntries.push(ledgerEntry);
             updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
             dates.add(ledgerEntry.valueDate.getTime());
@@ -249,8 +252,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     await Promise.all(entriesPromises);
 
-    const miscLedgerEntries: LedgerProto[] = [];
-
     // generate ledger from balance cancellation
     for (const balanceCancellation of balanceCancellations) {
       try {
@@ -287,12 +288,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
-      const transactionEntries = financialAccountLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-      );
-      const documentEntries = accountingLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-      );
+      const transactionEntries = financialAccountLedgerEntries.filter(entry => {
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        return false;
+      });
+      const documentEntries = accountingLedgerEntries.filter(entry => {
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        return false;
+      });
 
       try {
         const entries = multipleForeignCurrenciesBalanceEntries(

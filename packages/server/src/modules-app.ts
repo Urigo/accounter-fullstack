@@ -4,6 +4,7 @@ import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
+import { deelModule } from '@modules/deel/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
 import { vatModule } from '@modules/vat/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
@@ -71,6 +72,7 @@ export async function createGraphQLApp(env: Environment) {
       corporateTaxesModule,
       countriesModule,
       vatModule,
+      deelModule,
     ],
     providers: [
       {
