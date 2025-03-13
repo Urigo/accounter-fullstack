@@ -592,9 +592,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     );
 
     const records = [
-      ...(crossYearLedgerEntries ?? financialAccountLedgerEntries),
+      ...(crossYearLedgerEntries ?? accountingLedgerEntries),
       ...feeFinancialAccountLedgerEntries,
-      ...accountingLedgerEntries,
+      ...financialAccountLedgerEntries,
       ...miscLedgerEntries,
     ];
 
