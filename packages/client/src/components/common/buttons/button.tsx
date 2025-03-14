@@ -5,6 +5,7 @@ import {
   MouseEventHandler,
   ReactElement,
 } from 'react';
+import { Button as ShadcnButton } from '../../ui/button.js';
 
 export interface Props
   extends DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> {
@@ -29,16 +30,21 @@ export const Button = ({
   ...props
 }: Props): ReactElement => {
   return (
-    <button
+    <ShadcnButton
       style={style}
       type={type}
       onClick={onClick}
-      className="cursor: pointer text-align: center flex ml-auto text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-hidden hover:bg-indigo-600 rounded-sm;"
+      className="ml-auto"
+      asChild={!!herf}
       {...props}
     >
-      <a rel={rel} target={target} href={herf} type={type}>
-        {title}
-      </a>
-    </button>
+      {herf ? (
+        <a rel={rel} target={target} href={herf}>
+          {title}
+        </a>
+      ) : (
+        title
+      )}
+    </ShadcnButton>
   );
 };

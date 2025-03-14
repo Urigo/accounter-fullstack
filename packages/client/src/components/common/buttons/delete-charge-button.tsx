@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Trash } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { useDeleteCharge } from '../../../hooks/use-delete-charge.js';
+import { ActionIcon } from '../../ui/action-icon.js';
 import { ConfirmationModal } from '../index.js';
 
 interface Props {
