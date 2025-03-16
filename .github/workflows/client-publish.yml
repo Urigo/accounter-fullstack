@@ -17,7 +17,7 @@ jobs:
 
       - name: Get changed files
         id: client-files
-        uses: tj-actions/changed-files@v45
+        uses: tj-actions/changed-files@v46.0.1
         with:
           files: |
             packages/client/**
