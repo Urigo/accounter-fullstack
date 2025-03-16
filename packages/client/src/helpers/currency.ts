@@ -1,9 +1,15 @@
 import { Currency } from '../gql/graphql.js';
 
-export const formatCurrency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
+export function getCurrencyFormatter(
+  currency: Currency,
+  options?: Omit<Intl.NumberFormatOptions, 'currency'>,
+): Intl.NumberFormat {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    ...options,
+    currency,
+  });
+}
 
 export function currencyCodeToSymbol(currency_code: Currency): string {
   let currencySymbol = '₪';

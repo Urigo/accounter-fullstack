@@ -3,8 +3,8 @@ import { Loader2 } from 'lucide-react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Indicator, Table, Tooltip } from '@mantine/core';
-import { CorporateTaxRulingComplianceReportDocument } from '../../../gql/graphql.js';
-import { dedupeFragments } from '../../../helpers/index.js';
+import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
+import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
 import { AmountCell } from './amount-cell.js';
@@ -97,10 +97,10 @@ import { RuleCell } from './rule-cell.js';
   }
 `;
 
-const formatter = (amount: number, currency: string) =>
-  new Intl.NumberFormat('en-EN', { style: 'currency', currency }).format(amount);
+const formatter = (amount: number, currency: Currency) =>
+  getCurrencyFormatter(currency).format(amount);
 
-function multipleOptionalFormatter(amounts: number[], currency: string) {
+function multipleOptionalFormatter(amounts: number[], currency: Currency) {
   if (amounts.length === 0) return undefined;
   return formatter(
     amounts.reduce((acc, curr) => acc + curr, 0),

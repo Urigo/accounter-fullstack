@@ -11,7 +11,8 @@ import {
   Row,
   useReactTable,
 } from '@tanstack/react-table';
-import { YearlyLedgerDocument, YearlyLedgerQuery } from '../../../gql/graphql.js';
+import { Currency, YearlyLedgerDocument, YearlyLedgerQuery } from '../../../gql/graphql.js';
+import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
@@ -66,10 +67,7 @@ import { DownloadCSV } from './download-csv.js';
   }
 `;
 
-const formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'ILS',
-});
+const formatter = getCurrencyFormatter(Currency.Ils);
 
 type RowType =
   YearlyLedgerQuery['yearlyLedgerReport']['financialEntitiesInfo'][number]['records'][number] &
