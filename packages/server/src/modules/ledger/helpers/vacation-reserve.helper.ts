@@ -191,14 +191,22 @@ export async function calculateVacationReserveAmount(
   }
 
   const prevVacationReserveAmount = vacationLedgerRecords.reduce((acc, record) => {
-    if (
-      record.credit_entity1 !== vacationReserveTaxCategoryId ||
-      record.debit_entity1 !== vacationReserveExpensesTaxCategoryId ||
-      record.value_date.getTime() >= new Date(year, 11, 31).getTime()
-    ) {
+    let factor = 0;
+    if (record.value_date.getTime() >= new Date(year, 11, 31).getTime()) {
       return acc;
     }
-    return acc + Number(record.credit_local_amount1);
+    if (
+      record.credit_entity1 === vacationReserveTaxCategoryId ||
+      record.debit_entity1 === vacationReserveExpensesTaxCategoryId
+    ) {
+      factor = 1;
+    } else if (
+      record.credit_entity1 === vacationReserveExpensesTaxCategoryId ||
+      record.debit_entity1 === vacationReserveTaxCategoryId
+    ) {
+      factor = -1;
+    }
+    return acc + Number(record.credit_local_amount1) * factor;
   }, 0);
   reservesPrompt += `\n- Prev reserve: ${prevVacationReserveAmount}`;
   vacationReserveAmount -= prevVacationReserveAmount;
