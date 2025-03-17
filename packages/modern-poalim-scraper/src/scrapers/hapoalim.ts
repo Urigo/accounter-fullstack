@@ -33,7 +33,7 @@ declare namespace window {
 }
 
 async function businessLogin(credentials: HapoalimCredentials, page: Page) {
-  const BASE_URL = 'https://biz2.bankhapoalim.co.il/authenticate/logon/main';
+  const BASE_URL = 'https://biz2.bankhapoalim.co.il/ng-portals/auth/he/biz-login/authenticate';
   await page.goto(BASE_URL);
 
   await page.waitForSelector('.submit-btn');
