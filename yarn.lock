@@ -240,11 +240,14 @@ __metadata:
     "@types/uuid": "npm:10.0.0"
     ajv: "npm:8.17.1"
     ajv-formats: "npm:3.0.1"
+    concurrently: "npm:9.1.2"
     date-fns: "npm:4.1.0"
     inquirer: "npm:12.4.3"
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
+    nodemon: "npm:3.1.9"
     puppeteer: "npm:24.4.0"
+    typescript: "npm:5.8.2"
     uuid: "npm:11.1.0"
   languageName: unknown
   linkType: soft
