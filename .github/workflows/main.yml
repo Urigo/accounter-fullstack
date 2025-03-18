@@ -27,9 +27,9 @@ jobs:
     secrets:
       hiveToken: ${{ secrets.HIVE_TOKEN }}
 
-  client-publish:
-    name: client publish
-    uses: ./.github/workflows/client-publish.yml
-    secrets:
-      apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  # client-publish:
+  #   name: client publish
+  #   uses: ./.github/workflows/client-publish.yml
+  #   secrets:
+  #     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
