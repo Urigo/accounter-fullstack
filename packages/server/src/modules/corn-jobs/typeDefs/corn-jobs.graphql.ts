@@ -5,6 +5,10 @@ export default gql`
   extend type Mutation {
     mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult! @auth(role: ADMIN)
     flagForeignFeeTransactions: FlagForeignFeeTransactionsResult! @auth(role: ADMIN)
+    generateFinancialCharges(
+      date: TimelessDate!
+      ownerId: UUID!
+    ): FinancialChargesGenerationResult! @auth(role: ADMIN)
   }
 
   " result type for mergeChargesByTransactionReference "
@@ -19,5 +23,16 @@ export default gql`
     success: Boolean!
     transactions: [Transaction!]
     errors: [String!]
+  }
+
+  " result type for generateFinancialCharges "
+  type FinancialChargesGenerationResult {
+    id: ID!
+    revaluationCharge: Charge!
+    taxExpensesCharge: Charge!
+    depreciationCharge: Charge!
+    recoveryReserveCharge: Charge!
+    vacationReserveCharge: Charge!
+    bankDepositsRevaluationCharge: Charge!
   }
 `;
