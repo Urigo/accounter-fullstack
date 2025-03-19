@@ -9,39 +9,28 @@ import {
   type DeelInvoiceMatch,
   type PrefixedBreakdown,
 } from '../helpers/deel.helper.js';
+import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
-import { DeelWorkersProvider } from '../providers/deel-workers.provider.js';
-import { DeelProvider } from '../providers/deel.provider.js';
 import type { DeelModule } from '../types.js';
 
 export const deelResolvers: DeelModule.Resolvers = {
   Mutation: {
-    addDeelEmployee: async (_, { deelId, businessId }, { injector }) => {
+    addDeelContract: async (
+      _,
+      { contractId, contractorId, contractorName, contractStartDate, businessId },
+      { injector },
+    ) => {
       try {
-        await injector
-          .get(DeelWorkersProvider)
-          .insertDeelEmployee({ deelId: Number(deelId), businessId });
+        await injector.get(DeelContractsProvider).insertDeelContract({
+          contractId,
+          contractorId,
+          contractorName,
+          contractStartDate,
+          businessId,
+        });
         return true;
       } catch (error) {
-        const message = `Error adding Deel employee [${deelId}]`;
-        console.error(message, error);
-        throw new GraphQLError(message);
-      }
-    },
-    addDeelPaymentInfo: async (_, { records }, { injector }) => {
-      try {
-        const deelDocumentRecords = records.map(record => ({
-          ...record,
-          contractId: record.contractId ?? null,
-          contractOrFeeDescription: record.contractOrFeeDescription ?? null,
-          deelWorkerId: record.deelWorkerId ?? null,
-          entity: record.entity ?? null,
-          workerName: record.workerName ?? null,
-        }));
-        await injector.get(DeelProvider).insertDeelDocumentRecords({ deelDocumentRecords });
-        return true;
-      } catch (error) {
-        const message = 'Error adding Deel document records';
+        const message = `Error adding Deel contract [${contractId}]`;
         console.error(message, error);
         throw new GraphQLError(message);
       }

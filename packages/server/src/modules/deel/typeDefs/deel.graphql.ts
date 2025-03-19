@@ -3,8 +3,13 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Mutation {
-    addDeelEmployee(businessId: UUID!, deelId: ID!): Boolean! @auth(role: ACCOUNTANT)
-    addDeelPaymentInfo(records: [DeelDocumentRecord!]!): Boolean! @auth(role: ACCOUNTANT)
+    addDeelContract(
+      contractId: ID!
+      contractStartDate: TimelessDate!
+      contractorId: UUID!
+      contractorName: String!
+      businessId: UUID!
+    ): Boolean! @auth(role: ACCOUNTANT)
     fetchDeelDocuments: Boolean! @auth(role: ACCOUNTANT)
   }
 

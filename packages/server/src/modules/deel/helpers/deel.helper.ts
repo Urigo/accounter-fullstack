@@ -1,3 +1,4 @@
+import { endOfDay, startOfDay } from 'date-fns';
 import type { Injector } from 'graphql-modules';
 import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
 import type {
@@ -11,11 +12,12 @@ import type {
   IGetDocumentsByChargeIdResult,
   IInsertDocumentsParams,
 } from '@modules/documents/types';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
-import { DeelWorkersProvider } from '../providers/deel-workers.provider.js';
-import { DeelProvider } from '../providers/deel.provider.js';
+import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
+import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type { IInsertDeelInvoiceRecordsParams } from '../types.js';
 
 const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff';
@@ -25,6 +27,7 @@ export async function getDeelEmployeeId(
   document: IGetDocumentsByChargeIdResult,
   ledgerEntry: StrictLedgerProto,
   ledgerEntries: LedgerProto[],
+  updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
   if (
     (document.creditor_id !== DEEL_BUSINESS_ID && document.debtor_id !== DEEL_BUSINESS_ID) ||
@@ -38,30 +41,30 @@ export async function getDeelEmployeeId(
   const isDeelCreditor = ledgerEntry.creditAccountID1 === DEEL_BUSINESS_ID;
   // naive fetch employee id from deel
   let employeeId = await context.injector
-    .get(DeelWorkersProvider)
+    .get(DeelContractsProvider)
     .getEmployeeIdByDocumentIdLoader.load(document.id);
 
   if (!employeeId && document.date && document.type) {
     // figure out through deel records
     const records = await context.injector
-      .get(DeelProvider)
-      .getDocumentRecordsByInvoiceDateLoader.load(dateToTimelessDateString(document.date));
+      .get(DeelInvoicesProvider)
+      .getInvoicesByIssueDates(startOfDay(document.date), endOfDay(document.date));
 
     const matchingRecord = records.find(r => {
-      if (r.invoice_date.getTime() !== document.date?.getTime()) {
+      if (dateToTimelessDateString(r.issued_at) !== dateToTimelessDateString(document.date!)) {
         return false;
       }
-      if (r.invoice_serial !== document.serial_number) {
+      if (r.label !== document.serial_number) {
         return false;
       }
       if (r.currency !== document.currency_code) {
         return false;
       }
-      if (Number(r.amount) !== document.total_amount) {
+      if (Number(r.total) !== document.total_amount) {
         if (records.length === 1) {
           return false;
         }
-        const spreadRecords = records.filter(r => r.invoice_serial === document.serial_number);
+        const spreadRecords = records.filter(r => r.label === document.serial_number);
         if (spreadRecords.length === 1) {
           return false;
         }
@@ -72,40 +75,40 @@ export async function getDeelEmployeeId(
       }
       return true;
     });
-    if (matchingRecord) {
-      if (!matchingRecord.document_id) {
-        // update Deel record
-        await context.injector.get(DeelProvider).updateDocumentRecord({
-          documentId: document.id,
-          recordId: matchingRecord.id,
-        });
-      }
-      if (matchingRecord.document_id && matchingRecord.document_id !== document.id) {
-        console.log('this is weird...');
-      }
-
-      if (matchingRecord?.deel_worker_id) {
-        employeeId = await context.injector
-          .get(DeelWorkersProvider)
-          .getEmployeeIDByDeelIdLoader.load(matchingRecord.deel_worker_id);
-      }
+    if (matchingRecord?.contract_id) {
+      employeeId = await context.injector
+        .get(DeelContractsProvider)
+        .getEmployeeIDByContractIdLoader.load(matchingRecord.contract_id);
     }
   }
 
   if (employeeId) {
+    // get employee tax category
+    const taxCategoryId = await context.injector
+      .get(TaxCategoriesProvider)
+      .taxCategoryByBusinessAndOwnerIDsLoader.load({
+        businessId: employeeId,
+        ownerId: context.adminContext.defaultAdminBusinessId,
+      })
+      .then(taxCategory => taxCategory?.id);
+    let newEntry: LedgerProto;
     if (isDeelCreditor) {
-      ledgerEntries.push({
-        ...ledgerEntry,
-        debitAccountID1: employeeId,
-      });
-      ledgerEntry.creditAccountID1 = employeeId;
-    } else {
-      ledgerEntries.push({
+      newEntry = {
         ...ledgerEntry,
         creditAccountID1: employeeId,
-      });
+        debitAccountID1: taxCategoryId ?? ledgerEntry.debitAccountID1,
+      };
       ledgerEntry.debitAccountID1 = employeeId;
+    } else {
+      newEntry = {
+        ...ledgerEntry,
+        debitAccountID1: employeeId,
+        creditAccountID1: taxCategoryId ?? ledgerEntry.creditAccountID1,
+      };
+      ledgerEntry.creditAccountID1 = employeeId;
     }
+    updateLedgerBalance(newEntry);
+    ledgerEntries.push(newEntry);
   }
 
   return;

@@ -124,6 +124,16 @@ export class DeelInvoicesProvider {
     });
   }
 
+  public async getInvoicesByIssueDates(from: Date, to: Date) {
+    try {
+      return getInvoicesByIssueDates.run({ from, to }, this.dbProvider);
+    } catch (e) {
+      const message = `Error getting Deel invoices by issue dates`;
+      console.error(message, e);
+      throw new Error(message);
+    }
+  }
+
   public getInvoicesByIssueDateLoader = new DataLoader(
     (dates: readonly Date[]) => this.batchInvoicesByIssueDates(dates),
     {

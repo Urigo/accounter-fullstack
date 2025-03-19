@@ -1,6 +1,16 @@
 export * from './__generated__/types.js';
 export * from './__generated__/deel.types.js';
-export * from './__generated__/deel-workers.types.js';
+export type {
+  IGetEmployeeIDsByContractIdsParams,
+  IGetEmployeeIDsByContractIdsResult,
+  IGetEmployeeIDsByContractIdsQuery,
+  IGetEmployeeIdsByDocumentIdsParams,
+  IGetEmployeeIdsByDocumentIdsResult,
+  IGetEmployeeIdsByDocumentIdsQuery,
+  IInsertDeelContractParams,
+  IInsertDeelContractResult,
+  IInsertDeelContractQuery,
+} from './__generated__/deel-workers.types.js';
 export type {
   IGetInvoicesByIssueDatesParams,
   IGetInvoicesByIssueDatesResult,
