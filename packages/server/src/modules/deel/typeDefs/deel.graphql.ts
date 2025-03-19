@@ -5,6 +5,7 @@ export default gql`
   extend type Mutation {
     addDeelEmployee(businessId: UUID!, deelId: ID!): Boolean! @auth(role: ACCOUNTANT)
     addDeelPaymentInfo(records: [DeelDocumentRecord!]!): Boolean! @auth(role: ACCOUNTANT)
+    fetchDeelDocuments: Boolean! @auth(role: ACCOUNTANT)
   }
 
   " Deel document record input "

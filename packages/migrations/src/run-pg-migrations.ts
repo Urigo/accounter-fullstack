@@ -80,6 +80,7 @@ import migration_2025_02_26T19_27_56_add_to_context_ledger_lock from './actions/
 import migration_2025_03_04T16_29_18_update_charges_view_add_no_doc_req_flag from './actions/2025-03-04T16-29-18.update-charges-view-add-no-doc-req-flag.js';
 import migration_2025_03_10T16_21_31_charge_no_docs_flag from './actions/2025-03-10T16-21-31.charge-no-docs-flag.js';
 import migration_2025_03_13T13_24_43_deel_data from './actions/2025-03-13T13-24-43.deel-data.js';
+import migration_2025_03_19T12_05_43_deel_api_tables from './actions/2025-03-19T12-05-43.deel-api-tables.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -167,5 +168,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_03_04T16_29_18_update_charges_view_add_no_doc_req_flag,
       migration_2025_03_10T16_21_31_charge_no_docs_flag,
       migration_2025_03_13T13_24_43_deel_data,
+      migration_2025_03_19T12_05_43_deel_api_tables,
     ],
   });
