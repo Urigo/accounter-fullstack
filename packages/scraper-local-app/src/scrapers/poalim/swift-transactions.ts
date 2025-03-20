@@ -174,12 +174,12 @@ async function fetchSwiftTransactions(
     }
     if (transaction.dataOriginCode !== 2) {
       // skip non-ready transactions
-      logger.log(`
+      logger.log(`Swift transaction
           ${transaction.startDate}
           ${transaction.amount}
           ${transaction.chargePartyName}
           is not ready yet`);
-      return false;
+      // return false;
     }
     return true;
   });
@@ -247,6 +247,7 @@ async function normalizeTransaction(
     const foreignSwiftTransactionDetails = await scraper.getForeignSwiftTransaction(
       bankAccount,
       transaction.transferCatenatedId,
+      transaction.dataOriginCode,
     );
 
     if (!foreignSwiftTransactionDetails.isValid) {
