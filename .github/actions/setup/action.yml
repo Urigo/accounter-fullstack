@@ -24,22 +24,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Get yarn cache directory path
-      shell: bash
-      id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
-
-    - name: Cache Yarn
-      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-      id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+    - name: Install Node
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
-        path: ${{steps.yarn-cache-dir-path.outputs.dir}}
-        key: ${{runner.os}}-19-yarn-${{hashFiles('yarn.lock')}}
-        restore-keys: |
-          ${{runner.os}}-19-yarn-
+        node-version-file: .node-version
 
     - name: Install NodeJS
-      uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
+      uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.0.0
       with:
         node-version-file: .node-version
         cache: ${{ inputs.installDependencies == 'true' && 'yarn' }}

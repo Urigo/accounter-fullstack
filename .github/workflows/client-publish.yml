@@ -1,0 +1,67 @@
+name: 'Client Publish'
+on:
+  push:
+    branches:
+      - main
+      - prod
+    paths:
+      - 'packages/client/**'
+
+jobs:
+  lint:
+    name: Lint
+    uses: ./.github/workflows/lint.yml
+
+  search-token:
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    outputs:
+      api_token_present: ${{ steps.secrets_present.outputs.api_token }}
+    steps:
+      - name: check for Hive token presence
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.apiToken }}
+        id: secrets_present
+        run: echo "api_token=${{ env.CLOUDFLARE_API_TOKEN != '' }}" >> $GITHUB_OUTPUT
+
+  client-publish:
+    needs: [search-token]
+    if: ${{needs.search-token.outputs.api_token_present == 'true'}}
+    runs-on: ubuntu-latest
+    environment: accounter-fullstack
+    permissions:
+      contents: read
+      deployments: write
+    name: Publish Client to Cloudflare Pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Generate GraphQL
+        run: yarn generate:graphql
+
+      - name: Build Client
+        working-directory: packages/client
+        run:
+          yarn build  --mode ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref ==
+          'refs/heads/prod' && 'production') || 'development' }}
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1.5.0
+        with:
+          apiToken: ${{ secrets.apiToken }}
+          accountId: ${{ secrets.accountId }}
+          projectName:
+            ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref ==
+            'refs/heads/prod' && 'accounter-prod') || '' }}
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          workingDirectory: packages/client
