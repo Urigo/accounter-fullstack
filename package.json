@@ -55,7 +55,7 @@
     "@graphql-inspector/cli": "5.0.8",
     "@parcel/watcher": "^2.4.1",
     "@pgtyped/cli": "2.3.0",
-    "@pgtyped/runtime": "2.3.0",
+    "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.2",
     "@theguild/prettier-config": "3.0.0",
     "@types/node": "22.13.10",
