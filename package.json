@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "graphql": "16.10.0",
-    "graphql-scalars": "1.24.1"
+    "graphql-scalars": "1.24.2"
   },
   "devDependencies": {
     "@changesets/changelog-github": "0.5.1",
@@ -74,7 +74,7 @@
     "tsx": "4.19.3",
     "typescript": "5.8.2",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "resolutions": {
     "graphql": "16.10.0"
