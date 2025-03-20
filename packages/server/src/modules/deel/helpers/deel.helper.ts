@@ -5,7 +5,9 @@ import type {
   DeelWorker,
   Invoice,
   PaymentBreakdownRecord,
+  PaymentReceipts,
 } from '@modules/app-providers/deel/schemas.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { uploadToCloudinary } from '@modules/documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import type {
@@ -230,4 +232,125 @@ export function getDeelChargeDescription(workers?: DeelWorker[]) {
   const workersDescription = workerNames?.length ? ` for ${workerNames.join(', ')}` : '';
   const description = `Deel payment${workersDescription}`;
   return description;
+}
+
+export async function fetchAndFilterInvoices(injector: Injector) {
+  try {
+    const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: enable setting up period
+
+    const filteredInvoices: Invoice[] = [];
+    const knownReceiptIds = new Set<string>();
+
+    await Promise.all(
+      invoices.data.map(async invoice => {
+        const dbInvoice = await injector
+          .get(DeelInvoicesProvider)
+          .getInvoicesByIdLoader.load(invoice.id)
+          .catch(e => {
+            console.error(e);
+            throw new Error('Error fetching invoice');
+          });
+        if (dbInvoice) {
+          knownReceiptIds.add(invoice.id);
+        } else {
+          filteredInvoices.push(invoice);
+        }
+      }),
+    );
+
+    return { invoices: filteredInvoices, knownReceiptIds };
+  } catch (error) {
+    console.error(error);
+    throw new Error('Error fetching Deel invoices');
+  }
+}
+
+export async function fetchReceipts(injector: Injector) {
+  try {
+    const res = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERION_IN_MONTHS
+    return res.data.rows;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Error fetching Deel receipts');
+  }
+}
+
+export async function fetchPaymentBreakdowns(injector: Injector, receipts: PaymentReceipts[]) {
+  const receiptsBreakDown: Array<PaymentBreakdownRecord & { receipt_id: string }> = [];
+
+  for (const receipt of receipts) {
+    if (receipt.id) {
+      const breakDown = await injector.get(DeelClientProvider).getPaymentBreakdown(receipt.id);
+      receiptsBreakDown.push(...breakDown.data.map(row => ({ ...row, receipt_id: receipt.id })));
+    }
+  }
+
+  return receiptsBreakDown;
+}
+
+export async function getChargeMatchesForPayments(
+  injector: Injector,
+  ownerId: string,
+  receipts: PaymentReceipts[],
+  knownReceiptIds: Set<string>,
+) {
+  const receiptChargeMap = new Map<string, string>();
+
+  await Promise.all(
+    Array.from(knownReceiptIds).map(async id =>
+      injector
+        .get(DeelInvoicesProvider)
+        .getChargeIdByPaymentIdLoader.load(id)
+        .then(chargeId => {
+          if (chargeId) {
+            receiptChargeMap.set(id, chargeId);
+          }
+        }),
+    ),
+  );
+
+  for (const receipt of receipts) {
+    if (receiptChargeMap.has(receipt.id)) {
+      continue;
+    }
+    const description = getDeelChargeDescription(receipt.workers);
+    const [charge] = await injector.get(ChargesProvider).generateCharge({
+      ownerId,
+      userDescription: description,
+    });
+
+    receiptChargeMap.set(receipt.id, charge.id);
+
+    // TODO: upload receipt whenever available via Deel API
+  }
+
+  return receiptChargeMap;
+}
+
+export function matchInvoicesWithPayments(
+  invoices: Invoice[],
+  paymentBreakdowns: PaymentBreakdownRecord[],
+) {
+  const matches: DeelInvoiceMatch[] = [];
+
+  invoices.map(invoice => {
+    const optionalMatches = paymentBreakdowns.filter(
+      receipt =>
+        invoice.currency === receipt.currency &&
+        invoice.total === receipt.total &&
+        invoice.created_at === receipt.date &&
+        invoice.paid_at === receipt.payment_date,
+    );
+    if (optionalMatches.length === 1) {
+      const adjustedBreakdown: Record<string, unknown> = {};
+      Object.entries(optionalMatches[0]).map(([key, value]) => {
+        adjustedBreakdown[`breakdown_${key}`] = value;
+      });
+      matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
+    } else {
+      throw new Error(`No payment match found for invoice ${invoice.id}`);
+    }
+  });
+
+  return matches;
 }

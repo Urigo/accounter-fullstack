@@ -45,6 +45,10 @@ export class DeelClientProvider {
         },
       });
 
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error(`Deel API returned status ${res.status}`);
+      }
       const rawData = await res.json();
 
       if ('errors' in rawData) {
@@ -72,6 +76,10 @@ export class DeelClientProvider {
         },
       });
 
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error(`Deel API returned status ${res.status}`);
+      }
       const rawData = await res.json();
 
       if ('errors' in rawData) {
@@ -113,6 +121,10 @@ export class DeelClientProvider {
         },
       });
 
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error(`Deel API returned status ${res.status}`);
+      }
       const rawData = await res.json();
 
       if ('errors' in rawData) {
@@ -140,6 +152,10 @@ export class DeelClientProvider {
         },
       });
 
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error(`Deel API returned status ${res.status}`);
+      }
       const rawData = await res.json();
 
       const data = downloadInvoicePdfSchema.parse(rawData);

@@ -10,7 +10,7 @@ export type {
   IInsertDeelContractParams,
   IInsertDeelContractResult,
   IInsertDeelContractQuery,
-} from './__generated__/deel-workers.types.js';
+} from './__generated__/deel-contracts.types.js';
 export type {
   IGetInvoicesByIssueDatesParams,
   IGetInvoicesByIssueDatesResult,
@@ -21,4 +21,7 @@ export type {
   IGetInvoicesByIdsParams,
   IGetInvoicesByIdsResult,
   IGetInvoicesByIdsQuery,
+  IGetChargeIdsByPaymentIdsParams,
+  IGetChargeIdsByPaymentIdsResult,
+  IGetChargeIdsByPaymentIdsQuery,
 } from './__generated__/deel-invoices.types.js';

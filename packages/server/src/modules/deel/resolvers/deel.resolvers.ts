@@ -1,13 +1,12 @@
 import { GraphQLError } from 'graphql';
-import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
-import type { Invoice, PaymentBreakdownRecord } from '@modules/app-providers/deel/schemas.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import {
   convertMatchToDeelInvoiceRecord,
-  getDeelChargeDescription,
+  fetchAndFilterInvoices,
+  fetchPaymentBreakdowns,
+  fetchReceipts,
+  getChargeMatchesForPayments,
+  matchInvoicesWithPayments,
   uploadInvoice,
-  type DeelInvoiceMatch,
-  type PrefixedBreakdown,
 } from '../helpers/deel.helper.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
@@ -37,90 +36,24 @@ export const deelResolvers: DeelModule.Resolvers = {
     },
     fetchDeelDocuments: async (_, __, { injector, adminContext }) => {
       try {
-        const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: use PERION_IN_MONTHS
-        const receipts = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERION_IN_MONTHS
+        const { invoices, knownReceiptIds } = await fetchAndFilterInvoices(injector);
 
-        // filter out known invoices
-        const filteredInvoices: Invoice[] = [];
-        const knownReceiptIds = new Set<string>();
-        await Promise.all(
-          invoices.data.map(async invoice => {
-            const dbInvoice = await injector
-              .get(DeelInvoicesProvider)
-              .getInvoicesByIdLoader.load(invoice.id)
-              .catch(e => {
-                console.error(e);
-                throw new Error('Error fetching invoice');
-              });
-            if (dbInvoice) {
-              knownReceiptIds.add(dbInvoice.payment_id);
-            } else {
-              filteredInvoices.push(invoice);
-            }
-          }),
+        const receipts = await fetchReceipts(injector);
+
+        const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
+
+        const paymentToChargeMap = await getChargeMatchesForPayments(
+          injector,
+          adminContext.defaultAdminBusinessId,
+          receipts,
+          knownReceiptIds,
         );
 
-        // filter out known receipts
-        const filteredReceipts = receipts.data.rows.filter(
-          receipt => !knownReceiptIds.has(receipt.id),
-        );
-
-        // fetch payment breakdown for each receipt
-        const receiptsBreakDown: Array<PaymentBreakdownRecord & { receipt_id: string }> = [];
-        for (const receipt of filteredReceipts) {
-          if (receipt.id) {
-            const breakDown = await injector
-              .get(DeelClientProvider)
-              .getPaymentBreakdown(receipt.id);
-            receiptsBreakDown.push(
-              ...breakDown.data.map(row => ({ ...row, receipt_id: receipt.id })),
-            );
-          }
-        }
-
-        // generate charges for new receipts
-        const receiptChargeMap = new Map<string, string>();
-        for (const receipt of filteredReceipts) {
-          const chargePromise = async () => {
-            const description = getDeelChargeDescription(receipt.workers);
-            const [charge] = await injector.get(ChargesProvider).generateCharge({
-              ownerId: adminContext.defaultAdminBusinessId,
-              userDescription: description,
-            });
-
-            receiptChargeMap.set(receipt.id, charge.id);
-            return charge;
-          };
-
-          const _charge = await chargePromise();
-
-          // TODO: upload receipt whenever available via Deel API
-        }
-
-        // extend invoice data with payment breakdown data
-        const matches: DeelInvoiceMatch[] = [];
-        filteredInvoices.map(invoice => {
-          const optionalMatches = receiptsBreakDown.filter(
-            receipt =>
-              invoice.currency === receipt.currency &&
-              invoice.total === receipt.total &&
-              invoice.created_at === receipt.date &&
-              invoice.paid_at === receipt.payment_date,
-          );
-          if (optionalMatches.length === 1) {
-            const adjustedBreakdown: Record<string, unknown> = {};
-            Object.entries(optionalMatches[0]).map(([key, value]) => {
-              adjustedBreakdown[`breakdown_${key}`] = value;
-            });
-            matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
-          } else {
-            throw new Error(`No payment match found for invoice ${invoice.id}`);
-          }
-        });
+        const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
 
         for (const match of matches) {
           const documentId = await uploadInvoice(
-            receiptChargeMap,
+            paymentToChargeMap,
             match,
             injector,
             adminContext.defaultAdminBusinessId,

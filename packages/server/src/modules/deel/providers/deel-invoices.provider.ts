@@ -4,6 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
+  IGetChargeIdsByPaymentIdsQuery,
   IGetInvoicesByIdsQuery,
   IGetInvoicesByIssueDatesQuery,
   IInsertDeelInvoiceRecordsParams,
@@ -20,6 +21,13 @@ const getInvoicesByIds = sql<IGetInvoicesByIdsQuery>`
   SELECT *
   FROM accounter_schema.deel_invoices
   WHERE id in $$ids;`;
+
+const getChargeIdsByPaymentIds = sql<IGetChargeIdsByPaymentIdsQuery>`
+  SELECT d.charge_id, i.payment_id
+  FROM accounter_schema.deel_invoices i
+  LEFT JOIN accounter_schema.documents d
+    ON i.document_id = d.id AND d.charge_id IS NOT NULL
+  WHERE i.payment_id in $$paymentIds;`;
 
 const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       INSERT INTO accounter_schema.deel_invoices (
@@ -151,6 +159,21 @@ export class DeelInvoicesProvider {
     (ids: readonly string[]) => this.batchInvoicesByIds(ids),
     {
       cacheKeyFn: key => `invoices-id-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  private async batchChargeIdsByPaymentIds(paymentIds: readonly string[]) {
+    const matches = await getChargeIdsByPaymentIds.run({ paymentIds }, this.dbProvider);
+    return paymentIds.map(
+      paymentId => matches.find(match => match.payment_id === paymentId)?.charge_id,
+    );
+  }
+
+  public getChargeIdByPaymentIdLoader = new DataLoader(
+    (paymentIds: readonly string[]) => this.batchChargeIdsByPaymentIds(paymentIds),
+    {
+      cacheKeyFn: key => `charge-by-payment-${key}`,
       cacheMap: this.cache,
     },
   );
