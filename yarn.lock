@@ -54,8 +54,8 @@ __metadata:
   resolution: "@accounter-helper/scraper-local-app@workspace:packages/scraper-local-app"
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
-    "@pgtyped/cli": "npm:2.3.0"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/cli": "npm:2.4.3"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@sinclair/typebox": "npm:0.34.30"
     "@types/listr": "npm:0.14.9"
     "@types/pg": "npm:8.11.11"
@@ -288,8 +288,8 @@ __metadata:
     "@envelop/graphql-modules": "npm:7.1.3"
     "@graphql-hive/yoga": "npm:0.41.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.13.2"
-    "@pgtyped/cli": "npm:2.3.0"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/cli": "npm:2.4.3"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
@@ -6210,37 +6210,38 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/cli@npm:2.3.0":
-  version: 2.3.0
-  resolution: "@pgtyped/cli@npm:2.3.0"
+"@pgtyped/cli@npm:2.4.3":
+  version: 2.4.3
+  resolution: "@pgtyped/cli@npm:2.4.3"
   dependencies:
-    "@pgtyped/parser": "npm:^2.3.0"
-    "@pgtyped/query": "npm:^2.3.0"
-    "@pgtyped/wire": "npm:^2.3.0"
-    camel-case: "npm:^4.1.1"
+    "@pgtyped/parser": "npm:^2.4.2"
+    "@pgtyped/query": "npm:^2.4.2"
+    "@pgtyped/wire": "npm:^2.4.2"
+    camel-case: "npm:^5.0.0"
     chalk: "npm:^4.0.0"
-    chokidar: "npm:^3.3.1"
+    chokidar: "npm:^4.0.0"
     debug: "npm:^4.1.1"
     fp-ts: "npm:^2.5.3"
     fs-extra: "npm:^11.0.0"
-    glob: "npm:^10.3.7"
+    glob: "npm:^11.0.0"
     io-ts: "npm:^2.2.20"
     io-ts-reporters: "npm:^2.0.1"
+    minimatch: "npm:^10.0.1"
     nunjucks: "npm:3.2.4"
-    pascal-case: "npm:^3.1.1"
+    pascal-case: "npm:^4.0.0"
     piscina: "npm:^4.0.0"
-    tinypool: "npm:^0.8.0"
+    tinypool: "npm:^1.0.0"
     ts-parse-database-url: "npm:^1.0.3"
     yargs: "npm:^17.0.1"
   peerDependencies:
     typescript: 3.1 - 5
   bin:
     pgtyped: lib/index.js
-  checksum: 10c0/87b939d4827906979bac6a4ac452d84903a98cfdcb02a8a20d9f57de10d120603077a04429aa402cdd24720896a567773163ff4e8861fc100af3ef112d65abe0
+  checksum: 10c0/12375d9066efebe6acedbd7df67cb3c812c01e29e8e16e3f5c94b05e185627255047ec22643d37accea7e1484dfa71a7697926e6218e884285a8ec7be680a359
   languageName: node
   linkType: hard
 
-"@pgtyped/parser@npm:^2.3.0, @pgtyped/parser@npm:^2.4.2":
+"@pgtyped/parser@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/parser@npm:2.4.2"
   dependencies:
@@ -6251,7 +6252,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/query@npm:^2.3.0":
+"@pgtyped/query@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/query@npm:2.4.2"
   dependencies:
@@ -6263,18 +6264,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/runtime@npm:2.3.0":
-  version: 2.3.0
-  resolution: "@pgtyped/runtime@npm:2.3.0"
-  dependencies:
-    "@pgtyped/parser": "npm:^2.3.0"
-    chalk: "npm:^4.1.0"
-    debug: "npm:^4.1.1"
-  checksum: 10c0/730ccc111c5b9658b11461d8aaf4675315dceeb73214b0a001ca86e326b234a3c81caef0cc61a92c0ff4baed87f62e8393cbb99c39b45eb4735576ac3a78df3e
-  languageName: node
-  linkType: hard
-
-"@pgtyped/runtime@npm:^2.4.2":
+"@pgtyped/runtime@npm:2.4.2, @pgtyped/runtime@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/runtime@npm:2.4.2"
   dependencies:
@@ -6285,7 +6275,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/wire@npm:^2.3.0, @pgtyped/wire@npm:^2.4.2":
+"@pgtyped/wire@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/wire@npm:2.4.2"
   dependencies:
@@ -8763,8 +8753,8 @@ __metadata:
     "@graphql-hive/cli": "npm:0.49.0"
     "@graphql-inspector/cli": "npm:5.0.8"
     "@parcel/watcher": "npm:^2.4.1"
-    "@pgtyped/cli": "npm:2.3.0"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/cli": "npm:2.4.3"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.2"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:22.13.10"
@@ -9832,13 +9822,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"camel-case@npm:^4.1.1, camel-case@npm:^4.1.2":
+"camel-case@npm:^4.1.2":
   version: 4.1.2
   resolution: "camel-case@npm:4.1.2"
   dependencies:
     pascal-case: "npm:^3.1.2"
     tslib: "npm:^2.0.3"
   checksum: 10c0/bf9eefaee1f20edbed2e9a442a226793bc72336e2b99e5e48c6b7252b6f70b080fc46d8246ab91939e2af91c36cdd422e0af35161e58dd089590f302f8f64c8a
+  languageName: node
+  linkType: hard
+
+"camel-case@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "camel-case@npm:5.0.0"
+  dependencies:
+    no-case: "npm:^4.0.0"
+  checksum: 10c0/e149f2fd82168148af117df790f2b8848dfb3722b9010c1fced24ce8f2399bc73d8b61635ea327b301f56b9e68feb78bad1d77748418f7c348d9058d81f8a72b
   languageName: node
   linkType: hard
 
@@ -10068,7 +10067,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^3.3.1, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
+"chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
   version: 3.6.0
   resolution: "chokidar@npm:3.6.0"
   dependencies:
@@ -10087,7 +10086,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:^4.0.3":
+"chokidar@npm:^4.0.0, chokidar@npm:^4.0.3":
   version: 4.0.3
   resolution: "chokidar@npm:4.0.3"
   dependencies:
@@ -16225,7 +16224,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:^10.0.0":
+"minimatch@npm:^10.0.0, minimatch@npm:^10.0.1":
   version: 10.0.1
   resolution: "minimatch@npm:10.0.1"
   dependencies:
@@ -16631,6 +16630,13 @@ __metadata:
     lower-case: "npm:^2.0.2"
     tslib: "npm:^2.0.3"
   checksum: 10c0/8ef545f0b3f8677c848f86ecbd42ca0ff3cd9dd71c158527b344c69ba14710d816d8489c746b6ca225e7b615108938a0bda0a54706f8c255933703ac1cf8e703
+  languageName: node
+  linkType: hard
+
+"no-case@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "no-case@npm:4.0.0"
+  checksum: 10c0/619860434dc33e65cec2cb0b57942903bac864dd1efc834f71d04f5e060f5eb2189224c8557aa5ad3dacf5594d26e33882b3fb7f975a9bf3481c7e7867011a2f
   languageName: node
   linkType: hard
 
@@ -17463,13 +17469,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pascal-case@npm:3.1.2, pascal-case@npm:^3.1.1, pascal-case@npm:^3.1.2":
+"pascal-case@npm:3.1.2, pascal-case@npm:^3.1.2":
   version: 3.1.2
   resolution: "pascal-case@npm:3.1.2"
   dependencies:
     no-case: "npm:^3.0.4"
     tslib: "npm:^2.0.3"
   checksum: 10c0/05ff7c344809fd272fc5030ae0ee3da8e4e63f36d47a1e0a4855ca59736254192c5a27b5822ed4bae96e54048eec5f6907713cfcfff7cdf7a464eaf7490786d8
+  languageName: node
+  linkType: hard
+
+"pascal-case@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "pascal-case@npm:4.0.0"
+  dependencies:
+    no-case: "npm:^4.0.0"
+  checksum: 10c0/d421c9e1764f77466a2cc36f30b4b321ce777ee9bda7c2d90b0f49d2d4dc73577edeb85ca0bc4ce051fec6fb771ab45b759bf1e749e9f4b4aaa9a6c4a87626fa
   languageName: node
   linkType: hard
 
@@ -20644,14 +20659,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinypool@npm:^0.8.0":
-  version: 0.8.4
-  resolution: "tinypool@npm:0.8.4"
-  checksum: 10c0/779c790adcb0316a45359652f4b025958c1dff5a82460fe49f553c864309b12ad732c8288be52f852973bc76317f5e7b3598878aee0beb8a33322c0e72c4a66c
-  languageName: node
-  linkType: hard
-
-"tinypool@npm:^1.0.2":
+"tinypool@npm:^1.0.0, tinypool@npm:^1.0.2":
   version: 1.0.2
   resolution: "tinypool@npm:1.0.2"
   checksum: 10c0/31ac184c0ff1cf9a074741254fe9ea6de95026749eb2b8ec6fd2b9d8ca94abdccda731f8e102e7f32e72ed3b36d32c6975fd5f5523df3f1b6de6c3d8dfd95e63
