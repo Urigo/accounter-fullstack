@@ -9,7 +9,7 @@ jobs:
     uses: the-guild-org/shared-config/.github/workflows/release-stable.yml@8a92265b03efb0c3626397f993adcb1738e459e4
     with:
       releaseScript: release # script to run as part of publish command
-      nodeVersion: 23.9.0
+      nodeVersion: 23.10.0
     secrets:
       githubToken: ${{ secrets.GITHUB_TOKEN }}
       npmToken: ${{ secrets.NPM_TOKEN }}
