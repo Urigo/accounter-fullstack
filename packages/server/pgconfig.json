@@ -11,7 +11,7 @@
       "emitTemplate": "{{dir}}/__generated__/{{name}}.types.ts"
     }
   ],
-  "srcDir": "./src/",
+  "srcDir": "./",
   "failOnError": true,
   "camelCaseColumnNames": false,
   "db": {
