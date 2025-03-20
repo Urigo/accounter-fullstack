@@ -30,7 +30,7 @@ runs:
       run: echo "::set-output name=dir::$(yarn cache dir)"
 
     - name: Cache Yarn
-      uses: actions/cache@v4
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
       with:
         path: ${{steps.yarn-cache-dir-path.outputs.dir}}
@@ -39,7 +39,7 @@ runs:
           ${{runner.os}}-19-yarn-
 
     - name: Install NodeJS
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4
       with:
         node-version-file: .node-version
         cache: ${{ inputs.installDependencies == 'true' && 'yarn' }}
