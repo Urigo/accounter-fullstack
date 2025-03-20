@@ -55,7 +55,7 @@ __metadata:
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@pgtyped/cli": "npm:2.4.3"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@sinclair/typebox": "npm:0.34.30"
     "@types/listr": "npm:0.14.9"
     "@types/pg": "npm:8.11.11"
@@ -289,7 +289,7 @@ __metadata:
     "@graphql-hive/yoga": "npm:0.41.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.13.2"
     "@pgtyped/cli": "npm:2.4.3"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
@@ -6241,7 +6241,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/parser@npm:^2.3.0, @pgtyped/parser@npm:^2.4.2":
+"@pgtyped/parser@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/parser@npm:2.4.2"
   dependencies:
@@ -6264,18 +6264,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pgtyped/runtime@npm:2.3.0":
-  version: 2.3.0
-  resolution: "@pgtyped/runtime@npm:2.3.0"
-  dependencies:
-    "@pgtyped/parser": "npm:^2.3.0"
-    chalk: "npm:^4.1.0"
-    debug: "npm:^4.1.1"
-  checksum: 10c0/730ccc111c5b9658b11461d8aaf4675315dceeb73214b0a001ca86e326b234a3c81caef0cc61a92c0ff4baed87f62e8393cbb99c39b45eb4735576ac3a78df3e
-  languageName: node
-  linkType: hard
-
-"@pgtyped/runtime@npm:^2.4.2":
+"@pgtyped/runtime@npm:2.4.2, @pgtyped/runtime@npm:^2.4.2":
   version: 2.4.2
   resolution: "@pgtyped/runtime@npm:2.4.2"
   dependencies:
@@ -8765,7 +8754,7 @@ __metadata:
     "@graphql-inspector/cli": "npm:5.0.8"
     "@parcel/watcher": "npm:^2.4.1"
     "@pgtyped/cli": "npm:2.4.3"
-    "@pgtyped/runtime": "npm:2.3.0"
+    "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.2"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:22.13.10"
