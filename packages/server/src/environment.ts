@@ -69,6 +69,13 @@ const GoogleModel = zod.union([
   zod.void(),
 ]);
 
+const DeelModel = zod.union([
+  zod.object({
+    DEEL_TOKEN: zod.string().optional(),
+  }),
+  zod.void(),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
@@ -76,6 +83,7 @@ const configs = {
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
   google: GoogleModel.safeParse(process.env),
+  deel: DeelModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -105,6 +113,7 @@ const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
 const google = extractConfig(configs.google);
+const deel = extractConfig(configs.deel);
 
 export const env = {
   postgres: {
@@ -133,5 +142,8 @@ export const env = {
   },
   google: {
     driveApiKey: google?.GOOGLE_DRIVE_API_KEY,
+  },
+  deel: {
+    apiToken: deel?.DEEL_TOKEN,
   },
 } as const;

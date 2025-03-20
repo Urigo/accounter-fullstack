@@ -1,33 +1,77 @@
 import { GraphQLError } from 'graphql';
-import { DeelProvider } from '../providers/deel.provider.js';
+import {
+  convertMatchToDeelInvoiceRecord,
+  fetchAndFilterInvoices,
+  fetchPaymentBreakdowns,
+  fetchReceipts,
+  getChargeMatchesForPayments,
+  matchInvoicesWithPayments,
+  uploadInvoice,
+} from '../helpers/deel.helper.js';
+import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
+import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type { DeelModule } from '../types.js';
 
 export const deelResolvers: DeelModule.Resolvers = {
   Mutation: {
-    addDeelEmployee: async (_, { deelId, businessId }, { injector }) => {
+    addDeelContract: async (
+      _,
+      { contractId, contractorId, contractorName, contractStartDate, businessId },
+      { injector },
+    ) => {
       try {
-        await injector.get(DeelProvider).insertDeelEmployee({ deelId: Number(deelId), businessId });
+        await injector.get(DeelContractsProvider).insertDeelContract({
+          contractId,
+          contractorId,
+          contractorName,
+          contractStartDate,
+          businessId,
+        });
         return true;
       } catch (error) {
-        const message = `Error adding Deel employee [${deelId}]`;
+        const message = `Error adding Deel contract [${contractId}]`;
         console.error(message, error);
         throw new GraphQLError(message);
       }
     },
-    addDeelPaymentInfo: async (_, { records }, { injector }) => {
+    fetchDeelDocuments: async (_, __, { injector, adminContext }) => {
       try {
-        const deelDocumentRecords = records.map(record => ({
-          ...record,
-          contractId: record.contractId ?? null,
-          contractOrFeeDescription: record.contractOrFeeDescription ?? null,
-          deelWorkerId: record.deelWorkerId ?? null,
-          entity: record.entity ?? null,
-          workerName: record.workerName ?? null,
-        }));
-        await injector.get(DeelProvider).insertDeelDocumentRecords({ deelDocumentRecords });
+        const { invoices, knownReceiptIds } = await fetchAndFilterInvoices(injector);
+
+        const receipts = await fetchReceipts(injector);
+
+        const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
+
+        const paymentToChargeMap = await getChargeMatchesForPayments(
+          injector,
+          adminContext.defaultAdminBusinessId,
+          receipts,
+          knownReceiptIds,
+        );
+
+        const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
+
+        for (const match of matches) {
+          const documentId = await uploadInvoice(
+            paymentToChargeMap,
+            match,
+            injector,
+            adminContext.defaultAdminBusinessId,
+          );
+
+          await injector
+            .get(DeelInvoicesProvider)
+            .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId))
+            .catch(error => {
+              console.error(error);
+              throw new Error('Error uploading Deel invoice record');
+            });
+        }
+
+        // TODO: return updated charges
         return true;
       } catch (error) {
-        const message = 'Error adding Deel document records';
+        const message = 'Error fetching Deel documents';
         console.error(message, error);
         throw new GraphQLError(message);
       }
