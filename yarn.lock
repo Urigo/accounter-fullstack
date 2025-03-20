@@ -23,7 +23,7 @@ __metadata:
   dependencies:
     "@types/pg": "npm:8.11.11"
     got: "npm:14.4.6"
-    pg-promise: "npm:11.11.0"
+    pg-promise: "npm:11.13.0"
     slonik: "npm:38.0.0"
     tslib: "npm:2.8.1"
     zod: "npm:3.24.2"
@@ -151,7 +151,7 @@ __metadata:
     csv-parse: "npm:5.6.0"
     diary: "npm:0.4.5"
     dotenv: "npm:16.4.7"
-    pg-promise: "npm:11.11.0"
+    pg-promise: "npm:11.13.0"
     tsup: "npm:8.4.0"
   languageName: unknown
   linkType: soft
@@ -163,7 +163,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.5"
     diary: "npm:0.4.5"
     dotenv: "npm:16.4.7"
-    pg-promise: "npm:11.11.0"
+    pg-promise: "npm:11.13.0"
     tsup: "npm:8.4.0"
   languageName: unknown
   linkType: soft
@@ -226,7 +226,7 @@ __metadata:
     diary: "npm:0.4.5"
     dotenv: "npm:16.4.7"
     node-kraken-api: "npm:2.2.2"
-    pg-promise: "npm:11.11.0"
+    pg-promise: "npm:11.13.0"
     tsup: "npm:8.4.0"
   languageName: unknown
   linkType: soft
@@ -17605,17 +17605,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-promise@npm:11.11.0":
-  version: 11.11.0
-  resolution: "pg-promise@npm:11.11.0"
+"pg-promise@npm:11.13.0":
+  version: 11.13.0
+  resolution: "pg-promise@npm:11.13.0"
   dependencies:
     assert-options: "npm:0.8.2"
-    pg: "npm:8.13.3"
+    pg: "npm:8.14.1"
     pg-minify: "npm:1.7.0"
     spex: "npm:3.4.0"
   peerDependencies:
-    pg-query-stream: 4.7.3
-  checksum: 10c0/2de5e03aa7eadf776cdc67f04a2d8fa5e2c5e8b175b1a073e0cde4742f46fa37b77c9832a572e14e2debb3d344a4daed7400a7b624fe2bb4bf3c35d24ecc1d7a
+    pg-query-stream: 4.8.1
+  checksum: 10c0/cc77bd8b5e5873321ec31cc1b394ba1e24ed470990f6636f28901207103c12273449e45828fa41cd54d36281afa4a8c7af999b77194a8f95425ce1f016d523f6
   languageName: node
   linkType: hard
 
@@ -17672,28 +17672,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.13.3, pg@npm:^8.11.3":
-  version: 8.13.3
-  resolution: "pg@npm:8.13.3"
-  dependencies:
-    pg-cloudflare: "npm:^1.1.1"
-    pg-connection-string: "npm:^2.7.0"
-    pg-pool: "npm:^3.7.1"
-    pg-protocol: "npm:^1.7.1"
-    pg-types: "npm:^2.1.0"
-    pgpass: "npm:1.x"
-  peerDependencies:
-    pg-native: ">=3.0.1"
-  dependenciesMeta:
-    pg-cloudflare:
-      optional: true
-  peerDependenciesMeta:
-    pg-native:
-      optional: true
-  checksum: 10c0/7296f0e5930b35faef471be2673210cda553b30f1b8e9d176fcc286aa43248e17e09336032bf5a6bba55d2cc2d03afb8a407b5a6e6bc56ebb331c02d1a7ccc05
-  languageName: node
-  linkType: hard
-
 "pg@npm:8.14.0":
   version: 8.14.0
   resolution: "pg@npm:8.14.0"
@@ -17713,6 +17691,50 @@ __metadata:
     pg-native:
       optional: true
   checksum: 10c0/14d9fe726189107b028d5603b299776d039e36ed657c99057bcc1c125f889cb46536e0c48c6d98952231733c788f98c631bf74d5f8c9cbf85c4ac7c0a119b8b4
+  languageName: node
+  linkType: hard
+
+"pg@npm:8.14.1":
+  version: 8.14.1
+  resolution: "pg@npm:8.14.1"
+  dependencies:
+    pg-cloudflare: "npm:^1.1.1"
+    pg-connection-string: "npm:^2.7.0"
+    pg-pool: "npm:^3.8.0"
+    pg-protocol: "npm:^1.8.0"
+    pg-types: "npm:^2.1.0"
+    pgpass: "npm:1.x"
+  peerDependencies:
+    pg-native: ">=3.0.1"
+  dependenciesMeta:
+    pg-cloudflare:
+      optional: true
+  peerDependenciesMeta:
+    pg-native:
+      optional: true
+  checksum: 10c0/221741cfcea4ab32c8b57bd60703bc36cfb5622dcac56c19e45f504ef8669f2f2e0429af8850f58079cfc89055da35b5a5e12de19e0505e3f61a4b4349388dcb
+  languageName: node
+  linkType: hard
+
+"pg@npm:^8.11.3":
+  version: 8.13.3
+  resolution: "pg@npm:8.13.3"
+  dependencies:
+    pg-cloudflare: "npm:^1.1.1"
+    pg-connection-string: "npm:^2.7.0"
+    pg-pool: "npm:^3.7.1"
+    pg-protocol: "npm:^1.7.1"
+    pg-types: "npm:^2.1.0"
+    pgpass: "npm:1.x"
+  peerDependencies:
+    pg-native: ">=3.0.1"
+  dependenciesMeta:
+    pg-cloudflare:
+      optional: true
+  peerDependenciesMeta:
+    pg-native:
+      optional: true
+  checksum: 10c0/7296f0e5930b35faef471be2673210cda553b30f1b8e9d176fcc286aa43248e17e09336032bf5a6bba55d2cc2d03afb8a407b5a6e6bc56ebb331c02d1a7ccc05
   languageName: node
   linkType: hard
 
