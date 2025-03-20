@@ -837,6 +837,7 @@ async function getForeignSwiftTransactionsfromBankAndSave(
                 await newScraperIstance.getForeignSwiftTransaction(
                   account,
                   foreignSwiftTransaction.transferCatenatedId,
+                  2,
                 );
               // console.log(foreignSwiftTransaction);
               // console.log(foreignSwiftTransactionDetails);

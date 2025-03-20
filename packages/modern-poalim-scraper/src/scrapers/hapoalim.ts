@@ -314,13 +314,14 @@ export async function hapoalim(
         accountNumber: number;
       },
       transferCatenatedId: string,
+      dataOriginCode: number,
     ): Promise<{
       data: ForeignSwiftTransaction | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
-      const foreignSwiftTransactionUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions/${transferCatenatedId}?accountId=${fullAccountNumber}&dataOriginCode=2&lang=he`;
+      const foreignSwiftTransactionUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions/${transferCatenatedId}?accountId=${fullAccountNumber}&dataOriginCode=${dataOriginCode}&lang=he`;
       const getForeignSwiftTransactionFunction = fetchGetWithinPage<ForeignSwiftTransaction>(
         page,
         foreignSwiftTransactionUrl,
