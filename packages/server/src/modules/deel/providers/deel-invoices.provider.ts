@@ -14,8 +14,8 @@ import type {
 const getInvoicesByIssueDates = sql<IGetInvoicesByIssueDatesQuery>`
   SELECT *
   FROM accounter_schema.deel_invoices
-  WHERE issued_at <= $from
-    AND issued_at >= $to;`;
+  WHERE issued_at >= $from
+    AND issued_at <= $to;`;
 
 const getInvoicesByIds = sql<IGetInvoicesByIdsQuery>`
   SELECT *
