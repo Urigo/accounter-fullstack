@@ -1,11 +1,11 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Badge } from '../../ui/badge.js';
-import { Button } from '../../ui/button.js';
-import { AmountCell } from './amount-cell.js';
-import { CounterpartyCell } from './counterparty-cell.js';
-import { DateCell } from './date-cell.js';
-import { LedgerRecordRow } from './ledger-record-table.js';
+import { Badge } from '../ui/badge.js';
+import { Button } from '../ui/button.js';
+import { AmountCell } from './amount-cell.jsx';
+import { CounterpartyCell } from './counterparty-cell.jsx';
+import { DateCell } from './date-cell.jsx';
+import { LedgerRecordRow } from './index.js';
 
 export const columns: ColumnDef<LedgerRecordRow>[] = [
   {

@@ -1,7 +1,7 @@
 import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
-import { ChargeFilter } from '../../../gql/graphql.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { ChargeFilter } from '../../gql/graphql.js';
+import { useUrlQuery } from '../../hooks/use-url-query.js';
 
 type Props = {
   account?: {
@@ -16,8 +16,6 @@ type Props = {
 
 export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement => {
   const { get } = useUrlQuery();
-
-  const creditAccount = account;
 
   const encodedFilters = get('chargesFilters');
 
@@ -50,17 +48,17 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
     [encodedFilters],
   );
 
-  const isAccountDiff = diffAccount && diffAccount?.id !== creditAccount?.id;
+  const isAccountDiff = diffAccount && diffAccount?.id !== account?.id;
 
   return (
     <td>
       <div className="flex flex-col">
-        {(creditAccount || isAccountDiff) && (
+        {(account || isAccountDiff) && (
           <>
-            {creditAccount && (
-              <a href={getHref(creditAccount.id)} target="_blank" rel="noreferrer">
+            {account && (
+              <a href={getHref(account.id)} target="_blank" rel="noreferrer">
                 <NavLink
-                  label={creditAccount.name}
+                  label={account.name}
                   className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
                 />
               </a>

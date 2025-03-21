@@ -9,10 +9,10 @@ import {
 import {
   TableLedgerRecordsFieldsFragment,
   TableLedgerRecordsFieldsFragmentDoc,
-} from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { EMPTY_UUID } from '../../../helpers/consts.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
+} from '../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { EMPTY_UUID } from '../../helpers/consts.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -172,11 +172,11 @@ export type LedgerRecordRow = TableLedgerRecordsFieldsFragment['ledger']['record
 };
 
 type Props = {
-  ledgerRecordsProps: FragmentType<typeof TableLedgerRecordsFieldsFragmentDoc>;
+  ledgerFragment: FragmentType<typeof TableLedgerRecordsFieldsFragmentDoc>;
 };
 
-export const LedgerRecordTable = ({ ledgerRecordsProps }: Props): ReactElement => {
-  const { ledger } = getFragmentData(TableLedgerRecordsFieldsFragmentDoc, ledgerRecordsProps);
+export const LedgerTable = ({ ledgerFragment }: Props): ReactElement => {
+  const { ledger } = getFragmentData(TableLedgerRecordsFieldsFragmentDoc, ledgerFragment);
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const data = useMemo(() => {

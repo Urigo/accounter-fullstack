@@ -18,15 +18,15 @@ import {
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { BusinessTripSummarizedReport, RegenerateLedgerRecordsButton } from '../common/index.js';
+import { DocumentsGallery } from '../documents-table/documents-gallery.js';
+import { DocumentsTable } from '../documents-table/index.js';
+import { LedgerTable } from '../ledger-table/index.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
-import { DocumentsGallery } from './documents/documents-gallery.jsx';
-import { DocumentsTable } from './documents/documents-table.jsx';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
 import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.jsx';
 import { SalariesTable } from './extended-info/salaries-info.jsx';
-import { LedgerRecordTable } from './ledger-records/ledger-record-table.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -358,7 +358,7 @@ export function ChargeExtendedInfo({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  {ledgerRecordsAreReady && <LedgerRecordTable ledgerRecordsProps={charge} />}
+                  {ledgerRecordsAreReady && <LedgerTable ledgerFragment={charge} />}
                 </Accordion.Panel>
               </Accordion.Item>
             )}

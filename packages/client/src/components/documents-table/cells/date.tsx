@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Indicator } from '@mantine/core';
-import { DocumentsDateFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { DocumentsDateFieldsFragmentDoc, DocumentType } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
