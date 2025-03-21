@@ -1,8 +1,19 @@
-import { ReactElement, useState } from 'react';
-import { TableDocumentsFieldsFragmentDoc } from '../../gql/graphql.js';
+import { ReactElement, useMemo, useState } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import {
+  TableDocumentsFieldsFragmentDoc,
+  TableDocumentsRowFieldsFragmentDoc,
+} from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
 import { EditDocumentModal } from '../common/index.js';
-import { DocumentsTableRow } from './documents-table-row.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { columns, DocumentsTableRowType } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -26,33 +37,65 @@ export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElemen
     documentsProps,
   );
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const data: DocumentsTableRowType[] = useMemo(
+    () =>
+      documents?.map(document => ({
+        ...getFragmentData(TableDocumentsRowFieldsFragmentDoc, document),
+        editDocument: (): void => setEditDocumentId(document.id),
+        onUpdate: onChange,
+      })),
+    [documents, onChange],
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
+  });
+
   return (
     <>
-      <table className="w-full h-full">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>VAT</th>
-            <th>Type</th>
-            <th>Serial</th>
-            <th>Creditor</th>
-            <th>Debtor</th>
-            <th>files</th>
-            <th>Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {documents?.map(document => (
-            <DocumentsTableRow
-              key={document.id}
-              documentData={document}
-              editDocument={(): void => setEditDocumentId(document.id)}
-              onChange={onChange}
-            />
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map(headerGroup => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <TableHead key={header.id} colSpan={header.colSpan}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map(row => (
+              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
       <EditDocumentModal
         documentId={editDocumentId}
         onDone={(): void => setEditDocumentId(undefined)}

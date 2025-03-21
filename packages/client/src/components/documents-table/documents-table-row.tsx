@@ -11,21 +11,6 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment TableDocumentsRowFields on Document {
-    id
-    ...DocumentsTableAmountFields
-    ...DocumentsDateFields
-    ...DocumentsTableVatFields
-    ...DocumentTypeFields
-    ...DocumentSerialFields
-    ...DocumentsTableCreditorFields
-    ...DocumentsTableDebtorFields
-    ...DocumentFilesFields
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
   query DocumentTableRow($documentId: UUID!) {
     documentById(documentId: $documentId) {
       id
