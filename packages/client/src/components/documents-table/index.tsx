@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
-import { TableDocumentsFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { EditDocumentModal } from '../../common/index.js';
-import { DocumentsTableRow } from './documents-table-row.jsx';
+import { TableDocumentsFieldsFragmentDoc } from '../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { EditDocumentModal } from '../common/index.js';
+import { DocumentsTableRow } from './documents-table-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

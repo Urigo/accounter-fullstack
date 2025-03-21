@@ -1,9 +1,9 @@
 import { ReactElement, useState } from 'react';
 import { File, Photo } from 'tabler-icons-react';
 import { ActionIcon, Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
-import { DocumentFilesFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { ImageMagnifier } from '../../../common/index.js';
+import { DocumentFilesFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { ImageMagnifier } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
