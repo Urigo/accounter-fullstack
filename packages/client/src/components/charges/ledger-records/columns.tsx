@@ -27,7 +27,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
       );
     },
     cell: ({ row }) => {
-      return <DateCell date={row.original.invoiceDate} diff={row.original.diff?.valueDate} />;
+      return <DateCell date={row.original.invoiceDate} diff={row.original.diff?.invoiceDate} />;
     },
   },
   {
