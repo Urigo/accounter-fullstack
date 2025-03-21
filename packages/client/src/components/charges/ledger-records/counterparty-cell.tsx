@@ -23,26 +23,29 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
 
   const getHref = useCallback(
     (businessID: string) => {
-      const currentFilters = encodedFilters
-        ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
-        : {};
-      const encodedNewFilters = {
-        fromDate: currentFilters.fromDate
-          ? `%252C%2522fromDate%2522%253A%2522${currentFilters.fromDate}%2522`
-          : '',
-        toDate: currentFilters.toDate
-          ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
-          : '',
-        financialEntityIds:
-          currentFilters.byOwners && currentFilters.byOwners.length > 0
-            ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
-            : '',
+      let currentFilters: ChargeFilter = {};
+      if (encodedFilters) {
+        try {
+          const decoded = decodeURIComponent(encodedFilters);
+          const parsed = JSON.parse(decoded);
+          currentFilters = parsed as ChargeFilter;
+        } catch (error) {
+          console.error('Failed to parse filters from URL:', error);
+        }
+      }
+
+      const params = new URLSearchParams();
+      const filterObject = {
+        ownerIds: currentFilters.byOwners || [],
+        businessIDs: [businessID],
+        ...(currentFilters.fromDate && { fromDate: currentFilters.fromDate }),
+        ...(currentFilters.toDate && { toDate: currentFilters.toDate }),
       };
-      return `/business-transactions?transactionsFilters=%257B%2522ownerIds%2522%253A%255B${
-        encodedNewFilters.financialEntityIds
-      }%255D%252C%2522businessIDs%2522%253A%255B%2522${encodeURIComponent(businessID)}%2522%255D${
-        encodedNewFilters.fromDate
-      }${encodedNewFilters.toDate}%257D`;
+
+      // Add it as a single encoded parameter
+      params.append('transactionsFilters', JSON.stringify(filterObject));
+
+      return `/business-transactions?${params.toString()}`;
     },
     [encodedFilters],
   );
