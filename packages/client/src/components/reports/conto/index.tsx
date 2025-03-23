@@ -313,6 +313,9 @@ export const ContoReport: React.FC = () => {
       parent: BANK_TREE_ROOT_ID,
       droppable: true,
       text: 'New Category',
+      data: {
+        isOpen: false,
+      },
     };
 
     setLastId(lastId + 1);
