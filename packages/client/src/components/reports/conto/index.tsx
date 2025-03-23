@@ -182,10 +182,21 @@ function updateFinancialEntitiesTreeNodes(
   return newTree;
 }
 
+function randomId(length: number) {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
+
+  length ||= Math.floor(Math.random() * chars.length);
+
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return str;
+}
+
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
-  const [lastId, setLastId] = useState(1);
   const [enableDnd, setEnableDnd] = useState(false);
   const [templateName, setTemplateName] = useState<string | undefined>(undefined);
   const { get } = useUrlQuery();
@@ -309,7 +320,7 @@ export const ContoReport: React.FC = () => {
 
   const handleAddBankNode = useCallback(() => {
     const node: NodeModel<CustomData> = {
-      id: `synthetic-${lastId}`,
+      id: `synthetic-${randomId(8)}`,
       parent: BANK_TREE_ROOT_ID,
       droppable: true,
       text: 'New Category',
@@ -318,9 +329,8 @@ export const ContoReport: React.FC = () => {
       },
     };
 
-    setLastId(lastId + 1);
     setTree([...tree, node]);
-  }, [setTree, tree, lastId]);
+  }, [setTree, tree]);
 
   const handleTextChange = (id: NodeModel['id'], value: string) => {
     setTree(
