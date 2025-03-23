@@ -369,14 +369,14 @@ export function multipleForeignCurrenciesBalanceEntries(
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
     let localDiff = 0;
     for (const [currency, { local }] of Object.entries(foreignAmounts)) {
+      localDiff += local;
       if (mainForeignCurrency) {
-        if (mainForeignCurrency.amount < local) {
+        if (Math.abs(mainForeignCurrency.amount) > Math.abs(local)) {
           mainForeignCurrency = { amount: local, currency: currency as Currency };
         }
       } else {
         mainForeignCurrency = { amount: local, currency: currency as Currency };
       }
-      localDiff += local;
     }
 
     if (balanceAgainstLocal && !foreignAmounts[defaultLocalCurrency]) {
@@ -400,7 +400,7 @@ export function multipleForeignCurrenciesBalanceEntries(
     });
 
     for (const [currency, { local, foreign }] of Object.entries(foreignAmounts)) {
-      let localToUse = local;
+      // let localToUse = local;
 
       if (!balanceAgainstLocal) {
         if (Math.abs(foreign) < 0.005) {
@@ -408,7 +408,7 @@ export function multipleForeignCurrenciesBalanceEntries(
         }
 
         if (mainForeignCurrency?.currency === currency) {
-          localToUse -= localDiff;
+          // localToUse -= localDiff;
         }
       }
 
@@ -426,8 +426,8 @@ export function multipleForeignCurrenciesBalanceEntries(
           : {
               debitAccountID1: mainBusiness,
             }),
-        localCurrencyCreditAmount1: Math.abs(localToUse),
-        localCurrencyDebitAmount1: Math.abs(localToUse),
+        localCurrencyCreditAmount1: Math.abs(local),
+        localCurrencyDebitAmount1: Math.abs(local),
         ...(balanceAgainstLocal && !foreign
           ? {}
           : {
