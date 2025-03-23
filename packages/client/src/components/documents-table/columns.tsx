@@ -126,7 +126,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
-    accessorKey: 'vat.row',
+    accessorKey: 'vat.raw',
     header: ({ column }) => {
       return (
         <Button
