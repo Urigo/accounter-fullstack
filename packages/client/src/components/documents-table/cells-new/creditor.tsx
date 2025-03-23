@@ -1,48 +1,18 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
-import { DocumentsTableCreditorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ConfirmMiniButton } from '../../../common/index.js';
-import { getBusinessHref } from '../../helpers.js';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment DocumentsTableCreditorFields on Document {
-    id
-    documentType
-    ... on FinancialDocument {
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-      }
-      missingInfoSuggestions {
-        isIncome
-        counterparty {
-          id
-          name
-        }
-        owner {
-          id
-          name
-        }
-      }
-    }
-  }
-`;
+import { DocumentType } from '../../../gql/graphql.js';
+import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { getBusinessHref } from '../../charges/helpers.js';
+import { ConfirmMiniButton } from '../../common/index.js';
+import { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
-  data: FragmentType<typeof DocumentsTableCreditorFieldsFragmentDoc>;
-  refetchDocument: () => void;
+  document: DocumentsTableRowType;
 };
 
-export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
+export const Creditor = ({ document }: Props): ReactElement => {
   const { get } = useUrlQuery();
-  const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
   const shouldHaveCreditor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
@@ -103,37 +73,35 @@ export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
           fields: {
             creditorId,
           },
-        }).then(refetchDocument);
+        }).then(document.onUpdate);
       }
     },
-    [document.id, updateDocument, refetchDocument],
+    [document.id, updateDocument, document.onUpdate],
   );
 
   const { name = 'Missing', id } = creditor || {};
 
   return (
-    <td>
-      <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">
-          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {shouldHaveCreditor &&
-              (id ? (
-                <a href={getHref(id)} target="_blank" rel="noreferrer">
-                  <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-                </a>
-              ) : (
-                name
-              ))}
-            {isError && <p className="bg-yellow-400">{name}</p>}
-          </Indicator>
-        </div>
-        {hasAlternative && (
-          <ConfirmMiniButton
-            onClick={(): void => updateCreditor(suggestedCreditor.id)}
-            disabled={fetching}
-          />
-        )}
+    <div className="flex flex-wrap">
+      <div className="flex flex-col justify-center">
+        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+          {shouldHaveCreditor &&
+            (id ? (
+              <a href={getHref(id)} target="_blank" rel="noreferrer">
+                <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
+              </a>
+            ) : (
+              name
+            ))}
+          {isError && <p className="bg-yellow-400">{name}</p>}
+        </Indicator>
       </div>
-    </td>
+      {hasAlternative && (
+        <ConfirmMiniButton
+          onClick={(): void => updateCreditor(suggestedCreditor.id)}
+          disabled={fetching}
+        />
+      )}
+    </div>
   );
 };

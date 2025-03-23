@@ -4,10 +4,10 @@ import {
   Currency,
   DocumentsTableAmountFieldsFragmentDoc,
   DocumentType,
-} from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
-import { ConfirmMiniButton } from '../../../common/index.js';
+} from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { ConfirmMiniButton } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

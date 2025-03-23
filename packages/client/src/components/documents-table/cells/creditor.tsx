@@ -1,24 +1,24 @@
 import { ReactElement, useCallback, useMemo } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
-import { DocumentsTableDebtorFieldsFragmentDoc, DocumentType } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ConfirmMiniButton } from '../../../common/index.js';
-import { getBusinessHref } from '../../helpers.js';
+import { DocumentsTableCreditorFieldsFragmentDoc, DocumentType } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { getBusinessHref } from '../../charges/helpers.js';
+import { ConfirmMiniButton } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment DocumentsTableDebtorFields on Document {
+  fragment DocumentsTableCreditorFields on Document {
     id
     documentType
     ... on FinancialDocument {
       creditor {
         id
+        name
       }
       debtor {
         id
-        name
       }
       missingInfoSuggestions {
         isIncome
@@ -36,20 +36,20 @@ import { getBusinessHref } from '../../helpers.js';
 `;
 
 type Props = {
-  data: FragmentType<typeof DocumentsTableDebtorFieldsFragmentDoc>;
+  data: FragmentType<typeof DocumentsTableCreditorFieldsFragmentDoc>;
   refetchDocument: () => void;
 };
 
-export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
+export const Creditor = ({ data, refetchDocument }: Props): ReactElement => {
   const { get } = useUrlQuery();
-  const document = getFragmentData(DocumentsTableDebtorFieldsFragmentDoc, data);
-  const dbDebtor = 'debtor' in document ? document.debtor : undefined;
+  const document = getFragmentData(DocumentsTableCreditorFieldsFragmentDoc, data);
+  const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
-  const shouldHaveDebtor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
+  const shouldHaveCreditor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
     document.documentType as DocumentType,
   );
   const isError =
-    (shouldHaveDebtor && !dbDebtor?.id) ||
+    (shouldHaveCreditor && !dbCreditor?.id) ||
     [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
 
   const encodedFilters = get('chargesFilters');
@@ -59,8 +59,8 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
     [encodedFilters],
   );
 
-  const suggestedDebtor = useMemo(() => {
-    if (dbDebtor || !('missingInfoSuggestions' in document) || !document.missingInfoSuggestions) {
+  const suggestedCreditor = useMemo(() => {
+    if (dbCreditor || !('missingInfoSuggestions' in document) || !document.missingInfoSuggestions) {
       // case when creditor is already set or no suggestions
       return undefined;
     }
@@ -68,40 +68,40 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
     const suggestedCounterparty = document.missingInfoSuggestions.counterparty;
     if (document.missingInfoSuggestions?.isIncome == null) {
       // case when we don't know if it's income or expense
-      if (document.creditor?.id) {
-        const creditorId = document.creditor.id;
-        if (suggestedOwner?.id === creditorId && suggestedCounterparty) {
-          // case when owner is creditor and we have counterparty
+      if (document.debtor?.id) {
+        const debtorId = document.debtor.id;
+        if (suggestedOwner?.id === debtorId && suggestedCounterparty) {
+          // case when owner is debtor and we have counterparty
           return suggestedCounterparty;
         }
-        if (suggestedCounterparty?.id === creditorId && suggestedOwner) {
-          // case when counterparty is creditor and we have owner
+        if (suggestedCounterparty?.id === debtorId && suggestedOwner) {
+          // case when counterparty is debtor and we have owner
           return suggestedOwner;
         }
       }
-    } else if (document.missingInfoSuggestions.isIncome && suggestedCounterparty) {
-      // case when it's income and we have counterparty
-      return suggestedCounterparty;
-    } else if (!document.missingInfoSuggestions.isIncome && suggestedOwner) {
-      // case when it's expense and we have owner
+    } else if (document.missingInfoSuggestions.isIncome && suggestedOwner) {
+      // case when it's income and we have owner
       return suggestedOwner;
+    } else if (!document.missingInfoSuggestions.isIncome && suggestedCounterparty) {
+      // case when it's expense and we have counterparty
+      return suggestedCounterparty;
     }
     return undefined;
-  }, [document, dbDebtor]);
+  }, [document, dbCreditor]);
 
-  const hasAlternative = !dbDebtor && !!suggestedDebtor;
+  const hasAlternative = !dbCreditor && !!suggestedCreditor;
 
-  const debtor = dbDebtor ?? suggestedDebtor;
+  const creditor = dbCreditor ?? suggestedCreditor;
 
   const { updateDocument, fetching } = useUpdateDocument();
 
-  const updateDebtor = useCallback(
-    (debtorId?: string) => {
-      if (debtorId !== undefined) {
+  const updateCreditor = useCallback(
+    (creditorId?: string) => {
+      if (creditorId !== undefined) {
         updateDocument({
           documentId: document.id,
           fields: {
-            debtorId,
+            creditorId,
           },
         }).then(refetchDocument);
       }
@@ -109,14 +109,14 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
     [document.id, updateDocument, refetchDocument],
   );
 
-  const { name = 'Missing', id } = debtor || {};
+  const { name = 'Missing', id } = creditor || {};
 
   return (
     <td>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            {shouldHaveDebtor &&
+            {shouldHaveCreditor &&
               (id ? (
                 <a href={getHref(id)} target="_blank" rel="noreferrer">
                   <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
@@ -129,7 +129,7 @@ export const Debtor = ({ data, refetchDocument }: Props): ReactElement => {
         </div>
         {hasAlternative && (
           <ConfirmMiniButton
-            onClick={(): void => updateDebtor(suggestedDebtor.id)}
+            onClick={(): void => updateCreditor(suggestedCreditor.id)}
             disabled={fetching}
           />
         )}

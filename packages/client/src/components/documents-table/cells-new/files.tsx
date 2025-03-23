@@ -1,29 +1,18 @@
 import { ReactElement, useState } from 'react';
 import { File, Photo } from 'tabler-icons-react';
 import { ActionIcon, Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
-import { DocumentFilesFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { ImageMagnifier } from '../../../common/index.js';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment DocumentFilesFields on Document {
-    id
-    image
-    file
-  }
-`;
+import { ImageMagnifier } from '../../common/index.js';
+import { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
-  data: FragmentType<typeof DocumentFilesFieldsFragmentDoc>;
+  document: DocumentsTableRowType;
 };
 
-export const Files = ({ data }: Props): ReactElement => {
-  const { image, file } = getFragmentData(DocumentFilesFieldsFragmentDoc, data);
+export const Files = ({ document: { image, file } }: Props): ReactElement => {
   const [openImage, setOpenImage] = useState<boolean>(false);
 
   return (
-    <td>
+    <>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <SimpleGrid cols={1}>
@@ -76,6 +65,6 @@ export const Files = ({ data }: Props): ReactElement => {
           </div>
         </Drawer>
       )}
-    </td>
+    </>
   );
 };
