@@ -51,6 +51,8 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
 
+        // TODO: validate Deel exchange rate margin
+
         for (const match of matches) {
           const documentId = await uploadInvoice(
             paymentToChargeMap,

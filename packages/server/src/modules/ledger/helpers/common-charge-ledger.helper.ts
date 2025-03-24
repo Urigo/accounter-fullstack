@@ -212,7 +212,7 @@ export async function ledgerEntryFromMainTransaction(
       .getExchangeRates(currency, defaultLocalCurrency, valueDate);
 
     foreignAmount = amount;
-    // calculate amounts in ILS
+    // calculate local amounts
     amount = exchangeRate * amount;
   }
 

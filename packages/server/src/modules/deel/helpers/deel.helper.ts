@@ -29,7 +29,6 @@ export async function getDeelEmployeeId(
   document: IGetDocumentsByChargeIdResult,
   ledgerEntry: StrictLedgerProto,
   ledgerEntries: LedgerProto[],
-  updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
   if (
     (document.creditor_id !== DEEL_BUSINESS_ID && document.debtor_id !== DEEL_BUSINESS_ID) ||
@@ -109,7 +108,6 @@ export async function getDeelEmployeeId(
       };
       ledgerEntry.creditAccountID1 = employeeId;
     }
-    updateLedgerBalance(newEntry);
     ledgerEntries.push(newEntry);
   }
 
@@ -137,6 +135,8 @@ export async function uploadInvoice(
     // fetch file from Deel
     const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
 
+    // TODO: validate file against API data (using AI OCR?)
+
     // upload file to cloudinary
     const { fileUrl, imageUrl } = await uploadToCloudinary(injector, file);
 
@@ -147,8 +147,8 @@ export async function uploadInvoice(
       documentType: DocumentType.Invoice,
       serialNumber: match.label,
       date: match.issued_at,
-      amount: Number(match.total),
-      currencyCode: match.currency as Currency,
+      amount: Number(match.breakdown_total_payment_currency),
+      currencyCode: match.breakdown_payment_currency as Currency,
       vat: Number(match.vat_total),
       chargeId,
       vatReportDateOverride: null,

@@ -2,10 +2,11 @@ import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { accountant_statusArray } from '@modules/charges/types.js';
+import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { ChargeSortByField, Resolvers, ResolversTypes } from '@shared/gql-types';
+import { ChargeSortByField, Currency, Resolvers, ResolversTypes } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
   ledgerGenerationByCharge,
@@ -327,6 +328,89 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     valueDate: DbLedgerRecord => DbLedgerRecord.value_date,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
+    debitDefaultForeignAmount1: async (record, _, { injector, adminContext }) => {
+      const { defaultCryptoConversionFiatCurrency, defaultLocalCurrency } = adminContext;
+      if (
+        !record.debit_foreign_amount1 ||
+        record.currency === defaultLocalCurrency ||
+        record.currency === defaultCryptoConversionFiatCurrency
+      )
+        return null;
+      const exchange = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(
+          record.currency as Currency,
+          defaultCryptoConversionFiatCurrency,
+          record.value_date,
+        );
+      return formatFinancialAmount(
+        Number(record.debit_foreign_amount1) * exchange,
+        defaultCryptoConversionFiatCurrency,
+      );
+    },
+    debitDefaultForeignAmount2: async (record, _, { injector, adminContext }) => {
+      const { defaultCryptoConversionFiatCurrency, defaultLocalCurrency } = adminContext;
+      if (
+        !record.debit_foreign_amount2 ||
+        record.currency === defaultLocalCurrency ||
+        record.currency === defaultCryptoConversionFiatCurrency
+      )
+        return null;
+
+      const exchange = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(
+          record.currency as Currency,
+          defaultCryptoConversionFiatCurrency,
+          record.value_date,
+        );
+      return formatFinancialAmount(
+        Number(record.debit_foreign_amount2) * exchange,
+        defaultCryptoConversionFiatCurrency,
+      );
+    },
+    creditDefaultForeignAmount1: async (record, _, { injector, adminContext }) => {
+      const { defaultCryptoConversionFiatCurrency, defaultLocalCurrency } = adminContext;
+      if (
+        !record.credit_foreign_amount1 ||
+        record.currency === defaultLocalCurrency ||
+        record.currency === defaultCryptoConversionFiatCurrency
+      )
+        return null;
+
+      const exchange = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(
+          record.currency as Currency,
+          defaultCryptoConversionFiatCurrency,
+          record.value_date,
+        );
+      return formatFinancialAmount(
+        Number(record.credit_foreign_amount1) * exchange,
+        defaultCryptoConversionFiatCurrency,
+      );
+    },
+    creditDefaultForeignAmount2: async (record, _, { injector, adminContext }) => {
+      const { defaultCryptoConversionFiatCurrency, defaultLocalCurrency } = adminContext;
+      if (
+        !record.credit_foreign_amount2 ||
+        record.currency === defaultLocalCurrency ||
+        record.currency === defaultCryptoConversionFiatCurrency
+      )
+        return null;
+
+      const exchange = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(
+          record.currency as Currency,
+          defaultCryptoConversionFiatCurrency,
+          record.value_date,
+        );
+      return formatFinancialAmount(
+        Number(record.credit_foreign_amount2) * exchange,
+        defaultCryptoConversionFiatCurrency,
+      );
+    },
   },
   Ledger: {
     records: parent => parent.records,

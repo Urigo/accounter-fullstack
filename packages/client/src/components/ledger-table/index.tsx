@@ -59,6 +59,22 @@ import { columns } from './columns.js';
           formatted
           currency
         }
+        creditDefaultForeignAmount1 {
+          formatted
+          currency
+        }
+        creditDefaultForeignAmount2 {
+          formatted
+          currency
+        }
+        debitDefaultForeignAmount1 {
+          formatted
+          currency
+        }
+        debitDefaultForeignAmount2 {
+          formatted
+          currency
+        }
         localCurrencyCreditAmount1 {
           formatted
           raw
