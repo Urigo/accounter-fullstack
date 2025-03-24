@@ -29,7 +29,6 @@ export async function getDeelEmployeeId(
   document: IGetDocumentsByChargeIdResult,
   ledgerEntry: StrictLedgerProto,
   ledgerEntries: LedgerProto[],
-  updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
   if (
     (document.creditor_id !== DEEL_BUSINESS_ID && document.debtor_id !== DEEL_BUSINESS_ID) ||
@@ -109,7 +108,6 @@ export async function getDeelEmployeeId(
       };
       ledgerEntry.creditAccountID1 = employeeId;
     }
-    updateLedgerBalance(newEntry);
     ledgerEntries.push(newEntry);
   }
 

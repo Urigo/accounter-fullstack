@@ -367,7 +367,7 @@ export function multipleForeignCurrenciesBalanceEntries(
 
     // get the main foreign currency + diff in local currency
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
-    let localDiff = 0;
+    let localBalance = 0;
     for (const [currency, { local }] of Object.entries(foreignAmounts)) {
       if (mainForeignCurrency) {
         if (mainForeignCurrency.amount < local) {
@@ -376,12 +376,12 @@ export function multipleForeignCurrenciesBalanceEntries(
       } else {
         mainForeignCurrency = { amount: local, currency: currency as Currency };
       }
-      localDiff += local;
+      localBalance += local;
     }
 
     if (balanceAgainstLocal && !foreignAmounts[defaultLocalCurrency]) {
       foreignAmounts[defaultLocalCurrency] = {
-        local: -localDiff,
+        local: -localBalance,
         foreign: 0,
       };
     }
@@ -408,7 +408,7 @@ export function multipleForeignCurrenciesBalanceEntries(
         }
 
         if (mainForeignCurrency?.currency === currency) {
-          localToUse -= localDiff;
+          localToUse -= localBalance;
         }
       }
 
