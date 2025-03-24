@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '@shared/enums';
+import { formatFinancialAmount } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
 
 export function validateExchangeRate(
@@ -97,7 +98,9 @@ export function calculateExchangeRate(
   }
   for (const foreignCurrency of foreignCurrencies) {
     if (Math.abs(amounts[foreignCurrency] ?? 0) > 0.005) {
-      throw new GraphQLError(`Exchange rate error - ${foreignCurrency} amount not balanced`);
+      throw new GraphQLError(
+        `Exchange rate error - ${foreignCurrency} amount not balanced (by ${formatFinancialAmount(amounts[foreignCurrency], foreignCurrency).formatted})`,
+      );
     }
   }
   return amounts[defaultLocalCurrency];
