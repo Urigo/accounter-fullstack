@@ -6,6 +6,10 @@ type AmountData = {
     formatted: string;
     currency: string;
   } | null;
+  foreignDefaultAmount?: {
+    formatted: string;
+    currency: string;
+  } | null;
   localAmount?: {
     formatted: string;
   } | null;
@@ -15,7 +19,12 @@ type Props = AmountData & {
   diff?: AmountData;
 };
 
-export const AmountCell = ({ foreignAmount, localAmount, diff }: Props): ReactElement => {
+export const AmountCell = ({
+  foreignAmount,
+  foreignDefaultAmount,
+  localAmount,
+  diff,
+}: Props): ReactElement => {
   const isForeign = foreignAmount != null && foreignAmount.currency !== Currency.Ils;
 
   const isLocalAmountDiff = diff && diff.localAmount?.formatted !== localAmount?.formatted;
@@ -32,12 +41,17 @@ export const AmountCell = ({ foreignAmount, localAmount, diff }: Props): ReactEl
                   {foreignAmount.formatted}
                 </p>
               )}
-              {isForeignAmountDiff && diff.foreignAmount && (
-                <p className="border-2 border-yellow-500 rounded-md">
-                  {diff.foreignAmount.formatted}
-                </p>
-              )}
             </div>
+            {isForeignAmountDiff && diff.foreignAmount && (
+              <p className="border-2 border-yellow-500 rounded-md">
+                {diff.foreignAmount.formatted}
+              </p>
+            )}
+            {isForeign && foreignDefaultAmount && (
+              <p className={`${isForeignAmountDiff ? 'line-through' : ''} text-xs`}>
+                ({foreignDefaultAmount.formatted})
+              </p>
+            )}
 
             <div className="flex gap-2  items-center">
               {localAmount != null && (

@@ -104,6 +104,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           return (
             <AmountCell
               foreignAmount={row.original.debitAmount1}
+              foreignDefaultAmount={row.original.debitDefaultForeignAmount1}
               localAmount={row.original.localCurrencyDebitAmount1}
               diff={
                 row.original.diff
@@ -171,6 +172,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           return (
             <AmountCell
               foreignAmount={row.original.creditAmount1}
+              foreignDefaultAmount={row.original.creditDefaultForeignAmount1}
               localAmount={row.original.localCurrencyCreditAmount1}
               diff={
                 row.original.diff
@@ -238,6 +240,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           return (
             <AmountCell
               foreignAmount={row.original.debitAmount2}
+              foreignDefaultAmount={row.original.debitDefaultForeignAmount2}
               localAmount={row.original.localCurrencyDebitAmount2}
               diff={
                 row.original.diff
@@ -305,6 +308,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           return (
             <AmountCell
               foreignAmount={row.original.creditAmount2}
+              foreignDefaultAmount={row.original.creditDefaultForeignAmount2}
               localAmount={row.original.localCurrencyCreditAmount2}
               diff={
                 row.original.diff
