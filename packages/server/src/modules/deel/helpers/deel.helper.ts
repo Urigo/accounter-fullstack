@@ -135,6 +135,8 @@ export async function uploadInvoice(
     // fetch file from Deel
     const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
 
+    // TODO: validate file against API data (using AI OCR?)
+
     // upload file to cloudinary
     const { fileUrl, imageUrl } = await uploadToCloudinary(injector, file);
 
