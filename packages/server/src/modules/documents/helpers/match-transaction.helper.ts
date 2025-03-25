@@ -17,17 +17,10 @@ export async function matchTransactionToDocument(
   context: GraphQLModules.ModuleContext,
 ): Promise<string | null> {
   try {
-    // Get unmatched transactions (those without documents)
+    // Get unmatched transactions (those with a charge_id but no matching document)
     const unmatchedTransactions = await injector
       .get(TransactionsProvider)
-      .getTransactionsByFilters({
-        fromEventDate: document.date
-          ? dateToTimelessDateString(new Date(document.date))
-          : undefined,
-        // Add a buffer of a few days before the document date to catch related transactions
-        toEventDate: document.date ? dateToTimelessDateString(new Date(document.date)) : undefined,
-        ownerIDs: [context.adminContext.defaultAdminBusinessId],
-      });
+      .getTransactionsWithChargeButNoDocument(context.adminContext.defaultAdminBusinessId);
 
     if (!unmatchedTransactions || unmatchedTransactions.length === 0) {
       return null;
