@@ -118,6 +118,7 @@ export class LLMProvider {
 
   /**
    * Match a document to a transaction
+   * NOTE: may be possible to do these matches without an LLM. Or at least limit the txs we send to the LLM to reduce chance of hallucinations
    * @param document The document to match
    * @returns The matched transaction
    */

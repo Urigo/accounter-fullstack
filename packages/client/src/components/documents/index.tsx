@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import {
@@ -508,8 +509,10 @@ const TransactionCell = ({
     });
 
     if (result && 'message' in result) {
-      // TODO: Show error toast
-      console.error('Failed to update document:', result.message);
+      toast.error('Error updating document', {
+        description:
+          (result.message as string) || 'Failed to update document with selected transaction',
+      });
     } else {
       setShowMatchesDialog(false);
       setSuggestedMatches([]);
