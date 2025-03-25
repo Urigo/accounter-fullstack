@@ -87,6 +87,11 @@ export async function getCalData(credentials: CalCredentials, parentTask: ListrT
     {
       title: 'Status Update',
       task: async ctx => {
+        if (!ctx[accountKey]) {
+          ctx.logger.error('No account');
+          return;
+        }
+
         let status: string = '';
         if (ctx[accountKey].processedData) {
           if (ctx[accountKey].processedData.transactions) {
