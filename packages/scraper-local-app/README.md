@@ -85,6 +85,8 @@ The configuration file (`src/env.ts`) defines the following options:
   Isracard accounts. Each entry should include required details like username and password.
 - **`amexAccounts`**: For American Express credit cards. An array of credentials for scraping data
   from Amex accounts. Each entry should include relevant details such as username and password.
+- **`calAccounts`**: For Visa Cal
+- **`discountAccounts`**: For Bank Discount
 
 Ensure that all required fields are correctly set up to avoid runtime errors or unexpected behavior.
 
