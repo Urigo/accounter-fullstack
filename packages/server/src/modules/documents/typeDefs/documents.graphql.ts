@@ -36,6 +36,7 @@ export default gql`
       isSensitive: Boolean
       chargeId: UUID
     ): [UploadDocumentResult!]! @auth(role: ACCOUNTANT)
+    suggestDocumentMatchingTransactions(documentId: UUID!): [Transaction]! @auth(role: ACCOUNTANT)
   }
 
   " All possible document types "
