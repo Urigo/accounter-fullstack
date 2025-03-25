@@ -259,7 +259,12 @@ export const columns: ColumnDef<DocumentsScreenQuery['documentsByFilters'][numbe
           ]}
         />
       ) : (
-        'No Related Transaction'
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            Match with AI
+          </Button>
+          No Related Transaction
+        </div>
       );
     },
   },
