@@ -506,14 +506,13 @@ const TransactionCell = ({
       documentId: row.original.id,
       fields: { chargeId },
     });
-    console.log('🚀 ~ handleSelectMatch ~ result:', result);
 
     if (result && 'message' in result) {
       // TODO: Show error toast
       console.error('Failed to update document:', result.message);
     } else {
-      // setShowMatchesDialog(false);
-      // setSuggestedMatches([]);
+      setShowMatchesDialog(false);
+      setSuggestedMatches([]);
     }
   };
 

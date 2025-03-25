@@ -210,8 +210,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
-      console.log('🚀 ~ updateDocument: ~ documentId:', documentId);
-      console.log('🚀 ~ updateDocument: ~ fields:', fields);
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
@@ -272,7 +270,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           const charge = await injector
             .get(ChargesProvider)
             .getChargeByIdLoader.load(fields.chargeId);
-          console.log('🚀 ~ updateDocument: ~ charge:', charge);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
           }
