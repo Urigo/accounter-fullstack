@@ -2,13 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["github>the-guild-org/shared-config:renovate"],
   "automerge": false,
-  "patch": {
-    "automerge": true
-  },
-  "lockFileMaintenance": {
-    "enabled": true,
-    "automerge": true
-  },
+  "dependencyDashboardTitle": "Dependencies Dashboard",
   "prConcurrentLimit": 10,
   "packageRules": [
     {
@@ -19,12 +13,19 @@
     },
     {
       "groupName": "Yoga/Envelop",
-      "matchPackageNames": ["@envelop/{/,}**", "graphql-yoga{/,}**", "@graphql-yoga/{/,}**"]
+      "matchPackagePrefixes": ["@envelop", "graphql-yoga", "@graphql-yoga"]
     },
     {
       "groupName": "urql",
       "recreateWhen": "auto",
-      "matchPackageNames": ["@urql/{/,}**", "urql{/,}**"]
+      "matchPackagePrefixes": ["@urql", "urql"]
+    },
+    {
+      "matchDepTypes": ["devDependencies"]
     }
-  ]
+  ],
+  "dockerfile": {
+    "enabled": true,
+    "fileMatch": [".*?\\.[dD]ockerfile"]
+  }
 }

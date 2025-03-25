@@ -1,16 +1,12 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Select, Switch } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
-import {
-  AllFinancialEntitiesDocument,
-  EditTransactionDocument,
-  UpdateTransactionInput,
-} from '../../../gql/graphql.js';
+import { EditTransactionDocument, UpdateTransactionInput } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { SimpleGrid } from '../index.js';
 
@@ -52,9 +48,6 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
     defaultValues: { ...transaction },
   });
 
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
   const {
     control: transactionControl,
     handleSubmit: handleTransactionSubmit,
@@ -78,39 +71,8 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
     }
   };
 
-  const [
-    {
-      data: financialEntitiesData,
-      fetching: fetchingFinancialEntities,
-      error: financialEntitiesError,
-    },
-  ] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
-
-  useEffect(() => {
-    if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
-        color: 'red',
-      });
-    }
-  }, [financialEntitiesError]);
-
-  // On every new data fetch, reorder results by name
-  useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        financialEntitiesData.allFinancialEntities.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [financialEntitiesData, setFinancialEntities]);
+  const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
+    useGetFinancialEntities();
 
   return (
     <>

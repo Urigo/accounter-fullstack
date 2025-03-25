@@ -1,3 +1,4 @@
+import { getDeelEmployeeId } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -68,6 +69,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
     >();
 
+    function updateLedgerBalance(entry: LedgerProto) {
+      updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+    }
+
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
@@ -131,6 +136,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    const miscLedgerEntries: LedgerProto[] = [];
 
     // generate ledger from documents
     if (gotRelevantDocuments) {
@@ -157,9 +163,16 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           charge.owner_id,
           documentsTaxCategoryId!,
         )
-          .then(ledgerEntry => {
+          .then(async ledgerEntry => {
+            await getDeelEmployeeId(
+              context,
+              document,
+              ledgerEntry,
+              miscLedgerEntries,
+              updateLedgerBalance,
+            );
             accountingLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalance(ledgerEntry);
             dates.add(ledgerEntry.valueDate.getTime());
             currencies.add(ledgerEntry.currency);
           })
@@ -201,7 +214,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         }
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalance(ledgerEntry);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       });
@@ -226,7 +239,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalance(ledgerEntry);
           dates.add(ledgerEntry.valueDate.getTime());
           currencies.add(ledgerEntry.currency);
         });
@@ -240,7 +253,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalance(entry);
         dates.add(entry.valueDate.getTime());
         currencies.add(entry.currency);
       });
@@ -248,8 +261,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     entriesPromises.push(expensesLedgerPromise);
 
     await Promise.all(entriesPromises);
-
-    const miscLedgerEntries: LedgerProto[] = [];
 
     // generate ledger from balance cancellation
     for (const balanceCancellation of balanceCancellations) {
@@ -264,7 +275,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         );
 
         miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalance(ledgerEntry);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -287,12 +298,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
-      const transactionEntries = financialAccountLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-      );
-      const documentEntries = accountingLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
-      );
+      const transactionEntries = financialAccountLedgerEntries.filter(entry => {
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        return false;
+      });
+      const documentEntries = accountingLedgerEntries.filter(entry => {
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        return false;
+      });
 
       try {
         const entries = multipleForeignCurrenciesBalanceEntries(
@@ -305,7 +318,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         );
         for (const ledgerEntry of entries) {
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalance(ledgerEntry);
         }
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -394,10 +407,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         let exchangeRateTaxCategory: string | undefined = undefined;
         if (exchangeRateEntry) {
-          exchangeRateTaxCategory =
-            exchangeRateEntry.debitAccountID1 === entityId
-              ? exchangeRateEntry.creditAccountID1
-              : exchangeRateEntry.debitAccountID1;
+          if (documentsTaxCategoryId) {
+            exchangeRateTaxCategory = documentsTaxCategoryId;
+          } else {
+            exchangeRateTaxCategory =
+              exchangeRateEntry.debitAccountID1 === entityId
+                ? exchangeRateEntry.creditAccountID1
+                : exchangeRateEntry.debitAccountID1;
+          }
 
           const isRefund = isRefundCharge(charge.user_description);
           const isIncomeCharge =
@@ -439,7 +456,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               chargeId,
             };
             miscLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalance(ledgerEntry);
           } else {
             errors.add(
               `Failed to locate tax category for exchange rate for business ID="${entityId}"`,

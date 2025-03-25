@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
+import { toast } from 'sonner';
 import { Dropzone } from '@mantine/dropzone';
-import { showNotification } from '@mantine/notifications';
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
 
 type Props = {
@@ -11,12 +11,10 @@ type Props = {
 export const DragFile = ({ children, chargeId }: Props): ReactElement => {
   const { uploading, uploadMultipleDocuments } = useUploadMultipleDocuments();
 
-  function onFail(message: string): void {
-    showNotification({
-      title: 'Error',
-      message,
-      color: 'red',
-      autoClose: 5000,
+  function onFail(description: string): void {
+    toast.error('Error', {
+      description,
+      duration: 5000,
     });
   }
 

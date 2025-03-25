@@ -1,12 +1,10 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select, Switch } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
-  AllBusinessesDocument,
   AllBusinessTripsDocument,
-  AllTaxCategoriesDocument,
   EditChargeQuery,
   UpdateChargeInput,
 } from '../../../gql/graphql.js';
@@ -16,6 +14,8 @@ import {
   relevantDataPicker,
   TimelessDateString,
 } from '../../../helpers/index.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import {
   ChargeSpreadInput,
@@ -33,14 +33,7 @@ type Props = {
 
 export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => {
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
-  const [{ data: businessesData, fetching: fetchingBusinesses, error: businessesError }] = useQuery(
-    {
-      query: AllBusinessesDocument,
-    },
-  );
-
-  const [businesses, setBusinesses] = useState<Array<{ value: string; label: string }>>([]);
-  const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
+  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
   const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
 
   const formManager = useForm<UpdateChargeInput>({
@@ -82,57 +75,9 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
     }
   };
 
-  useEffect(() => {
-    if (businessesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching businesses! 🤥',
-      });
-    }
-  }, [businessesError]);
-
-  // On every new data fetch, reorder results by name
-  useEffect(() => {
-    if (businessesData?.allBusinesses?.nodes.length) {
-      setBusinesses(
-        businessesData.allBusinesses.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [businessesData, setBusinesses]);
-
   // handle tax categories
-  const [{ data: taxCategoriesData, fetching: fetchingTaxCategories, error: taxCategoriesError }] =
-    useQuery({
-      query: AllTaxCategoriesDocument,
-    });
-
-  useEffect(() => {
-    if (taxCategoriesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tax categories! 🤥',
-      });
-    }
-  }, [taxCategoriesError]);
-
-  // On every new data fetch, reorder results by name
-  useEffect(() => {
-    if (taxCategoriesData?.taxCategories.length) {
-      setTaxCategories(
-        taxCategoriesData.taxCategories
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [taxCategoriesData, setTaxCategories]);
+  const { selectableTaxCategories: taxCategories, fetching: fetchingTaxCategories } =
+    useGetTaxCategories();
 
   // handle business trips
   const [
@@ -148,10 +93,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
 
   useEffect(() => {
     if (businessTripsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching business trips! 🤥',
-      });
+      toast.error('Error', { description: 'An error occurred while fetching business trips.' });
     }
   }, [businessTripsError]);
 

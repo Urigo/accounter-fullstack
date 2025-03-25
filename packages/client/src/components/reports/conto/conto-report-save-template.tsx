@@ -40,7 +40,28 @@ function ContoReportTemplateSaveForm({
     const strippedTree = tree.filter(
       node => node.data?.sortCode == null && node.data?.value == null,
     );
-    const template = JSON.stringify(strippedTree);
+    const template = JSON.stringify(
+      strippedTree.map(node => {
+        const strippedNode = {
+          id: node.id,
+          parent: node.parent,
+          text: node.text,
+          droppable: node.droppable ?? undefined,
+          data: node.data
+            ? {
+                hebrewText: node.data.hebrewText,
+                value: node.data.value,
+                sortCode: node.data.sortCode,
+                isOpen: node.data.isOpen,
+                descendantSortCodes: node.data.descendantSortCodes,
+                descendantFinancialEntities: node.data.descendantFinancialEntities,
+                mergedSortCodes: node.data.mergedSortCodes,
+              }
+            : undefined,
+        };
+        return strippedNode;
+      }),
+    );
     return template;
   }, [tree]);
   const form = useForm<z.infer<typeof FormSchema>>({

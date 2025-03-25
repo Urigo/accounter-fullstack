@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   UpdateMiscExpenseDocument,
   UpdateMiscExpenseMutation,
   UpdateMiscExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,44 +21,49 @@ type UseUpdateMiscExpense = {
   fetching: boolean;
   updateMiscExpense: (
     variables: UpdateMiscExpenseMutationVariables,
-  ) => Promise<UpdateMiscExpenseMutation['updateMiscExpense']>;
+  ) => Promise<UpdateMiscExpenseMutation['updateMiscExpense'] | void>;
 };
+
+const NOTIFICATION_ID = 'updateMiscExpense';
 
 export const useUpdateMiscExpense = (): UseUpdateMiscExpense => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateMiscExpenseDocument);
+  const updateMiscExpense = useCallback(
+    async (variables: UpdateMiscExpenseMutationVariables) => {
+      const message = `Error updating misc expense ID [${variables.id}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.id}`;
+      toast.loading('Update Misc Expense', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateMiscExpense');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Misc expense was updated',
+          });
+          return data.updateMiscExpense;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateMiscExpense: (
-      variables: UpdateMiscExpenseMutationVariables,
-    ): Promise<UpdateMiscExpenseMutation['updateMiscExpense']> =>
-      new Promise<UpdateMiscExpenseMutation['updateMiscExpense']>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error updating misc expense ID [${variables.id}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(`Error updating misc expense ID [${variables.id}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.updateMiscExpense);
-        }),
-      ),
+    updateMiscExpense,
   };
 };

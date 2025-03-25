@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   InsertBusinessTripAttendeeDocument,
   InsertBusinessTripAttendeeMutation,
   InsertBusinessTripAttendeeMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,45 +19,49 @@ type UseInsertBusinessTripAttendee = {
   fetching: boolean;
   insertBusinessTripAttendee: (
     variables: InsertBusinessTripAttendeeMutationVariables,
-  ) => Promise<InsertBusinessTripAttendeeMutation['insertBusinessTripAttendee']>;
+  ) => Promise<InsertBusinessTripAttendeeMutation['insertBusinessTripAttendee'] | void>;
 };
+
+const NOTIFICATION_ID = 'insertBusinessTripAttendee';
 
 export const useInsertBusinessTripAttendee = (): UseInsertBusinessTripAttendee => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
   const [{ fetching }, mutate] = useMutation(InsertBusinessTripAttendeeDocument);
+  const insertBusinessTripAttendee = useCallback(
+    async (variables: InsertBusinessTripAttendeeMutationVariables) => {
+      const message = 'Error adding attendee to business trip';
+      const notificationId = NOTIFICATION_ID;
+      toast.loading('Adding attendee', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Attendee was added to the business trip',
+          });
+          return data.insertBusinessTripAttendee;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    insertBusinessTripAttendee: (
-      variables: InsertBusinessTripAttendeeMutationVariables,
-    ): Promise<InsertBusinessTripAttendeeMutation['insertBusinessTripAttendee']> =>
-      new Promise<InsertBusinessTripAttendeeMutation['insertBusinessTripAttendee']>(
-        (resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(`Error adding attendee to business trip: ${res.error}`);
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, attendee was not added',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error('Error adding attendee to business trip: No data returned');
-              showNotification({
-                title: 'Error!',
-                message: 'Oops, attendee was not added',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Insert Success!',
-              message: 'Attendee was added to the business trip! 🎉',
-            });
-            return resolve(res.data.insertBusinessTripAttendee);
-          }),
-      ),
+    insertBusinessTripAttendee,
   };
 };

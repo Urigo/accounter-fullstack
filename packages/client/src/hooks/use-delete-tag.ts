@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import { DeleteTagDocument, DeleteTagMutationVariables } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,39 +16,45 @@ type UseDeleteTag = {
   deleteTag: (variables: DeleteTagMutationVariables & { name: string }) => Promise<void>;
 };
 
+const NOTIFICATION_ID = 'deleteTag';
+
 export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
 
   const [{ fetching }, mutate] = useMutation(DeleteTagDocument);
+  const deleteTag = useCallback(
+    async (variables: DeleteTagMutationVariables & { name: string }) => {
+      const message = `Error deleting new tag [${variables.name}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.tagId}`;
+      toast.loading(`Deleting tag [${variables.name}]`, {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Tag Deleted', {
+            id: notificationId,
+            description: `[${variables.name}] tag was successfully removed`,
+          });
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    deleteTag: (variables: DeleteTagMutationVariables & { name: string }): Promise<void> =>
-      new Promise<void>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error deleting new tag [${variables.name}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data?.deleteTag) {
-            console.error(`Error deleting new tag [${variables.name}]`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Tag Deleted!',
-            message: `"${variables.name}" tag was successfully removed`,
-          });
-          return resolve();
-        }),
-      ),
+    deleteTag,
   };
 };

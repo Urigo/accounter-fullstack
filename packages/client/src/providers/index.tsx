@@ -1,11 +1,10 @@
 import { ReactElement, ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '../components/ui/toaster.js';
+import { Toaster } from '../components/ui/sonner.js';
 import { AuthGuard } from './auth-guard.js';
 import { UrqlProvider } from './urql.js';
 import { UserProvider } from './user-provider.js';
@@ -38,13 +37,12 @@ export function Providers({ children }: { children?: ReactNode }): ReactElement 
     >
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Notifications />
+        <Toaster />
         <AuthGuard>
           <UrqlProvider>
             <QueryClientProvider client={queryClient}>
               <UserProvider>{children}</UserProvider>
             </QueryClientProvider>
-            <Toaster />
           </UrqlProvider>
         </AuthGuard>
       </ThemeProvider>

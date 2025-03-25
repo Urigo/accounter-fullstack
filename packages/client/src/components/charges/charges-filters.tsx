@@ -11,7 +11,6 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { useQuery } from 'urql';
 import {
   ActionIcon,
   Indicator,
@@ -22,16 +21,11 @@ import {
   Switch,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
-import {
-  AllFinancialEntitiesDocument,
-  AllTagsDocument,
-  ChargeFilter,
-  ChargeFilterType,
-  ChargeSortByField,
-} from '../../gql/graphql.js';
+import { ChargeFilter, ChargeFilterType, ChargeSortByField } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates.js';
-import { isObjectEmpty, sortTags, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
+import { useGetFinancialEntities } from '../../hooks/use-get-financial-entities.js';
+import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { accountantApprovalInputData, PopUpModal, SelectTagItem } from '../common/index.js';
@@ -83,24 +77,9 @@ function ChargesFiltersForm({
   });
   const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
   const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-  const [tags, setTags] = useState<Array<{ value: string; label: string; description?: string }>>(
-    [],
-  );
-  const [
-    {
-      data: financialEntitiesData,
-      fetching: financialEntitiesFetching,
-      error: financialEntitiesError,
-    },
-  ] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
-  const [{ data: tagsData, fetching: tagsFetching, error: tagsError }] = useQuery({
-    query: AllTagsDocument,
-  });
+  const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
+    useGetFinancialEntities();
+  const { selectableTags: tags, fetching: tagsFetching } = useGetTags();
 
   const sortByField = watch('sortBy.field');
 
@@ -111,24 +90,6 @@ function ChargesFiltersForm({
       setEnableAsc(false);
     }
   }, [sortByField, enableAsc]);
-
-  useEffect(() => {
-    if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
-      });
-    }
-  }, [financialEntitiesError]);
-
-  useEffect(() => {
-    if (tagsError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tags! 🤥',
-      });
-    }
-  }, [tagsError]);
 
   const onSubmit: SubmitHandler<ChargeFilter> = data => {
     if (asc != null && data.sortBy?.field) {
@@ -143,33 +104,6 @@ function ChargesFiltersForm({
     setAsc(false);
     closeModal();
   }
-
-  // On every new financial entities data fetch, reorder results by name
-  useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        financialEntitiesData.allFinancialEntities.nodes
-          .sort((a, b) => (a.name > b.name ? 1 : -1))
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          })),
-      );
-    }
-  }, [financialEntitiesData, setFinancialEntities]);
-
-  // On every new tags data fetch, reorder results by name
-  useEffect(() => {
-    if (tagsData?.allTags.length) {
-      setTags(
-        sortTags(tagsData.allTags).map(entity => ({
-          value: entity.id,
-          label: entity.name,
-          description: entity.namePath ? `${entity.namePath.join(' > ')} >` : undefined,
-        })),
-      );
-    }
-  }, [tagsData, setTags]);
 
   return (
     <>
@@ -241,7 +175,7 @@ function ChargesFiltersForm({
           <Controller
             name="fromAnyDate"
             control={control}
-            defaultValue={filter.fromDate}
+            defaultValue={filter.fromAnyDate}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
@@ -269,7 +203,7 @@ function ChargesFiltersForm({
           <Controller
             name="toAnyDate"
             control={control}
-            defaultValue={filter.toDate}
+            defaultValue={filter.toAnyDate}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,

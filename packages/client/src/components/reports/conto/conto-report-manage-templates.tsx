@@ -261,7 +261,7 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
       <DialogTrigger asChild>
-        <Tooltip content="Save template">
+        <Tooltip content="Manage templates">
           <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
             <CloudCog size={20} />
           </Button>

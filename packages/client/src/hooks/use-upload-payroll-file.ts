@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import { UploadPayrollFileDocument, UploadPayrollFileMutationVariables } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,51 +16,51 @@ type UseUploadPayrollFile = {
   uploadPayrollFile: (variables: UploadPayrollFileMutationVariables) => Promise<boolean>;
 };
 
+const NOTIFICATION_ID = 'insertSalaryRecordsFromFile';
+
 export const useUploadPayrollFile = (): UseUploadPayrollFile => {
   // TODO: add authentication
   // TODO: add local data update method after upload
 
   const [{ fetching }, mutate] = useMutation(UploadPayrollFileDocument);
+  const uploadPayrollFile = useCallback(
+    async (variables: UploadPayrollFileMutationVariables) => {
+      const message = `Error uploading payroll file to charge ID [${variables.chargeId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
+      toast.loading('Uploading payroll file', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(
+          res,
+          message,
+          notificationId,
+          'insertSalaryRecordsFromFile',
+        );
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Payroll file added',
+          });
+          return data.insertSalaryRecordsFromFile;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return false;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    uploadPayrollFile: (variables: UploadPayrollFileMutationVariables): Promise<boolean> =>
-      new Promise<boolean>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(
-              `Error uploading payroll file to charge ID [${variables.chargeId}]: ${res.error}`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error(
-              `Error uploading payroll file to charge ID [${variables.chargeId}]: No data returned`,
-            );
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          if (res.data.insertSalaryRecordsFromFile !== true) {
-            console.error(`Error uploading payroll file to charge ID [${variables.chargeId}]}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(false);
-          }
-          showNotification({
-            title: 'Upload Success!',
-            message: 'Your payroll file was added! 🎉',
-          });
-          return resolve(res.data.insertSalaryRecordsFromFile);
-        }),
-      ),
+    uploadPayrollFile,
   };
 };

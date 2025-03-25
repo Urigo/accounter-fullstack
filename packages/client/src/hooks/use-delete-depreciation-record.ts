@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   DeleteDepreciationRecordDocument,
   DeleteDepreciationRecordMutation,
   DeleteDepreciationRecordMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,44 +19,49 @@ type UseDeleteDepreciationRecord = {
   fetching: boolean;
   deleteDepreciationRecord: (
     variables: DeleteDepreciationRecordMutationVariables,
-  ) => Promise<DeleteDepreciationRecordMutation['deleteDepreciationRecord']>;
+  ) => Promise<DeleteDepreciationRecordMutation['deleteDepreciationRecord'] | void>;
 };
+
+const NOTIFICATION_ID = 'deleteDepreciationRecord';
 
 export const useDeleteDepreciationRecord = (): UseDeleteDepreciationRecord => {
   // TODO: add authentication
   // TODO: add local data delete method after delete
 
   const [{ fetching }, mutate] = useMutation(DeleteDepreciationRecordDocument);
+  const deleteDepreciationRecord = useCallback(
+    async (variables: DeleteDepreciationRecordMutationVariables) => {
+      const message = 'Error deleting depreciation record';
+      const notificationId = `${NOTIFICATION_ID}-${variables.depreciationRecordId}`;
+      toast.loading('Deleting depreciation record', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId);
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Depreciation record was deleted',
+          });
+          return data.deleteDepreciationRecord;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    deleteDepreciationRecord: (
-      variables: DeleteDepreciationRecordMutationVariables,
-    ): Promise<DeleteDepreciationRecordMutation['deleteDepreciationRecord']> =>
-      new Promise<DeleteDepreciationRecordMutation['deleteDepreciationRecord']>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error deleting depreciation record: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oops, depreciation record was not deleted',
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error('Error deleting depreciation record: No data returned');
-            showNotification({
-              title: 'Error!',
-              message: 'Oops, depreciation record was not deleted',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Removal Success!',
-            message: 'Depreciation record was deleted! 🎉',
-          });
-          return resolve(res.data.deleteDepreciationRecord);
-        }),
-      ),
+    deleteDepreciationRecord,
   };
 };

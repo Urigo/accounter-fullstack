@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import {
   AccountantStatus,
   UpdateBusinessTripAccountantApprovalDocument,
   UpdateBusinessTripAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,8 +22,10 @@ type UseUpdateBusinessTripAccountantApproval = {
   fetching: boolean;
   updateBusinessTripAccountantApproval: (
     variables: UpdateBusinessTripAccountantApprovalMutationVariables,
-  ) => Promise<AccountantStatus>;
+  ) => Promise<AccountantStatus | void>;
 };
+
+const NOTIFICATION_ID = 'updateBusinessTripAccountantApproval';
 
 export const useUpdateBusinessTripAccountantApproval =
   (): UseUpdateBusinessTripAccountantApproval => {
@@ -29,40 +33,39 @@ export const useUpdateBusinessTripAccountantApproval =
     // TODO: add local data update method after change
 
     const [{ fetching }, mutate] = useMutation(UpdateBusinessTripAccountantApprovalDocument);
+    const updateBusinessTripAccountantApproval = useCallback(
+      async (variables: UpdateBusinessTripAccountantApprovalMutationVariables) => {
+        const message = `Error toggling accountant approval for trip [${variables.businessTripId}]`;
+        const notificationId = `${NOTIFICATION_ID}-${variables.businessTripId}`;
+        toast.loading('Updating accountant approval status', {
+          id: notificationId,
+        });
+        try {
+          const res = await mutate(variables);
+          const data = handleCommonErrors(res, message, notificationId);
+          if (data) {
+            toast.success('Success', {
+              id: notificationId,
+              description: 'Accountant approval status updated',
+            });
+            return data.updateBusinessTripAccountantApproval;
+          }
+        } catch (e) {
+          console.error(`${message}: ${e}`);
+          toast.error('Error', {
+            id: notificationId,
+            description: message,
+            duration: 100_000,
+            closeButton: true,
+          });
+        }
+        return void 0;
+      },
+      [mutate],
+    );
 
     return {
       fetching,
-      updateBusinessTripAccountantApproval: (
-        variables: UpdateBusinessTripAccountantApprovalMutationVariables,
-      ): Promise<AccountantStatus> =>
-        new Promise<AccountantStatus>((resolve, reject) =>
-          mutate(variables).then(res => {
-            if (res.error) {
-              console.error(
-                `Error toggling accountant approval to ledger record ID [${variables.businessTripId}]: ${res.error}`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject(res.error.message);
-            }
-            if (!res.data) {
-              console.error(
-                `Error toggling accountant approval to ledger record ID [${variables.businessTripId}]: No data returned`,
-              );
-              showNotification({
-                title: 'Error!',
-                message: 'Oh no!, we have an error! 🤥',
-              });
-              return reject('No data returned');
-            }
-            showNotification({
-              title: 'Update Success!',
-              message: 'Accountant approval was updated! 🎉',
-            });
-            return resolve(res.data.updateBusinessTripAccountantApproval);
-          }),
-        ),
+      updateBusinessTripAccountantApproval,
     };
   };

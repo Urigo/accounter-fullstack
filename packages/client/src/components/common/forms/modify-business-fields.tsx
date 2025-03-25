@@ -1,14 +1,9 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { useQuery } from 'urql';
 import { Divider, Select, SimpleGrid, Switch, TextInput, Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import {
-  AllSortCodesDocument,
-  AllTaxCategoriesDocument,
-  InsertNewBusinessInput,
-  UpdateBusinessInput,
-} from '../../../gql/graphql.js';
+import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
+import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
+import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { PhrasesInput, TagsInput } from '../index.js';
 
 type ModalProps<T extends boolean> = {
@@ -27,63 +22,13 @@ export function ModifyBusinessFields({
 }: ModalProps<boolean>): ReactElement {
   const { control } = useFormManager;
   const [tagsFetching, setTagsFetching] = useState(false);
-  const [sortCodes, setSortCodes] = useState<Array<{ value: string; label: string }>>([]);
-  const [taxCategories, setTaxCategories] = useState<Array<{ value: string; label: string }>>([]);
 
   // Tax categories array handle
-  const [{ data: taxCategoriesData, fetching: fetchingTaxCategories, error: taxCategoriesError }] =
-    useQuery({
-      query: AllTaxCategoriesDocument,
-    });
-
-  useEffect(() => {
-    if (taxCategoriesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching tax categories! 🤥',
-      });
-    }
-  }, [taxCategoriesError]);
-
-  useEffect(() => {
-    if (taxCategoriesData?.taxCategories.length) {
-      setTaxCategories(
-        taxCategoriesData.taxCategories
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [taxCategoriesData, setTaxCategories]);
+  const { selectableTaxCategories: taxCategories, fetching: fetchingTaxCategories } =
+    useGetTaxCategories();
 
   // Sort codes array handle
-  const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
-    query: AllSortCodesDocument,
-  });
-
-  useEffect(() => {
-    if (sortCodesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching sort codes! 🤥',
-      });
-    }
-  }, [sortCodesError]);
-
-  useEffect(() => {
-    if (sortCodesData?.allSortCodes.length) {
-      const sortCodes = sortCodesData.allSortCodes
-        .filter(code => !!code.name)
-        .map(code => ({
-          value: code.id.toString(),
-          label: `${code.id}: ${code.name}`,
-        }))
-        .sort((a, b) => (a.label > b.label ? 1 : -1));
-      setSortCodes(sortCodes);
-    }
-  }, [sortCodesData, setSortCodes]);
+  const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
 
   useEffect(() => {
     setFetching(tagsFetching || fetchingTaxCategories || fetchingSortCodes);

@@ -12,13 +12,14 @@
     "format": "prettier \"**/*.ts\" --write",
     "json2ts": "json2ts -i src/schemas -o src/__generated__",
     "start": "node dist/index.js",
+    "test:hapoalim": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-poalim.js\"",
     "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },
   "dependencies": {
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "date-fns": "4.1.0",
-    "inquirer": "12.4.3",
+    "inquirer": "12.5.0",
     "node-fetch": "3.3.2",
     "puppeteer": "24.4.0",
     "uuid": "11.1.0"
@@ -27,7 +28,10 @@
     "@types/inquirer": "9.0.7",
     "@types/node-fetch": "3.0.3",
     "@types/uuid": "10.0.0",
-    "json-schema-to-typescript": "15.0.4"
+    "concurrently": "9.1.2",
+    "json-schema-to-typescript": "15.0.4",
+    "nodemon": "3.1.9",
+    "typescript": "5.8.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

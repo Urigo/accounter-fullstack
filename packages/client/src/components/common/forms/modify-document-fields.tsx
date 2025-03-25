@@ -1,12 +1,9 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
 import { DatePickerInput, MonthPickerInput } from '@mantine/dates';
-import { showNotification } from '@mantine/notifications';
 import {
-  AllFinancialEntitiesDocument,
   Currency,
   DocumentType,
   EditDocumentQuery,
@@ -21,6 +18,7 @@ import {
   isDocumentProforma,
   isDocumentReceipt,
 } from '../../../helpers/documents.js';
+import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { CurrencyInput, SelectInput, TextInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
@@ -36,19 +34,9 @@ export const ModifyDocumentFields = ({
 }: ModifyDocumentFieldsProps): ReactElement => {
   const { control, watch, trigger } = formManager;
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
-  const [financialEntities, setFinancialEntities] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
 
-  const [
-    {
-      data: financialEntitiesData,
-      fetching: fetchingFinancialEntities,
-      error: financialEntitiesError,
-    },
-  ] = useQuery({
-    query: AllFinancialEntitiesDocument,
-  });
+  const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
+    useGetFinancialEntities();
 
   const isDocumentProcessed =
     isDocumentInvoice(document) ||
@@ -70,29 +58,6 @@ export const ModifyDocumentFields = ({
           type === DocumentType.CreditInvoice),
     );
   }, [type]);
-
-  useEffect(() => {
-    if (financialEntitiesError) {
-      showNotification({
-        title: 'Error!',
-        message: 'Oh no!, we have an error fetching financial entities! 🤥',
-        color: 'red',
-      });
-    }
-  }, [financialEntitiesError]);
-
-  useEffect(() => {
-    if (financialEntitiesData?.allFinancialEntities?.nodes.length) {
-      setFinancialEntities(
-        financialEntitiesData.allFinancialEntities.nodes
-          .map(entity => ({
-            value: entity.id,
-            label: entity.name,
-          }))
-          .sort((a, b) => (a.label > b.label ? 1 : -1)),
-      );
-    }
-  }, [financialEntitiesData, setFinancialEntities]);
 
   return (
     <>

@@ -7,11 +7,11 @@
     },
     {
       "mode": "ts",
-      "include": "./plugins/admin-context-plugin.ts",
+      "include": "src/plugins/admin-context-plugin.ts",
       "emitTemplate": "{{dir}}/__generated__/{{name}}.types.ts"
     }
   ],
-  "srcDir": "./src/",
+  "srcDir": "./",
   "failOnError": true,
   "camelCaseColumnNames": false,
   "db": {

@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import {
   UpdateDocumentDocument,
   UpdateDocumentMutation,
   UpdateDocumentMutationVariables,
 } from '../gql/graphql.js';
-import { useHandleKnownErrors } from './use-handle-known-errors.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,7 +34,7 @@ type UseUpdateDocument = {
   fetching: boolean;
   updateDocument: (
     variables: UpdateDocumentMutationVariables,
-  ) => Promise<UpdateDocumentSuccessfulResult>;
+  ) => Promise<UpdateDocumentSuccessfulResult | void>;
 };
 
 const NOTIFICATION_ID = 'updateDocument';
@@ -44,48 +44,35 @@ export const useUpdateDocument = (): UseUpdateDocument => {
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateDocumentDocument);
-  const { handleKnownErrors } = useHandleKnownErrors();
-
   const updateDocument = useCallback(
-    async (variables: UpdateDocumentMutationVariables): Promise<UpdateDocumentSuccessfulResult> => {
+    async (variables: UpdateDocumentMutationVariables) => {
+      const message = `Error updating document ID [${variables.documentId}]`;
       const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-
-      return new Promise<UpdateDocumentSuccessfulResult>((resolve, reject) => {
-        notifications.show({
-          id: notificationId,
-          loading: true,
-          title: 'Updating document',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-        return mutate(variables).then(res => {
-          const message = `Error updating document ID [${variables.documentId}]`;
-          const data = handleKnownErrors(res, reject, message, notificationId);
-          if (data) {
-            if (data.updateDocument.__typename === 'CommonError') {
-              console.error(`${message}: ${data.updateDocument.message}`);
-              notifications.update({
-                id: notificationId,
-                message,
-                color: 'red',
-                autoClose: 5000,
-              });
-              return reject(data.updateDocument.message);
-            }
-            notifications.update({
-              id: notificationId,
-              title: 'Update Successful!',
-              autoClose: 5000,
-              message: 'Document is updated',
-              withCloseButton: true,
-            });
-            return resolve(data.updateDocument);
-          }
-        });
+      toast.loading('Updating document', {
+        id: notificationId,
       });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateDocument');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Document updated',
+          });
+          return data.updateDocument;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
     },
-    [handleKnownErrors, mutate],
+    [mutate],
   );
 
   return {

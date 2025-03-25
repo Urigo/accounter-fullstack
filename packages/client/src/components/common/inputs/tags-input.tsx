@@ -9,10 +9,8 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { useQuery } from 'urql';
 import { ActionIcon, Select } from '@mantine/core';
-import { AllTagsDocument } from '../../../gql/graphql.js';
-import { sortTags } from '../../../helpers/index.js';
+import { useGetTags } from '../../../hooks/use-get-tags.js';
 import { SelectTagItem } from './index.js';
 
 type Props<T extends FieldValues> = {
@@ -28,16 +26,7 @@ export function TagsInput<T extends FieldValues>({
   setFetching,
   label,
 }: Props<T>): ReactElement {
-  const [{ data, fetching }] = useQuery({
-    query: AllTagsDocument,
-  });
-
-  const allTags =
-    sortTags(data?.allTags ?? []).map(tag => ({
-      label: tag.name,
-      value: tag.id,
-      description: tag.namePath ? `${tag.namePath.join(' > ')} >` : undefined,
-    })) ?? [];
+  const { selectableTags: allTags, fetching } = useGetTags();
 
   const { control } = formManager;
   const { fields, append, remove } = useFieldArray({

@@ -1,24 +1,24 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FolderPlus, Loader2 } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
 import {
-  AllSortCodesDocument,
   AllSortCodesQuery,
   ContoReportDocument,
   ContoReportQuery,
   TemplateForContoReportDocument,
 } from '../../../gql/graphql.js';
+import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { useToast } from '../../ui/use-toast.js';
 import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
 import { SaveTemplate } from './conto-report-save-template.js';
@@ -182,13 +182,23 @@ function updateFinancialEntitiesTreeNodes(
   return newTree;
 }
 
+function randomId(length: number) {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
+
+  length ||= Math.floor(Math.random() * chars.length);
+
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return str;
+}
+
 export const ContoReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
-  const [lastId, setLastId] = useState(1);
   const [enableDnd, setEnableDnd] = useState(false);
   const [templateName, setTemplateName] = useState<string | undefined>(undefined);
-  const { toast } = useToast();
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<ContoReportFiltersType>(
     get(CONTO_REPORT_FILTERS_KEY)
@@ -215,9 +225,7 @@ export const ContoReport: React.FC = () => {
   });
 
   // Sort codes array handle
-  const [{ data: sortCodesData, fetching: fetchingSortCodes, error: sortCodesError }] = useQuery({
-    query: AllSortCodesDocument,
-  });
+  const { sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
 
   // new template structure fetch
   const [{ data: templateData, fetching: fetchingTemplate, error: templateError }, fetchTemplate] =
@@ -312,15 +320,17 @@ export const ContoReport: React.FC = () => {
 
   const handleAddBankNode = useCallback(() => {
     const node: NodeModel<CustomData> = {
-      id: `synthetic-${lastId}`,
+      id: `synthetic-${randomId(8)}`,
       parent: BANK_TREE_ROOT_ID,
       droppable: true,
       text: 'New Category',
+      data: {
+        isOpen: false,
+      },
     };
 
-    setLastId(lastId + 1);
     setTree([...tree, node]);
-  }, [setTree, tree, lastId]);
+  }, [setTree, tree]);
 
   const handleTextChange = (id: NodeModel['id'], value: string) => {
     setTree(
@@ -386,16 +396,6 @@ export const ContoReport: React.FC = () => {
     );
   }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree, templateName]);
 
-  const sortCodes = useMemo(() => {
-    if (sortCodesData?.allSortCodes) {
-      const sortCodes = sortCodesData.allSortCodes
-        .filter(code => !!code.name)
-        .sort((a, b) => (a.id > b.id ? 1 : -1));
-      return sortCodes;
-    }
-    return [];
-  }, [sortCodesData]);
-
   const businessesSum = useMemo(() => {
     if (
       businessTransactionsSumData &&
@@ -444,53 +444,32 @@ export const ContoReport: React.FC = () => {
     reorderTree();
   }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, reorderTree]);
 
-  // error handling
-  useEffect(() => {
-    if (sortCodesError) {
-      console.error(sortCodesError);
-      toast({
-        title: 'Error',
-        description: 'Unable to fetch sort codes',
-        variant: 'destructive',
-      });
-    }
-  }, [sortCodesError, toast]);
-
   useEffect(() => {
     if (businessesSumError) {
       console.error(businessesSumError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch businesses summary',
-        variant: 'destructive',
       });
     }
-  }, [businessesSumError, toast]);
+  }, [businessesSumError]);
 
   useEffect(() => {
     if (templateError) {
       console.error(templateError);
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Unable to fetch template',
-        variant: 'destructive',
       });
     }
-  }, [templateError, toast]);
+  }, [templateError]);
 
   const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
   const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);
 
   const fetching = useMemo(
     () =>
-      (!sortCodesData && fetchingSortCodes) ||
+      (!sortCodes && fetchingSortCodes) ||
       (!businessTransactionsSumData && businessTransactionsSumFetching),
-    [
-      sortCodesData,
-      fetchingSortCodes,
-      businessTransactionsSumData,
-      businessTransactionsSumFetching,
-    ],
+    [sortCodes, fetchingSortCodes, businessTransactionsSumData, businessTransactionsSumFetching],
   );
 
   return (

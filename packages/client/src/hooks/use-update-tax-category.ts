@@ -1,10 +1,12 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { notifications } from '@mantine/notifications';
 import {
   UpdateTaxCategoryDocument,
   UpdateTaxCategoryMutation,
   UpdateTaxCategoryMutationVariables,
 } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -29,7 +31,7 @@ type TaxCategory = Extract<
 
 type UseUpdateTaxCategory = {
   fetching: boolean;
-  updateTaxCategory: (variables: UpdateTaxCategoryMutationVariables) => Promise<TaxCategory>;
+  updateTaxCategory: (variables: UpdateTaxCategoryMutationVariables) => Promise<TaxCategory | void>;
 };
 
 const NOTIFICATION_ID = 'updateTaxCategory';
@@ -39,63 +41,39 @@ export const useUpdateTaxCategory = (): UseUpdateTaxCategory => {
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateTaxCategoryDocument);
+  const updateTaxCategory = useCallback(
+    async (variables: UpdateTaxCategoryMutationVariables) => {
+      const message = 'Error updating tax category';
+      const notificationId = `${NOTIFICATION_ID}-${variables.taxCategoryId}`;
+      toast.loading('Uploading Tax Category', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateTaxCategory');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: `${data.updateTaxCategory.name} was updated`,
+          });
+          return data.updateTaxCategory;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return void 0;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateTaxCategory: (variables: UpdateTaxCategoryMutationVariables): Promise<TaxCategory> =>
-      new Promise<TaxCategory>((resolve, reject) => {
-        notifications.show({
-          id: NOTIFICATION_ID,
-          loading: true,
-          title: 'Uploading Tax Category',
-          message: 'Please wait...',
-          autoClose: false,
-          withCloseButton: true,
-        });
-
-        return mutate(variables).then(res => {
-          if (res.error) {
-            const message = 'Error updating tax category';
-            console.error(`${message}: ${res.error}`);
-            notifications.update({
-              id: NOTIFICATION_ID,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(res.error.message);
-          }
-          if (!res.data) {
-            console.error('Error updating tax category: No data received');
-            notifications.update({
-              id: NOTIFICATION_ID,
-              title: 'Error updating tax category',
-              message: 'No data received',
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject('No data received');
-          }
-          if (res.data.updateTaxCategory.__typename === 'CommonError') {
-            const message = 'Error updating tax category';
-            console.error(`${message}: ${res.data.updateTaxCategory.message}`);
-            notifications.update({
-              id: NOTIFICATION_ID,
-              message,
-              color: 'red',
-              autoClose: 5000,
-            });
-            return reject(res.data.updateTaxCategory.message);
-          }
-          notifications.update({
-            id: NOTIFICATION_ID,
-            title: 'Update Successful!',
-            autoClose: 5000,
-            message: `${res.data.updateTaxCategory.name} was updated`,
-            withCloseButton: true,
-          });
-          return resolve(res.data.updateTaxCategory);
-        });
-      }),
+    updateTaxCategory,
   };
 };

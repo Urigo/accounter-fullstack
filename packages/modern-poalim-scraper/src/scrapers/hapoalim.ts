@@ -33,7 +33,7 @@ declare namespace window {
 }
 
 async function businessLogin(credentials: HapoalimCredentials, page: Page) {
-  const BASE_URL = 'https://biz2.bankhapoalim.co.il/authenticate/logon/main';
+  const BASE_URL = 'https://biz2.bankhapoalim.co.il/ng-portals/auth/he/biz-login/authenticate';
   await page.goto(BASE_URL);
 
   await page.waitForSelector('.submit-btn');
@@ -314,13 +314,14 @@ export async function hapoalim(
         accountNumber: number;
       },
       transferCatenatedId: string,
+      dataOriginCode: number,
     ): Promise<{
       data: ForeignSwiftTransaction | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
-      const foreignSwiftTransactionUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions/${transferCatenatedId}?accountId=${fullAccountNumber}&dataOriginCode=2&lang=he`;
+      const foreignSwiftTransactionUrl = `${apiSiteUrl}/foreign-trade/swiftTransactions/${transferCatenatedId}?accountId=${fullAccountNumber}&dataOriginCode=${dataOriginCode}&lang=he`;
       const getForeignSwiftTransactionFunction = fetchGetWithinPage<ForeignSwiftTransaction>(
         page,
         foreignSwiftTransactionUrl,

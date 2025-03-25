@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { showNotification } from '@mantine/notifications';
 import { UpdateTagDocument, UpdateTagMutationVariables } from '../gql/graphql.js';
+import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,39 +16,46 @@ type UseUpdateTag = {
   updateTag: (variables: UpdateTagMutationVariables) => Promise<boolean>;
 };
 
+const NOTIFICATION_ID = 'updateTag';
+
 export const useUpdateTag = (): UseUpdateTag => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(UpdateTagDocument);
+  const updateTag = useCallback(
+    async (variables: UpdateTagMutationVariables) => {
+      const message = `Error updating tag ID [${variables.tagId}]`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.tagId}`;
+      toast.loading('Updating Tag...', {
+        id: notificationId,
+      });
+      try {
+        const res = await mutate(variables);
+        const data = handleCommonErrors(res, message, notificationId, 'updateTag');
+        if (data) {
+          toast.success('Success', {
+            id: notificationId,
+            description: 'Tag updated',
+          });
+          return data.updateTag;
+        }
+      } catch (e) {
+        console.error(`${message}: ${e}`);
+        toast.error('Error', {
+          id: notificationId,
+          description: message,
+          duration: 100_000,
+          closeButton: true,
+        });
+      }
+      return false;
+    },
+    [mutate],
+  );
 
   return {
     fetching,
-    updateTag: (variables: UpdateTagMutationVariables): Promise<boolean> =>
-      new Promise<boolean>((resolve, reject) =>
-        mutate(variables).then(res => {
-          if (res.error) {
-            console.error(`Error updating tag ID [${variables.tagId}]: ${res.error}`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject(res.error.message);
-          }
-          if (res.data?.updateTag !== true) {
-            console.error(`Error updating tag ID [${variables.tagId}]: No data returned`);
-            showNotification({
-              title: 'Error!',
-              message: 'Oh no!, we have an error! 🤥',
-            });
-            return reject('No data returned');
-          }
-          showNotification({
-            title: 'Update Success!',
-            message: 'Hey there, your update is awesome!',
-          });
-          return resolve(res.data.updateTag);
-        }),
-      ),
+    updateTag,
   };
 };
