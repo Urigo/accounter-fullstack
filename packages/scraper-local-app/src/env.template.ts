@@ -15,4 +15,20 @@ export const config: Config = {
   poalimAccounts: [],
   isracardAccounts: [],
   amexAccounts: [],
+  // Example usage:
+  // calAccounts: [
+  //   {
+  //     username: '',
+  //     password: '',
+  //     last4Digits: '',
+  //   },
+  // ],
+  // discountAccounts: [
+  //   {
+  //     ID: '',
+  //     password: '',
+  //     code: '',
+  //     nickname: '',
+  //   },
+  // ],
 };
