@@ -59,6 +59,43 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
       return doc ?? null;
     },
+    suggestDocumentMatchingTransactions: async (_, { documentId }, context) => {
+      const { injector } = context;
+
+      // 1. fetch document
+      const document = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByIdLoader.load(documentId);
+      if (!document) {
+        throw new GraphQLError(`Document ID="${documentId}" not found`);
+      }
+
+      // 2. try to match the document with a transaction
+      const matchedTransactionId = await matchTransactionToDocument(
+        injector,
+        {
+          type: dbDocumentTypeToEnum(document.type),
+          issuer: null,
+          recipient: null,
+          fullAmount: document.total_amount,
+          currency: formatCurrency(document.currency_code),
+          vatAmount: document.vat_amount,
+          date: document.date ? dateToTimelessDateString(document.date) : null,
+          referenceCode: document.serial_number,
+        },
+        context,
+      );
+
+      // 3. if we found a match, fetch the full transaction
+      if (matchedTransactionId) {
+        const transaction = await injector
+          .get(TransactionsProvider)
+          .getTransactionByIdLoader.load(matchedTransactionId);
+        return transaction ? [transaction] : [];
+      }
+
+      return [];
+    },
   },
   Mutation: {
     uploadDocument: async (_, { file, chargeId }, context) => {
@@ -173,6 +210,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
+      console.log('🚀 ~ updateDocument: ~ documentId:', documentId);
+      console.log('🚀 ~ updateDocument: ~ fields:', fields);
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
@@ -233,6 +272,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           const charge = await injector
             .get(ChargesProvider)
             .getChargeByIdLoader.load(fields.chargeId);
+          console.log('🚀 ~ updateDocument: ~ charge:', charge);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
           }
@@ -594,43 +634,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         success: true,
         errors,
       };
-    },
-    suggestDocumentMatchingTransactions: async (_, { documentId }, context) => {
-      const { injector } = context;
-
-      // 1. fetch document
-      const document = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByIdLoader.load(documentId);
-      if (!document) {
-        throw new GraphQLError(`Document ID="${documentId}" not found`);
-      }
-
-      // 2. try to match the document with a transaction
-      const matchedTransactionId = await matchTransactionToDocument(
-        injector,
-        {
-          type: dbDocumentTypeToEnum(document.type),
-          issuer: null,
-          recipient: null,
-          fullAmount: document.total_amount,
-          currency: formatCurrency(document.currency_code),
-          vatAmount: document.vat_amount,
-          date: document.date ? dateToTimelessDateString(document.date) : null,
-          referenceCode: document.serial_number,
-        },
-        context,
-      );
-
-      // 3. if we found a match, fetch the full transaction
-      if (matchedTransactionId) {
-        const transaction = await injector
-          .get(TransactionsProvider)
-          .getTransactionByIdLoader.load(matchedTransactionId);
-        return transaction ? [transaction] : [];
-      }
-
-      return [];
     },
   },
   Document: {

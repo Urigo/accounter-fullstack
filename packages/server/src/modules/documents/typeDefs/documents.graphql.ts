@@ -6,6 +6,7 @@ export default gql`
     documents: [Document!]! @auth(role: ACCOUNTANT)
     documentsByFilters(filters: DocumentsFilters!): [Document!]! @auth(role: ACCOUNTANT)
     documentById(documentId: UUID!): Document @auth(role: ACCOUNTANT)
+    suggestDocumentMatchingTransactions(documentId: UUID!): [Transaction]! @auth(role: ACCOUNTANT)
   }
 
   " input variables for documents filtering "
@@ -36,7 +37,6 @@ export default gql`
       isSensitive: Boolean
       chargeId: UUID
     ): [UploadDocumentResult!]! @auth(role: ACCOUNTANT)
-    suggestDocumentMatchingTransactions(documentId: UUID!): [Transaction]! @auth(role: ACCOUNTANT)
   }
 
   " All possible document types "

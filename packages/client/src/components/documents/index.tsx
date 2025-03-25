@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
-import { useMutation, useQuery } from 'urql';
+import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import {
   ColumnDef,
@@ -101,14 +101,27 @@ import { DocumentsFilters } from './ documents-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation SuggestDocumentMatchingTransactions($documentId: UUID!) {
+  query SuggestDocumentMatchingTransactions($documentId: UUID!) {
     suggestDocumentMatchingTransactions(documentId: $documentId) {
-      id
-      eventDate
-      sourceDescription
-      effectiveDate
-      amount {
-        formatted
+      ... on CommonTransaction {
+        id
+        eventDate
+        sourceDescription
+        commonEffectiveDate: effectiveDate
+        amount {
+          formatted
+        }
+        chargeId
+      }
+      ... on ConversionTransaction {
+        id
+        eventDate
+        sourceDescription
+        conversionEffectiveDate: effectiveDate
+        amount {
+          formatted
+        }
+        chargeId
       }
     }
   }
@@ -411,12 +424,13 @@ export const DocumentsReport = () => {
   );
 };
 
-type SuggestedMatch = {
+type TransactionMatch = {
   id: string;
-  eventDate?: string | null;
-  effectiveDate?: string | null;
-  sourceDescription?: string | null;
-  amount?: { formatted?: string | null } | null;
+  eventDate: string;
+  sourceDescription: string;
+  effectiveDate?: string;
+  amount: { formatted: string };
+  chargeId: string;
 };
 
 const SuggestedMatchesDialog = ({
@@ -427,8 +441,8 @@ const SuggestedMatchesDialog = ({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  matches: SuggestedMatch[];
-  onSelectMatch: (matchId: string) => void;
+  matches: TransactionMatch[];
+  onSelectMatch: (chargeId: string) => void;
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -449,7 +463,7 @@ const SuggestedMatchesDialog = ({
                 </div>
                 <div className="text-sm font-medium">{match.amount?.formatted}</div>
               </div>
-              <Button variant="outline" onClick={() => onSelectMatch(match.id)}>
+              <Button variant="outline" onClick={() => onSelectMatch(match.chargeId)}>
                 Select
               </Button>
             </div>
@@ -470,34 +484,36 @@ const TransactionCell = ({
     original: DocumentsScreenQuery['documentsByFilters'][number];
   };
 }) => {
-  const [{ fetching }, suggestMatches] = useMutation(SuggestDocumentMatchingTransactionsDocument);
+  const [{ data, fetching }, suggestMatches] = useQuery({
+    query: SuggestDocumentMatchingTransactionsDocument,
+    variables: { documentId: row.original.id },
+    pause: true,
+  });
   const { updateDocument } = useUpdateDocument();
-  const [suggestedMatches, setSuggestedMatches] = useState<SuggestedMatch[]>([]);
+  const [suggestedMatches, setSuggestedMatches] = useState<TransactionMatch[]>([]);
   const [showMatchesDialog, setShowMatchesDialog] = useState(false);
 
-  const handleMatchWithAI = async () => {
-    const result = await suggestMatches({ documentId: row.original.id });
-    if (result.data?.suggestDocumentMatchingTransactions) {
-      setSuggestedMatches(result.data.suggestDocumentMatchingTransactions as SuggestedMatch[]);
+  useEffect(() => {
+    if (data?.suggestDocumentMatchingTransactions) {
+      setSuggestedMatches(data.suggestDocumentMatchingTransactions as TransactionMatch[]);
       setShowMatchesDialog(true);
     }
-  };
+  }, [data]);
 
-  const handleSelectMatch = async (matchId: string) => {
+  const handleSelectMatch = async (chargeId: string) => {
     // Update the document with the selected match's charge ID
     const result = await updateDocument({
       documentId: row.original.id,
-      fields: {
-        chargeId: matchId,
-      },
+      fields: { chargeId },
     });
+    console.log('🚀 ~ handleSelectMatch ~ result:', result);
 
     if (result && 'message' in result) {
       // TODO: Show error toast
       console.error('Failed to update document:', result.message);
     } else {
-      setShowMatchesDialog(false);
-      setSuggestedMatches([]);
+      // setShowMatchesDialog(false);
+      // setSuggestedMatches([]);
     }
   };
 
@@ -531,7 +547,7 @@ const TransactionCell = ({
         />
       ) : (
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleMatchWithAI} disabled={fetching}>
+          <Button variant="outline" size="sm" onClick={suggestMatches} disabled={fetching}>
             {fetching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Match with AI
           </Button>
