@@ -179,6 +179,10 @@ export async function getMonthTransactions(
     {
       title: 'Get Transactions',
       task: async (ctx, task) => {
+        if (!ctx[accountKey]) {
+          task.skip('No account');
+          return;
+        }
         ctx[accountKey][monthKey] ??= {};
         const { logger } = ctx;
 
@@ -206,9 +210,14 @@ export async function getMonthTransactions(
     },
     {
       title: 'Save Transactions',
-      enabled: ctx => !!ctx[accountKey][monthKey]?.transactions,
+      enabled: ctx => !!ctx[accountKey]?.[monthKey]?.transactions,
       task: async (ctx, task) => {
-        const { transactions = [] } = ctx[accountKey][monthKey];
+        if (!ctx[accountKey]) {
+          task.skip('No account');
+          return;
+        }
+
+        const { transactions = [] } = ctx[accountKey][monthKey] ?? {};
         if (transactions.length === 0) {
           task.skip('No new transactions');
           return;
