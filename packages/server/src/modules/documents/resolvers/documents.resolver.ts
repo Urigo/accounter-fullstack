@@ -25,10 +25,7 @@ import {
   getGreenInvoiceDocumentType,
   normalizeDocumentType,
 } from '../helpers/green-invoice.helper.js';
-import {
-  matchTransactionToDocument,
-  tryMatchAndUpdateTransaction,
-} from '../helpers/match-transaction.helper.js';
+import { matchTransactionToDocument } from '../helpers/match-transaction.helper.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type {
@@ -76,12 +73,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         const doc = res[0];
 
-        // Try to match the document with a transaction
-        // TODO: qu: we can make this a different mutation.
-        // TODO: if we leave it here, then we need to check if sensitive data. if yes, then skip.
-        await tryMatchAndUpdateTransaction(injector, doc, context);
-
-        return { document: res[0] as IGetAllDocumentsResult };
+        return { document: doc as IGetAllDocumentsResult };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Unknown error';
         return {
@@ -118,9 +110,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       );
 
       const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
-
-      // Try to match each document with a transaction
-      await Promise.all(res.map(doc => tryMatchAndUpdateTransaction(injector, doc, context)));
 
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
@@ -180,9 +169,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       );
 
       const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
-
-      // Try to match each document with a transaction
-      await Promise.all(res.map(doc => tryMatchAndUpdateTransaction(injector, doc, context)));
 
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
