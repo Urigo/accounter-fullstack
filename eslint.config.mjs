@@ -132,6 +132,7 @@ export default [
               'TransactionSuggestions',
               'UncategorizedTransaction',
               'UpdateChargeSuccessfulResult',
+              'UserContext',
               'VatReportResult',
               'VatReportRecord',
               'VacationDays',
