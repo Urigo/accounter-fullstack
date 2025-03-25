@@ -1,15 +1,16 @@
-import { ReactElement, useCallback } from 'react';
+import { ReactElement, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { userService } from '../../../services/user-service.js';
+import { AuthContext } from '../../../providers/auth-guard.js';
 import { Button } from '../../ui/button.js';
 
 export function LogoutButton(): ReactElement {
   const navigate = useNavigate();
+  const { authService } = useContext(AuthContext);
 
   const onLogout = useCallback(() => {
-    userService.logout();
+    authService.logout();
     navigate('/login');
-  }, [navigate]);
+  }, [navigate, authService]);
 
   return (
     <Button variant="ghost" onClick={onLogout}>

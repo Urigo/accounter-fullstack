@@ -1,10 +1,10 @@
-import { ReactElement, useEffect } from 'react';
+import { ReactElement, useContext, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { userService } from '../services/user-service.js';
+import { AuthContext } from '../providers/auth-guard.js';
 import { Button } from './ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form.js';
 import { Input } from './ui/input.js';
@@ -15,9 +15,10 @@ const formSchema = z.object({
 });
 
 export function LoginPage(): ReactElement {
+  const { authService } = useContext(AuthContext);
   useEffect(() => {
-    userService.logout();
-  }, []);
+    authService.logout();
+  }, [authService]);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -30,7 +31,7 @@ export function LoginPage(): ReactElement {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      userService.login(values.username, values.password).then(_user => {
+      authService.login(values.username, values.password).then(_user => {
         navigate('/');
       });
       toast.success('Success', {
