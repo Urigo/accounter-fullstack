@@ -33,7 +33,9 @@ export const AccountantApprovals = (): ReactElement => {
     get('chargesFilters')
       ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
       : {
-          byOwners: userContext?.ownerId ? [userContext?.ownerId] : [],
+          byOwners: userContext?.context.adminBusinessId
+            ? [userContext?.context.adminBusinessId]
+            : [],
           sortBy: {
             field: ChargeSortByField.Date,
             asc: false,

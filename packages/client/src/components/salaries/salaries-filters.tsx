@@ -52,14 +52,14 @@ function SalariesFiltersForm({
   ] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: userContext?.ownerId ?? '',
+      employerId: userContext?.context.adminBusinessId ?? '',
     },
     pause: true,
   });
 
   useEffect(() => {
     fetchEmployees();
-  }, [userContext?.ownerId, fetchEmployees]);
+  }, [userContext?.context.adminBusinessId, fetchEmployees]);
 
   useEffect(() => {
     if (financialEntitiesError) {

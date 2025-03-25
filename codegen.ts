@@ -6,6 +6,7 @@ const config: CodegenConfig = {
   documents: [
     './packages/client/src/components/**/*.tsx',
     './packages/client/src/hooks/**/*.ts',
+    './packages/client/src/providers/**/*.tsx',
     './packages/client/**/*.graphql.ts',
   ],
   emitLegacyCommonJSImports: false,

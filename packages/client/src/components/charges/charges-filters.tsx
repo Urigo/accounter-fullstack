@@ -65,7 +65,9 @@ function ChargesFiltersForm({
   const { userContext } = useContext(UserContext);
   const { control, handleSubmit, watch, setValue } = useForm<ChargeFilter>({
     defaultValues: {
-      byOwners: userContext?.ownerId ? [userContext.ownerId] : undefined,
+      byOwners: userContext?.context.adminBusinessId
+        ? [userContext.context.adminBusinessId]
+        : undefined,
       sortBy: {
         field: ChargeSortByField.Date,
         asc: false,
