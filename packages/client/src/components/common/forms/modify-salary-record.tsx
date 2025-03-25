@@ -49,7 +49,7 @@ export const ModifySalaryRecord = ({
   const [{ data: employeesData, fetching: employeesFetching, error: employeesError }] = useQuery({
     query: AllEmployeesByEmployerDocument,
     variables: {
-      employerId: userContext?.ownerId ?? '',
+      employerId: userContext?.context.adminBusinessId ?? '',
     },
   });
 
@@ -133,10 +133,13 @@ export const ModifySalaryRecord = ({
   }, [employeesData, setTrainingFunds]);
 
   useEffect(() => {
-    if (!defaultValues?.employer && userContext?.ownerId) {
-      setValue('employer', userContext.ownerId, { shouldDirty: true, shouldTouch: true });
+    if (!defaultValues?.employer && userContext?.context.adminBusinessId) {
+      setValue('employer', userContext.context.adminBusinessId, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
     }
-  }, [setValue, defaultValues?.employer, userContext?.ownerId]);
+  }, [setValue, defaultValues?.employer, userContext?.context.adminBusinessId]);
 
   const onSalaryRecordSubmit: SubmitHandler<SalaryRecordInput> = data => {
     console.log('data', data);

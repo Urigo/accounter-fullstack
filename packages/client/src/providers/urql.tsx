@@ -1,20 +1,18 @@
-import { ReactNode, useEffect, useMemo } from 'react';
+import { ReactNode, useContext, useEffect, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AnyVariables, createClient, fetchExchange, mapExchange, Operation, Provider } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
-import { userService } from '../services/user-service.js';
-
-function initializeAuthState(): {
-  token: string | null;
-} {
-  const token = userService.authToken();
-  return { token };
-}
+import { AuthContext } from './auth-guard.js';
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  const { isLoggedIn } = userService;
+  const { authService } = useContext(AuthContext);
   const navigate = useNavigate();
-  const loggedIn = isLoggedIn();
+  const loggedIn = authService.isLoggedIn();
+
+  const token = useMemo(() => {
+    const token = authService.authToken();
+    return token;
+  }, [authService]);
 
   const client = useMemo(() => {
     if (!loggedIn) {
@@ -53,8 +51,6 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
           },
         }),
         authExchange(async utils => {
-          const { token } = initializeAuthState();
-
           return {
             addAuthToOperation(operation): Operation<void, AnyVariables> {
               if (!token) {
@@ -71,14 +67,14 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
               );
             },
             async refreshAuth(): Promise<void> {
-              userService.logout();
+              authService.logout();
             },
           };
         }),
         fetchExchange,
       ],
     });
-  }, [loggedIn, navigate]);
+  }, [loggedIn, navigate, token, authService]);
 
   useEffect(() => {
     if (!client) {

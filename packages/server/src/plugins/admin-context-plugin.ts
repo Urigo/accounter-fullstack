@@ -3,8 +3,12 @@ import pg from 'pg';
 import type { Plugin } from '@envelop/types';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '@shared/enums';
-import { formatCurrency, getCacheInstance } from '@shared/helpers';
-import type { Environment } from '@shared/types';
+import {
+  formatCurrency,
+  getCacheInstance,
+  optionalDateToTimelessDateString,
+} from '@shared/helpers';
+import type { Environment, TimelessDateString } from '@shared/types';
 import { env } from '../environment.js';
 import type {
   IGetAdminBusinessContextQuery,
@@ -22,6 +26,7 @@ export type AdminContext = {
   defaultCryptoConversionFiatCurrency: Currency;
   defaultAdminBusinessId: string;
   defaultTaxCategoryId: string;
+  ledgerLock?: TimelessDateString;
   authorities: {
     vatBusinessId: string;
     inputVatTaxCategoryId: string;
@@ -171,6 +176,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
     ),
     defaultAdminBusinessId: rawContext.owner_id,
     defaultTaxCategoryId: rawContext.default_tax_category_id,
+    ledgerLock: optionalDateToTimelessDateString(rawContext.ledger_lock) ?? undefined,
 
     authorities: {
       vatBusinessId: rawContext.vat_business_id,

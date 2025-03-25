@@ -124,7 +124,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
   } = useFormManager;
 
   const onBusinessSubmit: SubmitHandler<UpdateBusinessInput> = data => {
-    if (!business || !userContext?.ownerId) {
+    if (!business || !userContext?.context.adminBusinessId) {
       return;
     }
 
@@ -141,7 +141,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
 
       updateDbBusiness({
         businessId: business.id,
-        ownerId: userContext.ownerId,
+        ownerId: userContext.context.adminBusinessId,
         fields: dataToUpdate,
       }).then(() => refetchBusiness());
     }

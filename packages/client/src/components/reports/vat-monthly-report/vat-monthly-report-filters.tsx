@@ -134,7 +134,7 @@ export function VatMonthlyReportFilter({
 
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
-      financialEntityId: userContext?.ownerId ?? filter.financialEntityId,
+      financialEntityId: userContext?.context.adminBusinessId ?? filter.financialEntityId,
       fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
       toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
     };

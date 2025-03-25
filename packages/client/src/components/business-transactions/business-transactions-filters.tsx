@@ -56,7 +56,12 @@ function BusinessTransactionsFilterForm({
             <MultiSelect
               {...field}
               data={businesses}
-              value={field.value ?? (userContext?.ownerId ? [userContext.ownerId] : undefined)}
+              value={
+                field.value ??
+                (userContext?.context.adminBusinessId
+                  ? [userContext.context.adminBusinessId]
+                  : undefined)
+              }
               disabled={businessesLoading}
               label="Owners"
               placeholder="Scroll to see all options"

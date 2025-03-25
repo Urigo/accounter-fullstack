@@ -27,7 +27,9 @@ function DocumentsFiltersForm({
   const { userContext } = useContext(UserContext);
   const { control, handleSubmit, setValue } = useForm<DocumentsFiltersType>({
     defaultValues: {
-      ownerIDs: userContext?.ownerId ? [userContext.ownerId] : undefined,
+      ownerIDs: userContext?.context.adminBusinessId
+        ? [userContext.context.adminBusinessId]
+        : undefined,
       toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
       fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
       ...filter,
