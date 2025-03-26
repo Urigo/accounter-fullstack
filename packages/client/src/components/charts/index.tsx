@@ -161,7 +161,6 @@ export const ChartPage = (): ReactElement => {
         if (item.amount.currency === Currency.Ils) {
           const rate = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
           if (!rate) {
-            console.log(`No rate found for transaction ${item.id}`);
             return null;
           }
           const amount = numberToDecimalJS(item.amount.raw * rate);
@@ -179,7 +178,6 @@ export const ChartPage = (): ReactElement => {
           const rateToILS = item.debitExchangeRates?.eur?.raw || item.eventExchangeRates?.eur?.raw;
           const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
           if (!rateToILS || !rateToUSD) {
-            console.log(`No rate found for transaction ${item.id}`);
             return null;
           }
           const rate = rateToUSD / rateToILS;
@@ -198,7 +196,6 @@ export const ChartPage = (): ReactElement => {
           const rateToILS = item.debitExchangeRates?.gbp?.raw || item.eventExchangeRates?.gbp?.raw;
           const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
           if (!rateToILS || !rateToUSD) {
-            console.log(`No rate found for transaction ${item.id}`);
             return null;
           }
           const rate = rateToUSD / rateToILS;
@@ -217,7 +214,6 @@ export const ChartPage = (): ReactElement => {
           const rateToILS = item.debitExchangeRates?.cad?.raw || item.eventExchangeRates?.cad?.raw;
           const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
           if (!rateToILS || !rateToUSD) {
-            console.log(`No rate found for transaction ${item.id}`);
             return null;
           }
           const rate = rateToUSD / rateToILS;

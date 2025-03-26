@@ -409,7 +409,6 @@ export function ChargesFilters({
 
   const onSetFilter = useCallback(
     (newFilter: ChargeFilter) => {
-      console.log(newFilter, filter);
       // looks for actual changes before triggering update
       if (!equal(newFilter, filter)) {
         setFilter(newFilter);

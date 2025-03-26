@@ -79,8 +79,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
     pause: true,
   });
 
-  console.log(fetching, filter);
-
   function onResetMerge(): void {
     setMergeSelectedCharges([]);
   }
@@ -95,7 +93,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
 
   const onFilterChange = useCallback(
     (newFilter: ChargeFilter): void => {
-      console.log('onFilterChange');
       setFilter(newFilter);
     },
     [setFilter],

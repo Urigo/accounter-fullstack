@@ -133,7 +133,6 @@ export function SimilarTransactionsModal({
 
   useEffect(() => {
     if (open && counterpartyId) {
-      console.log('fetching similar transactions', transactionId);
       fetchSimilarTransactions();
     }
   }, [open, counterpartyId, fetchSimilarTransactions, transactionId]);

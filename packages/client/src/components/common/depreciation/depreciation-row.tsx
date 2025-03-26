@@ -51,7 +51,6 @@ interface Props {
 
 export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
   const depreciationRecord = getFragmentData(DepreciationRecordRowFieldsFragmentDoc, data);
-  console.log('depreciationRecord', depreciationRecord);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [{ data: categoriesData, fetching: fetchingCategories }, fetchCategories] = useQuery({

@@ -16,7 +16,6 @@ export const InsertSalaryRecordModal = ({
 
   const doUpdate = useCallback(
     (salaryRecord?: SalaryRecordInput) => {
-      console.log('salaryRecord', salaryRecord);
       if (salaryRecord) {
         insertSalaryRecord({
           salaryRecords: [salaryRecord],
