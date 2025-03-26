@@ -142,12 +142,10 @@ export const ModifySalaryRecord = ({
   }, [setValue, defaultValues?.employer, userContext?.context.adminBusinessId]);
 
   const onSalaryRecordSubmit: SubmitHandler<SalaryRecordInput> = data => {
-    console.log('data', data);
     const dataToUpdate = relevantDataPicker(
       data,
       dirtySalaryRecordFields as MakeBoolean<typeof data>,
     );
-    console.log('dataToUpdate', dataToUpdate);
     if (
       isNewInsert &&
       (!dataToUpdate?.directPaymentAmount ||
@@ -155,7 +153,6 @@ export const ModifySalaryRecord = ({
         !dataToUpdate?.employer ||
         !dataToUpdate?.month)
     ) {
-      console.log('insert missing data');
       return;
     }
 
@@ -169,7 +166,6 @@ export const ModifySalaryRecord = ({
       }
       onDone(dataToUpdate as SalaryRecordInput);
     } else {
-      console.log('no data to update');
       onDone();
     }
   };

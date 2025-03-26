@@ -207,7 +207,6 @@ export function DocumentsFilters({
 
   const onSetFilter = useCallback(
     (newFilter: DocumentsFiltersType) => {
-      console.log(newFilter, filter);
       // looks for actual changes before triggering update
       if (!equal(newFilter, filter)) {
         setFilter(newFilter);

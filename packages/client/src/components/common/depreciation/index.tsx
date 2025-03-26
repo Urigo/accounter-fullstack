@@ -33,8 +33,6 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
     return <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />;
   }
 
-  console.log(data);
-
   return fetching ? (
     <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
   ) : (
