@@ -30,10 +30,8 @@ export const DateCell = ({ data }: Props): ReactElement => {
   const dateContentValue = shouldHaveDate ? formattedDate : null;
 
   return (
-    <td>
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-        <div>{dateContentValue}</div>
-      </Indicator>
-    </td>
+    <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+      <div>{dateContentValue}</div>
+    </Indicator>
   );
 };

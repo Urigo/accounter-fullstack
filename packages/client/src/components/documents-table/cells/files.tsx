@@ -23,7 +23,7 @@ export const Files = ({ data }: Props): ReactElement => {
   const [openImage, setOpenImage] = useState<boolean>(false);
 
   return (
-    <td>
+    <>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">
           <SimpleGrid cols={1}>
@@ -76,6 +76,6 @@ export const Files = ({ data }: Props): ReactElement => {
           </div>
         </Drawer>
       )}
-    </td>
+    </>
   );
 };

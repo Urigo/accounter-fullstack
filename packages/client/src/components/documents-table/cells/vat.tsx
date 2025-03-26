@@ -30,17 +30,15 @@ export const Vat = ({ data }: Props): ReactElement => {
   const isError = shouldHaveVat && vat?.formatted == null;
 
   return (
-    <td>
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-        <div
-          style={{
-            color: Number(vat?.raw) > 0 ? 'green' : 'red',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {vat?.formatted}
-        </div>
-      </Indicator>
-    </td>
+    <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+      <div
+        style={{
+          color: Number(vat?.raw) > 0 ? 'green' : 'red',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {vat?.formatted}
+      </div>
+    </Indicator>
   );
 };

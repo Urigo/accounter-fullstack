@@ -51,31 +51,29 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
   const isAccountDiff = diffAccount && diffAccount?.id !== account?.id;
 
   return (
-    <td>
-      <div className="flex flex-col">
-        {(account || isAccountDiff) && (
-          <>
-            {account && (
-              <a href={getHref(account.id)} target="_blank" rel="noreferrer">
+    <div className="flex flex-col whitespace-normal">
+      {(account || isAccountDiff) && (
+        <>
+          {account && (
+            <a href={getHref(account.id)} target="_blank" rel="noreferrer">
+              <NavLink
+                label={account.name}
+                className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
+              />
+            </a>
+          )}
+          {isAccountDiff && diffAccount && (
+            <div className="border-2 border-yellow-500 rounded-md">
+              <a href={getHref(diffAccount.id)} target="_blank" rel="noreferrer">
                 <NavLink
-                  label={account.name}
-                  className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
+                  label={diffAccount.name}
+                  className="[&>*>.mantine-NavLink-label]:font-semibold"
                 />
               </a>
-            )}
-            {isAccountDiff && diffAccount && (
-              <div className="border-2 border-yellow-500 rounded-md">
-                <a href={getHref(diffAccount.id)} target="_blank" rel="noreferrer">
-                  <NavLink
-                    label={diffAccount.name}
-                    className="[&>*>.mantine-NavLink-label]:font-semibold"
-                  />
-                </a>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </td>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 };

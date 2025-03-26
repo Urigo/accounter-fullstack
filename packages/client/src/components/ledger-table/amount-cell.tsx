@@ -22,36 +22,30 @@ export const AmountCell = ({ foreignAmount, localAmount, diff }: Props): ReactEl
   const isForeignAmountDiff = diff && diff.foreignAmount?.formatted !== foreignAmount?.formatted;
 
   return (
-    <td>
-      <div className="flex flex-col">
-        {(localAmount || isLocalAmountDiff) && (
-          <>
-            <div className="flex gap-2  items-center">
-              {isForeign && (
-                <p className={isForeignAmountDiff ? 'line-through' : ''}>
-                  {foreignAmount.formatted}
-                </p>
-              )}
-              {isForeignAmountDiff && diff.foreignAmount && (
-                <p className="border-2 border-yellow-500 rounded-md">
-                  {diff.foreignAmount.formatted}
-                </p>
-              )}
-            </div>
+    <div className="flex flex-col">
+      {(localAmount || isLocalAmountDiff) && (
+        <>
+          <div className="flex gap-2  items-center">
+            {isForeign && (
+              <p className={isForeignAmountDiff ? 'line-through' : ''}>{foreignAmount.formatted}</p>
+            )}
+            {isForeignAmountDiff && diff.foreignAmount && (
+              <p className="border-2 border-yellow-500 rounded-md">
+                {diff.foreignAmount.formatted}
+              </p>
+            )}
+          </div>
 
-            <div className="flex gap-2  items-center">
-              {localAmount != null && (
-                <p className={isLocalAmountDiff ? 'line-through' : ''}>{localAmount.formatted}</p>
-              )}
-              {isLocalAmountDiff && diff.localAmount && (
-                <p className="border-2 border-yellow-500 rounded-md">
-                  {diff.localAmount.formatted}
-                </p>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </td>
+          <div className="flex gap-2  items-center">
+            {localAmount != null && (
+              <p className={isLocalAmountDiff ? 'line-through' : ''}>{localAmount.formatted}</p>
+            )}
+            {isLocalAmountDiff && diff.localAmount && (
+              <p className="border-2 border-yellow-500 rounded-md">{diff.localAmount.formatted}</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
