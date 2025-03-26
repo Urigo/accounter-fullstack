@@ -1,6 +1,9 @@
+import { GraphQLError } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForBankDeposit } from '../resolvers/ledger-generation/bank-deposit-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBusinessTrip } from '../resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
@@ -11,11 +14,43 @@ import { generateLedgerRecordsForFinancialCharge } from '../resolvers/ledger-gen
 import { generateLedgerRecordsForInternalTransfer } from '../resolvers/ledger-generation/internal-transfer-ledger-generation.resolver.js';
 import { generateLedgerRecordsForMonthlyVat } from '../resolvers/ledger-generation/monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/ledger-generation/salary-ledger-generation.resolver.js';
+import { isChargeLocked } from './ledger-lock.js';
+
+const resolveLockedCharge: ResolverFn<
+  Maybe<ResolversTypes['GeneratedLedgerRecords']>,
+  ResolversParentTypes['Charge'],
+  GraphQLModules.Context,
+  object
+> = async (charge, _, context, __) => {
+  try {
+    const records = await context.injector
+      .get(LedgerProvider)
+      .getLedgerRecordsByChargesIdLoader.load(charge.id);
+
+    return {
+      records,
+      charge,
+      balance: {
+        isBalanced: true,
+        unbalancedEntities: [],
+        balanceSum: 0,
+        financialEntities: [],
+      },
+      errors: [],
+    };
+  } catch (e) {
+    console.error(e);
+    throw new GraphQLError(`Error loading ledger records for charge ID="${charge.id}"`);
+  }
+};
 
 export function ledgerGenerationByCharge(
   charge: IGetChargesByIdsResult,
   context: GraphQLModules.Context,
 ) {
+  if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+    return resolveLockedCharge;
+  }
   const chargeType = getChargeType(charge, context);
   switch (chargeType) {
     case 'CommonCharge':

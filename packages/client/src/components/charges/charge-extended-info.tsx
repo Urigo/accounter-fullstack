@@ -38,6 +38,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         transactionsCount
         documentsCount
         ledgerCount
+        isLedgerLocked
       }
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
@@ -349,11 +350,13 @@ export function ChargeExtendedInfo({
                   }}
                 >
                   <div className="flex flex-row items-center gap-2 justify-start w-full">
-                    <RegenerateLedgerRecordsButton
-                      chargeId={charge.id}
-                      onChange={onExtendedChange}
-                      variant="outline"
-                    />
+                    {!charge.metadata?.isLedgerLocked && (
+                      <RegenerateLedgerRecordsButton
+                        chargeId={charge.id}
+                        onChange={onExtendedChange}
+                        variant="outline"
+                      />
+                    )}
                     Ledger Records
                   </div>
                 </Accordion.Control>

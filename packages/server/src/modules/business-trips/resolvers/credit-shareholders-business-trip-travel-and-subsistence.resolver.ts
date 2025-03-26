@@ -68,6 +68,15 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
       throw new GraphQLError(`Business trip with id ${businessTripId} is missing end date`);
     }
 
+    if (
+      context.adminContext.ledgerLock &&
+      dateToTimelessDateString(toDate) < context.adminContext.ledgerLock
+    ) {
+      throw new GraphQLError(
+        `Cannot credit shareholders for business trip ${businessTrip.name}, because ledger is locked`,
+      );
+    }
+
     const summaryData = await businessTripSummary(context, businessTrip);
 
     return { businessTrip: { ...businessTrip, toDate }, summaryData };

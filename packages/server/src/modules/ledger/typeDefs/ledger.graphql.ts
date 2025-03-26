@@ -76,6 +76,10 @@ export default gql`
     ledger: Ledger!
   }
 
+  extend type ChargeMetadata {
+    isLedgerLocked: Boolean!
+  }
+
   " unbalanced entity over ledger records "
   type LedgerBalanceUnbalancedEntity {
     entity: FinancialEntity!

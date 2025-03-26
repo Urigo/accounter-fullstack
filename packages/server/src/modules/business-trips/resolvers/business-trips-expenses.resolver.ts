@@ -416,8 +416,18 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip other expense');
       }
     },
-    addBusinessTripTravelAndSubsistenceExpense: async (_, { fields }, context) =>
-      createTravelAndSubsistenceExpense(context, fields),
+    addBusinessTripTravelAndSubsistenceExpense: async (_, { fields }, context) => {
+      if (context.adminContext.ledgerLock) {
+        if (fields.date && fields.date < context.adminContext.ledgerLock) {
+          throw new GraphQLError('Cannot add expense before ledger lock date');
+        }
+        if (fields.valueDate && fields.valueDate < context.adminContext.ledgerLock) {
+          throw new GraphQLError('Cannot add expense before ledger lock date');
+        }
+      }
+
+      return createTravelAndSubsistenceExpense(context, fields);
+    },
     addBusinessTripCarRentalExpense: async (_, { fields }, context) => {
       const { injector } = context;
       try {

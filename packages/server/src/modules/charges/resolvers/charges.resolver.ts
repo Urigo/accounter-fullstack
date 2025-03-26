@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
+import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
@@ -513,6 +514,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
     ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
+        if (isChargeLocked(DbCharge, context.adminContext.ledgerLock)) {
+          return 'VALID';
+        }
+
         const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context)(
           DbCharge,
           { insertLedgerRecordsIfNotExists: false },

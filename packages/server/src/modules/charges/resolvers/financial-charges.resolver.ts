@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
+import { getMinDate } from '@modules/ledger/helpers/ledger-lock.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { getChargeType } from '../helpers/charge-type.js';
 import { generateAndTagCharge } from '../helpers/financial-charge.helper.js';
 import type { ChargesModule } from '../types.js';
@@ -11,6 +13,9 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
   Mutation: {
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector, adminContext } = context;
+      if (adminContext.ledgerLock && date <= adminContext.ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       try {
         const charge = await generateAndTagCharge(
           injector,
@@ -34,6 +39,9 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     },
     generateBankDepositsRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector, adminContext } = context;
+      if (adminContext.ledgerLock && date <= adminContext.ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       try {
         const { bankDepositInterestIncomeTaxCategoryId } = adminContext.bankDeposits;
         if (!bankDepositInterestIncomeTaxCategoryId) {
@@ -63,9 +71,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         injector,
         adminContext: {
+          ledgerLock,
           authorities: { taxExpensesTaxCategoryId },
         },
       } = context;
+      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       try {
         const charge = await generateAndTagCharge(
           injector,
@@ -91,9 +103,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         injector,
         adminContext: {
+          ledgerLock,
           depreciation: { accumulatedDepreciationTaxCategoryId },
         },
       } = context;
+      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       if (!accumulatedDepreciationTaxCategoryId) {
         throw new GraphQLError('Accumulated depreciation tax category missing');
       }
@@ -119,8 +135,16 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
-      const { injector, adminContext } = context;
-      const { recoveryReserveTaxCategoryId } = adminContext.salaries;
+      const {
+        injector,
+        adminContext: {
+          ledgerLock,
+          salaries: { recoveryReserveTaxCategoryId },
+        },
+      } = context;
+      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       if (!recoveryReserveTaxCategoryId) {
         throw new GraphQLError('Recovery reserve tax category missing');
       }
@@ -146,8 +170,16 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
-      const { injector, adminContext } = context;
-      const { vacationReserveTaxCategoryId } = adminContext.salaries;
+      const {
+        injector,
+        adminContext: {
+          ledgerLock,
+          salaries: { vacationReserveTaxCategoryId },
+        },
+      } = context;
+      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
+        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      }
       if (!vacationReserveTaxCategoryId) {
         throw new GraphQLError('Vacation reserve tax category missing');
       }
@@ -180,9 +212,18 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Balance charge must include balance records');
       }
 
-      const { defaultTaxCategoryId, defaultAdminBusinessId } = adminContext;
+      const { defaultTaxCategoryId, defaultAdminBusinessId, ledgerLock } = adminContext;
       if (!defaultTaxCategoryId) {
         throw new GraphQLError('Default tax category missing');
+      }
+
+      if (ledgerLock) {
+        const minDate = getMinDate(
+          balanceRecords.map(record => [new Date(record.invoiceDate), record.valueDate]).flat(),
+        );
+        if (minDate && dateToTimelessDateString(minDate) <= ledgerLock) {
+          throw new GraphQLError('Cannot generate balance charge for locked period');
+        }
       }
 
       try {

@@ -1,3 +1,4 @@
+import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
@@ -18,6 +19,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   const {
     adminContext: {
       defaultTaxCategoryId,
+      ledgerLock,
       authorities: { taxExpensesTaxCategoryId },
       bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
       depreciation: { accumulatedDepreciationTaxCategoryId },
@@ -27,6 +29,14 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
       salaries: { recoveryReserveTaxCategoryId, vacationReserveTaxCategoryId },
     },
   } = context;
+
+  if (isChargeLocked(charge, ledgerLock)) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${charge.id}" is locked for ledger generation`,
+    };
+  }
+
   try {
     if (!charge.tax_category_id) {
       return {

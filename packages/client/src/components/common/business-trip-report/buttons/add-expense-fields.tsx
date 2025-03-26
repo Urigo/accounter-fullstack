@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import {
   Currency,
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import { UserContext } from '../../../../providers/user-provider.js';
 import { CurrencyInput } from '../../index.js';
 
 type ModalProps = {
@@ -29,6 +30,7 @@ export function AddExpenseFields({
     query: AttendeesByBusinessTripDocument,
     variables: { businessTripId },
   });
+  const { userContext } = useContext(UserContext);
 
   // On every new data fetch, reorder results by name
   useEffect(() => {
@@ -56,12 +58,20 @@ export function AddExpenseFields({
     }
   }, [error]);
 
+  const ledgerLock = useMemo(() => userContext?.context.ledgerLock, [userContext]);
+
   return (
     <>
       <Controller
         name="date"
         control={control}
         rules={{
+          min: ledgerLock
+            ? {
+                value: ledgerLock,
+                message: `Date must be after ${ledgerLock}`,
+              }
+            : undefined,
           pattern: {
             value: TIMELESS_DATE_REGEX,
             message: 'Date must be im format yyyy-mm-dd',
@@ -94,6 +104,12 @@ export function AddExpenseFields({
             value: TIMELESS_DATE_REGEX,
             message: 'Date must be im format yyyy-mm-dd',
           },
+          min: ledgerLock
+            ? {
+                value: ledgerLock,
+                message: `Date must be after ${ledgerLock}`,
+              }
+            : undefined,
         }}
         render={({ field, fieldState }): ReactElement => (
           <DatePickerInput
