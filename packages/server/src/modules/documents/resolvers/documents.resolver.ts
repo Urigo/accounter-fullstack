@@ -108,9 +108,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           .get(DocumentsProvider)
           .insertDocuments({ document: [{ ...newDocument }] });
 
-        const doc = res[0];
-
-        return { document: doc as IGetAllDocumentsResult };
+        return { document: res[0] as IGetAllDocumentsResult };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Unknown error';
         return {
