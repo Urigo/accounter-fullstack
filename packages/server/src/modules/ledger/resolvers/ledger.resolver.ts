@@ -11,6 +11,7 @@ import {
   ledgerGenerationByCharge,
   ledgerUnbalancedBusinessesByCharge,
 } from '../helpers/ledger-by-charge-type.helper.js';
+import { isChargeLocked } from '../helpers/ledger-lock.js';
 import {
   convertLedgerRecordToInput,
   convertLedgerRecordToProto,
@@ -29,7 +30,7 @@ import { commonChargeLedgerResolver } from './common.resolver.js';
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   Query: {
     chargesWithLedgerChanges: async (_, { filters, limit }, context, info) => {
-      const { injector } = context;
+      const { injector, adminContext } = context;
 
       // handle sort column
       let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
@@ -45,11 +46,17 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           break;
       }
 
+      // get max date of filter and ledger lock
+      const fromDate =
+        adminContext.ledgerLock || filters?.fromDate
+          ? [adminContext.ledgerLock, filters?.fromDate].filter(Boolean).sort().reverse()[0]
+          : undefined;
+
       const charges = await injector
         .get(ChargesProvider)
         .getChargesByFilters({
           ownerIds: filters?.byOwners,
-          fromDate: filters?.fromDate,
+          fromDate,
           toDate: filters?.toDate,
           fromAnyDate: filters?.fromAnyDate,
           toAnyDate: filters?.toAnyDate,
@@ -80,6 +87,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         await Promise.all(
           limitedCharges.map(async charge => {
+            if (isChargeLocked(charge, adminContext.ledgerLock)) {
+              handledCharges++;
+              if (handledCharges % 50 === 0 || handledCharges === limitedCharges.length) {
+                push({ progress: calculateProgress() });
+              }
+              return;
+            }
             try {
               const generatedRecordsPromise = ledgerGenerationByCharge(charge, context)(
                 charge,
@@ -156,6 +170,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
       if (!charge) {
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
+      }
+      if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+        return {
+          __typename: 'CommonError',
+          message: `Charge with id ${chargeId} is locked`,
+        };
       }
       try {
         const generated = await ledgerGenerationByCharge(charge, context)(
@@ -387,6 +407,15 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       );
     },
     validate: async ({ charge, records }, _, context, info) => {
+      const { ledgerLock } = context.adminContext;
+      if (isChargeLocked(charge, ledgerLock)) {
+        return {
+          isValid: true,
+          differences: [],
+          matches: records.map(r => r.id),
+          errors: [],
+        };
+      }
       try {
         const generated = await ledgerGenerationByCharge(charge, context)(
           charge,
@@ -486,5 +515,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Ledger';
     },
+  },
+  ChargeMetadata: {
+    isLedgerLocked: async (DbCharge, _, { adminContext }) =>
+      isChargeLocked(DbCharge, adminContext.ledgerLock),
   },
 };
