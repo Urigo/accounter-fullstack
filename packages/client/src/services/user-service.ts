@@ -46,7 +46,6 @@ export class UserService {
   }
 
   public isLoggedIn(): boolean {
-    console.log('isLoggedIn', !!this.user);
     return !!this.user;
   }
 
