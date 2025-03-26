@@ -69,28 +69,26 @@ export const Amount = ({ data, refetchDocument }: Props): ReactElement => {
   const isError = shouldHaveAmount && amount?.formatted == null;
 
   return (
-    <td>
-      <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">
-          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            <p
-              className={[
-                'whitespace-nowrap',
-                hasAlternative ? 'bg-yellow-400' : '',
-                Number(amount?.raw) > 0 ? 'text-green-700' : 'text-red-500',
-              ].join(' ')}
-            >
-              {amount?.formatted}
-            </p>
-          </Indicator>
-        </div>
-        {hasAlternative && (
-          <ConfirmMiniButton
-            onClick={(): void => updateAmount(suggestedAmount)}
-            disabled={fetching}
-          />
-        )}
+    <div className="flex flex-wrap">
+      <div className="flex flex-col justify-center">
+        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+          <p
+            className={[
+              'whitespace-nowrap',
+              hasAlternative ? 'bg-yellow-400' : '',
+              Number(amount?.raw) > 0 ? 'text-green-700' : 'text-red-500',
+            ].join(' ')}
+          >
+            {amount?.formatted}
+          </p>
+        </Indicator>
       </div>
-    </td>
+      {hasAlternative && (
+        <ConfirmMiniButton
+          onClick={(): void => updateAmount(suggestedAmount)}
+          disabled={fetching}
+        />
+      )}
+    </div>
   );
 };

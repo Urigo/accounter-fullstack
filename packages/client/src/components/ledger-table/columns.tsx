@@ -341,7 +341,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     cell: ({ row: { original } }) => {
       const isDiff = original.diff && original.diff.description !== original.description;
       return (
-        <div className="flex flex-col">
+        <div className="flex flex-col whitespace-normal">
           <p className={isDiff ? 'line-through' : ''}>{original.description}</p>
           {isDiff && (
             <div className="border-2 border-yellow-500 rounded-md">
@@ -373,7 +373,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     cell: ({ row: { original } }) => {
       const isDiff = original.diff && original.diff.reference !== original.reference;
       return (
-        <div className="flex flex-col">
+        <div className="flex flex-col whitespace-normal">
           <p className={isDiff ? 'line-through' : ''}>{original.reference}</p>
           {isDiff && (
             <div className="border-2 border-yellow-500 rounded-md">{original.diff?.reference}</div>

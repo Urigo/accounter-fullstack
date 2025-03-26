@@ -14,13 +14,13 @@ export const DateCell = ({ date, diff }: Props): ReactElement => {
   const isDiff = diffFormattedDate && formattedDate !== diffFormattedDate;
 
   return (
-    <td>
+    <>
       <p className={isDiff ? 'line-through' : ''}>{formattedDate ?? 'Missing Data'}</p>
       {isDiff && (
         <div className="flex flex-col border-2 border-yellow-500 rounded-md">
           {diffFormattedDate}
         </div>
       )}
-    </td>
+    </>
   );
 };

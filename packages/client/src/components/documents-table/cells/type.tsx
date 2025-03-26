@@ -21,14 +21,12 @@ export const TypeCell = ({ data }: Props): ReactElement => {
   const cellText = documentType ?? 'Missing';
 
   return (
-    <td>
-      <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">
-          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            <p>{cellText}</p>
-          </Indicator>
-        </div>
+    <div className="flex flex-wrap">
+      <div className="flex flex-col justify-center">
+        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+          <p>{cellText}</p>
+        </Indicator>
       </div>
-    </td>
+    </div>
   );
 };
