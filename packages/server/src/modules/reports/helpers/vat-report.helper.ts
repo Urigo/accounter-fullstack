@@ -36,6 +36,7 @@ export type RawVatReportRecord = {
   foreignVatAfterDeduction?: number;
   localVatAfterDeduction?: number;
   vatNumber?: string | null;
+  allocationNumber?: string | null;
 };
 
 export async function adjustTaxRecord(
@@ -90,6 +91,7 @@ export async function adjustTaxRecord(
         doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id !== charge.owner_id
           : doc.debtor_id === charge.owner_id,
+      allocationNumber: doc.allocation_number,
     };
 
     // set default amountBeforeVAT
