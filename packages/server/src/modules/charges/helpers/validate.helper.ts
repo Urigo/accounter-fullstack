@@ -1,7 +1,9 @@
+import { validateDocumentAllocation } from '@modules/documents/helpers/validate-document.helper.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
 
@@ -33,25 +35,59 @@ export const validateCharge = async (
   }
 
   // validate documents
-  const invoicesCount = Number(charge.invoices_count) || 0;
-  const receiptsCount = Number(charge.receipts_count) || 0;
-  const canSettleWithReceipt = !!(charge.can_settle_with_receipt && receiptsCount > 0);
-  const dbDocumentsAreValid = !charge.invalid_documents;
-  const documentsNotRequired =
-    business?.no_invoices_required === true ||
-    charge.documents_optional_flag ||
-    [
-      ChargeTypeEnum.Salary,
-      ChargeTypeEnum.InternalTransfer,
-      ChargeTypeEnum.Dividend,
-      ChargeTypeEnum.Conversion,
-      ChargeTypeEnum.MonthlyVat,
-      ChargeTypeEnum.CreditcardBankCharge,
-      ChargeTypeEnum.Financial,
-    ].includes(chargeType) ||
-    isGeneralFees;
-  const documentsAreFine =
-    (dbDocumentsAreValid && (invoicesCount > 0 || canSettleWithReceipt)) || documentsNotRequired;
+  let shouldHaveDocuments = true;
+  switch (chargeType) {
+    case ChargeTypeEnum.Salary:
+    case ChargeTypeEnum.InternalTransfer:
+    case ChargeTypeEnum.Dividend:
+    case ChargeTypeEnum.Conversion:
+    case ChargeTypeEnum.MonthlyVat:
+    case ChargeTypeEnum.CreditcardBankCharge:
+    case ChargeTypeEnum.Financial:
+    case ChargeTypeEnum.BusinessTrip:
+    case ChargeTypeEnum.BankDeposit:
+      shouldHaveDocuments = false;
+  }
+  if (isGeneralFees || business?.no_invoices_required === true || charge.documents_optional_flag) {
+    shouldHaveDocuments = false;
+  }
+  let documentsAreFine = false;
+  if (shouldHaveDocuments) {
+    const documents = await injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(charge.id);
+    let invoicesCount = 0;
+    let receiptsCount = 0;
+    let missingAllocationNumber = false;
+    Promise.all(
+      documents.map(async doc => {
+        if (
+          [DocumentType.Invoice, DocumentType.CreditInvoice, DocumentType.InvoiceReceipt].includes(
+            doc.type as DocumentType,
+          )
+        ) {
+          invoicesCount++;
+          const validAllocation = await validateDocumentAllocation(doc, context);
+          if (!validAllocation) {
+            missingAllocationNumber = true;
+          }
+        }
+        if (
+          [DocumentType.Receipt, DocumentType.InvoiceReceipt].includes(doc.type as DocumentType)
+        ) {
+          receiptsCount++;
+        }
+      }),
+    );
+    const canSettleWithReceipt = !!(charge.can_settle_with_receipt && receiptsCount > 0);
+    const dbDocumentsAreValid = !charge.invalid_documents;
+    documentsAreFine =
+      dbDocumentsAreValid &&
+      (invoicesCount > 0 || canSettleWithReceipt) &&
+      !missingAllocationNumber;
+  } else {
+    documentsAreFine = true;
+  }
   if (!documentsAreFine) {
     missingInfo.push(MissingChargeInfo.Documents);
   }
@@ -85,7 +121,7 @@ export const validateCharge = async (
     (business &&
       (business.country !== 'Israel' || business.exempt_dealer || business.optional_vat));
   const vatIsFine =
-    documentsNotRequired ||
+    !shouldHaveDocuments ||
     isGeneralFees ||
     (charge.documents_vat_amount != null &&
       (isVATlessBusiness || charge.documents_vat_amount !== 0));
