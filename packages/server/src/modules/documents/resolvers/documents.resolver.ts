@@ -64,16 +64,17 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         const newDocument = await getDocumentFromFile(context, file, chargeId);
 
-        const res = await injector
+        const [document] = await injector
           .get(DocumentsProvider)
-          .insertDocuments({ document: [{ ...newDocument }] });
+          .insertDocuments({ document: [newDocument] });
 
-        return { document: res[0] as IGetAllDocumentsResult };
+        return { document };
       } catch (e) {
-        const message = (e as Error)?.message ?? 'Unknown error';
+        const message = 'Error uploading document';
+        console.error(`${message}: ${e}`);
         return {
           __typename: 'CommonError',
-          message: `Error uploading document: ${message}`,
+          message,
         };
       }
     },
@@ -250,6 +251,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             : null,
           noVatAmount: fields.noVatAmount ?? null,
           isReviewed: true,
+          allocationNumber: fields.allocationNumber ?? null,
         };
         const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
         if (!res || res.length === 0) {
@@ -331,10 +333,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           noVatAmount: record.noVatAmount ?? null,
           creditorId: record.creditorId ?? null,
           debtorId: record.debtorId ?? null,
+          allocationNumber: record.allocationNumber ?? null,
         };
         const res = await injector
           .get(DocumentsProvider)
-          .insertDocuments({ document: [{ ...newDocument }] });
+          .insertDocuments({ document: [newDocument] });
 
         if (!res || res.length === 0) {
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
@@ -442,6 +445,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               noVatAmount: null,
               creditorId: isOwnerCreditor ? defaultAdminBusinessId : counterpartyId,
               debtorId: isOwnerCreditor ? counterpartyId : defaultAdminBusinessId,
+              allocationNumber: null, // TODO: add allocation number from GreenInvoice API
             };
 
             const newDocumentPromise = injector

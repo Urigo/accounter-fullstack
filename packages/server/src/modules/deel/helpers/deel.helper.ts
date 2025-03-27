@@ -122,7 +122,7 @@ type Prefixer<Type> = {
 export type PrefixedBreakdown = Prefixer<PaymentBreakdownRecord & { receipt_id: string }>;
 export type DeelInvoiceMatch = Invoice & PrefixedBreakdown;
 
-export async function uploadInvoice(
+export async function uploadDeelInvoice(
   receiptChargeMap: Map<string, string>,
   match: DeelInvoiceMatch,
   injector: Injector,
@@ -155,6 +155,7 @@ export async function uploadInvoice(
       noVatAmount: null,
       debtorId: ownerId,
       creditorId: DEEL_BUSINESS_ID,
+      allocationNumber: null,
     };
 
     // upload the document

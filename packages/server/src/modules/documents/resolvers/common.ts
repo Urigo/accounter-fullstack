@@ -50,6 +50,7 @@ export const commonFinancialDocumentsFields:
     optionalDateToTimelessDateString(documentRoot.vat_report_date_override),
   noVatAmount: documentRoot =>
     documentRoot.no_vat_amount ? Number(documentRoot.no_vat_amount) : null,
+  allocationNumber: documentRoot => documentRoot.allocation_number,
 };
 
 export const commonChargeFields: DocumentsModule.ChargeResolvers = {
