@@ -50,6 +50,7 @@ import {
         currency
       }
       serialNumber
+      allocationNumber
       creditor {
         id
         name
@@ -59,14 +60,6 @@ import {
         name
       }
     }
-    ...DocumentsTableAmountFields
-    ...DocumentsDateFields
-    ...DocumentsTableVatFields
-    ...DocumentTypeFields
-    ...DocumentSerialFields
-    ...DocumentsTableCreditorFields
-    ...DocumentsTableDebtorFields
-    ...DocumentFilesFields
   }
 `;
 
