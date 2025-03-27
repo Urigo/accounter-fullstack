@@ -59,7 +59,7 @@ export const validateCharge = async (
     let invoicesCount = 0;
     let receiptsCount = 0;
     let missingAllocationNumber = false;
-    Promise.all(
+    await Promise.all(
       documents.map(async doc => {
         if (
           [DocumentType.Invoice, DocumentType.CreditInvoice, DocumentType.InvoiceReceipt].includes(
