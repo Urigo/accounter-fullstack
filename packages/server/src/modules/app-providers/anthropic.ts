@@ -30,6 +30,13 @@ const documentDataSchema = z.object({
     .string()
     .nullable()
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
+  allocationNumber: z
+    .string()
+    .length(9)
+    .nullable()
+    .describe(
+      'Unique document 9-digits allocation number (מספר הקצאה), not relevant if no VAT amount exists. Usually last 9 digits of a longer number',
+    ),
 });
 
 type DocumentData = z.infer<typeof documentDataSchema>;

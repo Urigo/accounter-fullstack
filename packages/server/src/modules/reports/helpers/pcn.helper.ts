@@ -112,6 +112,7 @@ const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTra
       totalVat: Math.round(Math.abs(Number(t.roundedVATToAdd ?? 0))),
       invoiceSum: Math.round(Number(t.localAmountBeforeVAT)),
       isProperty: t.isProperty,
+      allocationNumber: t.allocationNumber ?? undefined,
     });
   }
   return transactions.sort((a, b) => a.invoiceDate.localeCompare(b.invoiceDate));

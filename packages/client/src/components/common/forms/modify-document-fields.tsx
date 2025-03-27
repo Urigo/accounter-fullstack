@@ -120,6 +120,26 @@ export const ModifyDocumentFields = ({
             )}
           />
           <Controller
+            name="allocationNumber"
+            control={control}
+            defaultValue={isDocumentProcessed ? document?.allocationNumber : undefined}
+            rules={{
+              pattern: {
+                value: /^\d{9}$/,
+                message: 'Allocation number must be 9 characters long',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <TextInput
+                {...field}
+                value={field.value ?? undefined}
+                error={fieldState.error?.message}
+                isDirty={fieldState.isDirty}
+                label="Allocation Number"
+              />
+            )}
+          />
+          <Controller
             name="debtorId"
             control={control}
             defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}

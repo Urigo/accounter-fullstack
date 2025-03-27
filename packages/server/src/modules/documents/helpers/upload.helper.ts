@@ -32,6 +32,7 @@ type OcrData = {
   amount: number | null;
   currency: Currency | null;
   vat: number | null;
+  allocationNumber: string | null;
 };
 
 export async function getOcrData(
@@ -59,6 +60,7 @@ export async function getOcrData(
       amount: null,
       currency: null,
       vat: null,
+      allocationNumber: null,
     };
   }
 
@@ -85,6 +87,7 @@ export async function getOcrData(
     amount: validateNumber(draft.fullAmount),
     currency: draft.currency,
     vat: validateNumber(draft.vatAmount),
+    allocationNumber: draft.allocationNumber,
   };
 }
 
@@ -162,6 +165,7 @@ export async function getDocumentFromFile(
       chargeId: chargeId ?? null,
       vatReportDateOverride: null,
       noVatAmount: null,
+      allocationNumber: ocrData.allocationNumber,
       ...sides,
     };
 

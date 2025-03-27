@@ -1,4 +1,7 @@
-import { validateDocumentVat } from '@modules/documents/helpers/validate-document-vat.helper.js';
+import {
+  validateDocumentAllocation,
+  validateDocumentVat,
+} from '@modules/documents/helpers/validate-document.helper.js';
 import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
@@ -76,6 +79,11 @@ export async function ledgerEntryFromDocument(
 
     validateDocumentVat(document, vatValue, message => {
       throw new LedgerError(message);
+    });
+    await validateDocumentAllocation(document, context).then(valid => {
+      if (!valid) {
+        throw new LedgerError(`Allocation number missing for document [${document.serial_number}]`);
+      }
     });
   }
 

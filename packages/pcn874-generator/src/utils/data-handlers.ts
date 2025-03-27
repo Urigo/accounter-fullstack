@@ -40,6 +40,22 @@ export const transactionHandler = (transaction: Transaction, options: Options): 
     transaction.vatId = digitsAdjuster(sanitizedNumber, 9);
   }
 
+  if (transaction.allocationNumber) {
+    const sanitizedNumber = cleanNonDigitChars(transaction.allocationNumber);
+    if (
+      options.strict &&
+      (sanitizedNumber.length !== 9 ||
+        sanitizedNumber.length !== transaction.allocationNumber.length)
+    ) {
+      throw new Error(
+        `Expected Transaction allocation number to be of 9 digits, received "${transaction.allocationNumber}". ${
+          sanitizedNumber.length > 9 ? `Using the last 9 digits.` : `Adding leading zeros.`
+        }`,
+      );
+    }
+    transaction.allocationNumber = digitsAdjuster(sanitizedNumber, 9);
+  }
+
   if (transaction.refGroup) {
     const sanitizedNumber = cleanNonDigitChars(transaction.refGroup);
     if (

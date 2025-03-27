@@ -6,7 +6,7 @@ import {
   fetchReceipts,
   getChargeMatchesForPayments,
   matchInvoicesWithPayments,
-  uploadInvoice,
+  uploadDeelInvoice,
 } from '../helpers/deel.helper.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
@@ -52,7 +52,7 @@ export const deelResolvers: DeelModule.Resolvers = {
         const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
 
         for (const match of matches) {
-          const documentId = await uploadInvoice(
+          const documentId = await uploadDeelInvoice(
             paymentToChargeMap,
             match,
             injector,
