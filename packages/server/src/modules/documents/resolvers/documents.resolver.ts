@@ -9,8 +9,10 @@ import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-
 import { GreenInvoiceProvider } from '@modules/app-providers/green-invoice.js';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { dbDocumentTypeToEnum } from '@modules/documents/helpers/document-type.helper.js';
 import { BusinessesGreenInvoiceMatcherProvider } from '@modules/financial-entities/providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
 import { Resolvers } from '@shared/gql-types';
@@ -23,6 +25,7 @@ import {
   getGreenInvoiceDocumentType,
   normalizeDocumentType,
 } from '../helpers/green-invoice.helper.js';
+import { matchTransactionToDocument } from '../helpers/match-transaction.helper.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type {
@@ -55,6 +58,43 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     documentById: async (_, { documentId }, { injector }) => {
       const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
       return doc ?? null;
+    },
+    suggestDocumentMatchingTransactions: async (_, { documentId }, context) => {
+      const { injector } = context;
+
+      // 1. fetch document
+      const document = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByIdLoader.load(documentId);
+      if (!document) {
+        throw new GraphQLError(`Document ID="${documentId}" not found`);
+      }
+
+      // 2. try to match the document with a transaction
+      const matchedTransactionId = await matchTransactionToDocument(
+        injector,
+        {
+          type: dbDocumentTypeToEnum(document.type),
+          issuer: null,
+          recipient: null,
+          fullAmount: document.total_amount,
+          currency: formatCurrency(document.currency_code),
+          vatAmount: document.vat_amount,
+          date: document.date ? dateToTimelessDateString(document.date) : null,
+          referenceCode: document.serial_number,
+        },
+        context,
+      );
+
+      // 3. if we found a match, fetch the full transaction
+      if (matchedTransactionId) {
+        const transaction = await injector
+          .get(TransactionsProvider)
+          .getTransactionByIdLoader.load(matchedTransactionId);
+        return transaction ? [transaction] : [];
+      }
+
+      return [];
     },
   },
   Mutation: {
@@ -105,6 +145,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       );
 
       const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     batchUploadDocumentsFromGoogleDrive: async (
@@ -163,6 +204,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       );
 
       const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {

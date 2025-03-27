@@ -149,6 +149,23 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   ORDER BY event_date DESC;
 `;
 
+interface IGetTransactionsWithNoDocumentQuery {
+  params: {
+    ownerId: string;
+  };
+  result: IGetTransactionsByFiltersResult;
+}
+
+const getTransactionsWithChargeButNoDocument = sql<IGetTransactionsWithNoDocumentQuery>`
+  SELECT t.*
+  FROM accounter_schema.extended_transactions t
+  LEFT JOIN accounter_schema.documents d ON t.charge_id = d.charge_id
+  WHERE t.charge_id IS NOT NULL 
+    AND d.id IS NULL
+    AND t.owner_id = $ownerId
+  ORDER BY event_date DESC;
+`;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -244,6 +261,12 @@ export class TransactionsProvider {
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
     return getTransactionsByFilters.run(fullParams, this.dbProvider) as Promise<
+      IGetTransactionsByFiltersResult[]
+    >;
+  }
+
+  public async getTransactionsWithChargeButNoDocument(ownerId: string) {
+    return getTransactionsWithChargeButNoDocument.run({ ownerId }, this.dbProvider) as Promise<
       IGetTransactionsByFiltersResult[]
     >;
   }

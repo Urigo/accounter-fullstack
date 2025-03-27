@@ -32,7 +32,7 @@ const documentDataSchema = z.object({
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
 });
 
-type DocumentData = z.infer<typeof documentDataSchema>;
+export type DocumentData = z.infer<typeof documentDataSchema>;
 
 const SUPPORTED_FILE_TYPES = [
   'image/jpeg',
@@ -51,7 +51,9 @@ function isSupportedFileType(value: string): value is SupportedFileType {
   scope: Scope.Singleton,
   global: true,
 })
-export class AnthropicProvider {
+export class LLMProvider {
+  model = anthropic('claude-3-7-sonnet-latest');
+
   /**
    * Convert File or Blob to Base64
    * @param fileOrBlob File or Blob to convert
@@ -78,7 +80,7 @@ export class AnthropicProvider {
       const fileData = await this.fileToBase64(fileOrBlob);
 
       const { object, usage } = await generateObject({
-        model: anthropic('claude-3-5-sonnet-20241022'),
+        model: this.model,
         schema: documentDataSchema,
         messages: [
           {
@@ -112,5 +114,68 @@ export class AnthropicProvider {
       console.error('Error in document extraction:', error);
       throw error;
     }
+  }
+
+  /**
+   * Match a document to a transaction
+   * NOTE: may be possible to do these matches without an LLM. Or at least limit the txs we send to the LLM to reduce chance of hallucinations
+   * @param document The document to match
+   * @returns The matched transaction
+   */
+  async matchDocumentToTransaction(
+    document: DocumentData,
+    transactions: { id: string }[],
+  ): Promise<{ id: string } | null> {
+    const schema = z.object({
+      matchedTransactionId: z.string().nullable().describe('The ID of the matched transaction'),
+      rationale: z
+        .string()
+        .nullable()
+        .describe('One-line explanation of why the document was matched to the transaction'),
+    });
+
+    const system = stripIndent(`
+      You are a helpful assistant that matches a document to a transaction for accounting purposes.
+      You will be given a document and a list of transactions.
+      You will need to match the document to the correct transaction.
+      It's possible that the document doesn't match any transaction. Return NULL if that's the case.
+    `);
+
+    const prompt = stripIndent(`
+      Here is the data that was extracted from the document:
+      <document>
+      ${JSON.stringify(document)}
+      </document>
+
+      Here is the list of transactions:
+      <transactions>
+      ${transactions
+        .map(
+          transaction => `
+      <transaction>
+      ${JSON.stringify(transaction)}
+      </transaction>
+      `,
+        )
+        .join('\n')}
+      </transactions>
+    `);
+
+    const { object, usage } = await generateObject({
+      model: this.model,
+      schema,
+      system,
+      prompt,
+    });
+
+    console.log('Usage:', usage);
+    console.log('Result:', object);
+
+    const matchedTransactionId = object.matchedTransactionId;
+    const matchedTransaction = transactions.find(
+      transaction => transaction.id === matchedTransactionId,
+    );
+
+    return matchedTransaction ?? null;
   }
 }

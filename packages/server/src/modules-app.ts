@@ -1,8 +1,8 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
-import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
+import { LLMProvider } from '@modules/app-providers/llm.js';
 import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { deelModule } from '@modules/deel/index.js';
@@ -93,7 +93,7 @@ export async function createGraphQLApp(env: Environment) {
       DeelClientProvider,
       GreenInvoiceProvider,
       CoinMarketCapProvider,
-      AnthropicProvider,
+      LLMProvider,
       GoogleDriveProvider,
       {
         provide: ENVIRONMENT,
