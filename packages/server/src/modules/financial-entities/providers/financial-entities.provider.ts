@@ -202,7 +202,7 @@ export class FinancialEntitiesProvider {
         ? this.taxCategoriesProvider.deleteTaxCategoryById(financialEntityId)
         : Promise.resolve();
 
-    Promise.all([deleteBusiness, deleteTaxCategory]);
+    await Promise.all([deleteBusiness, deleteTaxCategory]);
 
     // TODO: should remove ledger, misc expenses?
 
