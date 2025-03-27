@@ -213,6 +213,13 @@ export const transactionValidator = (transaction: Transaction, options: Options)
     throw new Error(`Expected refGroup to be 4 chars long, received "${transaction.refGroup}"`);
   }
 
+  transaction.allocationNumber ??= '000000000';
+  if (!idValidator(transaction.allocationNumber, 9)) {
+    throw new Error(
+      `Expected allocation number to be 9 digits, received "${transaction.allocationNumber}"`,
+    );
+  }
+
   if (!!transaction.refNumber && !idValidator(transaction.refNumber, 9)) {
     throw new Error(`Expected refNumber to be 9 digits, received "${transaction.refNumber}"`);
   }
