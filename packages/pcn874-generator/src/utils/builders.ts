@@ -3,7 +3,6 @@ import type { Header, Transaction } from '../types.js';
 const HEADER_REPORT_TYPE = 1;
 const HEADER_TAXABLE_DIFFERENT_RATE_SALES = '+00000000000';
 const HEADER_TAXABLE_DIFFERENT_RATE_SALES_VAT = '+000000000';
-const TRANSACTION_EXTRA_SPACE = '000000000';
 
 const addLeadingZeros = (value = 0, length: number): string => {
   const zeros = '0'.repeat(length);
@@ -53,7 +52,16 @@ export const headerBuilder = (header: Header): string => {
 };
 
 export const transactionBuilder = (transaction: Transaction): string => {
-  const { entryType, vatId, invoiceDate, refGroup, refNumber, totalVat, invoiceSum } = transaction;
+  const {
+    entryType,
+    vatId,
+    invoiceDate,
+    refGroup,
+    refNumber,
+    totalVat,
+    invoiceSum,
+    allocationNumber,
+  } = transaction;
 
   const entryTypeLetter = entryType.valueOf()[0];
 
@@ -61,7 +69,7 @@ export const transactionBuilder = (transaction: Transaction): string => {
 
   const invoiceSumString = numToSignedString(invoiceSum, 10);
 
-  return `\n${entryTypeLetter}${vatId}${invoiceDate}${refGroup}${refNumber}${totalVatString}${invoiceSumString}${TRANSACTION_EXTRA_SPACE}`;
+  return `\n${entryTypeLetter}${vatId}${invoiceDate}${refGroup}${refNumber}${totalVatString}${invoiceSumString}${allocationNumber}`;
 };
 
 export const footerBuilder = (header: Header): string => {

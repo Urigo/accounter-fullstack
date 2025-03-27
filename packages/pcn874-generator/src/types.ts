@@ -185,6 +185,12 @@ export interface Transaction {
   vatId?: string;
 
   /**
+   * Short allocation number – last 9 digits of full number.
+   * מספר הקצאה קצר
+   */
+  allocationNumber?: string;
+
+  /**
    * Invoice Date/Reference.
    * YYYYMMDD
    * תאריך החשבונית
