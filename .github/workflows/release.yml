@@ -10,6 +10,7 @@ jobs:
     with:
       releaseScript: release # script to run as part of publish command
       nodeVersion: 23.10.0
+      packageManagerVersion: modern
     secrets:
       githubToken: ${{ secrets.GITHUB_TOKEN }}
       npmToken: ${{ secrets.NPM_TOKEN }}
