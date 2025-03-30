@@ -58,7 +58,7 @@
     "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.2",
     "@theguild/prettier-config": "3.0.1",
-    "@types/node": "22.13.13",
+    "@types/node": "22.13.14",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "9.1.2",
     "eslint": "9.23.0",
