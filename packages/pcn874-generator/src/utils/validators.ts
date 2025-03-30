@@ -1,4 +1,4 @@
-import { EntryType } from '../index.js';
+import { EntryType } from '../types.js';
 import type { Header, Options, Transaction } from '../types.js';
 
 const onlyDigitsValidator = (value: string): boolean => {
