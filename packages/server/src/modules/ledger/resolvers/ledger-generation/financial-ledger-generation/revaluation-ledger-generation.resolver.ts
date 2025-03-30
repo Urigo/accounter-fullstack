@@ -1,4 +1,4 @@
-import { sub } from 'date-fns';
+import { endOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -76,7 +76,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       foreignAccounts.map(({ currency }) => currency as Currency),
     );
 
-    const cumulativeDate = dateToTimelessDateString(sub(new Date(revaluationDate), { days: 1 }));
+    const cumulativeDate = dateToTimelessDateString(endOfDay(new Date(revaluationDate)));
     const accountsCumulativeBalancePromise = businessTransactionsSumFromLedgerRecords(
       {},
       {
