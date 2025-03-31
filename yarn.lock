@@ -129,7 +129,7 @@ __metadata:
     react-dom: "npm:19.1.0"
     react-error-boundary: "npm:5.0.0"
     react-hook-form: "npm:7.54.2"
-    react-router-dom: "npm:7.4.0"
+    react-router-dom: "npm:7.4.1"
     sonner: "npm:2.0.2"
     strip-indent: "npm:4.0.0"
     tabler-icons-react: "npm:1.56.0"
@@ -294,7 +294,7 @@ __metadata:
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
     "@whatwg-node/fetch": "npm:0.10.5"
-    ai: "npm:4.2.6"
+    ai: "npm:4.2.8"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:5.1.1"
     cloudinary: "npm:2.6.0"
@@ -313,7 +313,7 @@ __metadata:
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.0.1"
     strip-indent: "npm:4.0.0"
-    tsc-alias: "npm:1.8.11"
+    tsc-alias: "npm:1.8.13"
     typescript: "npm:5.8.2"
   languageName: unknown
   linkType: soft
@@ -352,12 +352,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/react@npm:1.2.2":
-  version: 1.2.2
-  resolution: "@ai-sdk/react@npm:1.2.2"
+"@ai-sdk/react@npm:1.2.3":
+  version: 1.2.3
+  resolution: "@ai-sdk/react@npm:1.2.3"
   dependencies:
     "@ai-sdk/provider-utils": "npm:2.2.1"
-    "@ai-sdk/ui-utils": "npm:1.2.1"
+    "@ai-sdk/ui-utils": "npm:1.2.2"
     swr: "npm:^2.2.5"
     throttleit: "npm:2.1.0"
   peerDependencies:
@@ -366,20 +366,20 @@ __metadata:
   peerDependenciesMeta:
     zod:
       optional: true
-  checksum: 10c0/f829106796df7817afdad2bbd913b19d4eda47fd4d4847dd9bf4665850cdc7c94f927f3ff464f910ed0458c0d00911e34d7453b92752b8656b20125ab71599eb
+  checksum: 10c0/621e312a483ca6a9a3b27ff4cc16275426c1ee2562a82670b25d59970e30f9e44872d73bdd214f8904c1ab5938bb39d043461b68233ad3734d6fb3e30b75f875
   languageName: node
   linkType: hard
 
-"@ai-sdk/ui-utils@npm:1.2.1":
-  version: 1.2.1
-  resolution: "@ai-sdk/ui-utils@npm:1.2.1"
+"@ai-sdk/ui-utils@npm:1.2.2":
+  version: 1.2.2
+  resolution: "@ai-sdk/ui-utils@npm:1.2.2"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.0"
     "@ai-sdk/provider-utils": "npm:2.2.1"
     zod-to-json-schema: "npm:^3.24.1"
   peerDependencies:
     zod: ^3.23.8
-  checksum: 10c0/461a6691e8b0f32b577bb54930c9e8ac533642c881a2d9a8ba6b8d9628ab7cc94fece113710b2472b9a0d9672193252af0a6d12cd9387fc2d37afdc08efe8054
+  checksum: 10c0/e765374a87316fa87da1bf9f5c60a83343de3f638983c2cd05ef26dbe97101e931368f8d936289feaf0fa8c05c737cc5875ba91a5ff525105ba7dedf7eb8a8ed
   languageName: node
   linkType: hard
 
@@ -2812,19 +2812,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/graphql-modules-preset@npm:4.0.15":
-  version: 4.0.15
-  resolution: "@graphql-codegen/graphql-modules-preset@npm:4.0.15"
+"@graphql-codegen/graphql-modules-preset@npm:4.0.16":
+  version: 4.0.16
+  resolution: "@graphql-codegen/graphql-modules-preset@npm:4.0.16"
   dependencies:
     "@graphql-codegen/plugin-helpers": "npm:^5.1.0"
-    "@graphql-codegen/visitor-plugin-common": "npm:5.7.1"
+    "@graphql-codegen/visitor-plugin-common": "npm:5.8.0"
     "@graphql-tools/utils": "npm:^10.0.0"
     change-case-all: "npm:1.0.15"
     parse-filepath: "npm:^1.0.2"
     tslib: "npm:~2.6.0"
   peerDependencies:
     graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/7624f7ef8dfc075553b44834728cf180b65f4f8c36cdaba8b28e4b14f4b0fc2799cd887f8620897d588cdf2524d94eb67a527fcae68a581c250012b5de9ae5ef
+  checksum: 10c0/ac036e1d2981fb1b62de9fbbf2ef0e38029f2c62b6a3fb1b67253d0ee317bb07304b9b56a0bdf80f41af5460a5ab994910cb03a0b93d6fe4328052c036ce861b
   languageName: node
   linkType: hard
 
@@ -2984,26 +2984,6 @@ __metadata:
   peerDependencies:
     graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
   checksum: 10c0/9dfc4893599721eba988103d4456345f915cab75c9a754e78a21bd7d05c49b00a01f38ffb70355d758626da0396ae3bb6d44fc98d5c8f9f36a1b122aea0063c4
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/visitor-plugin-common@npm:5.7.1":
-  version: 5.7.1
-  resolution: "@graphql-codegen/visitor-plugin-common@npm:5.7.1"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^5.1.0"
-    "@graphql-tools/optimize": "npm:^2.0.0"
-    "@graphql-tools/relay-operation-optimizer": "npm:^7.0.0"
-    "@graphql-tools/utils": "npm:^10.0.0"
-    auto-bind: "npm:~4.0.0"
-    change-case-all: "npm:1.0.15"
-    dependency-graph: "npm:^0.11.0"
-    graphql-tag: "npm:^2.11.0"
-    parse-filepath: "npm:^1.0.2"
-    tslib: "npm:~2.6.0"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/07707623162757e4187e4ad4c4a55eea0c77531c979ea5e3d995fb6a5d424c70eb1380dcc4ff03814358e6c72735b3ea5f116fb570e5a8d27e1d514942c18faa
   languageName: node
   linkType: hard
 
@@ -8715,7 +8695,7 @@ __metadata:
     "@changesets/cli": "npm:2.28.1"
     "@graphql-codegen/cli": "npm:5.0.5"
     "@graphql-codegen/client-preset": "npm:4.8.0"
-    "@graphql-codegen/graphql-modules-preset": "npm:4.0.15"
+    "@graphql-codegen/graphql-modules-preset": "npm:4.0.16"
     "@graphql-codegen/schema-ast": "npm:4.1.0"
     "@graphql-codegen/typescript": "npm:4.1.6"
     "@graphql-codegen/typescript-resolvers": "npm:4.5.0"
@@ -8802,14 +8782,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:4.2.6":
-  version: 4.2.6
-  resolution: "ai@npm:4.2.6"
+"ai@npm:4.2.8":
+  version: 4.2.8
+  resolution: "ai@npm:4.2.8"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.0"
     "@ai-sdk/provider-utils": "npm:2.2.1"
-    "@ai-sdk/react": "npm:1.2.2"
-    "@ai-sdk/ui-utils": "npm:1.2.1"
+    "@ai-sdk/react": "npm:1.2.3"
+    "@ai-sdk/ui-utils": "npm:1.2.2"
     "@opentelemetry/api": "npm:1.9.0"
     jsondiffpatch: "npm:0.6.0"
   peerDependencies:
@@ -8818,7 +8798,7 @@ __metadata:
   peerDependenciesMeta:
     react:
       optional: true
-  checksum: 10c0/6a4a9c987343a1ab99048b7cfa9abac166c8e8ea650a7d9e75f8bffe8ca86163e1a6e9abea131956097954cbe6cf60f484469c331fe587d1de26a2cd2786ca56
+  checksum: 10c0/df1e7cfae16c1802aa9a1320442f54835e21e65017bd629b7bbc8b3782c154bdf8e54148c2c2fedced2e2ede4b56d968503401a76f3d13a6f8e3083f2f46da01
   languageName: node
   linkType: hard
 
@@ -18347,21 +18327,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.4.0":
-  version: 7.4.0
-  resolution: "react-router-dom@npm:7.4.0"
+"react-router-dom@npm:7.4.1":
+  version: 7.4.1
+  resolution: "react-router-dom@npm:7.4.1"
   dependencies:
-    react-router: "npm:7.4.0"
+    react-router: "npm:7.4.1"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/d3233843b05e3cac3045a2655f487860b9e20464cc6d2907e6b57628b1740084390478538508183bb43a4712c7f9b6ab2c20178f4444430c4c99ded6512cd3e5
+  checksum: 10c0/2a3a3e8de0bbce384eae9c365f5b7ac406a3fdc4a70942f3aab9e74e70cb7fb88326566686c5cdbedc7e0afe005719ceba630eea67e15ebd820a3277b7c05fd3
   languageName: node
   linkType: hard
 
-"react-router@npm:7.4.0":
-  version: 7.4.0
-  resolution: "react-router@npm:7.4.0"
+"react-router@npm:7.4.1":
+  version: 7.4.1
+  resolution: "react-router@npm:7.4.1"
   dependencies:
     "@types/cookie": "npm:^0.6.0"
     cookie: "npm:^1.0.1"
@@ -18373,7 +18353,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/9cf943d7854e1e4d068162efa9a61e2d06a5c679cf3272a867046cc97a6cc65c9744490f54e8fd77bbe2d114610a5cb285ceb3d3941b9b19ac6f63385ac0a89d
+  checksum: 10c0/c501e46bf4e672f977250acb431ecfad120d7a0383bbb17e5c3276a1390c01d36bd36bd995c9dddca39ba3a8521be11295292595523d880ec11240fc5d74e637
   languageName: node
   linkType: hard
 
@@ -20724,9 +20704,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsc-alias@npm:1.8.11":
-  version: 1.8.11
-  resolution: "tsc-alias@npm:1.8.11"
+"tsc-alias@npm:1.8.13":
+  version: 1.8.13
+  resolution: "tsc-alias@npm:1.8.13"
   dependencies:
     chokidar: "npm:^3.5.3"
     commander: "npm:^9.0.0"
@@ -20736,7 +20716,7 @@ __metadata:
     plimit-lit: "npm:^1.2.6"
   bin:
     tsc-alias: dist/bin/index.js
-  checksum: 10c0/73b58ad9c0ecffa1ed36337a3125ad14fc464f4e2345969ca080aae7004878658e30738100650f2cde05a8b08ceffc921f3c3743369539221fcfa2e93eb332c6
+  checksum: 10c0/3f27c5cd92eb2704b5705b72b76fa08a187e7149f573fb0af26d38a757b88563a891150738c35e9f09d5825bffbbdecf536baa39b17c5f7906ea5eb658cffab8
   languageName: node
   linkType: hard
 

@@ -27,7 +27,7 @@
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
     "@whatwg-node/fetch": "0.10.5",
-    "ai": "4.2.6",
+    "ai": "4.2.8",
     "basic-auth": "2.0.1",
     "bcrypt": "5.1.1",
     "cloudinary": "2.6.0",
@@ -51,7 +51,7 @@
     "nodemon": "3.1.9",
     "pino-pretty": "13.0.0",
     "rimraf": "6.0.1",
-    "tsc-alias": "1.8.11",
+    "tsc-alias": "1.8.13",
     "typescript": "5.8.2"
   },
   "publishConfig": {
