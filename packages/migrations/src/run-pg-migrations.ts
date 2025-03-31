@@ -83,6 +83,7 @@ import migration_2025_03_13T13_24_43_deel_data from './actions/2025-03-13T13-24-
 import migration_2025_03_19T12_05_43_deel_api_tables from './actions/2025-03-19T12-05-43.deel-api-tables.js';
 import migration_2025_03_24T18_35_56_add_to_context_ledger_lock2 from './actions/2025-03-24T18-35-56.add-to-context-ledger-lock2.js';
 import migration_2025_03_27T11_33_29_documents_allocation_numbers from './actions/2025-03-27T11-33-29.documents-allocation-numbers.js';
+import migration_2025_03_30T18_56_00_add_salary_tns_property from './actions/2025-03-30T18-56-00.add-salary-tns-property.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -173,5 +174,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_03_19T12_05_43_deel_api_tables,
       migration_2025_03_24T18_35_56_add_to_context_ledger_lock2,
       migration_2025_03_27T11_33_29_documents_allocation_numbers,
+      migration_2025_03_30T18_56_00_add_salary_tns_property,
     ],
   });
