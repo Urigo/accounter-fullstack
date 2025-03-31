@@ -78,6 +78,9 @@ import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
       gift {
         raw
       }
+      travelAndSubsistence {
+        raw
+      }
       recovery {
         raw
       }
@@ -181,6 +184,7 @@ export const EditSalaryRecordModalContent = ({
     trainingFundEmployerAmount: salaryRecord?.trainingFundEmployerAmount?.raw,
     trainingFundEmployerPercentage: salaryRecord?.trainingFundEmployerPercentage,
     trainingFundId: salaryRecord?.trainingFund?.id,
+    travelAndSubsistence: salaryRecord?.travelAndSubsistence?.raw,
     vacationDaysBalance: salaryRecord?.vacationDays?.balance,
     vacationTakeout: salaryRecord?.vacationTakeout?.raw,
     workDays: salaryRecord?.workDays,

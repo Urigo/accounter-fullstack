@@ -120,7 +120,8 @@ export function generateEntriesFromSalaryRecords(
       Number(salaryRecord.bonus ?? '0') +
       Number(salaryRecord.gift ?? '0') +
       Number(salaryRecord.recovery ?? '0') +
-      Number(salaryRecord.vacation_takeout ?? '0');
+      Number(salaryRecord.vacation_takeout ?? '0') +
+      Number(salaryRecord.travel_and_subsistence ?? '0');
 
     const directPayment =
       salaryExpense -

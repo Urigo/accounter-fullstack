@@ -80,6 +80,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
               trainingFundEmployerAmount: salaryRecord.trainingFundEmployerAmount ?? null,
               trainingFundEmployerPercentage: salaryRecord.trainingFundEmployerPercentage ?? null,
               trainingFundId: salaryRecord.trainingFundId ?? null,
+              travelAndSubsistence: salaryRecord.travelAndSubsistence ?? null,
               vacationDaysBalance: salaryRecord.vacationDaysBalance ?? null,
               vacationTakeout: salaryRecord.vacationTakeout ?? null,
               workDays: salaryRecord.workDays ?? null,
@@ -211,6 +212,8 @@ export const salariesResolvers: SalariesModule.Resolvers &
       formatFinancialAmount(DbSalary.bonus, defaultLocalCurrency),
     gift: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
       formatFinancialAmount(DbSalary.gift, defaultLocalCurrency),
+    travelAndSubsistence: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
+      formatFinancialAmount(DbSalary.travel_and_subsistence, defaultLocalCurrency),
     recovery: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>
       formatFinancialAmount(DbSalary.recovery, defaultLocalCurrency),
     vacationTakeout: (DbSalary, _, { adminContext: { defaultLocalCurrency } }) =>

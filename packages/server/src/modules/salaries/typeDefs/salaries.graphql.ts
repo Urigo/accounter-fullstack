@@ -56,6 +56,7 @@ export default gql`
     trainingFundEmployerAmount: Float
     trainingFundEmployerPercentage: Float
     trainingFundId: UUID
+    travelAndSubsistence: Float
     vacationDaysBalance: Float
     vacationTakeout: Float
     workDays: Float
@@ -94,6 +95,7 @@ export default gql`
     trainingFundEmployerAmount: Float
     trainingFundEmployerPercentage: Float
     trainingFundId: UUID
+    travelAndSubsistence: Float
     vacationDaysBalance: Float
     vacationTakeout: Float
     workDays: Float
@@ -148,6 +150,7 @@ export default gql`
     globalAdditionalHoursAmount: FinancialAmount
     bonus: FinancialAmount
     gift: FinancialAmount
+    travelAndSubsistence: FinancialAmount
     recovery: FinancialAmount
     notionalExpense: FinancialAmount
     vacationDays: VacationDays
