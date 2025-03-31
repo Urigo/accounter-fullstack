@@ -11,7 +11,7 @@ const addLeadingZeros = (value = 0, length: number): string => {
   return final;
 };
 
-const numToSignedString = (value: number, length: number): string => {
+export const numToSignedString = (value: number, length: number): string => {
   const sign = value >= 0 ? '+' : '-';
   const paddedNum = addLeadingZeros(value, length);
   return `${sign}${paddedNum}`;
