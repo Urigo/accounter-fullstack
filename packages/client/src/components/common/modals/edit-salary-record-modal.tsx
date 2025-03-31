@@ -184,7 +184,7 @@ export const EditSalaryRecordModalContent = ({
     trainingFundEmployerAmount: salaryRecord?.trainingFundEmployerAmount?.raw,
     trainingFundEmployerPercentage: salaryRecord?.trainingFundEmployerPercentage,
     trainingFundId: salaryRecord?.trainingFund?.id,
-    TravelAndSubsistence: salaryRecord?.globalAdditionalHoursAmount?.raw,
+    travelAndSubsistence: salaryRecord?.travelAndSubsistence?.raw,
     vacationDaysBalance: salaryRecord?.vacationDays?.balance,
     vacationTakeout: salaryRecord?.vacationTakeout?.raw,
     workDays: salaryRecord?.workDays,
