@@ -325,6 +325,25 @@ export const ModifySalaryRecord = ({
               )}
             />
             <Controller
+              name="travelAndSubsistence"
+              control={control}
+              defaultValue={defaultValues?.travelAndSubsistence}
+              render={({ field, fieldState }): ReactElement => (
+                <CurrencyInput
+                  {...field}
+                  value={field.value ?? undefined}
+                  error={fieldState.error?.message}
+                  label="Travel and Subsistence"
+                  removeTrailingZeros
+                  currencyCodeProps={{
+                    value: 'ILS',
+                    label: 'Currency',
+                    disabled: true,
+                  }}
+                />
+              )}
+            />
+            <Controller
               name="recovery"
               control={control}
               defaultValue={defaultValues?.recovery}
