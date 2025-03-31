@@ -212,6 +212,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
           zkufot:
             validateNumericCellWrapper('שווי קרן השתלמות', true) +
             validateNumericCellWrapper('שווי קיצבה', true),
+          travelAndSubsistence: validateNumericCellWrapper('החזר הוצאות אש"ל', true),
 
           directPaymentAmount: validateNumericCellWrapper('נטו לתשלום'),
 

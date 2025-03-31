@@ -42,6 +42,7 @@ export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalary
       trainingFundEmployerAmount: salaryRecord.trainingFundEmployerAmount ?? null,
       trainingFundEmployerPercentage: salaryRecord.trainingFundEmployerPercentage ?? null,
       trainingFundId: salaryRecord.trainingFundId ?? null,
+      travelAndSubsistence: salaryRecord.travelAndSubsistence ?? null,
       vacationDaysBalance: salaryRecord.vacationDaysBalance ?? null,
       vacationTakeout: salaryRecord.vacationTakeout ?? null,
       workDays: salaryRecord.workDays ?? null,

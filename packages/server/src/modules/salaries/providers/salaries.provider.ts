@@ -72,6 +72,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     training_fund_employer_amount,
     training_fund_employer_percentage,
     training_fund_id,
+    travel_and_subsistence,
     vacation_days_balance,
     vacation_takeout,
     work_days,
@@ -109,6 +110,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     trainingFundEmployerAmount,
     trainingFundEmployerPercentage,
     trainingFundId,
+    travelAndSubsistence,
     vacationDaysBalance,
     vacationTakeout,
     workDays,
@@ -234,6 +236,10 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
     training_fund_id = COALESCE(
       $trainingFundId,
       training_fund_id
+    ),
+    travel_and_subsistence = COALESCE(
+      $travelAndSubsistence,
+      travel_and_subsistence
     ),
     vacation_days_balance = COALESCE(
       $vacationDaysBalance,
