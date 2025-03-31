@@ -46,7 +46,7 @@
     "@changesets/cli": "2.28.1",
     "@graphql-codegen/cli": "5.0.5",
     "@graphql-codegen/client-preset": "4.8.0",
-    "@graphql-codegen/graphql-modules-preset": "4.0.15",
+    "@graphql-codegen/graphql-modules-preset": "4.0.16",
     "@graphql-codegen/schema-ast": "4.1.0",
     "@graphql-codegen/typescript": "4.1.6",
     "@graphql-codegen/typescript-resolvers": "4.5.0",
