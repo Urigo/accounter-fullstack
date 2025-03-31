@@ -453,14 +453,14 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
       const similarTransactions = await injector
         .get(TransactionsProvider)
         .getSimilarTransactions({
-          details: mainTransaction.source_details,
+          details: mainTransaction.source_description,
           counterAccount: mainTransaction.counter_account,
           withMissingInfo,
         })
         .catch(e => {
           console.error('Error fetching similar transactions:', {
             transactionId,
-            details: mainTransaction.source_details,
+            details: mainTransaction.source_description,
             counterAccount: mainTransaction.counter_account,
             error: e.message,
           });
