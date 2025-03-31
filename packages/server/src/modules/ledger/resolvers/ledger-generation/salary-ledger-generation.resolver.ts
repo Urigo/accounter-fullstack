@@ -331,7 +331,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
             }
           }
 
-          const batchedEntries = accountingLedgerEntries
+          const batchedEntries = [...accountingLedgerEntries, ...miscExpensesLedgerEntries]
             .filter(accountingLedgerEntry =>
               accountingLedgerEntry.creditAccountID1
                 ? unbatchedBusinesses.includes(accountingLedgerEntry.creditAccountID1)
