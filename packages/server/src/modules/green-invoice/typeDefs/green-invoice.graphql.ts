@@ -7,7 +7,9 @@ export default gql`
   }
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
-    generateMonthlyClientDocuments: GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
+    generateMonthlyClientDocuments(
+      generateDocumentsInfo: [GenerateDocumentInfo!]!
+    ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
   }
 
   " business extended with green invoice data "
@@ -18,5 +20,11 @@ export default gql`
     remark: String
     emails: [String!]!
     generatedDocumentType: DocumentType!
+  }
+
+  " input for generating monthly client document "
+  input GenerateDocumentInfo {
+    businessId: UUID!
+    amount: FinancialAmountInput!
   }
 `;
