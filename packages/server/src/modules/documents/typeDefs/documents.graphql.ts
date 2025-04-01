@@ -24,8 +24,6 @@ export default gql`
       @auth(role: ACCOUNTANT)
     deleteDocument(documentId: UUID!): Boolean! @auth(role: ACCOUNTANT)
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ACCOUNTANT)
-    fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
-    generateMonthlyClientDocuments: GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
     batchUploadDocuments(
       documents: [FileScalar!]!
       isSensitive: Boolean

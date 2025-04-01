@@ -7,12 +7,13 @@ import { corporateTaxesModule } from '@modules/corporate-taxes/index.js';
 import { countriesModule } from '@modules/countries/index.js';
 import { deelModule } from '@modules/deel/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
+import { greenInvoiceModule } from '@modules/green-invoice/index.js';
 import { vatModule } from '@modules/vat/index.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
-import { GreenInvoiceProvider } from './modules/app-providers/green-invoice.js';
+import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { chartsModule } from './modules/charts/index.js';
@@ -74,6 +75,7 @@ export async function createGraphQLApp(env: Environment) {
       countriesModule,
       vatModule,
       deelModule,
+      greenInvoiceModule,
     ],
     providers: [
       {
@@ -91,7 +93,7 @@ export async function createGraphQLApp(env: Environment) {
       DBProvider,
       CloudinaryProvider,
       DeelClientProvider,
-      GreenInvoiceProvider,
+      GreenInvoiceClientProvider,
       CoinMarketCapProvider,
       AnthropicProvider,
       GoogleDriveProvider,

@@ -15,7 +15,7 @@ export type ExpenseDraft = NonNullable<
   scope: Scope.Operation,
   global: true,
 })
-export class GreenInvoiceProvider {
+export class GreenInvoiceClientProvider {
   localCurrency: Currency;
 
   constructor(

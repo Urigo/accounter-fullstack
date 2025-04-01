@@ -122,6 +122,7 @@ const config: CodegenConfig = {
           TaxReportYear: '@modules/reports/types.js#TaxReportYearProto',
           Unprocessed: '@modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '@modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
+          GreenInvoiceBusiness: '@modules/green-invoice/types.js#IGetAllBusinessMatchesResult',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],

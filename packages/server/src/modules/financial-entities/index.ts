@@ -3,7 +3,6 @@ import businesses from './typeDefs/businesses.graphql.js';
 import financialEntities from './typeDefs/financial-entities.graphql.js';
 import taxCategories from './typeDefs/tax-categories.graphql.js';
 import { createModule } from 'graphql-modules';
-import { BusinessesGreenInvoiceMatcherProvider } from './providers/businesses-green-invoice-match.provider.js';
 import { BusinessesProvider } from './providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from './providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from './providers/tax-categories.provider.js';
@@ -24,12 +23,7 @@ export const financialEntitiesModule = createModule({
     taxCategoriesResolvers,
     businessesResolvers,
   ],
-  providers: () => [
-    BusinessesProvider,
-    TaxCategoriesProvider,
-    FinancialEntitiesProvider,
-    BusinessesGreenInvoiceMatcherProvider,
-  ],
+  providers: () => [BusinessesProvider, TaxCategoriesProvider, FinancialEntitiesProvider],
 });
 
 export * as FinancialEntitiesTypes from './types.js';
