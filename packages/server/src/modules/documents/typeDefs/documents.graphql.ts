@@ -242,12 +242,6 @@ export default gql`
     document: Document
   }
 
-  " result type for generateMonthlyClientDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
-  type GenerateMonthlyClientDocumentsResult {
-    success: Boolean!
-    errors: [String!]
-  }
-
   extend interface Charge {
     " additional documents attached to the charge "
     additionalDocuments: [Document!]!

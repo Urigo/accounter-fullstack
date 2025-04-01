@@ -27,4 +27,10 @@ export default gql`
     businessId: UUID!
     amount: FinancialAmountInput!
   }
+
+  " result type for generateMonthlyClientDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type GenerateMonthlyClientDocumentsResult {
+    success: Boolean!
+    errors: [String!]
+  }
 `;
