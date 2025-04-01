@@ -3,6 +3,7 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
+import { GreenInvoiceProvider } from '@modules/green-invoice/providers/green-invoice.provider.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
@@ -20,7 +21,6 @@ import type {
   IUpdateBusinessParams,
   IUpdateBusinessQuery,
 } from '../types.js';
-import { BusinessesGreenInvoiceMatcherProvider } from './businesses-green-invoice-match.provider.js';
 import { TaxCategoriesProvider } from './tax-categories.provider.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
@@ -301,7 +301,7 @@ export class BusinessesProvider {
     @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
     private taxCategoryProvider: TaxCategoriesProvider,
-    private businessesGreenInvoiceMatcherProvider: BusinessesGreenInvoiceMatcherProvider,
+    private businessesGreenInvoiceMatcherProvider: GreenInvoiceProvider,
     private employeesProvider: EmployeesProvider,
     private fundsProvider: FundsProvider,
     private dividendsProvider: DividendsProvider,
