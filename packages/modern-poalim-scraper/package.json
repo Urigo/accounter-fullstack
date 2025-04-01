@@ -13,6 +13,7 @@
     "json2ts": "json2ts -i src/schemas -o src/__generated__",
     "start": "node dist/index.js",
     "test:hapoalim": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-poalim.js\"",
+    "test:isracard": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-isracard.js\"",
     "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },
   "dependencies": {
