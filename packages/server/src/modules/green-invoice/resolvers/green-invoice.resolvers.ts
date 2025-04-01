@@ -1,9 +1,6 @@
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import {
-  DocumentInput_Input,
-  Currency as GreenInvoiceCurrency,
-} from '@accounter/green-invoice-graphql';
+import { DocumentInput_Input } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -11,10 +8,11 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import type { IInsertDocumentsParams, IInsertDocumentsResult } from '@modules/documents/types.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
+  convertCurrencyToGreenInvoice,
   getGreenInvoiceDocumentType,
   normalizeDocumentType,
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
-import { Currency, DocumentType } from '@shared/enums';
+import { DocumentType } from '@shared/enums';
 import {
   dateToTimelessDateString,
   formatCurrency,
@@ -174,41 +172,29 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       return addedDocs;
     },
-    generateMonthlyClientDocuments: async (_, __, { injector }) => {
-      const jsonArray: Array<{
-        businessId: string;
-        amount: number;
-        currency: GreenInvoiceCurrency;
-      }> = [
-        {
-          businessId: '147d3415-55e3-497f-acba-352dcc37cb8d', // uri test
-          amount: 100,
-          currency: Currency.Ils,
-        },
-      ];
-
+    generateMonthlyClientDocuments: async (_, { generateDocumentsInfo }, { injector }) => {
       const errors: string[] = [];
 
       const proformaProtos = await Promise.all(
-        jsonArray.map(async json => {
+        generateDocumentsInfo.map(async docInfo => {
           const businessPromise = injector
             .get(BusinessesProvider)
-            .getBusinessByIdLoader.load(json.businessId);
+            .getBusinessByIdLoader.load(docInfo.businessId);
           const businessGreenInvoiceMatchPromise = injector
             .get(GreenInvoiceProvider)
-            .getBusinessMatchByIdLoader.load(json.businessId);
+            .getBusinessMatchByIdLoader.load(docInfo.businessId);
           const [business, businessGreenInvoiceMatch] = await Promise.all([
             businessPromise,
             businessGreenInvoiceMatchPromise,
           ]);
 
           if (!business) {
-            throw new GraphQLError(`Business ID="${json.businessId}" not found`);
+            throw new GraphQLError(`Business ID="${docInfo.businessId}" not found`);
           }
 
           if (!businessGreenInvoiceMatch) {
             throw new GraphQLError(
-              `Green invoice match not found for business ID="${json.businessId}"`,
+              `Green invoice match not found for business ID="${docInfo.businessId}"`,
             );
           }
 
@@ -227,7 +213,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             date: monthStart,
             dueDate: monthEnd,
             lang: 'en',
-            currency: json.currency,
+            currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
             vatType: 1,
             rounding: false,
             signed: true,
@@ -240,8 +226,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
               {
                 description: `GraphQL Hive Enterprise License - ${month} ${year}`,
                 quantity: 1,
-                price: json.amount,
-                currency: json.currency,
+                price: docInfo.amount.raw,
+                currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
                 vatType: 1,
               },
             ],
