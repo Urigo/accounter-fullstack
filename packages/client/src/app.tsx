@@ -22,6 +22,7 @@ import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
+import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
 import { FiltersContext } from './providers/filters-context.js';
@@ -51,6 +52,7 @@ export function App(): ReactElement {
             <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
           </Route>
           <Route path="documents" element={<DocumentsReport />} />
+          <Route path="issue-documents" element={<IssueDocuments />} />
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
