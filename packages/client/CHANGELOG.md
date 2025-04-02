@@ -1,5 +1,1032 @@
 # @accounter/client
 
+## 0.0.4
+
+### Patch Changes
+
+- [#1511](https://github.com/Urigo/accounter-fullstack/pull/1511)
+  [`6afccff`](https://github.com/Urigo/accounter-fullstack/commit/6afccfff0e669c7e57ba4b7faea13d5cb6995fec)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.4)
+    (from `2.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.1.4)
+    (from `2.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.4)
+    (from `1.2.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.1.6)
+    (from `1.1.5`, in `dependencies`)
+
+- [#1514](https://github.com/Urigo/accounter-fullstack/pull/1514)
+  [`b957fc9`](https://github.com/Urigo/accounter-fullstack/commit/b957fc92e7725eab8a19a5099dd1c6c63e6e6bea)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.2.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.2.1) (from `6.2.0`,
+    in `dependencies`)
+
+- [#1518](https://github.com/Urigo/accounter-fullstack/pull/1518)
+  [`fe155e1`](https://github.com/Urigo/accounter-fullstack/commit/fe155e1fddde622791f7338a95a5a5fef2c28bbb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.62.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.8)
+    (from `5.62.7`, in `dependencies`)
+  - Updated dependency [`next@15.1.1` ↗︎](https://www.npmjs.com/package/next/v/15.1.1) (from
+    `15.1.0`, in `dependencies`)
+
+- [#1528](https://github.com/Urigo/accounter-fullstack/pull/1528)
+  [`f592f83`](https://github.com/Urigo/accounter-fullstack/commit/f592f838216f794f911e53365fd740fb87e07ace)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.1.2` ↗︎](https://www.npmjs.com/package/next/v/15.1.2) (from
+    `15.1.1`, in `dependencies`)
+
+- [#1532](https://github.com/Urigo/accounter-fullstack/pull/1532)
+  [`58c2009`](https://github.com/Urigo/accounter-fullstack/commit/58c20096ebb13f62b1fe32a4c578e30f9b4c7ed4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.469.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.469.0) (from
+    `0.468.0`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.1.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.0) (from
+    `7.0.2`, in `dependencies`)
+
+- [#1533](https://github.com/Urigo/accounter-fullstack/pull/1533)
+  [`36987e2`](https://github.com/Urigo/accounter-fullstack/commit/36987e27c9ebdc5087b3b1e93abc89ac3d58f1dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.469.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.469.0) (from
+    `0.468.0`, in `dependencies`)
+
+- [#1536](https://github.com/Urigo/accounter-fullstack/pull/1536)
+  [`64dd586`](https://github.com/Urigo/accounter-fullstack/commit/64dd586dfb6a4d36509802d82434babe03614e21)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-hook-form@7.54.2` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.54.2) (from
+    `7.54.1`, in `dependencies`)
+
+- [#1538](https://github.com/Urigo/accounter-fullstack/pull/1538)
+  [`2789a5c`](https://github.com/Urigo/accounter-fullstack/commit/2789a5cae797e2bf8622dcf62c4a696b2ff3eba1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.1.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.0) (from
+    `7.0.2`, in `dependencies`)
+
+- [#1540](https://github.com/Urigo/accounter-fullstack/pull/1540)
+  [`928eead`](https://github.com/Urigo/accounter-fullstack/commit/928eead8963e6fd302c1d9eb3cb4dac903c92ba3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.62.9` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.9)
+    (from `5.62.8`, in `dependencies`)
+
+- [#1541](https://github.com/Urigo/accounter-fullstack/pull/1541)
+  [`04e38f3`](https://github.com/Urigo/accounter-fullstack/commit/04e38f3f861784aa437324f791bfffa69a541c6b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`tailwind-merge@2.6.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/2.6.0) (from
+    `2.5.5`, in `dependencies`)
+
+- [#1542](https://github.com/Urigo/accounter-fullstack/pull/1542)
+  [`dbf71a1`](https://github.com/Urigo/accounter-fullstack/commit/dbf71a1e0cd8d5ef92f33ed220c39bbd1ddc63f7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.3.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.3.0) (from `6.2.1`,
+    in `dependencies`)
+
+- [#1544](https://github.com/Urigo/accounter-fullstack/pull/1544)
+  [`86b1b7f`](https://github.com/Urigo/accounter-fullstack/commit/86b1b7f5203ab98d0364f0786c0d1a2344fb95aa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.1.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.1) (from
+    `7.1.0`, in `dependencies`)
+
+- [#1551](https://github.com/Urigo/accounter-fullstack/pull/1551)
+  [`3edcf26`](https://github.com/Urigo/accounter-fullstack/commit/3edcf268807300fe70dfe5a57f6241677768c496)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.62.11` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.11)
+    (from `5.62.9`, in `dependencies`)
+  - Updated dependency [`next@15.1.3` ↗︎](https://www.npmjs.com/package/next/v/15.1.3) (from
+    `15.1.2`, in `dependencies`)
+
+- [#1552](https://github.com/Urigo/accounter-fullstack/pull/1552)
+  [`745dfe6`](https://github.com/Urigo/accounter-fullstack/commit/745dfe6a644ed43c6a2bb02814bb08182edbd465)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.3.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.3.1) (from `6.3.0`,
+    in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.62.12` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.12)
+    (from `5.62.11`, in `dependencies`)
+
+- [#1553](https://github.com/Urigo/accounter-fullstack/pull/1553)
+  [`36e73d0`](https://github.com/Urigo/accounter-fullstack/commit/36e73d07c251bf6ea5b944a71c2b002ff6ae0c3c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.62.15` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.15)
+    (from `5.62.12`, in `dependencies`)
+
+- [#1566](https://github.com/Urigo/accounter-fullstack/pull/1566)
+  [`e4e8712`](https://github.com/Urigo/accounter-fullstack/commit/e4e871244428c94878d6da2c4516f056092ab809)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.62.16` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.62.16)
+    (from `5.62.15`, in `dependencies`)
+
+- [#1567](https://github.com/Urigo/accounter-fullstack/pull/1567)
+  [`122a448`](https://github.com/Urigo/accounter-fullstack/commit/122a44864626c98b7bd4b2b337fe03cc751cb97f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@3.10.0` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/3.10.0)
+    (from `3.9.1`, in `dependencies`)
+
+- [#1571](https://github.com/Urigo/accounter-fullstack/pull/1571)
+  [`b5df6ab`](https://github.com/Urigo/accounter-fullstack/commit/b5df6abac60c86d96169928c3e158a95bf1df650)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`embla-carousel-react@8.5.2` ↗︎](https://www.npmjs.com/package/embla-carousel-react/v/8.5.2)
+    (from `8.5.1`, in `dependencies`)
+  - Updated dependency [`next@15.1.4` ↗︎](https://www.npmjs.com/package/next/v/15.1.4) (from
+    `15.1.3`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.3` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.3) (from
+    `5.0.2`, in `dependencies`)
+
+- [#1572](https://github.com/Urigo/accounter-fullstack/pull/1572)
+  [`5f0c582`](https://github.com/Urigo/accounter-fullstack/commit/5f0c582340b9e1ac1eb25e00152eb9f5b9e816e5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`embla-carousel-react@8.5.2` ↗︎](https://www.npmjs.com/package/embla-carousel-react/v/8.5.2)
+    (from `8.5.1`, in `dependencies`)
+  - Updated dependency [`next@15.1.4` ↗︎](https://www.npmjs.com/package/next/v/15.1.4) (from
+    `15.1.3`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.3` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.3) (from
+    `5.0.2`, in `dependencies`)
+
+- [#1575](https://github.com/Urigo/accounter-fullstack/pull/1575)
+  [`643bb4e`](https://github.com/Urigo/accounter-fullstack/commit/643bb4ea1c63fcc7e829ac9be21acd1bb4e86138)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.63.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.63.0)
+    (from `5.62.16`, in `dependencies`)
+
+- [#1580](https://github.com/Urigo/accounter-fullstack/pull/1580)
+  [`6ed601e`](https://github.com/Urigo/accounter-fullstack/commit/6ed601e49a083e39ae95c4db1072d9ded32e3c24)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.23.6` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.23.6) (from
+    `7.23.2`, in `dependencies`)
+
+- [#1582](https://github.com/Urigo/accounter-fullstack/pull/1582)
+  [`0b7ff12`](https://github.com/Urigo/accounter-fullstack/commit/0b7ff129ad0b96eb0f97b09c302565ca08adaca9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.471.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.471.0) (from
+    `0.469.0`, in `dependencies`)
+
+- [#1584](https://github.com/Urigo/accounter-fullstack/pull/1584)
+  [`f5969d3`](https://github.com/Urigo/accounter-fullstack/commit/f5969d34413dc5efc9c56e038ce5cd6994895e1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.64.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.64.0)
+    (from `5.63.0`, in `dependencies`)
+
+- [#1592](https://github.com/Urigo/accounter-fullstack/pull/1592)
+  [`2352078`](https://github.com/Urigo/accounter-fullstack/commit/235207869e154334b6338837f8a14b13dffb6623)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.471.1` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.471.1) (from
+    `0.471.0`, in `dependencies`)
+
+- [#1593](https://github.com/Urigo/accounter-fullstack/pull/1593)
+  [`8271ba0`](https://github.com/Urigo/accounter-fullstack/commit/8271ba0585b048029f7fe24dfa06aaa4c878ed26)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.64.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.64.1)
+    (from `5.64.0`, in `dependencies`)
+
+- [#1596](https://github.com/Urigo/accounter-fullstack/pull/1596)
+  [`c845a24`](https://github.com/Urigo/accounter-fullstack/commit/c845a24450cecedf40b9e32568a5008cd0d63da9)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.0) (from `6.3.1`,
+    in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.64.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.64.1)
+    (from `5.64.0`, in `dependencies`)
+
+- [#1597](https://github.com/Urigo/accounter-fullstack/pull/1597)
+  [`77254d4`](https://github.com/Urigo/accounter-fullstack/commit/77254d45cfa4ae879a7c8fba56df787e37d3bcd9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.0) (from `6.3.1`,
+    in `dependencies`)
+
+- [#1605](https://github.com/Urigo/accounter-fullstack/pull/1605)
+  [`05e1d18`](https://github.com/Urigo/accounter-fullstack/commit/05e1d18cb93fbc9770473152bf7357237b70e7a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.1.2` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.2) (from
+    `7.1.1`, in `dependencies`)
+
+- [#1607](https://github.com/Urigo/accounter-fullstack/pull/1607)
+  [`6c4cde1`](https://github.com/Urigo/accounter-fullstack/commit/6c4cde1394ea3260ffa733d2e615f56d6f28eb60)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.24.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.24.0) (from
+    `7.23.6`, in `dependencies`)
+
+- [#1608](https://github.com/Urigo/accounter-fullstack/pull/1608)
+  [`e2d467f`](https://github.com/Urigo/accounter-fullstack/commit/e2d467ff3a7a35ea4adfeccca1ae6859a5fb931b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.473.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.473.0) (from
+    `0.471.1`, in `dependencies`)
+
+- [#1609](https://github.com/Urigo/accounter-fullstack/pull/1609)
+  [`eea3d65`](https://github.com/Urigo/accounter-fullstack/commit/eea3d6528ddbc26cba16cc9756443d4eac3b2e6d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.64.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.64.2)
+    (from `5.64.1`, in `dependencies`)
+  - Updated dependency [`next@15.1.5` ↗︎](https://www.npmjs.com/package/next/v/15.1.5) (from
+    `15.1.4`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.1.3` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.3) (from
+    `7.1.2`, in `dependencies`)
+
+- [#1610](https://github.com/Urigo/accounter-fullstack/pull/1610)
+  [`52ff874`](https://github.com/Urigo/accounter-fullstack/commit/52ff87446c400e7c6ae67fd219d5bac610c414d6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.64.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.64.2)
+    (from `5.64.1`, in `dependencies`)
+  - Updated dependency [`next@15.1.5` ↗︎](https://www.npmjs.com/package/next/v/15.1.5) (from
+    `15.1.4`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.1.3` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.3) (from
+    `7.1.2`, in `dependencies`)
+
+- [#1618](https://github.com/Urigo/accounter-fullstack/pull/1618)
+  [`b38cfbb`](https://github.com/Urigo/accounter-fullstack/commit/b38cfbbde88a824cad811f055c368c59b754f198)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.1) (from `6.4.0`,
+    in `dependencies`)
+
+- [#1619](https://github.com/Urigo/accounter-fullstack/pull/1619)
+  [`76a56d3`](https://github.com/Urigo/accounter-fullstack/commit/76a56d315be39b75d28e1be750800675b17bdd92)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.1.6` ↗︎](https://www.npmjs.com/package/next/v/15.1.6) (from
+    `15.1.5`, in `dependencies`)
+
+- [#1621](https://github.com/Urigo/accounter-fullstack/pull/1621)
+  [`80a98df`](https://github.com/Urigo/accounter-fullstack/commit/80a98df658a6fc12c980b6f823f88a5253fc4017)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.5)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.5)
+    (from `2.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.1.5)
+    (from `2.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.5)
+    (from `1.2.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.1.7)
+    (from `1.1.6`, in `dependencies`)
+
+- [#1623](https://github.com/Urigo/accounter-fullstack/pull/1623)
+  [`42544e1`](https://github.com/Urigo/accounter-fullstack/commit/42544e1150fb304be7d19a99806049b28cce7ce8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`decimal.js@10.5.0` ↗︎](https://www.npmjs.com/package/decimal.js/v/10.5.0)
+    (from `10.4.3`, in `dependencies`)
+
+- [#1624](https://github.com/Urigo/accounter-fullstack/pull/1624)
+  [`8c3f1d6`](https://github.com/Urigo/accounter-fullstack/commit/8c3f1d6f4e11ace98d17e50473fe1642f8d35a20)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.474.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.474.0) (from
+    `0.473.0`, in `dependencies`)
+
+- [#1629](https://github.com/Urigo/accounter-fullstack/pull/1629)
+  [`424065e`](https://github.com/Urigo/accounter-fullstack/commit/424065ea0311f8293b3b5f00d69b0fc561e47442)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.24.1` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.24.1) (from
+    `7.24.0`, in `dependencies`)
+
+- [#1631](https://github.com/Urigo/accounter-fullstack/pull/1631)
+  [`b82b826`](https://github.com/Urigo/accounter-fullstack/commit/b82b8262d8eac7b63b1b4979f32572fbc9615556)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Removed dependency
+    [`tailwindcss-animate@1.0.7` ↗︎](https://www.npmjs.com/package/tailwindcss-animate/v/1.0.7)
+    (from `dependencies`)
+
+- [#1633](https://github.com/Urigo/accounter-fullstack/pull/1633)
+  [`ff950b3`](https://github.com/Urigo/accounter-fullstack/commit/ff950b3cfa66c2888fb3047fc93cc75fd06b921a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.65.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.65.0)
+    (from `5.64.2`, in `dependencies`)
+
+- [#1636](https://github.com/Urigo/accounter-fullstack/pull/1636)
+  [`a1455a3`](https://github.com/Urigo/accounter-fullstack/commit/a1455a3e1336b23d8d36c02e1c02cf500c1d01d2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-popover@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.4)
+    (to `dependencies`)
+  - Added dependency [`cmdk@1.0.4` ↗︎](https://www.npmjs.com/package/cmdk/v/1.0.4) (to
+    `dependencies`)
+
+- [#1637](https://github.com/Urigo/accounter-fullstack/pull/1637)
+  [`fc8656b`](https://github.com/Urigo/accounter-fullstack/commit/fc8656bbc242e2fbbd5fbcb260ff8a28e338b1e5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.65.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.65.1)
+    (from `5.65.0`, in `dependencies`)
+
+- [#1655](https://github.com/Urigo/accounter-fullstack/pull/1655)
+  [`6a617aa`](https://github.com/Urigo/accounter-fullstack/commit/6a617aa46f538816b52cff43ad6ed86810bb8da7)
+  Thanks [@elie222](https://github.com/elie222)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-checkbox@^1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.1.3)
+    (to `dependencies`)
+  - Added dependency
+    [`react-aria-components@1.6.0` ↗︎](https://www.npmjs.com/package/react-aria-components/v/1.6.0)
+    (to `dependencies`)
+
+- [#1646](https://github.com/Urigo/accounter-fullstack/pull/1646)
+  [`a637011`](https://github.com/Urigo/accounter-fullstack/commit/a637011c1c51bff71c240ab4e7e795bfd6fa5f13)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.5)
+    (from `1.1.4`, in `dependencies`)
+
+- [#1651](https://github.com/Urigo/accounter-fullstack/pull/1651)
+  [`0b39ce2`](https://github.com/Urigo/accounter-fullstack/commit/0b39ce20a41e9f1ad91d9b1ab1c789cd2aa2b9da)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.2` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.2) (from `6.4.1`,
+    in `dependencies`)
+
+- [#1660](https://github.com/Urigo/accounter-fullstack/pull/1660)
+  [`85a3bcb`](https://github.com/Urigo/accounter-fullstack/commit/85a3bcbdd48af299a448e4e8f063a99ebab99420)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.1.4` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.4) (from
+    `7.1.3`, in `dependencies`)
+
+- [#1662](https://github.com/Urigo/accounter-fullstack/pull/1662)
+  [`884ef2f`](https://github.com/Urigo/accounter-fullstack/commit/884ef2f5a957d542744165f7ac253a8176ae3a4b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`tailwind-merge@3.0.1` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.0.1) (from
+    `2.6.0`, in `dependencies`)
+
+- [#1663](https://github.com/Urigo/accounter-fullstack/pull/1663)
+  [`d42d4ef`](https://github.com/Urigo/accounter-fullstack/commit/d42d4efd14ff8710abd473e5a8c1468c4737fdae)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.0)
+    (from `5.65.1`, in `dependencies`)
+
+- [#1665](https://github.com/Urigo/accounter-fullstack/pull/1665)
+  [`caedb14`](https://github.com/Urigo/accounter-fullstack/commit/caedb141374d4538f733efa8f198d2c5de712872)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.25.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.25.0) (from
+    `7.24.1`, in `dependencies`)
+
+- [#1666](https://github.com/Urigo/accounter-fullstack/pull/1666)
+  [`53d22fc`](https://github.com/Urigo/accounter-fullstack/commit/53d22fcaf5481a19c026a361931bd4df67d98f8f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.1.5` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.1.5) (from
+    `7.1.4`, in `dependencies`)
+
+- [#1676](https://github.com/Urigo/accounter-fullstack/pull/1676)
+  [`00ed5d5`](https://github.com/Urigo/accounter-fullstack/commit/00ed5d55ca39e77db51d6bd1a998ae9f2b5b4d6c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.3` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.3) (from `6.4.2`,
+    in `dependencies`)
+
+- [#1684](https://github.com/Urigo/accounter-fullstack/pull/1684)
+  [`203c6d3`](https://github.com/Urigo/accounter-fullstack/commit/203c6d3a2c8b9d0a92d45648bedc041fef0c1953)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-avatar@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-avatar/v/1.1.3)
+    (from `1.1.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.6)
+    (from `1.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.6)
+    (from `2.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-label@2.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-label/v/2.1.2)
+    (from `2.1.1`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.6)
+    (from `1.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-scroll-area@1.2.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.3)
+    (from `1.2.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.1.6)
+    (from `2.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-separator@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-separator/v/1.1.2)
+    (from `1.1.1`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-slot@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-slot/v/1.1.2)
+    (from `1.1.1`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.6)
+    (from `1.2.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.1.8)
+    (from `1.1.7`, in `dependencies`)
+
+- [#1685](https://github.com/Urigo/accounter-fullstack/pull/1685)
+  [`ef33ab5`](https://github.com/Urigo/accounter-fullstack/commit/ef33ab5b3a063bcd17e5a022916dcfcdbd9160e3)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-tabs@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.2)
+    (to `dependencies`)
+
+- [#1687](https://github.com/Urigo/accounter-fullstack/pull/1687)
+  [`92d24e6`](https://github.com/Urigo/accounter-fullstack/commit/92d24e652c4d3e7819d7952186458005ea2e8012)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-tabs@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.2)
+    (to `dependencies`)
+
+- [#1690](https://github.com/Urigo/accounter-fullstack/pull/1690)
+  [`e4ade7f`](https://github.com/Urigo/accounter-fullstack/commit/e4ade7fc78980e03f6c43b824cf9eda791b0bdfc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.26.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.26.0) (from
+    `7.25.0`, in `dependencies`)
+
+- [#1691](https://github.com/Urigo/accounter-fullstack/pull/1691)
+  [`70e5cf4`](https://github.com/Urigo/accounter-fullstack/commit/70e5cf4450f4f3c20a6f834efeea2394304ce7bd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.475.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.475.0) (from
+    `0.474.0`, in `dependencies`)
+
+- [#1693](https://github.com/Urigo/accounter-fullstack/pull/1693)
+  [`c0be39f`](https://github.com/Urigo/accounter-fullstack/commit/c0be39fb2ec6531a21df0bfa7a373c45d05b0a6e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-tabs@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.3)
+    (from `1.1.2`, in `dependencies`)
+
+- [#1703](https://github.com/Urigo/accounter-fullstack/pull/1703)
+  [`4a06d94`](https://github.com/Urigo/accounter-fullstack/commit/4a06d94fa32eabe0bd86851995d044451727415c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@4.1.0` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/4.1.0)
+    (from `3.10.0`, in `dependencies`)
+
+- [#1704](https://github.com/Urigo/accounter-fullstack/pull/1704)
+  [`c24c247`](https://github.com/Urigo/accounter-fullstack/commit/c24c247f706abcf8b734e22d4e9d008b05316484)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.1.3)
+    (from `^1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-collapsible@1.1.0` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.0)
+    (from `^1.1.0`, in `dependencies`)
+  - Added dependency
+    [`@minoru/react-dnd-treeview@3.5.0` ↗︎](https://www.npmjs.com/package/@minoru/react-dnd-treeview/v/3.5.0)
+    (to `dependencies`)
+  - Added dependency
+    [`@radix-ui/react-switch@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-switch/v/1.1.3)
+    (to `dependencies`)
+  - Added dependency [`react-dnd@16.0.1` ↗︎](https://www.npmjs.com/package/react-dnd/v/16.0.1) (to
+    `dependencies`)
+
+- [#1706](https://github.com/Urigo/accounter-fullstack/pull/1706)
+  [`eaf31e9`](https://github.com/Urigo/accounter-fullstack/commit/eaf31e9cfe56ac1f2a954dc986148fcb38d1e63b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.4` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.4) (from `6.4.3`,
+    in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-collapsible@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.3)
+    (from `1.1.0`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.66.6` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.6)
+    (from `5.66.0`, in `dependencies`)
+  - Updated dependency [`next@15.1.7` ↗︎](https://www.npmjs.com/package/next/v/15.1.7) (from
+    `15.1.6`, in `dependencies`)
+  - Updated dependency [`zod@3.24.2` ↗︎](https://www.npmjs.com/package/zod/v/3.24.2) (from
+    `3.24.1`, in `dependencies`)
+
+- [#1708](https://github.com/Urigo/accounter-fullstack/pull/1708)
+  [`dd12a98`](https://github.com/Urigo/accounter-fullstack/commit/dd12a9866ba6f9e9bc8cca3fe252c15e424511dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-table@8.21.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/8.21.2)
+    (from `8.20.6`, in `dependencies`)
+
+- [#1731](https://github.com/Urigo/accounter-fullstack/pull/1731)
+  [`9eb5d80`](https://github.com/Urigo/accounter-fullstack/commit/9eb5d801afb02d81e68b3cd45a60baf5ab383364)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.27.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.27.0) (from
+    `7.26.0`, in `dependencies`)
+
+- [#1744](https://github.com/Urigo/accounter-fullstack/pull/1744)
+  [`a471eec`](https://github.com/Urigo/accounter-fullstack/commit/a471eec5b2cac7981f213b9a2d8164ee30b7c115)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.7` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.7)
+    (from `5.66.6`, in `dependencies`)
+
+- [#1748](https://github.com/Urigo/accounter-fullstack/pull/1748)
+  [`9195842`](https://github.com/Urigo/accounter-fullstack/commit/9195842148dc9e0a6775a1d48b0e85a89956680a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.5` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.5) (from `6.4.4`,
+    in `dependencies`)
+
+- [#1749](https://github.com/Urigo/accounter-fullstack/pull/1749)
+  [`4a9c853`](https://github.com/Urigo/accounter-fullstack/commit/4a9c8538de81e6a23c18eee7d9a515b6f30d8258)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.2.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.2.0) (from
+    `7.1.5`, in `dependencies`)
+
+- [#1767](https://github.com/Urigo/accounter-fullstack/pull/1767)
+  [`44e9a17`](https://github.com/Urigo/accounter-fullstack/commit/44e9a1761305e199b686b3d04ba8b038985a9fc6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`chart.js@4.4.8` ↗︎](https://www.npmjs.com/package/chart.js/v/4.4.8) (from
+    `4.4.7`, in `dependencies`)
+
+- [#1778](https://github.com/Urigo/accounter-fullstack/pull/1778)
+  [`8c48509`](https://github.com/Urigo/accounter-fullstack/commit/8c48509db682ef4f928966abd98c2e01f0ce14c9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.8)
+    (from `5.66.7`, in `dependencies`)
+
+- [#1781](https://github.com/Urigo/accounter-fullstack/pull/1781)
+  [`2c7a834`](https://github.com/Urigo/accounter-fullstack/commit/2c7a83407a2dabbf04211e10bff30cc9049e202d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@4.1.1` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/4.1.1)
+    (from `4.1.0`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.66.9` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.9)
+    (from `5.66.8`, in `dependencies`)
+  - Updated dependency
+    [`tailwind-merge@3.0.2` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.0.2) (from
+    `3.0.1`, in `dependencies`)
+
+- [#1786](https://github.com/Urigo/accounter-fullstack/pull/1786)
+  [`59c0b6c`](https://github.com/Urigo/accounter-fullstack/commit/59c0b6cc3dd29921af7de0f601c791bbdb630148)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@4.1.2` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/4.1.2)
+    (from `4.1.1`, in `dependencies`)
+
+- [#1790](https://github.com/Urigo/accounter-fullstack/pull/1790)
+  [`56a0d24`](https://github.com/Urigo/accounter-fullstack/commit/56a0d243c46ec3bf22f31c5b2ef8276e4a79ced5)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@4.1.2` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/4.1.2)
+    (from `4.1.1`, in `dependencies`)
+
+- [#1803](https://github.com/Urigo/accounter-fullstack/pull/1803)
+  [`1535fa3`](https://github.com/Urigo/accounter-fullstack/commit/1535fa37f412bb282ccc18bb888a97f46bf4194d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.476.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.476.0) (from
+    `0.475.0`, in `dependencies`)
+
+- [#1805](https://github.com/Urigo/accounter-fullstack/pull/1805)
+  [`0065ae8`](https://github.com/Urigo/accounter-fullstack/commit/0065ae8cc65fc80bbbab96439ca850f88495743a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.27.1` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.27.1) (from
+    `7.27.0`, in `dependencies`)
+
+- [#1817](https://github.com/Urigo/accounter-fullstack/pull/1817)
+  [`bc5f68a`](https://github.com/Urigo/accounter-fullstack/commit/bc5f68afbdd4e13a2dc72bd7156d975d75e160e0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.6` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.6) (from `6.4.5`,
+    in `dependencies`)
+
+- [#1821](https://github.com/Urigo/accounter-fullstack/pull/1821)
+  [`1f16f95`](https://github.com/Urigo/accounter-fullstack/commit/1f16f957188200967a4dc9328fc809ca6484c186)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.11` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.11)
+    (from `5.66.9`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@0.477.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.477.0) (from
+    `0.476.0`, in `dependencies`)
+  - Updated dependency [`next@15.2.0` ↗︎](https://www.npmjs.com/package/next/v/15.2.0) (from
+    `15.1.7`, in `dependencies`)
+
+- [#1823](https://github.com/Urigo/accounter-fullstack/pull/1823)
+  [`4dcfce4`](https://github.com/Urigo/accounter-fullstack/commit/4dcfce4c2a1952410cfdc4e56d1161a342fc809a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.2.0` ↗︎](https://www.npmjs.com/package/next/v/15.2.0) (from
+    `15.1.7`, in `dependencies`)
+
+- [#1828](https://github.com/Urigo/accounter-fullstack/pull/1828)
+  [`76dd7d7`](https://github.com/Urigo/accounter-fullstack/commit/76dd7d771c935561c8e26eae9aa07f1e04d8c013)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.10` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.10)
+    (from `5.66.9`, in `dependencies`)
+
+- [#1830](https://github.com/Urigo/accounter-fullstack/pull/1830)
+  [`ce089b4`](https://github.com/Urigo/accounter-fullstack/commit/ce089b481a98b664d9b57682899884a8b4a3a6af)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.477.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.477.0) (from
+    `0.476.0`, in `dependencies`)
+
+- [#1832](https://github.com/Urigo/accounter-fullstack/pull/1832)
+  [`9d3201e`](https://github.com/Urigo/accounter-fullstack/commit/9d3201ea99b48f8a6ecac0533bcedbeb2c07fac4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.66.11` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.66.11)
+    (from `5.66.10`, in `dependencies`)
+
+- [#1834](https://github.com/Urigo/accounter-fullstack/pull/1834)
+  [`9055af7`](https://github.com/Urigo/accounter-fullstack/commit/9055af752537a0a3e83b47a74bc08712d9ef2ec3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@4.1.3` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/4.1.3)
+    (from `4.1.2`, in `dependencies`)
+
+- [#1840](https://github.com/Urigo/accounter-fullstack/pull/1840)
+  [`e0f052e`](https://github.com/Urigo/accounter-fullstack/commit/e0f052efc7d00bdac62aab0fc5e4951052eea56f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.67.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.67.0)
+    (from `5.66.11`, in `dependencies`)
+
+- [#1842](https://github.com/Urigo/accounter-fullstack/pull/1842)
+  [`e3d5df9`](https://github.com/Urigo/accounter-fullstack/commit/e3d5df9832acd47ea078b06093e742a0ee6da968)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@urql/exchange-auth@2.2.1` ↗︎](https://www.npmjs.com/package/@urql/exchange-auth/v/2.2.1)
+    (from `2.2.0`, in `dependencies`)
+  - Updated dependency [`urql@4.2.2` ↗︎](https://www.npmjs.com/package/urql/v/4.2.2) (from `4.2.1`,
+    in `dependencies`)
+
+- [#1848](https://github.com/Urigo/accounter-fullstack/pull/1848)
+  [`d476997`](https://github.com/Urigo/accounter-fullstack/commit/d4769974568e0ac3bf4ced8d9a4de5ebc6b6bec2)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.67.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.67.1)
+    (from `5.67.0`, in `dependencies`)
+  - Updated dependency [`next@15.2.1` ↗︎](https://www.npmjs.com/package/next/v/15.2.1) (from
+    `15.2.0`, in `dependencies`)
+
+- [#1862](https://github.com/Urigo/accounter-fullstack/pull/1862)
+  [`577cd81`](https://github.com/Urigo/accounter-fullstack/commit/577cd815e2b728823292502d90d144ffb965bb7d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.7` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.7) (from `6.4.6`,
+    in `dependencies`)
+
+- [#1864](https://github.com/Urigo/accounter-fullstack/pull/1864)
+  [`04c12eb`](https://github.com/Urigo/accounter-fullstack/commit/04c12eb97524203b7ca8804722f92b401b447fa2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency [`next-themes@0.4.4` ↗︎](https://www.npmjs.com/package/next-themes/v/0.4.4)
+    (to `dependencies`)
+  - Added dependency [`sonner@2.0.1` ↗︎](https://www.npmjs.com/package/sonner/v/2.0.1) (to
+    `dependencies`)
+
+- [#1866](https://github.com/Urigo/accounter-fullstack/pull/1866)
+  [`35fc6c1`](https://github.com/Urigo/accounter-fullstack/commit/35fc6c1e0745bc680d1f0425fb1c412404ecd1da)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-aria-components@1.7.0` ↗︎](https://www.npmjs.com/package/react-aria-components/v/1.7.0)
+    (from `1.6.0`, in `dependencies`)
+
+- [#1867](https://github.com/Urigo/accounter-fullstack/pull/1867)
+  [`43795c9`](https://github.com/Urigo/accounter-fullstack/commit/43795c9cf1b5cc3de1969af23c9ba4276704619f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.3.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.3.0) (from
+    `7.2.0`, in `dependencies`)
+
+- [#1868](https://github.com/Urigo/accounter-fullstack/pull/1868)
+  [`33a9989`](https://github.com/Urigo/accounter-fullstack/commit/33a9989cb4e38dd03b81424b5dde44297bb0ebcc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.67.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.67.2)
+    (from `5.67.1`, in `dependencies`)
+
+- [#1872](https://github.com/Urigo/accounter-fullstack/pull/1872)
+  [`517f138`](https://github.com/Urigo/accounter-fullstack/commit/517f138b912421b18893213d9f3d0d0c36666dce)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.479.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.479.0) (from
+    `0.477.0`, in `dependencies`)
+
+- [#1878](https://github.com/Urigo/accounter-fullstack/pull/1878)
+  [`bb064f3`](https://github.com/Urigo/accounter-fullstack/commit/bb064f34f1bf0a30c26922e872be81a6c19b16a0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next-themes@0.4.5` ↗︎](https://www.npmjs.com/package/next-themes/v/0.4.5)
+    (from `0.4.4`, in `dependencies`)
+
+- [#1900](https://github.com/Urigo/accounter-fullstack/pull/1900)
+  [`6219577`](https://github.com/Urigo/accounter-fullstack/commit/6219577a1160389287fa41137e2470df32b79b9f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.2.2` ↗︎](https://www.npmjs.com/package/next/v/15.2.2) (from
+    `15.2.1`, in `dependencies`)
+
+- [#1903](https://github.com/Urigo/accounter-fullstack/pull/1903)
+  [`fb9defc`](https://github.com/Urigo/accounter-fullstack/commit/fb9defcbd15c93d8ef95ea97343f22714df4b589)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Removed dependency
+    [`@mantine/notifications@6.0.22` ↗︎](https://www.npmjs.com/package/@mantine/notifications/v/6.0.22)
+    (from `dependencies`)
+
+- [#1905](https://github.com/Urigo/accounter-fullstack/pull/1905)
+  [`8ad26e4`](https://github.com/Urigo/accounter-fullstack/commit/8ad26e444a7da929077a4da0b07b96e664e81bba)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.67.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.67.3)
+    (from `5.67.2`, in `dependencies`)
+  - Updated dependency [`next-themes@0.4.6` ↗︎](https://www.npmjs.com/package/next-themes/v/0.4.6)
+    (from `0.4.5`, in `dependencies`)
+
+- [#1911](https://github.com/Urigo/accounter-fullstack/pull/1911)
+  [`7de124b`](https://github.com/Urigo/accounter-fullstack/commit/7de124b4003e3b2e8de60d2991f681a3f3e53462)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.68.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.68.0)
+    (from `5.67.3`, in `dependencies`)
+  - Updated dependency [`cmdk@1.1.1` ↗︎](https://www.npmjs.com/package/cmdk/v/1.1.1) (from `1.0.4`,
+    in `dependencies`)
+  - Updated dependency
+    [`lucide-react@0.481.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.481.0) (from
+    `0.479.0`, in `dependencies`)
+
+- [#1912](https://github.com/Urigo/accounter-fullstack/pull/1912)
+  [`8e1b61a`](https://github.com/Urigo/accounter-fullstack/commit/8e1b61a96e3bdb07f44fe758cb44dad0bc46d6b2)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.68.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.68.0)
+    (from `5.67.3`, in `dependencies`)
+
+- [#1913](https://github.com/Urigo/accounter-fullstack/pull/1913)
+  [`2cce093`](https://github.com/Urigo/accounter-fullstack/commit/2cce093801507832a4a7cfa57fad5f2c8deb83ef)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.481.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.481.0) (from
+    `0.479.0`, in `dependencies`)
+
+- [#1917](https://github.com/Urigo/accounter-fullstack/pull/1917)
+  [`f8de2e3`](https://github.com/Urigo/accounter-fullstack/commit/f8de2e30f4a6188077e83c9e4f73a0f58a29d602)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`cmdk@1.1.1` ↗︎](https://www.npmjs.com/package/cmdk/v/1.1.1) (from `1.0.4`,
+    in `dependencies`)
+
+- [#1932](https://github.com/Urigo/accounter-fullstack/pull/1932)
+  [`1ddff51`](https://github.com/Urigo/accounter-fullstack/commit/1ddff517562c26a0ed03064ac42411bc0c7edd08)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.8` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.8) (from `6.4.7`,
+    in `dependencies`)
+  - Updated dependency [`next@15.2.3` ↗︎](https://www.npmjs.com/package/next/v/15.2.3) (from
+    `15.2.2`, in `dependencies`)
+
+- [#1939](https://github.com/Urigo/accounter-fullstack/pull/1939)
+  [`4837e05`](https://github.com/Urigo/accounter-fullstack/commit/4837e05cb2f3578a4cf0acdf779db03cf4527731)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.28.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.28.0) (from
+    `7.27.1`, in `dependencies`)
+
+- [#1940](https://github.com/Urigo/accounter-fullstack/pull/1940)
+  [`c46e436`](https://github.com/Urigo/accounter-fullstack/commit/c46e436203abb7bec6236cd7be9956af464a7e4f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.69.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.69.0)
+    (from `5.68.0`, in `dependencies`)
+
+- [#1942](https://github.com/Urigo/accounter-fullstack/pull/1942)
+  [`27430e4`](https://github.com/Urigo/accounter-fullstack/commit/27430e4216d4480e1422d7011b47f4cb144570e5)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.28.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.28.0) (from
+    `7.27.1`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.69.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.69.0)
+    (from `5.68.0`, in `dependencies`)
+
+- [#1943](https://github.com/Urigo/accounter-fullstack/pull/1943)
+  [`ab06bab`](https://github.com/Urigo/accounter-fullstack/commit/ab06babac6b485a4400a48beaf147b8ae8e78206)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.2.4` ↗︎](https://www.npmjs.com/package/next/v/15.2.4) (from
+    `15.2.3`, in `dependencies`)
+
+- [#1948](https://github.com/Urigo/accounter-fullstack/pull/1948)
+  [`66e4415`](https://github.com/Urigo/accounter-fullstack/commit/66e4415f9a7f1498d91ed956b96c78f4abe5602f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.483.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.483.0) (from
+    `0.481.0`, in `dependencies`)
+
+- [#1952](https://github.com/Urigo/accounter-fullstack/pull/1952)
+  [`8a4675e`](https://github.com/Urigo/accounter-fullstack/commit/8a4675eb05a10bb55bf09f0092e8793a3c1f9fd5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.4.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.4.0) (from
+    `7.3.0`, in `dependencies`)
+
+- [#1960](https://github.com/Urigo/accounter-fullstack/pull/1960)
+  [`3adfdfd`](https://github.com/Urigo/accounter-fullstack/commit/3adfdfd60c48557ffcb57209d66c566ecdd231a6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.484.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.484.0) (from
+    `0.483.0`, in `dependencies`)
+
+- [#1966](https://github.com/Urigo/accounter-fullstack/pull/1966)
+  [`7c6679c`](https://github.com/Urigo/accounter-fullstack/commit/7c6679cd5843722a90abce00b1590dfa701a2689)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.9` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.9) (from `6.4.8`,
+    in `dependencies`)
+  - Updated dependency [`sonner@2.0.2` ↗︎](https://www.npmjs.com/package/sonner/v/2.0.2) (from
+    `2.0.1`, in `dependencies`)
+
+- [#1973](https://github.com/Urigo/accounter-fullstack/pull/1973)
+  [`423e04b`](https://github.com/Urigo/accounter-fullstack/commit/423e04b98b345eb63879dd9ebfef8a35679f8bcf)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.485.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.485.0) (from
+    `0.484.0`, in `dependencies`)
+
+- [#1974](https://github.com/Urigo/accounter-fullstack/pull/1974)
+  [`3200215`](https://github.com/Urigo/accounter-fullstack/commit/3200215a205531c55479ea19c2a6afda3bec91a6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.70.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.70.0)
+    (from `5.69.0`, in `dependencies`)
+
+- [#1975](https://github.com/Urigo/accounter-fullstack/pull/1975)
+  [`ae203c4`](https://github.com/Urigo/accounter-fullstack/commit/ae203c4fa23d172ec9a9ca95904838a39718964f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.4.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.4.1) (from
+    `7.4.0`, in `dependencies`)
+
+- [#1979](https://github.com/Urigo/accounter-fullstack/pull/1979)
+  [`4ff21b8`](https://github.com/Urigo/accounter-fullstack/commit/4ff21b837b26e0c35492aa43cffa8572fd049727)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`react@19.1.0` ↗︎](https://www.npmjs.com/package/react/v/19.1.0) (from
+    `19.0.0`, in `dependencies`)
+  - Updated dependency [`react-dom@19.1.0` ↗︎](https://www.npmjs.com/package/react-dom/v/19.1.0)
+    (from `19.0.0`, in `dependencies`)
+
+- [#1980](https://github.com/Urigo/accounter-fullstack/pull/1980)
+  [`5dd8611`](https://github.com/Urigo/accounter-fullstack/commit/5dd8611b8ddc2b4aaf606e12a25bd717a57e7303)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.71.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.0)
+    (from `5.70.0`, in `dependencies`)
+
+- [#1992](https://github.com/Urigo/accounter-fullstack/pull/1992)
+  [`4f4998a`](https://github.com/Urigo/accounter-fullstack/commit/4f4998a842dbd1715681a3d66de7e092a51803e2)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.486.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.486.0) (from
+    `0.485.0`, in `dependencies`)
+
 ## 0.0.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.5.0
+
+### Minor Changes
+
+- [#1970](https://github.com/Urigo/accounter-fullstack/pull/1970)
+  [`f55bdcd`](https://github.com/Urigo/accounter-fullstack/commit/f55bdcddb5afb3a4c4c9bd230b70b195d55c1b00)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Activate allocation numbers
+
 ## 0.4.2
 
 ### Patch Changes
