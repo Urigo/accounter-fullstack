@@ -24,8 +24,17 @@ cp .env.template .env
 
 4. Run setup:
 
+If you want to create new local database, run:
+
 ```sh
 yarn local:setup
+```
+
+In case you already have a database, you can set the database variables in your `.env` file, then
+run:
+
+```sh
+yarn setup
 ```
 
 5. Run client and server:
