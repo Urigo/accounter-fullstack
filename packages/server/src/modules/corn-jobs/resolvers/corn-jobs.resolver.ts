@@ -81,14 +81,18 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
                 internatTransaction.event_date.getTime() <= widelyToDate;
               const areDetailsSufficient =
                 isWidelyInTimeRange &&
-                internatTransaction.source_details &&
-                internatTransaction.source_details.length >= 5 &&
-                transaction.source_details &&
-                transaction.source_details.length >= 5;
+                internatTransaction.source_description &&
+                internatTransaction.source_description.length >= 5 &&
+                transaction.source_description &&
+                transaction.source_description.length >= 5;
               const isMatchingDetails =
                 areDetailsSufficient &&
-                (internatTransaction.source_details?.includes(transaction.source_details!) ||
-                  internatTransaction.source_details?.includes(transaction.source_details!));
+                (internatTransaction.source_description?.includes(
+                  transaction.source_description!,
+                ) ||
+                  internatTransaction.source_description?.includes(
+                    transaction.source_description!,
+                  ));
 
               return isWithinTimeRange || isMatchingDetails;
             });

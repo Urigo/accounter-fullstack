@@ -83,7 +83,7 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
       TRUE
    END)
       AND (
-        (source_details IS NOT NULL AND source_details <> '' AND source_details = $details)
+        (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
       ) AND owner_id = $ownerId;`;
 
