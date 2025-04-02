@@ -14,7 +14,7 @@
     "scraper:pgtyped:watch": "yarn pgtyped -w",
     "start": "yarn build && node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "validate-env": "/bin/sh -c 'if [ ! -f \"./src/env.ts\" ] ; then cp ./src/env.template.ts ./src/env.ts ; fi'"
+    "validate-env": "node scripts/create-env.mjs"
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
