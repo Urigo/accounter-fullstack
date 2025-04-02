@@ -1,3 +1,10 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const dotenv = require('dotenv');
+
+dotenv.config({
+  path: '../../.env',
+});
+
 const {
   POSTGRES_USER = 'postgres',
   POSTGRES_PASSWORD = 'postgres',
@@ -12,5 +19,4 @@ function cn(dbName = POSTGRES_DB) {
     POSTGRES_SSL ? '?sslmode=require' : '?sslmode=disable'
   }`;
 }
-
 module.exports = cn;
