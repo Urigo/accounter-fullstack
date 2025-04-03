@@ -56,7 +56,7 @@ __metadata:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@sinclair/typebox": "npm:0.34.31"
+    "@sinclair/typebox": "npm:0.34.33"
     "@types/listr": "npm:0.14.9"
     "@types/pg": "npm:8.11.11"
     date-fns: "npm:4.1.0"
@@ -103,7 +103,7 @@ __metadata:
     "@radix-ui/react-toast": "npm:1.2.6"
     "@radix-ui/react-tooltip": "npm:1.1.8"
     "@tailwindcss/vite": "npm:4.1.1"
-    "@tanstack/react-query": "npm:5.71.1"
+    "@tanstack/react-query": "npm:5.71.5"
     "@tanstack/react-table": "npm:8.21.2"
     "@types/chart.js": "npm:2.9.41"
     "@types/deep-equal": "npm:1.0.4"
@@ -130,7 +130,7 @@ __metadata:
     react-error-boundary: "npm:5.0.0"
     react-hook-form: "npm:7.54.2"
     react-router-dom: "npm:7.4.1"
-    sonner: "npm:2.0.2"
+    sonner: "npm:2.0.3"
     strip-indent: "npm:4.0.0"
     tabler-icons-react: "npm:1.56.0"
     tailwind-merge: "npm:3.0.2"
@@ -7554,10 +7554,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sinclair/typebox@npm:0.34.31":
-  version: 0.34.31
-  resolution: "@sinclair/typebox@npm:0.34.31"
-  checksum: 10c0/505775c3fe8be1b842f132274bc661627b0139e98574ffd4665af2da33354430e6ab6bedc5f36ce09db9d9bb65228f4f9ce0904e7e1bc578094e43f118b97c37
+"@sinclair/typebox@npm:0.34.33":
+  version: 0.34.33
+  resolution: "@sinclair/typebox@npm:0.34.33"
+  checksum: 10c0/88ab4f7afc7514d576602dce5c892462a89f9082d77dde0e8e21342b3a5c8891ddfc51a65e7dbd5b3f5cbd8f5cb76aded0c0edcfcfb5730f189c2819de9583a7
   languageName: node
   linkType: hard
 
@@ -7751,21 +7751,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.71.1":
-  version: 5.71.1
-  resolution: "@tanstack/query-core@npm:5.71.1"
-  checksum: 10c0/cc26032439fa1f4f249a56505a51b251440e08312c65b2dcf6b6970c751a3a1c9b3dba4a03e7a64a5b9be5634b6d86c3f93d95e91d73d3875a86e4d50da7e9ae
+"@tanstack/query-core@npm:5.71.5":
+  version: 5.71.5
+  resolution: "@tanstack/query-core@npm:5.71.5"
+  checksum: 10c0/d0f9bd69efc47d52553f10e288495b4992ed698cda93e408c0622cbbfaa806a9e383db902e5270718f09e09204f79a898f13fc850b1014dd0e695a933843db3f
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.71.1":
-  version: 5.71.1
-  resolution: "@tanstack/react-query@npm:5.71.1"
+"@tanstack/react-query@npm:5.71.5":
+  version: 5.71.5
+  resolution: "@tanstack/react-query@npm:5.71.5"
   dependencies:
-    "@tanstack/query-core": "npm:5.71.1"
+    "@tanstack/query-core": "npm:5.71.5"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/10b852ff99839069282ff2262817672a1243c781469e71643007a5610a579557a0f50cc0cc39bf3bb59d79c09d16e367952bce6b889117b461bbb548dc2f464e
+  checksum: 10c0/7fa32edb167271532e2439e543c442d1fdb199bb1aae4dd9e537dcc9990f3b1fb1f26233611b631c65d6f9387b0365fc3a92ab8040cc0ae49b8b3da763bae535
   languageName: node
   linkType: hard
 
@@ -19703,13 +19703,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sonner@npm:2.0.2":
-  version: 2.0.2
-  resolution: "sonner@npm:2.0.2"
+"sonner@npm:2.0.3":
+  version: 2.0.3
+  resolution: "sonner@npm:2.0.3"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
     react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-  checksum: 10c0/c391e8ef85382b77c3255c2d0ccd1aa37fd3a9a50c750b98e3eae62a7a896fe79452a2363a5150ceae5f51e18e0126c05845ce2466c7c2ce5662ee13d223a516
+  checksum: 10c0/59f84142f7a692dd1ec90e6df2003a70ff0b325eaef1d5dd17ad250e7f992b71053824f1a7ab3912f8c4caa5ce30523a096b5f5108b3e8ae13f906048691aca1
   languageName: node
   linkType: hard
 
