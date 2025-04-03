@@ -85,28 +85,22 @@ export async function isracard(
   await login(credentials, page);
 
   return {
-    getMonthDashboard: async (RequestedMonthDate: Date) => {
-      return getMonthDashboard(page, RequestedMonthDate, options);
-    },
-    getDashboards: async () => {
-      return Promise.all(
+    getMonthDashboard: (RequestedMonthDate: Date) =>
+      getMonthDashboard(page, RequestedMonthDate, options),
+    getDashboards: () =>
+      Promise.all(
         /* get monthly results */
         getMonthsList(options).map(async monthDate => {
           return getMonthDashboard(page, monthDate, options);
         }),
-      );
-    },
-    getMonthTransactions: async (RequestedMonthDate: Date) => {
-      return getMonthTransactions(page, RequestedMonthDate, options);
-    },
-    getTransactions: async () => {
-      return Promise.all(
+      ),
+    getMonthTransactions: (RequestedMonthDate: Date) =>
+      getMonthTransactions(page, RequestedMonthDate, options),
+    getTransactions: () =>
+      Promise.all(
         /* get monthly results */
-        getMonthsList(options).map(async monthDate => {
-          return getMonthTransactions(page, monthDate, options);
-        }),
-      );
-    },
+        getMonthsList(options).map(monthDate => getMonthTransactions(page, monthDate, options)),
+      ),
   };
 }
 
