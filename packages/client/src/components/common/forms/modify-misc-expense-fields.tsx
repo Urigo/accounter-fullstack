@@ -10,7 +10,11 @@ import { CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
-  formManager: UseFormReturn<InsertMiscExpenseInput | UpdateMiscExpenseInput, unknown, undefined>;
+  formManager: UseFormReturn<
+    InsertMiscExpenseInput | UpdateMiscExpenseInput,
+    unknown,
+    InsertMiscExpenseInput | UpdateMiscExpenseInput
+  >;
 }
 
 export const ModifyMiscExpenseFields = ({

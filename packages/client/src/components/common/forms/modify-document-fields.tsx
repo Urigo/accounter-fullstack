@@ -22,7 +22,11 @@ import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entiti
 import { CurrencyInput, SelectInput, TextInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
-  formManager: UseFormReturn<UpdateDocumentFieldsInput | InsertDocumentInput, unknown, undefined>;
+  formManager: UseFormReturn<
+    UpdateDocumentFieldsInput | InsertDocumentInput,
+    unknown,
+    UpdateDocumentFieldsInput | InsertDocumentInput
+  >;
   document?: EditDocumentQuery['documentById'];
   defaultCurrency?: Currency;
 }
