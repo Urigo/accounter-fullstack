@@ -99,6 +99,11 @@ export async function userAgentOverride(page: Page) {
 
   if ('_client' in page) {
     const client = typeof page._client === 'function' ? page._client() : page._client;
-    client.send('Network.setUserAgentOverride', override);
+    try {
+      await client.send('Network.setUserAgentOverride', override);
+    } catch (error) {
+      console.warn('Failed to set user agent override:', error);
+      // Fallback using another method or just continue
+    }
   }
 }
