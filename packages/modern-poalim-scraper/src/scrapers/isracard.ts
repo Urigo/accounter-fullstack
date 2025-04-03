@@ -4,6 +4,7 @@ import type { IsracardDashboardMonth } from '../__generated__/isracardDashboardM
 import isracardCardsTransactionsList from '../schemas/isracardCardsTransactionsList.json' with { type: 'json' };
 import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPostWithinPage } from '../utils/fetch.js';
+import { userAgentOverride } from '../utils/user-agent-override.js';
 import { validateSchema } from '../utils/validate-schema.js';
 
 const SERVICE_URL = 'https://digital.isracard.co.il/services/ProxyRequestHandler.ashx';
@@ -76,6 +77,8 @@ export async function isracard(
   credentials: IsracardCredentials,
   options: IsracardOptions = new IsracardOptions(),
 ) {
+  await userAgentOverride(page);
+
   const BASE_URL = 'https://digital.isracard.co.il';
   await page.goto(`${BASE_URL}/personalarea/Login`, {
     waitUntil: 'networkidle2',
