@@ -34,8 +34,9 @@ const documentDataSchema = z.object({
     .string()
     .length(9)
     .nullable()
+    .optional()
     .describe(
-      'Unique document 9-digits allocation number (מספר הקצאה), not relevant if no VAT amount exists. Usually last 9 digits of a longer number',
+      'Should be empty if no VAT amount. Unique document 9-digits allocation number (מספר הקצאה). Usually last 9 digits of a longer number.',
     ),
 });
 
@@ -98,8 +99,9 @@ export class AnthropicProvider {
                         - Issuer and recipient details
                         - Monetary amounts (total and VAT)
                         - Date and reference numbers
+                        - Allocation number (if VAT exists and applicable)
 
-                        Return only a JSON object without any explanation. Use NULL for missing values.`),
+                        Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
               },
               {
                 type: 'file',

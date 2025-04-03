@@ -87,7 +87,7 @@ export async function getOcrData(
     amount: validateNumber(draft.fullAmount),
     currency: draft.currency,
     vat: validateNumber(draft.vatAmount),
-    allocationNumber: draft.allocationNumber,
+    allocationNumber: draft.allocationNumber ?? null,
   };
 }
 
