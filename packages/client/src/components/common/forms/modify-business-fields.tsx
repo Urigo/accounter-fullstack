@@ -11,7 +11,7 @@ type ModalProps<T extends boolean> = {
   useFormManager: UseFormReturn<
     T extends true ? InsertNewBusinessInput : UpdateBusinessInput,
     unknown,
-    undefined
+    T extends true ? InsertNewBusinessInput : UpdateBusinessInput
   >;
   setFetching: (fetching: boolean) => void;
 };

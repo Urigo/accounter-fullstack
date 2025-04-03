@@ -4,7 +4,7 @@ import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphq
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 type ModalProps = {
-  useFormManager: UseFormReturn<InsertNewBusinessInput, unknown, undefined>;
+  useFormManager: UseFormReturn<InsertNewBusinessInput, unknown, InsertNewBusinessInput>;
   setFetching: (fetching: boolean) => void;
 };
 
@@ -12,7 +12,9 @@ export function InsertBusinessFields({ useFormManager, setFetching }: ModalProps
   return (
     <ModifyBusinessFields
       isInsert
-      useFormManager={useFormManager as UseFormReturn<UpdateBusinessInput, unknown, undefined>}
+      useFormManager={
+        useFormManager as UseFormReturn<UpdateBusinessInput, unknown, UpdateBusinessInput>
+      }
       setFetching={setFetching}
     />
   );

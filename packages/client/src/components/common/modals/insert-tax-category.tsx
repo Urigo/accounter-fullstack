@@ -62,7 +62,7 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
         <ModifyTaxCategoryFields
           isInsert
           useFormManager={
-            useFormManager as UseFormReturn<UpdateTaxCategoryInput, unknown, undefined>
+            useFormManager as UseFormReturn<UpdateTaxCategoryInput, unknown, UpdateTaxCategoryInput>
           }
           setFetching={setFetching}
         />
