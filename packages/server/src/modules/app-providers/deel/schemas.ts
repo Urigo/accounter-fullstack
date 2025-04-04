@@ -148,11 +148,11 @@ export type DownloadInvoicePdf = z.infer<typeof downloadInvoicePdfSchema>;
 
 export const workerSchema = z
   .object({
-    id: z.number().int().describe('Unique identifier for the worker.'),
+    id: z.string().describe('Unique identifier for the worker.'),
     contract_id: z.string().nullable().optional().describe("The worker's Deel contract ID."),
     name: z.string().optional().describe('Full name of the worker.'),
     picUrl: z.string().nullable().describe("URL to the worker's Deel avatar."),
-    public_id: z.string(), // NOTE: by docs, not existing
+    public_id: z.string().optional(), // NOTE: by docs, not existing
   })
   .strict();
 
