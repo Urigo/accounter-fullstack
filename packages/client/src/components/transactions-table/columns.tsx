@@ -229,9 +229,13 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       const row = rows[0];
       return (
         <div>
-          {row.original.enableEdit && row.original.enableChargeLink ? 'Actions' : 
-           row.original.enableEdit ? 'Edit' : 
-           row.original.enableChargeLink ? 'Charge' : ''}
+          {row.original.enableEdit && row.original.enableChargeLink
+            ? 'Actions'
+            : row.original.enableEdit
+              ? 'Edit'
+              : row.original.enableChargeLink
+                ? 'Charge'
+                : ''}
         </div>
       );
     },
