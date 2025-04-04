@@ -21,6 +21,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '../../ui/chart.js';
+import { Toggle } from '../../ui/toggle.js';
 import { BalanceReportFilter, BalanceReportFilters, Period } from './balance-report-filters.js';
 import { ExtendedTransactionsCard } from './extended-transactions.js';
 
@@ -123,6 +124,7 @@ export const BalanceReport = (): ReactElement => {
     excludedCounterparties: [],
   });
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
+  const [isCumulative, setIsCumulative] = useState<boolean>(true);
 
   const variables = useMemo(() => {
     const { ownerId, fromDate, toDate } = filter;
@@ -139,6 +141,13 @@ export const BalanceReport = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BalanceReportFilters filter={filter} setFilter={setFilter} initiallyOpened={!filter} />
+        <Toggle
+          aria-label="Toggle cumulative balance"
+          variant="outline"
+          onPressedChange={value => setIsCumulative(value)}
+        >
+          Cumulative Balance
+        </Toggle>
       </div>,
     );
     setExtendedPeriod(undefined);
@@ -158,7 +167,7 @@ export const BalanceReport = (): ReactElement => {
       {
         income: number;
         expense: number;
-        balance: number;
+        delta: number;
         transactions: BalanceReportScreenQuery['transactionsForBalanceReport'];
       }
     >();
@@ -176,7 +185,7 @@ export const BalanceReport = (): ReactElement => {
         periods.set(key, {
           income: 0,
           expense: 0,
-          balance: 0,
+          delta: 0,
           transactions: [],
         });
       }
@@ -186,23 +195,28 @@ export const BalanceReport = (): ReactElement => {
       } else {
         period.expense += txn.amount.raw;
       }
-      period.balance += txn.amount.raw;
+      period.delta += txn.amount.raw;
       period.transactions.push(txn);
     });
+    let cumulativeBalance = 0;
     return Array.from(periods.entries())
-      .map(([key, value]) => ({
-        period: key,
-        income: value.income,
-        expense: value.expense,
-        balance: value.balance,
-        transactions: value.transactions,
-      }))
-      .sort((a, b) => a.period.localeCompare(b.period));
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, value]) => {
+        cumulativeBalance += value.delta;
+        return {
+          period: key,
+          income: value.income,
+          expense: value.expense,
+          balance: isCumulative ? cumulativeBalance : value.delta,
+          transactions: value.transactions,
+        };
+      });
   }, [
     data,
     filter.period,
     filter.excludedCounterparties,
     userContext?.context.financialAccountsBusinessesIds,
+    isCumulative,
   ]);
 
   return (
@@ -237,26 +251,27 @@ export const BalanceReport = (): ReactElement => {
                     content={
                       <ChartTooltipContent
                         formatter={(value, name, item, index) => {
-                          if (index === 1) return null;
                           const bgColor = `bg-[var(--color-${name})]`;
-                          return (
-                            <>
-                              <div className={`${bgColor} h-2.5 w-2.5 shrink-0 rounded-[2px]`} />
-                              {chartConfig[name as keyof typeof chartConfig]?.label || name}
-                              <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                                {formatter.format(Number(value))}
-                              </div>
-                              {/* Add this after the last item */}
-                              {index === 2 && (
-                                <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
-                                  <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[var(--color-balance)] mr-2" />
-                                  Balance
-                                  <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                                    {formatter.format(item.payload.balance)}
-                                  </div>
+
+                          if (index < 2) {
+                            return (
+                              <>
+                                <div className={`${bgColor} h-2.5 w-2.5 shrink-0 rounded-[2px]`} />
+                                {chartConfig[name as keyof typeof chartConfig]?.label || name}
+                                <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                                  {formatter.format(Number(value))}
                                 </div>
-                              )}
-                            </>
+                              </>
+                            );
+                          }
+                          return (
+                            <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
+                              <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[var(--color-balance)] mr-2" />
+                              Balance
+                              <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
+                                {formatter.format(item.payload.balance)}
+                              </div>
+                            </div>
                           );
                         }}
                       />
@@ -264,8 +279,8 @@ export const BalanceReport = (): ReactElement => {
                   />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Bar dataKey="income" fill="var(--color-income)" radius={4} />
-                  <Bar dataKey="balance" fill="var(--color-balance)" radius={4} />
                   <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
+                  <Bar dataKey="balance" fill="var(--color-balance)" radius={4} />
                 </BarChart>
               </ChartContainer>
             </CardContent>

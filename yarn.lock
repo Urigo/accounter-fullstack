@@ -101,6 +101,7 @@ __metadata:
     "@radix-ui/react-switch": "npm:1.1.3"
     "@radix-ui/react-tabs": "npm:1.1.3"
     "@radix-ui/react-toast": "npm:1.2.6"
+    "@radix-ui/react-toggle": "npm:1.1.2"
     "@radix-ui/react-tooltip": "npm:1.1.8"
     "@tailwindcss/vite": "npm:4.1.1"
     "@tanstack/react-query": "npm:5.71.5"
@@ -7127,6 +7128,27 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 10c0/34334eb835097de9474137bea41a68a5299ab3a2db7f88f4c9007c85ef19b8798f25771a726aed83a76c4f33ce4592b0a84d870d9754e0c2a9e23022fec9721a
+  languageName: node
+  linkType: hard
+
+"@radix-ui/react-toggle@npm:1.1.2":
+  version: 1.1.2
+  resolution: "@radix-ui/react-toggle@npm:1.1.2"
+  dependencies:
+    "@radix-ui/primitive": "npm:1.1.1"
+    "@radix-ui/react-primitive": "npm:2.0.2"
+    "@radix-ui/react-use-controllable-state": "npm:1.1.0"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+    react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    "@types/react-dom":
+      optional: true
+  checksum: 10c0/2cd8dc6b64c2680f4c0662ff2424963e8cc432de3a925a549e8fd5e5e7b48da1a08434ef4ab49b6b627faea1628160f89a16f098399104ed06a00220170f72a2
   languageName: node
   linkType: hard
 
