@@ -224,8 +224,9 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
   {
     accessorKey: 'id',
     header: ({ table }) => {
-      const row = table.getCenterRows()[0];
-      if (!row) return null;
+      const rows = table.getCenterRows();
+      if (!rows.length) return null;
+      const row = rows[0];
       return (
         <div>
           {row.original.enableEdit && row.original.enableChargeLink ? 'Actions' : 
