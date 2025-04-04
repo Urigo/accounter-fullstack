@@ -1,15 +1,15 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
-import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
-import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
-import { useUpdateTransaction } from '../../../../hooks/use-update-transaction.js';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { InsertBusiness } from '../../../common/modals/insert-business.js';
-import { SimilarTransactionsModal } from '../../../common/modals/similar-transactions-modal.js';
-import { Button } from '../../../ui/button.js';
-import { SelectWithSearch } from '../../../ui/select-with-search.js';
-import { Tooltip } from '../../index.js';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { Tooltip } from '../../common/index.js';
+import { InsertBusiness } from '../../common/modals/insert-business.js';
+import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
+import { Button } from '../../ui/button.js';
+import { SelectWithSearch } from '../../ui/select-with-search.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

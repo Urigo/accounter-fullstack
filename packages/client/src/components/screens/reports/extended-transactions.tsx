@@ -2,7 +2,8 @@ import { ReactElement } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from 'urql';
 import { BalanceReportExtendedTransactionsDocument } from '../../../gql/graphql.js';
-import { AccounterLoader, TransactionsTable } from '../../common/index.js';
+import { AccounterLoader } from '../../common/index.js';
+import { TransactionsTable } from '../../transactions-table/index.js';
 import { Button } from '../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card.js';
 

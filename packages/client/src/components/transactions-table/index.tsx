@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
-import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { ChargeNavigateButton, EditMiniButton, EditTransactionModal } from '../index.js';
-import { InsertMiscExpenseModal } from '../modals/insert-misc-expense-modal.js';
+import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { ChargeNavigateButton, EditMiniButton, EditTransactionModal } from '../common/index.js';
+import { InsertMiscExpenseModal } from '../common/modals/insert-misc-expense-modal.js';
 import {
   Account,
   Amount,
