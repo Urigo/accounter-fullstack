@@ -1,22 +1,41 @@
 import { ReactElement, useCallback, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
-import { ChargeFilter } from '../../../gql/graphql.js';
+import { ChargeFilter, TransactionsTableEntityFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { Tooltip } from '../../common/index.js';
-import { InsertBusiness } from '../../common/modals/insert-business.jsx';
-import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.jsx';
-import { Button } from '../../ui/button.jsx';
-import { SelectWithSearch } from '../../ui/select-with-search.jsx';
-import { TransactionsTableRowType } from '../columns.js';
+import { InsertBusiness } from '../../common/modals/insert-business.js';
+import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
+import { Button } from '../../ui/button.js';
+import { SelectWithSearch } from '../../ui/select-with-search.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment TransactionsTableEntityFields on Transaction {
+    id
+    counterparty {
+      name
+      id
+    }
+    sourceDescription
+    missingInfoSuggestions {
+      business {
+        id
+        name
+      }
+    }
+  }
+`;
 
 type Props = {
-  transaction: TransactionsTableRowType;
+  data: FragmentType<typeof TransactionsTableEntityFieldsFragmentDoc>;
+  enableEdit?: boolean;
   onChange?: () => void;
 };
 
-export function Counterparty({ transaction, onChange }: Props): ReactElement {
+export function Counterparty({ data, onChange, enableEdit }: Props): ReactElement {
   const { get } = useUrlQuery();
   const {
     id,
@@ -24,8 +43,7 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
     missingInfoSuggestions,
     id: transactionId,
     sourceDescription,
-    enableEdit,
-  } = transaction;
+  } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
   const hasSuggestion = !!missingInfoSuggestions?.business && enableEdit;
   const suggestedName = hasSuggestion ? missingInfoSuggestions?.business?.name : 'Missing';
@@ -92,7 +110,7 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
   const [search, setSearch] = useState<string | null>(sourceDescription);
 
   return (
-    <>
+    <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">
         {counterparty?.id ? (
           <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
@@ -130,6 +148,6 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
         onOpenChange={setSimilarTransactionsOpen}
         onClose={onChange}
       />
-    </>
+    </td>
   );
 }
