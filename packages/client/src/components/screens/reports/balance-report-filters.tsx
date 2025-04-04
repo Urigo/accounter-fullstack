@@ -3,11 +3,12 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Indicator, Select, SimpleGrid } from '@mantine/core';
+import { ActionIcon, Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { TimelessDateString } from '../../../helpers/dates.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
 
@@ -24,6 +25,7 @@ export interface BalanceReportFilter {
   toDate: TimelessDateString;
   period: Period;
   ownerId?: string;
+  excludedCounterparties: string[];
 }
 
 interface BalanceReportFiltersFormProps {
@@ -41,6 +43,8 @@ function BalanceReportFiltersForm({
     defaultValues: { ...filter },
   });
   const { selectableBusinesses: businesses, fetching: businessesFetching } = useGetBusinesses();
+  const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
+    useGetFinancialEntities();
 
   const onSubmit: SubmitHandler<BalanceReportFilter> = data => {
     setFilter(data);
@@ -137,6 +141,25 @@ function BalanceReportFiltersForm({
               label="Period"
               // placeholder="Filter income/expense"
               maxDropdownHeight={160}
+              error={fieldState.error?.message}
+              withinPortal
+            />
+          )}
+        />
+        <Controller
+          name="excludedCounterparties"
+          control={control}
+          defaultValue={filter.excludedCounterparties}
+          render={({ field, fieldState }): ReactElement => (
+            <MultiSelect
+              {...field}
+              data={financialEntities}
+              value={field.value ?? []}
+              disabled={financialEntitiesFetching}
+              label="Excluded Counterparties"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
               error={fieldState.error?.message}
               withinPortal
             />

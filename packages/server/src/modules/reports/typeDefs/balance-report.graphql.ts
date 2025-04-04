@@ -18,5 +18,9 @@ export default gql`
     date: TimelessDate!
     month: Int!
     year: Int!
+    charge: Charge!
+    counterparty: FinancialEntity
+    isFee: Boolean!
+    description: String
   }
 `;

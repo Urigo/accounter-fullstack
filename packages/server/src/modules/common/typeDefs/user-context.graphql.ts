@@ -12,5 +12,6 @@ export default gql`
     defaultLocalCurrency: Currency!
     defaultCryptoConversionFiatCurrency: Currency!
     ledgerLock: TimelessDate
+    financialAccountsBusinessesIds: [UUID!]!
   }
 `;

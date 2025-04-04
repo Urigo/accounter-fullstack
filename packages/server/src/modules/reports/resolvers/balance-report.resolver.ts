@@ -1,4 +1,6 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { BalanceReportProvider } from '../providers/balance-report.provider.js';
@@ -32,5 +34,28 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
     date: t => dateToTimelessDateString(t.debit_date!),
     month: t => t.month!,
     year: t => t.year!,
+    counterparty: (t, _, context) =>
+      t.business_id
+        ? context.injector
+            .get(FinancialEntitiesProvider)
+            .getFinancialEntityByIdLoader.load(t.business_id)
+            .then(res => res ?? null)
+        : null,
+    isFee: t => t.is_fee ?? false,
+    description: t => t.source_description ?? null,
+    charge: (t, _, context) => {
+      if (!t.charge_id) {
+        throw new GraphQLError(`Charge ID missing for transaction ID ${t.id}`);
+      }
+      return context.injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(t.charge_id)
+        .then(res => {
+          if (!res) {
+            throw new GraphQLError(`Charge not found for ID ${t.charge_id}`);
+          }
+          return res;
+        });
+    },
   },
 };

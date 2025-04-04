@@ -19,6 +19,8 @@ with transactions AS (SELECT
     t.amount,
     t.amount > 0 as is_income,
     t.owner_id,
+    t.business_id,
+    t.is_fee,
     date_part('month', t.debit_date) as month,
     date_part('year', t.debit_date) as year,
     CASE
@@ -50,7 +52,10 @@ SELECT t.id,
        t.amount,
        t.debit_date,
        t.month,
-       t.year
+       t.year,
+       t.business_id,
+       t.is_fee,
+       t.source_description
 FROM transactions t
 WHERE t.owner_id = $ownerId
 AND t.debit_date BETWEEN $fromDate AND $toDate
