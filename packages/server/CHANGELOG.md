@@ -1,5 +1,18 @@
 # @accounter/server
 
+## 0.0.5
+
+### Patch Changes
+
+- [#1994](https://github.com/Urigo/accounter-fullstack/pull/1994)
+  [`c73af73`](https://github.com/Urigo/accounter-fullstack/commit/c73af737d68cff22b560b615a5bd48296aa8b653)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.4` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.4) (from
+    `1.2.2`, in `dependencies`)
+  - Updated dependency [`ai@4.2.10` ↗︎](https://www.npmjs.com/package/ai/v/4.2.10) (from `4.2.8`,
+    in `dependencies`)
+
 ## 0.0.4
 
 ### Patch Changes

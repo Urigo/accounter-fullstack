@@ -1,5 +1,71 @@
 # @accounter/client
 
+## 0.0.5
+
+### Patch Changes
+
+- [#1967](https://github.com/Urigo/accounter-fullstack/pull/1967)
+  [`07c308b`](https://github.com/Urigo/accounter-fullstack/commit/07c308b49073aa77c6421a5a29589421a240a8a7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@7.0.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.0.1) (from `6.4.10`,
+    in `dependencies`)
+
+- [#1978](https://github.com/Urigo/accounter-fullstack/pull/1978)
+  [`05eca36`](https://github.com/Urigo/accounter-fullstack/commit/05eca36933aeeb9069b69ea57f38a9893c15d74d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-hook-form@7.55.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.55.0) (from
+    `7.54.2`, in `dependencies`)
+
+- [#1994](https://github.com/Urigo/accounter-fullstack/pull/1994)
+  [`c73af73`](https://github.com/Urigo/accounter-fullstack/commit/c73af737d68cff22b560b615a5bd48296aa8b653)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.10` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.10) (from
+    `6.4.9`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.71.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.1)
+    (from `5.71.0`, in `dependencies`)
+
+- [#1996](https://github.com/Urigo/accounter-fullstack/pull/1996)
+  [`70274fd`](https://github.com/Urigo/accounter-fullstack/commit/70274fd57fb0c4b5c70f2b670edac7d2b70b939f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`tailwind-merge@3.1.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.1.0) (from
+    `3.0.2`, in `dependencies`)
+
+- [#2004](https://github.com/Urigo/accounter-fullstack/pull/2004)
+  [`40044e6`](https://github.com/Urigo/accounter-fullstack/commit/40044e66735a84ddb2bb8582bc2c76cbede38152)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.71.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.5)
+    (from `5.71.1`, in `dependencies`)
+  - Updated dependency [`sonner@2.0.3` ↗︎](https://www.npmjs.com/package/sonner/v/2.0.3) (from
+    `2.0.2`, in `dependencies`)
+
+- [#2009](https://github.com/Urigo/accounter-fullstack/pull/2009)
+  [`0baca73`](https://github.com/Urigo/accounter-fullstack/commit/0baca73594085162fb317bd439b0779926e8ec8a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.487.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.487.0) (from
+    `0.486.0`, in `dependencies`)
+
+- [#2011](https://github.com/Urigo/accounter-fullstack/pull/2011)
+  [`e21b991`](https://github.com/Urigo/accounter-fullstack/commit/e21b99105c64647dd584f31ca2409b27ed5c5011)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@radix-ui/react-toggle@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.2)
+    (to `dependencies`)
+  - Added dependency [`recharts@2.15.1` ↗︎](https://www.npmjs.com/package/recharts/v/2.15.1) (to
+    `dependencies`)
+
 ## 0.0.4
 
 ### Patch Changes
