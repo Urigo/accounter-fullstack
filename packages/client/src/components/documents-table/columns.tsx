@@ -3,16 +3,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { EditMiniButton } from '../common/index.js';
 import { Button } from '../ui/button.js';
-import {
-  Amount,
-  Creditor,
-  DateCell,
-  Debtor,
-  Files,
-  Serial,
-  TypeCell,
-  Vat,
-} from './cells-new/index.js';
+import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

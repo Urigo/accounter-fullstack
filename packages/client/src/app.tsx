@@ -22,6 +22,7 @@ import { Salaries } from './components/salaries/index.js';
 import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
+import { BalanceReport } from './components/screens/reports/balance-report.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
 import { FiltersContext } from './providers/filters-context.js';
@@ -69,6 +70,7 @@ export function App(): ReactElement {
               path="corporate-tax-ruling-compliance/:year"
               element={<CorporateTaxRulingComplianceReport />}
             />
+            <Route path="balance" element={<BalanceReport />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />

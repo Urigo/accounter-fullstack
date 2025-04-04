@@ -16,7 +16,7 @@ import {
   Description,
   EventDate,
   SourceID,
-} from '../../transactions-table/cells/index.js';
+} from '../../../transactions-table/cells-legacy/index.js';
 import { CategorizeExpense } from '../buttons/categorize-expense.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

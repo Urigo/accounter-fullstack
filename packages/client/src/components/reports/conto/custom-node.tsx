@@ -12,6 +12,8 @@ import { ActionIcon } from '@mantine/core';
 import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import { Currency } from '../../../gql/graphql.js';
+import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
 import { Tooltip } from '../../common/index.js';
 import { Badge } from '../../ui/badge.js';
@@ -29,9 +31,7 @@ import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { TypeIcon } from './type-icon.js';
 import { CustomData } from './types.js';
 
-const formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'ILS',
+const formatter = getCurrencyFormatter(Currency.Ils, {
   trailingZeroDisplay: 'stripIfInteger',
 });
 

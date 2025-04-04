@@ -1,5 +1,6 @@
 export * from './__generated__/types.js';
 export * from './__generated__/dynamic-report.types.js';
+export * from './__generated__/balance-report.types.js';
 
 export type CommentaryProto = {
   amount: number;
