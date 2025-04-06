@@ -293,7 +293,7 @@ export const BalanceReport = (): ReactElement => {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        formatter={(value, name, item, index) => {
+                        formatter={(value, name, _item, index) => {
                           const bgColor = `bg-[var(--color-${name})]`;
 
                           if (index < 2) {
