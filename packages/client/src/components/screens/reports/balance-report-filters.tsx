@@ -1,14 +1,15 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
 import { ActionIcon, Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { TimelessDateString } from '../../../helpers/dates.js';
+import { BalanceReportScreenQueryVariables } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { useGetTags } from '../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
 
@@ -20,13 +21,12 @@ export enum Period {
   ANNUALLY = 'Annually',
 }
 
-export interface BalanceReportFilter {
-  fromDate: TimelessDateString;
-  toDate: TimelessDateString;
+export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   period: Period;
-  ownerId?: string;
   excludedCounterparties: string[];
-}
+  includedTags: string[];
+  excludedTags: string[];
+};
 
 interface BalanceReportFiltersFormProps {
   filter: BalanceReportFilter;
@@ -39,18 +39,30 @@ function BalanceReportFiltersForm({
   setFilter,
   closeModal,
 }: BalanceReportFiltersFormProps): ReactElement {
-  const { control, handleSubmit } = useForm<BalanceReportFilter>({
+  const { control, handleSubmit, watch } = useForm<BalanceReportFilter>({
     defaultValues: { ...filter },
   });
   const { selectableBusinesses: businesses, fetching: businessesFetching } = useGetBusinesses();
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
+  const { selectableTags: allTags, fetching: tagsFetching } = useGetTags();
 
   const onSubmit: SubmitHandler<BalanceReportFilter> = data => {
     setFilter(data);
     closeModal();
   };
 
+  const excludedTags = watch('excludedTags');
+  const selectableIncludedTags = useMemo(
+    () => allTags.filter(tag => !excludedTags.includes(tag.value)),
+    [excludedTags, allTags],
+  );
+
+  const includedTags = watch('includedTags');
+  const selectableExcludedTags = useMemo(
+    () => allTags.filter(tag => !includedTags.includes(tag.value)),
+    [includedTags, allTags],
+  );
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <SimpleGrid cols={2}>
@@ -157,6 +169,44 @@ function BalanceReportFiltersForm({
               value={field.value ?? []}
               disabled={financialEntitiesFetching}
               label="Excluded Counterparties"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+              withinPortal
+            />
+          )}
+        />
+        <Controller
+          name="includedTags"
+          control={control}
+          defaultValue={filter.includedTags}
+          render={({ field, fieldState }): ReactElement => (
+            <MultiSelect
+              {...field}
+              data={selectableIncludedTags}
+              value={field.value ?? []}
+              disabled={tagsFetching}
+              label="Included Tags"
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+              withinPortal
+            />
+          )}
+        />
+        <Controller
+          name="excludedTags"
+          control={control}
+          defaultValue={filter.excludedTags}
+          render={({ field, fieldState }): ReactElement => (
+            <MultiSelect
+              {...field}
+              data={selectableExcludedTags}
+              value={field.value ?? []}
+              disabled={tagsFetching}
+              label="Excluded Tags"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable

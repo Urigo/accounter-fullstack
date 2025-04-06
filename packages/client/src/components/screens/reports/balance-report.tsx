@@ -41,6 +41,13 @@ import { ExtendedTransactionsCard } from './extended-transactions.js';
       }
       isFee
       description
+      charge {
+        id
+        tags {
+          id
+          name
+        }
+      }
     }
   }
 `;
@@ -125,6 +132,8 @@ export const BalanceReport = (): ReactElement => {
     period: Period.MONTHLY,
     fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
     excludedCounterparties: [],
+    includedTags: [],
+    excludedTags: [],
   });
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
@@ -179,14 +188,37 @@ export const BalanceReport = (): ReactElement => {
       }
     >();
     data.transactionsForBalanceReport.map(txn => {
+      if (txn.counterparty?.id) {
+        if (
+          !txn.isFee &&
+          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
+        ) {
+          // filter out internal transactions
+          return;
+        }
+        if (filter.excludedCounterparties?.includes(txn.counterparty.id)) {
+          // filter out excluded counterparties
+          return;
+        }
+      }
+      if (filter.includedTags.length > 0) {
+        if (!txn.charge?.tags || txn.charge.tags.length === 0) {
+          // filter out transactions without tags
+          return;
+        }
+        if (!txn.charge.tags.some(tag => filter.includedTags.includes(tag.id))) {
+          // filter out transactions without included tags
+          return;
+        }
+      }
       if (
-        txn.counterparty?.id &&
-        ((!txn.isFee &&
-          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)) ||
-          filter.excludedCounterparties?.includes(txn.counterparty.id))
-      )
-        // filter out internal transactions and excluded counterparties
+        filter.excludedTags.length > 0 &&
+        txn.charge?.tags.length &&
+        txn.charge.tags.some(tag => filter.excludedTags.includes(tag.id))
+      ) {
+        // filter out transactions with excluded tags
         return;
+      }
       const key = getPeriodKey(txn.year, txn.month, filter.period);
       if (!periods.has(key)) {
         periods.set(key, {
@@ -226,6 +258,8 @@ export const BalanceReport = (): ReactElement => {
     filter.period,
     filter.excludedCounterparties,
     userContext?.context.financialAccountsBusinessesIds,
+    filter.includedTags,
+    filter.excludedTags,
   ]);
 
   return (
