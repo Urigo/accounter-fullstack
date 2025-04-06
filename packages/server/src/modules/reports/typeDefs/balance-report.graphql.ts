@@ -15,6 +15,7 @@ export default gql`
     id: UUID!
     chargeId: UUID!
     amount: FinancialAmount!
+    amountUsd: FinancialAmount!
     date: TimelessDate!
     month: Int!
     year: Int!
