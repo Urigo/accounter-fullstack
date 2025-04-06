@@ -10,7 +10,7 @@ import {
 import { getCurrencyFormatter, TimelessDateString } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { AccounterLoader } from '../../common/index.js';
+import { AccounterLoader, MultiSelect } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Card, CardContent, CardDescription, CardHeader } from '../../ui/card.js';
 import {
@@ -21,7 +21,6 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '../../ui/chart.js';
-import { Toggle } from '../../ui/toggle.js';
 import { BalanceReportFilter, BalanceReportFilters, Period } from './balance-report-filters.js';
 import { ExtendedTransactionsCard } from './extended-transactions.js';
 
@@ -42,6 +41,13 @@ import { ExtendedTransactionsCard } from './extended-transactions.js';
       }
       isFee
       description
+      charge {
+        id
+        tags {
+          id
+          name
+        }
+      }
     }
   }
 `;
@@ -55,9 +61,13 @@ const chartConfig = {
     label: 'Expense',
     color: 'rgba(255, 0, 0, 0.5)',
   },
-  balance: {
-    label: 'Balance',
+  delta: {
+    label: 'Delta',
     color: 'rgba(0, 30, 255, 0.5)',
+  },
+  cumulative: {
+    label: 'Cumulative Balance',
+    color: 'rgba(100, 0, 255, 0.5)',
   },
 } satisfies ChartConfig;
 
@@ -122,9 +132,11 @@ export const BalanceReport = (): ReactElement => {
     period: Period.MONTHLY,
     fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
     excludedCounterparties: [],
+    includedTags: [],
+    excludedTags: [],
   });
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
-  const [isCumulative, setIsCumulative] = useState<boolean>(true);
+  const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
 
   const variables = useMemo(() => {
     const { ownerId, fromDate, toDate } = filter;
@@ -141,17 +153,21 @@ export const BalanceReport = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BalanceReportFilters filter={filter} setFilter={setFilter} initiallyOpened={!filter} />
-        <Toggle
-          aria-label="Toggle cumulative balance"
-          variant="outline"
-          onPressedChange={value => setIsCumulative(value)}
-        >
-          Cumulative Balance
-        </Toggle>
+        <MultiSelect
+          options={Object.entries(chartConfig).map(([key, value]) => ({
+            label: value.label,
+            value: key,
+          }))}
+          onValueChange={setVisibleSets}
+          defaultValue={visibleSets}
+          placeholder="Select Data Sets"
+          variant="default"
+          maxCount={1}
+        />
       </div>,
     );
     setExtendedPeriod(undefined);
-  }, [data, fetching, filter, setFiltersContext, setFilter]);
+  }, [data, fetching, filter, setFiltersContext, setFilter, visibleSets]);
 
   useEffect(() => {
     setFilter(prev => ({
@@ -172,14 +188,37 @@ export const BalanceReport = (): ReactElement => {
       }
     >();
     data.transactionsForBalanceReport.map(txn => {
+      if (txn.counterparty?.id) {
+        if (
+          !txn.isFee &&
+          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
+        ) {
+          // filter out internal transactions
+          return;
+        }
+        if (filter.excludedCounterparties?.includes(txn.counterparty.id)) {
+          // filter out excluded counterparties
+          return;
+        }
+      }
+      if (filter.includedTags.length > 0) {
+        if (!txn.charge?.tags || txn.charge.tags.length === 0) {
+          // filter out transactions without tags
+          return;
+        }
+        if (!txn.charge.tags.some(tag => filter.includedTags.includes(tag.id))) {
+          // filter out transactions without included tags
+          return;
+        }
+      }
       if (
-        txn.counterparty?.id &&
-        ((!txn.isFee &&
-          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)) ||
-          filter.excludedCounterparties?.includes(txn.counterparty.id))
-      )
-        // filter out internal transactions and excluded counterparties
+        filter.excludedTags.length > 0 &&
+        txn.charge?.tags.length &&
+        txn.charge.tags.some(tag => filter.excludedTags.includes(tag.id))
+      ) {
+        // filter out transactions with excluded tags
         return;
+      }
       const key = getPeriodKey(txn.year, txn.month, filter.period);
       if (!periods.has(key)) {
         periods.set(key, {
@@ -207,7 +246,8 @@ export const BalanceReport = (): ReactElement => {
           period: key,
           income: value.income,
           expense: value.expense,
-          balance: isCumulative ? cumulativeBalance : value.delta,
+          delta: value.delta,
+          cumulative: cumulativeBalance,
           transactions: value.transactions.sort(
             (t1, t2) => Math.abs(t2.amountUsd.raw) - Math.abs(t1.amountUsd.raw),
           ),
@@ -218,7 +258,8 @@ export const BalanceReport = (): ReactElement => {
     filter.period,
     filter.excludedCounterparties,
     userContext?.context.financialAccountsBusinessesIds,
-    isCumulative,
+    filter.includedTags,
+    filter.excludedTags,
   ]);
 
   return (
@@ -268,10 +309,12 @@ export const BalanceReport = (): ReactElement => {
                           }
                           return (
                             <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium text-foreground">
-                              <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] bg-[var(--color-balance)] mr-2" />
-                              Balance
+                              <div
+                                className={`h-2.5 w-2.5 shrink-0 rounded-[2px] mr-2 ${bgColor}`}
+                              />
+                              {chartConfig[name as keyof typeof chartConfig]?.label || name}
                               <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums text-foreground">
-                                {formatter.format(item.payload.balance)}
+                                {formatter.format(Number(value))}
                               </div>
                             </div>
                           );
@@ -280,9 +323,18 @@ export const BalanceReport = (): ReactElement => {
                     }
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="income" fill="var(--color-income)" radius={4} />
-                  <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
-                  <Bar dataKey="balance" fill="var(--color-balance)" radius={4} />
+                  {visibleSets.includes('income') && (
+                    <Bar dataKey="income" fill="var(--color-income)" radius={4} />
+                  )}
+                  {visibleSets.includes('expense') && (
+                    <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
+                  )}
+                  {visibleSets.includes('delta') && (
+                    <Bar dataKey="delta" fill="var(--color-delta)" radius={4} />
+                  )}
+                  {visibleSets.includes('cumulative') && (
+                    <Bar dataKey="cumulative" fill="var(--color-cumulative)" radius={4} />
+                  )}
                 </BarChart>
               </ChartContainer>
             </CardContent>
