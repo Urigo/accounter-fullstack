@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from 'urql';
 import { BalanceReportExtendedTransactionsDocument } from '../../../gql/graphql.js';
@@ -35,6 +35,15 @@ export const ExtendedTransactionsCard = ({
     },
   });
 
+  const transactions = useMemo(() => {
+    if (data?.transactionsByIDs) {
+      return transactionIDs
+        .map(id => data?.transactionsByIDs.find(transaction => transaction.id === id))
+        .filter(Boolean) as NonNullable<(typeof data.transactionsByIDs)[number]>[];
+    }
+    return [];
+  }, [data, transactionIDs]);
+
   return (
     <Card className="mt-5 w-full">
       {fetching ? (
@@ -50,7 +59,7 @@ export const ExtendedTransactionsCard = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <TransactionsTable transactionsProps={data?.transactionsByIDs ?? []} />
+            <TransactionsTable transactionsProps={transactions} />
           </CardContent>
         </>
       )}

@@ -10,14 +10,12 @@ import {
 const getNormalizedBalanceTransactions = sql<IGetNormalizedBalanceTransactionsQuery>`
 with transactions AS (SELECT
     t.id,
-    t.account_id,
     t.charge_id,
     t.source_description,
     t.currency,
     t.debit_date,
     t.debit_timestamp,
     t.amount,
-    t.amount > 0 as is_income,
     t.owner_id,
     t.business_id,
     t.is_fee,
@@ -50,12 +48,14 @@ LEFT JOIN LATERAL (
 SELECT t.id,
        t.charge_id,
        t.amount,
+       t.currency,
        t.debit_date,
        t.month,
        t.year,
        t.business_id,
        t.is_fee,
-       t.source_description
+       t.source_description,
+       t.amount_usd
 FROM transactions t
 WHERE t.owner_id = $ownerId
 AND t.debit_date BETWEEN $fromDate AND $toDate

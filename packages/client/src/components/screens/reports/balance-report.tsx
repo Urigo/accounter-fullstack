@@ -30,7 +30,7 @@ import { ExtendedTransactionsCard } from './extended-transactions.js';
   query BalanceReportScreen($fromDate: TimelessDate!, $toDate: TimelessDate!, $ownerId: UUID) {
     transactionsForBalanceReport(fromDate: $fromDate, toDate: $toDate, ownerId: $ownerId) {
       id
-      amount {
+      amountUsd {
         formatted
         raw
       }
@@ -190,12 +190,12 @@ export const BalanceReport = (): ReactElement => {
         });
       }
       const period = periods.get(key)!;
-      if (txn.amount.raw > 0) {
-        period.income += txn.amount.raw;
+      if (txn.amountUsd.raw > 0) {
+        period.income += txn.amountUsd.raw;
       } else {
-        period.expense += txn.amount.raw;
+        period.expense += txn.amountUsd.raw;
       }
-      period.delta += txn.amount.raw;
+      period.delta += txn.amountUsd.raw;
       period.transactions.push(txn);
     });
     let cumulativeBalance = 0;
@@ -208,7 +208,9 @@ export const BalanceReport = (): ReactElement => {
           income: value.income,
           expense: value.expense,
           balance: isCumulative ? cumulativeBalance : value.delta,
-          transactions: value.transactions,
+          transactions: value.transactions.sort(
+            (t1, t2) => Math.abs(t2.amountUsd.raw) - Math.abs(t1.amountUsd.raw),
+          ),
         };
       });
   }, [
