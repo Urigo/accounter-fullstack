@@ -8296,6 +8296,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/pegjs@npm:^0.10.0":
+  version: 0.10.6
+  resolution: "@types/pegjs@npm:0.10.6"
+  checksum: 10c0/ee4a31cf07679ae5422fec95e499ad059483a9ab2815af1ada0ee858a00af6c7e6579a8e172810c1c9db04005941bef96d0dd2c28648769211f57df330f9c30f
+  languageName: node
+  linkType: hard
+
 "@types/pg@npm:8.11.11, @types/pg@npm:^8.10.7":
   version: 8.11.11
   resolution: "@types/pg@npm:8.11.11"
@@ -8817,7 +8824,7 @@ __metadata:
     husky: "npm:9.1.7"
     lint-staged: "npm:15.5.0"
     prettier: "npm:3.5.3"
-    prettier-plugin-sql: "npm:0.18.1"
+    prettier-plugin-sql: "npm:0.19.0"
     rimraf: "npm:6.0.1"
     ts-node: "npm:10.9.2"
     tsx: "npm:4.19.3"
@@ -15012,7 +15019,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsox@npm:^1.2.119":
+"jsox@npm:^1.2.121":
   version: 1.2.121
   resolution: "jsox@npm:1.2.121"
   bin:
@@ -16814,12 +16821,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-sql-parser@npm:^4.12.0":
-  version: 4.18.0
-  resolution: "node-sql-parser@npm:4.18.0"
+"node-sql-parser@npm:^5.3.8":
+  version: 5.3.8
+  resolution: "node-sql-parser@npm:5.3.8"
   dependencies:
+    "@types/pegjs": "npm:^0.10.0"
     big-integer: "npm:^1.6.48"
-  checksum: 10c0/0dd428f579326c802219acfc2fbbde2bbf775b302f02601861c8ec0df0df433a332e5d022eee882523475f81ce9681692eca982751577d452e1105551f2aa734
+  checksum: 10c0/6eea30b0687088396441f8025eedbb9d95a5e5f84a0fb6596bc99eec998a3387c79ee806fbbd152439e47d8b04d20e06b0b06e056798b48194b67b3b73ed010d
   languageName: node
   linkType: hard
 
@@ -18086,17 +18094,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-sql@npm:0.18.1":
-  version: 0.18.1
-  resolution: "prettier-plugin-sql@npm:0.18.1"
+"prettier-plugin-sql@npm:0.19.0":
+  version: 0.19.0
+  resolution: "prettier-plugin-sql@npm:0.19.0"
   dependencies:
-    jsox: "npm:^1.2.119"
-    node-sql-parser: "npm:^4.12.0"
-    sql-formatter: "npm:^15.0.2"
-    tslib: "npm:^2.6.2"
+    jsox: "npm:^1.2.121"
+    node-sql-parser: "npm:^5.3.8"
+    sql-formatter: "npm:^15.5.2"
+    tslib: "npm:^2.8.1"
   peerDependencies:
     prettier: ^3.0.3
-  checksum: 10c0/876c36f5de041bf21142d8fa451f962e0693bced41aeda113edddb0d44b54f6c32eaff0e2043004522adbb775bb249f84b72ee380a04c8c5a0097f4ce98685aa
+  checksum: 10c0/69f99287b196fbc385b4616eae5c0a2971a1e95387c0e3d7ae902a6b75ae293aefc29c228138448c9d3499c1307a32ca51b6fccf5a8186e2e1396b412da640c2
   languageName: node
   linkType: hard
 
@@ -19996,7 +20004,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sql-formatter@npm:^15.0.2":
+"sql-formatter@npm:^15.5.2":
   version: 15.5.2
   resolution: "sql-formatter@npm:15.5.2"
   dependencies:
