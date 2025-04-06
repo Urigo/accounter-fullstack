@@ -66,7 +66,7 @@ __metadata:
     pg: "npm:8.14.1"
     rimraf: "npm:6.0.1"
     tsup: "npm:8.4.0"
-    typescript: "npm:5.8.2"
+    typescript: "npm:5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -138,7 +138,7 @@ __metadata:
     tailwind-merge: "npm:3.1.0"
     tailwindcss: "npm:4.1.1"
     tailwindcss-animate: "npm:1.0.7"
-    typescript: "npm:5.8.2"
+    typescript: "npm:5.8.3"
     urql: "npm:4.2.2"
     vite: "npm:6.2.5"
     zod: "npm:3.24.2"
@@ -250,7 +250,7 @@ __metadata:
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.9"
     puppeteer: "npm:24.6.0"
-    typescript: "npm:5.8.2"
+    typescript: "npm:5.8.3"
     uuid: "npm:11.1.0"
   languageName: unknown
   linkType: soft
@@ -317,7 +317,7 @@ __metadata:
     rimraf: "npm:6.0.1"
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.13"
-    typescript: "npm:5.8.2"
+    typescript: "npm:5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -8821,7 +8821,7 @@ __metadata:
     rimraf: "npm:6.0.1"
     ts-node: "npm:10.9.2"
     tsx: "npm:4.19.3"
-    typescript: "npm:5.8.2"
+    typescript: "npm:5.8.3"
     vite-tsconfig-paths: "npm:5.1.4"
     vitest: "npm:3.1.1"
   languageName: unknown
@@ -21208,7 +21208,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.8.2, typescript@npm:^5, typescript@npm:^5.4.2":
+"typescript@npm:5.8.3":
+  version: 5.8.3
+  resolution: "typescript@npm:5.8.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5f8bb01196e542e64d44db3d16ee0e4063ce4f3e3966df6005f2588e86d91c03e1fb131c2581baf0fb65ee79669eea6e161cd448178986587e9f6844446dbb48
+  languageName: node
+  linkType: hard
+
+"typescript@npm:^5, typescript@npm:^5.4.2":
   version: 5.8.2
   resolution: "typescript@npm:5.8.2"
   bin:
@@ -21218,7 +21228,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>":
+  version: 5.8.3
+  resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.2#optional!builtin<compat/typescript>":
   version: 5.8.2
   resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
   bin:
