@@ -328,7 +328,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
         {animation > 0 && selectedValues.length > 0 && (
           <WandSparkles
             className={cn(
-              'cursor-pointer my-2 text-gray-950 bg-white w-3 h-3',
+              'cursor-pointer my-2 text-gray-950 bg-white w-5 h-5',
               isAnimating ? '' : 'text-gray-500',
             )}
             onClick={() => setIsAnimating(!isAnimating)}
