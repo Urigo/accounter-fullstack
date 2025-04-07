@@ -54,7 +54,7 @@ export async function validateDocumentAllocation(
     const docYear = document.date.getFullYear();
 
     // set amount to local currency
-    let amount = Math.abs(document.total_amount);
+    let amount = Math.abs(document.total_amount) - Math.abs(document.vat_amount);
     if (document.currency_code !== context.adminContext.defaultLocalCurrency) {
       const exchangeRate = await context.injector
         .get(ExchangeProvider)
