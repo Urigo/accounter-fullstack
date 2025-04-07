@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { UUID_REGEX } from '@shared/constants';
 import { Resolvers } from '@shared/gql-types';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
@@ -296,7 +296,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       __,
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
-      const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
+      const transactionsPromise = injector.get(TransactionsNewProvider).getTransactionsByFilters({
         ownerIDs: [defaultAdminBusinessId],
       });
       const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
@@ -382,7 +382,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       Array.from(businessTransactions.entries())
         .map(([businessId, transactionIds]) =>
           transactionIds.map(transactionId =>
-            injector.get(TransactionsProvider).updateTransaction({
+            injector.get(TransactionsNewProvider).updateTransaction({
               businessId,
               transactionId,
             }),

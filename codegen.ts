@@ -78,9 +78,9 @@ const config: CodegenConfig = {
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
-          CommonTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          CommonTransaction: 'string',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
-          ConversionTransaction: '@modules/transactions/types.js#IGetTransactionsByIdsResult',
+          ConversionTransaction: 'string',
           CorporateTax: '@modules/corporate-taxes/types.js#IGetCorporateTaxesByCorporateIdsResult',
           CorporateTaxRulingComplianceReport:
             '@shared/types#CorporateTaxRulingComplianceReportProto',

@@ -7,7 +7,7 @@ import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/help
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
@@ -106,7 +106,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       const chargeIds = new Set<string>();
       // get by transactions
       const getByTransactionsPromise = injector
-        .get(TransactionsProvider)
+        .get(TransactionsNewProvider)
         .getTransactionsByMissingRequiredInfo()
         .then(transactions => {
           transactions.map(transaction => {

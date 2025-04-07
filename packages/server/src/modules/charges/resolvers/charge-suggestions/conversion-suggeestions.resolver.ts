@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { FeeTransactionsProvider } from '@modules/transactions/providers/fee-transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
 import { Suggestion } from './charge-suggestions.resolver.js';
@@ -11,14 +12,18 @@ export const missingConversionInfoSuggestions: ResolverFn<
   object
 > = async (DbCharge, _, { injector }) => {
   const transactions = await injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+    .get(TransactionsNewProvider)
+    .transactionsByChargeIDLoader.load(DbCharge.id);
 
   let fromCurrency: string | undefined;
   let toCurrency: string | undefined;
 
   for (const transaction of transactions) {
-    if (transaction.is_fee) continue;
+    const isFee = await injector
+      .get(FeeTransactionsProvider)
+      .getFeeTransactionByIdLoader.load(transaction.id)
+      .then(Boolean);
+    if (isFee) continue;
     const amount = formatAmount(transaction.amount);
     if (amount > 0) {
       if (toCurrency) {

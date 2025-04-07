@@ -3,16 +3,14 @@ import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
-import type { Resolvers } from '@shared/gql-types';
+import type { Currency, Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
+import { IUpdateTransactionParams } from '../__generated__/transactions-new.types.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
-import { TransactionsProvider } from '../providers/transactions.provider.js';
-import type {
-  IGetTransactionsByIdsResult,
-  IUpdateTransactionParams,
-  TransactionsModule,
-} from '../types.js';
+import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
+import { TransactionsSourceProvider } from '../providers/transactions-source.provider.js';
+import type { TransactionsModule } from '../types.js';
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
@@ -24,8 +22,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       }
 
       const dbTransactions = await injector
-        .get(TransactionsProvider)
-        .getTransactionByIdLoader.loadMany(transactionIDs);
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.loadMany(transactionIDs);
       if (!dbTransactions) {
         if (transactionIDs.length === 1) {
           throw new GraphQLError(`Transaction ID="${transactionIDs[0]}" not found`);
@@ -34,16 +32,15 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         }
       }
 
-      const transactions = transactionIDs.map(id => {
+      transactionIDs.map(id => {
         const transaction = dbTransactions.find(
           transaction => transaction && 'id' in transaction && transaction.id === id,
         );
         if (!transaction) {
           throw new GraphQLError(`Transaction ID="${id}" not found`);
         }
-        return transaction as IGetTransactionsByIdsResult;
       });
-      return transactions;
+      return transactionIDs;
     },
   },
   Mutation: {
@@ -64,8 +61,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const emptyChargePromise = async () => {
           // case unlinked from charge
           const transaction = await injector
-            .get(TransactionsProvider)
-            .getTransactionByIdLoader.load(transactionId);
+            .get(TransactionsNewProvider)
+            .transactionByIdLoader.load(transactionId);
           if (!transaction) {
             throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
           }
@@ -145,20 +142,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           debitDate: fields.effectiveDate ?? null,
         };
 
-        injector.get(TransactionsProvider).getTransactionByIdLoader.clear(transactionId);
         const res = await injector
-          .get(TransactionsProvider)
+          .get(TransactionsNewProvider)
           .updateTransaction({ ...adjustedFields });
-        const transaction = await injector
-          .get(TransactionsProvider)
-          .getTransactionByIdLoader.load(res[0].id);
-        if (!transaction) {
-          throw new GraphQLError(`Transaction ID="${res[0].id}" not found`);
+        if (!res[0]?.id) {
+          throw new GraphQLError('Transaction update failed');
         }
 
         await postUpdateActions();
 
-        return transaction as IGetTransactionsByIdsResult;
+        return res[0].id;
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
@@ -172,11 +165,21 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
   },
   UpdateTransactionResult: {
-    __resolveType: (obj, _context, _info) => {
-      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
-      return 'type' in obj && obj.type === 'CONVERSION'
-        ? 'ConversionTransaction'
-        : 'CommonTransaction';
+    __resolveType: async (raw, { injector }, _info) => {
+      if (typeof raw === 'string') {
+        const transaction = await injector
+          .get(TransactionsNewProvider)
+          .transactionByIdLoader.load(raw);
+
+        const charge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(transaction.charge_id);
+        return charge.type === 'CONVERSION' ? 'ConversionTransaction' : 'CommonTransaction';
+      }
+      if (typeof raw === 'object' && '__typename' in raw && raw.__typename === 'CommonError') {
+        return 'CommonError';
+      }
+      throw new GraphQLError('Unexpected type for UpdateTransactionResult');
     },
   },
   CommonCharge: commonChargeFields,
@@ -190,34 +193,83 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   BankDepositCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   ConversionTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.charge_type === 'CONVERSION',
+    __isTypeOf: async (transactionId, { injector }) => {
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
+
+      const charge = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(transaction.charge_id);
+      return charge.type === 'CONVERSION';
+    },
     ...commonTransactionFields,
-    effectiveDate: DbTransaction => {
-      const date = effectiveDateSupplement(DbTransaction);
+    effectiveDate: async (transactionId, __dirname, { injector }) => {
+      const [sourceInfo, transaction] = await Promise.all([
+        injector.get(TransactionsSourceProvider).transactionSourceByIdLoader.load(transactionId),
+        injector.get(TransactionsNewProvider).transactionByIdLoader.load(transactionId),
+      ]);
+
+      const date = effectiveDateSupplement({
+        ...sourceInfo,
+        ...transaction,
+        currency: transaction.currency as Currency,
+      });
       if (!date) {
-        console.error(`Conversion transaction ID="${DbTransaction.id}" has no effective date`);
+        console.error(`Conversion transaction ID="${transactionId}" has no effective date`);
         throw new GraphQLError('Conversion transaction must have effective date');
       }
       return date;
     },
-    type: DbTransaction => (Number(DbTransaction.amount) > 0 ? 'QUOTE' : 'BASE'),
-    bankRate: DbTransaction => DbTransaction.currency_rate,
+    type: async (transactionId, __dirname, { injector }) => {
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
+      return Number(transaction.amount) > 0 ? 'QUOTE' : 'BASE';
+    },
+    bankRate: async (transactionId, __dirname, { injector }) => {
+      const transactionSource = await injector
+        .get(TransactionsSourceProvider)
+        .transactionSourceByIdLoader.load(transactionId);
+
+      return transactionSource.currency_rate;
+    },
     officialRateToLocal: async (
-      DbTransaction,
+      transactionId,
       _,
       { injector, adminContext: { defaultLocalCurrency } },
     ) => {
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
+
       return injector
         .get(ExchangeProvider)
         .getExchangeRates(
           defaultLocalCurrency,
-          formatCurrency(DbTransaction.currency),
-          DbTransaction.event_date,
+          formatCurrency(transaction.currency),
+          transaction.event_date,
         );
     },
   },
   CommonTransaction: {
-    __isTypeOf: DbTransaction => DbTransaction.charge_type !== 'CONVERSION',
+    __isTypeOf: async (transactionId, { injector }) => {
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
+
+      const charge = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(transaction.charge_id);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${transaction.charge_id}" not found`);
+      }
+      if (charge instanceof GraphQLError) {
+        console.error(charge);
+        throw new GraphQLError(`Charge ID="${transaction.charge_id}" not found`);
+      }
+      return charge.type !== 'CONVERSION';
+    },
     ...commonTransactionFields,
   },
 };

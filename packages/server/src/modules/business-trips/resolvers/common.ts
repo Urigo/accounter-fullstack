@@ -3,11 +3,18 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
+import {
+  getTransactionDebitDate,
+  getValueDate,
+} from '@modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { Currency } from '@shared/enums';
-import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
+import {
+  formatCurrency,
+  formatFinancialAmount,
+  optionalDateToTimelessDateString,
+} from '@shared/helpers';
 import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
@@ -39,8 +46,8 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       }
 
       const transactionsPromise = injector
-        .get(TransactionsProvider)
-        .getTransactionByIdLoader.loadMany(DbTripExpense.transaction_ids);
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.loadMany(DbTripExpense.transaction_ids);
 
       const [transactions] = await Promise.all([transactionsPromise]);
 
@@ -55,8 +62,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
           if (!transaction || transaction instanceof Error) {
             return;
           }
-          const date =
-            transaction.debit_timestamp || transaction.debit_date || transaction.event_date;
+          const date = await getTransactionDebitDate(transaction, injector);
 
           const exchangeRate = await injector
             .get(ExchangeProvider)
@@ -105,8 +111,8 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       .get(BusinessTripExpensesTransactionsMatchProvider)
       .getBusinessTripsExpenseMatchesByExpenseIdLoader.load(DbTripExpense.id);
     const transactionsPromise = injector
-      .get(TransactionsProvider)
-      .getTransactionByIdLoader.loadMany(DbTripExpense.transaction_ids)
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.loadMany(DbTripExpense.transaction_ids)
       .then(
         res =>
           res.filter(transaction => {
@@ -131,7 +137,8 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         if (!match) {
           return;
         }
-        const { currency, valueDate } = validateTransactionBasicVariables(transaction);
+        const currency = formatCurrency(transaction.currency);
+        const valueDate = await getValueDate(transaction, injector);
         const exchangeRate = await injector
           .get(ExchangeProvider)
           .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, valueDate);
@@ -156,20 +163,8 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
             return res;
           })
       : null,
-  transactions: async (DbTripTransaction, _, { injector }) =>
-    DbTripTransaction.transaction_ids?.length
-      ? injector
-          .get(TransactionsProvider)
-          .getTransactionByIdLoader.loadMany(DbTripTransaction.transaction_ids)
-          .then(res => {
-            if (!res) {
-              throw new GraphQLError(
-                `Some transaction of business trip transaction id ${DbTripTransaction.id} were not found`,
-              );
-            }
-            return res as IGetTransactionsByIdsResult[];
-          })
-      : Promise.resolve(null),
+  transactions: DbTripTransaction =>
+    DbTripTransaction.transaction_ids?.length ? DbTripTransaction.transaction_ids : null,
   charges: async (DbTripTransaction, _, { injector }) => {
     if (!DbTripTransaction.charge_ids?.length) {
       return null;

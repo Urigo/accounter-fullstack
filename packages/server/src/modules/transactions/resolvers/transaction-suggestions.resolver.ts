@@ -3,6 +3,9 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
+import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
+import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
+import { TransactionsSourceProvider } from '../providers/transactions-source.provider.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
@@ -27,7 +30,7 @@ function sortPhrasesByPriority(
 }
 
 const missingInfoSuggestions = async (
-  DbTransaction: ResolversParentTypes['CommonTransaction'],
+  transactionId: ResolversParentTypes['CommonTransaction'],
   _: object,
   { injector, adminContext }: GraphQLModules.Context,
   __: GraphQLResolveInfo,
@@ -39,12 +42,24 @@ const missingInfoSuggestions = async (
     etanaBusinessId,
     isracardBusinessId,
   } = adminContext.financialAccounts;
-  if (DbTransaction.business_id) {
+
+  const transaction = await injector
+    .get(TransactionsNewProvider)
+    .transactionByIdLoader.load(transactionId);
+  const isFee = await injector
+    .get(FeeTransactionsProvider)
+    .getFeeTransactionByIdLoader.load(transactionId)
+    .then(res => !!res);
+  const sourceInfo = await injector
+    .get(TransactionsSourceProvider)
+    .transactionSourceByIdLoader.load(transactionId);
+
+  if (transaction.business_id) {
     return null;
   }
 
-  if (DbTransaction.is_fee) {
-    if (DbTransaction.source_description?.includes('Swift')) {
+  if (isFee) {
+    if (transaction.source_description?.includes('Swift')) {
       const { swiftBusinessId } = adminContext.financialAccounts;
       if (!swiftBusinessId) {
         throw new Error('Swift business is not set');
@@ -53,7 +68,7 @@ const missingInfoSuggestions = async (
         business: swiftBusinessId,
       };
     }
-    switch (DbTransaction.source_origin) {
+    switch (sourceInfo.source_origin) {
       case 'ETANA': {
         if (!etanaBusinessId) {
           throw new Error('Etana business is not set');
@@ -97,10 +112,10 @@ const missingInfoSuggestions = async (
     }
   }
 
-  if (DbTransaction.business_id) {
+  if (transaction.business_id) {
     const business = await injector
       .get(BusinessesProvider)
-      .getBusinessByIdLoader.load(DbTransaction.business_id);
+      .getBusinessByIdLoader.load(transaction.business_id);
 
     if (business?.suggestion_data) {
       return {
@@ -109,7 +124,7 @@ const missingInfoSuggestions = async (
     }
   }
 
-  const description = DbTransaction.source_description?.trim() ?? '';
+  const description = transaction.source_description?.trim() ?? '';
 
   const businesses = await injector
     .get(BusinessesProvider)
@@ -139,17 +154,17 @@ const missingInfoSuggestions = async (
     }
   }
 
-  switch (DbTransaction.source_origin) {
+  switch (sourceInfo.source_origin) {
     case 'ETANA': {
       if (!etanaBusinessId) {
         throw new Error('Etana business is not set');
       }
-      if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
+      if (isFee || /\bfee\b/.test(description.toLowerCase())) {
         return {
           business: etanaBusinessId,
         };
       }
-      const amount = formatAmount(DbTransaction.amount);
+      const amount = formatAmount(transaction.amount);
       if (poalimBusinessId && amount < 0) {
         return {
           business: poalimBusinessId,
@@ -166,12 +181,12 @@ const missingInfoSuggestions = async (
       if (!etherScanBusinessId) {
         throw new Error('EtherScan business is not set');
       }
-      if (DbTransaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
+      if (isFee || /\bfee\b/.test(description.toLowerCase())) {
         return {
           business: etherScanBusinessId,
         };
       }
-      const amount = formatAmount(DbTransaction.amount);
+      const amount = formatAmount(transaction.amount);
       if (krakenBusinessId && amount < 0) {
         return {
           business: krakenBusinessId,
@@ -189,7 +204,7 @@ const missingInfoSuggestions = async (
         throw new Error('Kraken business is not set');
       }
       if (
-        DbTransaction.is_fee ||
+        isFee ||
         /\bfee\b/.test(description.toLowerCase()) ||
         /\btrade\b/.test(description.toLowerCase())
       ) {
@@ -197,7 +212,7 @@ const missingInfoSuggestions = async (
           business: krakenBusinessId,
         };
       }
-      const amount = formatAmount(DbTransaction.amount);
+      const amount = formatAmount(transaction.amount);
       if (etanaBusinessId && amount < 0) {
         return {
           business: etanaBusinessId,
@@ -215,8 +230,8 @@ const missingInfoSuggestions = async (
   if (
     poalimBusinessId &&
     (description.includes('ע\' העברת מט"ח') ||
-      (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-      (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      (description.includes('העברת מט"ח') && Math.abs(formatAmount(transaction.amount)) < 400) ||
+      (description.includes('מטח') && Math.abs(formatAmount(transaction.amount)) < 400) ||
       description.includes('F.C.COM') ||
       description.includes('ע.מפעולות-ישיר') ||
       description.includes('ריבית חובה') ||
@@ -321,7 +336,7 @@ const missingInfoSuggestions = async (
     };
     return suggested;
   }
-  if (formatAmount(DbTransaction.amount) === -4329) {
+  if (formatAmount(transaction.amount) === -4329) {
     return {
       business: '8069311d-314e-4d1a-8f76-629757070ca0', //name: 'Avi Peretz',
     };
@@ -334,8 +349,8 @@ const missingInfoSuggestions = async (
   if (
     poalimBusinessId &&
     (description.includes('ע\' העברת מט"ח') ||
-      (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
-      (description.includes('מטח') && Math.abs(formatAmount(DbTransaction.amount)) < 400) ||
+      (description.includes('העברת מט"ח') && Math.abs(formatAmount(transaction.amount)) < 400) ||
+      (description.includes('מטח') && Math.abs(formatAmount(transaction.amount)) < 400) ||
       description.includes('F.C.COM') ||
       description.includes('ע.מפעולות-ישיר') ||
       description.includes('ריבית חובה') ||
@@ -392,14 +407,14 @@ const missingInfoSuggestions = async (
       business: 'dcb28428-6ba4-4ee3-94a9-ebd188c82822', // name: 'HSI Workplace Compliance Solutions, Inc'
     };
   }
-  if (formatAmount(DbTransaction.amount) === -12_000) {
+  if (formatAmount(transaction.amount) === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     return {
       business: 'd140fae3-f841-464c-84a7-c526c0123f36', //name: 'Saihajpreet Singh',
     };
   }
-  if (formatAmount(DbTransaction.amount) === -600) {
+  if (formatAmount(transaction.amount) === -600) {
     return {
       business: '02d467c9-0818-45e3-9a25-9f99d0101a9e', //name: 'ZAUM',
     };
@@ -466,7 +481,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
           });
           throw new GraphQLError('Error fetching similar transactions');
         });
-      return similarTransactions;
+      return similarTransactions.map(txn => txn.id);
     },
   },
   ConversionTransaction: {

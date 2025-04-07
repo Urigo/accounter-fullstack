@@ -187,7 +187,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       });
 
       return uncategorizedTransactions.map(({ transaction, matchInfo }) => ({
-        transaction,
+        transaction: transaction.id,
         categorizedAmount: formatFinancialAmount(matchInfo.amount, transaction.currency),
         errors: matchInfo.errors ?? [],
       }));

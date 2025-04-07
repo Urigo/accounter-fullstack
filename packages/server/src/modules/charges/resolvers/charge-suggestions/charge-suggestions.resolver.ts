@@ -1,7 +1,9 @@
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { IGetTransactionsSourceByIdsResult } from '@modules/transactions/__generated__/transactions-source.types.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsSourceProvider } from '@modules/transactions/providers/transactions-source.provider.js';
 import { UUID_REGEX } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type {
@@ -139,8 +141,8 @@ const missingInfoSuggestions: Resolver<
   }
 
   const transactions = await injector
-    .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+    .get(TransactionsNewProvider)
+    .transactionsByChargeIDLoader.load(DbCharge.id);
   const description = transactions.map(t => t.source_description).join(' ');
 
   for (const [phrase, suggestion] of Object.entries(suggestions)) {
@@ -161,12 +163,14 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
-    const sourceTransaction =
-      transactions.length === 0
-        ? 'Missing'
-        : transactions.length === 1
-          ? transactions[0].source_reference
-          : `['${transactions.map(t => t.source_reference).join("','")}']`;
+    let sourceTransaction = 'Missing';
+    if (transactions.length) {
+      const transactionSources = await injector
+        .get(TransactionsSourceProvider)
+        .transactionSourceByIdLoader.loadMany(transactions.map(t => t.source_id))
+        .then(res => res.filter(t => !(t instanceof Error)) as IGetTransactionsSourceByIdsResult[]);
+      sourceTransaction = `['${transactionSources.map(t => t.source_reference).join("','")}']`;
+    }
     return {
       tags: await injector
         .get(TagsProvider)
@@ -489,13 +493,20 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
+    const transactionSources = await injector
+      .get(TransactionsSourceProvider)
+      .transactionSourceByIdLoader.loadMany(transactions.map(t => t.source_id))
+      .then(res => res.filter(t => !(t instanceof Error)) as IGetTransactionsSourceByIdsResult[]);
+    const description = transactionSources.length
+      ? `['${transactionSources.map(t => t.source_reference).join("','")}']`
+      : 'Missing';
     //NOTE: multiple suggestions business
     return {
       tags: await injector
         .get(TagsProvider)
         .getTagByNameLoader.load('financial')
         .then(res => (res ? [res] : [])),
-      description: `Fees for bank_reference=${transactions[0].source_reference ?? 'Missing'}`,
+      description,
     };
   }
   if (description.includes('ריבית זכות')) {

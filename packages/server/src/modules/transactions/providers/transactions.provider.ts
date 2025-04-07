@@ -13,11 +13,6 @@ import type {
   IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
   IGetTransactionsByIdsResult,
-  IGetTransactionsByMissingRequiredInfoQuery,
-  IReplaceTransactionsChargeIdParams,
-  IReplaceTransactionsChargeIdQuery,
-  IUpdateTransactionParams,
-  IUpdateTransactionQuery,
 } from '../types.js';
 
 export type TransactionRequiredWrapper<
@@ -69,11 +64,6 @@ const getTransactionsByChargeIds = sql<IGetTransactionsByChargeIdsQuery>`
     WHERE charge_id IN $$chargeIds
     ORDER BY event_date DESC;`;
 
-const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequiredInfoQuery>`
-    SELECT *
-    FROM accounter_schema.transactions
-    WHERE business_id IS NULL;`;
-
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
     SELECT *
     FROM accounter_schema.extended_transactions
@@ -86,41 +76,6 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
         (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
       ) AND owner_id = $ownerId;`;
-
-const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
-  UPDATE accounter_schema.transactions
-  SET charge_id = $assertChargeID
-  WHERE charge_id = $replaceChargeID
-  RETURNING id;
-`;
-
-const updateTransaction = sql<IUpdateTransactionQuery>`
-  UPDATE accounter_schema.transactions
-  SET
-    account_id = COALESCE(
-      $accountId,
-      account_id,
-      NULL
-    ),
-    charge_id = COALESCE(
-      $chargeId,
-      charge_id,
-      NULL
-    ),
-    debit_date_override = COALESCE(
-      $debitDate,
-      debit_date_override,
-      NULL
-    ),
-    business_id = COALESCE(
-      $businessId,
-      business_id,
-      NULL
-    )
-  WHERE
-    id = $transactionId
-  RETURNING *;
-`;
 
 type IGetAdjustedTransactionsByFiltersParams = Optional<
   Omit<
@@ -170,9 +125,15 @@ export class TransactionsProvider {
       },
       this.dbProvider,
     );
-    return ids.map(id =>
-      (transactions as IGetTransactionsByIdsResult[]).find(charge => charge.id === id),
-    );
+    return ids.map(id => {
+      const transaction = (transactions as IGetTransactionsByIdsResult[]).find(
+        charge => charge.id === id,
+      );
+      if (!transaction) {
+        return new Error(`Transaction with ID "${id}" not found`);
+      }
+      return transaction;
+    });
   }
 
   public getTransactionByIdLoader = new DataLoader(
@@ -201,10 +162,6 @@ export class TransactionsProvider {
     },
   );
 
-  public async getTransactionsByMissingRequiredInfo() {
-    return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider);
-  }
-
   public async getSimilarTransactions(params: Omit<IGetSimilarTransactionsParams, 'ownerId'>) {
     try {
       return getSimilarTransactions.run(
@@ -215,14 +172,6 @@ export class TransactionsProvider {
       console.error('Error fetching similar transactions:', error);
       throw new Error('Failed to fetch similar transactions');
     }
-  }
-
-  public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
-    return replaceTransactionsChargeId.run(params, this.dbProvider);
-  }
-
-  public updateTransaction(params: IUpdateTransactionParams) {
-    return updateTransaction.run(params, this.dbProvider);
   }
 
   public getTransactionsByFilters(params: IGetAdjustedTransactionsByFiltersParams) {

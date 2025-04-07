@@ -2,8 +2,8 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
@@ -11,8 +11,6 @@ import type {
   IDeleteBusinessTripExpenseQuery,
   IGetBusinessTripsExpensesByBusinessTripIdsQuery,
   IGetBusinessTripsExpensesByIdsQuery,
-  IGetUncategorizedTransactionsByBusinessTripIdParams,
-  IGetUncategorizedTransactionsByBusinessTripIdQuery,
   IInsertBusinessTripExpenseParams,
   IInsertBusinessTripExpenseQuery,
   IUpdateBusinessTripExpenseParams,
@@ -62,18 +60,6 @@ const deleteBusinessTripExpense = sql<IDeleteBusinessTripExpenseQuery>`
   RETURNING id;
 `;
 
-const getUncategorizedTransactionsByBusinessTripId = sql<IGetUncategorizedTransactionsByBusinessTripIdQuery>`
-  SELECT t.id
-  FROM accounter_schema.transactions t
-  LEFT JOIN accounter_schema.business_trip_charges btc
-    ON t.charge_id = btc.charge_id
-      AND btc.business_trip_id = $businessTripId
-  LEFT JOIN accounter_schema.extended_business_trip_transactions btt
-    ON t.id = ANY(btt.transaction_ids)
-    AND btt.business_trip_id = $businessTripId 
-  WHERE btc.business_trip_id IS NOT NULL
-    AND btt.id IS NULL;`;
-
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -91,7 +77,7 @@ export class BusinessTripExpensesProvider {
     private travelAndSubsistenceExpensesProvider: BusinessTripTravelAndSubsistenceExpensesProvider,
     private otherExpensesProvider: BusinessTripOtherExpensesProvider,
     private carRentalExpensesProvider: BusinessTripCarRentalExpensesProvider,
-    private transactionsProvider: TransactionsProvider,
+    private transactionsProvider: TransactionsNewProvider,
   ) {}
 
   private async batchBusinessTripsExpensesByBusinessTripIds(businessTripIds: readonly string[]) {
@@ -241,22 +227,10 @@ export class BusinessTripExpensesProvider {
     };
   }
 
-  public async getUncategorizedTransactionsByBusinessTripId(
-    params: IGetUncategorizedTransactionsByBusinessTripIdParams,
-  ) {
-    const transactionIDs = await getUncategorizedTransactionsByBusinessTripId.run(
-      params,
-      this.dbProvider,
-    );
-    return this.transactionsProvider.getTransactionByIdLoader.loadMany(
-      transactionIDs.map(t => t.id),
-    );
-  }
-
   public async getTransactionsByBusinessTripId(businessTripId: string) {
     const chargeIds =
       await this.businessTripsProvider.getChargeIdsByBusinessTripIdLoader.load(businessTripId);
-    return this.transactionsProvider.getTransactionsByChargeIDLoader
+    return this.transactionsProvider.transactionsByChargeIDLoader
       .loadMany(chargeIds)
       .then(
         res => res.filter(r => !(r instanceof Error)).flat() as IGetTransactionsByChargeIdsResult[],

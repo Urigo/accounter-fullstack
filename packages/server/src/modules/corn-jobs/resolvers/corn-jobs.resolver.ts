@@ -2,7 +2,6 @@ import { GraphQLError } from 'graphql';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
 import type { CornJobsModule } from '../types.js';
@@ -180,17 +179,13 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
-        const updatedTransactionsId = await injector
+        const res = await injector
           .get(CornJobsProvider)
           .flagForeignFeeTransactions({ ownerId: defaultAdminBusinessId });
-        const res = await injector
-          .get(TransactionsProvider)
-          .getTransactionByIdLoader.loadMany(updatedTransactionsId.map(({ id }) => id));
+        const updatedTransactionsIds = res.map(({ id }) => id);
         return {
           success: true,
-          transactions: res.filter(
-            transaction => transaction,
-          ) as IGetTransactionsByChargeIdsResult[],
+          transactions: updatedTransactionsIds,
         };
       } catch (e) {
         return {

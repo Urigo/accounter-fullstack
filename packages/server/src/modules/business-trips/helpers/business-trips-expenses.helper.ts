@@ -6,7 +6,7 @@ import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
 import type { IGetExpensesByChargeIdsResult } from '@modules/misc-expenses/types.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import type {
   AddBusinessTripTravelAndSubsistenceExpenseInput,
   BusinessTripExpenseCategories,

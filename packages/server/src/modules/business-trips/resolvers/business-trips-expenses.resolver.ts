@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import {
   coreExpenseUpdate,
@@ -42,8 +42,8 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
 
         if (!amount) {
           const transaction = await injector
-            .get(TransactionsProvider)
-            .getTransactionByIdLoader.load(transactionId);
+            .get(TransactionsNewProvider)
+            .transactionByIdLoader.load(transactionId);
           if (transaction?.amount) {
             amount = Number(transaction.amount);
           }
