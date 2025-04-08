@@ -31,6 +31,12 @@ SET is_fee = et.is_fee,
 FROM accounter_schema.extended_transactions et
 WHERE et.id = t.id;
 
+alter table accounter_schema.transactions
+    alter column source_reference set not null;
+
+alter table accounter_schema.transactions
+    alter column source_origin set not null;
+
 create or replace function accounter_schema.insert_creditcard_transaction_handler() returns trigger
     language plpgsql
 as
