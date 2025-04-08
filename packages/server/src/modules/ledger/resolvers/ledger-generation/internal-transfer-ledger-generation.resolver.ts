@@ -1,7 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
@@ -53,8 +53,8 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
     // Get all transactions
     const transactions = await injector
-      .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .get(TransactionsNewProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
@@ -118,7 +118,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
-          reference: transaction.source_id,
+          reference: transaction.source_reference,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

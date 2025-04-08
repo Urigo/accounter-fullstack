@@ -17,9 +17,9 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
-        const candidates = (await injector.get(CornJobsProvider).getReferenceMergeCandidates({
+        const candidates = await injector.get(CornJobsProvider).getReferenceMergeCandidates({
           ownerId: defaultAdminBusinessId,
-        })) as IGetTransactionsByChargeIdsResult[];
+        });
 
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
         const charges = await injector

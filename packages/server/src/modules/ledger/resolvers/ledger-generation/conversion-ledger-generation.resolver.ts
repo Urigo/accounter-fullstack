@@ -1,6 +1,6 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import {
   Currency,
   Maybe,
@@ -56,8 +56,8 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
     // Get all transactions
     const transactions = await injector
-      .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .get(TransactionsNewProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
@@ -116,7 +116,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyDebitAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
-          reference: transaction.source_id,
+          reference: transaction.source_reference,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
@@ -199,7 +199,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
-              reference: transaction.source_id,
+              reference: transaction.source_reference,
               isCreditorCounterparty,
               ownerId: charge.owner_id,
               currencyRate: transaction.currency_rate
@@ -227,7 +227,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
               debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
               localCurrencyDebitAmount1: Math.abs(amount),
               description: transaction.source_description ?? undefined,
-              reference: transaction.source_id,
+              reference: transaction.source_reference,
               isCreditorCounterparty: !isCreditorCounterparty,
               ownerId: charge.owner_id,
               currencyRate: transaction.currency_rate

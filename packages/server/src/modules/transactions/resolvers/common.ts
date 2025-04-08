@@ -1,22 +1,15 @@
-import { Currency, TransactionDirection } from '@shared/gql-types';
+import { TransactionDirection } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
-import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
 import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '../providers/transactions-source.provider.js';
 import type { TransactionsModule } from '../types.js';
 
 export const commonTransactionFields: TransactionsModule.TransactionResolvers = {
   id: transactionId => transactionId,
-  referenceId: async (transactionId, __dirname, { injector }) =>
-    injector
-      .get(TransactionsSourceProvider)
-      .transactionSourceByIdLoader.load(transactionId)
-      .then(res => res.source_id ?? 'Missing'),
   referenceKey: async (transactionId, __dirname, { injector }) =>
     injector
-      .get(TransactionsSourceProvider)
-      .transactionSourceByIdLoader.load(transactionId)
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.load(transactionId)
       .then(res => res.source_reference),
   eventDate: async (transactionId, __dirname, { injector }) =>
     injector
@@ -24,39 +17,25 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
       .transactionByIdLoader.load(transactionId)
       .then(res => dateToTimelessDateString(res.event_date)),
   effectiveDate: async (transactionId, __dirname, { injector }) => {
-    const [sourceInfo, transaction] = await Promise.all([
-      injector.get(TransactionsSourceProvider).transactionSourceByIdLoader.load(transactionId),
-      injector.get(TransactionsNewProvider).transactionByIdLoader.load(transactionId),
-    ]);
-    return effectiveDateSupplement({
-      ...sourceInfo,
-      ...transaction,
-      currency: transaction.currency as Currency,
-    });
+    const transaction = await injector
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.load(transactionId);
+    return effectiveDateSupplement(transaction);
   },
   sourceEffectiveDate: async (transactionId, __dirname, { injector }) => {
-    const [sourceInfo, transaction] = await Promise.all([
-      injector.get(TransactionsSourceProvider).transactionSourceByIdLoader.load(transactionId),
-      injector.get(TransactionsNewProvider).transactionByIdLoader.load(transactionId),
-    ]);
+    const transaction = await injector
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.load(transactionId);
     const date = transaction.debit_date ? dateToTimelessDateString(transaction.debit_date) : null;
-    if (
-      date &&
-      date !==
-        effectiveDateSupplement({
-          ...sourceInfo,
-          ...transaction,
-          currency: transaction.currency as Currency,
-        })
-    ) {
+    if (date && date !== effectiveDateSupplement(transaction)) {
       return date;
     }
     return null;
   },
   exactEffectiveDate: async (transactionId, __dirname, { injector }) =>
     injector
-      .get(TransactionsSourceProvider)
-      .transactionSourceByIdLoader.load(transactionId)
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.load(transactionId)
       .then(res => res.debit_timestamp),
   direction: async (transactionId, __dirname, { injector }) =>
     injector
@@ -92,9 +71,9 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
       .then(res => res.updated_at),
   isFee: async (transactionId, __dirname, { injector }) =>
     injector
-      .get(FeeTransactionsProvider)
-      .getFeeTransactionByIdLoader.load(transactionId)
-      .then(res => !!res),
+      .get(TransactionsNewProvider)
+      .transactionByIdLoader.load(transactionId)
+      .then(res => res.is_fee),
   chargeId: async (transactionId, __dirname, { injector }) =>
     injector
       .get(TransactionsNewProvider)

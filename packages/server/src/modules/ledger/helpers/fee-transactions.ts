@@ -1,6 +1,6 @@
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import type { LedgerProto } from '@shared/types';
 import {
   getFinancialAccountTaxCategoryId,
@@ -102,7 +102,7 @@ export async function getEntriesFromFeeTransaction(
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: transaction.source_description ?? undefined,
-    reference: transaction.source_id,
+    reference: transaction.source_reference,
     isCreditorCounterparty: isSupplementalFee ? isCreditorCounterparty : !isCreditorCounterparty,
     ownerId: charge.owner_id,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

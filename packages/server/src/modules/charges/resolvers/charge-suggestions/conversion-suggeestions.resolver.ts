@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { FeeTransactionsProvider } from '@modules/transactions/providers/fee-transactions.provider.js';
 import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
@@ -19,11 +18,7 @@ export const missingConversionInfoSuggestions: ResolverFn<
   let toCurrency: string | undefined;
 
   for (const transaction of transactions) {
-    const isFee = await injector
-      .get(FeeTransactionsProvider)
-      .getFeeTransactionByIdLoader.load(transaction.id)
-      .then(Boolean);
-    if (isFee) continue;
+    if (transaction.is_fee) continue;
     const amount = formatAmount(transaction.amount);
     if (amount > 0) {
       if (toCurrency) {

@@ -1,4 +1,4 @@
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import { splitFeeTransactions } from './fee-transactions.js';
 
 export function splitDividendTransactions(

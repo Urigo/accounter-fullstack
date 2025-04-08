@@ -62,7 +62,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
           if (!transaction || transaction instanceof Error) {
             return;
           }
-          const date = await getTransactionDebitDate(transaction, injector);
+          const date = getTransactionDebitDate(transaction);
 
           const exchangeRate = await injector
             .get(ExchangeProvider)
@@ -138,7 +138,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
           return;
         }
         const currency = formatCurrency(transaction.currency);
-        const valueDate = await getValueDate(transaction, injector);
+        const valueDate = getValueDate(transaction);
         const exchangeRate = await injector
           .get(ExchangeProvider)
           .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, valueDate);

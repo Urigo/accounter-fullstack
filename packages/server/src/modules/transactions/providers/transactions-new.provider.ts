@@ -5,6 +5,8 @@ import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import { Optional, TimelessDateString } from '@shared/types';
 import type {
+  IGetSimilarTransactionsParams,
+  IGetSimilarTransactionsQuery,
   IGetTransactionsByChargeIdsQuery,
   IGetTransactionsByFiltersParams,
   IGetTransactionsByFiltersQuery,
@@ -47,6 +49,21 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   ORDER BY event_date DESC;
 `;
 
+const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
+    SELECT t.*, c.owner_id
+    FROM accounter_schema.transactions t
+    LEFT JOIN accounter_schema.charges c
+      ON t.charge_id = c.id
+    WHERE (CASE WHEN $withMissingInfo IS TRUE THEN
+      business_id IS NULL
+   ELSE
+      TRUE
+   END)
+      AND (
+        (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
+        OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
+      ) AND c.owner_id = $ownerId;`;
+
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
   SET charge_id = $assertChargeID
@@ -75,6 +92,11 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
     business_id = COALESCE(
       $businessId,
       business_id,
+      NULL
+    ),
+    is_fee = COALESCE(
+      $isFee,
+      is_fee,
       NULL
     )
   WHERE
@@ -179,6 +201,16 @@ export class TransactionsNewProvider {
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
     return getTransactionsByFilters.run(fullParams, this.dbProvider);
+  }
+
+  public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
+    try {
+      return getSimilarTransactions.run(params, this.dbProvider);
+    } catch (error) {
+      const message = 'Failed to fetch similar transactions';
+      console.error(message, error);
+      throw new Error(message);
+    }
   }
 
   public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {

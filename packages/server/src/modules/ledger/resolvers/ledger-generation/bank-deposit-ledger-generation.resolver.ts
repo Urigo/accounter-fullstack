@@ -4,9 +4,9 @@ import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-c
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import type {
   Currency,
   Maybe,
@@ -59,8 +59,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     >();
 
     const transactionsPromise = injector
-      .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .get(TransactionsNewProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const bankDepositTransactionsPromise = injector
       .get(BankDepositTransactionsProvider)
@@ -168,7 +168,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyDebitAmount1: Math.abs(amount),
         description: transaction.source_description ?? undefined,
-        reference: transaction.source_id,
+        reference: transaction.source_reference,
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

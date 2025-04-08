@@ -3,10 +3,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
-import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
 import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '../providers/transactions-source.provider.js';
-import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
 type SuggestionData = {
@@ -46,19 +43,12 @@ const missingInfoSuggestions = async (
   const transaction = await injector
     .get(TransactionsNewProvider)
     .transactionByIdLoader.load(transactionId);
-  const isFee = await injector
-    .get(FeeTransactionsProvider)
-    .getFeeTransactionByIdLoader.load(transactionId)
-    .then(res => !!res);
-  const sourceInfo = await injector
-    .get(TransactionsSourceProvider)
-    .transactionSourceByIdLoader.load(transactionId);
 
   if (transaction.business_id) {
     return null;
   }
 
-  if (isFee) {
+  if (transaction.is_fee) {
     if (transaction.source_description?.includes('Swift')) {
       const { swiftBusinessId } = adminContext.financialAccounts;
       if (!swiftBusinessId) {
@@ -68,7 +58,7 @@ const missingInfoSuggestions = async (
         business: swiftBusinessId,
       };
     }
-    switch (sourceInfo.source_origin) {
+    switch (transaction.source_origin) {
       case 'ETANA': {
         if (!etanaBusinessId) {
           throw new Error('Etana business is not set');
@@ -154,12 +144,12 @@ const missingInfoSuggestions = async (
     }
   }
 
-  switch (sourceInfo.source_origin) {
+  switch (transaction.source_origin) {
     case 'ETANA': {
       if (!etanaBusinessId) {
         throw new Error('Etana business is not set');
       }
-      if (isFee || /\bfee\b/.test(description.toLowerCase())) {
+      if (transaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
         return {
           business: etanaBusinessId,
         };
@@ -181,7 +171,7 @@ const missingInfoSuggestions = async (
       if (!etherScanBusinessId) {
         throw new Error('EtherScan business is not set');
       }
-      if (isFee || /\bfee\b/.test(description.toLowerCase())) {
+      if (transaction.is_fee || /\bfee\b/.test(description.toLowerCase())) {
         return {
           business: etherScanBusinessId,
         };
@@ -204,7 +194,7 @@ const missingInfoSuggestions = async (
         throw new Error('Kraken business is not set');
       }
       if (
-        isFee ||
+        transaction.is_fee ||
         /\bfee\b/.test(description.toLowerCase()) ||
         /\btrade\b/.test(description.toLowerCase())
       ) {
@@ -448,14 +438,18 @@ function missingInfoSuggestionsWrapper(
 
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   Query: {
-    similarTransactions: async (_, { transactionId, withMissingInfo = false }, { injector }) => {
+    similarTransactions: async (
+      _,
+      { transactionId, withMissingInfo = false },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       if (!transactionId?.trim()) {
         throw new GraphQLError('Transaction ID is required');
       }
 
       const mainTransaction = await injector
-        .get(TransactionsProvider)
-        .getTransactionByIdLoader.load(transactionId)
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId)
         .catch(e => {
           console.error('Error fetching transaction', { transactionId, error: e });
           throw new GraphQLError('Error fetching transaction');
@@ -466,11 +460,12 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
       }
 
       const similarTransactions = await injector
-        .get(TransactionsProvider)
+        .get(TransactionsNewProvider)
         .getSimilarTransactions({
           details: mainTransaction.source_description,
           counterAccount: mainTransaction.counter_account,
           withMissingInfo,
+          ownerId: defaultAdminBusinessId,
         })
         .catch(e => {
           console.error('Error fetching similar transactions:', {

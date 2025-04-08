@@ -85,6 +85,7 @@ import migration_2025_03_24T18_35_56_add_to_context_ledger_lock2 from './actions
 import migration_2025_03_27T11_33_29_documents_allocation_numbers from './actions/2025-03-27T11-33-29.documents-allocation-numbers.js';
 import migration_2025_03_30T18_56_00_add_salary_tns_property from './actions/2025-03-30T18-56-00.add-salary-tns-property.js';
 import migration_2025_04_08T09_16_45_static_extend_transactions from './actions/2025-04-08T09-16-45.static-extend-transactions.js';
+import migration_2025_04_08T14_28_54_drop_extended_transactions_view from './actions/2025-04-08T14-28-54.drop-extended-transactions-view.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -177,5 +178,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_03_27T11_33_29_documents_allocation_numbers,
       migration_2025_03_30T18_56_00_add_salary_tns_property,
       migration_2025_04_08T09_16_45_static_extend_transactions,
+      migration_2025_04_08T14_28_54_drop_extended_transactions_view,
     ],
   });

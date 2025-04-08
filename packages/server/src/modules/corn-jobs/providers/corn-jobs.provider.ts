@@ -10,9 +10,9 @@ import type {
 
 const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
   SELECT t.*
-  FROM accounter_schema.extended_transactions t
+  FROM accounter_schema.transactions t
   LEFT JOIN (SELECT COUNT(et.*) AS counter, array_agg(DISTINCT et.charge_id) AS charge_ids, et.source_reference
-          FROM accounter_schema.extended_transactions et
+          FROM accounter_schema.transactions et
           LEFT JOIN accounter_schema.charges c
               ON c.id = et.charge_id
           WHERE c.owner_id = $ownerId
@@ -32,30 +32,32 @@ const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
   ORDER BY t.source_reference;`;
 
 const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
-  INSERT INTO accounter_schema.transactions_fees (id)
-  SELECT et.id
-  FROM accounter_schema.extended_transactions et
-          LEFT JOIN (SELECT count(et2.*)                      AS counter,
-                            array_agg(DISTINCT et2.charge_id) AS charge_ids,
-                            et2.source_reference
-                      FROM accounter_schema.extended_transactions et2
-                              LEFT JOIN accounter_schema.charges c
-                                        ON c.id = et2.charge_id
-                      WHERE c.owner_id = $ownerId
-                      GROUP BY source_reference) g
-                    ON g.source_reference = et.source_reference
-          LEFT JOIN accounter_schema.charges c
-                    ON c.id = et.charge_id
-          LEFT JOIN accounter_schema.transactions_fees f
-                    ON f.id = et.id
-  WHERE f.id IS NULL
-    AND c.owner_id = $ownerId
-    AND g.counter > 1
-    AND et.currency <> 'ILS'
-    AND et.amount <= 30
-    AND et.amount >= -30
-    AND et.source_description LIKE '%העברת מט%'
-  RETURNING id;`;
+  UPDATE accounter_schema.transactions t
+  SET is_fee = TRUE
+  FROM (SELECT t.id
+        FROM accounter_schema.transactions t
+                LEFT JOIN (SELECT count(t2.*)                      AS counter,
+                                  array_agg(DISTINCT t2.charge_id) AS charge_ids,
+                                  t2.source_reference
+                            FROM accounter_schema.transactions t2
+                                    LEFT JOIN accounter_schema.charges c2
+                                              ON c2.id = t2.charge_id
+                            WHERE c2.owner_id = $ownerId
+                            GROUP BY source_reference) g
+                          ON g.source_reference = t.source_reference
+                LEFT JOIN accounter_schema.charges c
+                          ON c.id = t.charge_id
+                LEFT JOIN accounter_schema.transactions_fees f
+                          ON f.id = t.id
+        WHERE f.id IS NULL
+          AND c.owner_id = $ownerId
+          AND g.counter > 1
+          AND t.currency <> 'ILS'
+          AND t.amount <= 30
+          AND t.amount >= -30
+          AND t.source_description LIKE '%העברת מט%') matches
+  WHERE t.id = matches.id
+  RETURNING t.id;`;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -71,4 +73,6 @@ export class CornJobsProvider {
   public async flagForeignFeeTransactions(params: IFlagForeignFeeTransactionsParams) {
     return flagForeignFeeTransactions.run(params, this.dbProvider);
   }
+
+  // TODO: update creditcard debit date according to bank payment date
 }

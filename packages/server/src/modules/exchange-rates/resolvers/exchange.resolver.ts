@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '@modules/transactions/providers/transactions-source.provider.js';
 import { Currency } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -69,21 +68,12 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!transactions) {
         throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
       }
-      const { baseTransaction, quoteTransaction } = await defineConversionBaseAndQuote(
-        transactions,
-        injector,
-      );
-
-      const [baseSourceInfo, quoteSourceInfo] = await injector
-        .get(TransactionsSourceProvider)
-        .transactionSourceByIdLoader.loadMany([baseTransaction.id, quoteTransaction.id]);
+      const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
       const quoteCurrency = formatCurrency(quoteTransaction.currency);
-      const baseDebitTimestamp =
-        baseSourceInfo instanceof Error ? undefined : baseSourceInfo.debit_timestamp;
-      const quoteDebitTimestamp =
-        quoteSourceInfo instanceof Error ? undefined : quoteSourceInfo.debit_timestamp;
+      const baseDebitTimestamp = baseTransaction.debit_timestamp;
+      const quoteDebitTimestamp = quoteTransaction.debit_timestamp;
       const date = baseDebitTimestamp || quoteDebitTimestamp || baseTransaction.debit_date;
 
       const rate = await injector
@@ -100,21 +90,15 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       const transactions = await injector
         .get(TransactionsNewProvider)
         .transactionsByChargeIDLoader.load(dbCharge.id);
-      const { baseTransaction, quoteTransaction } = await defineConversionBaseAndQuote(
-        transactions,
-        injector,
-      );
+      const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
       const quoteCurrency = formatCurrency(quoteTransaction.currency);
 
       let rate: number | undefined = undefined;
       for (const transaction of [baseTransaction, quoteTransaction]) {
-        const sourceInfo = await injector
-          .get(TransactionsSourceProvider)
-          .transactionSourceByIdLoader.load(transaction.id);
-        if (sourceInfo.currency_rate && sourceInfo.currency_rate !== '0') {
-          const transactionRate = Number(sourceInfo.currency_rate);
+        if (transaction.currency_rate && transaction.currency_rate !== '0') {
+          const transactionRate = Number(transaction.currency_rate);
           if (rate && rate !== transactionRate) {
             throw new GraphQLError(`Multiple rates found for charge ID="${dbCharge.id}"`);
           }

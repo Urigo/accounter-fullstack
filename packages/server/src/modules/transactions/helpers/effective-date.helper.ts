@@ -1,14 +1,8 @@
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
+import type { IGetTransactionsByIdsResult } from '../__generated__/transactions-new.types';
 
-export function effectiveDateSupplement(transaction: {
-  debit_date_override: Date | null;
-  debit_timestamp: Date | null;
-  debit_date: Date | null;
-  event_date: Date;
-  currency: Currency;
-  source_origin: string | null;
-}) {
+export function effectiveDateSupplement(transaction: IGetTransactionsByIdsResult) {
   if (transaction.debit_date_override) {
     return dateToTimelessDateString(transaction.debit_date_override);
   }

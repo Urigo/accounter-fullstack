@@ -170,7 +170,7 @@ export async function getExpenseAmountsData(
         }
         const amount = Number(transaction.amount);
         const currency = transaction.currency as Currency;
-        const date = await getTransactionDebitDate(transaction, injector);
+        const date = getTransactionDebitDate(transaction);
 
         if (!amount || !currency || !date) {
           const errorMessage = `Currency, amount or date not found for transaction ID ${transaction.id}`;

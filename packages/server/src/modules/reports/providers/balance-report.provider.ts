@@ -13,10 +13,10 @@ with transactions AS (SELECT
     t.charge_id,
     t.source_description,
     t.currency,
-    t.debit_date,
+    COALESCE(t.debit_date_override, t.debit_date) as debit_date,
     t.debit_timestamp,
     t.amount,
-    t.owner_id,
+    c.owner_id,
     t.business_id,
     t.is_fee,
     date_part('month', t.debit_date) as month,
@@ -30,7 +30,8 @@ with transactions AS (SELECT
         WHEN t.currency = 'USDC' OR t.currency = 'GRT' OR t.currency = 'ETH' THEN t.amount * lr2.value -- Convert Crypto => USD
         ELSE NULL
     END AS amount_usd
-FROM accounter_schema.extended_transactions t
+FROM accounter_schema.transactions t
+LEFT JOIN accounter_schema.charges c ON t.charge_id = c.id
 LEFT JOIN LATERAL (
     SELECT er.usd, er.eur, er.gbp, er.cad
     FROM accounter_schema.exchange_rates er

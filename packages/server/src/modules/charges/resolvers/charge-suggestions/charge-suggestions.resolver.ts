@@ -1,9 +1,7 @@
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
-import { IGetTransactionsSourceByIdsResult } from '@modules/transactions/__generated__/transactions-source.types.js';
 import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '@modules/transactions/providers/transactions-source.provider.js';
 import { UUID_REGEX } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type {
@@ -165,11 +163,7 @@ const missingInfoSuggestions: Resolver<
   ) {
     let sourceTransaction = 'Missing';
     if (transactions.length) {
-      const transactionSources = await injector
-        .get(TransactionsSourceProvider)
-        .transactionSourceByIdLoader.loadMany(transactions.map(t => t.source_id))
-        .then(res => res.filter(t => !(t instanceof Error)) as IGetTransactionsSourceByIdsResult[]);
-      sourceTransaction = `['${transactionSources.map(t => t.source_reference).join("','")}']`;
+      sourceTransaction = `['${transactions.map(t => t.source_reference).join("','")}']`;
     }
     return {
       tags: await injector
@@ -493,12 +487,8 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
-    const transactionSources = await injector
-      .get(TransactionsSourceProvider)
-      .transactionSourceByIdLoader.loadMany(transactions.map(t => t.source_id))
-      .then(res => res.filter(t => !(t instanceof Error)) as IGetTransactionsSourceByIdsResult[]);
-    const description = transactionSources.length
-      ? `['${transactionSources.map(t => t.source_reference).join("','")}']`
+    const description = transactions.length
+      ? `['${transactions.map(t => t.source_reference).join("','")}']`
       : 'Missing';
     //NOTE: multiple suggestions business
     return {

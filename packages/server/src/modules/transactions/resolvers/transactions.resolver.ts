@@ -3,13 +3,11 @@ import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
-import type { Currency, Resolvers } from '@shared/gql-types';
+import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import { IUpdateTransactionParams } from '../__generated__/transactions-new.types.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
-import { FeeTransactionsProvider } from '../providers/fee-transactions.provider.js';
 import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '../providers/transactions-source.provider.js';
 import type { TransactionsModule } from '../types.js';
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
@@ -114,32 +112,14 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               ? emptyChargePromise()
               : Promise.resolve();
 
-        const feePromise = async () => {
-          if (fields.isFee === true) {
-            return injector.get(FeeTransactionsProvider).addFeeTransaction({
-              feeTransactions: [
-                {
-                  id: transactionId,
-                  isRecurring: false,
-                },
-              ],
-            });
-          }
-          if (fields.isFee === false) {
-            return injector.get(FeeTransactionsProvider).deleteFeeTransactionsByIds({
-              transactionIds: [transactionId],
-            });
-          }
-          return Promise.resolve();
-        };
-
-        await Promise.all([chargePromise, feePromise()]);
+        await chargePromise;
 
         const adjustedFields: IUpdateTransactionParams = {
           transactionId,
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
           debitDate: fields.effectiveDate ?? null,
+          isFee: fields.isFee,
         };
 
         const res = await injector
@@ -205,16 +185,11 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
     ...commonTransactionFields,
     effectiveDate: async (transactionId, __dirname, { injector }) => {
-      const [sourceInfo, transaction] = await Promise.all([
-        injector.get(TransactionsSourceProvider).transactionSourceByIdLoader.load(transactionId),
-        injector.get(TransactionsNewProvider).transactionByIdLoader.load(transactionId),
-      ]);
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
 
-      const date = effectiveDateSupplement({
-        ...sourceInfo,
-        ...transaction,
-        currency: transaction.currency as Currency,
-      });
+      const date = effectiveDateSupplement(transaction);
       if (!date) {
         console.error(`Conversion transaction ID="${transactionId}" has no effective date`);
         throw new GraphQLError('Conversion transaction must have effective date');
@@ -228,11 +203,11 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       return Number(transaction.amount) > 0 ? 'QUOTE' : 'BASE';
     },
     bankRate: async (transactionId, __dirname, { injector }) => {
-      const transactionSource = await injector
-        .get(TransactionsSourceProvider)
-        .transactionSourceByIdLoader.load(transactionId);
+      const transaction = await injector
+        .get(TransactionsNewProvider)
+        .transactionByIdLoader.load(transactionId);
 
-      return transactionSource.currency_rate;
+      return transaction.currency_rate;
     },
     officialRateToLocal: async (
       transactionId,

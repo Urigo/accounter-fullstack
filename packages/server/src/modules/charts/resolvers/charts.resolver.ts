@@ -30,7 +30,7 @@ export const chartsResolvers: ChartsModule.Resolvers = {
 
         await Promise.all(
           transactions.map(async transaction => {
-            const date = await getTransactionDebitDate(transaction, injector);
+            const date = getTransactionDebitDate(transaction);
 
             // convert amount to chart currency
             const exchangeRate = await injector

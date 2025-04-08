@@ -1,7 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
 import { IGetTransactionsByIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
-import { FeeTransactionsProvider } from '@modules/transactions/providers/fee-transactions.provider.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField } from '@shared/types';
@@ -9,10 +7,7 @@ import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
 type ValidatedTransaction = NoOptionalField<IGetTransactionsByIdsResult, 'debit_date'>;
 
-export async function defineConversionBaseAndQuote(
-  transactions: Array<IGetTransactionsByIdsResult>,
-  injector: Injector,
-) {
+export function defineConversionBaseAndQuote(transactions: Array<IGetTransactionsByIdsResult>) {
   if (transactions.length < 2) {
     throw new GraphQLError('Conversion charges must have at least two ledger records');
   }
@@ -22,11 +17,7 @@ export async function defineConversionBaseAndQuote(
   const miscTransactions: ValidatedTransaction[] = [];
 
   for (const transaction of transactions) {
-    const isFee = await injector
-      .get(FeeTransactionsProvider)
-      .getFeeTransactionByIdLoader.load(transaction.id)
-      .then(Boolean);
-    if (isFee || transaction.source_description?.includes('Fee:')) {
+    if (transaction.is_fee || transaction.source_description?.includes('Fee:')) {
       miscTransactions.push(transaction as ValidatedTransaction);
       continue;
     }

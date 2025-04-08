@@ -4,7 +4,7 @@ import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/comm
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
 import { DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
@@ -63,8 +63,8 @@ export const generateLedgerRecordsForDividend: ResolverFn<
 
     // Get all transactions
     const transactionsPromise = injector
-      .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .get(TransactionsNewProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const chargeBallanceCancellationsPromise = injector
       .get(BalanceCancellationProvider)

@@ -5,7 +5,7 @@ import {
 import type { IGetDocumentsByChargeIdResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
@@ -240,7 +240,7 @@ export async function ledgerEntryFromMainTransaction(
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: transaction.source_description ?? undefined,
-    reference: transaction.source_id,
+    reference: transaction.source_reference,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

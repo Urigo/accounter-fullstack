@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
-import { TransactionsSourceProvider } from '@modules/transactions/providers/transactions-source.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
@@ -57,15 +56,7 @@ export const commonTransactionFields:
       if (!isCryptoCurrency(currency)) {
         return null;
       }
-
-      const transactionSourceInfo = await injector
-        .get(TransactionsSourceProvider)
-        .transactionSourceByIdLoader.load(transactionId)
-        .catch(error => console.error(error));
-      if (!transactionSourceInfo) {
-        return null;
-      }
-      if (!transactionSourceInfo.debit_timestamp) {
+      if (!transaction.debit_timestamp) {
         return null;
       }
 
@@ -73,7 +64,7 @@ export const commonTransactionFields:
         .get(CryptoExchangeProvider)
         .getCryptoExchangeRateLoader.load({
           cryptoCurrency: currency,
-          date: transactionSourceInfo.debit_timestamp,
+          date: transaction.debit_timestamp,
         });
 
       const rate = Number(value);
