@@ -54,7 +54,7 @@
     "test": "node --import ../../scripts/register-esm.js ./src/dev-tests/e2e.ts"
   },
   "dependencies": {
-    "@graphql-mesh/config": "0.108.2",
+    "@graphql-mesh/config": "0.108.3",
     "@graphql-mesh/cross-helpers": "0.4.10",
     "@graphql-mesh/http": "0.106.2",
     "@graphql-mesh/json-schema": "0.109.3",
@@ -66,7 +66,7 @@
     "graphql": "16.10.0"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.100.2",
+    "@graphql-mesh/cli": "0.100.3",
     "tsup": "8.4.0"
   },
   "publishConfig": {
