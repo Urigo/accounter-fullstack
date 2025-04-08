@@ -32,14 +32,16 @@ export async function createAndConnectStore(options: { connectionString: string;
       await pg.none(`
         CREATE OR REPLACE FUNCTION ${options.schema}.${ledgerTable}_insert_fn() RETURNS TRIGGER
           LANGUAGE plpgsql
-        AS $$
+        AS
+        $$
         DECLARE
-            merged_id UUID;
-            account_id_var UUID;
-            owner_id_var UUID;
-            charge_id_var UUID = NULL;
-            is_conversion BOOLEAN = false;
-            transaction_id_var UUID = NULL;
+            merged_id          UUID;
+            account_id_var     UUID;
+            owner_id_var       UUID;
+            charge_id_var      UUID    = NULL;
+            is_conversion      BOOLEAN = false;
+            transaction_id_var UUID    = NULL;
+            trade_price        NUMERIC = NULL;
         BEGIN
             -- Create merged raw transactions record:
             INSERT INTO ${options.schema}.transactions_raw_list(kraken_id)
@@ -47,8 +49,8 @@ export async function createAndConnectStore(options: { connectionString: string;
             RETURNING id INTO merged_id;
 
             -- get account and owner IDs
-            SELECT INTO account_id_var, owner_id_var
-                id, owner
+            SELECT INTO account_id_var, owner_id_var id,
+                                                    owner
             FROM ${options.schema}.financial_accounts
             WHERE account_number = NEW.account_nickname;
 
@@ -59,58 +61,81 @@ export async function createAndConnectStore(options: { connectionString: string;
                 SELECT t.charge_id
                 INTO charge_id_var
                 FROM ${options.schema}.${ledgerTable} AS s
-                LEFT JOIN ${options.schema}.transactions_raw_list tr
-                ON tr.kraken_id = s.ledger_id
-                LEFT JOIN ${options.schema}.transactions t
-                ON tr.id = t.source_id
+                        LEFT JOIN ${options.schema}.transactions_raw_list tr
+                                  ON tr.kraken_id = s.ledger_id
+                        LEFT JOIN ${options.schema}.transactions t
+                                  ON tr.id = t.source_id
                 WHERE t.charge_id IS NOT NULL
-                AND s.trade_ref_id = NEW.trade_ref_id;
+                  AND s.trade_ref_id = NEW.trade_ref_id;
             END IF;
-                
+
             -- if no match, create new charge
             IF (charge_id_var IS NULL) THEN
                 INSERT INTO ${options.schema}.charges (owner_id, type)
-                VALUES (
-                    owner_id_var,
-                    CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::accounter_schema.charge_type END
-                )
+                VALUES (owner_id_var,
+                        CASE WHEN is_conversion IS TRUE THEN 'CONVERSION'::${options.schema}.charge_type END)
                 RETURNING id INTO charge_id_var;
             END IF;
 
+            -- get trade price for currency rate
+            SELECT t.price
+            INTO trade_price
+            FROM ${options.schema}.${tradesTable} AS t
+            WHERE NEW.trade_ref_id = t.trade_id;
+
             -- create new transaction
-            INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
-            VALUES (
-                account_id_var,
-                charge_id_var,
-                merged_id,
-                CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
-                NEW.currency::${options.schema}.currency,
-                NEW.value_date::text::date,
-                NEW.value_date::text::date,
-                NEW.amount,
-                (NEW.balance + NEW.fee)
-            );
+            INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                                                      event_date, debit_date, amount, current_balance, source_reference,
+                                                      currency_rate, debit_timestamp, source_origin, counter_account)
+            VALUES (account_id_var,
+                    charge_id_var,
+                    merged_id,
+                    CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
+                    NEW.currency::${options.schema}.currency,
+                    NEW.value_date::text::date,
+                    NEW.value_date::text::date,
+                    NEW.amount,
+                    (NEW.balance + NEW.fee),
+                    NEW.ledger_id,
+                    CASE
+                        WHEN trade_price IS NOT NULL THEN 1::numeric / trade_price
+                        ELSE 0::numeric
+                        END,
+                    NEW.value_date,
+                    'KRAKEN',
+                    CASE
+                        WHEN NEW.action_type = 'trade'::text THEN 'KRAKEN'::text
+                        ELSE NULL::text
+                        END);
 
             -- if fee is not null, create new fee transaction
             IF (NEW.fee IS NOT NULL AND NEW.fee <> 0) THEN
-              INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
-              VALUES (
-                  account_id_var,
-                  charge_id_var,
-                  merged_id,
-                  CONCAT_WS(' ', 'Fee:', NEW.trade_ref_id),
-                  NEW.currency::${options.schema}.currency,
-                  NEW.value_date::text::date,
-                  NEW.value_date::text::date,
-                  (NEW.fee * -1),
-                  NEW.balance
-              )
-              RETURNING id INTO transaction_id_var;
-
-              INSERT INTO ${options.schema}.transactions_fees (id)
-              VALUES (
-                transaction_id_var
-              );
+                INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                                                          event_date, debit_date, amount, current_balance, is_fee,
+                                                          source_reference, currency_rate, debit_timestamp, source_origin,
+                                                          counter_account)
+                VALUES (account_id_var,
+                        charge_id_var,
+                        merged_id,
+                        CONCAT_WS(' ', 'Fee:', NEW.trade_ref_id),
+                        NEW.currency::${options.schema}.currency,
+                        NEW.value_date::text::date,
+                        NEW.value_date::text::date,
+                        (NEW.fee * -1),
+                        NEW.balance,
+                        TRUE,
+                        NEW.ledger_id,
+                        CASE
+                            WHEN trade_price IS NOT NULL THEN 1::numeric / trade_price
+                            ELSE 0::numeric
+                            END,
+                        NEW.value_date,
+                        'KRAKEN',
+                        CASE
+                            WHEN NEW.action_type = 'trade'::text THEN 'KRAKEN'::text
+                            ELSE NULL::text
+                            END)
+                RETURNING id INTO transaction_id_var;
             END IF;
 
             RETURN NEW;
