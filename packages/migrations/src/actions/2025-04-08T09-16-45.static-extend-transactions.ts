@@ -19,9 +19,6 @@ alter table accounter_schema.transactions
     add debit_timestamp timestamp;
 
 alter table accounter_schema.transactions
-    add currency_rate numeric;
-
-alter table accounter_schema.transactions
     add currency_rate numeric default 0 not null;
 
 UPDATE accounter_schema.transactions t
