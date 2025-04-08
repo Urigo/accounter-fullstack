@@ -34,73 +34,83 @@ export async function createAndConnectStore(options: { connectionString: string;
       LANGUAGE plpgsql
     AS $$
     DECLARE
-        merged_id UUID;
-        account_id_var UUID;
-        owner_id_var UUID;
-        charge_id_var UUID = NULL;
+        merged_id          UUID;
+        account_id_var     UUID;
+        owner_id_var       UUID;
+        charge_id_var      UUID = NULL;
         transaction_id_var UUID = NULL;
     BEGIN
         -- Create merged raw transactions record:
         INSERT INTO ${options.schema}.transactions_raw_list(etherscan_id)
         VALUES (NEW.id)
         RETURNING id INTO merged_id;
-    
+
         -- get account and owner IDs
-        SELECT INTO account_id_var, owner_id_var
-            id, owner
+        SELECT INTO account_id_var, owner_id_var id,
+                                                owner
         FROM ${options.schema}.financial_accounts
         WHERE account_number = NEW.wallet_address;
-    
+
         -- create new charge
         IF (charge_id_var IS NULL) THEN
             INSERT INTO ${options.schema}.charges (owner_id)
-            VALUES (
-                owner_id_var
-            )
+            VALUES (owner_id_var)
             RETURNING id INTO charge_id_var;
         END IF;
-    
+
         -- create new transaction
-        INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
-        VALUES (
-            account_id_var,
-            charge_id_var,
-            merged_id,
-            '',
-            NEW.currency::${options.schema}.currency,
-            NEW.value_date::text::date,
-            NEW.value_date::text::date,
-            (CASE
-                WHEN NEW.wallet_address = NEW.from_address THEN (NEW.amount * -1)
-                ELSE NEW.amount END
-            ),
-            0
-        );
+        INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                                                  event_date, debit_date, amount, current_balance, source_reference,
+                                                  debit_timestamp, source_origin, counter_account)
+        VALUES (account_id_var,
+                charge_id_var,
+                merged_id,
+                '',
+                NEW.currency::${options.schema}.currency,
+                NEW.value_date::text::date,
+                NEW.value_date::text::date,
+                (CASE
+                    WHEN NEW.wallet_address = NEW.from_address THEN (NEW.amount * -1)
+                    ELSE NEW.amount END
+                    ),
+                0,
+                NEW.transaction_hash,
+                NEW.event_date,
+                'ETHERSCAN',
+                CASE
+                    WHEN NEW.wallet_address =
+                        NEW.from_address THEN NEW.to_address
+                    ELSE NEW.from_address
+                    END);
 
         -- if fee is not null, create new fee transaction
         IF (NEW.gas_fee IS NOT NULL) THEN
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
-          VALUES (
-              account_id_var,
-              charge_id_var,
-              merged_id,
-              CONCAT_WS(' ', 'Fee:', NEW.id::text),
-              'ETH'::${options.schema}.currency,
-              NEW.value_date::text::date,
-              NEW.value_date::text::date,
-              (NEW.gas_fee * -1),
-              0
-          )
-          RETURNING id INTO transaction_id_var;
-          
-          INSERT INTO ${options.schema}.transactions_fees (id)
-          VALUES (
-            transaction_id_var
-          );
+            INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                                                      event_date, debit_date, amount, current_balance, is_fee,
+                                                      source_reference, debit_timestamp, source_origin, counter_account)
+            VALUES (account_id_var,
+                    charge_id_var,
+                    merged_id,
+                    CONCAT_WS(' ', 'Fee:', NEW.id::text),
+                    'ETH'::${options.schema}.currency,
+                    NEW.value_date::text::date,
+                    NEW.value_date::text::date,
+                    (NEW.gas_fee * -1),
+                    0,
+                    TRUE,
+                    NEW.transaction_hash,
+                    NEW.event_date,
+                    'ETHERSCAN',
+                    CASE
+                        WHEN NEW.wallet_address =
+                            NEW.from_address THEN NEW.to_address
+                        ELSE NEW.from_address
+                        END)
+            RETURNING id INTO transaction_id_var;
         END IF;
-    
+
         RETURN NEW;
-      END;
+    END;
     $$;
       `);
 

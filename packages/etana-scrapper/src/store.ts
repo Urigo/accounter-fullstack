@@ -34,20 +34,20 @@ export async function createAndConnectStore(options: { connectionString: string;
       LANGUAGE plpgsql
       AS $$
         DECLARE
-          merged_id UUID;
-          account_id_var UUID;
-          owner_id_var UUID;
-          charge_id_var UUID = NULL;
+          merged_id          UUID;
+          account_id_var     UUID;
+          owner_id_var       UUID;
+          charge_id_var      UUID = NULL;
           transaction_id_var UUID = NULL;
         BEGIN
           -- Create merged raw transactions record:
           INSERT INTO ${options.schema}.transactions_raw_list(etana_id)
           VALUES (NEW.transaction_id::text)
           RETURNING id INTO merged_id;
-      
+
           -- get account and owner IDs
-          SELECT INTO account_id_var, owner_id_var
-              id, owner
+          SELECT INTO account_id_var, owner_id_var id,
+                                                  owner
           FROM ${options.schema}.financial_accounts
           WHERE account_number = NEW.account_id;
 
@@ -55,62 +55,59 @@ export async function createAndConnectStore(options: { connectionString: string;
           IF (NEW.action_type = 'fee') THEN
               SELECT t.charge_id
               INTO charge_id_var
-              FROM ${options.schema}.${tableName} AS s
-              LEFT JOIN ${options.schema}.transactions_raw_list tr
-              ON tr.etana_id = s.transaction_id::text
-              LEFT JOIN ${options.schema}.transactions t
-              ON tr.id = t.source_id
+              FROM ${options.schema}.etana_account_transactions AS s
+                      LEFT JOIN ${options.schema}.transactions_raw_list tr
+                                ON tr.etana_id = s.transaction_id::text
+                      LEFT JOIN ${options.schema}.transactions t
+                                ON tr.id = t.source_id
               WHERE t.charge_id IS NOT NULL
-              AND s.fee_tx_id = NEW.transaction_id;
+                AND s.fee_tx_id = NEW.transaction_id;
           ELSEIF (NEW.fee IS NOT NULL) THEN
               SELECT t.charge_id
               INTO charge_id_var
-              FROM ${options.schema}.${tableName} AS s
-              LEFT JOIN ${options.schema}.transactions_raw_list tr
-              ON tr.etana_id = s.transaction_id::text
-              LEFT JOIN ${options.schema}.transactions t
-              ON tr.id = t.source_id
+              FROM ${options.schema}.etana_account_transactions AS s
+                      LEFT JOIN ${options.schema}.transactions_raw_list tr
+                                ON tr.etana_id = s.transaction_id::text
+                      LEFT JOIN ${options.schema}.transactions t
+                                ON tr.id = t.source_id
               WHERE t.charge_id IS NOT NULL
-              AND s.transaction_id = NEW.fee_tx_id;
+                AND s.transaction_id = NEW.fee_tx_id;
           END IF;
-      
+
           -- if no match, create new charge
           IF (charge_id_var IS NULL) THEN
               INSERT INTO ${options.schema}.charges (owner_id)
-              VALUES (
-                  owner_id_var
-              )
+              VALUES (owner_id_var)
               RETURNING id INTO charge_id_var;
           END IF;
-      
+
           -- create new transaction
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency, event_date, debit_date, amount, current_balance)
-          VALUES (
-              account_id_var,
-              charge_id_var,
-              merged_id,
-              CONCAT(NEW.description,(
+          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                                                    event_date, debit_date, amount, current_balance, is_fee,
+                                                    source_reference, source_origin, counter_account)
+          VALUES (account_id_var,
+                  charge_id_var,
+                  merged_id,
+                  CONCAT(NEW.description, (
+                      CASE
+                          WHEN new.fee_tx_id IS NOT NULL
+                              THEN (new.fee_tx_id)
+                          END)
+                  ),
+                  NEW.currency::${options.schema}.currency,
+                  NEW.time::text::date,
+                  NEW.time::text::date,
+                  new.amount,
+                  0,
+                  NEW.action_type = 'fee',
+                  NEW.transaction_id,
+                  'ETANA',
                   CASE
-                    WHEN new.fee_tx_id IS NOT NULL
-                    THEN (new.fee_tx_id)
-                  END)
-              ),
-              NEW.currency::${options.schema}.currency,
-              NEW.time::text::date,
-              NEW.time::text::date,
-              new.amount,
-              0
-          )
+                      WHEN NEW.action_type = 'fee'::text THEN 'ETANA'::text
+                      ELSE NULL::text
+                      END)
           RETURNING id INTO transaction_id_var;
 
-          -- extend transaction with fee
-          IF (NEW.action_type = 'fee') THEN
-              INSERT INTO ${options.schema}.transactions_fees (id)
-              VALUES (
-                transaction_id_var
-              );
-          END IF;
-      
           RETURN NEW;
         END;
       $$;
