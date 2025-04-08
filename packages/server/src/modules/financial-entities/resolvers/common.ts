@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
@@ -46,13 +47,19 @@ export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
 export const commonTransactionFields:
   | FinancialEntitiesModule.ConversionTransactionResolvers
   | FinancialEntitiesModule.CommonTransactionResolvers = {
-  counterparty: (documentRoot, _, { injector }) =>
-    documentRoot.business_id
-      ? injector
-          .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(documentRoot.business_id)
-          .then(res => res ?? null)
-      : null,
+  counterparty: async (transactionId, _, { injector }) => {
+    const transaction = await injector
+      .get(TransactionsProvider)
+      .transactionByIdLoader.load(transactionId);
+    if (!transaction.business_id) {
+      return null;
+    }
+
+    return injector
+      .get(FinancialEntitiesProvider)
+      .getFinancialEntityByIdLoader.load(transaction.business_id)
+      .then(res => res ?? null);
+  },
 };
 
 export const commonDocumentsFields: FinancialEntitiesModule.FinancialDocumentResolvers = {

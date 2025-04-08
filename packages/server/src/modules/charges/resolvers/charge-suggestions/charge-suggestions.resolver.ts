@@ -140,7 +140,7 @@ const missingInfoSuggestions: Resolver<
 
   const transactions = await injector
     .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+    .transactionsByChargeIDLoader.load(DbCharge.id);
   const description = transactions.map(t => t.source_description).join(' ');
 
   for (const [phrase, suggestion] of Object.entries(suggestions)) {
@@ -489,13 +489,16 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
+    const description = transactions.length
+      ? `['${transactions.map(t => t.source_reference).join("','")}']`
+      : 'Missing';
     //NOTE: multiple suggestions business
     return {
       tags: await injector
         .get(TagsProvider)
         .getTagByNameLoader.load('financial')
         .then(res => (res ? [res] : [])),
-      description: `Fees for bank_reference=${transactions[0].source_reference ?? 'Missing'}`,
+      description,
     };
   }
   if (description.includes('ריבית זכות')) {

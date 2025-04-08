@@ -43,7 +43,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         if (!amount) {
           const transaction = await injector
             .get(TransactionsProvider)
-            .getTransactionByIdLoader.load(transactionId);
+            .transactionByIdLoader.load(transactionId);
           if (transaction?.amount) {
             amount = Number(transaction.amount);
           }

@@ -6,7 +6,7 @@ import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expense
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type {
   Currency,
   Maybe,
@@ -60,7 +60,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
     const transactionsPromise = injector
       .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const bankDepositTransactionsPromise = injector
       .get(BankDepositTransactionsProvider)
@@ -168,7 +168,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
         localCurrencyDebitAmount1: Math.abs(amount),
         description: transaction.source_description ?? undefined,
-        reference: transaction.source_id,
+        reference: transaction.source_reference,
         isCreditorCounterparty,
         ownerId: charge.owner_id,
         currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

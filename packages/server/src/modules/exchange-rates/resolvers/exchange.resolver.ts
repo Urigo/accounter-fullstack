@@ -64,7 +64,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     officialRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
-        .getTransactionsByChargeIDLoader.load(dbCharge.id);
+        .transactionsByChargeIDLoader.load(dbCharge.id);
       if (!transactions) {
         throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
       }
@@ -75,6 +75,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       const date =
         baseTransaction.debit_timestamp ||
         quoteTransaction.debit_timestamp ||
+        baseTransaction.debit_date_override ||
         baseTransaction.debit_date;
 
       const rate = await injector
@@ -90,10 +91,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     eventRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
-        .getTransactionsByChargeIDLoader.load(dbCharge.id);
-      if (!transactions) {
-        throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
-      }
+        .transactionsByChargeIDLoader.load(dbCharge.id);
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseCurrency = formatCurrency(baseTransaction.currency);

@@ -64,7 +64,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     // Get all transactions
     const transactionsPromise = injector
       .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const chargeBallanceCancellationsPromise = injector
       .get(BalanceCancellationProvider)

@@ -1,6 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import {
   Currency,
   type BusinessTripSummaryCategories,
@@ -153,7 +154,7 @@ export async function getExpenseAmountsData(
 
     const transactions = await injector
       .get(TransactionsProvider)
-      .getTransactionByIdLoader.loadMany(businessTripExpense.transaction_ids);
+      .transactionByIdLoader.loadMany(businessTripExpense.transaction_ids);
 
     const allTransactions = transactions.filter(
       transaction => transaction && !(transaction instanceof Error),
@@ -169,8 +170,7 @@ export async function getExpenseAmountsData(
         }
         const amount = Number(transaction.amount);
         const currency = transaction.currency as Currency;
-        const date =
-          transaction.debit_timestamp || transaction.debit_date || transaction.event_date;
+        const date = getTransactionDebitDate(transaction);
 
         if (!amount || !currency || !date) {
           const errorMessage = `Currency, amount or date not found for transaction ID ${transaction.id}`;

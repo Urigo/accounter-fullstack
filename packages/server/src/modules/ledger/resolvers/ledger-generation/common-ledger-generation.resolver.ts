@@ -107,7 +107,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       : Promise.resolve([]);
 
     const transactionsPromise = gotTransactions
-      ? injector.get(TransactionsProvider).getTransactionsByChargeIDLoader.load(chargeId)
+      ? injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId)
       : Promise.resolve([]);
 
     const unbalancedBusinessesPromise = injector

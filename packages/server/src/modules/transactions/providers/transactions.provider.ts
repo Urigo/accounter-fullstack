@@ -1,18 +1,16 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import { Optional, TimelessDateString } from '@shared/types';
 import type {
   IGetSimilarTransactionsParams,
   IGetSimilarTransactionsQuery,
   IGetTransactionsByChargeIdsQuery,
-  IGetTransactionsByChargeIdsResult,
   IGetTransactionsByFiltersParams,
   IGetTransactionsByFiltersQuery,
-  IGetTransactionsByFiltersResult,
   IGetTransactionsByIdsQuery,
-  IGetTransactionsByIdsResult,
   IGetTransactionsByMissingRequiredInfoQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
@@ -20,63 +18,42 @@ import type {
   IUpdateTransactionQuery,
 } from '../types.js';
 
-export type TransactionRequiredWrapper<
-  T extends {
-    id: unknown;
-    account_id: unknown;
-    charge_id: unknown;
-    source_id: unknown;
-    currency: unknown;
-    event_date: unknown;
-    amount: unknown;
-    current_balance: unknown;
-    created_at: unknown;
-    updated_at: unknown;
-  },
-> = Omit<
-  T,
-  | 'id'
-  | 'account_id'
-  | 'charge_id'
-  | 'source_id'
-  | 'currency'
-  | 'event_date'
-  | 'amount'
-  | 'current_balance'
-  | 'created_at'
-  | 'updated_at'
-> & {
-  id: NonNullable<T['id']>;
-  account_id: NonNullable<T['account_id']>;
-  charge_id: NonNullable<T['charge_id']>;
-  source_id: NonNullable<T['source_id']>;
-  currency: NonNullable<T['currency']>;
-  event_date: NonNullable<T['event_date']>;
-  amount: NonNullable<T['amount']>;
-  current_balance: NonNullable<T['current_balance']>;
-  created_at: NonNullable<T['created_at']>;
-  updated_at: NonNullable<T['updated_at']>;
-};
-
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
     SELECT *
-    FROM accounter_schema.extended_transactions
+    FROM accounter_schema.transactions
     WHERE id IN $$transactionIds;`;
 
 const getTransactionsByChargeIds = sql<IGetTransactionsByChargeIdsQuery>`
     SELECT *
-    FROM accounter_schema.extended_transactions
-    WHERE charge_id IN $$chargeIds
-    ORDER BY event_date DESC;`;
+    FROM accounter_schema.transactions
+    WHERE charge_id IN $$chargeIds;`;
 
 const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequiredInfoQuery>`
     SELECT *
     FROM accounter_schema.transactions
     WHERE business_id IS NULL;`;
 
+const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
+  SELECT t.*
+  FROM accounter_schema.transactions t
+  LEFT JOIN accounter_schema.charges c
+    ON t.charge_id = C.id
+  WHERE
+    ($isIDs = 0 OR t.id IN $$IDs)
+    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
+    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
+    AND ($fromDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
+    AND ($toDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
+    AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
+  ORDER BY event_date DESC;
+`;
+
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
-    SELECT *
-    FROM accounter_schema.extended_transactions
+    SELECT t.*, c.owner_id
+    FROM accounter_schema.transactions t
+    LEFT JOIN accounter_schema.charges c
+      ON t.charge_id = c.id
     WHERE (CASE WHEN $withMissingInfo IS TRUE THEN
       business_id IS NULL
    ELSE
@@ -85,7 +62,7 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
       AND (
         (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
-      ) AND owner_id = $ownerId;`;
+      ) AND c.owner_id = $ownerId;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -116,6 +93,11 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
       $businessId,
       business_id,
       NULL
+    ),
+    is_fee = COALESCE(
+      $isFee,
+      is_fee,
+      NULL
     )
   WHERE
     id = $transactionId
@@ -135,33 +117,16 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
   toDebitDate?: TimelessDateString | null;
 };
 
-const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
-  SELECT t.*
-  FROM accounter_schema.extended_transactions t
-  WHERE
-    ($isIDs = 0 OR t.id IN $$IDs)
-    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
-    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
-    AND ($fromDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
-    AND ($toDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
-    AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
-    AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
-  ORDER BY event_date DESC;
-`;
-
 @Injectable({
-  scope: Scope.Operation,
+  scope: Scope.Singleton,
   global: true,
 })
 export class TransactionsProvider {
-  adminBusinessId: string;
+  cache = getCacheInstance({
+    stdTTL: 60 * 5,
+  });
 
-  constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
-    private dbProvider: DBProvider,
-  ) {
-    this.adminBusinessId = this.context.currentUser.userId;
-  }
+  constructor(private dbProvider: DBProvider) {}
 
   private async batchTransactionsByIds(ids: readonly string[]) {
     const transactions = await getTransactionsByIds.run(
@@ -170,15 +135,31 @@ export class TransactionsProvider {
       },
       this.dbProvider,
     );
-    return ids.map(id =>
-      (transactions as IGetTransactionsByIdsResult[]).find(charge => charge.id === id),
-    );
+    return ids.map(id => {
+      const transaction = transactions.find(transaction => transaction.id === id);
+      if (!transaction) {
+        return new Error(`Transaction ID="${id}" not found`);
+      }
+      return transaction;
+    });
   }
 
-  public getTransactionByIdLoader = new DataLoader(
+  public transactionByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchTransactionsByIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: id => `transaction-${id}`,
+      cacheMap: this.cache,
+    },
   );
+
+  public async getTransactionsByMissingRequiredInfo() {
+    return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider).then(res =>
+      res.map(t => {
+        this.cache.set(`transaction-${t.id}`, t);
+        return t;
+      }),
+    );
+  }
 
   private async batchTransactionsByChargeIDs(chargeIds: readonly string[]) {
     const transactions = await getTransactionsByChargeIds.run(
@@ -187,43 +168,19 @@ export class TransactionsProvider {
       },
       this.dbProvider,
     );
-    return chargeIds.map(id =>
-      (transactions as IGetTransactionsByChargeIdsResult[]).filter(
-        transaction => transaction.charge_id === id,
-      ),
-    );
+    transactions.map(t => {
+      this.cache.set(`transaction-${t.id}`, t);
+    });
+    return chargeIds.map(id => transactions.filter(transaction => transaction.charge_id === id));
   }
 
-  public getTransactionsByChargeIDLoader = new DataLoader(
+  public transactionsByChargeIDLoader = new DataLoader(
     (keys: readonly string[]) => this.batchTransactionsByChargeIDs(keys),
     {
-      cache: false,
+      cacheKeyFn: id => `transactions-by-charge-${id}`,
+      cacheMap: this.cache,
     },
   );
-
-  public async getTransactionsByMissingRequiredInfo() {
-    return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider);
-  }
-
-  public async getSimilarTransactions(params: Omit<IGetSimilarTransactionsParams, 'ownerId'>) {
-    try {
-      return getSimilarTransactions.run(
-        { ...params, ownerId: this.adminBusinessId },
-        this.dbProvider,
-      ) as Promise<IGetTransactionsByIdsResult[]>;
-    } catch (error) {
-      console.error('Error fetching similar transactions:', error);
-      throw new Error('Failed to fetch similar transactions');
-    }
-  }
-
-  public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
-    return replaceTransactionsChargeId.run(params, this.dbProvider);
-  }
-
-  public updateTransaction(params: IUpdateTransactionParams) {
-    return updateTransaction.run(params, this.dbProvider);
-  }
 
   public getTransactionsByFilters(params: IGetAdjustedTransactionsByFiltersParams) {
     const isIDs = !!params?.IDs?.length;
@@ -243,8 +200,69 @@ export class TransactionsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getTransactionsByFilters.run(fullParams, this.dbProvider) as Promise<
-      IGetTransactionsByFiltersResult[]
-    >;
+    return getTransactionsByFilters.run(fullParams, this.dbProvider);
+  }
+
+  public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
+    try {
+      return getSimilarTransactions.run(params, this.dbProvider);
+    } catch (error) {
+      const message = 'Failed to fetch similar transactions';
+      console.error(message, error);
+      throw new Error(message);
+    }
+  }
+
+  public async replaceTransactionsChargeId(params: IReplaceTransactionsChargeIdParams) {
+    if (params.replaceChargeID) {
+      await this.invalidateTransactionByChargeID(params.replaceChargeID);
+    }
+    if (params.assertChargeID) {
+      await this.invalidateTransactionByChargeID(params.assertChargeID);
+    }
+    return replaceTransactionsChargeId.run(params, this.dbProvider);
+  }
+
+  public async updateTransaction(params: IUpdateTransactionParams) {
+    if (params.transactionId) {
+      await this.invalidateTransactionByID(params.transactionId);
+    }
+    return updateTransaction.run(params, this.dbProvider);
+  }
+
+  public async invalidateTransactionByChargeID(chargeId: string) {
+    try {
+      const transactions = await getTransactionsByChargeIds.run(
+        {
+          chargeIds: [chargeId],
+        },
+        this.dbProvider,
+      );
+      transactions.map(transaction => this.cache.delete(`transaction-${transaction.id}`));
+      this.cache.delete(`transactions-by-charge-${chargeId}`);
+    } catch (e) {
+      console.error(`Error invalidating transaction by charge ID "${chargeId}":`, e);
+    }
+  }
+
+  public async invalidateTransactionByID(id: string) {
+    try {
+      const [transaction] = await getTransactionsByIds.run(
+        {
+          transactionIds: [id],
+        },
+        this.dbProvider,
+      );
+      if (transaction) {
+        this.cache.delete(`transactions-by-charge-${transaction.charge_id}`);
+      }
+      this.cache.delete(`transaction-${id}`);
+    } catch (e) {
+      console.error(`Error invalidating transaction by ID "${id}":`, e);
+    }
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

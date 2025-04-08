@@ -215,7 +215,13 @@ export class ChargesProvider {
       },
       this.dbProvider,
     )) as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
-    return ids.map(id => charges.find(charge => charge.id === id));
+    return ids.map(id => {
+      const charge = charges.find(charge => charge.id === id);
+      if (!charge) {
+        return new Error(`Charge ID="${id}" not found`);
+      }
+      return charge;
+    });
   }
 
   public getChargeByIdLoader = new DataLoader(

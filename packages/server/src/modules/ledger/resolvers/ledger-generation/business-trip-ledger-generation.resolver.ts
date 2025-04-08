@@ -85,7 +85,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
       .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .transactionsByChargeIDLoader.load(chargeId);
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
       : Promise.resolve([]);

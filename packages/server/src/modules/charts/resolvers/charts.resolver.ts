@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
@@ -29,8 +30,7 @@ export const chartsResolvers: ChartsModule.Resolvers = {
 
         await Promise.all(
           transactions.map(async transaction => {
-            const date =
-              transaction.debit_timestamp || transaction.debit_date || transaction.event_date;
+            const date = getTransactionDebitDate(transaction);
 
             // convert amount to chart currency
             const exchangeRate = await injector

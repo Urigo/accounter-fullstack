@@ -61,8 +61,6 @@ export default gql`
   " Represent a general transaction object "
   interface Transaction {
     id: UUID!
-    " Source DB ID "
-    referenceId: String!
     " external key / identifier in the bank or card (אסמכתא) "
     referenceKey: String
     " eventDate "
@@ -100,7 +98,6 @@ export default gql`
   " temp type until DB supports transactions differentiation "
   type CommonTransaction implements Transaction {
     id: UUID!
-    referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate # TODO: this should be required, but lots are missing in the DB
@@ -119,7 +116,6 @@ export default gql`
   " המרה "
   type ConversionTransaction implements Transaction {
     id: UUID!
-    referenceId: String!
     referenceKey: String
     eventDate: TimelessDate!
     effectiveDate: TimelessDate!

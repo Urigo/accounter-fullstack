@@ -80,7 +80,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     const transactionsPromise = injector
       .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)

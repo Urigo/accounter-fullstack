@@ -54,7 +54,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     // Get all transactions
     const transactions = await injector
       .get(TransactionsProvider)
-      .getTransactionsByChargeIDLoader.load(chargeId);
+      .transactionsByChargeIDLoader.load(chargeId);
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
     if (mainTransactions.length !== 2) {
@@ -118,7 +118,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
           localCurrencyCreditAmount1: Math.abs(amount),
           description: transaction.source_description ?? undefined,
-          reference: transaction.source_id,
+          reference: transaction.source_reference,
           isCreditorCounterparty,
           ownerId: charge.owner_id,
           currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

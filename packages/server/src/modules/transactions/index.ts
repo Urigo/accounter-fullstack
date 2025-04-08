@@ -4,7 +4,6 @@ import transactions from './typeDefs/transactions.graphql.js';
 import { createModule } from 'graphql-modules';
 import { BankDepositTransactionsProvider } from './providers/bank-deposit-transactions.provider.js';
 import { CreditCardTransactionsProvider } from './providers/creditcard-transactions.provider.js';
-import { FeeTransactionsProvider } from './providers/fee-transactions.provider.js';
 import { TransactionsProvider } from './providers/transactions.provider.js';
 import { CreditCardTransactionsResolvers } from './resolvers/creditcard-transactions.resolver.js';
 import { transactionSuggestionsResolvers } from './resolvers/transaction-suggestions.resolver.js';
@@ -22,10 +21,9 @@ export const transactionsModule = createModule({
     CreditCardTransactionsResolvers,
   ],
   providers: () => [
-    TransactionsProvider,
-    FeeTransactionsProvider,
     BankDepositTransactionsProvider,
     CreditCardTransactionsProvider,
+    TransactionsProvider,
   ],
 });
 

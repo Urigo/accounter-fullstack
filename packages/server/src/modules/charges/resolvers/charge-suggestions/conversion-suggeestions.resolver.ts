@@ -12,7 +12,7 @@ export const missingConversionInfoSuggestions: ResolverFn<
 > = async (DbCharge, _, { injector }) => {
   const transactions = await injector
     .get(TransactionsProvider)
-    .getTransactionsByChargeIDLoader.load(DbCharge.id);
+    .transactionsByChargeIDLoader.load(DbCharge.id);
 
   let fromCurrency: string | undefined;
   let toCurrency: string | undefined;

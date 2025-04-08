@@ -3,7 +3,7 @@ import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
