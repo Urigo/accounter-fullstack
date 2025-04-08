@@ -1,7 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import {
   Currency,
   type BusinessTripSummaryCategories,
@@ -153,7 +153,7 @@ export async function getExpenseAmountsData(
     }
 
     const transactions = await injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionByIdLoader.loadMany(businessTripExpense.transaction_ids);
 
     const allTransactions = transactions.filter(

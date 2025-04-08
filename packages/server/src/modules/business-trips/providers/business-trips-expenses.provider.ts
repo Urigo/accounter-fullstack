@@ -2,8 +2,8 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
@@ -77,7 +77,7 @@ export class BusinessTripExpensesProvider {
     private travelAndSubsistenceExpensesProvider: BusinessTripTravelAndSubsistenceExpensesProvider,
     private otherExpensesProvider: BusinessTripOtherExpensesProvider,
     private carRentalExpensesProvider: BusinessTripCarRentalExpensesProvider,
-    private transactionsProvider: TransactionsNewProvider,
+    private transactionsProvider: TransactionsProvider,
   ) {}
 
   private async batchBusinessTripsExpensesByBusinessTripIds(businessTripIds: readonly string[]) {

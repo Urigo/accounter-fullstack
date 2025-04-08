@@ -1,6 +1,6 @@
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import type { IGetTransactionsByIdsResult } from '../__generated__/transactions-new.types';
 
 export function effectiveDateSupplement(transaction: IGetTransactionsByIdsResult) {
   if (transaction.debit_date_override) {

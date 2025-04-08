@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
@@ -49,7 +49,7 @@ export const commonTransactionFields:
   | FinancialEntitiesModule.CommonTransactionResolvers = {
   counterparty: async (transactionId, _, { injector }) => {
     const transaction = await injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId);
     if (!transaction.business_id) {
       return null;

@@ -1,4 +1,4 @@
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule } from '../types.js';
 
@@ -12,7 +12,7 @@ export const commonTransactionFields:
   | FinancialAccountsModule.CommonTransactionResolvers = {
   account: async (transactionId, _, { injector }) => {
     const transaction = await injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId);
     if (!transaction.account_id) {
       throw new Error(`Transaction ID="${transactionId}" is missing account_id`);

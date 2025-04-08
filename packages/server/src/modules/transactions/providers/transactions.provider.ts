@@ -16,7 +16,7 @@ import type {
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
   IUpdateTransactionQuery,
-} from '../__generated__/transactions-new.types.js';
+} from '../types.js';
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
     SELECT *
@@ -121,7 +121,7 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
   scope: Scope.Singleton,
   global: true,
 })
-export class TransactionsNewProvider {
+export class TransactionsProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 5,
   });

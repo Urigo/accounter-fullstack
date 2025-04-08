@@ -8,7 +8,7 @@ import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-c
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import {
@@ -71,7 +71,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
       .getSalaryRecordsByChargeIdLoader.load(chargeId);
 
     const transactionsPromise = injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector

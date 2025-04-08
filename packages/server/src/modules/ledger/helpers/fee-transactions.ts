@@ -1,6 +1,6 @@
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type { LedgerProto } from '@shared/types';
 import {
   getFinancialAccountTaxCategoryId,

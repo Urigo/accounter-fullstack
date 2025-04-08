@@ -16,7 +16,7 @@ import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.he
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   Currency,
   Maybe,
@@ -84,7 +84,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)

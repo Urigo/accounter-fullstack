@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
@@ -11,7 +11,7 @@ export const commonTransactionFields:
   debitExchangeRates: async (transactionId, _, { injector }) => {
     try {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       if (!transaction.debit_date) {
@@ -28,7 +28,7 @@ export const commonTransactionFields:
   eventExchangeRates: async (transactionId, _, { injector }) => {
     try {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       if (!transaction.event_date) {
@@ -49,7 +49,7 @@ export const commonTransactionFields:
   ) => {
     try {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       const currency = formatCurrency(transaction.currency);

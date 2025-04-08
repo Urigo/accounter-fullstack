@@ -1,7 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
@@ -53,7 +53,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
     // Get all transactions
     const transactions = await injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 

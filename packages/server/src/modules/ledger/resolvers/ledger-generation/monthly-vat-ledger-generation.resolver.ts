@@ -5,7 +5,7 @@ import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expense
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString, getMonthFromDescription } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -79,7 +79,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     });
 
     const transactionsPromise = injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector

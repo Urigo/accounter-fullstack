@@ -1,4 +1,4 @@
-export * from './__generated__/transactions-new.types.js';
+export * from './__generated__/transactions.types.js';
 export type {
   IGetCreditCardTransactionsByChargeIdsParams,
   IGetCreditCardTransactionsByChargeIdsResult,

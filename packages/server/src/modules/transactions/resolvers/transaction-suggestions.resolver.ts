@@ -3,7 +3,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
-import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
+import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
 type SuggestionData = {
@@ -41,7 +41,7 @@ const missingInfoSuggestions = async (
   } = adminContext.financialAccounts;
 
   const transaction = await injector
-    .get(TransactionsNewProvider)
+    .get(TransactionsProvider)
     .transactionByIdLoader.load(transactionId);
 
   if (transaction.business_id) {
@@ -448,7 +448,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
       }
 
       const mainTransaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId)
         .catch(e => {
           console.error('Error fetching transaction', { transactionId, error: e });
@@ -460,7 +460,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
       }
 
       const similarTransactions = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .getSimilarTransactions({
           details: mainTransaction.source_description,
           counterAccount: mainTransaction.counter_account,

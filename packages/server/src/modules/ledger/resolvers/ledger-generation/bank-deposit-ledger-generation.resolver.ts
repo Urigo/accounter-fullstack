@@ -4,9 +4,9 @@ import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-c
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type {
   Currency,
   Maybe,
@@ -59,7 +59,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     >();
 
     const transactionsPromise = injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
 
     const bankDepositTransactionsPromise = injector

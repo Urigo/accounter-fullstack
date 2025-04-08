@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -63,7 +63,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     ...commonChargeFields,
     officialRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionsByChargeIDLoader.load(dbCharge.id);
       if (!transactions) {
         throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
@@ -88,7 +88,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
     eventRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionsByChargeIDLoader.load(dbCharge.id);
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 

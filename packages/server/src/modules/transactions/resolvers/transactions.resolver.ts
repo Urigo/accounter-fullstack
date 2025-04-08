@@ -5,10 +5,9 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import { IUpdateTransactionParams } from '../__generated__/transactions-new.types.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
-import { TransactionsNewProvider } from '../providers/transactions-new.provider.js';
-import type { TransactionsModule } from '../types.js';
+import { TransactionsProvider } from '../providers/transactions.provider.js';
+import type { IUpdateTransactionParams, TransactionsModule } from '../types.js';
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
@@ -20,7 +19,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       }
 
       const dbTransactions = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.loadMany(transactionIDs);
       if (!dbTransactions) {
         if (transactionIDs.length === 1) {
@@ -59,7 +58,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const emptyChargePromise = async () => {
           // case unlinked from charge
           const transaction = await injector
-            .get(TransactionsNewProvider)
+            .get(TransactionsProvider)
             .transactionByIdLoader.load(transactionId);
           if (!transaction) {
             throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
@@ -123,7 +122,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         };
 
         const res = await injector
-          .get(TransactionsNewProvider)
+          .get(TransactionsProvider)
           .updateTransaction({ ...adjustedFields });
         if (!res[0]?.id) {
           throw new GraphQLError('Transaction update failed');
@@ -148,7 +147,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     __resolveType: async (raw, { injector }, _info) => {
       if (typeof raw === 'string') {
         const transaction = await injector
-          .get(TransactionsNewProvider)
+          .get(TransactionsProvider)
           .transactionByIdLoader.load(raw);
 
         const charge = await injector
@@ -175,7 +174,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   ConversionTransaction: {
     __isTypeOf: async (transactionId, { injector }) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       const charge = await injector
@@ -186,7 +185,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     ...commonTransactionFields,
     effectiveDate: async (transactionId, __dirname, { injector }) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       const date = effectiveDateSupplement(transaction);
@@ -198,13 +197,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
     type: async (transactionId, __dirname, { injector }) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
       return Number(transaction.amount) > 0 ? 'QUOTE' : 'BASE';
     },
     bankRate: async (transactionId, __dirname, { injector }) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       return transaction.currency_rate;
@@ -215,7 +214,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       { injector, adminContext: { defaultLocalCurrency } },
     ) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       return injector
@@ -230,7 +229,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   CommonTransaction: {
     __isTypeOf: async (transactionId, { injector }) => {
       const transaction = await injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
       const charge = await injector

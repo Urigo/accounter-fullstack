@@ -3,12 +3,12 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
 import {
   getTransactionDebitDate,
   getValueDate,
 } from '@modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/enums';
 import {
   formatCurrency,
@@ -46,7 +46,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       }
 
       const transactionsPromise = injector
-        .get(TransactionsNewProvider)
+        .get(TransactionsProvider)
         .transactionByIdLoader.loadMany(DbTripExpense.transaction_ids);
 
       const [transactions] = await Promise.all([transactionsPromise]);
@@ -111,7 +111,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       .get(BusinessTripExpensesTransactionsMatchProvider)
       .getBusinessTripsExpenseMatchesByExpenseIdLoader.load(DbTripExpense.id);
     const transactionsPromise = injector
-      .get(TransactionsNewProvider)
+      .get(TransactionsProvider)
       .transactionByIdLoader.loadMany(DbTripExpense.transaction_ids)
       .then(
         res =>

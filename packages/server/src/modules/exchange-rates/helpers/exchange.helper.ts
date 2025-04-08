@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { IGetTransactionsByIdsResult } from '@modules/transactions/__generated__/transactions-new.types.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField } from '@shared/types';

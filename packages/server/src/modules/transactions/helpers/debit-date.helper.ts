@@ -1,6 +1,6 @@
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
-import type { IGetTransactionsByIdsResult } from '../__generated__/transactions-new.types.js';
 
 export function getTransactionDebitDate(transaction: IGetTransactionsByIdsResult) {
   return (

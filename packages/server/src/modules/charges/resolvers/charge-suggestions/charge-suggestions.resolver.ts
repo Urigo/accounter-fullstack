@@ -1,7 +1,7 @@
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
-import { TransactionsNewProvider } from '@modules/transactions/providers/transactions-new.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { UUID_REGEX } from '@shared/constants';
 import { ChargeTypeEnum } from '@shared/enums';
 import type {
@@ -139,7 +139,7 @@ const missingInfoSuggestions: Resolver<
   }
 
   const transactions = await injector
-    .get(TransactionsNewProvider)
+    .get(TransactionsProvider)
     .transactionsByChargeIDLoader.load(DbCharge.id);
   const description = transactions.map(t => t.source_description).join(' ');
 
