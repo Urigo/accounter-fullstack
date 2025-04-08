@@ -31,7 +31,7 @@ SET is_fee = et.is_fee,
 FROM accounter_schema.extended_transactions et
 WHERE et.id = t.id;
 
-create function accounter_schema.insert_creditcard_transaction_handler() returns trigger
+create or replace function accounter_schema.insert_creditcard_transaction_handler() returns trigger
     language plpgsql
 as
 $$
