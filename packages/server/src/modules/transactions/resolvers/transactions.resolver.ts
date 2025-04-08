@@ -18,10 +18,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         return [];
       }
 
-      const dbTransactions = await injector
+      const transactions = await injector
         .get(TransactionsProvider)
         .transactionByIdLoader.loadMany(transactionIDs);
-      if (!dbTransactions) {
+      if (!transactions) {
         if (transactionIDs.length === 1) {
           throw new GraphQLError(`Transaction ID="${transactionIDs[0]}" not found`);
         } else {
@@ -30,8 +30,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       }
 
       transactionIDs.map(id => {
-        const transaction = dbTransactions.find(
-          transaction => transaction && 'id' in transaction && transaction.id === id,
+        const transaction = transactions.find(
+          transaction => !(transaction instanceof Error) && transaction.id === id,
         );
         if (!transaction) {
           throw new GraphQLError(`Transaction ID="${id}" not found`);

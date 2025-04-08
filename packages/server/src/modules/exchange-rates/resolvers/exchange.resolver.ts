@@ -72,9 +72,11 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
       const quoteCurrency = formatCurrency(quoteTransaction.currency);
-      const baseDebitTimestamp = baseTransaction.debit_timestamp;
-      const quoteDebitTimestamp = quoteTransaction.debit_timestamp;
-      const date = baseDebitTimestamp || quoteDebitTimestamp || baseTransaction.debit_date;
+      const date =
+        baseTransaction.debit_timestamp ||
+        quoteTransaction.debit_timestamp ||
+        baseTransaction.debit_date_override ||
+        baseTransaction.debit_date;
 
       const rate = await injector
         .get(ExchangeProvider)

@@ -161,10 +161,12 @@ const missingInfoSuggestions: Resolver<
     description.includes('ריבית חובה') ||
     description.includes('FEE')
   ) {
-    let sourceTransaction = 'Missing';
-    if (transactions.length) {
-      sourceTransaction = `['${transactions.map(t => t.source_reference).join("','")}']`;
-    }
+    const sourceTransaction =
+      transactions.length === 0
+        ? 'Missing'
+        : transactions.length === 1
+          ? transactions[0].source_reference
+          : `['${transactions.map(t => t.source_reference).join("','")}']`;
     return {
       tags: await injector
         .get(TagsProvider)

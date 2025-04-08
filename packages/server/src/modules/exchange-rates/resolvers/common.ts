@@ -14,11 +14,11 @@ export const commonTransactionFields:
         .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);
 
-      if (!transaction.debit_date) {
+      if (!transaction.debit_date || !transaction.debit_date_override) {
         return null;
       }
 
-      return dateToTimelessDateString(transaction.debit_date);
+      return dateToTimelessDateString(transaction.debit_date_override || transaction.debit_date);
     } catch (e) {
       const message = 'Error fetching transaction debit date';
       console.error(message, e);

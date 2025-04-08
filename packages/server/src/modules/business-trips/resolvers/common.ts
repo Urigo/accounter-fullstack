@@ -3,18 +3,12 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import {
-  getTransactionDebitDate,
-  getValueDate,
-} from '@modules/transactions/helpers/debit-date.helper.js';
+import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
+import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/enums';
-import {
-  formatCurrency,
-  formatFinancialAmount,
-  optionalDateToTimelessDateString,
-} from '@shared/helpers';
+import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';
@@ -137,8 +131,7 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         if (!match) {
           return;
         }
-        const currency = formatCurrency(transaction.currency);
-        const valueDate = getValueDate(transaction);
+        const { currency, valueDate } = validateTransactionBasicVariables(transaction);
         const exchangeRate = await injector
           .get(ExchangeProvider)
           .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, valueDate);
