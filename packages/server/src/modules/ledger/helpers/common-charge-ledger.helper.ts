@@ -240,7 +240,7 @@ export async function ledgerEntryFromMainTransaction(
     debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyDebitAmount1: Math.abs(amount),
     description: transaction.source_description ?? undefined,
-    reference: transaction.source_reference,
+    reference: transaction.source_id,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
