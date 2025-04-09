@@ -28,8 +28,8 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
     },
   },
   BalanceTransactions: {
-    id: t => t.id!,
-    chargeId: t => t.charge_id!,
+    id: t => t.id,
+    chargeId: t => t.charge_id,
     amount: t => formatFinancialAmount(t.amount, t.currency),
     amountUsd: t => formatFinancialAmount(t.amount_usd, Currency.Usd),
     date: t => dateToTimelessDateString(t.debit_date!),

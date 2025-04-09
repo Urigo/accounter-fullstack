@@ -21,7 +21,7 @@ const getCreditCardTransactionsByChargeIds = sql<IGetCreditCardTransactionsByCha
       on t.account_number = origin_transaction.source_reference
         and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
-        and t.debit_date = origin_transaction.debit_date
+        and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)
   WHERE origin_transaction.charge_id in $$chargeIds;`;
 
 const validateCreditCardTransactionsAmountByChargeIds = sql<IValidateCreditCardTransactionsAmountByChargeIdsQuery>`
@@ -38,7 +38,7 @@ const validateCreditCardTransactionsAmountByChargeIds = sql<IValidateCreditCardT
       on t.account_number = origin_transaction.source_reference
         and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
-        and t.debit_date = origin_transaction.debit_date
+        and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)
 WHERE origin_transaction.charge_id in $$chargeIds
 group by (origin_transaction.charge_id, origin_transaction.amount)`;
 

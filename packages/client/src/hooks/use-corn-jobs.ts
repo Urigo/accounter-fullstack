@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
+  CalculateCreditcardTransactionsDebitDateDocument,
   FlagForeignFeeTransactionsDocument,
   MergeChargesByTransactionReferenceDocument,
 } from '../gql/graphql.js';
@@ -27,6 +28,13 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  mutation CalculateCreditcardTransactionsDebitDate {
+    calculateCreditcardTransactionsDebitDate
+  }
+`;
+
 const NOTIFICATION_ID = 'mergeChargesByTransactionReference';
 
 type UseCornJobs = {
@@ -44,10 +52,14 @@ export const useCornJobs = (): UseCornJobs => {
   const [{ fetching: executingMergeCharges }, mergeCharges] = useMutation(
     MergeChargesByTransactionReferenceDocument,
   );
+  const [{ fetching: executingCalculateDebitDates }, calculateDebitDates] = useMutation(
+    CalculateCreditcardTransactionsDebitDateDocument,
+  );
   const executeJobs = useCallback(async () => {
     let message = 'Error flagging foreign fee transactions';
     const feeNotificationId = `${NOTIFICATION_ID}-fees`;
     const mergeChargesNotificationId = `${NOTIFICATION_ID}-merge`;
+    const calculateDebitDateNotificationId = `${NOTIFICATION_ID}-debit-date`;
     toast.loading('Flagging Fees', {
       id: feeNotificationId,
     });
@@ -108,10 +120,38 @@ export const useCornJobs = (): UseCornJobs => {
         id: mergeChargesNotificationId,
         description: 'Charges successfully auto-merged',
       });
+
+      // next task: calculate debit date where missing for credit card transactions
+      message = 'Error calculating missing debit date for credit card transactions';
+      toast.loading('Completing missing debit dates', {
+        id: calculateDebitDateNotificationId,
+      });
+      const calculateDebitDatesRes = await calculateDebitDates({});
+      const calculateDebitDatesData = handleCommonErrors(
+        calculateDebitDatesRes,
+        message,
+        calculateDebitDateNotificationId,
+      );
+      if (!calculateDebitDatesData) {
+        return void 0;
+      }
+      if (!calculateDebitDatesData.calculateCreditcardTransactionsDebitDate) {
+        toast.error('Error', {
+          id: calculateDebitDateNotificationId,
+          description: message,
+        });
+        return void 0;
+      }
+      toast.success('Success', {
+        id: calculateDebitDateNotificationId,
+        description: 'Debit dates successfully updated',
+      });
     } catch (e) {
       console.error(`${message}: ${e}`);
       toast.dismiss(feeNotificationId);
       toast.dismiss(mergeChargesNotificationId);
+      toast.dismiss(calculateDebitDateNotificationId);
+
       toast.error('Error', {
         description: 'Error handling tasks',
         duration: 100_000,
@@ -119,10 +159,10 @@ export const useCornJobs = (): UseCornJobs => {
       });
     }
     return void 0;
-  }, [flagFees, mergeCharges]);
+  }, [flagFees, mergeCharges, calculateDebitDates]);
 
   return {
-    fetching: executingFlagFees || executingMergeCharges,
+    fetching: executingFlagFees || executingMergeCharges || executingCalculateDebitDates,
     executeJobs,
   };
 };

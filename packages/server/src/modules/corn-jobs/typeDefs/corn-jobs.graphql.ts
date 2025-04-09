@@ -5,6 +5,7 @@ export default gql`
   extend type Mutation {
     mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult! @auth(role: ADMIN)
     flagForeignFeeTransactions: FlagForeignFeeTransactionsResult! @auth(role: ADMIN)
+    calculateCreditcardTransactionsDebitDate: Boolean! @auth(role: ADMIN)
   }
 
   " result type for mergeChargesByTransactionReference "

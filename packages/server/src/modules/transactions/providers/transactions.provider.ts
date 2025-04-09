@@ -42,8 +42,8 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
     ($isIDs = 0 OR t.id IN $$IDs)
     AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
     AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
-    AND ($fromDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
-    AND ($toDebitDate ::TEXT IS NULL OR t.debit_date::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
+    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
     AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;

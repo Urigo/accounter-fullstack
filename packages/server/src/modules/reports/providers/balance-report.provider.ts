@@ -19,8 +19,8 @@ with transactions AS (SELECT
     c.owner_id,
     t.business_id,
     t.is_fee,
-    date_part('month', t.debit_date) as month,
-    date_part('year', t.debit_date) as year,
+    date_part('month', COALESCE(t.debit_date_override, t.debit_date)) as month,
+    date_part('year', COALESCE(t.debit_date_override, t.debit_date)) as year,
     CASE
         WHEN t.currency = 'USD' THEN t.amount
         WHEN t.currency = 'ILS' THEN t.amount / lr.usd -- Convert ILS => USD

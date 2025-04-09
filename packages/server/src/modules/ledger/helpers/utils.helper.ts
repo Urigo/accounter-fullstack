@@ -66,21 +66,22 @@ type ValidationOptions = {
 
 export function validateTransactionRequiredVariables(
   transaction: IGetTransactionsByChargeIdsResult,
-  valiadtionOptions: ValidationOptions = {},
+  validationOptions: ValidationOptions = {},
 ): ValidateTransaction {
-  if (!transaction.debit_date) {
+  if (!transaction.debit_date && !transaction.debit_date_override) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${transaction.currency}`,
     );
   }
 
-  if (!transaction.business_id && !valiadtionOptions.skipBusinessId) {
+  if (!transaction.business_id && !validationOptions.skipBusinessId) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" is missing business_id`,
     );
   }
 
-  const debit_timestamp = transaction.debit_timestamp ?? transaction.debit_date;
+  const debit_timestamp =
+    transaction.debit_date_override ?? transaction.debit_timestamp ?? transaction.debit_date;
 
   return {
     ...transaction,
