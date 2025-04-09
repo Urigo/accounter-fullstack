@@ -880,7 +880,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$
+$$;
 
 create or replace function accounter_schema.insert_poalim_cad_transaction_handler() returns trigger
     language plpgsql
