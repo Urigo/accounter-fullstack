@@ -84,7 +84,7 @@ export async function createAndConnectStore(options: { connectionString: string;
           -- create new transaction
           INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
                                                     event_date, debit_date, amount, current_balance, is_fee,
-                                                    source_reference, source_origin, counter_account)
+                                                    source_reference, source_origin, counter_account, origin_key)
           VALUES (account_id_var,
                   charge_id_var,
                   merged_id,
@@ -105,7 +105,8 @@ export async function createAndConnectStore(options: { connectionString: string;
                   CASE
                       WHEN NEW.action_type = 'fee'::text THEN 'ETANA'::text
                       ELSE NULL::text
-                      END)
+                      END,
+                  NEW.transaction_id)
           RETURNING id INTO transaction_id_var;
 
           RETURN NEW;

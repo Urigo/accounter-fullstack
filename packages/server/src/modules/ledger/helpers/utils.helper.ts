@@ -116,7 +116,7 @@ export function generatePartialLedgerEntry(
     debitAmount1: absForeignAmount,
     localCurrencyDebitAmount1: absAmount,
     description: transaction.source_description ?? undefined,
-    reference: transaction.source_id,
+    reference: transaction.origin_key,
     isCreditorCounterparty,
     ownerId,
     currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,

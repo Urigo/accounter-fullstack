@@ -61,7 +61,7 @@ export async function createAndConnectStore(options: { connectionString: string;
         -- create new transaction
         INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
                                                   event_date, debit_date, amount, current_balance, source_reference,
-                                                  debit_timestamp, source_origin, counter_account)
+                                                  debit_timestamp, source_origin, counter_account, origin_key)
         VALUES (account_id_var,
                 charge_id_var,
                 merged_id,
@@ -81,13 +81,15 @@ export async function createAndConnectStore(options: { connectionString: string;
                     WHEN NEW.wallet_address =
                         NEW.from_address THEN NEW.to_address
                     ELSE NEW.from_address
-                    END);
+                    END,
+                NEW.id);
 
         -- if fee is not null, create new fee transaction
         IF (NEW.gas_fee IS NOT NULL) THEN
             INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
                                                       event_date, debit_date, amount, current_balance, is_fee,
-                                                      source_reference, debit_timestamp, source_origin, counter_account)
+                                                      source_reference, debit_timestamp, source_origin, counter_account,
+                                                      origin_key)
             VALUES (account_id_var,
                     charge_id_var,
                     merged_id,
@@ -105,7 +107,8 @@ export async function createAndConnectStore(options: { connectionString: string;
                         WHEN NEW.wallet_address =
                             NEW.from_address THEN NEW.to_address
                         ELSE NEW.from_address
-                        END)
+                        END,
+                    NEW.id)
             RETURNING id INTO transaction_id_var;
         END IF;
 
