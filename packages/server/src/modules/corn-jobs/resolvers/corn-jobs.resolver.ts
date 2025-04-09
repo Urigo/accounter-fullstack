@@ -194,6 +194,21 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         };
       }
     },
+    calculateCreditcardTransactionsDebitDate: async (
+      _,
+      __,
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
+      try {
+        await injector
+          .get(CornJobsProvider)
+          .calculateCreditcardDebitDate({ ownerId: defaultAdminBusinessId });
+        return true;
+      } catch (e) {
+        console.error(e);
+        throw new GraphQLError('Failed to calculate creditcard transactions debit date');
+      }
+    },
   },
 };
 

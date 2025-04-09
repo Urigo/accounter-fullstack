@@ -2,6 +2,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import type {
+  ICalculateCreditcardDebitDateParams,
+  ICalculateCreditcardDebitDateQuery,
   IFlagForeignFeeTransactionsParams,
   IFlagForeignFeeTransactionsQuery,
   IGetReferenceMergeCandidatesParams,
@@ -57,6 +59,40 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
   WHERE t.id = matches.id
   RETURNING t.id;`;
 
+const calculateCreditcardDebitDate = sql<ICalculateCreditcardDebitDateQuery>`
+WITH alt_debit_date AS (SELECT p.event_date,
+                               p.reference_number::text
+                        FROM accounter_schema.poalim_ils_account_transactions p
+                        WHERE p.activity_type_code = 491
+                        ORDER BY p.event_date DESC),
+     altered_transactions AS (SELECT DISTINCT ON (t.id) t.id,
+                                                        alt_debit_date.event_date AS alt_debit_date,
+                                                        c.owner_id
+                              FROM accounter_schema.transactions t
+                                       LEFT JOIN accounter_schema.financial_accounts a ON a.id = t.account_id
+                                       LEFT JOIN accounter_schema.charges c ON c.id = t.charge_id
+                                       LEFT JOIN alt_debit_date
+                                                 ON alt_debit_date.reference_number = a.account_number AND
+                                                    alt_debit_date.event_date > t.event_date AND
+                                                    alt_debit_date.event_date < (t.event_date + '40 days'::interval) AND
+                                                    alt_debit_date.event_date = ((SELECT min(add.event_date) AS min
+                                                                                  FROM alt_debit_date add
+                                                                                  WHERE add.reference_number = a.account_number
+                                                                                    AND add.event_date > t.event_date
+                                                                                    AND add.event_date < (t.event_date + '40 days'::interval)))
+                              WHERE t.debit_date IS NULL
+                                AND t.debit_date_override IS NULL
+                                AND currency = 'ILS'
+                                AND (t.source_origin = 'ISRACARD' OR t.source_origin = 'AMEX'))
+UPDATE accounter_schema.transactions t
+SET debit_date_override = at.alt_debit_date
+FROM altered_transactions at
+where at.id = t.id
+  AND t.debit_date IS NULL
+  AND t.debit_date_override IS NULL
+  AND at.alt_debit_date IS NOT NULL
+  AND at.owner_id = $ownerId;`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -72,5 +108,7 @@ export class CornJobsProvider {
     return flagForeignFeeTransactions.run(params, this.dbProvider);
   }
 
-  // TODO: update creditcard debit date according to bank payment date
+  public async calculateCreditcardDebitDate(params: ICalculateCreditcardDebitDateParams) {
+    return calculateCreditcardDebitDate.run(params, this.dbProvider);
+  }
 }
