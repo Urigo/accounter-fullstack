@@ -31,12 +31,13 @@ export function isTransactionsOppositeSign([first, second]: IGetTransactionsByCh
 
 export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
   const currency = formatCurrency(transaction.currency);
-  if (!transaction.debit_date) {
+  const debitDate = transaction.debit_date_override ?? transaction.debit_date;
+  if (!debitDate) {
     throw new LedgerError(
       `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${currency}`,
     );
   }
-  const valueDate = transaction.debit_timestamp ?? transaction.debit_date;
+  const valueDate = transaction.debit_timestamp ?? debitDate;
 
   if (!transaction.business_id) {
     throw new LedgerError(
