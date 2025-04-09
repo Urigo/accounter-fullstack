@@ -47,9 +47,7 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
                           ON g.source_reference = t.source_reference
                 LEFT JOIN accounter_schema.charges c
                           ON c.id = t.charge_id
-                LEFT JOIN accounter_schema.transactions_fees f
-                          ON f.id = t.id
-        WHERE f.id IS NULL
+        WHERE t.is_fee IS FALSE
           AND c.owner_id = $ownerId
           AND g.counter > 1
           AND t.currency <> 'ILS'
