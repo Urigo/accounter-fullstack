@@ -59,14 +59,20 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
 
     const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(context, year);
 
+    const isCreditorCounterparty = recoveryReserveAmount < 0;
+
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
       invoiceDate: new Date(year, 11, 31),
       valueDate: new Date(year, 11, 31),
       currency: defaultLocalCurrency,
       isCreditorCounterparty: true,
-      creditAccountID1: recoveryReserveTaxCategoryId,
-      debitAccountID1: recoveryReserveExpensesTaxCategoryId,
+      creditAccountID1: isCreditorCounterparty
+        ? recoveryReserveExpensesTaxCategoryId
+        : recoveryReserveTaxCategoryId,
+      debitAccountID1: isCreditorCounterparty
+        ? recoveryReserveTaxCategoryId
+        : recoveryReserveExpensesTaxCategoryId,
       localCurrencyCreditAmount1: Math.abs(recoveryReserveAmount),
       localCurrencyDebitAmount1: Math.abs(recoveryReserveAmount),
       description: `Recovery reserve for ${year}`,
