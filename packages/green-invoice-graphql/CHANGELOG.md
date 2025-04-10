@@ -1,5 +1,24 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.7.4
+
+### Patch Changes
+
+- [#2026](https://github.com/Urigo/accounter-fullstack/pull/2026)
+  [`7d70618`](https://github.com/Urigo/accounter-fullstack/commit/7d706185e337c05efd2c8cbeb3b4b919522c5336)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.3)
+    (from `0.108.2`, in `dependencies`)
+
+- [#2028](https://github.com/Urigo/accounter-fullstack/pull/2028)
+  [`ed1758c`](https://github.com/Urigo/accounter-fullstack/commit/ed1758ccebf849fde17a4c6e208a6e76913aea2c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.3)
+    (from `0.108.2`, in `dependencies`)
+
 ## 0.7.3
 
 ### Patch Changes
