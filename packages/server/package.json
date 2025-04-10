@@ -51,7 +51,7 @@
     "nodemon": "3.1.9",
     "pino-pretty": "13.0.0",
     "rimraf": "6.0.1",
-    "tsc-alias": "1.8.14",
+    "tsc-alias": "1.8.15",
     "typescript": "5.8.3"
   },
   "publishConfig": {
