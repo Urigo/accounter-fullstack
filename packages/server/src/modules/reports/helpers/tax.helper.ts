@@ -7,12 +7,13 @@ import { BusinessTripProto } from '@modules/business-trips/types.js';
 import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
 import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TimelessDateString } from '@shared/types';
 import { CommentaryProto } from '../types.js';
 import {
-  amountByFinancialEntityIdValidation,
-  amountBySortCodeValidation,
+  amountByFinancialEntityIdAndSortCodeValidation,
   DecoratedLedgerRecord,
+  recordsByFinancialEntityIdAndSortCodeValidation,
   updateRecords,
 } from './profit-and-loss.helper.js';
 
@@ -21,7 +22,7 @@ export async function calculateTaxAmounts(
   year: number,
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   yearlyResearchAndDevelopmentExpensesAmount: number,
-  researchAndDevelopmentExpensesForTax: number,
+  threeYearsResearchAndDevelopmentExpensesForTax: number,
   profitBeforeTaxAmount: number,
 ) {
   const {
@@ -169,16 +170,44 @@ export async function calculateTaxAmounts(
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
     businessTripsExcessExpensesAmount += amount;
   });
-  const salaryExcessExpensesAmount = amountByFinancialEntityIdValidation(
+
+  const excludedTaxCategories = await injector
+    .get(TaxCategoriesProvider)
+    .getAllTaxCategories()
+    .then(res => res.filter(tc => !!tc.tax_excluded).map(tc => tc.id));
+
+  const filterBusinessTripsExcludedRecords = (financialEntityId: string, sortCode: number) => {
+    return sortCode === 945 && !excludedTaxCategories.includes(financialEntityId);
+  };
+  const businessTripsExcludedAmount = amountByFinancialEntityIdAndSortCodeValidation(
+    decoratedLedgerRecords,
+    filterBusinessTripsExcludedRecords,
+    true,
+  );
+  businessTripsExcessExpensesAmount -= businessTripsExcludedAmount;
+
+  const salaryExcessExpensesAmount = amountByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
     financialEntityId => financialEntityId === salaryExcessExpensesTaxCategoryId,
     true,
   );
-  const reserves = amountBySortCodeValidation(
+  const reserves = recordsByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
-    sortCode => sortCode === 931,
+    (financialEntityId, sortCode) =>
+      sortCode === 931 && !excludedTaxCategories.includes(financialEntityId),
     true,
   );
+
+  const filterYearlyRndExcludedRecords = (financialEntityId: string, sortCode: number) => {
+    return sortCode === 922 && !excludedTaxCategories.includes(financialEntityId);
+  };
+  const yearlyRndExcludedRnd = amountByFinancialEntityIdAndSortCodeValidation(
+    decoratedLedgerRecords,
+    filterYearlyRndExcludedRecords,
+    true,
+  );
+  const researchAndDevelopmentExpensesForTax =
+    threeYearsResearchAndDevelopmentExpensesForTax + yearlyRndExcludedRnd;
 
   const taxableIncomeAmount =
     profitBeforeTaxAmount +

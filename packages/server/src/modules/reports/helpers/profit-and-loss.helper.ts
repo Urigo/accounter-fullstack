@@ -141,29 +141,111 @@ export function amountBySortCodeValidation(
   return { amount, records };
 }
 
-export function amountByFinancialEntityIdValidation(
+export function amountByFinancialEntityIdAndSortCodeValidation(
   unfilteredRecords: DecoratedLedgerRecord[],
-  validation: (financialEntityId: string) => boolean,
+  validation: (financialEntityId: string, sortCode: number) => boolean,
   negate: boolean = false,
 ): number {
   let amount = 0;
   const sign = negate ? -1 : 1;
   unfilteredRecords.map(record => {
-    if (record.credit_entity1 && validation(record.credit_entity1)) {
+    if (
+      record.credit_entity1 &&
+      validation(record.credit_entity1, record.credit_entity_sort_code1!)
+    ) {
       amount += Number(record.credit_local_amount1) * sign;
     }
-    if (record.credit_entity2 && validation(record.credit_entity2)) {
+    if (
+      record.credit_entity2 &&
+      validation(record.credit_entity2, record.credit_entity_sort_code2!)
+    ) {
       amount += Number(record.credit_local_amount2) * sign;
     }
-    if (record.debit_entity1 && validation(record.debit_entity1)) {
+    if (record.debit_entity1 && validation(record.debit_entity1, record.debit_entity_sort_code1!)) {
       amount += Number(record.debit_local_amount1) * sign * -1;
     }
-    if (record.debit_entity2 && validation(record.debit_entity2)) {
+    if (record.debit_entity2 && validation(record.debit_entity2, record.debit_entity_sort_code2!)) {
       amount += Number(record.debit_local_amount2) * sign * -1;
     }
   });
 
   return amount;
+}
+
+export function recordsByFinancialEntityIdAndSortCodeValidation(
+  unfilteredRecords: DecoratedLedgerRecord[],
+  validation: (financialEntityId: string, sortCode: number) => boolean,
+  negate: boolean = false,
+): CommentaryProto {
+  let amount = 0;
+  const amountsByEntity = new Map<
+    number,
+    {
+      amount: number;
+      records: Map<string, number>;
+    }
+  >();
+
+  const sign = negate ? -1 : 1;
+  unfilteredRecords.map(record => {
+    if (
+      record.credit_entity1 &&
+      validation(record.credit_entity1, record.credit_entity_sort_code1!)
+    ) {
+      const recordAmount = Number(record.credit_local_amount1) * sign;
+      updateRecords(
+        amountsByEntity,
+        recordAmount,
+        record.credit_entity_sort_code1!,
+        record.credit_entity1,
+      );
+      amount += recordAmount;
+    }
+    if (
+      record.credit_entity2 &&
+      validation(record.credit_entity2, record.credit_entity_sort_code2!)
+    ) {
+      const recordAmount = Number(record.credit_local_amount2) * sign;
+      updateRecords(
+        amountsByEntity,
+        recordAmount,
+        record.credit_entity_sort_code2!,
+        record.credit_entity2,
+      );
+      amount += recordAmount;
+    }
+    if (record.debit_entity1 && validation(record.debit_entity1, record.debit_entity_sort_code1!)) {
+      const recordAmount = Number(record.debit_local_amount1) * sign * -1;
+      updateRecords(
+        amountsByEntity,
+        recordAmount,
+        record.debit_entity_sort_code1!,
+        record.debit_entity1,
+      );
+      amount += recordAmount;
+    }
+    if (record.debit_entity2 && validation(record.debit_entity2, record.debit_entity_sort_code2!)) {
+      const recordAmount = Number(record.debit_local_amount2) * sign * -1;
+      updateRecords(
+        amountsByEntity,
+        recordAmount,
+        record.debit_entity_sort_code2!,
+        record.debit_entity2,
+      );
+      amount += recordAmount;
+    }
+  });
+
+  const records = Array.from(amountsByEntity.entries()).map(([sortCode, data]) => ({
+    sortCode,
+    amount: data.amount,
+    records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
+      financialEntityId,
+      amount,
+    })),
+  }));
+
+  return { amount, records };
 }
 
 export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedgerRecord[]) {
