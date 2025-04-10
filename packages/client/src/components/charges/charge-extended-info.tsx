@@ -112,10 +112,12 @@ export function ChargeExtendedInfo({
     }
   }, [chargeID, chargeId, refetchExtensionInfo]);
 
+  const chargeType = useMemo(() => charge?.__typename, [charge]);
+
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
-  const isSalaryCharge = charge?.__typename === 'SalaryCharge';
+  const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
 
   useEffect(() => {
@@ -178,18 +180,21 @@ export function ChargeExtendedInfo({
 
   const conversionIsReady = useMemo(() => {
     return (
-      charge?.__typename === 'ConversionCharge' &&
+      chargeType === 'ConversionCharge' &&
       isFragmentReady(FetchChargeDocument, ConversionChargeInfoFragmentDoc, charge)
     );
-  }, [charge]);
+  }, [charge, chargeType]);
 
   const salariesAreReady =
-    charge?.__typename === 'SalaryCharge' &&
+    chargeType === 'SalaryCharge' &&
     isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
 
-  const creditcardTransactionsAreReady =
-    charge?.__typename === 'CreditcardBankCharge' &&
-    isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge);
+  const creditcardTransactionsAreReady = useMemo(
+    () =>
+      chargeType === 'CreditcardBankCharge' &&
+      isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge),
+    [charge, chargeType],
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -214,7 +219,7 @@ export function ChargeExtendedInfo({
               },
             }}
           >
-            {charge.__typename === 'ConversionCharge' && (
+            {chargeType === 'ConversionCharge' && (
               <Accordion.Item value="conversion">
                 <Accordion.Control
                   disabled={!hasTransactions}
@@ -302,7 +307,7 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            {charge.__typename === 'SalaryCharge' && (
+            {chargeType === 'SalaryCharge' && (
               <Accordion.Item value="salaries">
                 <Accordion.Control
                   disabled={!isSalaryCharge}
@@ -327,14 +332,18 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            {charge.__typename === 'CreditcardBankCharge' && (
+            {chargeType === 'CreditcardBankCharge' && (
               <Accordion.Item value="creditcard">
                 <Accordion.Control onClick={() => toggleAccordionItem('creditcard')}>
                   CreditCard Transactions
                 </Accordion.Control>
                 <Accordion.Panel>
                   {creditcardTransactionsAreReady && (
-                    <CreditcardTransactionsInfo chargeProps={charge} />
+                    <CreditcardTransactionsInfo
+                      chargeProps={
+                        charge as FragmentType<typeof CreditcardBankChargeInfoFragmentDoc>
+                      }
+                    />
                   )}
                 </Accordion.Panel>
               </Accordion.Item>
