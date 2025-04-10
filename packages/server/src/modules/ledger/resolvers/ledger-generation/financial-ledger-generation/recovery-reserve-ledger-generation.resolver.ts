@@ -66,7 +66,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
       invoiceDate: new Date(year, 11, 31),
       valueDate: new Date(year, 11, 31),
       currency: defaultLocalCurrency,
-      isCreditorCounterparty: isCreditorCounterparty,
+      isCreditorCounterparty,
       creditAccountID1: isCreditorCounterparty
         ? recoveryReserveExpensesTaxCategoryId
         : recoveryReserveTaxCategoryId,
