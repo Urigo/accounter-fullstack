@@ -1,11 +1,8 @@
 import { ReactElement } from 'react';
 import { InfoCircle } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps } from '@mantine/core';
-import { PolymorphicComponentProps } from '@mantine/utils';
+import { ActionIcon } from '../../ui/action-icon.js';
 
-export function InfoMiniButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps>,
-): ReactElement {
+export function InfoMiniButton(props: React.ComponentProps<typeof ActionIcon>): ReactElement {
   return (
     <ActionIcon {...props}>
       <InfoCircle size={20} />

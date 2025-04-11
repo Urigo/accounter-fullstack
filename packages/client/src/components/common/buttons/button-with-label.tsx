@@ -1,4 +1,5 @@
 import { CSSProperties, MouseEventHandler, ReactElement } from 'react';
+import { Button } from '../../ui/button.js';
 
 export interface ButtonWithLabelProps {
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -25,16 +26,22 @@ export const ButtonWithLabel = ({
     <div>
       <label className="text-sm font-medium text-gray-700">{textLabel}</label>
       <div>
-        <button
+        <Button
           style={style}
           type={type}
           onClick={onClick}
-          className="bg-gray-100 border focus:ring-2 focus:ring-indigo-200 focus:bg-transparent hover:bg-indigo-500 hover:text-white text-base outline-hidden text-gray-700 py-1 px-3 leading-8 transition-colors duration-200 ease-in-out sm:text-sm rounded-md"
+          variant="outline"
+          className="w-full"
+          asChild={!!url}
         >
-          <a rel={rel} target={target} href={url} type={type}>
-            {title}
-          </a>
-        </button>
+          {url ? (
+            <a rel={rel} target={target} href={url}>
+              {title}
+            </a>
+          ) : (
+            title
+          )}
+        </Button>
       </div>
     </div>
   );

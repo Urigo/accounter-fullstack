@@ -1,13 +1,10 @@
 import { ReactElement } from 'react';
 import { Check } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps } from '@mantine/core';
-import { PolymorphicComponentProps } from '@mantine/utils';
+import { ActionIcon } from '../../ui/action-icon.js';
 
-export function ConfirmMiniButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps> & {
-    onClick: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  },
-): ReactElement {
+export function ConfirmMiniButton(props: {
+  onClick: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
+}): ReactElement {
   return (
     <ActionIcon color="green" {...props}>
       <Check size={20} />

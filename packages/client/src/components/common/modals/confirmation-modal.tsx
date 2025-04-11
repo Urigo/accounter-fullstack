@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
 import { Modal, ModalProps } from '@mantine/core';
+import { Button } from '../../ui/button.js';
 
 interface Props extends ModalProps {
   labels?: { cancel?: string; confirm?: string };
@@ -23,18 +24,12 @@ export function ConfirmationModal({
           )}
           {children}
           <div className="flex mx-auto flex-row justify-evenly">
-            <button
-              onClick={props.onClose}
-              className="flex mt-6 text-white bg-red-500 border-0 py-2 px-5 focus:outline-hidden hover:bg-red-600 rounded-sm"
-            >
+            <Button onClick={props.onClose} variant="destructive" className="mt-6">
               {labels.cancel}
-            </button>
-            <button
-              onClick={onConfirm}
-              className="flex mt-6 text-white bg-indigo-500 border-0 py-2 px-5 focus:outline-hidden hover:bg-indigo-600 rounded-sm"
-            >
+            </Button>
+            <Button onClick={onConfirm} className="mt-6">
               {labels.confirm}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
