@@ -57,7 +57,7 @@
     "@parcel/watcher": "^2.4.1",
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
-    "@theguild/eslint-config": "0.13.2",
+    "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
     "@types/node": "22.14.1",
     "bob-the-bundler": "^7.0.1",
@@ -78,6 +78,7 @@
     "vitest": "3.1.1"
   },
   "resolutions": {
+    "@theguild/eslint-config/eslint-plugin-unicorn": "56.0.1",
     "graphql": "16.10.0"
   },
   "lint-staged": {
