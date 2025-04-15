@@ -277,6 +277,8 @@ __metadata:
 "@accounter/pcn874-generator@workspace:^, @accounter/pcn874-generator@workspace:packages/pcn874-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
+  dependencies:
+    zod: "npm:3.24.2"
   languageName: unknown
   linkType: soft
 
