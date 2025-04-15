@@ -1,23 +1,10 @@
-import type { Header, Transaction } from '../types.js';
+import { HeaderStrict, TransactionStrict } from '../schemas.js';
 
 const HEADER_REPORT_TYPE = 1;
 const HEADER_TAXABLE_DIFFERENT_RATE_SALES = '+00000000000';
 const HEADER_TAXABLE_DIFFERENT_RATE_SALES_VAT = '+000000000';
 
-const addLeadingZeros = (value = 0, length: number): string => {
-  const zeros = '0'.repeat(length);
-  const stringNum = Math.abs(Math.round(value)).toString();
-  const final = (zeros + stringNum).slice(-length);
-  return final;
-};
-
-const numToSignedString = (value: number, length: number): string => {
-  const sign = value >= 0 ? '+' : '-';
-  const paddedNum = addLeadingZeros(value, length);
-  return `${sign}${paddedNum}`;
-};
-
-export const headerBuilder = (header: Header): string => {
+export const headerBuilder = (header: HeaderStrict): string => {
   const {
     licensedDealerId,
     generationDate,
@@ -32,26 +19,10 @@ export const headerBuilder = (header: Header): string => {
     totalVat,
   } = header;
 
-  const taxableSalesAmountString = numToSignedString(taxableSalesAmount, 11);
-
-  const taxableSalesVatString = numToSignedString(taxableSalesVat, 9);
-
-  const salesRecordCountString = addLeadingZeros(salesRecordCount, 9);
-
-  const zeroValOrExemptSalesCountString = numToSignedString(zeroValOrExemptSalesCount, 11);
-
-  const otherInputsVatString = numToSignedString(otherInputsVat, 9);
-
-  const equipmentInputsVatString = numToSignedString(equipmentInputsVat, 9);
-
-  const inputsCountString = addLeadingZeros(inputsCount, 9);
-
-  const totalVatString = numToSignedString(totalVat, 11);
-
-  return `O${licensedDealerId}${reportMonth}${HEADER_REPORT_TYPE}${generationDate}${taxableSalesAmountString}${taxableSalesVatString}${HEADER_TAXABLE_DIFFERENT_RATE_SALES}${HEADER_TAXABLE_DIFFERENT_RATE_SALES_VAT}${salesRecordCountString}${zeroValOrExemptSalesCountString}${otherInputsVatString}${equipmentInputsVatString}${inputsCountString}${totalVatString}`;
+  return `O${licensedDealerId}${reportMonth}${HEADER_REPORT_TYPE}${generationDate}${taxableSalesAmount}${taxableSalesVat}${HEADER_TAXABLE_DIFFERENT_RATE_SALES}${HEADER_TAXABLE_DIFFERENT_RATE_SALES_VAT}${salesRecordCount}${zeroValOrExemptSalesCount}${otherInputsVat}${equipmentInputsVat}${inputsCount}${totalVat}`;
 };
 
-export const transactionBuilder = (transaction: Transaction): string => {
+export const transactionBuilder = (transaction: TransactionStrict): string => {
   const {
     entryType,
     vatId,
@@ -63,15 +34,9 @@ export const transactionBuilder = (transaction: Transaction): string => {
     allocationNumber,
   } = transaction;
 
-  const entryTypeLetter = entryType.valueOf()[0];
-
-  const totalVatString = addLeadingZeros(totalVat, 9);
-
-  const invoiceSumString = numToSignedString(invoiceSum, 10);
-
-  return `\n${entryTypeLetter}${vatId}${invoiceDate}${refGroup}${refNumber}${totalVatString}${invoiceSumString}${allocationNumber}`;
+  return `\n${entryType}${vatId}${invoiceDate}${refGroup}${refNumber}${totalVat}${invoiceSum}${allocationNumber}`;
 };
 
-export const footerBuilder = (header: Header): string => {
+export const footerBuilder = (header: HeaderStrict): string => {
   return `\nX${header.licensedDealerId}`;
 };
