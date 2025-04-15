@@ -78,7 +78,7 @@
     "vitest": "3.1.1"
   },
   "resolutions": {
-    "@theguild/eslint-config/eslint-plugin-unicorn": "56.0.1",
+    "@theguild/eslint-config/eslint-plugin-unicorn": "58.0.0",
     "graphql": "16.10.0"
   },
   "lint-staged": {
