@@ -3,6 +3,7 @@ import { Injector } from 'graphql-modules';
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { deleteCharges } from './delete-charges.helper.js';
 
@@ -37,6 +38,14 @@ export const mergeChargesExecutor = async (
           assertChargeID: baseChargeID,
         });
 
+      // update linked misc expenses
+      const replaceMiscExpensesChargeIdPromise = injector
+        .get(MiscExpensesProvider)
+        .replaceMiscExpensesChargeId({
+          replaceChargeID: id,
+          assertChargeID: baseChargeID,
+        });
+
       // update linked business trips employee payments
       const replaceBusinessTripsEmployeePaymentsChargeIdPromise = injector
         .get(BusinessTripEmployeePaymentsProvider)
@@ -49,6 +58,7 @@ export const mergeChargesExecutor = async (
         replaceDocumentsChargeIdPromise,
         replaceTransactionsChargeIdPromise,
         replaceLedgerRecordsChargeIdPromise,
+        replaceMiscExpensesChargeIdPromise,
         replaceBusinessTripsEmployeePaymentsChargeIdPromise,
       ]);
     });

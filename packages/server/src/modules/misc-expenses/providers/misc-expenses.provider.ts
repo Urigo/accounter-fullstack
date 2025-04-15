@@ -14,6 +14,8 @@ import type {
   IInsertExpenseQuery,
   IInsertExpensesParams,
   IInsertExpensesQuery,
+  IReplaceMiscExpensesChargeIdParams,
+  IReplaceMiscExpensesChargeIdQuery,
   IUpdateExpenseParams,
   IUpdateExpenseQuery,
 } from '../types.js';
@@ -71,6 +73,15 @@ const updateExpense = sql<IUpdateExpenseQuery>`
   WHERE
     id = $miscExpenseId
   RETURNING *;`;
+
+const replaceMiscExpensesChargeId = sql<IReplaceMiscExpensesChargeIdQuery>`
+    UPDATE accounter_schema.misc_expenses
+      SET
+      charge_id = $assertChargeID
+    WHERE
+      charge_id = $replaceChargeID
+    RETURNING *
+  `;
 
 const insertExpense = sql<IInsertExpenseQuery>`
   INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
@@ -165,6 +176,16 @@ export class MiscExpensesProvider {
   public async updateExpense(params: IUpdateExpenseParams) {
     if (params.miscExpenseId) await this.invalidateById(params.miscExpenseId);
     return updateExpense.run(params, this.dbProvider);
+  }
+
+  public async replaceMiscExpensesChargeId(params: IReplaceMiscExpensesChargeIdParams) {
+    if (params.assertChargeID) {
+      await this.invalidateByChargeId(params.assertChargeID);
+    }
+    if (params.replaceChargeID) {
+      await this.invalidateByChargeId(params.replaceChargeID);
+    }
+    return replaceMiscExpensesChargeId.run(params, this.dbProvider);
   }
 
   public async insertExpense(params: IInsertExpenseParams) {
