@@ -108,7 +108,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.2"
     "@types/chart.js": "npm:2.9.41"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.1.0"
+    "@types/react": "npm:19.1.1"
     "@types/react-dom": "npm:19.1.2"
     "@urql/exchange-auth": "npm:2.2.1"
     "@vitejs/plugin-react": "npm:4.3.4"
@@ -297,7 +297,7 @@ __metadata:
     "@types/bcrypt": "npm:5.0.2"
     "@types/pg": "npm:8.11.11"
     "@whatwg-node/fetch": "npm:0.10.5"
-    ai: "npm:4.3.4"
+    ai: "npm:4.3.5"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:5.1.1"
     cloudinary: "npm:2.6.0"
@@ -8586,12 +8586,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.14.0":
-  version: 22.14.0
-  resolution: "@types/node@npm:22.14.0"
+"@types/node@npm:22.14.1":
+  version: 22.14.1
+  resolution: "@types/node@npm:22.14.1"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/9d79f3fa1af9c2c869514f419c4a4905b34c10e12915582fd1784868ac4e74c6d306cf5eb47ef889b6750ab85a31be96618227b86739c4a3e0b1c15063f384c6
+  checksum: 10c0/d49c4d00403b1c2348cf0701b505fd636d80aabe18102105998dc62fdd36dcaf911e73c7a868c48c21c1022b825c67b475b65b1222d84b704d8244d152bb7f86
   languageName: node
   linkType: hard
 
@@ -8668,12 +8668,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.1.0":
-  version: 19.1.0
-  resolution: "@types/react@npm:19.1.0"
+"@types/react@npm:19.1.1":
+  version: 19.1.1
+  resolution: "@types/react@npm:19.1.1"
   dependencies:
     csstype: "npm:^3.0.2"
-  checksum: 10c0/632fd20ee176e55801a61c5f854141b043571a3e363ef106b047b766a813a12735cbb37abb3d61d126346979f530f2ed269a60c8ef3cdee54e5e9fe4174e5dad
+  checksum: 10c0/d22417857460ade4250806135a3d1e2558737a7ae76f120f88afbc6419ab04312977a5208a70d4f85059b9493c0f1f16c9ba1483aa8ea1dad581da666c95773e
   languageName: node
   linkType: hard
 
@@ -9132,7 +9132,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.2"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:22.14.0"
+    "@types/node": "npm:22.14.1"
     bob-the-bundler: "npm:^7.0.1"
     concurrently: "npm:9.1.2"
     eslint: "npm:9.24.0"
@@ -9142,7 +9142,7 @@ __metadata:
     graphql: "npm:16.10.0"
     graphql-scalars: "npm:1.24.2"
     husky: "npm:9.1.7"
-    lint-staged: "npm:15.5.0"
+    lint-staged: "npm:15.5.1"
     prettier: "npm:3.5.3"
     prettier-plugin-sql: "npm:0.19.0"
     rimraf: "npm:6.0.1"
@@ -9207,9 +9207,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:4.3.4":
-  version: 4.3.4
-  resolution: "ai@npm:4.3.4"
+"ai@npm:4.3.5":
+  version: 4.3.5
+  resolution: "ai@npm:4.3.5"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.2"
     "@ai-sdk/provider-utils": "npm:2.2.6"
@@ -9223,7 +9223,7 @@ __metadata:
   peerDependenciesMeta:
     react:
       optional: true
-  checksum: 10c0/6bc465b5d402c9feb57464816107b7716d7725a35bb51d5fba4a1a77828f31235b26e48677ca102ae552679f3479bc317ea422df726784501d4cdb91e7aee640
+  checksum: 10c0/459e4002715b183cf0cfff87965f4e1ae7411301be30f74f6c4d68173e1b9f43f58bccb43a99fd9c10d3bf12483a73bb5afda032618bd1d25c8462dedf4f71df
   languageName: node
   linkType: hard
 
@@ -15572,9 +15572,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:15.5.0":
-  version: 15.5.0
-  resolution: "lint-staged@npm:15.5.0"
+"lint-staged@npm:15.5.1":
+  version: 15.5.1
+  resolution: "lint-staged@npm:15.5.1"
   dependencies:
     chalk: "npm:^5.4.1"
     commander: "npm:^13.1.0"
@@ -15588,7 +15588,7 @@ __metadata:
     yaml: "npm:^2.7.0"
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/393b24d85d705a36e6556dc9d9b710594163be60f7789a2ca71bbf8f31debc10f7fde9cd0e868466ac2b7c154661983602decd7abbb6c685b21007bc70dbbdd6
+  checksum: 10c0/86deddb08bf10428f2eb96c02326a9ee403360729225f0b12afb0c0f13c287a75daa01e179d86f64e3432576446d8643d204a47417296f9ef0aa56f1340ff2af
   languageName: node
   linkType: hard
 
