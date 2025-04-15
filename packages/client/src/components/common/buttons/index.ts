@@ -1,5 +1,4 @@
 export * from './button.js';
-export * from './button-image.js';
 export * from './button-with-label.js';
 export * from './charge-navigate-button.js';
 export * from './confirm-mini-button.js';
