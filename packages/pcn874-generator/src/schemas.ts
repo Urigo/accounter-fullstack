@@ -218,7 +218,7 @@ export const transactionStrictSchema = z
           );
         }
 
-        if (transaction.refNumber !== '000000000') {
+        if (transaction.refNumber === '000000000') {
           throw new Error(
             `On transactions of entry type "INPUT_PETTY_CASH", refNumber should reflect the number of invoices in the entry (hence > 0), received "${transaction.refNumber}"`,
           );
