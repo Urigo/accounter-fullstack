@@ -88,6 +88,7 @@ import migration_2025_04_08T09_16_45_static_extend_transactions from './actions/
 import migration_2025_04_08T14_28_54_drop_extended_transactions_view from './actions/2025-04-08T14-28-54.drop-extended-transactions-view.js';
 import migration_2025_04_09T14_39_52_drop_extended_transactions_additions from './actions/2025-04-09T14-39-52.drop-extended-transactions-additions.js';
 import migration_2025_04_10T15_44_07_tax_excluded_flag from './actions/2025-04-10T15-44-07.tax-excluded-flag.js';
+import migration_2025_04_15T17_27_28_pcn874 from './actions/2025-04-15T17-27-28.pcn874.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -183,5 +184,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_04_08T14_28_54_drop_extended_transactions_view,
       migration_2025_04_09T14_39_52_drop_extended_transactions_additions,
       migration_2025_04_10T15_44_07_tax_excluded_flag,
+      migration_2025_04_15T17_27_28_pcn874,
     ],
   });

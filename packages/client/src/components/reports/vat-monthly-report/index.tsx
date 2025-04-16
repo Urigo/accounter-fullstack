@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { format, lastDayOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -50,8 +50,7 @@ export const VatMonthlyReport = (): ReactElement => {
         ) as VatReportFilter)
       : {
           financialEntityId: userContext?.context.adminBusinessId ?? '',
-          fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
-          toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
+          monthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
         },
   );
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
