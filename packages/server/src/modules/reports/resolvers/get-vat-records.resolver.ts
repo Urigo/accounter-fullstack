@@ -1,4 +1,4 @@
-import { endOfDay, format, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
+import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -9,11 +9,10 @@ import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.hel
 import {
   DocumentType,
   type QueryVatReportArgs,
-  type ResolverFn,
   type ResolversParentTypes,
   type ResolversTypes,
 } from '@shared/gql-types';
-import { TimelessDateString } from '@shared/types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import {
   adjustTaxRecord,
   type RawVatReportRecord,
@@ -43,10 +42,10 @@ export const getVatRecords = async (
     const reportIssuerId = filters?.financialEntityId;
 
     const fromDate = filters?.monthDate
-      ? (format(startOfMonth(new Date(filters.monthDate)), 'yyyy-MM-dd') as TimelessDateString)
+      ? dateToTimelessDateString(startOfMonth(new Date(filters.monthDate)))
       : undefined;
     const toDate = filters?.monthDate
-      ? (format(lastDayOfMonth(new Date(filters.monthDate)), 'yyyy-MM-dd') as TimelessDateString)
+      ? dateToTimelessDateString(lastDayOfMonth(new Date(filters.monthDate)))
       : undefined;
 
     // get all documents by date filters

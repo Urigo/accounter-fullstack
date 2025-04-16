@@ -12,7 +12,7 @@ export default gql`
       businessId: UUID
       fromMonthDate: TimelessDate!
       toMonthDate: TimelessDate!
-    ): [Pcn874Records!]!
+    ): [Pcn874Records!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
@@ -37,5 +37,6 @@ export default gql`
     business: Business!
     date: TimelessDate!
     content: String!
+    diffContent: String
   }
 `;
