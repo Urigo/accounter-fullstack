@@ -1,6 +1,17 @@
 export * from './__generated__/types.js';
 export * from './__generated__/dynamic-report.types.js';
 export * from './__generated__/balance-report.types.js';
+export type {
+  IGetReportByBusinessIdAndDatesParams,
+  IGetReportByBusinessIdAndDatesResult,
+  IGetReportByBusinessIdAndDatesQuery,
+  IUpdateReportParams,
+  IUpdateReportResult,
+  IUpdateReportQuery,
+  IInsertReportParams,
+  IInsertReportResult,
+  IInsertReportQuery,
+} from './__generated__/vat-report.types.js';
 
 export type CommentaryProto = {
   amount: number;

@@ -4,11 +4,20 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     pcnFile(
-      fromDate: TimelessDate!
-      toDate: TimelessDate!
+      monthDate: TimelessDate!
       financialEntityId: UUID!
       options: PCNOptionsInput
     ): PCNFileResult! @auth(role: ACCOUNTANT)
+    pcnByDate(
+      businessId: UUID
+      fromMonthDate: TimelessDate!
+      toMonthDate: TimelessDate!
+    ): [Pcn874Records!]!
+  }
+
+  extend type Mutation {
+    updatePcn874(businessId: UUID, monthDate: TimelessDate!, content: String!): Boolean!
+      @auth(role: ACCOUNTANT)
   }
 
   " config options for generatePCN "
@@ -23,48 +32,10 @@ export default gql`
     # rawData: PCNFileRawData
   }
 
-  # type PCNFileRawData {
-  #   header: PCNHeader!
-  #   transactions: [PCNTransaction!]!
-  # }
-
-  # type PCNHeader {
-  #   licensedDealerId: String!
-  #   reportMonth: String!
-  #   generationDate: String
-  #   taxableSalesAmount: Int!
-  #   taxableSalesVat: Int!
-  #   salesRecordCount: Int!
-  #   zeroValOrExemptSalesCount: Int!
-  #   otherInputsVat: Int!
-  #   equipmentInputsVat: Int!
-  #   inputsCount: Int!
-  #   totalVat: Int!
-  # }
-
-  # type PCNTransaction {
-  #   entryType: PCNEntryType!
-  #   vatId: String
-  #   invoiceDate: String!
-  #   refGroup: String
-  #   refNumber: String
-  #   totalVat: Int
-  #   invoiceSum: Int!
-  # }
-
-  # enum PCNEntryType {
-  #   S1
-  #   S2
-  #   L1
-  #   L2
-  #   M
-  #   Y
-  #   I
-  #   T
-  #   K
-  #   R
-  #   P
-  #   H
-  #   C
-  # }
+  " record of PCN874 report "
+  type Pcn874Records {
+    business: Business!
+    date: TimelessDate!
+    content: String!
+  }
 `;
