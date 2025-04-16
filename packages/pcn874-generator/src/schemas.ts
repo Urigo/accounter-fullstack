@@ -168,7 +168,6 @@ export const transactionStrictSchema = z
     invoiceSum: z
       .number()
       .int()
-      .min(0)
       .transform(value => numToSignedString(value, 10)),
   })
   .strict()
@@ -361,7 +360,7 @@ export const transactionCoreSchema = z.object({
    * Always the 100%, always a positive value, rounded to the nearest shekel
    * סכום
    */
-  invoiceSum: z.number().int().min(0),
+  invoiceSum: z.number().int(),
 });
 
 export type TransactionStrict = z.infer<typeof transactionStrictSchema>;
