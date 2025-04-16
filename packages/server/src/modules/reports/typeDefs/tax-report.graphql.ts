@@ -26,6 +26,7 @@ export default gql`
     businessTripsExcessExpensesAmount: FinancialAmount!
     salaryExcessExpensesAmount: FinancialAmount!
     reserves: ReportCommentary!
+    nontaxableLinkage: ReportCommentary!
 
     taxableIncome: FinancialAmount!
     taxRate: Float!

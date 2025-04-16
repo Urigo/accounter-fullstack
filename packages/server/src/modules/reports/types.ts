@@ -47,6 +47,7 @@ export type TaxReportYearProto = {
   businessTripsExcessExpensesAmount: number;
   salaryExcessExpensesAmount: number;
   reserves: CommentaryProto;
+  nontaxableLinkage: CommentaryProto;
 
   taxableIncome: number;
   taxRate: number;

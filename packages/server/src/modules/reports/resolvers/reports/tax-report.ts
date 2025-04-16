@@ -101,6 +101,7 @@ export const taxReport: ResolverFn<
       businessTripsExcessExpensesAmount,
       salaryExcessExpensesAmount,
       reserves,
+      nontaxableLinkage,
       taxableIncomeAmount,
       taxRate,
       annualTaxExpenseAmount,
@@ -136,6 +137,7 @@ export const taxReport: ResolverFn<
       businessTripsExcessExpensesAmount,
       salaryExcessExpensesAmount,
       reserves,
+      nontaxableLinkage,
 
       taxableIncome: taxableIncomeAmount,
       taxRate,
@@ -186,6 +188,10 @@ export const taxReportYearMapper: TaxReportYearResolvers = {
   reserves: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
     amount: formatFinancialAmount(parent.reserves.amount, defaultLocalCurrency),
     records: parent.reserves.records,
+  }),
+  nontaxableLinkage: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.nontaxableLinkage.amount, defaultLocalCurrency),
+    records: parent.nontaxableLinkage.records,
   }),
   taxableIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
     formatFinancialAmount(parent.taxableIncome, defaultLocalCurrency),
