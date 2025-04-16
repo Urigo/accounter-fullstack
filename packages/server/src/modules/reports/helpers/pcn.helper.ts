@@ -150,7 +150,7 @@ export async function getPcn874String(
     reportMonth,
   );
 
-  return { reportContent, monthDate, reportMonth, vatNumber: financialEntity.vat_number };
+  return { reportContent, monthDate, reportMonth, financialEntity };
 }
 
 export const generatePcnFromCharges = (

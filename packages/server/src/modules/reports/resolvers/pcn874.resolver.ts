@@ -1,22 +1,20 @@
-import { format, startOfMonth } from 'date-fns';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
+import { GraphQLError } from 'graphql';
+import { ResolversTypes } from '@shared/gql-types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { generatePcnFromCharges, getPcn874String } from '../helpers/pcn.helper.js';
-import type { RawVatReportRecord } from '../helpers/vat-report.helper.js';
+import { getPcn874String } from '../helpers/pcn.helper.js';
 import { VatReportProvider } from '../providers/vat-report.provider.js';
 import type { ReportsModule } from '../types.js';
-import { getVatRecords } from './get-vat-records.resolver.js';
 
 export const pcn874Resolvers: ReportsModule.Resolvers = {
   Query: {
     pcnFile: async (_, { monthDate: rawMonthDate, financialEntityId }, context) => {
-      const { reportContent, monthDate, reportMonth, vatNumber } = await getPcn874String(
+      const { reportContent, monthDate, reportMonth, financialEntity } = await getPcn874String(
         context,
         financialEntityId,
         rawMonthDate,
       );
-
-      const fileName = `pcn874_${vatNumber}_${reportMonth}.txt`;
 
       // if not exists, insert the report
       try {
@@ -34,28 +32,74 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
         console.error('Error inserting report:', error);
       }
 
+      const fileName = `pcn874_${financialEntity.vat_number}_${reportMonth}.txt`;
+
       return { reportContent, fileName };
     },
     pcnByDate: async (_, { businessId, fromMonthDate, toMonthDate }, context, __) => {
       const financialEntityId = businessId || context.adminContext.defaultAdminBusinessId;
-      const financialEntity = await context.injector
-        .get(BusinessesProvider)
-        .getBusinessByIdLoader.load(financialEntityId);
-      if (!financialEntity?.vat_number) {
-        throw new Error(`Financial entity ${financialEntity?.name} has no VAT number`);
+      const months: TimelessDateString[] = [];
+      let startTimestamp = startOfMonth(new Date(fromMonthDate)).getTime();
+      const endTimestamp = endOfMonth(new Date(toMonthDate)).getTime();
+      while (startTimestamp <= endTimestamp) {
+        const currMonth = startOfMonth(new Date(startTimestamp));
+        months.push(dateToTimelessDateString(currMonth));
+        const nextMonth = addMonths(currMonth, 1);
+        startTimestamp = nextMonth.getTime();
       }
 
-      const months: string[] = [];
-      const startTimestamp = new Date(fromMonthDate).getTime();
+      const reports: Array<ResolversTypes['Pcn874Records']> = [];
+      await Promise.all(
+        months.map(async monthDate => {
+          try {
+            const [savedReport, { reportContent: generatedReport, financialEntity }] =
+              await Promise.all([
+                context.injector
+                  .get(VatReportProvider)
+                  .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]),
+                getPcn874String(context, financialEntityId, monthDate),
+              ]);
 
-      await getPcn874String(context, financialEntityId, rawMonthDate);
-      // TODO
-      return [];
+            if (savedReport) {
+              reports.push({
+                date: monthDate,
+                business: financialEntity,
+                content: generatedReport,
+                diffContent: savedReport === generatedReport ? undefined : savedReport,
+              });
+            } else {
+              reports.push({
+                date: monthDate,
+                business: financialEntity,
+                content: generatedReport,
+              });
+            }
+          } catch (error) {
+            const message = `Error fetching report for month ${monthDate}`;
+            console.error(message, error);
+            throw new Error(message);
+          }
+        }),
+      );
+
+      return reports;
     },
   },
   Mutation: {
-    updatePcn874: async (_, {}, context, __) => {
-      return true;
+    updatePcn874: async (_, { monthDate, businessId, content }, context, __) => {
+      try {
+        const normalizedMonthDate = dateToTimelessDateString(startOfMonth(new Date(monthDate)));
+        await context.injector.get(VatReportProvider).updateReport({
+          businessId,
+          monthDate: normalizedMonthDate,
+          content,
+        });
+        return true;
+      } catch (error) {
+        const message = `Error updating report for month ${monthDate}`;
+        console.error(message, error);
+        throw new GraphQLError(message);
+      }
     },
   },
 };
