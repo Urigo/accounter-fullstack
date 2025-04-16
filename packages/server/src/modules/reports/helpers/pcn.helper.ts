@@ -1,6 +1,9 @@
-import { format } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { idValidator, yearMonthValidator } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
+import { getVatRecords } from '../resolvers/get-vat-records.resolver.js';
 import type { RawVatReportRecord } from './vat-report.helper.js';
 
 type GeneratorParameters = Parameters<typeof pcnGenerator>;
@@ -118,6 +121,38 @@ const transformTransactions = (vatRecords: RawVatReportRecord[]): ExtendedPCNTra
   return transactions.sort((a, b) => a.invoiceDate.localeCompare(b.invoiceDate));
 };
 
+export async function getPcn874String(
+  context: GraphQLModules.Context,
+  businessId: string,
+  rawMonthDate: TimelessDateString,
+) {
+  const monthDate = format(
+    startOfMonth(new Date(rawMonthDate)),
+    'yyyy-MM-dd',
+  ) as TimelessDateString;
+  const financialEntity = await context.injector
+    .get(BusinessesProvider)
+    .getBusinessByIdLoader.load(businessId);
+  if (!financialEntity?.vat_number) {
+    throw new Error(`Business entity ${businessId} has no VAT number`);
+  }
+  const vatRecords = await getVatRecords(
+    { filters: { monthDate, financialEntityId: businessId } },
+    context,
+  );
+  const reportMonth = format(new Date(monthDate), 'yyyyMM');
+  const reportContent = generatePcnFromCharges(
+    [
+      ...(vatRecords.income as RawVatReportRecord[]),
+      ...(vatRecords.expenses as RawVatReportRecord[]),
+    ],
+    financialEntity.vat_number,
+    reportMonth,
+  );
+
+  return { reportContent, monthDate, reportMonth, vatNumber: financialEntity.vat_number };
+}
+
 export const generatePcnFromCharges = (
   vatRecords: RawVatReportRecord[],
   vatNumber: string,
@@ -139,7 +174,5 @@ export const generatePcnFromCharges = (
 
   const reportContent = pcnGenerator(header, transactions, { strict: false });
 
-  const fileName = `pcn874_${vatNumber}_${reportMonth}.txt`;
-
-  return { reportContent, fileName };
+  return reportContent;
 };

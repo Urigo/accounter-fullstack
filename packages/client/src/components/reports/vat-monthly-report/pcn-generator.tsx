@@ -8,8 +8,8 @@ import { dedupeFragments } from '../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query GeneratePCN($fromDate: TimelessDate!, $toDate: TimelessDate!, $financialEntityId: UUID!) {
-    pcnFile(fromDate: $fromDate, toDate: $toDate, financialEntityId: $financialEntityId) {
+  query GeneratePCN($monthDate: TimelessDate!, $financialEntityId: UUID!) {
+    pcnFile(monthDate: $monthDate, financialEntityId: $financialEntityId) {
       reportContent
       fileName
     }
@@ -22,15 +22,14 @@ type Props = {
 };
 
 export const PCNGenerator = ({
-  filter: { fromDate, toDate, financialEntityId },
+  filter: { monthDate, financialEntityId },
   isLoading,
 }: Props): ReactElement => {
   const [{ data, fetching, error }, executeQuery] = useQuery({
     query: dedupeFragments(GeneratePcnDocument),
     pause: true,
     variables: {
-      fromDate,
-      toDate,
+      monthDate,
       financialEntityId,
     },
   });

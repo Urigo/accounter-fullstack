@@ -9,8 +9,10 @@ import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 import { createModule } from 'graphql-modules';
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
+import { VatReportProvider } from './providers/vat-report.provider.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
+import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
@@ -28,8 +30,8 @@ export const reportsModule = createModule({
     dynamicReport,
     balanceReport,
   ],
-  resolvers: [reportsResolvers, dynamicReportResolver, balanceReportResolver],
-  providers: () => [DynamicReportProvider, BalanceReportProvider],
+  resolvers: [reportsResolvers, dynamicReportResolver, balanceReportResolver, pcn874Resolvers],
+  providers: () => [DynamicReportProvider, BalanceReportProvider, VatReportProvider],
 });
 
 export * as ReportsTypes from './types.js';

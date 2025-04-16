@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
@@ -7,8 +6,6 @@ import {
   formatFinancialIntAmount,
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
-import { generatePcnFromCharges } from '../helpers/pcn.helper.js';
-import type { RawVatReportRecord } from '../helpers/vat-report.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
 import {
@@ -26,30 +23,7 @@ import { yearlyLedgerReport } from './reports/yearly-ledger-report.resolver.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
-    vatReport: getVatRecords,
-    pcnFile: async (_, { fromDate, toDate, financialEntityId }, context, __) => {
-      const financialEntity = await context.injector
-        .get(BusinessesProvider)
-        .getBusinessByIdLoader.load(financialEntityId);
-      if (!financialEntity?.vat_number) {
-        throw new Error(`Financial entity ${financialEntityId} has no VAT number`);
-      }
-      const vatRecords = await getVatRecords(
-        _,
-        { filters: { fromDate, toDate, financialEntityId } },
-        context,
-        __,
-      );
-      const reportMonth = format(new Date(fromDate), 'yyyyMM');
-      return generatePcnFromCharges(
-        [
-          ...(vatRecords.income as RawVatReportRecord[]),
-          ...(vatRecords.expenses as RawVatReportRecord[]),
-        ],
-        financialEntity.vat_number,
-        reportMonth,
-      );
-    },
+    vatReport: (_, args, context) => getVatRecords(args, context),
     profitAndLossReport,
     taxReport,
     corporateTaxRulingComplianceReport,

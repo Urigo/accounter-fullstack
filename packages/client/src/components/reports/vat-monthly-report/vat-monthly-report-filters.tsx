@@ -1,5 +1,5 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
-import { format, lastDayOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
@@ -41,10 +41,8 @@ function VatMonthlyReportFilterForm({
   }
 
   function onSelectDate(date: Date): void {
-    const from = new Date(date.getFullYear(), date.getMonth(), 1);
-    const to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    setValue('fromDate', format(from, 'yyyy-MM-dd') as TimelessDateString);
-    setValue('toDate', format(to, 'yyyy-MM-dd') as TimelessDateString);
+    const month = new Date(date.getFullYear(), date.getMonth(), 15);
+    setValue('monthDate', format(month, 'yyyy-MM-dd') as TimelessDateString);
   }
 
   return (
@@ -86,8 +84,8 @@ function VatMonthlyReportFilterForm({
           )}
         />
         <MonthPickerInput
-          defaultValue={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
-          defaultDate={filter?.fromDate ? new Date(filter.fromDate) : new Date()}
+          defaultValue={filter?.monthDate ? new Date(filter.monthDate) : new Date()}
+          defaultDate={filter?.monthDate ? new Date(filter.monthDate) : new Date()}
           onChange={onSelectDate}
           popoverProps={{ withinPortal: true }}
         />
@@ -135,8 +133,7 @@ export function VatMonthlyReportFilter({
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
       financialEntityId: userContext?.context.adminBusinessId ?? filter.financialEntityId,
-      fromDate: format(new Date(), 'yyyy-MM-01') as TimelessDateString,
-      toDate: format(lastDayOfMonth(new Date()), 'yyyy-MM-dd') as TimelessDateString,
+      monthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
     };
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
