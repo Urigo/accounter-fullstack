@@ -1,5 +1,153 @@
 # @accounter/server
 
+## 0.0.5
+
+### Patch Changes
+
+- [#1754](https://github.com/Urigo/accounter-fullstack/pull/1754)
+  [`2711ade`](https://github.com/Urigo/accounter-fullstack/commit/2711ade6c369a6c0fa858f0f3047776f5979ae68)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency [`ai@4.3.5` ↗︎](https://www.npmjs.com/package/ai/v/4.3.5) (from `4.3.4`, in
+    `dependencies`)
+  - Updated dependency [`dotenv@16.5.0` ↗︎](https://www.npmjs.com/package/dotenv/v/16.5.0) (from
+    `16.4.7`, in `dependencies`)
+
+- [#1994](https://github.com/Urigo/accounter-fullstack/pull/1994)
+  [`c73af73`](https://github.com/Urigo/accounter-fullstack/commit/c73af737d68cff22b560b615a5bd48296aa8b653)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.4` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.4) (from
+    `1.2.2`, in `dependencies`)
+  - Updated dependency [`ai@4.2.10` ↗︎](https://www.npmjs.com/package/ai/v/4.2.10) (from `4.2.8`,
+    in `dependencies`)
+
+- [#2007](https://github.com/Urigo/accounter-fullstack/pull/2007)
+  [`c1c42bf`](https://github.com/Urigo/accounter-fullstack/commit/c1c42bf430e7bc1030c9432b0417b2310b9f2412)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.5` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.5) (from
+    `1.2.4`, in `dependencies`)
+
+- [#2020](https://github.com/Urigo/accounter-fullstack/pull/2020)
+  [`b242f4c`](https://github.com/Urigo/accounter-fullstack/commit/b242f4cfccadcc6dae83c7c6055ba8795ce4c770)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.6` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.6) (from
+    `1.2.5`, in `dependencies`)
+
+- [#2021](https://github.com/Urigo/accounter-fullstack/pull/2021)
+  [`026df05`](https://github.com/Urigo/accounter-fullstack/commit/026df059d7ccb8ef67602106b01d5020e936b418)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.6` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.6) (from
+    `1.2.5`, in `dependencies`)
+
+- [#2022](https://github.com/Urigo/accounter-fullstack/pull/2022)
+  [`9b2e24e`](https://github.com/Urigo/accounter-fullstack/commit/9b2e24ec470a6ab3b377313a2ec6be5771bf6145)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`ai@4.3.2` ↗︎](https://www.npmjs.com/package/ai/v/4.3.2) (from `4.2.10`, in
+    `dependencies`)
+
+- [#2028](https://github.com/Urigo/accounter-fullstack/pull/2028)
+  [`ed1758c`](https://github.com/Urigo/accounter-fullstack/commit/ed1758ccebf849fde17a4c6e208a6e76913aea2c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency [`ai@4.3.2` ↗︎](https://www.npmjs.com/package/ai/v/4.3.2) (from `4.2.10`, in
+    `dependencies`)
+
+- [#2029](https://github.com/Urigo/accounter-fullstack/pull/2029)
+  [`bd3a3c6`](https://github.com/Urigo/accounter-fullstack/commit/bd3a3c62d877f662485cd5dfe7b3b1460ede0dda)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.7` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.7) (from
+    `1.2.6`, in `dependencies`)
+  - Updated dependency [`ai@4.3.3` ↗︎](https://www.npmjs.com/package/ai/v/4.3.3) (from `4.3.2`, in
+    `dependencies`)
+
+- [#2032](https://github.com/Urigo/accounter-fullstack/pull/2032)
+  [`2b60daa`](https://github.com/Urigo/accounter-fullstack/commit/2b60daa5678f94c9710372172601db82340be2ff)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.8` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.8) (from
+    `1.2.7`, in `dependencies`)
+  - Updated dependency [`ai@4.3.4` ↗︎](https://www.npmjs.com/package/ai/v/4.3.4) (from `4.3.3`, in
+    `dependencies`)
+
+- [#2033](https://github.com/Urigo/accounter-fullstack/pull/2033)
+  [`c8b8ee9`](https://github.com/Urigo/accounter-fullstack/commit/c8b8ee9422916435881db92e50fccf8e8f9c9fa8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.9` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.9) (from
+    `1.2.8`, in `dependencies`)
+
+- [#2034](https://github.com/Urigo/accounter-fullstack/pull/2034)
+  [`6b46090`](https://github.com/Urigo/accounter-fullstack/commit/6b460905177148b06a485c6bc0e2a470562b5c4b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.13.3` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.13.3)
+    (from `3.13.2`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.13.3` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.13.3) (from `5.13.2`,
+    in `dependencies`)
+
+- [#2044](https://github.com/Urigo/accounter-fullstack/pull/2044)
+  [`8fd3d43`](https://github.com/Urigo/accounter-fullstack/commit/8fd3d431858e40690970bdaed6d2fef158933f02)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`dotenv@16.5.0` ↗︎](https://www.npmjs.com/package/dotenv/v/16.5.0) (from
+    `16.4.7`, in `dependencies`)
+
+- [#2045](https://github.com/Urigo/accounter-fullstack/pull/2045)
+  [`21d5e4d`](https://github.com/Urigo/accounter-fullstack/commit/21d5e4d3fffbbcaaa1975bb748ca46d18b37bf1f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`ai@4.3.5` ↗︎](https://www.npmjs.com/package/ai/v/4.3.5) (from `4.3.4`, in
+    `dependencies`)
+
+- [#2050](https://github.com/Urigo/accounter-fullstack/pull/2050)
+  [`68ca1e1`](https://github.com/Urigo/accounter-fullstack/commit/68ca1e1c29187b2c29f5699113927ba55be61739)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@ai-sdk/anthropic@1.2.10` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/1.2.10) (from
+    `1.2.9`, in `dependencies`)
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.6` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.6)
+    (from `0.10.5`, in `dependencies`)
+  - Updated dependency [`ai@4.3.6` ↗︎](https://www.npmjs.com/package/ai/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#2056](https://github.com/Urigo/accounter-fullstack/pull/2056)
+  [`67166ad`](https://github.com/Urigo/accounter-fullstack/commit/67166addecc6d768cc1507cd1d1f2d810f8cb78c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.13.4` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.13.4)
+    (from `3.13.3`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.13.4` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.13.4) (from `5.13.3`,
+    in `dependencies`)
+
+- [#2058](https://github.com/Urigo/accounter-fullstack/pull/2058)
+  [`931c554`](https://github.com/Urigo/accounter-fullstack/commit/931c5547459b0e92b58c6fc0b0f8897d077e9f1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.7` ↗︎](https://www.npmjs.com/package/ai/v/4.3.7) (from `4.3.6`, in
+    `dependencies`)
+- Updated dependencies
+  [[`7d70618`](https://github.com/Urigo/accounter-fullstack/commit/7d706185e337c05efd2c8cbeb3b4b919522c5336),
+  [`ed1758c`](https://github.com/Urigo/accounter-fullstack/commit/ed1758ccebf849fde17a4c6e208a6e76913aea2c)]:
+  - @accounter/green-invoice-graphql@0.7.4
+
 ## 0.0.4
 
 ### Patch Changes
