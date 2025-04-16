@@ -158,7 +158,7 @@ export async function calculateTaxAmounts(
     .then(res => res.filter(tc => !!tc.tax_excluded).map(tc => tc.id));
 
   const filterBusinessTripsExcludedRecords = (financialEntityId: string, sortCode: number) => {
-    return sortCode === 945 && !excludedTaxCategories.includes(financialEntityId);
+    return sortCode === 945 && excludedTaxCategories.includes(financialEntityId);
   };
   const businessTripsExcludedAmount = amountByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
@@ -186,7 +186,7 @@ export async function calculateTaxAmounts(
   );
 
   const filterYearlyRndExcludedRecords = (financialEntityId: string, sortCode: number) => {
-    return sortCode === 922 && !excludedTaxCategories.includes(financialEntityId);
+    return sortCode === 922 && excludedTaxCategories.includes(financialEntityId);
   };
   const yearlyRndExcludedRnd = amountByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
