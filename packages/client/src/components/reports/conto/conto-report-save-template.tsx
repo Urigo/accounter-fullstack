@@ -49,7 +49,7 @@ function ContoReportTemplateSaveForm({
           droppable: node.droppable ?? undefined,
           data: node.data
             ? {
-                hebrewText: node.data.hebrewText,
+                hebrewText: node.data.hebrewText ?? undefined,
                 value: node.data.value,
                 sortCode: node.data.sortCode,
                 isOpen: node.data.isOpen,

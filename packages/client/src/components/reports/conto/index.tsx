@@ -432,7 +432,7 @@ export const ContoReport: React.FC = () => {
     if (!fetchingTemplate && templateData) {
       const template = templateData.dynamicReport.template.map(node => ({
         ...node,
-        data: { ...node.data, hebrewText: node.data.hebrewText },
+        data: { ...node.data, hebrewText: node.data.hebrewText ?? undefined },
       }));
       setTree(template);
       reorderTree();

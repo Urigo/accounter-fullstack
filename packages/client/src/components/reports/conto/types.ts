@@ -1,5 +1,5 @@
 export type CustomData = {
-  hebrewText?: string | null;
+  hebrewText?: string;
   value?: number | null;
   sortCode?: number | null;
   isOpen: boolean;
