@@ -1,5 +1,43 @@
 # @accounter/modern-poalim-scraper
 
+## 0.9.16
+
+### Patch Changes
+
+- [#1997](https://github.com/Urigo/accounter-fullstack/pull/1997)
+  [`4c91e4e`](https://github.com/Urigo/accounter-fullstack/commit/4c91e4ee9d2bee269148a6ea2837382a37bed255)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`puppeteer@24.5.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.5.0)
+    (from `24.4.0`, in `dependencies`)
+
+- [#2012](https://github.com/Urigo/accounter-fullstack/pull/2012)
+  [`24a9877`](https://github.com/Urigo/accounter-fullstack/commit/24a987795b86ee2347d6ceee747c9f4c3291db5b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`puppeteer@24.6.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.6.0)
+    (from `24.5.0`, in `dependencies`)
+
+- [#2020](https://github.com/Urigo/accounter-fullstack/pull/2020)
+  [`b242f4c`](https://github.com/Urigo/accounter-fullstack/commit/b242f4cfccadcc6dae83c7c6055ba8795ce4c770)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2)
+    (from `12.5.0`, in `dependencies`)
+
+- [#2021](https://github.com/Urigo/accounter-fullstack/pull/2021)
+  [`026df05`](https://github.com/Urigo/accounter-fullstack/commit/026df059d7ccb8ef67602106b01d5020e936b418)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2)
+    (from `12.5.0`, in `dependencies`)
+
+- [#2042](https://github.com/Urigo/accounter-fullstack/pull/2042)
+  [`68f2f27`](https://github.com/Urigo/accounter-fullstack/commit/68f2f2712ad7342e03394b55118c5797fcc7d7e9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.6.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.6.1)
+    (from `24.6.0`, in `dependencies`)
+
 ## 0.9.15
 
 ### Patch Changes
