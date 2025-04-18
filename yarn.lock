@@ -85,7 +85,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.0"
     "@mui/material": "npm:7.0.2"
-    "@mui/x-charts": "npm:7.28.0"
+    "@mui/x-charts": "npm:7.29.0"
     "@radix-ui/react-avatar": "npm:1.1.4"
     "@radix-ui/react-checkbox": "npm:1.1.5"
     "@radix-ui/react-collapsible": "npm:1.1.4"
@@ -4856,20 +4856,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^7.4.0":
-  version: 7.4.0
-  resolution: "@mui/types@npm:7.4.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.26.10"
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/1f456206e8c6742a76c265d6c407a930d7126b03aac98949bd35a1edd14db1fd98c5169266a7948b9e24d0295adbeb3b58635eceb38217ee5f2d04d88b6b7d1c
-  languageName: node
-  linkType: hard
-
 "@mui/types@npm:^7.4.1":
   version: 7.4.1
   resolution: "@mui/types@npm:7.4.1"
@@ -4884,27 +4870,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.16.6 || ^6.0.0 || ^7.0.0 || ^7.0.0-beta":
-  version: 7.0.1
-  resolution: "@mui/utils@npm:7.0.1"
-  dependencies:
-    "@babel/runtime": "npm:^7.26.10"
-    "@mui/types": "npm:^7.4.0"
-    "@types/prop-types": "npm:^15.7.14"
-    clsx: "npm:^2.1.1"
-    prop-types: "npm:^15.8.1"
-    react-is: "npm:^19.0.0"
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
-    react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/bf5d721c9e09f2eba359db227dfafca51152a47753c6f32d020f8a9af572f8f14515e03592b2a95b5bea8207efe775d7d1ae4a0e42f0638f03a15fd1d303ffce
-  languageName: node
-  linkType: hard
-
-"@mui/utils@npm:^7.0.2":
+"@mui/utils@npm:^5.16.6 || ^6.0.0 || ^7.0.0, @mui/utils@npm:^7.0.2":
   version: 7.0.2
   resolution: "@mui/utils@npm:7.0.2"
   dependencies:
@@ -4947,14 +4913,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:7.28.0":
-  version: 7.28.0
-  resolution: "@mui/x-charts@npm:7.28.0"
+"@mui/x-charts@npm:7.29.0":
+  version: 7.29.0
+  resolution: "@mui/x-charts@npm:7.29.0"
   dependencies:
     "@babel/runtime": "npm:^7.25.7"
-    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0 || ^7.0.0-beta"
+    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0"
     "@mui/x-charts-vendor": "npm:7.20.0"
-    "@mui/x-internals": "npm:7.28.0"
+    "@mui/x-internals": "npm:7.29.0"
     "@react-spring/rafz": "npm:^9.7.5"
     "@react-spring/web": "npm:^9.7.5"
     clsx: "npm:^2.1.1"
@@ -4962,8 +4928,8 @@ __metadata:
   peerDependencies:
     "@emotion/react": ^11.9.0
     "@emotion/styled": ^11.8.1
-    "@mui/material": ^5.15.14 || ^6.0.0 || ^7.0.0 || ^7.0.0-beta
-    "@mui/system": ^5.15.14 || ^6.0.0 || ^7.0.0 || ^7.0.0-beta
+    "@mui/material": ^5.15.14 || ^6.0.0 || ^7.0.0
+    "@mui/system": ^5.15.14 || ^6.0.0 || ^7.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
@@ -4971,19 +4937,19 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/09c1832c72899bc3656dca33b95497251e540975f20e0a0b7fd9de26f89e9d1bb52e38d184cc3ee539ecada502c0bb2caf917989e4874bfa03f49769283fc884
+  checksum: 10c0/5a2b2ac59a84fded4265948fa971cacb4eec1c10ba07a740db8883e0d37fcfcf51f6daacfe245359f8c7822d5acc1c37efc447136d79cec5936fe4caec0c7c19
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:7.28.0":
-  version: 7.28.0
-  resolution: "@mui/x-internals@npm:7.28.0"
+"@mui/x-internals@npm:7.29.0":
+  version: 7.29.0
+  resolution: "@mui/x-internals@npm:7.29.0"
   dependencies:
     "@babel/runtime": "npm:^7.25.7"
-    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0 || ^7.0.0-beta"
+    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/50950953fa5566890c424a8a69e935b389d810cde93cb4bf0c223331bdcae593089fe4051261033626a25df1d7fe5f61aa9e9403a76dbe75933c2f53c2b0a279
+  checksum: 10c0/adb4358ef0e29f6f57622b50ff479e9d225078761b4c82546343e2976ccb55eed687e122c37874c76a170f4ec2ea6e82f89bf8b9c0ef3b5cb35b32d026761fba
   languageName: node
   linkType: hard
 
@@ -18253,7 +18219,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-is@npm:^19.0.0, react-is@npm:^19.1.0":
+"react-is@npm:^19.1.0":
   version: 19.1.0
   resolution: "react-is@npm:19.1.0"
   checksum: 10c0/b6c6cadd172d5d39f66d493700d137a5545c294a62ce0f8ec793d59794c97d2bed6bad227626f16bd0e90004ed7fdc8ed662a004e6edcf5d2b7ecb6e3040ea6b
