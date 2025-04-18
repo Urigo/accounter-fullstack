@@ -17,6 +17,41 @@ import {
   updateRecords,
 } from './profit-and-loss.helper.js';
 
+function updateAmountAndRecords(
+  record: DecoratedLedgerRecord,
+  financialEntityId: string,
+  sumAmount: number,
+  records: Map<
+    number,
+    {
+      amount: number;
+      records: Map<string, number>;
+    }
+  >,
+) {
+  if (record.credit_entity1 === financialEntityId) {
+    const amount = -Number(record.credit_local_amount1);
+    updateRecords(records, amount, record.credit_entity_sort_code1!, record.credit_entity1);
+    sumAmount += amount;
+  }
+  if (record.credit_entity2 === financialEntityId) {
+    const amount = -Number(record.credit_local_amount2);
+    updateRecords(records, amount, record.credit_entity_sort_code2!, record.credit_entity2);
+    sumAmount += amount;
+  }
+  if (record.debit_entity1 === financialEntityId) {
+    const amount = Number(record.debit_local_amount1);
+    updateRecords(records, amount, record.debit_entity_sort_code1!, record.debit_entity1);
+    sumAmount += amount;
+  }
+  if (record.debit_entity2 === financialEntityId) {
+    const amount = Number(record.debit_local_amount2);
+    updateRecords(records, amount, record.debit_entity_sort_code2!, record.debit_entity2);
+    sumAmount += amount;
+  }
+  return sumAmount;
+}
+
 export async function calculateTaxAmounts(
   context: GraphQLModules.Context,
   year: number,
@@ -78,67 +113,13 @@ export async function calculateTaxAmounts(
     }
   >();
   decoratedLedgerRecords.map(record => {
-    if (record.credit_entity1 === untaxableGiftsTaxCategoryId) {
-      const amount = -Number(record.credit_local_amount1);
-      updateRecords(
-        untaxableGiftsRecords,
-        amount,
-        record.credit_entity_sort_code1!,
-        record.credit_entity1,
-      );
-      untaxableGiftsAmount += amount;
-    }
-    if (record.credit_entity2 === untaxableGiftsTaxCategoryId) {
-      const amount = -Number(record.credit_local_amount2);
-      updateRecords(
-        untaxableGiftsRecords,
-        amount,
-        record.credit_entity_sort_code2!,
-        record.credit_entity2,
-      );
-      untaxableGiftsAmount += amount;
-    }
-    if (record.debit_entity1 === untaxableGiftsTaxCategoryId) {
-      const amount = Number(record.debit_local_amount1);
-      updateRecords(
-        untaxableGiftsRecords,
-        amount,
-        record.debit_entity_sort_code1!,
-        record.debit_entity1,
-      );
-      untaxableGiftsAmount += amount;
-    }
-    if (record.debit_entity2 === untaxableGiftsTaxCategoryId) {
-      const amount = Number(record.debit_local_amount2);
-      updateRecords(
-        untaxableGiftsRecords,
-        amount,
-        record.debit_entity_sort_code2!,
-        record.debit_entity2,
-      );
-      untaxableGiftsAmount += amount;
-    }
-
-    if (record.credit_entity1 === fineTaxCategoryId) {
-      const amount = -Number(record.credit_local_amount1);
-      updateRecords(finesRecords, amount, record.credit_entity_sort_code1!, record.credit_entity1);
-      finesAmount += amount;
-    }
-    if (record.credit_entity2 === fineTaxCategoryId) {
-      const amount = -Number(record.credit_local_amount2);
-      updateRecords(finesRecords, amount, record.credit_entity_sort_code2!, record.credit_entity2);
-      finesAmount += amount;
-    }
-    if (record.debit_entity1 === fineTaxCategoryId) {
-      const amount = Number(record.debit_local_amount1);
-      updateRecords(finesRecords, amount, record.debit_entity_sort_code1!, record.debit_entity1);
-      finesAmount += amount;
-    }
-    if (record.debit_entity2 === fineTaxCategoryId) {
-      const amount = Number(record.debit_local_amount2);
-      updateRecords(finesRecords, amount, record.debit_entity_sort_code2!, record.debit_entity2);
-      finesAmount += amount;
-    }
+    untaxableGiftsAmount = updateAmountAndRecords(
+      record,
+      untaxableGiftsTaxCategoryId,
+      untaxableGiftsAmount,
+      untaxableGiftsRecords,
+    );
+    finesAmount = updateAmountAndRecords(record, fineTaxCategoryId, finesAmount, finesRecords);
   });
 
   const untaxableGifts: CommentaryProto = {
@@ -177,7 +158,7 @@ export async function calculateTaxAmounts(
     .then(res => res.filter(tc => !!tc.tax_excluded).map(tc => tc.id));
 
   const filterBusinessTripsExcludedRecords = (financialEntityId: string, sortCode: number) => {
-    return sortCode === 945 && !excludedTaxCategories.includes(financialEntityId);
+    return sortCode === 945 && excludedTaxCategories.includes(financialEntityId);
   };
   const businessTripsExcludedAmount = amountByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
@@ -197,9 +178,15 @@ export async function calculateTaxAmounts(
       sortCode === 931 && !excludedTaxCategories.includes(financialEntityId),
     true,
   );
+  const nontaxableLinkage = recordsByFinancialEntityIdAndSortCodeValidation(
+    decoratedLedgerRecords,
+    (financialEntityId, sortCode) =>
+      sortCode === 990 && excludedTaxCategories.includes(financialEntityId),
+    true,
+  );
 
   const filterYearlyRndExcludedRecords = (financialEntityId: string, sortCode: number) => {
-    return sortCode === 922 && !excludedTaxCategories.includes(financialEntityId);
+    return sortCode === 922 && excludedTaxCategories.includes(financialEntityId);
   };
   const yearlyRndExcludedRnd = amountByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
@@ -217,6 +204,7 @@ export async function calculateTaxAmounts(
     businessTripsExcessExpensesAmount +
     salaryExcessExpensesAmount +
     reserves.amount +
+    nontaxableLinkage.amount +
     researchAndDevelopmentExpensesForTax;
 
   const taxRate = Number(taxRateVariables.tax_rate) / 100;
@@ -229,6 +217,7 @@ export async function calculateTaxAmounts(
     businessTripsExcessExpensesAmount,
     salaryExcessExpensesAmount,
     reserves,
+    nontaxableLinkage,
     taxableIncomeAmount,
     taxRate,
     annualTaxExpenseAmount,

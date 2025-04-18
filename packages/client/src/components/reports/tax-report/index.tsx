@@ -57,6 +57,12 @@ import { TaxReportFilter } from './tax-report-filters.js';
           }
           ...ReportCommentaryTableFields
         }
+        nontaxableLinkage {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
         taxableIncome {
           formatted
         }
@@ -98,6 +104,11 @@ import { TaxReportFilter } from './tax-report-filters.js';
           formatted
         }
         reserves {
+          amount {
+            formatted
+          }
+        }
+        nontaxableLinkage {
           amount {
             formatted
           }
@@ -262,6 +273,19 @@ export const TaxReport = (): ReactElement => {
                     </tr>
                   )}
                   commentaryData={report.reserves}
+                />
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Nontaxable Linkage</td>
+                      <td>{report.nontaxableLinkage.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.nontaxableLinkage.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.nontaxableLinkage}
                 />
                 <tr>
                   <th>Taxable Income</th>
