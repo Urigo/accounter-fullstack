@@ -34,7 +34,7 @@
     "jsx": "preserve",
 
     "paths": {
-      "@accounter/modern-poalim-scraper": ["packages/modern-poalim-scraper/src/index"],
+      "@accounter/modern-israeli-scrapers": ["packages/modern-israeli-scrapers/src/index"],
       "@accounter/green-invoice-graphql": ["packages/green-invoice-graphql/src/"],
       "@accounter/hashavshevet-mesh": ["packages/hashavshevet-mesh/src/"],
       "@accounter/israeli-vat-scraper": ["packages/israeli-vat-scraper/src/"],

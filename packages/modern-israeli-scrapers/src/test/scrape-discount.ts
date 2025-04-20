@@ -1,5 +1,5 @@
 // Script to test out discount scraping. Run with:
-// tsx packages/modern-poalim-scraper/src/test/scrape-discount.ts
+// tsx packages/modern-israeli-scrapers/src/test/scrape-discount.ts
 import dotenv from 'dotenv';
 import { init } from '../index.js';
 import { DiscountOptions } from '../scrapers/discount.js';
