@@ -27,4 +27,47 @@ export const pcnGenerator = (
   return textFile;
 };
 
+export function validatePcn874(content: string): boolean {
+  const lines = content.split('\n');
+  if (lines.length < 3) {
+    return false;
+  }
+
+  // TODO: this is a very basic validation, we should add more checks
+
+  // validate header
+  const header = lines[0];
+  if (header.length !== 131) {
+    return false;
+  }
+  if (header[0] !== 'O') {
+    return false;
+  }
+  if (header[16] !== '1') {
+    return false;
+  }
+
+  // validate footer
+  const footer = lines[lines.length - 1];
+  if (footer.length !== 10) {
+    return false;
+  }
+  if (footer[0] !== 'X') {
+    return false;
+  }
+
+  // validate transaction lines
+  const transactionLines = lines.slice(1, -1);
+  for (const line of transactionLines) {
+    if (line.length !== 60) {
+      return false;
+    }
+    if (!['C', 'H', 'I', 'K', 'L', 'M', 'P', 'R', 'S', 'T', 'Y'].includes(line[0])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export * from './types.js';

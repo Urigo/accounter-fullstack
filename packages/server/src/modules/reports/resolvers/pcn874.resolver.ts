@@ -1,6 +1,7 @@
 import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
+import { validatePcn874 } from '@accounter/pcn874-generator';
 import { ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -22,7 +23,11 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
         const existingContent = await context.injector
           .get(VatReportProvider)
           .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]);
-        if (!existingContent) {
+        if (!existingContent && reportContent.split('\n').length > 2) {
+          if (validatePcn874(reportContent)) {
+            throw new GraphQLError('Invalid PCN874 content');
+          }
+          // insert the report
           await context.injector.get(VatReportProvider).insertReport({
             businessId: financialEntityId,
             monthDate,
@@ -70,6 +75,17 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
                   diffContent: savedReport === generatedReport ? undefined : savedReport,
                 });
               } else {
+                if (generatedReport.split('\n').length > 2) {
+                  if (!validatePcn874(generatedReport)) {
+                    throw new GraphQLError('Invalid PCN874 content');
+                  }
+                  // insert the report
+                  await context.injector.get(VatReportProvider).insertReport({
+                    businessId: financialEntityId,
+                    monthDate,
+                    content: generatedReport,
+                  });
+                }
                 push({
                   id: `${monthDate}-${financialEntityId}`,
                   date: monthDate,
@@ -92,6 +108,9 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
     updatePcn874: async (_, { monthDate, businessId, content }, context, __) => {
       try {
         const normalizedMonthDate = dateToTimelessDateString(startOfMonth(new Date(monthDate)));
+        if (!validatePcn874(content)) {
+          throw new GraphQLError('Invalid PCN874 content');
+        }
         await context.injector.get(VatReportProvider).updateReport({
           businessId,
           monthDate: normalizedMonthDate,
