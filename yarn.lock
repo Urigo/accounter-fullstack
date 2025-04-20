@@ -34,7 +34,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/old-accounter@workspace:packages/old-accounter"
   dependencies:
-    "@accounter/modern-poalim-scraper": "workspace:^"
+    "@accounter/modern-israeli-scrapers": "workspace:^"
     "@types/lodash": "npm:4.17.16"
     "@types/pg": "npm:8.11.13"
     "@types/uuid": "npm:10.0.0"
@@ -53,7 +53,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/scraper-local-app@workspace:packages/scraper-local-app"
   dependencies:
-    "@accounter/modern-poalim-scraper": "workspace:^"
+    "@accounter/modern-israeli-scrapers": "workspace:^"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
     "@sinclair/typebox": "npm:0.34.33"
@@ -234,9 +234,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/modern-poalim-scraper@workspace:^, @accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper":
+"@accounter/modern-israeli-scrapers@workspace:^, @accounter/modern-israeli-scrapers@workspace:packages/modern-israeli-scrapers":
   version: 0.0.0-use.local
-  resolution: "@accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper"
+  resolution: "@accounter/modern-israeli-scrapers@workspace:packages/modern-israeli-scrapers"
   dependencies:
     "@types/inquirer": "npm:9.0.7"
     "@types/node-fetch": "npm:3.0.3"

@@ -1,6 +1,6 @@
 import { addMonths, format, isBefore, subMonths } from 'date-fns';
 import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
-import type { init } from '@accounter/modern-poalim-scraper';
+import type { init } from '@accounter/modern-israeli-scrapers';
 import type { MainContext } from '../../index.js';
 import { getMonthTransactions } from './discount-month.js';
 

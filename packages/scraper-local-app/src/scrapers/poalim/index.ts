@@ -1,6 +1,6 @@
 import { MainContext } from 'index.js';
 import Listr, { type ListrTask } from 'listr';
-import { init } from '@accounter/modern-poalim-scraper';
+import { init } from '@accounter/modern-israeli-scrapers';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
 import { handlePoalimAccount } from './account.js';
 import { getPoalimAccounts, type ScrapedAccount } from './accounts.js';

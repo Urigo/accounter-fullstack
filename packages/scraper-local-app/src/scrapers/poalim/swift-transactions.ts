@@ -1,7 +1,7 @@
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { ForeignSwiftTransaction } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignSwiftTransaction.js';
-import type { ForeignSwiftTransactions } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignSwiftTransactions.js';
+import type { ForeignSwiftTransaction } from '@accounter/modern-israeli-scrapers/dist/__generated__/foreignSwiftTransaction.js';
+import type { ForeignSwiftTransactions } from '@accounter/modern-israeli-scrapers/dist/__generated__/foreignSwiftTransactions.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   ICheckForExistingSwiftTransactionQuery,

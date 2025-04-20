@@ -1,0 +1,458 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["metadata", "list", "depositsWrapperData"],
+  "definitions": {
+    "deposits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "source",
+          "validityDate",
+          "validityTime",
+          "israeliCurrencyDepositPrincipalBalanceAmount",
+          "depositsRevaluedAmount",
+          "formattedValidityTime",
+          "formattedDate",
+          "amount",
+          "revaluatedAmount",
+          "messages"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "metadata",
+                "shortProductName",
+                "principalAmount",
+                "revaluedTotalAmount",
+                "endExitDate",
+                "paymentDate",
+                "statedAnnualInterestRate",
+                "hebrewPurposeDescription",
+                "objectiveAmount",
+                "objectiveDate",
+                "agreementOpeningDate",
+                "eventWithdrawalAmount",
+                "startExitDate",
+                "periodUntilNextEvent",
+                "renewalDescription",
+                "requestedRenewalNumber",
+                "interestBaseDescription",
+                "interestTypeDescription",
+                "spreadPercent",
+                "variableInterestDescription",
+                "adjustedInterest",
+                "interestCalculatingMethodDescription",
+                "interestCreditingMethodDescription",
+                "interestPaymentDescription",
+                "nominalInterest",
+                "depositSerialId",
+                "linkageBaseDescription",
+                "renewalCounter",
+                "productFreeText",
+                "partyTextId",
+                "actualIndexRate",
+                "interestTypeCode",
+                "productNumber",
+                "productPurposeCode",
+                "detailedAccountTypeCode",
+                "formattedEndExitDate",
+                "formattedPaymentDate",
+                "formattedObjectiveDate",
+                "formattedAgreementOpeningDate",
+                "formattedStartExitDate",
+                "lienDescription",
+                "withdrawalEnablingIndication",
+                "renewalEnablingIndication",
+                "standingOrderEnablingIndication",
+                "additionEnablingIndication",
+                "timeUnitDescription",
+                "formattedRevaluedTotalAmount",
+                "warningExistanceIndication",
+                "renewalDateExplanation",
+                "expectedRepaymentSwitch"
+              ],
+              "properties": {
+                "metadata": {
+                  "type": "object",
+                  "properties": {
+                    "attributes": {
+                      "type": "object",
+                      "properties": {
+                        "actualCurrencyRate": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "lastIndexRate": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "basicIndexValue": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "basicCurrencyRate": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "standingOrderAmount": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "linkagePercent": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "ratePercentFactor": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        },
+                        "fixedInterestRate": {
+                          "type": "object",
+                          "properties": {
+                            "hidden": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": true,
+                          "required": ["hidden"]
+                        }
+                      },
+                      "additionalProperties": true,
+                      "required": [
+                        "actualCurrencyRate",
+                        "lastIndexRate",
+                        "basicIndexValue",
+                        "basicCurrencyRate",
+                        "standingOrderAmount",
+                        "linkagePercent",
+                        "ratePercentFactor",
+                        "fixedInterestRate"
+                      ]
+                    },
+                    "links": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true,
+                  "required": ["attributes", "links"]
+                },
+                "shortProductName": {
+                  "type": "string",
+                  "enum": ["פריים"]
+                },
+                "principalAmount": {
+                  "type": "number"
+                },
+                "revaluedTotalAmount": {
+                  "type": "number"
+                },
+                "endExitDate": {
+                  "type": "integer"
+                },
+                "paymentDate": {
+                  "type": "integer"
+                },
+                "statedAnnualInterestRate": {
+                  "type": "number"
+                },
+                "hebrewPurposeDescription": {
+                  "type": "string",
+                  "enum": ["לא רלוונטי"]
+                },
+                "objectiveAmount": {
+                  "type": "number"
+                },
+                "objectiveDate": {
+                  "type": "integer"
+                },
+                "agreementOpeningDate": {
+                  "type": "integer"
+                },
+                "eventWithdrawalAmount": {
+                  "type": "number"
+                },
+                "startExitDate": {
+                  "type": "integer"
+                },
+                "periodUntilNextEvent": {
+                  "type": "integer"
+                },
+                "renewalDescription": {
+                  "type": "string",
+                  "enum": ["פיקדון מתחדש", "יפרע לעו\"ש"]
+                },
+                "requestedRenewalNumber": {
+                  "type": "integer"
+                },
+                "interestBaseDescription": {
+                  "type": "string",
+                  "enum": ["פריים"]
+                },
+                "interestTypeDescription": {
+                  "type": "string",
+                  "enum": ["משתנה"]
+                },
+                "spreadPercent": {
+                  "type": "number"
+                },
+                "variableInterestDescription": {
+                  "type": "string"
+                },
+                "adjustedInterest": {
+                  "type": "number"
+                },
+                "interestCalculatingMethodDescription": {
+                  "type": "string",
+                  "enum": ["קו ישר"]
+                },
+                "interestCreditingMethodDescription": {
+                  "type": "string",
+                  "enum": ["לקרן הפיקדון"]
+                },
+                "interestPaymentDescription": {
+                  "type": "string",
+                  "enum": ["תחנה"]
+                },
+                "nominalInterest": {
+                  "type": "number"
+                },
+                "depositSerialId": {
+                  "type": "integer"
+                },
+                "linkageBaseDescription": {
+                  "type": "null"
+                },
+                "renewalCounter": {
+                  "type": "integer"
+                },
+                "productFreeText": {
+                  "type": "string"
+                },
+                "partyTextId": {
+                  "type": "integer"
+                },
+                "actualIndexRate": {
+                  "type": "number"
+                },
+                "interestTypeCode": {
+                  "type": "integer"
+                },
+                "productNumber": {
+                  "type": "integer"
+                },
+                "productPurposeCode": {
+                  "type": "integer"
+                },
+                "detailedAccountTypeCode": {
+                  "type": "integer"
+                },
+                "formattedEndExitDate": {
+                  "type": "string"
+                },
+                "formattedPaymentDate": {
+                  "type": "string"
+                },
+                "formattedObjectiveDate": {
+                  "type": "null"
+                },
+                "formattedAgreementOpeningDate": {
+                  "type": "string"
+                },
+                "formattedStartExitDate": {
+                  "type": "string"
+                },
+                "lienDescription": {
+                  "type": "string",
+                  "enum": ["משועבד", "מבטיח אשראי"]
+                },
+                "withdrawalEnablingIndication": {
+                  "type": "integer"
+                },
+                "renewalEnablingIndication": {
+                  "type": "integer"
+                },
+                "standingOrderEnablingIndication": {
+                  "type": "integer"
+                },
+                "additionEnablingIndication": {
+                  "type": "integer"
+                },
+                "timeUnitDescription": {
+                  "type": "string",
+                  "enum": ["ימים"]
+                },
+                "formattedRevaluedTotalAmount": {
+                  "type": "null"
+                },
+                "warningExistanceIndication": {
+                  "type": "integer"
+                },
+                "renewalDateExplanation": {
+                  "type": "string",
+                  "enum": ["תחנה קרובה", "ייפרע לעו\"ש בתאריך"]
+                },
+                "expectedRepaymentSwitch": {
+                  "type": "integer",
+                  "enum": [0, 1]
+                }
+              }
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": ["israeliCurrencyDeposit"]
+          },
+          "validityDate": {
+            "type": "integer"
+          },
+          "validityTime": {
+            "type": "integer"
+          },
+          "israeliCurrencyDepositPrincipalBalanceAmount": {
+            "type": "number"
+          },
+          "depositsRevaluedAmount": {
+            "type": "number"
+          },
+          "formattedValidityTime": {
+            "type": "string"
+          },
+          "formattedDate": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "revaluatedAmount": {
+            "type": "number"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["messageCode", "messageDescription", "messageTypeCode"],
+              "properties": {
+                "messageCode": {
+                  "type": "integer",
+                  "enum": [803, 804, 805, 821, 822, 823, 824, 825, 826]
+                },
+                "messageDescription": {
+                  "type": "string",
+                  "enum": [
+                    "בכל מקרה לא תפחת הריבית על הפיקדון משיעור 0% בשנה.",
+                    "הוראת משיכה/אי חידוש לפיקדון צמוד מט\"ח יש לתת שני ימי עסקים לפחות לפני תאריך התחנה/החידוש.",
+                    "שערוך הפיקדונות המובנים מחושב בשיטה דומה, אך לא זהה, לתנאי ההתקשרות ואין בנתונים כדי לחייב את הבנק או לשמש אסמכתא לפדיון או משיכה.",
+                    "פעולה המבוצעת בפיקדונות בשקלים עד השעה 18:30 (בימי ו' וערבי חג עד 14:00) ביום שהינו יום עסקים, נקלטת מיד עם אישורה ומשתקפת מיידית במסך פירוט פיקדונות.",
+                    "לאחר קליטת הפעולה לא ניתן יהיה לבטלה.",
+                    "הוראה הניתנת לאחר השעה 18:30 ( בימי ו' וערבי חג - לאחר השעה 14:00 ) תשתקף בחשבונך החל מהשעה 02:00 ועד למועד זה ניתן יהיה לבטלה.",
+                    "הוראה הניתנת ביום שאינו יום עסקים, תבוצע ביום העסקים הבא ותשתקף בחשבונך החל מהשעה 02:00 של אותו יום ועד למועד זה ניתן יהיה לבטלה.",
+                    "הוראה לביצוע עתידי ניתנת לביטול עד לשעה 02:00 של יום ערך הביצוע.",
+                    "במסך \"סטטוס הוראות בפיקדונות\" ניתן לצפות בסטטוס הפעולה. אם סטטוס הפעולה הינו \"ממתין לביצוע\" - ניתן לבטלה."
+                  ]
+                },
+                "messageTypeCode": {
+                  "type": "string",
+                  "enum": ["I"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "additionalItems": true,
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "messageDescription": {
+                  "type": "string"
+                },
+                "messageCode": {
+                  "type": "integer"
+                },
+                "severity": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true,
+              "required": ["messageDescription", "messageCode", "severity"]
+            }
+          ]
+        },
+        "links": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "required": ["messages", "links"]
+    },
+    "list": {
+      "$ref": "#/definitions/deposits"
+    },
+    "depositsWrapperData": {
+      "$ref": "#/definitions/deposits"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import Listr from 'listr';
-import type { AccountDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/accountDataSchema.js';
+import type { AccountDataSchema } from '@accounter/modern-israeli-scrapers/dist/__generated__/accountDataSchema.js';
 import { sql } from '@pgtyped/runtime';
 import { getTableColumns, insertFinancialAccount } from '../../helpers/sql.js';
 import type {

@@ -1,6 +1,6 @@
 import Listr, { ListrTask } from 'listr';
 import pg, { type Pool as PgPool, type PoolConfig } from 'pg';
-import { init } from '@accounter/modern-poalim-scraper';
+import { init } from '@accounter/modern-israeli-scrapers';
 import { config } from './env.js';
 import { makeId } from './helpers/misc.js';
 import { Logger } from './logger.js';

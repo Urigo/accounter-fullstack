@@ -1,8 +1,8 @@
 import lodash from 'lodash';
 import moment from 'moment';
 import pg from 'pg';
-import type { CalTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/cal/get-card-transactions-details.js';
-import type { DiscountTransaction } from '../../../modern-poalim-scraper/src/scrapers/types/discount/get-last-transactions.js';
+import type { CalTransaction } from '../../../modern-israeli-scrapers/src/scrapers/types/cal/get-card-transactions-details.js';
+import type { DiscountTransaction } from '../../../modern-israeli-scrapers/src/scrapers/types/discount/get-last-transactions.js';
 import type { DecoratedTransaction } from '../scrape.js';
 
 const { camelCase } = lodash;

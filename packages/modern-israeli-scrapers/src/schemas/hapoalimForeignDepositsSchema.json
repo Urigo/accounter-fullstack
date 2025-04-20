@@ -1,0 +1,657 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HapoalimForeignDepositsSchema",
+  "type": "object",
+  "properties": {
+    "dataQueryTypeCode": {
+      "type": "number"
+    },
+    "validityDate": {
+      "type": "number"
+    },
+    "formattedValidityDate": {
+      "type": "string"
+    },
+    "validityDateMin": {
+      "type": "number"
+    },
+    "formattedValidityDateMin": {
+      "type": "string"
+    },
+    "chosenDate": {
+      "type": "number"
+    },
+    "formattedChosenDate": {},
+    "detailedAccountTypeCode": {
+      "type": "number"
+    },
+    "productSerialId": {
+      "type": "number"
+    },
+    "packageNumber": {
+      "type": "number"
+    },
+    "currencyCode": {
+      "type": "number"
+    },
+    "depositSerialId": {
+      "type": "number"
+    },
+    "dataRetrievalMethodCode": {
+      "type": "number"
+    },
+    "filterTypeCode": {
+      "type": "number"
+    },
+    "generalNumberValidation": {
+      "type": "number"
+    },
+    "detailedAccountTypeCodeList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "detailedAccountTypeCode": {
+                  "type": "object",
+                  "properties": {
+                    "disabled": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["disabled"]
+                }
+              },
+              "required": ["detailedAccountTypeCode"]
+            },
+            "links": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "required": ["attributes", "links"]
+        },
+        "detailedAccountTypeCode": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "valueCode": {
+                    "type": "number"
+                  },
+                  "valueLongDescription": {
+                    "type": "string"
+                  }
+                },
+                "required": ["valueCode", "valueLongDescription"]
+              }
+            }
+          },
+          "required": ["code", "values"]
+        }
+      },
+      "required": ["metadata", "detailedAccountTypeCode"]
+    },
+    "productSerialIdList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "productSerialId": {
+                  "type": "object",
+                  "properties": {
+                    "disabled": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["disabled"]
+                }
+              },
+              "required": ["productSerialId"]
+            },
+            "links": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "required": ["attributes", "links"]
+        },
+        "productSerialId": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "valueCode": {
+                    "type": "number"
+                  },
+                  "valueLongDescription": {
+                    "type": "string"
+                  }
+                },
+                "required": ["valueCode", "valueLongDescription"]
+              }
+            }
+          },
+          "required": ["code", "values"]
+        }
+      },
+      "required": ["metadata", "productSerialId"]
+    },
+    "packageNumberList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "packageNumber": {
+                  "type": "object",
+                  "properties": {
+                    "disabled": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["disabled"]
+                }
+              },
+              "required": ["packageNumber"]
+            },
+            "links": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "required": ["attributes", "links"]
+        },
+        "packageNumber": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "valueCode": {
+                    "type": "number"
+                  },
+                  "valueLongDescription": {
+                    "type": "string"
+                  }
+                },
+                "required": ["valueCode", "valueLongDescription"]
+              }
+            }
+          },
+          "required": ["code", "values"]
+        }
+      },
+      "required": ["metadata", "packageNumber"]
+    },
+    "currencyCodeList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "currencyCode": {
+                  "type": "object",
+                  "properties": {
+                    "disabled": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["disabled"]
+                }
+              },
+              "required": ["currencyCode"]
+            },
+            "links": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "required": ["attributes", "links"]
+        },
+        "currencyCode": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "valueCode": {
+                    "type": "number"
+                  },
+                  "valueLongDescription": {
+                    "type": "string"
+                  }
+                },
+                "required": ["valueCode", "valueLongDescription"]
+              }
+            }
+          },
+          "required": ["code", "values"]
+        }
+      },
+      "required": ["metadata", "currencyCode"]
+    },
+    "listRevaluatedForeignCurrencyDepositAccountTypeCode": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "detailedAccountTypeCode": {
+            "type": "number"
+          },
+          "detailedAccountTypeShortedDescription": {
+            "type": "string"
+          },
+          "listRevaluatedForeignCurrencyDepositProductSerialId": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productSerialId": {
+                  "type": "number"
+                },
+                "fullProductName": {
+                  "type": "string"
+                },
+                "packageNumber": {
+                  "type": "number"
+                },
+                "packageName": {
+                  "type": "string"
+                },
+                "listRevaluatedForeignCurrencyCodeDeposits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "currencyCode": {
+                        "type": "number"
+                      },
+                      "currencyLongDescription": {
+                        "type": "string"
+                      },
+                      "listRevaluatedForeignCurrencyDepositsRows": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "depositSerialId": {
+                              "type": "number"
+                            },
+                            "originalValueDate": {
+                              "type": "number"
+                            },
+                            "formattedOriginalValueDate": {
+                              "type": "string"
+                            },
+                            "periodCounter": {
+                              "type": "number"
+                            },
+                            "timeUnitDescription": {
+                              "type": "string"
+                            },
+                            "foreignCurrencyDepositOriginCode": {
+                              "type": "number"
+                            },
+                            "foreignCurrencyDepositOriginDescription": {
+                              "type": "string"
+                            },
+                            "valueDate": {
+                              "type": "number"
+                            },
+                            "formattedValueDate": {
+                              "type": "string"
+                            },
+                            "nextPaymentDate": {
+                              "type": "number"
+                            },
+                            "formattedNextPaymentDate": {
+                              "type": "string"
+                            },
+                            "paymentDate": {
+                              "type": "number"
+                            },
+                            "formattedPaymentDate": {
+                              "type": "string"
+                            },
+                            "renewalMethodCode": {
+                              "type": "number"
+                            },
+                            "renewalMethodDescription": {
+                              "type": "string"
+                            },
+                            "foreignCurrencyDepositCurrentBalanceAmount": {
+                              "type": "number"
+                            },
+                            "interestRate": {
+                              "type": "number"
+                            },
+                            "revaluatedWithdrawalForeignCurrencyDepositBalanceAmount": {
+                              "type": "number"
+                            },
+                            "foreignCurrencyDepositPrincipalBalanceAmount": {
+                              "type": "number"
+                            },
+                            "productSerialId": {
+                              "type": "number"
+                            },
+                            "currencyCode": {
+                              "type": "number"
+                            },
+                            "packageNumber": {
+                              "type": "number"
+                            },
+                            "productTypeCode": {
+                              "type": "number"
+                            },
+                            "variableInterestDescription": {
+                              "type": "string"
+                            },
+                            "timeUnitCode": {
+                              "type": "number"
+                            },
+                            "periodDescription": {
+                              "type": "string"
+                            },
+                            "lienIndication": {
+                              "type": "string"
+                            },
+                            "warningExistenceSwitch": {
+                              "type": "number"
+                            },
+                            "revaluatedForeignCurrencyDepositsRowsMsg": {}
+                          },
+                          "required": [
+                            "depositSerialId",
+                            "originalValueDate",
+                            "formattedOriginalValueDate",
+                            "periodCounter",
+                            "timeUnitDescription",
+                            "foreignCurrencyDepositOriginCode",
+                            "foreignCurrencyDepositOriginDescription",
+                            "valueDate",
+                            "formattedValueDate",
+                            "nextPaymentDate",
+                            "formattedNextPaymentDate",
+                            "paymentDate",
+                            "formattedPaymentDate",
+                            "renewalMethodCode",
+                            "renewalMethodDescription",
+                            "foreignCurrencyDepositCurrentBalanceAmount",
+                            "interestRate",
+                            "revaluatedWithdrawalForeignCurrencyDepositBalanceAmount",
+                            "foreignCurrencyDepositPrincipalBalanceAmount",
+                            "productSerialId",
+                            "currencyCode",
+                            "packageNumber",
+                            "productTypeCode",
+                            "variableInterestDescription",
+                            "timeUnitCode",
+                            "periodDescription",
+                            "lienIndication",
+                            "warningExistenceSwitch",
+                            "revaluatedForeignCurrencyDepositsRowsMsg"
+                          ]
+                        }
+                      },
+                      "listRevaluatedForeignCurrencyTotalDepositsRows": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "exchangeRate": {
+                              "type": "number"
+                            },
+                            "currencyCode": {
+                              "type": "number"
+                            },
+                            "shortCurrencyDescription": {
+                              "type": "string"
+                            },
+                            "revaluatedWithdrawalForeignCurrencyDepositBalanceAmount": {
+                              "type": "number"
+                            },
+                            "displayedRevaluationCurrencyCode": {
+                              "type": "number"
+                            },
+                            "revaluationCurrencyShortedDescription": {
+                              "type": "string"
+                            },
+                            "revaluatedForeignCurrencyDepositBalanceAmount": {
+                              "type": "number"
+                            },
+                            "productTotalAmtText": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "exchangeRate",
+                            "currencyCode",
+                            "shortCurrencyDescription",
+                            "revaluatedWithdrawalForeignCurrencyDepositBalanceAmount",
+                            "displayedRevaluationCurrencyCode",
+                            "revaluationCurrencyShortedDescription",
+                            "revaluatedForeignCurrencyDepositBalanceAmount",
+                            "productTotalAmtText"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "currencyCode",
+                      "currencyLongDescription",
+                      "listRevaluatedForeignCurrencyDepositsRows",
+                      "listRevaluatedForeignCurrencyTotalDepositsRows"
+                    ]
+                  }
+                },
+                "listRevaluatedForeignCurrencyDepositTotalCurrencyCode": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "productSerialId": {
+                        "type": "number"
+                      },
+                      "packageNumber": {
+                        "type": "number"
+                      },
+                      "displayedRevaluationCurrencyCode": {
+                        "type": "number"
+                      },
+                      "revaluationCurrencyShortedDescription": {
+                        "type": "string"
+                      },
+                      "revaluatedForeignCurrencyDepositBalanceAmount": {
+                        "type": "number"
+                      },
+                      "productTotalAmtText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "productSerialId",
+                      "packageNumber",
+                      "displayedRevaluationCurrencyCode",
+                      "revaluationCurrencyShortedDescription",
+                      "revaluatedForeignCurrencyDepositBalanceAmount",
+                      "productTotalAmtText"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "productSerialId",
+                "fullProductName",
+                "packageNumber",
+                "packageName",
+                "listRevaluatedForeignCurrencyCodeDeposits",
+                "listRevaluatedForeignCurrencyDepositTotalCurrencyCode"
+              ]
+            }
+          },
+          "listRevaluatedForeignCurrencyDepositTotalProductSerialId": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "detailedAccountTypeCode": {
+                  "type": "number"
+                },
+                "detailedAccountTypeShortedDescription": {
+                  "type": "string"
+                },
+                "displayedRevaluationCurrencyCode": {
+                  "type": "number"
+                },
+                "revaluationCurrencyShortedDescription": {
+                  "type": "string"
+                },
+                "revaluatedForeignCurrencyDepositBalanceAmount": {
+                  "type": "number"
+                },
+                "productTotalAmtText": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "detailedAccountTypeCode",
+                "detailedAccountTypeShortedDescription",
+                "displayedRevaluationCurrencyCode",
+                "revaluationCurrencyShortedDescription",
+                "revaluatedForeignCurrencyDepositBalanceAmount",
+                "productTotalAmtText"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detailedAccountTypeCode",
+          "detailedAccountTypeShortedDescription",
+          "listRevaluatedForeignCurrencyDepositProductSerialId",
+          "listRevaluatedForeignCurrencyDepositTotalProductSerialId"
+        ]
+      }
+    },
+    "listRevaluatedForeignCurrencyDepositBalanceAmount": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "number"
+          },
+          "displayedRevaluationCurrencyCode": {
+            "type": "number"
+          },
+          "revaluationCurrencyShortedDescription": {
+            "type": "string"
+          },
+          "revaluatedForeignCurrencyDepositBalanceAmount": {
+            "type": "number"
+          },
+          "productTotalAmtText": {
+            "type": "string"
+          },
+          "currencyLongDescription": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accountNumber",
+          "displayedRevaluationCurrencyCode",
+          "revaluationCurrencyShortedDescription",
+          "revaluatedForeignCurrencyDepositBalanceAmount",
+          "productTotalAmtText",
+          "currencyLongDescription"
+        ]
+      }
+    },
+    "listRevaluatedForeignCurrencyDepositTotalMortgagedRows": {
+      "type": "array",
+      "items": {}
+    },
+    "listRevaluatedForeignCurrencyDepositsMsg": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "messageCode": {
+            "type": "number"
+          },
+          "messageDescription": {
+            "type": "string"
+          },
+          "messageTypeCode": {
+            "type": "string"
+          }
+        },
+        "required": ["messageCode", "messageDescription", "messageTypeCode"]
+      }
+    }
+  },
+  "required": [
+    "dataQueryTypeCode",
+    "validityDate",
+    "formattedValidityDate",
+    "validityDateMin",
+    "formattedValidityDateMin",
+    "chosenDate",
+    "formattedChosenDate",
+    "detailedAccountTypeCode",
+    "productSerialId",
+    "packageNumber",
+    "currencyCode",
+    "depositSerialId",
+    "dataRetrievalMethodCode",
+    "filterTypeCode",
+    "generalNumberValidation",
+    "detailedAccountTypeCodeList",
+    "productSerialIdList",
+    "packageNumberList",
+    "currencyCodeList",
+    "listRevaluatedForeignCurrencyDepositAccountTypeCode",
+    "listRevaluatedForeignCurrencyDepositBalanceAmount",
+    "listRevaluatedForeignCurrencyDepositTotalMortgagedRows",
+    "listRevaluatedForeignCurrencyDepositsMsg"
+  ]
+}

@@ -1,6 +1,6 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
 import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
-import type { init } from '@accounter/modern-poalim-scraper';
+import type { init } from '@accounter/modern-israeli-scrapers';
 import { getTableColumns } from '../../helpers/sql.js';
 import type { FilteredColumns } from '../../helpers/types.js';
 import type { MainContext } from '../../index.js';
