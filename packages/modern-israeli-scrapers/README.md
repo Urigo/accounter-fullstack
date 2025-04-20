@@ -103,11 +103,3 @@ We welcome feedback, issues, and contributions. If you’d like to help migrate 
 improve the architecture, feel free to open a pull request or discussion.
 
 ---
-
-## 📝 License
-
-> _(Insert license info here if applicable)_
-
----
-
-Want me to help polish the Installation section or add a Usage example too?
