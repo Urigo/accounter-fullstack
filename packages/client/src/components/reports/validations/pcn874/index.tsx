@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -14,7 +14,9 @@ import { Pcn874ReportPatch } from './rerport-patch.js';
     $fromMonthDate: TimelessDate!
     $toMonthDate: TimelessDate!
   ) {
-    pcnByDate(businessId: $businessId, fromMonthDate: $fromMonthDate, toMonthDate: $toMonthDate) {
+    pcnByDate(businessId: $businessId, fromMonthDate: $fromMonthDate, toMonthDate: $toMonthDate)
+      @stream {
+      id
       business {
         id
         name
@@ -32,10 +34,21 @@ type Props = {
 
 export const Pcn874Validator = ({ filter }: Props): ReactElement => {
   // fetch data
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching, hasNext }] = useQuery({
     query: ValidatePcn874ReportsDocument,
     variables: filter,
   });
+
+  const reports = useMemo(() => {
+    if (!data?.pcnByDate) {
+      return [];
+    }
+    return data.pcnByDate.sort((a, b) => {
+      if (b.date > a.date) return 1;
+      if (b.date < a.date) return -1;
+      return 0;
+    });
+  }, [data?.pcnByDate]);
 
   if (fetching) {
     return (
@@ -47,7 +60,12 @@ export const Pcn874Validator = ({ filter }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col gap-4">
-      {data?.pcnByDate?.map((report, index) => (
+      {!!data && hasNext && (
+        <div className="w-full h-full flex justify-center">
+          <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        </div>
+      )}
+      {reports.map((report, index) => (
         <Pcn874ReportPatch
           content={report.content}
           contentOrigin={report.diffContent}

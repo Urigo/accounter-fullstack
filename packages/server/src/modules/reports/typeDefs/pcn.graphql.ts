@@ -34,6 +34,7 @@ export default gql`
 
   " record of PCN874 report "
   type Pcn874Records {
+    id: ID!
     business: Business!
     date: TimelessDate!
     content: String!

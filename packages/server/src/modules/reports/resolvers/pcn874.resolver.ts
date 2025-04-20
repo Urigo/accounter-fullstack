@@ -1,5 +1,6 @@
 import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { Repeater } from 'graphql-yoga';
 import { ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
@@ -24,7 +25,7 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
         if (!existingContent) {
           await context.injector.get(VatReportProvider).insertReport({
             businessId: financialEntityId,
-            monthDate: monthDate,
+            monthDate,
             content: reportContent,
           });
         }
@@ -48,41 +49,43 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
         startTimestamp = nextMonth.getTime();
       }
 
-      const reports: Array<ResolversTypes['Pcn874Records']> = [];
-      await Promise.all(
-        months.map(async monthDate => {
-          try {
-            const [savedReport, { reportContent: generatedReport, financialEntity }] =
-              await Promise.all([
-                context.injector
-                  .get(VatReportProvider)
-                  .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]),
-                getPcn874String(context, financialEntityId, monthDate),
-              ]);
+      return new Repeater<ResolversTypes['Pcn874Records']>(async (push, stop) => {
+        await Promise.all(
+          months.map(async monthDate => {
+            try {
+              const [savedReport, { reportContent: generatedReport, financialEntity }] =
+                await Promise.all([
+                  context.injector
+                    .get(VatReportProvider)
+                    .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]),
+                  getPcn874String(context, financialEntityId, monthDate),
+                ]);
 
-            if (savedReport) {
-              reports.push({
-                date: monthDate,
-                business: financialEntity,
-                content: generatedReport,
-                diffContent: savedReport === generatedReport ? undefined : savedReport,
-              });
-            } else {
-              reports.push({
-                date: monthDate,
-                business: financialEntity,
-                content: generatedReport,
-              });
+              if (savedReport) {
+                push({
+                  id: `${monthDate}-${financialEntityId}`,
+                  date: monthDate,
+                  business: financialEntity,
+                  content: generatedReport,
+                  diffContent: savedReport === generatedReport ? undefined : savedReport,
+                });
+              } else {
+                push({
+                  id: `${monthDate}-${financialEntityId}`,
+                  date: monthDate,
+                  business: financialEntity,
+                  content: generatedReport,
+                });
+              }
+            } catch (error) {
+              const message = `Error fetching report for month ${monthDate}`;
+              console.error(message, error);
+              throw new Error(message);
             }
-          } catch (error) {
-            const message = `Error fetching report for month ${monthDate}`;
-            console.error(message, error);
-            throw new Error(message);
-          }
-        }),
-      );
-
-      return reports;
+          }),
+        );
+        stop();
+      }) as unknown as Promise<readonly ResolversTypes['Pcn874Records'][]>;
     },
   },
   Mutation: {

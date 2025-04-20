@@ -11,6 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../../ui/accordion.js';
+import { Card, CardContent, CardTitle } from '../../ui/card.js';
 import { Pcn874Validator } from './pcn874/index.js';
 import { ValidateReportsFilter } from './validate-reports-filter.js';
 
@@ -37,13 +38,19 @@ export const ValidateReportsScreen = (): ReactElement => {
   }, [filter, setFiltersContext]);
 
   return (
-    <PageLayout title="VAT Monthly Report">
+    <PageLayout title="Report Validations">
       <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
-          <AccordionTrigger>Monthly VAT (PCN874)</AccordionTrigger>
-          <AccordionContent>
-            <Pcn874Validator filter={filter} />
-          </AccordionContent>
+        <AccordionItem value="pcn874">
+          <Card className="p-4">
+            <AccordionTrigger>
+              <CardTitle>Monthly VAT (PCN874)</CardTitle>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CardContent>
+                <Pcn874Validator filter={filter} />
+              </CardContent>
+            </AccordionContent>
+          </Card>
         </AccordionItem>
       </Accordion>
     </PageLayout>
