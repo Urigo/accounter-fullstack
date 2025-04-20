@@ -16,6 +16,7 @@ import { CorporateTaxRulingComplianceReport } from './components/reports/corpora
 import { ProfitAndLossReport } from './components/reports/profit-and-loss-report/index.js';
 import { TaxReport } from './components/reports/tax-report/index.js';
 import { TrialBalanceReport } from './components/reports/trial-balance-report/index.js';
+import { ValidateReportsScreen } from './components/reports/validations/index.js';
 import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.js';
 import { YearlyLedgerReport } from './components/reports/yearly-ledger/index.js';
 import { Salaries } from './components/salaries/index.js';
@@ -71,6 +72,7 @@ export function App(): ReactElement {
               element={<CorporateTaxRulingComplianceReport />}
             />
             <Route path="balance" element={<BalanceReport />} />
+            <Route path="validate-reports" element={<ValidateReportsScreen />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />
