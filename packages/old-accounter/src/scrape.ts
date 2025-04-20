@@ -2,12 +2,12 @@ import * as fs from 'fs';
 import { addMonths, isBefore, startOfMonth, subMonths, subYears } from 'date-fns';
 import dotenv from 'dotenv';
 import lodash from 'lodash';
-import { DiscountCredentials } from 'packages/modern-poalim-scraper/src/scrapers/discount.js';
+import { DiscountCredentials } from 'packages/modern-israeli-scrapers/src/scrapers/discount.js';
 import pg from 'pg';
-import { init } from '@accounter/modern-poalim-scraper';
-import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/__generated__/isracardCardsTransactionsList.js';
-import type { CalCredentials } from '../../modern-poalim-scraper/src/scrapers/cal.js';
-import type { IsracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
+import { init } from '@accounter/modern-israeli-scrapers';
+import type { IsracardCardsTransactionsList } from '../../modern-israeli-scrapers/src/__generated__/isracardCardsTransactionsList.js';
+import type { CalCredentials } from '../../modern-israeli-scrapers/src/scrapers/cal.js';
+import type { IsracardCredentials } from '../../modern-israeli-scrapers/src/scrapers/isracard.js';
 import { getCurrencyRates } from './data/currency.js';
 import {
   saveCalTransactionsToDB,

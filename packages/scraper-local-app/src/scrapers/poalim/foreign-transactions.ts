@@ -2,8 +2,8 @@ import { differenceInMonths } from 'date-fns';
 import Listr, { ListrTaskWrapper, type ListrTask } from 'listr';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
-import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
-import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
+import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-israeli-scrapers/dist/__generated__/foreignTransactionsBusinessSchema.js';
+import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-israeli-scrapers/dist/__generated__/foreignTransactionsPersonalSchema.js';
 import { sql, TaggedQuery } from '@pgtyped/runtime';
 import {
   camelCase,

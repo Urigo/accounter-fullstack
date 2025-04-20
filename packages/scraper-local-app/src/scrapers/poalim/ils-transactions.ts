@@ -1,7 +1,7 @@
 import { differenceInMonths } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { ILSCheckingTransactionsDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
+import type { ILSCheckingTransactionsDataSchema } from '@accounter/modern-israeli-scrapers/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
 import { sql } from '@pgtyped/runtime';
 import {
   camelCase,

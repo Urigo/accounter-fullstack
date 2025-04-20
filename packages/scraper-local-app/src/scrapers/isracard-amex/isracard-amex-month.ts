@@ -4,7 +4,7 @@ import type { Pool } from 'pg';
 import type {
   Index,
   IsracardCardsTransactionsList,
-} from '@accounter/modern-poalim-scraper/dist/__generated__/isracardCardsTransactionsList.js';
+} from '@accounter/modern-israeli-scrapers/dist/__generated__/isracardCardsTransactionsList.js';
 import { sql, type TaggedQuery } from '@pgtyped/runtime';
 import {
   camelCase,
