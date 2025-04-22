@@ -1,4 +1,4 @@
-import { DocumentType } from '@shared/enums';
+import { DocumentType } from '@shared/gql-types';
 
 // TODO: qu: do we have something like this in the project already?
 
