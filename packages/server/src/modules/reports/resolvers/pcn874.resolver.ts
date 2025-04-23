@@ -36,6 +36,7 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
         }
       } catch (error) {
         console.error('Error inserting report:', error);
+        // TODO: let user know about the error
       }
 
       const fileName = `pcn874_${financialEntity.vat_number}_${reportMonth}.txt`;

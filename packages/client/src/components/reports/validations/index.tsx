@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format, subYears } from 'date-fns';
 import { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
 import { TimelessDateString } from '../../../helpers/index.js';
@@ -18,16 +18,21 @@ import { ValidateReportsFilter } from './validate-reports-filter.js';
 export const ValidateReportsScreen = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
-  const [filter, setFilter] = useState<ValidatePcn874ReportsQueryVariables>(
-    get('validateReportsFilters')
-      ? (JSON.parse(
-          decodeURIComponent(get('validateReportsFilters') as string),
-        ) as ValidatePcn874ReportsQueryVariables)
-      : {
-          fromMonthDate: format(subYears(new Date(), 1), 'yyyy-MM-15') as TimelessDateString,
-          toMonthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
-        },
-  );
+
+  const initialFilter = useMemo(() => {
+    try {
+      if (get('validateReportsFilters')) {
+        return JSON.parse(decodeURIComponent(get('validateReportsFilters') as string));
+      }
+    } catch (e) {
+      console.error('Error parsing filter from URL', e);
+    }
+    return {
+      fromMonthDate: format(subYears(new Date(), 1), 'yyyy-MM-15') as TimelessDateString,
+      toMonthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
+    };
+  }, [get]);
+  const [filter, setFilter] = useState<ValidatePcn874ReportsQueryVariables>(initialFilter);
 
   useEffect(() => {
     setFiltersContext(

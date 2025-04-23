@@ -1,7 +1,7 @@
 import { FC, ReactElement, ReactNode, useMemo } from 'react';
 import { calcPatch } from 'fast-myers-diff';
 import { Check } from 'lucide-react';
-import { TimelessDateString } from 'packages/client/src/helpers';
+import type { TimelessDateString } from '../../../../helpers/index.js';
 
 type PropsWithChildren<P = unknown> = P & {
   children: ReactNode;
@@ -75,13 +75,13 @@ export const Pcn874ReportPatch = ({ content, contentOrigin, monthDate }: Props):
       } else {
         subParts.map((content, i) => {
           subChildren.push(<Wrapper key={i}>{content}</Wrapper>);
-          children.push(<div key={children.length - 1}>{...subChildren}</div>);
+          children.push(<div key={children.length - 1}>{subChildren}</div>);
           subChildren = [];
         });
       }
     }
     if (subChildren.length > 0) {
-      children.push(<div key={children.length - 1}>{...subChildren}</div>);
+      children.push(<div key={children.length - 1}>{subChildren}</div>);
     }
     return children;
   }, [content, contentOrigin]);
