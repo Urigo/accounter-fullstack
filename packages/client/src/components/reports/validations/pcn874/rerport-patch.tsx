@@ -71,7 +71,7 @@ export const Pcn874ReportPatch = ({ content, contentOrigin, monthDate }: Props):
     for (const [content, Wrapper] of parts) {
       const subParts = content.split('\n');
       if (subParts.length === 1) {
-        subChildren.push(<Wrapper key={subChildren.length - 1}>{content}</Wrapper>);
+        subChildren.push(<Wrapper key={`unchanged-${subChildren.length}`}>{content}</Wrapper>);
       } else {
         subParts.map((content, i) => {
           subChildren.push(<Wrapper key={i}>{content}</Wrapper>);
