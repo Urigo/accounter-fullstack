@@ -48,7 +48,7 @@
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "5.0.2",
     "@types/pg": "8.11.13",
-    "nodemon": "3.1.9",
+    "nodemon": "3.1.10",
     "pino-pretty": "13.0.0",
     "rimraf": "6.0.1",
     "tsc-alias": "1.8.15",
