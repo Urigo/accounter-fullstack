@@ -62,7 +62,7 @@
     "@types/node": "22.14.1",
     "bob-the-bundler": "^7.0.1",
     "concurrently": "9.1.2",
-    "eslint": "9.24.0",
+    "eslint": "9.25.1",
     "eslint-config-flat-gitignore": "2.1.0",
     "glob": "11.0.1",
     "globals": "16.0.0",
