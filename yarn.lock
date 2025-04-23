@@ -44,7 +44,7 @@ __metadata:
     graphql: "npm:16.10.0"
     lodash: "npm:4.17.21"
     moment: "npm:2.30.1"
-    pg: "npm:8.14.1"
+    pg: "npm:8.15.5"
     uuid: "npm:11.1.0"
   languageName: unknown
   linkType: soft
@@ -63,7 +63,7 @@ __metadata:
     dotenv: "npm:16.5.0"
     dotenv-cli: "npm:8.0.0"
     listr: "npm:0.14.3"
-    pg: "npm:8.14.1"
+    pg: "npm:8.15.5"
     rimraf: "npm:6.0.1"
     tsup: "npm:8.4.0"
     typescript: "npm:5.8.3"
@@ -311,7 +311,7 @@ __metadata:
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.10"
-    pg: "npm:8.14.1"
+    pg: "npm:8.15.5"
     pino-pretty: "npm:13.0.0"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.0.1"
@@ -17679,10 +17679,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pg-cloudflare@npm:^1.2.5":
+  version: 1.2.5
+  resolution: "pg-cloudflare@npm:1.2.5"
+  checksum: 10c0/48b9105ef027c7b3f57ef88ceaec3634cd82120059bd68273cce06989a1ec547e0b0fbb5d1afdd0711824f409c8b410f9bdec2f6c8034728992d3658c0b36f86
+  languageName: node
+  linkType: hard
+
 "pg-connection-string@npm:^2.7.0":
   version: 2.7.0
   resolution: "pg-connection-string@npm:2.7.0"
   checksum: 10c0/50a1496a1c858f9495d78a2c7a66d93ef3602e718aff2953bb5738f3ea616d7f727f32fc20513c9bed127650cd14c1ddc7b458396f4000e689d4b64c65c5c51e
+  languageName: node
+  linkType: hard
+
+"pg-connection-string@npm:^2.8.5":
+  version: 2.8.5
+  resolution: "pg-connection-string@npm:2.8.5"
+  checksum: 10c0/5f65afc9dfc99ecf1583a1699c97511f3d505659c9c6a91db8cd0ffe862caa29060722712a034abd6da493356567261febf18b3a6ef223d0a219f0d50d959b97
   languageName: node
   linkType: hard
 
@@ -17725,6 +17739,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pg-pool@npm:^3.9.5":
+  version: 3.9.5
+  resolution: "pg-pool@npm:3.9.5"
+  peerDependencies:
+    pg: ">=8.0"
+  checksum: 10c0/ebb36b6a1fd753213263a2e0e73d06ffe9fc93907deceae484c7fe4b464f6e9c41a578eb096b4b6012beec94a5d6e0e47728dfc4425e06d283744aa7432365a4
+  languageName: node
+  linkType: hard
+
 "pg-promise@npm:11.13.0":
   version: 11.13.0
   resolution: "pg-promise@npm:11.13.0"
@@ -17743,6 +17766,13 @@ __metadata:
   version: 1.8.0
   resolution: "pg-protocol@npm:1.8.0"
   checksum: 10c0/2be784955599d84b564795952cee52cc2b8eab0be43f74fc1061506353801e282c1d52c9e0691a9b72092c1f3fde370e9b181e80fef6bb82a9b8d1618bfa91e6
+  languageName: node
+  linkType: hard
+
+"pg-protocol@npm:^1.9.5":
+  version: 1.9.5
+  resolution: "pg-protocol@npm:1.9.5"
+  checksum: 10c0/5cb3444cf973adadd22ee9ea26bb1674f0d980ef8f9c66d426bbe67fc9cb5f0ca4a204bf7e432b3ab2ab59ac8227f4b18ab3b2e64eaed537e037e916991c7319
   languageName: node
   linkType: hard
 
@@ -17804,6 +17834,28 @@ __metadata:
     pg-native:
       optional: true
   checksum: 10c0/221741cfcea4ab32c8b57bd60703bc36cfb5622dcac56c19e45f504ef8669f2f2e0429af8850f58079cfc89055da35b5a5e12de19e0505e3f61a4b4349388dcb
+  languageName: node
+  linkType: hard
+
+"pg@npm:8.15.5":
+  version: 8.15.5
+  resolution: "pg@npm:8.15.5"
+  dependencies:
+    pg-cloudflare: "npm:^1.2.5"
+    pg-connection-string: "npm:^2.8.5"
+    pg-pool: "npm:^3.9.5"
+    pg-protocol: "npm:^1.9.5"
+    pg-types: "npm:^2.1.0"
+    pgpass: "npm:1.x"
+  peerDependencies:
+    pg-native: ">=3.0.1"
+  dependenciesMeta:
+    pg-cloudflare:
+      optional: true
+  peerDependenciesMeta:
+    pg-native:
+      optional: true
+  checksum: 10c0/4c118cd9bec37c8880b4489b9acbd10cf1eaa86a0a9024de2dac83f4ce5adedecc4cab54b66fa3bcb204aab7297c08d03617ae15499538939692b48651cc52d1
   languageName: node
   linkType: hard
 
