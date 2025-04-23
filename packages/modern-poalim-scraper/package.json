@@ -22,7 +22,7 @@
     "date-fns": "4.1.0",
     "inquirer": "12.5.2",
     "node-fetch": "3.3.2",
-    "puppeteer": "24.6.1",
+    "puppeteer": "24.7.1",
     "uuid": "11.1.0"
   },
   "devDependencies": {
