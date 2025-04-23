@@ -44,10 +44,10 @@ export class VatReportProvider {
   ) {
     const businessIdsMap = new Map<string, Set<string>>();
     businessAndDates.map(([businessId, monthDate]) => {
-      if (!businessIdsMap.has(businessId)) {
-        businessIdsMap.set(businessId, new Set<string>([monthDate]));
-      } else {
+      if (businessIdsMap.has(businessId)) {
         businessIdsMap.get(businessId)?.add(monthDate);
+      } else {
+        businessIdsMap.set(businessId, new Set<string>([monthDate]));
       }
     });
     const reports = (
