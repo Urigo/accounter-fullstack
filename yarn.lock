@@ -129,7 +129,7 @@ __metadata:
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.1.0"
     react-error-boundary: "npm:5.0.0"
-    react-hook-form: "npm:7.55.0"
+    react-hook-form: "npm:7.56.1"
     react-router-dom: "npm:7.5.1"
     recharts: "npm:2.15.3"
     sonner: "npm:2.0.3"
@@ -18285,12 +18285,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:7.55.0":
-  version: 7.55.0
-  resolution: "react-hook-form@npm:7.55.0"
+"react-hook-form@npm:7.56.1":
+  version: 7.56.1
+  resolution: "react-hook-form@npm:7.56.1"
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10c0/9cff0da58d8223dd14e01ac83688e3546edc42cfa557974b6f2f09922ee051e4713fd53abb69c7a815bf3600142a14186b977d69d438da32f63475a8ecf6b452
+  checksum: 10c0/26eafd54bf47167628e34c2f22ea27ea7bdd5b4231a56af5be31ccedfb2a721708b308026ea4a17f2fb15c7b5fff83c0feb4acc7aa07bd6faa8506e917810cab
   languageName: node
   linkType: hard
 
