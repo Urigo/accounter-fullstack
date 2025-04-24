@@ -60,14 +60,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const vatRecordsPromises = (vatDates ?? []).map(async vatDate => {
       const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
       const ledgerDate = new Date(year, month, 0);
-      const fromDate = dateToTimelessDateString(new Date(year, month - 1, 1));
-      const toDate = dateToTimelessDateString(ledgerDate);
+      const monthDate = dateToTimelessDateString(new Date(year, month - 1, 15));
 
       const { income, expenses } = await getVatRecords(
-        charge,
-        { filters: { financialEntityId: charge.owner_id, fromDate, toDate } },
+        { filters: { financialEntityId: charge.owner_id, monthDate } },
         context,
-        __,
       );
 
       return {

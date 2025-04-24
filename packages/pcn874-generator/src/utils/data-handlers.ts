@@ -1,94 +1,103 @@
+import {
+  headerCoreSchema,
+  headerStrictSchema,
+  headerTransformerSchema,
+  transactionCoreSchema,
+  transactionStrictSchema,
+  transactionTransformerSchema,
+} from '../schemas.js';
 import type { Header, Options, Transaction } from '../types.js';
-import { headerValidator, transactionValidator } from './index.js';
+import { footerBuilder, headerBuilder, transactionBuilder } from './index.js';
 
-const digitsAdjuster = (value: string, length: number) => {
+export const digitsAdjuster = (value: string, length: number) => {
   return `${'0'.repeat(length)}${value}`.slice(-length);
 };
 
-const cleanNonDigitChars = (value: string): string => {
+export const cleanNonDigitChars = (value: string): string => {
   return value.replace(/\D/g, '');
 };
 
-export const transactionHandler = (transaction: Transaction, options: Options): Transaction => {
-  if (transaction.refNumber) {
-    const sanitizedNumber = cleanNonDigitChars(transaction.refNumber);
-    if (
-      options.strict &&
-      (sanitizedNumber.length !== 9 || sanitizedNumber.length !== transaction.refNumber.length)
-    ) {
-      throw new Error(
-        `Expected Transaction refNumber to be of 9 digits, received "${transaction.refNumber}". ${
-          transaction.refNumber.length > 9 ? `Using the last 9 digits.` : `Adding leading zeros.`
-        }`,
-      );
-    }
-    transaction.refNumber = digitsAdjuster(sanitizedNumber, 9);
-  }
-
-  if (transaction.vatId) {
-    const sanitizedNumber = cleanNonDigitChars(transaction.vatId);
-    if (
-      options.strict &&
-      (sanitizedNumber.length !== 9 || sanitizedNumber.length !== transaction.vatId.length)
-    ) {
-      throw new Error(
-        `Expected Transaction vatId to be of 9 digits, received "${transaction.vatId}". ${
-          sanitizedNumber.length > 9 ? `Using the last 9 digits.` : `Adding leading zeros.`
-        }`,
-      );
-    }
-    transaction.vatId = digitsAdjuster(sanitizedNumber, 9);
-  }
-
-  if (transaction.allocationNumber) {
-    const sanitizedNumber = cleanNonDigitChars(transaction.allocationNumber);
-    if (
-      options.strict &&
-      (sanitizedNumber.length !== 9 ||
-        sanitizedNumber.length !== transaction.allocationNumber.length)
-    ) {
-      throw new Error(
-        `Expected Transaction allocation number to be of 9 digits, received "${transaction.allocationNumber}". ${
-          sanitizedNumber.length > 9 ? `Using the last 9 digits.` : `Adding leading zeros.`
-        }`,
-      );
-    }
-    transaction.allocationNumber = digitsAdjuster(sanitizedNumber, 9);
-  }
-
-  if (transaction.refGroup) {
-    const sanitizedNumber = cleanNonDigitChars(transaction.refGroup);
-    if (
-      options.strict &&
-      (sanitizedNumber.length !== 4 || sanitizedNumber.length !== transaction.refGroup.length)
-    ) {
-      throw new Error(
-        `Expected Transaction refGroup to be of 4 digits, received "${transaction.refGroup}". ${
-          sanitizedNumber.length > 4 ? `Using the last 4 digits.` : `Adding leading zeros.`
-        }`,
-      );
-    }
-    transaction.refGroup = digitsAdjuster(sanitizedNumber, 4);
-  }
-
-  return transactionValidator(transaction, options);
+export const addLeadingZeros = (value = 0, length: number): string => {
+  const zeros = '0'.repeat(length);
+  const stringNum = Math.abs(Math.round(value)).toString();
+  const final = (zeros + stringNum).slice(-length);
+  return final;
 };
 
-export const headerHandler = (header: Header, options: Options): Header => {
-  if (header.licensedDealerId && header.licensedDealerId.length !== 9) {
-    const sanitizedNumber = cleanNonDigitChars(header.licensedDealerId);
-    if (
-      options.strict &&
-      (sanitizedNumber.length !== 9 || sanitizedNumber.length !== header.licensedDealerId.length)
-    ) {
-      throw new Error(
-        `Expected Header licensedDealerId to be of 9 digits, received "${
-          header.licensedDealerId
-        }". ${sanitizedNumber.length > 9 ? `Using the last 9 digits.` : `Adding leading zeros.`}`,
-      );
+export const numToSignedString = (value: number, length: number): string => {
+  const sign = value >= 0 ? '+' : '-';
+  const paddedNum = addLeadingZeros(value, length);
+  return `${sign}${paddedNum}`;
+};
+
+export const headerInfoToHeaderAndFooterStrings = (
+  header: Header,
+  options: Options,
+): { header: string; footer: string } => {
+  try {
+    const initiallyParsedHeader = headerCoreSchema.safeParse(header);
+    if (!initiallyParsedHeader.success) {
+      throw new Error(initiallyParsedHeader.error.format()._errors.join(', '));
     }
-    header.licensedDealerId = digitsAdjuster(sanitizedNumber, 9);
+    let { data: parsedHeader } = initiallyParsedHeader;
+    if (!options.strict) {
+      try {
+        parsedHeader = headerTransformerSchema.parse(parsedHeader);
+      } catch (e) {
+        console.log(e);
+        throw new Error('Error auto-fixing header');
+      }
+    }
+
+    const validatedHeader = headerStrictSchema.parse(parsedHeader);
+
+    return {
+      header: headerBuilder(validatedHeader),
+      footer: footerBuilder(validatedHeader),
+    };
+  } catch (e) {
+    throw new Error(`Header validation error: ${(e as Error).message}`);
+  }
+};
+
+export function sortTransactions(transactions: Transaction[], options: Options) {
+  if (!options.sort) {
+    return transactions;
   }
 
-  return headerValidator(header);
-};
+  return transactions.sort((a, b) => {
+    if (a.entryType > b.entryType) {
+      return 1;
+    }
+    if (a.entryType < b.entryType) {
+      return -1;
+    }
+    return a.invoiceDate > b.invoiceDate ? 1 : -1;
+  });
+}
+
+export function transactionToString(transaction: Transaction, options: Options): string {
+  try {
+    const initiallyParsedTransaction = transactionCoreSchema.safeParse(transaction);
+    if (!initiallyParsedTransaction.success) {
+      throw new Error(initiallyParsedTransaction.error.format()._errors.join(', '));
+    }
+    let { data: parsedTransaction } = initiallyParsedTransaction;
+    if (!options.strict) {
+      try {
+        parsedTransaction = transactionTransformerSchema.parse(parsedTransaction);
+      } catch (e) {
+        console.log(e);
+        throw new Error('Error auto-fixing transaction');
+      }
+    }
+
+    const validatedTransaction = transactionStrictSchema.parse(parsedTransaction);
+
+    return transactionBuilder(validatedTransaction);
+  } catch (e) {
+    throw new Error(
+      `Transaction validation error: ${(e as Error).message}\n\n${JSON.stringify(transaction)}`,
+    );
+  }
+}

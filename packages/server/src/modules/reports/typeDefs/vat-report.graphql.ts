@@ -8,8 +8,7 @@ export default gql`
 
   " input variables for vatReportRecords "
   input VatReportFilter {
-    fromDate: TimelessDate!
-    toDate: TimelessDate!
+    monthDate: TimelessDate!
     chargesType: ChargeFilterType
     financialEntityId: UUID!
   }

@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay } from 'date-fns';
+import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -6,25 +6,18 @@ import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { isRefundCharge } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import {
-  DocumentType,
-  type QueryVatReportArgs,
-  type ResolverFn,
-  type ResolversParentTypes,
-  type ResolversTypes,
-} from '@shared/gql-types';
+import { DocumentType, type QueryVatReportArgs, type ResolversTypes } from '@shared/gql-types';
+import { dateToTimelessDateString } from '@shared/helpers';
 import {
   adjustTaxRecord,
   type RawVatReportRecord,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
 
-export const getVatRecords: ResolverFn<
-  ResolversTypes['VatReportResult'],
-  ResolversParentTypes['Query'],
-  GraphQLModules.Context,
-  Partial<QueryVatReportArgs>
-> = async (_, { filters }, context) => {
+export const getVatRecords = async (
+  { filters }: Partial<QueryVatReportArgs>,
+  context: GraphQLModules.Context,
+): Promise<ResolversTypes['VatReportResult']> => {
   const {
     injector,
     adminContext: {
@@ -43,12 +36,19 @@ export const getVatRecords: ResolverFn<
     const docsChargesIDs = new Set<string>();
     const reportIssuerId = filters?.financialEntityId;
 
+    const fromDate = filters?.monthDate
+      ? dateToTimelessDateString(startOfMonth(new Date(filters.monthDate)))
+      : undefined;
+    const toDate = filters?.monthDate
+      ? dateToTimelessDateString(lastDayOfMonth(new Date(filters.monthDate)))
+      : undefined;
+
     // get all documents by date filters
     const relevantDocumentsPromise = injector
       .get(DocumentsProvider)
       .getDocumentsByFilters({
-        fromVatDate: filters?.fromDate,
-        toVatDate: filters?.toDate,
+        fromVatDate: fromDate,
+        toVatDate: toDate,
       })
       .then(documents =>
         documents.filter(doc => {
@@ -59,9 +59,8 @@ export const getVatRecords: ResolverFn<
           // filter documents with vat_report_date_override outside of the date range
           if (doc.vat_report_date_override) {
             const isBeforeFromDate =
-              filters?.fromDate && doc.vat_report_date_override < startOfDay(filters.fromDate);
-            const isAfterToDate =
-              filters?.toDate && doc.vat_report_date_override > endOfDay(filters.toDate);
+              fromDate && doc.vat_report_date_override < startOfDay(fromDate);
+            const isAfterToDate = toDate && doc.vat_report_date_override > endOfDay(toDate);
             if (isBeforeFromDate || isAfterToDate) {
               return false;
             }
@@ -80,8 +79,8 @@ export const getVatRecords: ResolverFn<
     const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
 
     const chargesPromise = injector.get(ChargesProvider).getChargesByFilters({
-      fromDate: filters?.fromDate,
-      toDate: filters?.toDate,
+      fromDate,
+      toDate,
       ownerIds: reportIssuerId ? [reportIssuerId] : undefined,
       chargeType: filters?.chargesType,
     });

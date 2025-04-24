@@ -51,6 +51,9 @@
     "prepublish": "yarn build",
     "start": "node ./dist"
   },
+  "dependencies": {
+    "zod": "3.24.3"
+  },
   "publishConfig": {
     "directory": "dist",
     "access": "public"
