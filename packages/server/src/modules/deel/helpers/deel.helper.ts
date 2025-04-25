@@ -22,7 +22,22 @@ import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type { IInsertDeelInvoiceRecordsParams } from '../types.js';
 
-const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff';
+const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff'; // TODO: replace with DB based business id
+
+export function isDeelDocument(document: IGetDocumentsByChargeIdResult): boolean {
+  const isDeelSide =
+    document.creditor_id === DEEL_BUSINESS_ID || document.debtor_id === DEEL_BUSINESS_ID;
+  const isFinancialDocument =
+    document.type === 'INVOICE' ||
+    document.type === 'INVOICE_RECEIPT' ||
+    document.type === 'CREDIT_INVOICE';
+
+  if (isDeelSide && isFinancialDocument) {
+    return true;
+  }
+
+  return false;
+}
 
 export async function getDeelEmployeeId(
   context: GraphQLModules.ModuleContext,
@@ -31,12 +46,7 @@ export async function getDeelEmployeeId(
   ledgerEntries: LedgerProto[],
   updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
-  if (
-    (document.creditor_id !== DEEL_BUSINESS_ID && document.debtor_id !== DEEL_BUSINESS_ID) ||
-    (document.type !== 'INVOICE' &&
-      document.type !== 'INVOICE_RECEIPT' &&
-      document.type !== 'CREDIT_INVOICE')
-  ) {
+  if (!isDeelDocument(document)) {
     return;
   }
 

@@ -1,4 +1,4 @@
-import { getDeelEmployeeId } from '@modules/deel/helpers/deel.helper.js';
+import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -414,6 +414,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
               exchangeRateEntry.debitAccountID1 === entityId
                 ? exchangeRateEntry.creditAccountID1
                 : exchangeRateEntry.debitAccountID1;
+          }
+
+          if (documents.map(doc => isDeelDocument(doc)).filter(Boolean).length) {
+            // If Deel - override to generic exchange rate tax category
+            exchangeRateTaxCategory = defaultTaxCategoryId;
           }
 
           const isRefund = isRefundCharge(charge.user_description);
