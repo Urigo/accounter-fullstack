@@ -32,11 +32,7 @@ export function isDeelDocument(document: IGetDocumentsByChargeIdResult): boolean
     document.type === 'INVOICE_RECEIPT' ||
     document.type === 'CREDIT_INVOICE';
 
-  if (isDeelSide && isFinancialDocument) {
-    return true;
-  }
-
-  return false;
+  return isDeelSide && isFinancialDocument;
 }
 
 export async function getDeelEmployeeId(

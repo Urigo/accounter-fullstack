@@ -416,7 +416,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
                 : exchangeRateEntry.debitAccountID1;
           }
 
-          if (documents.map(doc => isDeelDocument(doc)).filter(Boolean).length) {
+          if (documents.some(doc => isDeelDocument(doc))) {
             // If Deel - override to generic exchange rate tax category
             exchangeRateTaxCategory = defaultTaxCategoryId;
           }
