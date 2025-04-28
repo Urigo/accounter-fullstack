@@ -85,7 +85,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.2"
     "@mui/material": "npm:7.0.2"
-    "@mui/x-charts": "npm:7.29.0"
+    "@mui/x-charts": "npm:7.29.1"
     "@radix-ui/react-accordion": "npm:1.2.7"
     "@radix-ui/react-avatar": "npm:1.1.7"
     "@radix-ui/react-checkbox": "npm:1.2.3"
@@ -4917,9 +4917,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:7.29.0":
-  version: 7.29.0
-  resolution: "@mui/x-charts@npm:7.29.0"
+"@mui/x-charts@npm:7.29.1":
+  version: 7.29.1
+  resolution: "@mui/x-charts@npm:7.29.1"
   dependencies:
     "@babel/runtime": "npm:^7.25.7"
     "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0"
@@ -4941,7 +4941,7 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/5a2b2ac59a84fded4265948fa971cacb4eec1c10ba07a740db8883e0d37fcfcf51f6daacfe245359f8c7822d5acc1c37efc447136d79cec5936fe4caec0c7c19
+  checksum: 10c0/a1fd2b571d4da1d5c87a530e1487c8596d1c66218673887929e2b7a66b0eafe408c01a985c9834ad34342713e497f1a6175c84722b244e0a5c1dba90a1b0abd0
   languageName: node
   linkType: hard
 
@@ -8853,7 +8853,7 @@ __metadata:
     concurrently: "npm:9.1.2"
     eslint: "npm:9.25.1"
     eslint-config-flat-gitignore: "npm:2.1.0"
-    glob: "npm:11.0.1"
+    glob: "npm:11.0.2"
     globals: "npm:16.0.0"
     graphql: "npm:16.10.0"
     graphql-scalars: "npm:1.24.2"
@@ -13198,9 +13198,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:11.0.1, glob@npm:^11.0.0":
-  version: 11.0.1
-  resolution: "glob@npm:11.0.1"
+"glob@npm:11.0.2":
+  version: 11.0.2
+  resolution: "glob@npm:11.0.2"
   dependencies:
     foreground-child: "npm:^3.1.0"
     jackspeak: "npm:^4.0.1"
@@ -13210,7 +13210,7 @@ __metadata:
     path-scurry: "npm:^2.0.0"
   bin:
     glob: dist/esm/bin.mjs
-  checksum: 10c0/2b32588be52e9e90f914c7d8dec32f3144b81b84054b0f70e9adfebf37cd7014570489f2a79d21f7801b9a4bd4cca94f426966bfd00fb64a5b705cfe10da3a03
+  checksum: 10c0/49f91c64ca882d5e3a72397bd45a146ca91fd3ca53dafb5254daf6c0e83fc510d39ea66f136f9ac7ca075cdd11fbe9aaa235b28f743bd477622e472f4fdc0240
   languageName: node
   linkType: hard
 
@@ -13227,6 +13227,22 @@ __metadata:
   bin:
     glob: dist/esm/bin.mjs
   checksum: 10c0/19a9759ea77b8e3ca0a43c2f07ecddc2ad46216b786bb8f993c445aee80d345925a21e5280c7b7c6c59e860a0154b84e4b2b60321fea92cd3c56b4a7489f160e
+  languageName: node
+  linkType: hard
+
+"glob@npm:^11.0.0":
+  version: 11.0.1
+  resolution: "glob@npm:11.0.1"
+  dependencies:
+    foreground-child: "npm:^3.1.0"
+    jackspeak: "npm:^4.0.1"
+    minimatch: "npm:^10.0.0"
+    minipass: "npm:^7.1.2"
+    package-json-from-dist: "npm:^1.0.0"
+    path-scurry: "npm:^2.0.0"
+  bin:
+    glob: dist/esm/bin.mjs
+  checksum: 10c0/2b32588be52e9e90f914c7d8dec32f3144b81b84054b0f70e9adfebf37cd7014570489f2a79d21f7801b9a4bd4cca94f426966bfd00fb64a5b705cfe10da3a03
   languageName: node
   linkType: hard
 
