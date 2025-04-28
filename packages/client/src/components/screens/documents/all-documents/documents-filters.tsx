@@ -10,7 +10,7 @@ import { TimelessDateString } from '../../../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { UserContext } from '../../../../providers/user-provider.jsx';
+import { UserContext } from '../../../../providers/user-provider.js';
 import { PopUpModal } from '../../../common/index.js';
 
 interface DocumentsFiltersFormProps {
