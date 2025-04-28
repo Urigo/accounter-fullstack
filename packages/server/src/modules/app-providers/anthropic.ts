@@ -103,11 +103,17 @@ export class AnthropicProvider {
 
                         Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
               },
-              {
-                type: 'file',
-                data: fileData,
-                mimeType: fileType,
-              },
+              fileType === 'application/pdf'
+                ? {
+                    type: 'file',
+                    data: fileData,
+                    mimeType: fileType,
+                  }
+                : {
+                    type: 'image',
+                    image: fileData,
+                    mimeType: fileType,
+                  },
             ],
           },
         ],
