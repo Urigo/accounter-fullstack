@@ -1,6 +1,9 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { ReactElement, useCallback, useContext, useEffect, useMemo } from 'react';
+import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
+import { TimelessDateString } from 'packages/client/src/helpers/index.js';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { MonthPickerInput } from '@mantine/dates';
 import {
   AllGreenInvoiceBusinessesQuery,
   Currency,
@@ -8,9 +11,11 @@ import {
   IssueMonthlyDocumentsMutationVariables,
 } from '../../../../gql/graphql.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
-import { NumberInput } from '../../../common/index.js';
+import { FiltersContext } from '../../../../providers/filters-context.js';
+import { ConfirmationModal, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Label } from '../../../ui/label.js';
 import {
   Select,
   SelectContent,
@@ -27,6 +32,8 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
+import { DownloadCSV } from './download-csv.js';
+import { UploadCsv } from './upload-csv.js';
 
 export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
@@ -40,8 +47,12 @@ type IssueDocumentsTableProps = {
 };
 
 export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps): ReactElement => {
+  const { setFiltersContext } = useContext(FiltersContext);
   const form = useForm<IssueDocumentsVariables>({
-    defaultValues: { generateDocumentsInfo: [] },
+    defaultValues: {
+      generateDocumentsInfo: [],
+      issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
+    },
   });
   const { issueDocuments } = useIssueMonthlyDocuments();
 
@@ -64,7 +75,6 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
 
   const onSubmit = useCallback(
     (data: IssueDocumentsVariables) => {
-      console.log('Issuing docs:', data);
       issueDocuments(data);
     },
     [issueDocuments],
@@ -83,12 +93,47 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
     [businessesData, controlledFields],
   );
 
-  console.log('controlledFields', controlledFields);
+  useEffect(() => {
+    setFiltersContext(
+      <div className="flex flex-row gap-x-5">
+        <DownloadCSV form={form} businessesData={businessesData} />
+        <UploadCsv form={form} />
+      </div>,
+    );
+  }, [form, businessesData, setFiltersContext]);
 
   return (
     <div className="p-2">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
+          {/* date input for issueMonth */}
+          <div className="flex gap-2 items-center mb-4">
+            <Label>Issue Month:</Label>
+            <FormField
+              control={form.control}
+              name="issueMonth"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormControl>
+                    <MonthPickerInput
+                      {...field}
+                      value={field.value ? new Date(field.value) : new Date()}
+                      onChange={(date: Date) => {
+                        const month = new Date(date.getFullYear(), date.getMonth(), 15);
+                        form.setValue(
+                          'issueMonth',
+                          format(month, 'yyyy-MM-dd') as TimelessDateString,
+                        );
+                      }}
+                      error={fieldState.error?.message}
+                      popoverProps={{ withinPortal: true }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <Table>
             <TableHeader>
               <TableRow>
@@ -211,8 +256,12 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
           </Table>
           <div className="flex justify-between items-center mt-4">
             <AddDocumentToIssue greenInvoiceBusinesses={unusedBusinesses} onAdd={append} />
-
-            <Button type="submit">Issue</Button>
+            <ConfirmationModal
+              onConfirm={form.handleSubmit(onSubmit)}
+              title={`Are you sure you want to issue ${controlledFields.length} documents?`}
+            >
+              <Button>Issue</Button>
+            </ConfirmationModal>
           </div>
         </form>
       </Form>

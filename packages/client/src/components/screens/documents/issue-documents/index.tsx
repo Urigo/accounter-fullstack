@@ -1,4 +1,4 @@
-import { ReactElement, useContext } from 'react';
+import { ReactElement, useContext, useEffect } from 'react';
 import { useQuery } from 'urql';
 import { AllGreenInvoiceBusinessesDocument } from '../../../../gql/graphql.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
@@ -28,7 +28,11 @@ export const IssueDocuments = (): ReactElement => {
     query: AllGreenInvoiceBusinessesDocument,
   });
 
-  setFiltersContext(null);
+  useEffect(() => {
+    if (!data) {
+      setFiltersContext(null);
+    }
+  }, [data, setFiltersContext]);
 
   return fetching ? (
     <AccounterLoader />
