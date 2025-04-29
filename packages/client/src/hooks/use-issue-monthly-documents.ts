@@ -9,8 +9,14 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation IssueMonthlyDocuments($generateDocumentsInfo: [GenerateDocumentInfo!]!) {
-    generateMonthlyClientDocuments(generateDocumentsInfo: $generateDocumentsInfo) {
+  mutation IssueMonthlyDocuments(
+    $generateDocumentsInfo: [GenerateDocumentInfo!]!
+    $issueMonth: TimelessDate
+  ) {
+    generateMonthlyClientDocuments(
+      generateDocumentsInfo: $generateDocumentsInfo
+      issueMonth: $issueMonth
+    ) {
       success
       errors
     }
