@@ -1,11 +1,13 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { FileDown } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
-import { Button } from '../../ui/button';
+import { Button } from '../../ui/button.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 
 interface Props {
-  data: string;
-  fileName: string;
+  createFileVariables: () => Promise<{ fileContent: string; fileName: string }>;
+  buttonProps?: Omit<React.ComponentProps<typeof Button>, 'onClick'>;
+  buttonContent?: ReactElement;
+  label?: string;
 }
 
 function csvDownload(data: string, fileName: string): void {
@@ -20,12 +22,28 @@ function csvDownload(data: string, fileName: string): void {
   document.body.removeChild(link);
 }
 
-export const DownloadCSVButton = ({ data, fileName }: Props): ReactElement => {
+export const DownloadCSVButton = ({
+  createFileVariables,
+  buttonProps,
+  buttonContent,
+  label,
+}: Props): ReactElement => {
+  const onClick = useCallback(() => {
+    createFileVariables().then(({ fileContent, fileName }) => {
+      csvDownload(fileContent, fileName);
+    });
+  }, [createFileVariables]);
+
   return (
-    <Tooltip label="Download CSV" position="top">
-      <Button variant="outline" onClick={() => csvDownload(data, fileName)} className="p-2">
-        <FileDown size={20} />
-      </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button variant="outline" className="p-2" {...buttonProps} onClick={onClick}>
+          {buttonContent || <FileDown size={20} />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{label || 'Download CSV'}</p>
+      </TooltipContent>
     </Tooltip>
   );
 };
