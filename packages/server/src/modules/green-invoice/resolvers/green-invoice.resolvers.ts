@@ -172,7 +172,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       return addedDocs;
     },
-    generateMonthlyClientDocuments: async (_, { generateDocumentsInfo }, { injector }) => {
+    generateMonthlyClientDocuments: async (
+      _,
+      { generateDocumentsInfo, issueMonth },
+      { injector },
+    ) => {
       const errors: string[] = [];
 
       const proformaProtos = await Promise.all(
@@ -198,7 +202,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             );
           }
 
-          const today = new Date();
+          const today = issueMonth ? new Date(issueMonth) : new Date();
           const monthStart = dateToTimelessDateString(startOfMonth(today));
           const monthEnd = dateToTimelessDateString(endOfMonth(today));
           const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);

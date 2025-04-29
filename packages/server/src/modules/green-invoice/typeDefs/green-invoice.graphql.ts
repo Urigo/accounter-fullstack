@@ -8,6 +8,7 @@ export default gql`
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
     generateMonthlyClientDocuments(
+      issueMonth: TimelessDate
       generateDocumentsInfo: [GenerateDocumentInfo!]!
     ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
   }
