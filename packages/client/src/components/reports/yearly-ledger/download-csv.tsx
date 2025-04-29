@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { LedgerCsvFieldsFragmentDoc, type LedgerCsvFieldsFragment } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
@@ -55,15 +55,21 @@ interface Props {
 }
 
 export const DownloadCSV = ({ data, year }: Props): ReactElement => {
+  const createFileVariables = useCallback(async () => {
+    if (!data) {
+      return { fileContent: '', fileName: '' };
+    }
+    const report = getFragmentData(LedgerCsvFieldsFragmentDoc, data);
+    const csvData = convertToCSV(report);
+    const fileName = `${year}_ledger`;
+    return { fileContent: csvData, fileName };
+  }, [data, year]);
+
   if (!data) {
     return <div />;
   }
-  const report = getFragmentData(LedgerCsvFieldsFragmentDoc, data);
 
-  const csvData = convertToCSV(report);
-  const fileName = `${year}_ledger`;
-
-  return <DownloadCSVButton data={csvData} fileName={fileName} />;
+  return <DownloadCSVButton createFileVariables={createFileVariables} />;
 };
 
 type DataStructure<T> = { key: string; valueFn: (record: T) => string | number }[];
