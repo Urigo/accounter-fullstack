@@ -40,7 +40,6 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   ref,
 ) {
   const [value, setValue] = useState<number | undefined>(controlledValue ?? defaultValue);
-  console.log('number value', value);
 
   const handleIncrement = useCallback(() => {
     setValue(prev => (prev === undefined ? (stepper ?? 1) : Math.min(prev + (stepper ?? 1), max)));
