@@ -160,32 +160,6 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                   <TableRow key={row.id}>
                     <TableCell>{business.originalBusiness.name}</TableCell>
                     <TableCell>{business.generatedDocumentType}</TableCell>
-                    {/* <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`generateDocumentsInfo.${index}.generatedDocumentType`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select currency" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.values(Currency).map(currency => (
-                                  <SelectItem key={currency} value={currency}>
-                                    {currency}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell> */}
                     <TableCell>
                       <FormField
                         control={form.control}
