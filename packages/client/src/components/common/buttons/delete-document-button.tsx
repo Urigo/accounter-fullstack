@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { useDeleteDocument } from '../../../hooks/use-delete-document.js';
@@ -9,27 +9,19 @@ interface Props {
 }
 
 export function DeleteDocumentButton({ documentId }: Props): ReactElement {
-  const [opened, setOpened] = useState(false);
   const { deleteDocument } = useDeleteDocument();
 
   function onDelete(): void {
     deleteDocument({
       documentId,
     });
-    setOpened(false);
   }
 
   return (
-    <>
-      <ConfirmationModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        onConfirm={onDelete}
-        title="Are you sure you want to delete this document?"
-      />
-      <ActionIcon color="red" onClick={(): void => setOpened(true)}>
+    <ConfirmationModal onConfirm={onDelete} title="Are you sure you want to delete this document?">
+      <ActionIcon color="red">
         <Trash size={20} />
       </ActionIcon>
-    </>
+    </ConfirmationModal>
   );
 }

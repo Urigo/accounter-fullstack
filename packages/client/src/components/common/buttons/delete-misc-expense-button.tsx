@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 import { toast } from 'sonner';
 import { Trash } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
@@ -11,7 +11,6 @@ interface Props {
 }
 
 export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): ReactElement {
-  const [opened, setOpened] = useState(false);
   const { deleteMiscExpense } = useDeleteMiscExpense();
 
   async function onDelete(): Promise<void> {
@@ -20,7 +19,6 @@ export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): Rea
         id: miscExpenseId,
       });
       onChange?.();
-      setOpened(false);
     } catch (error) {
       const message = 'Failed to delete misc expense';
       console.error(`${message}: ${error}`);
@@ -31,16 +29,10 @@ export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): Rea
   }
 
   return (
-    <>
-      <ConfirmationModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        onConfirm={onDelete}
-        title="Are you sure you want to delete this expense?"
-      />
-      <ActionIcon color="red" onClick={(): void => setOpened(true)}>
+    <ConfirmationModal onConfirm={onDelete} title="Are you sure you want to delete this expense?">
+      <ActionIcon color="red">
         <Trash size={20} />
       </ActionIcon>
-    </>
+    </ConfirmationModal>
   );
 }

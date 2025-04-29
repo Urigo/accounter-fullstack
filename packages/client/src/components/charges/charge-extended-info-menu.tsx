@@ -32,7 +32,6 @@ export function ChargeExtendedInfoMenu({
 }: ChargeExtendedInfoMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
-  const [modalOpened, setModalOpened] = useState(false);
   const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
     useDisclosure(false);
   const [miscExpensesOpened, { open: openMiscExpenses, close: closeMiscExpenses }] =
@@ -46,7 +45,6 @@ export function ChargeExtendedInfoMenu({
     deleteCharge({
       chargeId,
     });
-    setModalOpened(false);
     onChange?.();
   }
 
@@ -56,12 +54,6 @@ export function ChargeExtendedInfoMenu({
 
   return (
     <>
-      <ConfirmationModal
-        opened={modalOpened}
-        onClose={(): void => setModalOpened(false)}
-        onConfirm={onDelete}
-        title="Are you sure you want to delete this charge?"
-      />
       <Menu shadow="md" width={200} opened={opened}>
         <Menu.Target>
           <Burger
@@ -75,16 +67,12 @@ export function ChargeExtendedInfoMenu({
 
         <Menu.Dropdown>
           <Menu.Label>Charge</Menu.Label>
-          <Menu.Item
-            icon={<Trash size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              setModalOpened(true);
-              closeMenu();
-            }}
+          <ConfirmationModal
+            onConfirm={onDelete}
+            title="Are you sure you want to delete this charge?"
           >
-            Delete Charge
-          </Menu.Item>
+            <Menu.Item icon={<Trash size={14} />}>Delete Charge</Menu.Item>
+          </ConfirmationModal>
           <Menu.Divider />
           <Menu.Label>Documents</Menu.Label>
           <Menu.Item

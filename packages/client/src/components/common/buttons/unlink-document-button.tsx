@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
 import { ActionIcon } from '@mantine/core';
 import { EMPTY_UUID } from '../../../helpers/index.js';
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
-  const [opened, setOpened] = useState(false);
   const { updateDocument } = useUpdateDocument();
 
   function onUnlink(): void {
@@ -18,20 +17,16 @@ export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
       documentId,
       fields: { chargeId: EMPTY_UUID },
     });
-    setOpened(false);
   }
 
   return (
-    <>
-      <ConfirmationModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        onConfirm={onUnlink}
-        title="Are you sure you want to unlink this document from the charge?"
-      />
-      <ActionIcon onClick={(): void => setOpened(true)}>
+    <ConfirmationModal
+      onConfirm={onUnlink}
+      title="Are you sure you want to unlink this document from the charge?"
+    >
+      <ActionIcon>
         <PlugConnectedX size={20} />
       </ActionIcon>
-    </>
+    </ConfirmationModal>
   );
 }
