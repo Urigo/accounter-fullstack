@@ -17,25 +17,32 @@ import {
   DocumentsFilters as DocumentsFiltersType,
   DocumentsScreenDocument,
   DocumentsScreenQuery,
-} from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { FiltersContext } from '../../providers/filters-context.js';
+} from '../../../../gql/graphql.js';
+import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { FiltersContext } from '../../../../providers/filters-context.js';
 import {
   AccounterTable,
   DataTablePagination,
   PopUpModal,
   UploadDocumentsModal,
-} from '../common/index.js';
-import { PageLayout } from '../layout/page-layout.js';
-import { Button } from '../ui/button.js';
+} from '../../../common/index.js';
+import { PageLayout } from '../../../layout/page-layout.jsx';
+import { Button } from '../../../ui/button.jsx';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { DocumentsFilters } from './ documents-filters.js';
+} from '../../../ui/dropdown-menu.jsx';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../ui/table.jsx';
+import { DocumentsFilters } from './documents-filters.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

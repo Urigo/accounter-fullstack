@@ -75,7 +75,7 @@ const insertBusinessMatch = sql<IInsertBusinessMatchQuery>`
   scope: Scope.Singleton,
   global: true,
 })
-export class BusinessesGreenInvoiceMatcherProvider {
+export class GreenInvoiceProvider {
   cache = getCacheInstance({
     stdTTL: 60 * 60 * 24, // 24 hours
   });

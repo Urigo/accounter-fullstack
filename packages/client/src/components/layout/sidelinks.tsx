@@ -9,6 +9,7 @@ import {
   ChartNoAxesCombined,
   CheckCheck,
   Factory,
+  FilePen,
   Files,
   HandCoins,
   IdCard,
@@ -156,10 +157,24 @@ export const sidelinks: SideLink[] = [
     ],
   },
   {
-    href: '/documents',
     title: 'Documents',
     label: '',
+    href: '',
     icon: <Files size={18} />,
+    sub: [
+      {
+        href: '/documents',
+        title: 'All Documents',
+        label: '',
+        icon: <Files size={18} />,
+      },
+      {
+        title: 'Issue Documents',
+        label: '',
+        href: '/issue-documents',
+        icon: <FilePen size={18} />,
+      },
+    ],
   },
   {
     href: '/business-trips',

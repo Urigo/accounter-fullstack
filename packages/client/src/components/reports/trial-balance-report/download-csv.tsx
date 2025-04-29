@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import type { TimelessDateString } from '../../../helpers/dates.js';
 import { DownloadCSVButton } from '../../common/index.js';
 import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
@@ -11,10 +11,13 @@ interface Props {
 }
 
 export const DownloadCSV = ({ data, fromDate, toDate }: Props): ReactElement => {
-  const csvData = convertToCSV(data);
-  const fileName = `trial_balance_report${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
+  const createFileVariables = useCallback(async () => {
+    const csvData = convertToCSV(data);
+    const fileName = `trial_balance_report${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
+    return { fileContent: csvData, fileName };
+  }, [data, fromDate, toDate]);
 
-  return <DownloadCSVButton data={csvData} fileName={fileName} />;
+  return <DownloadCSVButton createFileVariables={createFileVariables} />;
 };
 
 const convertToCSV = (sortCodesGroups: Record<number, SortCodeGroup>): string => {

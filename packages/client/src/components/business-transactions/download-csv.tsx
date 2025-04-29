@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Currency } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, type TimelessDateString } from '../../helpers/index.js';
@@ -18,10 +18,16 @@ export const DownloadCSV = ({
   fromDate,
   toDate,
 }: Props): ReactElement => {
-  const csvData = convertToCSV(transactions);
-  const fileName = `business_${businessName}_transactions${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
+  const createFileVariables = useCallback(async () => {
+    const csvData = convertToCSV(transactions);
+    const fileName = `business_${businessName}_transactions${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
+    return {
+      fileName,
+      fileContent: csvData,
+    };
+  }, [transactions, businessName, fromDate, toDate]);
 
-  return <DownloadCSVButton data={csvData} fileName={fileName} />;
+  return <DownloadCSVButton createFileVariables={createFileVariables} />;
 };
 
 const convertToCSV = (transactions: Array<ExtendedTransaction>): string => {

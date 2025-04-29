@@ -1,8 +1,9 @@
 import type {
   ExpenseDocumentType,
+  Currency as GreenInvoiceCurrency,
   DocumentType as GreenInvoiceDocumentType,
 } from '@accounter/green-invoice-graphql';
-import { DocumentType } from '@shared/gql-types';
+import { Currency, DocumentType } from '@shared/gql-types';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
@@ -60,5 +61,26 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
       return '_400';
     default:
       throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}
+
+export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceCurrency {
+  switch (currency) {
+    case Currency.Eur:
+      return 'EUR';
+    case Currency.Gbp:
+      return 'GBP';
+    case Currency.Cad:
+      return 'CAD';
+    case Currency.Ils:
+      return 'ILS';
+    case Currency.Usd:
+      return 'USD';
+    case Currency.Eth:
+    case Currency.Grt:
+    case Currency.Usdc:
+      throw new Error(`Crypto currency (${currency}) is not supported`);
+    default:
+      throw new Error(`Unsupported currency: ${currency}`);
   }
 }

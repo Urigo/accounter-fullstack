@@ -1,5 +1,4 @@
 export * from './confirmation-modal.js';
-export * from './corn-jobs-confirmation.js';
 export * from './drawer.js';
 export * from './edit-charge-modal.js';
 export * from './edit-document-modal.js';

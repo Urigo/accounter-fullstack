@@ -24,8 +24,6 @@ export default gql`
       @auth(role: ACCOUNTANT)
     deleteDocument(documentId: UUID!): Boolean! @auth(role: ACCOUNTANT)
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ACCOUNTANT)
-    fetchIncomeDocuments(ownerId: UUID!): [Document!]! @auth(role: ADMIN)
-    generateMonthlyClientDocuments: GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
     batchUploadDocuments(
       documents: [FileScalar!]!
       isSensitive: Boolean
@@ -242,12 +240,6 @@ export default gql`
   " result type for uploadDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type UploadDocumentSuccessfulResult {
     document: Document
-  }
-
-  " result type for generateMonthlyClientDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
-  type GenerateMonthlyClientDocumentsResult {
-    success: Boolean!
-    errors: [String!]
   }
 
   extend interface Charge {

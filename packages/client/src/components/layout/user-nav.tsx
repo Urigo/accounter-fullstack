@@ -3,7 +3,8 @@ import { User2Icon } from 'lucide-react';
 import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { CornJobsConfirmation, LogoutButton, PullDocumentsModal } from '../common/index.js';
+import { useCornJobs } from '../../hooks/use-corn-jobs.js';
+import { ConfirmationModal, LogoutButton, PullDocumentsModal } from '../common/index.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { Avatar } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
@@ -17,10 +18,10 @@ import {
 } from '../ui/dropdown-menu.js';
 
 export function UserNav(): JSX.Element {
-  const [cornJobsOpened, { close: closeCornJobs, open: openCornJobs }] = useDisclosure(false);
   const [pullDocumentsOpened, { close: closePullDocuments, open: openPullDocuments }] =
     useDisclosure(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
+  const { executeJobs } = useCornJobs();
 
   return (
     <>
@@ -53,18 +54,22 @@ export function UserNav(): JSX.Element {
             </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Tooltip label="Execute corn jobs">
-              <ActionIcon size={30} onClick={openCornJobs}>
-                <ArrowBigRightLines size={20} />
-              </ActionIcon>
-            </Tooltip>
+            <ConfirmationModal
+              onConfirm={executeJobs}
+              title="Are you sure you want to manually execute corn jobs?"
+            >
+              <Tooltip label="Execute corn jobs">
+                <ActionIcon size={30}>
+                  <ArrowBigRightLines size={20} />
+                </ActionIcon>
+              </Tooltip>
+            </ConfirmationModal>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <LogoutButton />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <CornJobsConfirmation close={closeCornJobs} opened={cornJobsOpened} />
       <PullDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
 
       <BalanceChargeModal

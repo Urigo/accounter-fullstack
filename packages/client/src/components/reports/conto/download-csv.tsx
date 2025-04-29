@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { getDescendants, type NodeModel } from '@minoru/react-dnd-treeview';
 import { DownloadCSVButton } from '../../common/index.js';
 import { ContoReportFiltersType } from './conto-report-filters.js';
@@ -11,16 +11,20 @@ interface Props {
 }
 
 export const DownloadCSV = ({ tree, filters }: Props): ReactElement => {
+  const createFileVariables = useCallback(async () => {
+    const datesString = getDatesString(filters.fromDate, filters.toDate);
+
+    const csvData = convertToCSV(tree);
+    const fileName = 'conto_report' + datesString;
+
+    return { fileContent: csvData, fileName };
+  }, [filters.fromDate, filters.toDate, tree]);
+
   if (!tree.length) {
     return <div />;
   }
 
-  const datesString = getDatesString(filters.fromDate, filters.toDate);
-
-  const csvData = convertToCSV(tree);
-  const fileName = 'conto_report' + datesString;
-
-  return <DownloadCSVButton data={csvData} fileName={fileName} />;
+  return <DownloadCSVButton createFileVariables={createFileVariables} />;
 };
 
 function getDatesString(fromDate?: string | null, toDate?: string | null): string {

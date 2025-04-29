@@ -8,7 +8,6 @@ import { Businesses } from './components/businesses/index.js';
 import { ChargesLedgerValidation } from './components/charges-ledger-validation.js';
 import { ChartPage } from './components/charts/index.js';
 import { MonthlyIncomeExpenseChart } from './components/charts/monthly-income-expense/index.js';
-import { DocumentsReport } from './components/documents/index.js';
 import { DashboardLayout } from './components/layout/dashboard-layout.js';
 import { AccountantApprovals } from './components/reports/accountant-approvals.js';
 import { ContoReport } from './components/reports/conto/index.js';
@@ -23,6 +22,8 @@ import { Salaries } from './components/salaries/index.js';
 import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
+import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
+import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
 import { BalanceReport } from './components/screens/reports/balance-report.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
@@ -53,6 +54,7 @@ export function App(): ReactElement {
             <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
           </Route>
           <Route path="documents" element={<DocumentsReport />} />
+          <Route path="issue-documents" element={<IssueDocuments />} />
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
