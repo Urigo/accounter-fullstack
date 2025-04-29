@@ -1,5 +1,6 @@
 import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 // @ts-expect-error Missing type definitions for tailwindcss
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
@@ -10,7 +11,23 @@ dotenv({
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    nodePolyfills({
+      include: ['path', 'stream', 'util'],
+      exclude: ['http'],
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+      overrides: {
+        fs: 'memfs',
+      },
+      protocolImports: true,
+    }),
+  ],
   server: {
     port: 3001,
   },
