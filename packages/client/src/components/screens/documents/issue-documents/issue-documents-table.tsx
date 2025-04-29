@@ -242,8 +242,16 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>{business.greenInvoiceId}</TableCell>
-                    <TableCell>{row.id}</TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
+                        {business.greenInvoiceId}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
+                        {row.id}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <Button variant="secondary" onClick={() => remove(index)}>
                         <X size={16} />
