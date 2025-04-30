@@ -10,6 +10,7 @@ import {
   FlightClass,
 } from '../../../../gql/graphql.js';
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
+import { Form } from '../../../ui/form.js';
 import { FlightPathInput } from '../parts/flight-path-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -87,59 +88,61 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     <Modal opened={opened} onClose={close} centered lockScroll>
       <Modal.Title>Add Flight Expense</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <AddExpenseFields
-            businessTripId={businessTripId}
-            control={control}
-            setFetching={setFetching}
-          />
+        <Form {...formManager}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <AddExpenseFields
+              businessTripId={businessTripId}
+              control={control}
+              setFetching={setFetching}
+            />
 
-          <FlightPathInput formManager={formManager} flightPathPath="path" />
-          <Controller
-            name="flightClass"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                data={flightClasses}
-                value={field.value}
-                label="Flight Class"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
-          <Controller
-            name="attendeeIds"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                disabled={fetchingAttendees}
-                data={attendeesData}
-                value={field.value ?? []}
-                label="Attendees"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
+            <FlightPathInput formManager={formManager} flightPathPath="path" />
+            <Controller
+              name="flightClass"
+              control={control}
+              render={({ field, fieldState }): ReactElement => (
+                <Select
+                  {...field}
+                  data={flightClasses}
+                  value={field.value}
+                  label="Flight Class"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                  withinPortal
+                />
+              )}
+            />
+            <Controller
+              name="attendeeIds"
+              control={control}
+              render={({ field, fieldState }): ReactElement => (
+                <MultiSelect
+                  {...field}
+                  disabled={fetchingAttendees}
+                  data={attendeesData}
+                  value={field.value ?? []}
+                  label="Attendees"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                  withinPortal
+                />
+              )}
+            />
 
-          <div className="flex justify-center mt-5 gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Add
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-center mt-5 gap-3">
+              <button
+                type="submit"
+                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </Form>
       </Modal.Body>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>

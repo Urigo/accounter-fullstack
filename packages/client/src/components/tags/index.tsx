@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useContext, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, TextInput } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { sortTags } from '../../helpers/index.js';
 import { useAddTag } from '../../hooks/use-add-tag.js';
@@ -10,6 +10,7 @@ import { useDeleteTag } from '../../hooks/use-delete-tag.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { EditTagModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Input } from '../ui/input.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -73,15 +74,14 @@ export const TagsManager = (): ReactElement => {
               </ActionIcon>
             </div>
           ))}
-          <div className="flex items-center gap-2 text-gray-600 mb-2">
-            <div className="w-full mt-1 relative rounded-md shadow-xs">
-              <TextInput
-                value={newTag}
-                onChange={(event): void => setNewTag(event.currentTarget.value)}
-                placeholder="Add new tag"
-                withAsterisk
-              />
-            </div>
+          <div className="flex justify-start items-center gap-2 text-gray-600 mb-2">
+            <Input
+              className="w-80"
+              value={newTag}
+              onChange={(event): void => setNewTag(event.currentTarget.value)}
+              placeholder="Add new tag"
+              required
+            />
             <ActionIcon disabled={newTag.length < 2} onClick={(): void => onAddTag(newTag)}>
               <PlaylistAdd size={20} />
             </ActionIcon>

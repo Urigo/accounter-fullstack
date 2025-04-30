@@ -1,13 +1,15 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc,
   UpdateBusinessTripTravelAndSubsistenceExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripTravelAndSubsistenceExpense } from '../../../../hooks/use-update-business-trip-travel-and-subsistence-expense.js';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -39,12 +41,13 @@ export const TravelAndSubsistenceRow = ({
   );
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripTravelAndSubsistenceExpenseInput>({
+  const form = useForm<UpdateBusinessTripTravelAndSubsistenceExpenseInput>({
     defaultValues: {
       id: travelAndSubsistenceExpense.id,
       businessTripId,
     },
   });
+  const { control, handleSubmit } = form;
 
   const { updateBusinessTripTravelAndSubsistenceExpense, fetching: updatingInProcess } =
     useUpdateBusinessTripTravelAndSubsistenceExpense();
@@ -66,29 +69,33 @@ export const TravelAndSubsistenceRow = ({
       />
 
       <td>
-        <form id={`form ${travelAndSubsistenceExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
-          {isEditMode ? (
-            <Controller
-              name="expenseType"
-              control={control}
-              defaultValue={travelAndSubsistenceExpense.expenseType}
-              render={({ field, fieldState }): ReactElement => (
-                <TextInput
-                  form={`form ${travelAndSubsistenceExpense.id}`}
-                  data-autofocus={travelAndSubsistenceExpense.payedByEmployee ? undefined : true}
-                  {...field}
-                  value={field.value ?? undefined}
-                  error={fieldState.error?.message}
-                  label="Expense Type"
-                />
-              )}
-            />
-          ) : (
-            <Text c={travelAndSubsistenceExpense.expenseType ? undefined : 'red'}>
-              {travelAndSubsistenceExpense.expenseType ?? 'Missing'}
-            </Text>
-          )}
-        </form>
+        <Form {...form}>
+          <form id={`form ${travelAndSubsistenceExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
+            {isEditMode ? (
+              <FormField
+                name="expenseType"
+                control={control}
+                defaultValue={travelAndSubsistenceExpense.expenseType}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        form={`form ${travelAndSubsistenceExpense.id}`}
+                        {...field}
+                        value={field.value ?? undefined}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <Text c={travelAndSubsistenceExpense.expenseType ? undefined : 'red'}>
+                {travelAndSubsistenceExpense.expenseType ?? 'Missing'}
+              </Text>
+            )}
+          </form>
+        </Form>
       </td>
       <td>
         <Tooltip label="Edit">

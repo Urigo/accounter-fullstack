@@ -4,17 +4,15 @@ import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphq
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 type ModalProps = {
-  useFormManager: UseFormReturn<InsertNewBusinessInput, unknown, InsertNewBusinessInput>;
+  formManager: UseFormReturn<InsertNewBusinessInput, unknown, InsertNewBusinessInput>;
   setFetching: (fetching: boolean) => void;
 };
 
-export function InsertBusinessFields({ useFormManager, setFetching }: ModalProps): ReactElement {
+export function InsertBusinessFields({ formManager, setFetching }: ModalProps): ReactElement {
   return (
     <ModifyBusinessFields
       isInsert
-      useFormManager={
-        useFormManager as UseFormReturn<UpdateBusinessInput, unknown, UpdateBusinessInput>
-      }
+      formManager={formManager as UseFormReturn<UpdateBusinessInput, unknown, UpdateBusinessInput>}
       setFetching={setFetching}
     />
   );

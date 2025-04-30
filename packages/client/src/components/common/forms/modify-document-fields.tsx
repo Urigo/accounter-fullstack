@@ -19,7 +19,9 @@ import {
   isDocumentReceipt,
 } from '../../../helpers/documents.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
-import { CurrencyInput, SelectInput, TextInput } from '../index.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
+import { CurrencyInput, SelectInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
   formManager: UseFormReturn<
@@ -109,21 +111,26 @@ export const ModifyDocumentFields = ({
               />
             )}
           />
-          <Controller
+
+          <FormField
             name="serialNumber"
             control={control}
             defaultValue={isDocumentProcessed ? document?.serialNumber : undefined}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={!field || field.value === 'Missing' ? '' : field.value!}
-                error={fieldState.error?.message}
-                isDirty={fieldState.isDirty}
-                label="Serial Number"
-              />
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Serial Number</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={!field || field.value === 'Missing' ? '' : field.value!}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
-          <Controller
+
+          <FormField
             name="allocationNumber"
             control={control}
             defaultValue={isDocumentProcessed ? document?.allocationNumber : undefined}
@@ -133,16 +140,17 @@ export const ModifyDocumentFields = ({
                 message: 'Allocation number must be 9 characters long',
               },
             }}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                isDirty={fieldState.isDirty}
-                label="Allocation Number"
-              />
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Allocation Number</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? undefined} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
+
           <Controller
             name="debtorId"
             control={control}
@@ -284,34 +292,35 @@ export const ModifyDocumentFields = ({
           />
         </>
       )}
-      <Controller
+
+      <FormField
         name="image"
         control={control}
         defaultValue={document?.image}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            {...field}
-            value={field.value?.toString()}
-            error={fieldState.error?.message}
-            isDirty={fieldState.isDirty}
-            label="Image URL"
-          />
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Image URL</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value?.toString()} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
-      <Controller
+
+      <FormField
         name="file"
         control={control}
         defaultValue={document?.file}
-        render={({ field, fieldState }): ReactElement => (
+        render={({ field }) => (
           <div className="flex flex-row">
-            <TextInput
-              className="grow"
-              {...field}
-              value={field.value?.toString()}
-              error={fieldState.error?.message}
-              isDirty={fieldState.isDirty}
-              label="File URL"
-            />
+            <FormItem>
+              <FormLabel>File URL</FormLabel>
+              <FormControl>
+                <Input className="grow" {...field} value={field.value?.toString()} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           </div>
         )}
       />

@@ -1,10 +1,19 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripTravelAndSubsistenceExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripTravelAndSubsistenceExpense } from '../../../../hooks/use-add-business-trip-travel-and-subsistence-expense.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
 import { AddExpenseFields } from './add-expense-fields.jsx';
 
 export function AddTravelAndSubsistenceExpense(props: {
@@ -43,9 +52,10 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripTravelAndSubsistenceExpenseInput>({
+  const form = useForm<AddBusinessTripTravelAndSubsistenceExpenseInput>({
     defaultValues: { businessTripId },
   });
+  const { control, handleSubmit } = form;
   const [fetching, setFetching] = useState(false);
 
   const { addBusinessTripTravelAndSubsistenceExpense, fetching: addingInProcess } =
@@ -62,35 +72,38 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     <Modal opened={opened} onClose={close} centered lockScroll>
       <Modal.Title>Add Travel & Subsistence Expense</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <AddExpenseFields
-            businessTripId={businessTripId}
-            control={control}
-            setFetching={setFetching}
-          />
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+            <AddExpenseFields
+              businessTripId={businessTripId}
+              control={control}
+              setFetching={setFetching}
+            />
 
-          <Controller
-            name="expenseType"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                label="Expense Type"
-              />
-            )}
-          />
+            <FormField
+              name="expenseType"
+              control={control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Expense Type</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? undefined} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-center mt-5 gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Add
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-center mt-5 gap-3">
+              <button
+                type="submit"
+                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </Form>
       </Modal.Body>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>

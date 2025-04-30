@@ -5,6 +5,7 @@ import { Drawer, Image, Loader } from '@mantine/core';
 import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { Form } from '../../ui/form.js';
 import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -100,26 +101,28 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
       {!fetchingDocument && document && (
         <>
           <div className="px-5 w-4/5 h-max justify-items-center">
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <SimpleGrid cols={4}>
-                <ModifyDocumentFields document={document} formManager={formManager} />
-                <ButtonWithLabel
-                  target="_blank"
-                  textLabel="File"
-                  url={document?.file?.toString()}
-                  title="Open Link"
-                />
-              </SimpleGrid>
-              <div className="flex justify-center mt-5">
-                <button
-                  type="submit"
-                  className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12  border border-transparent shadow-xs text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  disabled={fetching || Object.keys(dirtyFields).length === 0}
-                >
-                  Save
-                </button>
-              </div>
-            </form>
+            <Form {...formManager}>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <SimpleGrid cols={4}>
+                  <ModifyDocumentFields document={document} formManager={formManager} />
+                  <ButtonWithLabel
+                    target="_blank"
+                    textLabel="File"
+                    url={document?.file?.toString()}
+                    title="Open Link"
+                  />
+                </SimpleGrid>
+                <div className="flex justify-center mt-5">
+                  <button
+                    type="submit"
+                    className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12  border border-transparent shadow-xs text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={fetching || Object.keys(dirtyFields).length === 0}
+                  >
+                    Save
+                  </button>
+                </div>
+              </form>
+            </Form>
           </div>
           <div className=" w-1/5 h-max flex flex-col ">
             <div className="flex justify-center">

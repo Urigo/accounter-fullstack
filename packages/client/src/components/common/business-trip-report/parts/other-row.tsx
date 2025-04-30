@@ -1,13 +1,16 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Switch, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportOtherRowFieldsFragmentDoc,
   UpdateBusinessTripOtherExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripOtherExpense } from '../../../../hooks/use-update-business-trip-other-expense.js';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
+import { Switch } from '../../../ui/switch.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.jsx';
@@ -33,12 +36,13 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
   const otherExpense = getFragmentData(BusinessTripReportOtherRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripOtherExpenseInput>({
+  const form = useForm<UpdateBusinessTripOtherExpenseInput>({
     defaultValues: {
       id: otherExpense.id,
       businessTripId,
     },
   });
+  const { control, handleSubmit } = form;
 
   const { updateBusinessTripOtherExpense, fetching: updatingInProcess } =
     useUpdateBusinessTripOtherExpense();
@@ -60,47 +64,55 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
       />
 
       <td>
-        <form id={`form ${otherExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
-          {isEditMode ? (
-            <Controller
-              name="description"
-              control={control}
-              defaultValue={otherExpense.description}
-              render={({ field, fieldState }): ReactElement => (
-                <TextInput
-                  form={`form ${otherExpense.id}`}
-                  data-autofocus={otherExpense.payedByEmployee ? undefined : true}
-                  {...field}
-                  value={field.value ?? undefined}
-                  error={fieldState.error?.message}
-                  label="Description"
-                />
-              )}
-            />
-          ) : (
-            <Text c={otherExpense.description ? undefined : 'red'}>
-              {otherExpense.description ?? 'Missing'}
-            </Text>
-          )}
-        </form>
+        <Form {...form}>
+          <form id={`form ${otherExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
+            {isEditMode ? (
+              <FormField
+                name="description"
+                control={control}
+                defaultValue={otherExpense.description}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        form={`form ${otherExpense.id}`}
+                        {...field}
+                        value={field.value ?? undefined}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <Text c={otherExpense.description ? undefined : 'red'}>
+                {otherExpense.description ?? 'Missing'}
+              </Text>
+            )}
+          </form>
+        </Form>
       </td>
       <td>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode ? (
-            <Controller
-              name="deductibleExpense"
-              control={control}
-              defaultValue={otherExpense.deductibleExpense}
-              render={({ field: { value, ...field }, fieldState }): ReactElement => (
-                <Switch
-                  {...field}
-                  form={`form ${otherExpense.id}`}
-                  checked={value === true}
-                  error={fieldState.error?.message}
-                  label="Deductible Expense"
-                />
-              )}
-            />
+            <Form {...form}>
+              <FormField
+                name="deductibleExpense"
+                control={form.control}
+                defaultValue={otherExpense.deductibleExpense}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        form={`form ${otherExpense.id}`}
+                        checked={field.value === true}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </Form>
           ) : (
             <Text c={otherExpense.deductibleExpense ? undefined : 'red'}>
               {otherExpense.deductibleExpense === true

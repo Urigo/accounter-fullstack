@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.js';
+import { Form } from '../../ui/form.js';
 import { InsertBusinessFields } from '../index.js';
 
 export function InsertBusiness({
@@ -43,14 +44,14 @@ type CreateBusinessFormProps = {
 };
 
 function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormProps): ReactElement {
-  const useFormManager = useForm<InsertNewBusinessInput>({
+  const formManager = useForm<InsertNewBusinessInput>({
     defaultValues: {
       name: description,
       country: 'Israel',
       suggestions: { phrases: [description] },
     },
   });
-  const { handleSubmit } = useFormManager;
+  const { handleSubmit } = formManager;
   const [fetching, setFetching] = useState(false);
 
   const { insertBusiness, fetching: addingInProcess } = useInsertBusiness();
@@ -66,14 +67,16 @@ function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormPro
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <InsertBusinessFields useFormManager={useFormManager} setFetching={setFetching} />
+    <Form {...formManager}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <InsertBusinessFields formManager={formManager} setFetching={setFetching} />
 
-      <div className="flex justify-center mt-4">
-        <Button type="submit" disabled={addingInProcess || fetching}>
-          Add
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-center mt-4">
+          <Button type="submit" disabled={addingInProcess || fetching}>
+            Add
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
