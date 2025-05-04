@@ -1,4 +1,4 @@
-import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { DocumentInput_Input } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
@@ -202,7 +202,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             );
           }
 
-          const today = issueMonth ? new Date(issueMonth) : new Date();
+          const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
           const monthStart = dateToTimelessDateString(startOfMonth(today));
           const monthEnd = dateToTimelessDateString(endOfMonth(today));
           const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
