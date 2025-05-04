@@ -1,6 +1,7 @@
 import { ReactElement, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { Form } from 'react-router-dom';
+-import { Form } from 'react-router-dom';
++import { Form } from '../../ui/form.js';
 import { toast } from 'sonner';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
 import { useInsertDocument } from '../../../hooks/use-insert-document.js';
