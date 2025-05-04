@@ -1,4 +1,4 @@
-import { subYears } from 'date-fns';
+import { addHours, subYears } from 'date-fns';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
@@ -21,6 +21,12 @@ export class DeelClientProvider {
 
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
     this.apiToken = this.env.deel.apiToken ?? null;
+  }
+
+  // This is a workaround for the Deel API returning PST dates as UTC dates.
+  private timeZoneFix(dateString: string) {
+    const date = new Date(dateString);
+    return addHours(date, 7).toUTCString();
   }
 
   public async getPaymentReceipts() {
@@ -133,6 +139,16 @@ export class DeelClientProvider {
       }
 
       const data = retrieveInvoicesSchema.parse(rawData);
+
+      if (data.data.length) {
+        data.data = data.data.map(invoice => {
+          return {
+            ...invoice,
+            issued_at: this.timeZoneFix(invoice.issued_at),
+            due_date: this.timeZoneFix(invoice.due_date),
+          };
+        });
+      }
 
       return data;
     } catch (error) {
