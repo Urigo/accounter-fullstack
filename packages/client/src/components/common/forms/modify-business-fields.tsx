@@ -1,11 +1,12 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Divider, Select, SimpleGrid, Switch, Title } from '@mantine/core';
+import { Divider, Select, SimpleGrid, Title } from '@mantine/core';
 import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
+import { Switch } from '../../ui/switch.js';
 import { PhrasesInput, TagsInput } from '../index.js';
 
 type ModalProps<T extends boolean> = {
@@ -219,30 +220,35 @@ export function ModifyBusinessFields({
           )}
         />
 
-        <Controller
+        <FormField
           name="exemptDealer"
           control={control}
           defaultValue={false}
-          render={({ field: { value, ...field }, fieldState }): ReactElement => (
-            <Switch
-              {...field}
-              checked={value === true}
-              label="Is Exempt Dealer?"
-              error={fieldState.error?.message}
-            />
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Exempt Dealer</FormLabel>
+              </div>
+              <FormControl>
+                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="optionalVAT"
           control={control}
           defaultValue={false}
-          render={({ field: { value, ...field }, fieldState }): ReactElement => (
-            <Switch
-              {...field}
-              checked={value === true}
-              label="Is VAT optional?"
-              error={fieldState.error?.message}
-            />
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Optional VAT</FormLabel>
+              </div>
+              <FormControl>
+                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
       </SimpleGrid>

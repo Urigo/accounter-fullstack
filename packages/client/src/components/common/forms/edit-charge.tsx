@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Select, Switch } from '@mantine/core';
+import { Select } from '@mantine/core';
 import {
   AllBusinessTripsDocument,
   EditChargeQuery,
@@ -19,6 +19,7 @@ import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
+import { Switch } from '../../ui/switch.js';
 import { ChargeSpreadInput, InsertBusinessTripModal, SimpleGrid, TagsInput } from '../index.js';
 
 type Props = {
@@ -191,48 +192,88 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               )}
             />
             <TagsInput formManager={formManager} tagsPath="tags" />
-            <Controller
+
+            <FormField
               name="isProperty"
               control={control}
               defaultValue={charge.property}
-              render={({ field: { value, ...field } }): ReactElement => (
-                <Switch disabled {...field} checked={value === true} label="Is Property" />
+              render={({ field }) => (
+                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Is Property</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      disabled
+                      checked={field.value === true}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
               )}
             />
-            <Controller
+
+            <FormField
               name="isConversion"
               control={control}
               defaultValue={charge.conversion}
-              render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Is Conversion" />
+              render={({ field }) => (
+                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Is Conversion</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
-            <Controller
+
+            <FormField
               name="isInvoicePaymentDifferentCurrency"
               control={control}
               defaultValue={charge.isInvoicePaymentDifferentCurrency}
-              render={({ field: { value, ...field } }): ReactElement => (
-                <Switch
-                  {...field}
-                  checked={value === true}
-                  label="Is Invoice-Payment currency difference"
-                />
+              render={({ field }) => (
+                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Is Invoice-Payment currency difference</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
-            <Controller
+
+            <FormField
               name="optionalVAT"
               control={control}
               defaultValue={charge.optionalVAT ?? false}
-              render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Optional VAT" />
+              render={({ field }) => (
+                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Optional VAT</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
-            <Controller
+
+            <FormField
               name="optionalDocuments"
               control={control}
               defaultValue={charge.optionalDocuments ?? false}
-              render={({ field: { value, ...field } }): ReactElement => (
-                <Switch {...field} checked={value === true} label="Optional Documents" />
+              render={({ field }) => (
+                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Optional Documents</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
             <ChargeSpreadInput formManager={formManager} chargeSpreadPath="yearsOfRelevance" />
