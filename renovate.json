@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base", "helpers:pinGitHubActionDigests"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "postUpdateOptions": ["yarnDedupeFewer"],
   "automerge": false,
   "lockFileMaintenance": {
@@ -15,28 +15,41 @@
       "(^|/)website-cf/action\\.ya?ml"
     ]
   },
-  "recreateClosed": false,
+  "recreateWhen": "auto",
   "prConcurrentLimit": 25,
   "labels": ["dependencies"],
   "rebaseWhen": "conflicted",
-  "ignorePaths": ["**/__tests__/**", "**/test/**", "**/tests/**", "**/__fixtures__/**"],
-
+  "ignorePaths": [
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**"
+  ],
   "dependencyDashboardTitle": "Dependencies Dashboard",
   "packageRules": [
     {
       "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
       "groupSlug": "all-patch",
-      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//", "*"]
+      "matchPackageNames": [
+        "!/@changesets/*/",
+        "!/typescript/",
+        "!/^@theguild//",
+        "*"
+      ]
     },
     {
       "groupName": "Yoga/Envelop",
-      "matchPackagePrefixes": ["@envelop", "graphql-yoga", "@graphql-yoga"]
+      "matchPackageNames": [
+        "@envelop{/,}**",
+        "graphql-yoga{/,}**",
+        "@graphql-yoga{/,}**"
+      ]
     },
     {
       "groupName": "urql",
       "recreateWhen": "auto",
-      "matchPackagePrefixes": ["@urql", "urql"]
+      "matchPackageNames": ["@urql{/,}**", "urql{/,}**"]
     },
     {
       "matchDepTypes": ["devDependencies"]
