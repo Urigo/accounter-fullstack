@@ -401,11 +401,19 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const amount = Math.abs(balance.raw);
         const isCreditorCounterparty = balance.raw < 0;
 
-        const exchangeRateEntry = accountingLedgerEntries.find(entry =>
+        let exchangeRateEntry = accountingLedgerEntries.find(entry =>
           [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
         );
 
         let exchangeRateTaxCategory: string | undefined = undefined;
+        const deelCharge = documents.some(doc => isDeelDocument(doc));
+
+        if (deelCharge) {
+          exchangeRateEntry ||= miscLedgerEntries.find(entry =>
+            [entry.creditAccountID1, entry.debitAccountID1].includes(entityId),
+          );
+        }
+
         if (exchangeRateEntry) {
           if (documentsTaxCategoryId) {
             exchangeRateTaxCategory = documentsTaxCategoryId;
@@ -416,7 +424,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
                 : exchangeRateEntry.debitAccountID1;
           }
 
-          if (documents.some(doc => isDeelDocument(doc))) {
+          if (deelCharge) {
             // If Deel - override to generic exchange rate tax category
             exchangeRateTaxCategory = exchangeRateTaxCategoryId;
           }

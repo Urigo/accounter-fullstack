@@ -103,17 +103,17 @@ export async function getDeelEmployeeId(
     if (isDeelCreditor) {
       newEntry = {
         ...ledgerEntry,
-        creditAccountID1: employeeId,
-        debitAccountID1: taxCategoryId ?? ledgerEntry.debitAccountID1,
+        debitAccountID1: employeeId,
       };
-      ledgerEntry.debitAccountID1 = employeeId;
+      ledgerEntry.creditAccountID1 = employeeId;
+      ledgerEntry.debitAccountID1 = taxCategoryId ?? ledgerEntry.debitAccountID1;
     } else {
       newEntry = {
         ...ledgerEntry,
-        debitAccountID1: employeeId,
-        creditAccountID1: taxCategoryId ?? ledgerEntry.creditAccountID1,
+        creditAccountID1: employeeId,
       };
-      ledgerEntry.creditAccountID1 = employeeId;
+      ledgerEntry.creditAccountID1 = taxCategoryId ?? ledgerEntry.creditAccountID1;
+      ledgerEntry.debitAccountID1 = employeeId;
     }
     updateLedgerBalance(newEntry);
     ledgerEntries.push(newEntry);
