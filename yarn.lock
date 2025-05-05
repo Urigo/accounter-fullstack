@@ -24,7 +24,7 @@ __metadata:
     "@types/pg": "npm:8.11.14"
     got: "npm:14.4.7"
     pg-promise: "npm:11.13.0"
-    slonik: "npm:38.0.0"
+    slonik: "npm:46.6.1"
     tslib: "npm:2.8.1"
     zod: "npm:3.24.4"
   languageName: unknown
@@ -6685,6 +6685,87 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@slonik/driver@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/driver@npm:46.6.1"
+  dependencies:
+    "@slonik/types": "npm:^46.6.1"
+    "@slonik/utilities": "npm:^46.6.1"
+    roarr: "npm:^7.21.1"
+    serialize-error: "npm:^8.0.0"
+    strict-event-emitter-types: "npm:^2.0.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/86f2c94de16b396967e9acf20587ed35f8b4a4a7964ac08abf836952b41b130a9ee77c1157a8b8ff57b430da5ad8080475b6082cd3332bbfc06f49c5f05a750f
+  languageName: node
+  linkType: hard
+
+"@slonik/errors@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/errors@npm:46.6.1"
+  dependencies:
+    "@slonik/types": "npm:^46.6.1"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/2c9e4ebc2ea4a2d28aec9cb9ef529e0aaaa9ce0385e1678abb4eaa791aaae0a8fc5ca60f068df96825c3efd012ef9b50b022e6159edb44ff560bf419f6ed812f
+  languageName: node
+  linkType: hard
+
+"@slonik/pg-driver@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/pg-driver@npm:46.6.1"
+  dependencies:
+    "@slonik/driver": "npm:^46.6.1"
+    "@slonik/errors": "npm:^46.6.1"
+    "@slonik/sql-tag": "npm:^46.6.1"
+    "@slonik/types": "npm:^46.6.1"
+    "@slonik/utilities": "npm:^46.6.1"
+    pg: "npm:^8.13.1"
+    pg-query-stream: "npm:^4.7.1"
+    pg-types: "npm:^4.0.2"
+    postgres-array: "npm:^3.0.2"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/660bc03becdab766161b0a19b86a95dac6fa023956d455990074588842cab75472a1b34c79e7dd213abf92c56b771ce9641720cf2a58ebc7306f9cdb1faca98c
+  languageName: node
+  linkType: hard
+
+"@slonik/sql-tag@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/sql-tag@npm:46.6.1"
+  dependencies:
+    "@slonik/errors": "npm:^46.6.1"
+    "@slonik/types": "npm:^46.6.1"
+    roarr: "npm:^7.21.1"
+    safe-stable-stringify: "npm:^2.4.3"
+    serialize-error: "npm:^8.0.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/75aec20dcc2822ba9d204a130bfd5d236810c34000bf5a4b51df4a91d8853183ffed2ad7b5232330995508b0a75ba9f1c8fc8b9710c3514d0471fe7143f7ea1d
+  languageName: node
+  linkType: hard
+
+"@slonik/types@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/types@npm:46.6.1"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/cb2167e79cdd4a7abd5f5d6cf3165832d755d8f0b1217ac0fb6a6cadf869fb8c242a77e0fbb8310be7edab5cd34fd509436a3885c0006e0aa6188e07e7d14b10
+  languageName: node
+  linkType: hard
+
+"@slonik/utilities@npm:^46.6.1":
+  version: 46.6.1
+  resolution: "@slonik/utilities@npm:46.6.1"
+  dependencies:
+    "@slonik/errors": "npm:^46.6.1"
+    "@slonik/types": "npm:^46.6.1"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/3850df02e56c56f9860187e3117c0e48b94c591f301df31ffccd7870ce3f78f4d4a1645ffa188375c88e3d80ed4a30293fb6ee827d1ec8d5b68fea0b1a6e7abb
+  languageName: node
+  linkType: hard
+
 "@standard-schema/utils@npm:^0.3.0":
   version: 0.3.0
   resolution: "@standard-schema/utils@npm:0.3.0"
@@ -7348,7 +7429,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.11.14, @types/pg@npm:^8.10.7":
+"@types/pg@npm:8.11.14":
   version: 8.11.14
   resolution: "@types/pg@npm:8.11.14"
   dependencies:
@@ -17344,14 +17425,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-protocol@npm:*, pg-protocol@npm:^1.6.0, pg-protocol@npm:^1.8.0, pg-protocol@npm:^1.9.5":
+"pg-protocol@npm:*, pg-protocol@npm:^1.8.0, pg-protocol@npm:^1.9.5":
   version: 1.9.5
   resolution: "pg-protocol@npm:1.9.5"
   checksum: 10c0/5cb3444cf973adadd22ee9ea26bb1674f0d980ef8f9c66d426bbe67fc9cb5f0ca4a204bf7e432b3ab2ab59ac8227f4b18ab3b2e64eaed537e037e916991c7319
   languageName: node
   linkType: hard
 
-"pg-query-stream@npm:^4.5.3":
+"pg-query-stream@npm:^4.7.1":
   version: 4.9.6
   resolution: "pg-query-stream@npm:4.9.6"
   dependencies:
@@ -17375,7 +17456,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-types@npm:^4.0.1":
+"pg-types@npm:^4.0.1, pg-types@npm:^4.0.2":
   version: 4.0.2
   resolution: "pg-types@npm:4.0.2"
   dependencies:
@@ -17412,7 +17493,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.15.6, pg@npm:^8.11.3":
+"pg@npm:8.15.6, pg@npm:^8.13.1":
   version: 8.15.6
   resolution: "pg@npm:8.15.6"
   dependencies:
@@ -19450,25 +19531,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:38.0.0":
-  version: 38.0.0
-  resolution: "slonik@npm:38.0.0"
+"slonik@npm:46.6.1":
+  version: 46.6.1
+  resolution: "slonik@npm:46.6.1"
   dependencies:
-    "@types/pg": "npm:^8.10.7"
+    "@slonik/driver": "npm:^46.6.1"
+    "@slonik/errors": "npm:^46.6.1"
+    "@slonik/pg-driver": "npm:^46.6.1"
+    "@slonik/sql-tag": "npm:^46.6.1"
+    "@slonik/utilities": "npm:^46.6.1"
     get-stack-trace: "npm:^3.1.1"
     iso8601-duration: "npm:^1.3.0"
-    pg: "npm:^8.11.3"
-    pg-protocol: "npm:^1.6.0"
-    pg-query-stream: "npm:^4.5.3"
-    pg-types: "npm:^4.0.1"
-    postgres-array: "npm:^3.0.2"
     postgres-interval: "npm:^4.0.2"
     roarr: "npm:^7.21.1"
-    safe-stable-stringify: "npm:^2.4.3"
     serialize-error: "npm:^8.0.0"
+    strict-event-emitter-types: "npm:^2.0.0"
   peerDependencies:
     zod: ^3
-  checksum: 10c0/c962ddb1f1240739470b98250d91675b0c748e4cf6320893fc4e11f111444725945fcae7ff28babf0da6cb3916aad603fbed70047eb6b64930eac6abd86d3fc9
+  checksum: 10c0/310e2da11f0b8870eadfe0a0473ba24b0be2c52be82d499e03b4c14a364022ed4734931e248f2f9888b6d8fdf92c5378a677a3857467ba4f5b08340157ae6c38
   languageName: node
   linkType: hard
 
@@ -19755,6 +19835,13 @@ __metadata:
     bare-events:
       optional: true
   checksum: 10c0/f5017998a5b6360ba652599d20ef308c8c8ab0e26c8e5f624f0706f0ea12624e94fdf1ec18318124498529a1b106a1ab1c94a1b1e1ad6c2eec7cb9c8ac1b9198
+  languageName: node
+  linkType: hard
+
+"strict-event-emitter-types@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "strict-event-emitter-types@npm:2.0.0"
+  checksum: 10c0/7a2985b81908c2a7d1de10afe3be1de3423b8ce6188dc32aeb3dbaf66d4ac3f11029d6931c67d972a3bb976bbd04d27ee090eeed1cbd089c5ba3e899a04ed1b7
   languageName: node
   linkType: hard
 
