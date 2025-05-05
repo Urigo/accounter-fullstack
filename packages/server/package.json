@@ -35,7 +35,7 @@
     "date-fns": "4.1.0",
     "dotenv": "16.5.0",
     "dotenv-cli": "8.0.0",
-    "graphql": "16.10.0",
+    "graphql": "16.11.0",
     "graphql-modules": "3.0.0",
     "graphql-scalars": "1.24.2",
     "graphql-yoga": "5.13.4",
