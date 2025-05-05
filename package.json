@@ -81,7 +81,7 @@
   },
   "resolutions": {
     "@theguild/eslint-config/eslint-plugin-unicorn": "56.0.1",
-    "graphql": "16.10.0"
+    "graphql": "16.11.0"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
