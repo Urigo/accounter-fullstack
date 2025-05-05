@@ -1,10 +1,9 @@
 import { ReactElement, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
--import { Form } from 'react-router-dom';
-+import { Form } from '../../ui/form.js';
 import { toast } from 'sonner';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
 import { useInsertDocument } from '../../../hooks/use-insert-document.js';
+import { Form } from '../../ui/form.js';
 import { SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -50,7 +49,7 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
   }, [setValue, currency]);
 
   return (
-    <div className=" px-5 w-max h-max justify-items-center">
+    <div className="px-5 w-max h-max justify-items-center">
       <Form {...formManager}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <SimpleGrid cols={5}>
