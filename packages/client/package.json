@@ -20,7 +20,7 @@
     "@mantine/hooks": "6.0.22",
     "@minoru/react-dnd-treeview": "3.5.2",
     "@mui/material": "7.0.2",
-    "@mui/x-charts": "7.29.1",
+    "@mui/x-charts": "8.2.0",
     "@radix-ui/react-accordion": "1.2.8",
     "@radix-ui/react-avatar": "1.1.7",
     "@radix-ui/react-checkbox": "1.2.3",
