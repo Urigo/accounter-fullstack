@@ -1,12 +1,14 @@
 import { ReactElement, useEffect } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Select, TextInput } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
-  useFormManager: UseFormReturn<
+  formManager: UseFormReturn<
     T extends true ? InsertTaxCategoryInput : UpdateTaxCategoryInput,
     unknown,
     T extends true ? InsertTaxCategoryInput : UpdateTaxCategoryInput
@@ -15,10 +17,10 @@ type ModalProps<T extends boolean> = {
 };
 
 export function ModifyTaxCategoryFields({
-  useFormManager,
+  formManager,
   setFetching,
 }: ModalProps<boolean>): ReactElement {
-  const { control } = useFormManager;
+  const { control } = formManager;
 
   // Sort codes array handle
   const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
@@ -29,24 +31,24 @@ export function ModifyTaxCategoryFields({
 
   return (
     <>
-      <Controller
+      <FormField
         name="name"
         control={control}
         rules={{
           required: 'Required',
           minLength: { value: 2, message: 'Must be at least 2 characters' },
         }}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            data-autofocus
-            {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            label="Name"
-            required
-          />
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value ?? undefined} required />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
+
       <Controller
         name="sortCode"
         control={control}

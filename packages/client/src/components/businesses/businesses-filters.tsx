@@ -1,8 +1,9 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect } from 'react';
-import { Pagination, TextInput } from '@mantine/core';
+import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react';
+import { Pagination } from '@mantine/core';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { Input } from '../ui/input.js';
 
-interface ChargesFiltersProps {
+interface BusinessesFiltersProps {
   activePage: number;
   totalPages?: number;
   setPage: Dispatch<SetStateAction<number>>;
@@ -16,8 +17,9 @@ export function BusinessesFilters({
   totalPages = 1,
   businessName,
   setBusinessName,
-}: ChargesFiltersProps): ReactElement {
+}: BusinessesFiltersProps): ReactElement {
   const { get, set } = useUrlQuery();
+  const [inputBusinessName, setInputBusinessName] = useState(businessName);
 
   // update url on page change
   useEffect(() => {
@@ -28,14 +30,28 @@ export function BusinessesFilters({
     }
   }, [activePage, get, set]);
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setBusinessName(inputBusinessName);
+    }, 600);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [inputBusinessName, setBusinessName]);
+
+  const onInputBusinessNameChange = (input?: string) => {
+    setInputBusinessName(input);
+  };
+
   return (
     <div className="flex flex-row gap-5 items-center">
       <Pagination className="flex-auto" value={activePage} onChange={setPage} total={totalPages} />
-      <TextInput
+      <Input
+        className="w-72"
         placeholder="Business Name"
         defaultValue={businessName ?? undefined}
         onChange={event =>
-          setBusinessName(event.target.value === '' ? undefined : event.target.value)
+          onInputBusinessNameChange(event.target.value === '' ? undefined : event.target.value)
         }
       />
     </div>

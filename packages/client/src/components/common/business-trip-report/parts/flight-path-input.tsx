@@ -1,7 +1,6 @@
 import { ReactElement } from 'react';
 import {
   ArrayPath,
-  Controller,
   FieldArray,
   FieldValues,
   Path,
@@ -9,7 +8,9 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon, TextInput } from '@mantine/core';
+import { ActionIcon } from '@mantine/core';
+import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
+import { Input } from '../../../ui/input';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -48,20 +49,23 @@ export function FlightPathInput<T extends FieldValues>({
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-xs">
-              <Controller
+              <FormField
                 name={`${flightPathPath}.${index}` as Path<T>}
                 control={control}
                 rules={{
                   required: 'Required',
                 }}
-                render={({ field, fieldState }): ReactElement => (
-                  <TextInput
-                    {...field}
-                    value={field.value ?? undefined}
-                    placeholder="Destination"
-                    error={fieldState.error?.message}
-                    required
-                  />
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? undefined}
+                        placeholder="Destination"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>

@@ -2,7 +2,7 @@ import { ReactElement, useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion, Container, Switch, Tooltip } from '@mantine/core';
+import { Accordion, Container, Tooltip } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsScreenDocument,
@@ -12,6 +12,7 @@ import { FragmentType } from '../../gql/index.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusinessTripModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Switch } from '../ui/switch.js';
 import { BusinessTripsRow } from './business-trips-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -63,11 +64,13 @@ export const BusinessTrips = (): ReactElement => {
       <div className="flex flex-row gap-x-5">
         <InsertBusinessTripModal />
         <Tooltip label="Toggle business trips validation">
-          <Switch
-            defaultChecked={shouldValidate ?? false}
-            onChange={(event): void => setShouldValidate(event.currentTarget.checked)}
-            label="Validate"
-          />
+          <div className="flex flex-row items-center gap-x-2">
+            <Switch
+              checked={shouldValidate ?? false}
+              onCheckedChange={(checked): void => setShouldValidate(checked)}
+            />
+            <span className="text-sm text-gray-500">Validate</span>
+          </div>
         </Tooltip>
       </div>,
     );

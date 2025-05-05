@@ -4,6 +4,7 @@ import { Loader } from '@mantine/core';
 import { EditMiscExpenseFieldsFragmentDoc, UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateMiscExpense } from '../../../hooks/use-update-misc-expense.js';
+import { Form } from '../../ui/form.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -72,20 +73,21 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
   return isUpdating ? (
     <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
   ) : (
-    <form>
-      <div className="px-5 flex flex-col gap-5">
-        <ModifyMiscExpenseFields formManager={formManager} isInsert={false} />
-        <div className="flex justify-right gap-5 mt-5">
-          <button
-            type="button"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            disabled={fetching || Object.keys(dirtyFields).length === 0}
-            onClick={handleSubmit(onSubmit)}
-          >
-            Accept
-          </button>
+    <Form {...formManager}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className="px-5 flex flex-col gap-5">
+          <ModifyMiscExpenseFields formManager={formManager} isInsert={false} />
+          <div className="flex justify-right gap-5 mt-5">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              disabled={fetching || Object.keys(dirtyFields).length === 0}
+            >
+              Accept
+            </button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 };

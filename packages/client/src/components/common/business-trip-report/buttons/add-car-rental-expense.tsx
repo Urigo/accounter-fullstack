@@ -1,10 +1,19 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, NumberInput, Overlay, Switch, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, NumberInput, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
+import { Switch } from '../../../ui/switch.js';
 import { AddExpenseFields } from './add-expense-fields.jsx';
 
 export function AddCarRentalExpense(props: {
@@ -43,9 +52,10 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripCarRentalExpenseInput>({
+  const form = useForm<AddBusinessTripCarRentalExpenseInput>({
     defaultValues: { businessTripId },
   });
+  const { control, handleSubmit } = form;
   const [fetching, setFetching] = useState(false);
 
   const { addBusinessTripCarRentalExpense, fetching: addingInProcess } =
@@ -62,51 +72,56 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     <Modal opened={opened} onClose={close} centered lockScroll>
       <Modal.Title>Add Car Rental Expense</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <AddExpenseFields
-            businessTripId={businessTripId}
-            control={control}
-            setFetching={setFetching}
-          />
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <AddExpenseFields
+              businessTripId={businessTripId}
+              control={control}
+              setFetching={setFetching}
+            />
 
-          <Controller
-            name="days"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <NumberInput
-                {...field}
-                value={field.value ?? undefined}
-                hideControls
-                precision={2}
-                removeTrailingZeros
-                error={fieldState.error?.message}
-                label="Rent Days"
-              />
-            )}
-          />
-          <Controller
-            name="isFuelExpense"
-            control={control}
-            defaultValue={false}
-            render={({ field: { value, ...field }, fieldState }): ReactElement => (
-              <Switch
-                {...field}
-                checked={value === true}
-                error={fieldState.error?.message}
-                label="Is Fuel Expense"
-              />
-            )}
-          />
+            <Controller
+              name="days"
+              control={control}
+              render={({ field, fieldState }): ReactElement => (
+                <NumberInput
+                  {...field}
+                  value={field.value ?? undefined}
+                  hideControls
+                  precision={2}
+                  removeTrailingZeros
+                  error={fieldState.error?.message}
+                  label="Rent Days"
+                />
+              )}
+            />
 
-          <div className="flex justify-center mt-5 gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Add
-            </button>
-          </div>
-        </form>
+            <FormField
+              name="isFuelExpense"
+              control={control}
+              render={({ field: { value, ...field } }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Is Fuel Expense</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch {...field} checked={value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-center mt-5 gap-3">
+              <button
+                type="submit"
+                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </Form>
       </Modal.Body>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>

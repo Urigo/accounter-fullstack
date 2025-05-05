@@ -1,10 +1,20 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, NumberInput, Overlay, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripAccommodationsExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripAccommodationsExpense } from '../../../../hooks/use-add-business-trip-accommodations-expense.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
+import { NumberInput } from '../../index.js';
 import { AttendeesStayInput } from '../parts/attendee-stay-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -64,56 +74,64 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     <Modal opened={opened} onClose={close} centered lockScroll>
       <Modal.Title>Add Accommodation Expense</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <AddExpenseFields
-            businessTripId={businessTripId}
-            control={control}
-            setFetching={setFetching}
-          />
+        <Form {...formManager}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+            <AddExpenseFields
+              businessTripId={businessTripId}
+              control={control}
+              setFetching={setFetching}
+            />
 
-          <Controller
-            name="country"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                label="Country"
-              />
-            )}
-          />
-          <Controller
-            name="nightsCount"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <NumberInput
-                {...field}
-                value={field.value ?? undefined}
-                hideControls
-                precision={2}
-                removeTrailingZeros
-                error={fieldState.error?.message}
-                label="Nights Count"
-              />
-            )}
-          />
+            {/* TODO: replace with country select */}
+            <FormField
+              control={control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? undefined} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <AttendeesStayInput
-            formManager={formManager}
-            attendeesStayPath="attendeesStay"
-            businessTripId={businessTripId}
-          />
+            <FormField
+              name="nightsCount"
+              control={control}
+              render={({ field }): ReactElement => (
+                <FormItem>
+                  <FormLabel>Nights Count</FormLabel>
+                  <FormControl>
+                    <NumberInput
+                      {...field}
+                      value={field.value ?? undefined}
+                      hideControls
+                      decimalScale={2}
+                      thousandSeparator=","
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-center mt-5 gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Add
-            </button>
-          </div>
-        </form>
+            <AttendeesStayInput
+              formManager={formManager}
+              attendeesStayPath="attendeesStay"
+              businessTripId={businessTripId}
+            />
+            <div className="flex justify-center mt-5 gap-3">
+              <button
+                type="submit"
+                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </Form>
       </Modal.Body>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>

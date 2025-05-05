@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
-import { Control, Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Control, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, List, NumberInput, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, List, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   UpdateBusinessTripAccommodationsExpenseInput,
@@ -9,6 +9,9 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/use-update-business-trip-accommodations-expense.js';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
+import { NumberInput } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { AttendeesStayInput } from './attendee-stay-input.js';
@@ -78,50 +81,60 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
       />
 
       <td>
-        <form id={`form ${accommodationExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
-          {isEditMode ? (
-            <Controller
-              name="country"
-              control={control}
-              defaultValue={accommodationExpense.country}
-              render={({ field, fieldState }): ReactElement => (
-                <TextInput
-                  form={`form ${accommodationExpense.id}`}
-                  data-autofocus={accommodationExpense.payedByEmployee ? undefined : true}
-                  {...field}
-                  value={field.value ?? undefined}
-                  error={fieldState.error?.message}
-                  label="Country"
-                />
-              )}
-            />
-          ) : (
-            <Text c={accommodationExpense.country ? undefined : 'red'}>
-              {accommodationExpense.country ?? 'Missing'}
-            </Text>
-          )}
-        </form>
+        <Form {...formManager}>
+          <form id={`form ${accommodationExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
+            {isEditMode ? (
+              <FormField
+                name="country"
+                control={control}
+                defaultValue={accommodationExpense.country}
+                render={({ field }) => (
+                  // TODO: replace with country select
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        form={`form ${accommodationExpense.id}`}
+                        {...field}
+                        value={field.value ?? undefined}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <Text c={accommodationExpense.country ? undefined : 'red'}>
+                {accommodationExpense.country ?? 'Missing'}
+              </Text>
+            )}
+          </form>
+        </Form>
       </td>
       <td>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode ? (
-            <Controller
-              name="nightsCount"
-              control={control}
-              defaultValue={accommodationExpense.nightsCount}
-              render={({ field, fieldState }): ReactElement => (
-                <NumberInput
-                  {...field}
-                  value={field.value ?? undefined}
-                  form={`form ${accommodationExpense.id}`}
-                  hideControls
-                  precision={2}
-                  removeTrailingZeros
-                  error={fieldState.error?.message}
-                  label="Nights Count"
-                />
-              )}
-            />
+            <Form {...formManager}>
+              <FormField
+                name="nightsCount"
+                control={control}
+                defaultValue={accommodationExpense.nightsCount}
+                render={({ field }): ReactElement => (
+                  <FormItem>
+                    <FormControl>
+                      <NumberInput
+                        {...field}
+                        value={field.value ?? undefined}
+                        form={`form ${accommodationExpense.id}`}
+                        hideControls
+                        decimalScale={0}
+                        thousandSeparator=","
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </Form>
           ) : (
             <Text c={accommodationExpense.nightsCount ? undefined : 'red'}>
               {accommodationExpense.nightsCount ?? 'Missing'}
@@ -131,11 +144,13 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
       </td>
       <td>
         {isEditMode ? (
-          <AttendeesStayInput
-            formManager={formManager}
-            attendeesStayPath="attendeesStay"
-            businessTripId={businessTripId}
-          />
+          <Form {...formManager}>
+            <AttendeesStayInput
+              formManager={formManager}
+              attendeesStayPath="attendeesStay"
+              businessTripId={businessTripId}
+            />
+          </Form>
         ) : (
           <List listStyleType="disc">
             {accommodationExpense.attendeesStay?.length ? (

@@ -3,6 +3,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
 import { useInsertDocument } from '../../../hooks/use-insert-document.js';
+import { Form } from '../../ui/form.js';
 import { SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -48,28 +49,30 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
   }, [setValue, currency]);
 
   return (
-    <div className=" px-5 w-max h-max justify-items-center">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <SimpleGrid cols={5}>
-          <ModifyDocumentFields formManager={formManager} defaultCurrency={Currency.Ils} />
-        </SimpleGrid>
-        <div className="flex justify-center gap-5 mt-5">
-          <button
-            type="submit"
-            className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            disabled={fetching || Object.keys(dirtyFields).length === 0}
-          >
-            Accept
-          </button>
-          <button
-            type="button"
-            className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+    <div className="px-5 w-max h-max justify-items-center">
+      <Form {...formManager}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <SimpleGrid cols={5}>
+            <ModifyDocumentFields formManager={formManager} defaultCurrency={Currency.Ils} />
+          </SimpleGrid>
+          <div className="flex justify-center gap-5 mt-5">
+            <button
+              type="submit"
+              className=" text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              disabled={fetching || Object.keys(dirtyFields).length === 0}
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              className=" text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 };

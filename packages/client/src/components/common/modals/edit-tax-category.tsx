@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.jsx';
+import { Form } from '../../ui/form.js';
 import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -122,20 +123,22 @@ function EditTaxCategoryForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col gap-4 my-4">
-        <ModifyTaxCategoryFields
-          isInsert={false}
-          useFormManager={useFormManager}
-          setFetching={setFetching}
-        />
-      </div>
+    <Form {...useFormManager}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-4 my-4">
+          <ModifyTaxCategoryFields
+            isInsert={false}
+            formManager={useFormManager}
+            setFetching={setFetching}
+          />
+        </div>
 
-      <div className="flex justify-end mt-4">
-        <Button type="submit" disabled={updatingInProcess || fetching}>
-          Update
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end mt-4">
+          <Button type="submit" disabled={updatingInProcess || fetching}>
+            Update
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

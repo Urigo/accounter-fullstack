@@ -1,10 +1,20 @@
 import { ReactElement, useState } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Switch, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Loader, Modal, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripOtherExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripOtherExpense } from '../../../../hooks/use-add-business-trip-other-expense.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
+import { Switch } from '../../../ui/switch.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddOtherExpense(props: {
@@ -43,9 +53,10 @@ type ModalProps = {
 };
 
 function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): ReactElement {
-  const { control, handleSubmit } = useForm<AddBusinessTripOtherExpenseInput>({
+  const form = useForm<AddBusinessTripOtherExpenseInput>({
     defaultValues: { businessTripId },
   });
+  const { control, handleSubmit } = form;
   const [fetching, setFetching] = useState(false);
 
   const { addBusinessTripOtherExpense, fetching: addingInProcess } =
@@ -62,47 +73,53 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     <Modal opened={opened} onClose={close} centered lockScroll>
       <Modal.Title>Add Other Expense</Modal.Title>
       <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <AddExpenseFields
-            businessTripId={businessTripId}
-            control={control}
-            setFetching={setFetching}
-          />
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+            <AddExpenseFields
+              businessTripId={businessTripId}
+              control={control}
+              setFetching={setFetching}
+            />
 
-          <Controller
-            name="description"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <TextInput
-                {...field}
-                value={field.value ?? undefined}
-                error={fieldState.error?.message}
-                label="Description"
-              />
-            )}
-          />
-          <Controller
-            name="deductibleExpense"
-            control={control}
-            render={({ field: { value, ...field }, fieldState }): ReactElement => (
-              <Switch
-                {...field}
-                checked={value === true}
-                label="Deductible Expense"
-                error={fieldState.error?.message}
-              />
-            )}
-          />
+            <FormField
+              name="description"
+              control={control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? undefined} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-center mt-5 gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Add
-            </button>
-          </div>
-        </form>
+            <FormField
+              control={form.control}
+              name="deductibleExpense"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Deductible Expense</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-center mt-5 gap-3">
+              <button
+                type="submit"
+                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+        </Form>
       </Modal.Body>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>

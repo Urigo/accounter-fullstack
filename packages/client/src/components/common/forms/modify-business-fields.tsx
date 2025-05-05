@@ -1,14 +1,17 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Divider, Select, SimpleGrid, Switch, TextInput, Title } from '@mantine/core';
+import { Divider, Select, SimpleGrid, Title } from '@mantine/core';
 import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
+import { Switch } from '../../ui/switch.js';
 import { PhrasesInput, TagsInput } from '../index.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
-  useFormManager: UseFormReturn<
+  formManager: UseFormReturn<
     T extends true ? InsertNewBusinessInput : UpdateBusinessInput,
     unknown,
     T extends true ? InsertNewBusinessInput : UpdateBusinessInput
@@ -17,10 +20,10 @@ type ModalProps<T extends boolean> = {
 };
 
 export function ModifyBusinessFields({
-  useFormManager,
+  formManager,
   setFetching,
 }: ModalProps<boolean>): ReactElement {
-  const { control } = useFormManager;
+  const { control } = formManager;
   const [tagsFetching, setTagsFetching] = useState(false);
 
   // Tax categories array handle
@@ -37,39 +40,41 @@ export function ModifyBusinessFields({
   return (
     <>
       <SimpleGrid cols={3}>
-        <Controller
+        <FormField
           name="name"
           control={control}
           rules={{
             required: 'Required',
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              data-autofocus
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Name"
-              required
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} required />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="hebrewName"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Hebrew Name"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Hebrew Name</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
+
         <Controller
           name="country"
           control={control}
@@ -91,21 +96,24 @@ export function ModifyBusinessFields({
             />
           )}
         />
-        <Controller
+
+        <FormField
           name="governmentId"
           control={control}
           rules={{
             minLength: { value: 8, message: 'Must be at least 8 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Government ID"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Government ID</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
+
         <Controller
           name="taxCategory"
           control={control}
@@ -123,6 +131,7 @@ export function ModifyBusinessFields({
             />
           )}
         />
+
         <Controller
           name="sortCode"
           control={control}
@@ -142,115 +151,131 @@ export function ModifyBusinessFields({
             );
           }}
         />
-        <Controller
+
+        <FormField
           name="address"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Address"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="email"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Email"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="website"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Website"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Website</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="phoneNumber"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Phone Number"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="exemptDealer"
           control={control}
           defaultValue={false}
-          render={({ field: { value, ...field }, fieldState }): ReactElement => (
-            <Switch
-              {...field}
-              checked={value === true}
-              label="Is Exempt Dealer?"
-              error={fieldState.error?.message}
-            />
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Exempt Dealer</FormLabel>
+              </div>
+              <FormControl>
+                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
-        <Controller
+
+        <FormField
           name="optionalVAT"
           control={control}
           defaultValue={false}
-          render={({ field: { value, ...field }, fieldState }): ReactElement => (
-            <Switch
-              {...field}
-              checked={value === true}
-              label="Is VAT optional?"
-              error={fieldState.error?.message}
-            />
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Optional VAT</FormLabel>
+              </div>
+              <FormControl>
+                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
       </SimpleGrid>
       <Divider my="sm" />
       <Title order={5}>Suggestions</Title>
       <SimpleGrid cols={3}>
-        <PhrasesInput formManager={useFormManager} phrasesPath="suggestions.phrases" />
+        <PhrasesInput formManager={formManager} phrasesPath="suggestions.phrases" />
         <TagsInput
-          formManager={useFormManager}
+          formManager={formManager}
           tagsPath="suggestions.tags"
           setFetching={setTagsFetching}
         />
-        <Controller
+
+        <FormField
           name="suggestions.description"
           control={control}
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field, fieldState }): ReactElement => (
-            <TextInput
-              {...field}
-              value={field.value ?? undefined}
-              error={fieldState.error?.message}
-              label="Charge description"
-            />
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Charge description</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value ?? undefined} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
       </SimpleGrid>

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Loader } from '@mantine/core';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { useInsertBusinessTrip } from '../../../hooks/use-insert-business-trip.js';
+import { Form } from '../../ui/form.js';
 import { ModifyBusinessTripFields } from './modify-business-trip-fields.js';
 
 type Props = {
@@ -12,11 +13,12 @@ type Props = {
 
 export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   const [isInserting, setIsInserting] = useState(false);
+  const form = useForm<InsertBusinessTripInput>();
   const {
     control,
     handleSubmit,
     formState: { dirtyFields },
-  } = useForm<InsertBusinessTripInput>();
+  } = form;
   const { insertBusinessTrip, fetching } = useInsertBusinessTrip();
 
   const onInsertDone = useCallback(
@@ -48,20 +50,22 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   return isInserting ? (
     <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
   ) : (
-    <form>
-      <div className="px-5 flex flex-col gap-5">
-        <ModifyBusinessTripFields control={control} />
-        <div className="flex justify-right gap-5 mt-5">
-          <button
-            type="button"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            disabled={fetching || Object.keys(dirtyFields).length === 0}
-            onClick={handleSubmit(onSubmit)}
-          >
-            Accept
-          </button>
+    <Form {...form}>
+      <form>
+        <div className="px-5 flex flex-col gap-5">
+          <ModifyBusinessTripFields control={control} />
+          <div className="flex justify-right gap-5 mt-5">
+            <button
+              type="button"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              disabled={fetching || Object.keys(dirtyFields).length === 0}
+              onClick={handleSubmit(onSubmit)}
+            >
+              Accept
+            </button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 };

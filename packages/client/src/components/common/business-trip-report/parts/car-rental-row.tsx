@@ -2,13 +2,15 @@ import { ReactElement, useState } from 'react';
 import { Car, Fuel } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, NumberInput, Switch, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, NumberInput, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   UpdateBusinessTripCarRentalExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripCarRentalExpense } from '../../../../hooks/use-update-business-trip-car-rental-expense.js';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
+import { Switch } from '../../../ui/switch.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -34,12 +36,13 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
   const carRentalExpense = getFragmentData(BusinessTripReportCarRentalRowFieldsFragmentDoc, data);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const { control, handleSubmit } = useForm<UpdateBusinessTripCarRentalExpenseInput>({
+  const form = useForm<UpdateBusinessTripCarRentalExpenseInput>({
     defaultValues: {
       id: carRentalExpense.id,
       businessTripId,
     },
   });
+  const { control, handleSubmit } = form;
 
   const { updateBusinessTripCarRentalExpense, fetching: updatingInProcess } =
     useUpdateBusinessTripCarRentalExpense();
@@ -61,51 +64,60 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
       />
 
       <td>
-        <form id={`form ${carRentalExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-2 justify-center">
-            {carRentalExpense.isFuelExpense !== true &&
-              (isEditMode ? (
-                <Controller
-                  name="days"
-                  control={control}
-                  defaultValue={carRentalExpense.days}
-                  render={({ field, fieldState }): ReactElement => (
-                    <NumberInput
-                      {...field}
-                      value={field.value ?? undefined}
-                      form={`form ${carRentalExpense.id}`}
-                      hideControls
-                      precision={2}
-                      removeTrailingZeros
-                      error={fieldState.error?.message}
-                      label="Rent Days"
-                    />
-                  )}
-                />
-              ) : (
-                <Text c={carRentalExpense.days ? undefined : 'red'}>
-                  {carRentalExpense.days ?? 'Missing'}
-                </Text>
-              ))}
-          </div>
-        </form>
+        <Form {...form}>
+          <form id={`form ${carRentalExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex flex-col gap-2 justify-center">
+              {carRentalExpense.isFuelExpense !== true &&
+                (isEditMode ? (
+                  <Controller
+                    name="days"
+                    control={control}
+                    defaultValue={carRentalExpense.days}
+                    render={({ field, fieldState }): ReactElement => (
+                      <NumberInput
+                        {...field}
+                        value={field.value ?? undefined}
+                        form={`form ${carRentalExpense.id}`}
+                        hideControls
+                        precision={2}
+                        removeTrailingZeros
+                        error={fieldState.error?.message}
+                        placeholder="Rent Days"
+                      />
+                    )}
+                  />
+                ) : (
+                  <Text c={carRentalExpense.days ? undefined : 'red'}>
+                    {carRentalExpense.days ?? 'Missing'}
+                  </Text>
+                ))}
+            </div>
+          </form>
+        </Form>
       </td>
       <td>
         {isEditMode ? (
-          <Controller
-            name="isFuelExpense"
-            control={control}
-            defaultValue={carRentalExpense.isFuelExpense}
-            render={({ field: { value, ...field }, fieldState }): ReactElement => (
-              <Switch
-                {...field}
-                form={`form ${carRentalExpense.id}`}
-                checked={value === true}
-                error={fieldState.error?.message}
-                label="Is Fuel Expense"
-              />
-            )}
-          />
+          <Form {...form}>
+            <FormField
+              name="isFuelExpense"
+              control={control}
+              defaultValue={carRentalExpense.isFuelExpense}
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Is Fuel Expense</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      form={`form ${carRentalExpense.id}`}
+                      checked={field.value === true}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </Form>
         ) : carRentalExpense.isFuelExpense === true ? (
           <Fuel />
         ) : (

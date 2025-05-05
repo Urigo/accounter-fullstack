@@ -3,7 +3,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Indicator, MultiSelect, SimpleGrid, Switch } from '@mantine/core';
+import { ActionIcon, Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../helpers/dates.js';
@@ -12,6 +12,8 @@ import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-ent
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { PopUpModal } from '../../../common/index.js';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
+import { Switch } from '../../../ui/switch.js';
 
 interface DocumentsFiltersFormProps {
   filter: DocumentsFiltersType;
@@ -25,7 +27,7 @@ function DocumentsFiltersForm({
   closeModal,
 }: DocumentsFiltersFormProps): ReactElement {
   const { userContext } = useContext(UserContext);
-  const { control, handleSubmit, setValue } = useForm<DocumentsFiltersType>({
+  const form = useForm<DocumentsFiltersType>({
     defaultValues: {
       ownerIDs: userContext?.context.adminBusinessId
         ? [userContext.context.adminBusinessId]
@@ -35,6 +37,7 @@ function DocumentsFiltersForm({
       ...filter,
     },
   });
+  const { control, handleSubmit } = form;
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
 
@@ -51,132 +54,146 @@ function DocumentsFiltersForm({
   return (
     <>
       {financialEntitiesFetching ? <div>Loading...</div> : <div />}
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <SimpleGrid cols={2}>
-          <Controller
-            name="ownerIDs"
-            control={control}
-            defaultValue={filter.ownerIDs}
-            render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                data={financialEntities}
-                value={field.value ?? []}
-                disabled={financialEntitiesFetching}
-                label="Owners"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
-          <Controller
-            name="businessIDs"
-            control={control}
-            defaultValue={filter.businessIDs}
-            render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                data={financialEntities}
-                value={field.value ?? []}
-                disabled={financialEntitiesFetching}
-                label="Financial Entities"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
-          <Controller
-            name="fromDate"
-            control={control}
-            defaultValue={filter.fromDate}
-            rules={{
-              pattern: {
-                value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
-              },
-            }}
-            render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                error={fieldState.error?.message}
-                label="From Date"
-                popoverProps={{ withinPortal: true }}
-              />
-            )}
-          />
-          <Controller
-            name="toDate"
-            control={control}
-            defaultValue={filter.toDate}
-            rules={{
-              pattern: {
-                value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
-              },
-            }}
-            render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                error={fieldState.error?.message}
-                label="To Date"
-                popoverProps={{ withinPortal: true }}
-              />
-            )}
-          />
-          <Switch
-            defaultChecked={filter.unmatched ?? false}
-            onChange={(event): void => setValue('unmatched', event.currentTarget.checked)}
-            label="Unmatched only"
-          />
-        </SimpleGrid>
-        <div className="flex justify-center mt-5 gap-3">
-          <button
-            type="submit"
-            disabled={financialEntitiesFetching}
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-          >
-            Filter
-          </button>
-          <button
-            type="button"
-            className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
-            onClick={clearFilter}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <SimpleGrid cols={2}>
+            <Controller
+              name="ownerIDs"
+              control={control}
+              defaultValue={filter.ownerIDs}
+              render={({ field, fieldState }): ReactElement => (
+                <MultiSelect
+                  {...field}
+                  data={financialEntities}
+                  value={field.value ?? []}
+                  disabled={financialEntitiesFetching}
+                  label="Owners"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                  withinPortal
+                />
+              )}
+            />
+            <Controller
+              name="businessIDs"
+              control={control}
+              defaultValue={filter.businessIDs}
+              render={({ field, fieldState }): ReactElement => (
+                <MultiSelect
+                  {...field}
+                  data={financialEntities}
+                  value={field.value ?? []}
+                  disabled={financialEntitiesFetching}
+                  label="Financial Entities"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                  withinPortal
+                />
+              )}
+            />
+            <Controller
+              name="fromDate"
+              control={control}
+              defaultValue={filter.fromDate}
+              rules={{
+                pattern: {
+                  value: TIMELESS_DATE_REGEX,
+                  message: 'Date must be im format yyyy-mm-dd',
+                },
+              }}
+              render={({ field, fieldState }): ReactElement => (
+                <DatePickerInput
+                  {...field}
+                  onChange={(date?: Date | string | null): void => {
+                    const newDate = date
+                      ? typeof date === 'string'
+                        ? date
+                        : format(date, 'yyyy-MM-dd')
+                      : undefined;
+                    if (newDate !== field.value) field.onChange(newDate);
+                  }}
+                  value={field.value ? new Date(field.value) : undefined}
+                  error={fieldState.error?.message}
+                  label="From Date"
+                  popoverProps={{ withinPortal: true }}
+                />
+              )}
+            />
+            <Controller
+              name="toDate"
+              control={control}
+              defaultValue={filter.toDate}
+              rules={{
+                pattern: {
+                  value: TIMELESS_DATE_REGEX,
+                  message: 'Date must be im format yyyy-mm-dd',
+                },
+              }}
+              render={({ field, fieldState }): ReactElement => (
+                <DatePickerInput
+                  {...field}
+                  onChange={(date?: Date | string | null): void => {
+                    const newDate = date
+                      ? typeof date === 'string'
+                        ? date
+                        : format(date, 'yyyy-MM-dd')
+                      : undefined;
+                    if (newDate !== field.value) field.onChange(newDate);
+                  }}
+                  value={field.value ? new Date(field.value) : undefined}
+                  error={fieldState.error?.message}
+                  label="To Date"
+                  popoverProps={{ withinPortal: true }}
+                />
+              )}
+            />
+            <FormField
+              name="unmatched"
+              control={control}
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Unmatched only</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      defaultChecked={filter.unmatched ?? false}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </SimpleGrid>
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              disabled={financialEntitiesFetching}
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Filter
+            </button>
+            <button
+              type="button"
+              className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
+              onClick={clearFilter}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Form>
     </>
   );
 }

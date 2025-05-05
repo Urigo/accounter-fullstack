@@ -1,5 +1,4 @@
 import { ReactElement, useMemo, useState } from 'react';
-import { Switch } from '@mantine/core';
 import {
   ChargeToMatchDocumentsFieldsFragmentDoc,
   DocumentsToChargeMatcherQuery,
@@ -8,6 +7,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
+import { FormLabel } from '../../../ui/form.js';
+import { Switch } from '../../../ui/switch.js';
 import { Button } from '../../index.js';
 import { StrictFilteredSelection } from './strict-filtered-selection.js';
 import { WideFilteredSelection } from './wide-filtered-selection.js';
@@ -157,11 +158,12 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
     <div className="relative items-center w-full mx-auto md:px-5 lg:px-2 max-w-8xl">
       <div className="flex flex-row justify-end">
         {strictFilteredDocuments.length > 0 && (
-          <Switch
-            checked={filterSuggestions}
-            onChange={(): void => setFilterSuggestions(!filterSuggestions)}
-            label="Filter Suggestions"
-          />
+          <div className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+            <div className="space-y-0.5">
+              <FormLabel>Filter Suggestions</FormLabel>
+            </div>
+            <Switch checked={filterSuggestions} onCheckedChange={setFilterSuggestions} />
+          </div>
         )}
         <Button title="Accept" disabled={selectedDocuments.length === 0} onClick={onExecuteMatch} />
       </div>

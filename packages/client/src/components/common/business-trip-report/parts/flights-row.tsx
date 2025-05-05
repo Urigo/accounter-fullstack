@@ -9,6 +9,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-update-business-trip-flights-expense.js';
+import { Form } from '../../../ui/form.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -80,62 +81,66 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
       />
 
       <td>
-        <form id={`form ${flightExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-2 justify-center">
-            {isEditMode ? (
-              <FlightPathInput
-                formManager={formManager}
-                flightPathPath="path"
-                flightPathData={flightExpense.path ?? undefined}
-              />
-            ) : (
-              <div className="flex gap-2 items-center">
-                {flightExpense.path?.length ? (
-                  flightExpense.path.map((destination, i) => (
-                    <>
-                      <Text fw={700} key={i}>
-                        {destination}
-                      </Text>
-                      {i < flightExpense.path!.length - 1 &&
-                        (destination === flightExpense.path![i + 1] ? ' | ' : ' → ')}
-                    </>
-                  ))
-                ) : (
-                  <Text fw={700} className="flex gap-2 items-center" c="red">
-                    Missing
-                  </Text>
-                )}
-              </div>
-            )}
-            {isEditMode ? (
-              <Controller
-                name="flightClass"
-                control={control}
-                defaultValue={(flightExpense.class as FlightClass | null | undefined) ?? undefined}
-                render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    form={`form ${flightExpense.id}`}
-                    data-autofocus
-                    {...field}
-                    data={flightClasses}
-                    value={field.value}
-                    label="Flight Class"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                    withinPortal
-                  />
-                )}
-              />
-            ) : (
-              <Text
-                c={flightExpense.class ? undefined : 'red'}
-                fz="sm"
-              >{`Class: ${flightExpense.class ?? 'Missing'}`}</Text>
-            )}
-          </div>
-        </form>
+        <Form {...formManager}>
+          <form id={`form ${flightExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex flex-col gap-2 justify-center">
+              {isEditMode ? (
+                <FlightPathInput
+                  formManager={formManager}
+                  flightPathPath="path"
+                  flightPathData={flightExpense.path ?? undefined}
+                />
+              ) : (
+                <div className="flex gap-2 items-center">
+                  {flightExpense.path?.length ? (
+                    flightExpense.path.map((destination, i) => (
+                      <>
+                        <Text fw={700} key={i}>
+                          {destination}
+                        </Text>
+                        {i < flightExpense.path!.length - 1 &&
+                          (destination === flightExpense.path![i + 1] ? ' | ' : ' → ')}
+                      </>
+                    ))
+                  ) : (
+                    <Text fw={700} className="flex gap-2 items-center" c="red">
+                      Missing
+                    </Text>
+                  )}
+                </div>
+              )}
+              {isEditMode ? (
+                <Controller
+                  name="flightClass"
+                  control={control}
+                  defaultValue={
+                    (flightExpense.class as FlightClass | null | undefined) ?? undefined
+                  }
+                  render={({ field, fieldState }): ReactElement => (
+                    <Select
+                      form={`form ${flightExpense.id}`}
+                      data-autofocus
+                      {...field}
+                      data={flightClasses}
+                      value={field.value}
+                      label="Flight Class"
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                      withinPortal
+                    />
+                  )}
+                />
+              ) : (
+                <Text
+                  c={flightExpense.class ? undefined : 'red'}
+                  fz="sm"
+                >{`Class: ${flightExpense.class ?? 'Missing'}`}</Text>
+              )}
+            </div>
+          </form>
+        </Form>
       </td>
       <td>
         {isEditMode ? (

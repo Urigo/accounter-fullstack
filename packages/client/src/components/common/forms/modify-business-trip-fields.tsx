@@ -1,11 +1,13 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Control, Controller } from 'react-hook-form';
-import { Select, TextInput } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useAllCountries } from '../../../hooks/use-get-countries.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
 
 interface Props {
   control: Control<InsertBusinessTripInput, object>;
@@ -16,14 +18,21 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
 
   return (
     <>
-      <Controller
+      <FormField
         name="name"
         control={control}
         rules={{ required: 'Required' }}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput {...field} error={fieldState.error?.message} label="Name" />
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name</FormLabel>
+            <FormControl>
+              <Input {...field} required />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
+
       <Controller
         name="fromDate"
         control={control}
@@ -53,6 +62,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
           );
         }}
       />
+
       <Controller
         name="toDate"
         control={control}
@@ -82,6 +92,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
           );
         }}
       />
+
       <Controller
         name="destinationCode"
         control={control}
@@ -101,16 +112,18 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
           />
         )}
       />
-      <Controller
-        name="tripPurpose"
+
+      <FormField
         control={control}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            {...field}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            label="Trip Purpose"
-          />
+        name="tripPurpose"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Trip Purpose</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value ?? undefined} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

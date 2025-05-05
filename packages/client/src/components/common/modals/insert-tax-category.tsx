@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.js';
+import { Form } from '../../ui/form.js';
 import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js';
 
 export function InsertTaxCategory({
@@ -40,8 +41,8 @@ type CreateTaxCategoryFormProps = {
 };
 
 function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): ReactElement {
-  const useFormManager = useForm<InsertTaxCategoryInput>({});
-  const { handleSubmit } = useFormManager;
+  const formManager = useForm<InsertTaxCategoryInput>({});
+  const { handleSubmit } = formManager;
   const [fetching, setFetching] = useState(false);
 
   const { insertTaxCategory, fetching: addingInProcess } = useInsertTaxCategory();
@@ -57,22 +58,24 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col gap-4 my-4">
-        <ModifyTaxCategoryFields
-          isInsert
-          useFormManager={
-            useFormManager as UseFormReturn<UpdateTaxCategoryInput, unknown, UpdateTaxCategoryInput>
-          }
-          setFetching={setFetching}
-        />
-      </div>
+    <Form {...formManager}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-4 my-4">
+          <ModifyTaxCategoryFields
+            isInsert
+            formManager={
+              formManager as UseFormReturn<UpdateTaxCategoryInput, unknown, UpdateTaxCategoryInput>
+            }
+            setFetching={setFetching}
+          />
+        </div>
 
-      <div className="flex justify-end mt-4">
-        <Button type="submit" disabled={addingInProcess || fetching}>
-          Add Tax Category
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end mt-4">
+          <Button type="submit" disabled={addingInProcess || fetching}>
+            Add Tax Category
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

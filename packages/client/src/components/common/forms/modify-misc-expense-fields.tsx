@@ -1,11 +1,13 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Select, TextInput } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { DatePickerInput, DateTimePicker } from '@mantine/dates';
 import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
 import { CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
@@ -161,20 +163,21 @@ export const ModifyMiscExpenseFields = ({
           );
         }}
       />
-      <Controller
+
+      <FormField
         name="description"
         control={control}
         rules={{
           required: isInsert ? 'Required' : undefined,
         }}
-        render={({ field, fieldState }): ReactElement => (
-          <TextInput
-            {...field}
-            required={isInsert}
-            value={field.value ?? undefined}
-            error={fieldState.error?.message}
-            label="Description"
-          />
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Input {...field} required={isInsert} value={field.value ?? undefined} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>
