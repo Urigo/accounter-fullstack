@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
@@ -47,8 +47,13 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
 
   const transaction = transactionData?.transactionsByIDs?.[0];
   const formManager = useForm<UpdateTransactionInput>({
-    defaultValues: { ...transaction },
+    defaultValues: transaction ?? ({} as UpdateTransactionInput),
   });
+
+  // Ensure the form is hydrated once the data arrives
+  useEffect(() => {
+    if (transaction) formManager.reset(transaction);
+  }, [transaction, formManager]);
 
   const {
     control,
