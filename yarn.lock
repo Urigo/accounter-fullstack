@@ -84,7 +84,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.2"
     "@mui/material": "npm:7.0.2"
-    "@mui/x-charts": "npm:7.29.1"
+    "@mui/x-charts": "npm:8.2.0"
     "@radix-ui/react-accordion": "npm:1.2.8"
     "@radix-ui/react-avatar": "npm:1.1.7"
     "@radix-ui/react-checkbox": "npm:1.2.3"
@@ -1069,7 +1069,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.25.7, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.27.0, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.27.0, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.27.0
   resolution: "@babel/runtime@npm:7.27.0"
   dependencies:
@@ -4714,7 +4714,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.16.6 || ^6.0.0 || ^7.0.0, @mui/utils@npm:^7.0.2":
+"@mui/utils@npm:^7.0.2":
   version: 7.0.2
   resolution: "@mui/utils@npm:7.0.2"
   dependencies:
@@ -4734,41 +4734,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts-vendor@npm:7.20.0":
-  version: 7.20.0
-  resolution: "@mui/x-charts-vendor@npm:7.20.0"
+"@mui/x-charts-vendor@npm:8.0.0":
+  version: 8.0.0
+  resolution: "@mui/x-charts-vendor@npm:8.0.0"
   dependencies:
-    "@babel/runtime": "npm:^7.25.7"
+    "@babel/runtime": "npm:^7.27.0"
     "@types/d3-color": "npm:^3.1.3"
     "@types/d3-delaunay": "npm:^6.0.4"
     "@types/d3-interpolate": "npm:^3.0.4"
-    "@types/d3-scale": "npm:^4.0.8"
-    "@types/d3-shape": "npm:^3.1.6"
-    "@types/d3-time": "npm:^3.0.3"
+    "@types/d3-scale": "npm:^4.0.9"
+    "@types/d3-shape": "npm:^3.1.7"
+    "@types/d3-time": "npm:^3.0.4"
+    "@types/d3-timer": "npm:^3.0.2"
     d3-color: "npm:^3.1.0"
     d3-delaunay: "npm:^6.0.4"
     d3-interpolate: "npm:^3.0.1"
     d3-scale: "npm:^4.0.2"
     d3-shape: "npm:^3.2.0"
     d3-time: "npm:^3.1.0"
+    d3-timer: "npm:^3.0.1"
     delaunator: "npm:^5.0.1"
     robust-predicates: "npm:^3.0.2"
-  checksum: 10c0/9ae846dc93d8fbf3e7d95b116bfc0f517bfa2f262a1a469535a87922b6d080af220897fbefafcf842c6ebda86c3c889f0e0e311b60f6b0821f4a33adc3d20358
+  checksum: 10c0/52a1b1fc9976edca020449dccec349153c7eee6aa5672277e8b5cea971cdadfe1acf089823af6acfee1a856ad5d67b5093372530b651103a9d14867828a178ca
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:7.29.1":
-  version: 7.29.1
-  resolution: "@mui/x-charts@npm:7.29.1"
+"@mui/x-charts@npm:8.2.0":
+  version: 8.2.0
+  resolution: "@mui/x-charts@npm:8.2.0"
   dependencies:
-    "@babel/runtime": "npm:^7.25.7"
-    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0"
-    "@mui/x-charts-vendor": "npm:7.20.0"
-    "@mui/x-internals": "npm:7.29.0"
-    "@react-spring/rafz": "npm:^9.7.5"
-    "@react-spring/web": "npm:^9.7.5"
+    "@babel/runtime": "npm:^7.27.0"
+    "@mui/utils": "npm:^7.0.2"
+    "@mui/x-charts-vendor": "npm:8.0.0"
+    "@mui/x-internals": "npm:8.2.0"
+    bezier-easing: "npm:^2.1.0"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
+    reselect: "npm:^5.1.1"
+    use-sync-external-store: "npm:^1.5.0"
   peerDependencies:
     "@emotion/react": ^11.9.0
     "@emotion/styled": ^11.8.1
@@ -4781,19 +4784,19 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/a1fd2b571d4da1d5c87a530e1487c8596d1c66218673887929e2b7a66b0eafe408c01a985c9834ad34342713e497f1a6175c84722b244e0a5c1dba90a1b0abd0
+  checksum: 10c0/151eadd9638ad13f63896e666459c92d4d3bafa415091c86e3a63eb5ba6751b5d5cf5f28f2d902f98e14d2b45811684914842444a26b88c085468ce6ccbb07b7
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:7.29.0":
-  version: 7.29.0
-  resolution: "@mui/x-internals@npm:7.29.0"
+"@mui/x-internals@npm:8.2.0":
+  version: 8.2.0
+  resolution: "@mui/x-internals@npm:8.2.0"
   dependencies:
-    "@babel/runtime": "npm:^7.25.7"
-    "@mui/utils": "npm:^5.16.6 || ^6.0.0 || ^7.0.0"
+    "@babel/runtime": "npm:^7.27.0"
+    "@mui/utils": "npm:^7.0.2"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/adb4358ef0e29f6f57622b50ff479e9d225078761b4c82546343e2976ccb55eed687e122c37874c76a170f4ec2ea6e82f89bf8b9c0ef3b5cb35b32d026761fba
+  checksum: 10c0/de3beb8eb4048df138683e77fa37d724999491266e5cffd9474e50139f11cbec9532948a22a3b9271d98eb72911fe45d4a9aca8677bd4998bfb50bf9ab579f56
   languageName: node
   linkType: hard
 
@@ -6808,72 +6811,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-spring/animated@npm:~9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/animated@npm:9.7.5"
-  dependencies:
-    "@react-spring/shared": "npm:~9.7.5"
-    "@react-spring/types": "npm:~9.7.5"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/f8c2473c60f39a878c7dd0fdfcfcdbc720521e1506aa3f63c9de64780694a0a73d5ccc535a5ccec3520ddb70a71cf43b038b32c18e99531522da5388c510ecd7
-  languageName: node
-  linkType: hard
-
-"@react-spring/core@npm:~9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/core@npm:9.7.5"
-  dependencies:
-    "@react-spring/animated": "npm:~9.7.5"
-    "@react-spring/shared": "npm:~9.7.5"
-    "@react-spring/types": "npm:~9.7.5"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/5bfd83dfe248cd91889f215f015d908c7714ef445740fd5afa054b27ebc7d5a456abf6c309e2459d9b5b436e78d6fda16b62b9601f96352e9130552c02270830
-  languageName: node
-  linkType: hard
-
-"@react-spring/rafz@npm:^9.7.5, @react-spring/rafz@npm:~9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/rafz@npm:9.7.5"
-  checksum: 10c0/8bdad180feaa9a0e870a513043a5e98a4e9b7292a9f887575b7e6fadab2677825bc894b7ff16c38511b35bfe6cc1072df5851c5fee64448d67551559578ca759
-  languageName: node
-  linkType: hard
-
-"@react-spring/shared@npm:~9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/shared@npm:9.7.5"
-  dependencies:
-    "@react-spring/rafz": "npm:~9.7.5"
-    "@react-spring/types": "npm:~9.7.5"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/0207eacccdedd918a2fc55e78356ce937f445ce27ad9abd5d3accba8f9701a39349b55115641dc2b39bb9d3a155b058c185b411d292dc8cc5686bfa56f73b94f
-  languageName: node
-  linkType: hard
-
-"@react-spring/types@npm:~9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/types@npm:9.7.5"
-  checksum: 10c0/85c05121853cacb64f7cf63a4855e9044635e1231f70371cd7b8c78bc10be6f4dd7c68f592f92a2607e8bb68051540989b4677a2ccb525dba937f5cd95dc8bc1
-  languageName: node
-  linkType: hard
-
-"@react-spring/web@npm:^9.7.5":
-  version: 9.7.5
-  resolution: "@react-spring/web@npm:9.7.5"
-  dependencies:
-    "@react-spring/animated": "npm:~9.7.5"
-    "@react-spring/core": "npm:~9.7.5"
-    "@react-spring/shared": "npm:~9.7.5"
-    "@react-spring/types": "npm:~9.7.5"
-  peerDependencies:
-    react: ^16.8.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/bcd1e052e1b16341a12a19bf4515f153ca09d1fa86ff7752a5d02d7c4db58e8baf80e6283e64411f1e388c65340dce2254b013083426806b5dbae38bd151e53e
-  languageName: node
-  linkType: hard
-
 "@repeaterjs/repeater@npm:^3.0.4, @repeaterjs/repeater@npm:^3.0.6":
   version: 3.0.6
   resolution: "@repeaterjs/repeater@npm:3.0.6"
@@ -7698,7 +7635,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-scale@npm:^4.0.2, @types/d3-scale@npm:^4.0.8":
+"@types/d3-scale@npm:^4.0.2, @types/d3-scale@npm:^4.0.9":
   version: 4.0.9
   resolution: "@types/d3-scale@npm:4.0.9"
   dependencies:
@@ -7707,7 +7644,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-shape@npm:^3.1.0, @types/d3-shape@npm:^3.1.6":
+"@types/d3-shape@npm:^3.1.0, @types/d3-shape@npm:^3.1.7":
   version: 3.1.7
   resolution: "@types/d3-shape@npm:3.1.7"
   dependencies:
@@ -7716,14 +7653,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-time@npm:*, @types/d3-time@npm:^3.0.0, @types/d3-time@npm:^3.0.3":
+"@types/d3-time@npm:*, @types/d3-time@npm:^3.0.0, @types/d3-time@npm:^3.0.4":
   version: 3.0.4
   resolution: "@types/d3-time@npm:3.0.4"
   checksum: 10c0/6d9e2255d63f7a313a543113920c612e957d70da4fb0890931da6c2459010291b8b1f95e149a538500c1c99e7e6c89ffcce5554dd29a31ff134a38ea94b6d174
   languageName: node
   linkType: hard
 
-"@types/d3-timer@npm:^3.0.0":
+"@types/d3-timer@npm:^3.0.0, @types/d3-timer@npm:^3.0.2":
   version: 3.0.2
   resolution: "@types/d3-timer@npm:3.0.2"
   checksum: 10c0/c644dd9571fcc62b1aa12c03bcad40571553020feeb5811f1d8a937ac1e65b8a04b759b4873aef610e28b8714ac71c9885a4d6c127a048d95118f7e5b506d9e1
@@ -9374,6 +9311,13 @@ __metadata:
   dependencies:
     is-windows: "npm:^1.0.0"
   checksum: 10c0/7335130729d59a14b8e4753fea180ca84e287cccc20cb5f2438a95667abc5810327c414eee7b3c79ed1b5a348a40284ea872958f50caba69432c40405eb0acce
+  languageName: node
+  linkType: hard
+
+"bezier-easing@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "bezier-easing@npm:2.1.0"
+  checksum: 10c0/138a160698de3c12501479cc80280d5cc0ab47df73e20d7b5058cba6d62c0876eb97e63aa1e398233269aa2a6bb396fb0ee394da391de7258c9da20729df5158
   languageName: node
   linkType: hard
 
@@ -19342,6 +19286,13 @@ __metadata:
   version: 2.0.0
   resolution: "require-main-filename@npm:2.0.0"
   checksum: 10c0/db91467d9ead311b4111cbd73a4e67fa7820daed2989a32f7023785a2659008c6d119752d9c4ac011ae07e537eb86523adff99804c5fdb39cd3a017f9b401bb6
+  languageName: node
+  linkType: hard
+
+"reselect@npm:^5.1.1":
+  version: 5.1.1
+  resolution: "reselect@npm:5.1.1"
+  checksum: 10c0/219c30da122980f61853db3aebd173524a2accd4b3baec770e3d51941426c87648a125ca08d8c57daa6b8b086f2fdd2703cb035dd6231db98cdbe1176a71f489
   languageName: node
   linkType: hard
 
