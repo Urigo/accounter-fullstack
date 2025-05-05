@@ -37,12 +37,14 @@
     "dotenv-cli": "8.0.0",
     "graphql": "16.10.0",
     "graphql-modules": "3.0.0",
+    "graphql-scalars": "1.24.2",
     "graphql-yoga": "5.13.4",
     "node-cache": "5.1.2",
     "node-xlsx": "0.24.0",
     "pg": "8.15.5",
     "reflect-metadata": "0.2.2",
-    "strip-indent": "4.0.0"
+    "strip-indent": "4.0.0",
+    "zod": "3.24.3"
   },
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
