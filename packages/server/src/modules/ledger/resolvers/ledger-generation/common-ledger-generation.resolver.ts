@@ -418,7 +418,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
           if (documents.some(doc => isDeelDocument(doc))) {
             // If Deel - override to generic exchange rate tax category
-            exchangeRateTaxCategory = defaultTaxCategoryId;
+            exchangeRateTaxCategory = exchangeRateTaxCategoryId;
           }
 
           const isRefund = isRefundCharge(charge.user_description);
