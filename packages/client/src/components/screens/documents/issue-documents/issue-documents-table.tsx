@@ -1,7 +1,6 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo } from 'react';
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
-import { TimelessDateString } from 'packages/client/src/helpers/index.js';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { MonthPickerInput } from '@mantine/dates';
 import {
@@ -10,6 +9,7 @@ import {
   GenerateDocumentInfo,
   IssueMonthlyDocumentsMutationVariables,
 } from '../../../../gql/graphql.js';
+import { TimelessDateString } from '../../../../helpers/index.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { ConfirmationModal, NumberInput } from '../../../common/index.js';
