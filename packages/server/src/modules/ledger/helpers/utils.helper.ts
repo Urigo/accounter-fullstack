@@ -367,9 +367,55 @@ export function multipleForeignCurrenciesBalanceEntries(
   if (charge.business_id && Object.keys(foreignAmounts).length > 0) {
     const mainBusiness = charge.business_id;
 
+    const transactionEntry = transactionEntries.reduce((prev, curr) => {
+      if (!prev) {
+        return curr;
+      }
+      return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
+    });
+
+    const documentEntry = documentEntries.reduce((prev, curr) => {
+      if (!prev) {
+        return curr;
+      }
+      return prev.invoiceDate.getTime() < curr.invoiceDate.getTime() ? prev : curr;
+    });
+
     // get the main foreign currency + diff in local currency
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
     let localDiff = 0;
+
+    if (Object.keys(foreignAmounts).length === 1 && balanceAgainstLocal) {
+      const [currency, { local, foreign }] = Object.entries(foreignAmounts)[0];
+      if (foreign === 0) {
+        return [];
+      }
+
+      const isCreditorCounterparty = foreign < 0;
+      const ledgerEntry: LedgerProto = {
+        id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
+        creditAccountID1: mainBusiness,
+        debitAccountID1: mainBusiness,
+        localCurrencyCreditAmount1: Math.abs(local),
+        localCurrencyDebitAmount1: Math.abs(local),
+        ...(isCreditorCounterparty
+          ? {
+              creditAmount1: Math.abs(foreign),
+            }
+          : {
+              debitAmount1: Math.abs(foreign),
+            }),
+        description: 'Foreign currency balance',
+        isCreditorCounterparty,
+        invoiceDate: documentEntry.invoiceDate,
+        valueDate: transactionEntry.valueDate,
+        currency: currency as Currency,
+        ownerId: transactionEntry.ownerId,
+        chargeId: charge.id,
+      };
+      return [ledgerEntry];
+    }
+
     for (const [currency, { local }] of Object.entries(foreignAmounts)) {
       if (mainForeignCurrency) {
         if (mainForeignCurrency.amount < local) {
@@ -387,19 +433,6 @@ export function multipleForeignCurrenciesBalanceEntries(
         foreign: 0,
       };
     }
-
-    const transactionEntry = transactionEntries.reduce((prev, curr) => {
-      if (!prev) {
-        return curr;
-      }
-      return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
-    });
-    const documentEntry = documentEntries.reduce((prev, curr) => {
-      if (!prev) {
-        return curr;
-      }
-      return prev.invoiceDate.getTime() < curr.invoiceDate.getTime() ? prev : curr;
-    });
 
     for (const [currency, { local, foreign }] of Object.entries(foreignAmounts)) {
       let localToUse = local;
