@@ -19,32 +19,18 @@
   "prConcurrentLimit": 25,
   "labels": ["dependencies"],
   "rebaseWhen": "conflicted",
-  "ignorePaths": [
-    "**/__tests__/**",
-    "**/test/**",
-    "**/tests/**",
-    "**/__fixtures__/**"
-  ],
+  "ignorePaths": ["**/__tests__/**", "**/test/**", "**/tests/**", "**/__fixtures__/**"],
   "dependencyDashboardTitle": "Dependencies Dashboard",
   "packageRules": [
     {
       "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
       "groupSlug": "all-patch",
-      "matchPackageNames": [
-        "!/@changesets/*/",
-        "!/typescript/",
-        "!/^@theguild//",
-        "*"
-      ]
+      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//", "*"]
     },
     {
       "groupName": "Yoga/Envelop",
-      "matchPackageNames": [
-        "@envelop{/,}**",
-        "graphql-yoga{/,}**",
-        "@graphql-yoga{/,}**"
-      ]
+      "matchPackageNames": ["@envelop{/,}**", "graphql-yoga{/,}**", "@graphql-yoga{/,}**"]
     },
     {
       "groupName": "urql",
