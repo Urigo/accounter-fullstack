@@ -350,10 +350,19 @@ async function insertTransactions(
   for (const transaction of transactions) {
     if (
       (transaction.fullPurchaseDate != null &&
-        differenceInMonths(new Date(), new Date(transaction.fullPurchaseDate)) > 2) ||
+        differenceInMonths(
+          new Date(),
+          new Date(transaction.fullPurchaseDate.split('/').reverse().join('-')),
+        ) > 2) ||
       (transaction.fullPurchaseDateOutbound != null &&
-        differenceInMonths(new Date(), new Date(transaction.fullPurchaseDateOutbound)) > 2)
+        differenceInMonths(
+          new Date(),
+          new Date(transaction.fullPurchaseDateOutbound.split('/').reverse().join('-')),
+        ) > 2)
     ) {
+      logger.error(
+        `diff: ${differenceInMonths(new Date(), new Date(transaction.fullPurchaseDateOutbound as string))} ${new Date(transaction.fullPurchaseDateOutbound as string).toUTCString()}`,
+      );
       logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
       throw new Error('Old transaction');
     }
