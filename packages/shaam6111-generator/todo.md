@@ -24,9 +24,9 @@ and validate Israeli SHAAM 6111 tax reports.
 - [x] Define `HeaderRecord`, `SupplierRecord`, etc.
 - [x] Define `ValidationError` interface
 - [x] Define `ValidationResult` structure
-- [ ] Define custom error classes:
-  - [ ] `ValidationError`
-  - [ ] `ParsingError`
+- [x] Define custom error classes:
+  - [x] `ValidationError`
+  - [x] `ParsingError`
 
 ---
 

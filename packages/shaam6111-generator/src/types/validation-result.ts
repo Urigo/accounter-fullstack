@@ -17,7 +17,7 @@ export interface ValidationResult {
  * @export
  * @interface ValidationError
  */
-export interface ValidationError {
+export interface ValidationErrorDetails {
   /** Error or warning code */
   code: string;
   /** Error or warning message */
@@ -26,4 +26,27 @@ export interface ValidationError {
   field?: string;
   /** Value that caused the error */
   value?: unknown;
+}
+
+/**
+ * Custom error class for validation errors.
+ */
+export class ValidationError extends Error {
+  public errors: ValidationErrorDetails[];
+
+  constructor(message: string, errors: ValidationErrorDetails[]) {
+    super(message);
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+/**
+ * Custom error class for parsing errors.
+ */
+export class ParsingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ParsingError';
+  }
 }
