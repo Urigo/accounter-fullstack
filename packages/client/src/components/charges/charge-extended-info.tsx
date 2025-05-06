@@ -9,6 +9,7 @@ import {
   ConversionChargeInfoFragmentDoc,
   CreditcardBankChargeInfoFragmentDoc,
   DocumentsGalleryFieldsFragmentDoc,
+  ExchangeRatesInfoFragmentDoc,
   FetchChargeDocument,
   FetchChargeQuery,
   TableDocumentsFieldsFragmentDoc,
@@ -25,6 +26,7 @@ import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
+import { ExchangeRates } from './extended-info/exchange-rates.js';
 import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.jsx';
 import { SalariesTable } from './extended-info/salaries-info.jsx';
 
@@ -60,6 +62,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         id
       }
       ...TableMiscExpensesFields @defer
+      ...ExchangeRatesInfo @defer
     }
   }
 `;
@@ -185,6 +188,13 @@ export function ChargeExtendedInfo({
     );
   }, [charge, chargeType]);
 
+  const exchangeRatesAreReady = useMemo(() => {
+    return (
+      chargeType === 'FinancialCharge' &&
+      isFragmentReady(FetchChargeDocument, ExchangeRatesInfoFragmentDoc, charge)
+    );
+  }, [charge, chargeType]);
+
   const salariesAreReady =
     chargeType === 'SalaryCharge' &&
     isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
@@ -231,6 +241,24 @@ export function ChargeExtendedInfo({
                   {conversionIsReady && (
                     <ConversionInfo
                       chargeProps={charge as FragmentType<typeof ConversionChargeInfoFragmentDoc>}
+                    />
+                  )}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {chargeType === 'FinancialCharge' && (
+              <Accordion.Item value="exchangeRates">
+                <Accordion.Control
+                  disabled={!exchangeRatesAreReady}
+                  onClick={() => toggleAccordionItem('exchangeRates')}
+                >
+                  Exchange Rates
+                </Accordion.Control>
+                <Accordion.Panel>
+                  {exchangeRatesAreReady && (
+                    <ExchangeRates
+                      chargeProps={charge as FragmentType<typeof ExchangeRatesInfoFragmentDoc>}
                     />
                   )}
                 </Accordion.Panel>

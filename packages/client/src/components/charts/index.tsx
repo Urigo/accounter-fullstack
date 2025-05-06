@@ -34,49 +34,17 @@ import { StatsCard } from './stats-card.js';
             raw
           }
           eventExchangeRates {
-            cad {
-              currency
-              formatted
-              raw
-            }
-            eur {
-              currency
-              formatted
-              raw
-            }
-            gbp {
-              currency
-              formatted
-              raw
-            }
-            usd {
-              currency
-              formatted
-              raw
-            }
+            cad
+            eur
+            gbp
+            usd
             date
           }
           debitExchangeRates {
-            cad {
-              currency
-              formatted
-              raw
-            }
-            eur {
-              currency
-              formatted
-              raw
-            }
-            gbp {
-              currency
-              formatted
-              raw
-            }
-            usd {
-              currency
-              formatted
-              raw
-            }
+            cad
+            eur
+            gbp
+            usd
             date
           }
         }
@@ -159,7 +127,7 @@ export const ChartPage = (): ReactElement => {
           return item;
         }
         if (item.amount.currency === Currency.Ils) {
-          const rate = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          const rate = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rate) {
             return null;
           }
@@ -175,8 +143,8 @@ export const ChartPage = (): ReactElement => {
           };
         }
         if (item.amount.currency === Currency.Eur) {
-          const rateToILS = item.debitExchangeRates?.eur?.raw || item.eventExchangeRates?.eur?.raw;
-          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          const rateToILS = item.debitExchangeRates?.eur || item.eventExchangeRates?.eur;
+          const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rateToILS || !rateToUSD) {
             return null;
           }
@@ -193,8 +161,8 @@ export const ChartPage = (): ReactElement => {
           };
         }
         if (item.amount.currency === Currency.Gbp) {
-          const rateToILS = item.debitExchangeRates?.gbp?.raw || item.eventExchangeRates?.gbp?.raw;
-          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          const rateToILS = item.debitExchangeRates?.gbp || item.eventExchangeRates?.gbp;
+          const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rateToILS || !rateToUSD) {
             return null;
           }
@@ -211,8 +179,8 @@ export const ChartPage = (): ReactElement => {
           };
         }
         if (item.amount.currency === Currency.Cad) {
-          const rateToILS = item.debitExchangeRates?.cad?.raw || item.eventExchangeRates?.cad?.raw;
-          const rateToUSD = item.debitExchangeRates?.usd?.raw || item.eventExchangeRates?.usd?.raw;
+          const rateToILS = item.debitExchangeRates?.cad || item.eventExchangeRates?.cad;
+          const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rateToILS || !rateToUSD) {
             return null;
           }

@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+import { formatCurrency } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { defineConversionBaseAndQuote } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
@@ -26,7 +26,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates?.usd) {
         return null;
       }
-      return formatFinancialAmount(exchangeRates.usd, Currency.Usd) ?? null;
+      return parseFloat(exchangeRates.usd);
     },
     gbp: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
@@ -35,7 +35,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates?.gbp) {
         return null;
       }
-      return formatFinancialAmount(exchangeRates.gbp, Currency.Gbp) ?? null;
+      return parseFloat(exchangeRates.gbp);
     },
     eur: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
@@ -44,7 +44,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates?.eur) {
         return null;
       }
-      return formatFinancialAmount(exchangeRates.eur, Currency.Eur) ?? null;
+      return parseFloat(exchangeRates.eur);
     },
     cad: async (timelessDate, _, { injector }) => {
       const exchangeRates = await injector
@@ -53,7 +53,37 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates?.cad) {
         return null;
       }
-      return formatFinancialAmount(exchangeRates.cad, Currency.Cad) ?? null;
+      return parseFloat(exchangeRates.cad);
+    },
+    ils: () => {
+      return 1;
+    },
+    grt: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+      const exchangeRates = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(Currency.Grt, defaultLocalCurrency, new Date(timelessDate));
+      if (!exchangeRates) {
+        return null;
+      }
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
+    },
+    eth: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+      const exchangeRates = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(Currency.Eth, defaultLocalCurrency, new Date(timelessDate));
+      if (!exchangeRates) {
+        return null;
+      }
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
+    },
+    usdc: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+      const exchangeRates = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(Currency.Usdc, defaultLocalCurrency, new Date(timelessDate));
+      if (!exchangeRates) {
+        return null;
+      }
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
     date: timelessDate => timelessDate,
   },

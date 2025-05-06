@@ -9,10 +9,14 @@ export default gql`
 
   " represent a financial amount in a specific currency "
   type ExchangeRates {
-    usd: FinancialAmount
-    gbp: FinancialAmount
-    eur: FinancialAmount
-    cad: FinancialAmount
+    usd: Float
+    gbp: Float
+    eur: Float
+    cad: Float
+    ils: Float
+    eth: Float
+    grt: Float
+    usdc: Float
     date: TimelessDate!
   }
 
