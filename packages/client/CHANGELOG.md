@@ -1,5 +1,497 @@
 # @accounter/client
 
+## 0.0.5
+
+### Patch Changes
+
+- [#1754](https://github.com/Urigo/accounter-fullstack/pull/1754)
+  [`2711ade`](https://github.com/Urigo/accounter-fullstack/commit/2711ade6c369a6c0fa858f0f3047776f5979ae68)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.73.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.73.3)
+    (from `5.72.2`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@0.488.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.488.0) (from
+    `0.487.0`, in `dependencies`)
+
+- [#1967](https://github.com/Urigo/accounter-fullstack/pull/1967)
+  [`07c308b`](https://github.com/Urigo/accounter-fullstack/commit/07c308b49073aa77c6421a5a29589421a240a8a7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@7.0.1` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.0.1) (from `6.4.10`,
+    in `dependencies`)
+
+- [#1978](https://github.com/Urigo/accounter-fullstack/pull/1978)
+  [`05eca36`](https://github.com/Urigo/accounter-fullstack/commit/05eca36933aeeb9069b69ea57f38a9893c15d74d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-hook-form@7.55.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.55.0) (from
+    `7.54.2`, in `dependencies`)
+
+- [#1982](https://github.com/Urigo/accounter-fullstack/pull/1982)
+  [`f0dc5d0`](https://github.com/Urigo/accounter-fullstack/commit/f0dc5d0083c522c3504a89ba494888d97494910a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-accordion@1.2.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-accordion/v/1.2.7)
+    (to `dependencies`)
+  - Added dependency
+    [`fast-myers-diff@3.2.0` ↗︎](https://www.npmjs.com/package/fast-myers-diff/v/3.2.0) (to
+    `dependencies`)
+
+- [#1994](https://github.com/Urigo/accounter-fullstack/pull/1994)
+  [`c73af73`](https://github.com/Urigo/accounter-fullstack/commit/c73af737d68cff22b560b615a5bd48296aa8b653)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@6.4.10` ↗︎](https://www.npmjs.com/package/@mui/material/v/6.4.10) (from
+    `6.4.9`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.71.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.1)
+    (from `5.71.0`, in `dependencies`)
+
+- [#1996](https://github.com/Urigo/accounter-fullstack/pull/1996)
+  [`70274fd`](https://github.com/Urigo/accounter-fullstack/commit/70274fd57fb0c4b5c70f2b670edac7d2b70b939f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`tailwind-merge@3.1.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.1.0) (from
+    `3.0.2`, in `dependencies`)
+
+- [#1998](https://github.com/Urigo/accounter-fullstack/pull/1998)
+  [`0e2a961`](https://github.com/Urigo/accounter-fullstack/commit/0e2a961c29b83501d3f5567cbc3df418b77794ff)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.29.1` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.29.1) (from
+    `7.29.0`, in `dependencies`)
+  - Added dependency [`csv-parse@5.6.0` ↗︎](https://www.npmjs.com/package/csv-parse/v/5.6.0) (to
+    `dependencies`)
+  - Added dependency
+    [`react-number-format@5.4.3` ↗︎](https://www.npmjs.com/package/react-number-format/v/5.4.3) (to
+    `dependencies`)
+
+- [#2004](https://github.com/Urigo/accounter-fullstack/pull/2004)
+  [`40044e6`](https://github.com/Urigo/accounter-fullstack/commit/40044e66735a84ddb2bb8582bc2c76cbede38152)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.71.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.5)
+    (from `5.71.1`, in `dependencies`)
+  - Updated dependency [`sonner@2.0.3` ↗︎](https://www.npmjs.com/package/sonner/v/2.0.3) (from
+    `2.0.2`, in `dependencies`)
+
+- [#2009](https://github.com/Urigo/accounter-fullstack/pull/2009)
+  [`0baca73`](https://github.com/Urigo/accounter-fullstack/commit/0baca73594085162fb317bd439b0779926e8ec8a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.487.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.487.0) (from
+    `0.486.0`, in `dependencies`)
+
+- [#2010](https://github.com/Urigo/accounter-fullstack/pull/2010)
+  [`f9863b1`](https://github.com/Urigo/accounter-fullstack/commit/f9863b1f425548ac80e75816bb502904b70c01d8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@hookform/resolvers@5.0.1` ↗︎](https://www.npmjs.com/package/@hookform/resolvers/v/5.0.1)
+    (from `4.1.3`, in `dependencies`)
+
+- [#2011](https://github.com/Urigo/accounter-fullstack/pull/2011)
+  [`e21b991`](https://github.com/Urigo/accounter-fullstack/commit/e21b99105c64647dd584f31ca2409b27ed5c5011)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency
+    [`@radix-ui/react-toggle@1.1.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.2)
+    (to `dependencies`)
+  - Added dependency [`recharts@2.15.1` ↗︎](https://www.npmjs.com/package/recharts/v/2.15.1) (to
+    `dependencies`)
+
+- [#2020](https://github.com/Urigo/accounter-fullstack/pull/2020)
+  [`b242f4c`](https://github.com/Urigo/accounter-fullstack/commit/b242f4cfccadcc6dae83c7c6055ba8795ce4c770)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.71.10` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.10)
+    (from `5.71.5`, in `dependencies`)
+  - Updated dependency [`recharts@2.15.2` ↗︎](https://www.npmjs.com/package/recharts/v/2.15.2)
+    (from `2.15.1`, in `dependencies`)
+
+- [#2021](https://github.com/Urigo/accounter-fullstack/pull/2021)
+  [`026df05`](https://github.com/Urigo/accounter-fullstack/commit/026df059d7ccb8ef67602106b01d5020e936b418)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.71.10` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.71.10)
+    (from `5.71.5`, in `dependencies`)
+  - Updated dependency [`recharts@2.15.2` ↗︎](https://www.npmjs.com/package/recharts/v/2.15.2)
+    (from `2.15.1`, in `dependencies`)
+
+- [#2023](https://github.com/Urigo/accounter-fullstack/pull/2023)
+  [`27827de`](https://github.com/Urigo/accounter-fullstack/commit/27827deca349de37aedec1ec7997e88c4aa6d7b5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`embla-carousel-react@8.6.0` ↗︎](https://www.npmjs.com/package/embla-carousel-react/v/8.6.0)
+    (from `8.5.2`, in `dependencies`)
+
+- [#2024](https://github.com/Urigo/accounter-fullstack/pull/2024)
+  [`829024d`](https://github.com/Urigo/accounter-fullstack/commit/829024d67add1ae2ba0acb760e08cdf982e53532)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-router-dom@7.5.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.5.0) (from
+    `7.4.1`, in `dependencies`)
+
+- [#2025](https://github.com/Urigo/accounter-fullstack/pull/2025)
+  [`d226aa5`](https://github.com/Urigo/accounter-fullstack/commit/d226aa53881d5a9293adc372724ccd5785b3006f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`tailwind-merge@3.2.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.2.0) (from
+    `3.1.0`, in `dependencies`)
+
+- [#2027](https://github.com/Urigo/accounter-fullstack/pull/2027)
+  [`986a99c`](https://github.com/Urigo/accounter-fullstack/commit/986a99c61bf76e35e11e72adee3b59310daa5bf0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.72.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.72.0)
+    (from `5.71.10`, in `dependencies`)
+
+- [#2028](https://github.com/Urigo/accounter-fullstack/pull/2028)
+  [`ed1758c`](https://github.com/Urigo/accounter-fullstack/commit/ed1758ccebf849fde17a4c6e208a6e76913aea2c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.72.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.72.0)
+    (from `5.71.10`, in `dependencies`)
+  - Updated dependency
+    [`embla-carousel-react@8.6.0` ↗︎](https://www.npmjs.com/package/embla-carousel-react/v/8.6.0)
+    (from `8.5.2`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.5.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.5.0) (from
+    `7.4.1`, in `dependencies`)
+  - Updated dependency
+    [`tailwind-merge@3.2.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.2.0) (from
+    `3.1.0`, in `dependencies`)
+
+- [#2031](https://github.com/Urigo/accounter-fullstack/pull/2031)
+  [`ae2c9e8`](https://github.com/Urigo/accounter-fullstack/commit/ae2c9e8d120628d579f34fc316e0ab329d43058f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-slot@1.2.0` ↗︎](https://www.npmjs.com/package/@radix-ui/react-slot/v/1.2.0)
+    (from `1.1.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.2.0` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.2.0)
+    (from `1.1.8`, in `dependencies`)
+
+- [#2032](https://github.com/Urigo/accounter-fullstack/pull/2032)
+  [`2b60daa`](https://github.com/Urigo/accounter-fullstack/commit/2b60daa5678f94c9710372172601db82340be2ff)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-avatar@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-avatar/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.1.5)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-collapsible@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.7)
+    (from `1.1.6`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.7)
+    (from `2.1.6`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-label@2.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-label/v/2.1.3)
+    (from `2.1.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.7)
+    (from `1.1.6`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-scroll-area@1.2.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.4)
+    (from `1.2.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.1.7)
+    (from `2.1.6`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-separator@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-separator/v/1.1.3)
+    (from `1.1.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-switch@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-switch/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tabs@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.7)
+    (from `1.2.6`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toggle@1.1.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.3)
+    (from `1.1.2`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.72.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.72.1)
+    (from `5.72.0`, in `dependencies`)
+  - Updated dependency [`next@15.2.5` ↗︎](https://www.npmjs.com/package/next/v/15.2.5) (from
+    `15.2.4`, in `dependencies`)
+
+- [#2039](https://github.com/Urigo/accounter-fullstack/pull/2039)
+  [`668223c`](https://github.com/Urigo/accounter-fullstack/commit/668223c8161d2a0f985e2bce8516676a3de86aa5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`next@15.3.0` ↗︎](https://www.npmjs.com/package/next/v/15.3.0) (from
+    `15.2.5`, in `dependencies`)
+
+- [#2042](https://github.com/Urigo/accounter-fullstack/pull/2042)
+  [`68f2f27`](https://github.com/Urigo/accounter-fullstack/commit/68f2f2712ad7342e03394b55118c5797fcc7d7e9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/material@7.0.2` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.0.2) (from `7.0.1`,
+    in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.72.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.72.2)
+    (from `5.72.1`, in `dependencies`)
+
+- [#2046](https://github.com/Urigo/accounter-fullstack/pull/2046)
+  [`e38c7d3`](https://github.com/Urigo/accounter-fullstack/commit/e38c7d3b4d35b645b88c051f9ae8c35ac5639f9f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.73.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.73.3)
+    (from `5.72.2`, in `dependencies`)
+
+- [#2047](https://github.com/Urigo/accounter-fullstack/pull/2047)
+  [`0cf8e09`](https://github.com/Urigo/accounter-fullstack/commit/0cf8e090d1f49584a12f37a83d9858159477ac60)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.488.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.488.0) (from
+    `0.487.0`, in `dependencies`)
+
+- [#2050](https://github.com/Urigo/accounter-fullstack/pull/2050)
+  [`68ca1e1`](https://github.com/Urigo/accounter-fullstack/commit/68ca1e1c29187b2c29f5699113927ba55be61739)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-table@8.21.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/8.21.3)
+    (from `8.21.2`, in `dependencies`)
+
+- [#2051](https://github.com/Urigo/accounter-fullstack/pull/2051)
+  [`ef3017e`](https://github.com/Urigo/accounter-fullstack/commit/ef3017e7cc7995616bcc88b2bbdebdcfb7f12df8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.74.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.74.3)
+    (from `5.73.3`, in `dependencies`)
+
+- [#2058](https://github.com/Urigo/accounter-fullstack/pull/2058)
+  [`931c554`](https://github.com/Urigo/accounter-fullstack/commit/931c5547459b0e92b58c6fc0b0f8897d077e9f1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency [`chart.js@4.4.9` ↗︎](https://www.npmjs.com/package/chart.js/v/4.4.9) (from
+    `4.4.8`, in `dependencies`)
+
+- [#2065](https://github.com/Urigo/accounter-fullstack/pull/2065)
+  [`1e218ac`](https://github.com/Urigo/accounter-fullstack/commit/1e218ac3abb501d91b4fc8d49eb4d5c57588a49f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.29.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.29.0) (from
+    `7.28.0`, in `dependencies`)
+
+- [#2067](https://github.com/Urigo/accounter-fullstack/pull/2067)
+  [`c96f3b0`](https://github.com/Urigo/accounter-fullstack/commit/c96f3b0f71d75ecb02d67b262c5b31070cef08f9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.8)
+    (from `1.1.7`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.8)
+    (from `2.1.7`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.8)
+    (from `1.1.7`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-scroll-area@1.2.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.5)
+    (from `1.2.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tabs@1.1.5` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.5)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.8)
+    (from `1.2.7`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toggle@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.2.1` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.2.1)
+    (from `1.2.0`, in `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.74.4` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.74.4)
+    (from `5.74.3`, in `dependencies`)
+  - Updated dependency [`next@15.3.1` ↗︎](https://www.npmjs.com/package/next/v/15.3.1) (from
+    `15.3.0`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.5.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.5.1) (from
+    `7.5.0`, in `dependencies`)
+  - Updated dependency [`recharts@2.15.3` ↗︎](https://www.npmjs.com/package/recharts/v/2.15.3)
+    (from `2.15.2`, in `dependencies`)
+  - Updated dependency [`zod@3.24.3` ↗︎](https://www.npmjs.com/package/zod/v/3.24.3) (from
+    `3.24.2`, in `dependencies`)
+
+- [#2068](https://github.com/Urigo/accounter-fullstack/pull/2068)
+  [`765e8c5`](https://github.com/Urigo/accounter-fullstack/commit/765e8c50aa12183b023b376100484af9ee77d48c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`lucide-react@0.503.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.503.0) (from
+    `0.488.0`, in `dependencies`)
+
+- [#2070](https://github.com/Urigo/accounter-fullstack/pull/2070)
+  [`a545ada`](https://github.com/Urigo/accounter-fullstack/commit/a545ada9c3af7699c8a328db96b62807b20d19eb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.2.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.2.3)
+    (from `1.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.2.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.2.2)
+    (from `2.1.7`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-switch@1.2.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-switch/v/1.2.2)
+    (from `1.1.4`, in `dependencies`)
+
+- [#2073](https://github.com/Urigo/accounter-fullstack/pull/2073)
+  [`54c150e`](https://github.com/Urigo/accounter-fullstack/commit/54c150e05ecedd8ef41c0420e272d2011b2dec93)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@minoru/react-dnd-treeview@3.5.2` ↗︎](https://www.npmjs.com/package/@minoru/react-dnd-treeview/v/3.5.2)
+    (from `3.5.0`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-avatar@1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-avatar/v/1.1.7)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-collapsible@1.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.8)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.11` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.11)
+    (from `1.1.8`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.12` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.12)
+    (from `2.1.8`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-label@2.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-label/v/2.1.4)
+    (from `2.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.11` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.11)
+    (from `1.1.8`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-scroll-area@1.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.6)
+    (from `1.2.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-separator@1.1.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-separator/v/1.1.4)
+    (from `1.1.3`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tabs@1.1.9` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.9)
+    (from `1.1.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toast@1.2.11` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.11)
+    (from `1.2.8`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toggle@1.1.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.6)
+    (from `1.1.4`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.2.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.2.4)
+    (from `1.2.1`, in `dependencies`)
+
+- [#2076](https://github.com/Urigo/accounter-fullstack/pull/2076)
+  [`b6677f2`](https://github.com/Urigo/accounter-fullstack/commit/b6677f220f9a7490f8cb3e1027fb846e69fdd4a0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@mui/x-charts@7.29.1` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/7.29.1) (from
+    `7.29.0`, in `dependencies`)
+
+- [#2077](https://github.com/Urigo/accounter-fullstack/pull/2077)
+  [`18c7c1a`](https://github.com/Urigo/accounter-fullstack/commit/18c7c1a94e265b751777fc6b9ce7a16aac59e490)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`react-hook-form@7.56.1` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.56.1) (from
+    `7.55.0`, in `dependencies`)
+
+- [#2083](https://github.com/Urigo/accounter-fullstack/pull/2083)
+  [`82c17d6`](https://github.com/Urigo/accounter-fullstack/commit/82c17d615205dd460ba5453b18d23ca2c4800303)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Added dependency [`dotenv@16.5.0` ↗︎](https://www.npmjs.com/package/dotenv/v/16.5.0) (to
+    `dependencies`)
+  - Added dependency [`graphql@16.11.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.11.0) (to
+    `dependencies`)
+  - Removed dependency
+    [`@emotion/server@11.11.0` ↗︎](https://www.npmjs.com/package/@emotion/server/v/11.11.0) (from
+    `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-toast@1.2.11` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toast/v/1.2.11)
+    (from `dependencies`)
+  - Removed dependency [`next@15.3.1` ↗︎](https://www.npmjs.com/package/next/v/15.3.1) (from
+    `dependencies`)
+  - Removed dependency
+    [`strip-indent@4.0.0` ↗︎](https://www.npmjs.com/package/strip-indent/v/4.0.0) (from
+    `dependencies`)
+
+- [#2085](https://github.com/Urigo/accounter-fullstack/pull/2085)
+  [`0f04fe9`](https://github.com/Urigo/accounter-fullstack/commit/0f04fe915f70c54401cb530ee58e439b6cb29b00)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+
+  - Updated dependency
+    [`@radix-ui/react-accordion@1.2.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-accordion/v/1.2.8)
+    (from `1.2.7`, in `dependencies`)
+  - Updated dependency
+    [`react-hook-form@7.56.2` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.56.2) (from
+    `7.56.1`, in `dependencies`)
+  - Updated dependency
+    [`react-number-format@5.4.4` ↗︎](https://www.npmjs.com/package/react-number-format/v/5.4.4)
+    (from `5.4.3`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.5.3` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.5.3) (from
+    `7.5.1`, in `dependencies`)
+  - Updated dependency [`zod@3.24.4` ↗︎](https://www.npmjs.com/package/zod/v/3.24.4) (from
+    `3.24.3`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.4` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.4) (from
+    `5.0.3`, in `dependencies`)
+
+- [#2086](https://github.com/Urigo/accounter-fullstack/pull/2086)
+  [`5308911`](https://github.com/Urigo/accounter-fullstack/commit/530891185ab33f53299fa7fc8c623104e1b1dc94)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+
+  - Updated dependency
+    [`@tanstack/react-query@5.75.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.75.2)
+    (from `5.74.4`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@0.507.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.507.0) (from
+    `0.503.0`, in `dependencies`)
+  - Updated dependency
+    [`react-error-boundary@6.0.0` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.0.0)
+    (from `5.0.0`, in `dependencies`)
+
+- [#2095](https://github.com/Urigo/accounter-fullstack/pull/2095)
+  [`b48399e`](https://github.com/Urigo/accounter-fullstack/commit/b48399ee4c4e3bbd94f35d4eaa69b840608683aa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.3.0` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.3.0)
+    (from `1.2.3`, in `dependencies`)
+
 ## 0.0.4
 
 ### Patch Changes
