@@ -65,7 +65,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates) {
         return null;
       }
-      return exchangeRates;
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
     eth: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
       const exchangeRates = await injector
@@ -74,7 +74,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates) {
         return null;
       }
-      return exchangeRates;
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
     usdc: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
       const exchangeRates = await injector
@@ -83,7 +83,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       if (!exchangeRates) {
         return null;
       }
-      return exchangeRates;
+      return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
     date: timelessDate => timelessDate,
   },

@@ -37,7 +37,7 @@ export const ExchangeRates = ({ chargeProps }: Props): ReactElement => {
     if (charge.__typename !== 'FinancialCharge') {
       return [];
     }
-    return Object.entries(charge.exchangeRates ?? []).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(charge.exchangeRates ?? {}).sort((a, b) => a[0].localeCompare(b[0]));
   }, [charge]);
 
   if (charge.__typename !== 'FinancialCharge') {
