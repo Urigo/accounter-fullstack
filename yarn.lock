@@ -21,7 +21,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
-    "@types/pg": "npm:8.11.14"
+    "@types/pg": "npm:8.12.0"
     got: "npm:14.4.7"
     pg-promise: "npm:11.13.0"
     slonik: "npm:38.0.0"
@@ -36,7 +36,7 @@ __metadata:
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@types/lodash": "npm:4.17.16"
-    "@types/pg": "npm:8.11.14"
+    "@types/pg": "npm:8.12.0"
     "@types/uuid": "npm:10.0.0"
     date-fns: "npm:4.1.0"
     dotenv: "npm:16.5.0"
@@ -58,7 +58,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@sinclair/typebox": "npm:0.34.33"
     "@types/listr": "npm:0.14.9"
-    "@types/pg": "npm:8.11.14"
+    "@types/pg": "npm:8.12.0"
     date-fns: "npm:4.1.0"
     dotenv: "npm:16.5.0"
     dotenv-cli: "npm:8.0.0"
@@ -300,7 +300,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:5.0.2"
-    "@types/pg": "npm:8.11.14"
+    "@types/pg": "npm:8.12.0"
     "@whatwg-node/fetch": "npm:0.10.6"
     ai: "npm:4.3.13"
     basic-auth: "npm:2.0.1"
@@ -7348,7 +7348,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.11.14, @types/pg@npm:^8.10.7":
+"@types/pg@npm:8.12.0":
+  version: 8.12.0
+  resolution: "@types/pg@npm:8.12.0"
+  dependencies:
+    "@types/node": "npm:*"
+    pg-protocol: "npm:*"
+    pg-types: "npm:^4.0.1"
+  checksum: 10c0/8261535ddb386ee9fcd126cb6b4036202dc1e38dee76ae242b39a1262f3a2b7a7f990833628e7eb32cec12c8027d18450d231cae2aa54c1d608aa5b8d1e98742
+  languageName: node
+  linkType: hard
+
+"@types/pg@npm:^8.10.7":
   version: 8.11.14
   resolution: "@types/pg@npm:8.11.14"
   dependencies:
@@ -7968,7 +7979,7 @@ __metadata:
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:22.15.3"
-    "@types/pg": "npm:8.11.14"
+    "@types/pg": "npm:8.12.0"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.1.2"
     dotenv: "npm:16.5.0"
