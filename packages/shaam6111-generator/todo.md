@@ -40,13 +40,6 @@ and validate Israeli SHAAM 6111 tax reports.
   - [x] Valid inputs
   - [x] Invalid inputs
 
-### 🧪 Other Schemas
-
-- [ ] Implement `SupplierRecord` schema
-- [ ] Implement `CustomerRecord` schema
-- [ ] Implement all other record schemas
-- [ ] Write tests for each schema
-
 ### ✅ Data Validator
 
 - [ ] Implement `validateData()` using Zod schemas
