@@ -128,11 +128,9 @@ Based on the SHAAM 6111 specification, the following types will be implemented:
 // Main data structure
 export interface ReportData {
   header: HeaderRecord
-  suppliers?: SupplierRecord[]
-  customers?: CustomerRecord[]
-  incomeRecords?: IncomeRecord[]
-  deductionRecords?: DeductionRecord[]
-  summary: SummaryRecord
+  profitAndLoss: ReportEntry[]
+  taxAdjustment: ReportEntry[]
+  balanceSheet: ReportEntry[]
 }
 
 // Validation results
@@ -142,10 +140,10 @@ export interface ValidationResult {
 }
 
 export interface ValidationError {
-  path: string // Path to the invalid field
+  path?: string // Path to the invalid field
   message: string // Developer-friendly error message
   code?: string // Error code (if applicable)
-  value?: any // The invalid value
+  value?: unknown // The invalid value
 }
 
 // Record types based on SHAAM 6111 specification
@@ -153,18 +151,16 @@ export interface ValidationError {
 // that will be mapped to/from the numeric field IDs in the spec
 
 export interface HeaderRecord {
-  reporterTaxId: string
-  reporterName: string
-  reportingYear: number
-  reportingPeriod: string
+  taxFileNumber: string
+  taxYear: string
+  idNumber: string
+  vatFileNumber?: string
   // Other fields as specified in the SHAAM 6111 documentation
 }
 
-export interface SupplierRecord {
-  supplierId: string
-  supplierName: string
-  totalAmount: number
-  // Other fields as specified in the SHAAM 6111 documentation
+export interface ReportEntry {
+  code: string
+  amount: number
 }
 
 // Additional record type interfaces will be defined according to the spec
@@ -182,22 +178,10 @@ export interface SupplierRecord {
 
 ### Field Mapping
 
-- Each field in the SHAAM 6111 specification has a numeric ID
+- Each report entry in the SHAAM 6111 specification has a numeric ID
 - The library will maintain an internal mapping between the developer-friendly property names and
   these IDs
 - Strict adherence to field length, padding, and formatting requirements as defined in the spec
-
-### Record Types
-
-Implementation will include support for all record types defined in the SHAAM 6111 specification:
-
-- Header records (type 000)
-- Supplier records (type 100)
-- Customer records (type 200)
-- Income records (type 300)
-- Deduction records (type 400)
-- Summary records (type 900)
-- Any additional record types defined in the specification
 
 ## 6. Error Handling Strategy
 
@@ -220,13 +204,9 @@ export class ValidationError extends Error {
 }
 
 export class ParsingError extends Error {
-  public line?: number
-  public column?: number
-  constructor(message: string, line?: number, column?: number) {
+  constructor(message: string) {
     super(message)
     this.name = 'ParsingError'
-    this.line = line
-    this.column = column
   }
 }
 ```
@@ -249,16 +229,23 @@ export class ParsingError extends Error {
 ```typescript
 // Example schema for HeaderRecord
 export const headerSchema = z.object({
-  reporterTaxId: z
+  taxFileNumber: z
     .string()
-    .length(9, { message: 'Tax ID must be exactly 9 digits' })
-    .regex(/^\d+$/, { message: 'Tax ID must contain only digits' }),
-  reporterName: z.string().max(30, { message: 'Reporter name cannot exceed 30 characters' }),
-  reportingYear: z
-    .number()
-    .int({ message: 'Reporting year must be an integer' })
-    .min(2000, { message: 'Reporting year must be 2000 or later' }),
-  reportingPeriod: z.string().length(2, { message: 'Reporting period must be exactly 2 digits' })
+    .length(9, { message: 'Tax file number must be exactly 9 digits' })
+    .regex(/^\d+$/, { message: 'Tax file number must contain only digits' }),
+  taxYear: z
+    .string()
+    .length(4, { message: 'Tax year must be exactly 4 digits' })
+    .regex(/^\d{4}$/, { message: 'Tax year must be a valid year in YYYY format' }),
+  idNumber: z
+    .string()
+    .length(9, { message: 'ID number must be exactly 9 digits' })
+    .regex(/^\d+$/, { message: 'ID number must contain only digits' }),
+  vatFileNumber: z
+    .string()
+    .length(9, { message: 'VAT file number must be exactly 9 digits' })
+    .regex(/^\d+$/, { message: 'VAT file number must contain only digits' })
+    .optional()
   // Additional fields with appropriate validations
 })
 ```
