@@ -7,9 +7,7 @@ export interface ValidationResult {
   /** Whether the validation passed successfully */
   isValid: boolean;
   /** List of validation error messages */
-  errors: ValidationError[];
-  /** List of validation warning messages */
-  warnings: ValidationError[];
+  errors?: ValidationError[];
 }
 
 /**
@@ -19,11 +17,11 @@ export interface ValidationResult {
  */
 export interface ValidationErrorDetails {
   /** Error or warning code */
-  code: string;
+  code?: string;
   /** Error or warning message */
   message: string;
   /** Field or section where the error occurred */
-  field?: string;
+  path?: string;
   /** Value that caused the error */
   value?: unknown;
 }
@@ -34,7 +32,7 @@ export interface ValidationErrorDetails {
 export class ValidationError extends Error {
   public errors: ValidationErrorDetails[];
 
-  constructor(message: string, errors: ValidationErrorDetails[]) {
+  constructor(message: string, errors: ValidationErrorDetails[] = []) {
     super(message);
     this.name = 'ValidationError';
     this.errors = errors;
