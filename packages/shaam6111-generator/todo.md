@@ -8,7 +8,7 @@ and validate Israeli SHAAM 6111 tax reports.
 ## 📁 Phase 1: Project Setup & Types
 
 - [x] Initialize TypeScript project with `tsconfig.json` and `package.json`
-- [ ] Add and configure Vitest for testing
+- [x] Add and configure Vitest for testing
 - [ ] Set up folder structure:
   - `src/`
   - `src/types/`

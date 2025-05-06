@@ -49,11 +49,16 @@
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prepublish": "yarn build",
-    "start": "node ./dist"
+    "start": "node ./dist",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "zod": "^3.24.4",
     "iconv-lite": "^0.6.x"
+  },
+  "devDependencies": {
+    "vitest": "^0.34.0"
   },
   "publishConfig": {
     "directory": "dist",
