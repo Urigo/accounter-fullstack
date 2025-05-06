@@ -20,10 +20,10 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### 🧾 Define Types
 
-- [ ] Define `ReportData` structure (with clear field names)
-- [ ] Define `HeaderRecord`, `SupplierRecord`, etc.
-- [ ] Define `ValidationError` interface
-- [ ] Define `ValidationResult` structure
+- [x] Define `ReportData` structure (with clear field names)
+- [x] Define `HeaderRecord`, `SupplierRecord`, etc.
+- [x] Define `ValidationError` interface
+- [x] Define `ValidationResult` structure
 - [ ] Define custom error classes:
   - [ ] `ValidationError`
   - [ ] `ParsingError`
