@@ -34,8 +34,8 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### 🧪 Header Schema
 
-- [ ] Implement `headerSchema` using Zod
-  - [ ] Add field-level validation (e.g., length, number format)
+- [x] Implement `headerSchema` using Zod
+  - [x] Add field-level validation (e.g., length, number format)
 - [ ] Write unit tests for `headerSchema`
   - [ ] Valid inputs
   - [ ] Invalid inputs
