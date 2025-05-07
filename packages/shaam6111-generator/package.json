@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/urigo/accounter-fullstack.git",
-    "repository": "packages/shaam6111-generator"
+    "directory": "packages/shaam6111-generator"
   },
   "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam6111-generator#readme",
   "bugs": {
@@ -49,7 +49,7 @@
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prepublish": "yarn build",
-    "start": "node ./dist",
+    "start": "node ./dist/esm/index.js",
     "test": "vitest",
     "test:watch": "vitest --watch"
   },

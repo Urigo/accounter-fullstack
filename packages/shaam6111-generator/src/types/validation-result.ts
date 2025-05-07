@@ -7,13 +7,13 @@ export interface ValidationResult {
   /** Whether the validation passed successfully */
   isValid: boolean;
   /** List of validation error messages */
-  errors?: ValidationError[];
+  errors?: ValidationErrorDetails[];
 }
 
 /**
  * Validation Error interface for detailed error information
  * @export
- * @interface ValidationError
+ * @interface ValidationErrorDetails
  */
 export interface ValidationErrorDetails {
   /** Error or warning code */
