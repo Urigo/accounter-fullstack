@@ -42,9 +42,9 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### ✅ Data Validator
 
-- [ ] Implement `validateData()` using Zod schemas
-- [ ] Aggregate validation errors by field and record
-- [ ] Return `ValidationResult` object
+- [x] Implement `validateData()` using Zod schemas
+- [x] Aggregate validation errors by field and record
+- [x] Return `ValidationResult` object
 - [ ] Write unit and integration tests:
   - [ ] Single record validation
   - [ ] Multi-record validation
