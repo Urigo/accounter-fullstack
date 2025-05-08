@@ -151,11 +151,11 @@ export interface HeaderRecord {
   /** Balance sheet included - mandatory field (מצורף דוח מאזן) */
   includesBalanceSheet: YesNo;
   /** Number of entries in profit and loss section (3 digits) - mandatory field (מספר נגררות פיסקת רווח הפסד) */
-  profitLossEntryCount: number;
+  profitLossEntryCount?: number;
   /** Number of entries in tax adjustment section (3 digits) - mandatory if entries exist (מספר נגררות פיסקת התאמה למס) */
-  taxAdjustmentEntryCount: number;
+  taxAdjustmentEntryCount?: number;
   /** Number of entries in balance sheet section (3 digits) - mandatory if entries exist (מספר נגררות פיסקת מאזן) */
-  balanceSheetEntryCount: number;
+  balanceSheetEntryCount?: number;
   /**
    * Year when IFRS accounting standards were implemented (4 digits) (שנת מס - יישום תקני חשבונאות)
    * Starting from 2006, or 9999 if not applicable
