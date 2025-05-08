@@ -45,9 +45,9 @@ and validate Israeli SHAAM 6111 tax reports.
 - [x] Implement `validateData()` using Zod schemas
 - [x] Aggregate validation errors by field and record
 - [x] Return `ValidationResult` object
-- [ ] Write unit and integration tests:
-  - [ ] Single record validation
-  - [ ] Multi-record validation
+- [x] Write unit and integration tests:
+  - [x] Single record validation
+  - [x] Multi-record validation
 
 ---
 

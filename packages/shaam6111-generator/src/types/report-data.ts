@@ -42,7 +42,7 @@ export interface ReportData {
  */
 export interface ReportEntry {
   /** Field code from Form 6111 (5 digits) (קוד שדה) */
-  code: string;
+  code: number;
   /** Monetary amount (13 digits) - negative values have sign in leftmost position (סכום) */
   amount: number;
 }
