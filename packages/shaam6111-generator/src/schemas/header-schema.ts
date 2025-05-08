@@ -8,7 +8,8 @@ import {
   IfrsReportingOption,
   ReportingMethod,
   YesNo,
-} from '../types/report-data.js';
+} from '../types/index.js';
+import { isValidIsraeliID } from '../validation/id-validation.js';
 
 /**
  * Zod schema for HeaderRecord
@@ -18,7 +19,15 @@ export const headerSchema = z.object({
   taxFileNumber: z
     .string()
     .length(9, { message: 'Tax file number must be exactly 9 digits' })
-    .regex(/^[0-9]+$/, { message: 'Tax file number must contain only digits' }),
+    .regex(/^[0-9]+$/, { message: 'Tax file number must contain only digits' })
+    .superRefine((val, ctx) => {
+      if (!isValidIsraeliID(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid tax file number',
+        });
+      }
+    }),
   taxYear: z
     .string()
     .length(4, { message: 'Tax year must be exactly 4 digits' })
@@ -26,16 +35,40 @@ export const headerSchema = z.object({
   idNumber: z
     .string()
     .length(9, { message: 'ID number must be exactly 9 digits' })
-    .regex(/^[0-9]+$/, { message: 'ID number must contain only digits' }),
+    .regex(/^[0-9]+$/, { message: 'ID number must contain only digits' })
+    .superRefine((val, ctx) => {
+      if (!isValidIsraeliID(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid ID number',
+        });
+      }
+    }),
   vatFileNumber: z
     .string()
     .length(9, { message: 'VAT file number must be exactly 9 digits' })
     .regex(/^[0-9]+$/, { message: 'VAT file number must contain only digits' })
+    .superRefine((val, ctx) => {
+      if (!isValidIsraeliID(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid VAT file number',
+        });
+      }
+    })
     .optional(),
   withholdingTaxFileNumber: z
     .string()
     .length(9, { message: 'Withholding tax file number must be exactly 9 digits' })
     .regex(/^[0-9]+$/, { message: 'Withholding tax file number must contain only digits' })
+    .superRefine((val, ctx) => {
+      if (!isValidIsraeliID(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid withholding tax file number',
+        });
+      }
+    })
     .optional(),
   industryCode: z
     .string()
