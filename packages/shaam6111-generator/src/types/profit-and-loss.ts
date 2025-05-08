@@ -74,7 +74,49 @@ export const ALLOWED_PROFIT_LOSS_CODES = [
 // Create a type for the allowed codes
 export type AllowedProfitLossCode = (typeof ALLOWED_PROFIT_LOSS_CODES)[number];
 
-export const codeNames: Record<AllowedProfitLossCode, string> = {
+// Define which codes can have negative values
+export const NEGATIVE_ALLOWED_PROFIT_LOSS_CODES = [
+  // Section 1.53
+  1000, 1090,
+  // Section 1.54
+  1300, 1350, 1360, 1390,
+  // Section 1.55
+  2090,
+  // Section 1.56
+  2500, 2590,
+  // Section 1.57
+  3190,
+  // Section 1.58
+  3500, 3610, 3690,
+  // Section 1.59
+  5000, 5040, 5090,
+  // Section 1.60
+  5300, 5330,
+  // Section 1.61
+  6666,
+  // Section 1.62
+  5600, 5610, 5620, 5630,
+  // Section 1.63
+  5800, 5810,
+] as const;
+
+// Define the summary codes that should equal the sum of their subsections
+export const COMMON_PROFIT_LOSS_SUMMARY_CODES = [
+  1000, 2500, 5000, 5100, 5200, 5300, 5600, 5700, 5800,
+] as const;
+
+// Define the summary codes that are not simple sums
+export const UNCOMMON_PROFIT_LOSS_SUMMARY_CODES = [1300, 2000, 3000, 3500, 6666] as const;
+
+export const _PROFIT_LOSS_SUMMARY_CODES = [
+  ...COMMON_PROFIT_LOSS_SUMMARY_CODES,
+  ...UNCOMMON_PROFIT_LOSS_SUMMARY_CODES,
+] as const;
+
+export type CommonProfitLossSummaryCode = (typeof COMMON_PROFIT_LOSS_SUMMARY_CODES)[number];
+export type ProfitLossSummaryCode = (typeof _PROFIT_LOSS_SUMMARY_CODES)[number];
+
+export const PROFIT_LOSS_CODE_NAMES: Record<AllowedProfitLossCode, string> = {
   1010: 'הכנסות ממכירות בארץ',
   1015: 'הכנסות ממכירת מבנים כקבלן בונה',
   1020: 'הכנסות ממכירות לחו"ל',
@@ -231,44 +273,3 @@ export const codeNames: Record<AllowedProfitLossCode, string> = {
   5810: 'רווח/הפסד אקויטי',
   6666: 'סה"כ רווח/הפסד לפני מסים',
 } as const;
-
-// Define which codes can have negative values
-export const NEGATIVE_ALLOWED_CODES = [
-  // Section 1.53
-  1000, 1090,
-  // Section 1.54
-  1300, 1350, 1360, 1390,
-  // Section 1.55
-  2090,
-  // Section 1.56
-  2500, 2590,
-  // Section 1.57
-  3190,
-  // Section 1.58
-  3500, 3610, 3690,
-  // Section 1.59
-  5000, 5040, 5090,
-  // Section 1.60
-  5300, 5330,
-  // Section 1.61
-  6666,
-  // Section 1.62
-  5600, 5610, 5620, 5630,
-  // Section 1.63
-  5800, 5810,
-] as const;
-
-// Create a set for faster lookup of allowed codes
-export const allowedCodesSet = new Set(ALLOWED_PROFIT_LOSS_CODES);
-export const negativeAllowedCodesSet = new Set<number>(NEGATIVE_ALLOWED_CODES);
-
-// Define the summary codes that should equal the sum of their subsections
-export const COMMON_SUMMARY_CODES = [1000, 2500, 5000, 5100, 5200, 5300, 5600, 5700, 5800] as const;
-
-// Define the summary codes that are not simple sums
-export const UNCOMMON_SUMMARY_CODES = [1300, 2000, 3000, 3500, 6666] as const;
-
-export const _SUMMARY_CODES = [...COMMON_SUMMARY_CODES, ...UNCOMMON_SUMMARY_CODES] as const;
-
-export type CommonSummaryCode = (typeof COMMON_SUMMARY_CODES)[number];
-export type SummaryCode = (typeof _SUMMARY_CODES)[number];
