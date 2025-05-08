@@ -3,9 +3,9 @@ import { headerSchema } from '../src/schemas/index';
 
 // Valid HeaderRecord example
 const validHeaderRecord = {
-  taxFileNumber: '123456789',
+  taxFileNumber: '123456782',
   taxYear: '2025',
-  idNumber: '987654321',
+  idNumber: '987654324',
   industryCode: '1234',
   businessType: 1, // INDUSTRIAL
   reportingMethod: 1, // CASH
@@ -52,11 +52,20 @@ describe('headerSchema', () => {
     }
   });
 
+  it('should fail validation for an invalid idNumber', () => {
+    const invalidRecord = { ...validHeaderRecord, idNumber: '123456789' };
+    const result = headerSchema.safeParse(invalidRecord);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.errors[0].message).toBe('Invalid ID number');
+    }
+  });
+
   it('should validate optional fields when provided', () => {
     const recordWithOptionalFields = {
       ...validHeaderRecord,
-      vatFileNumber: '123456789',
-      withholdingTaxFileNumber: '987654321',
+      vatFileNumber: '123456782',
+      withholdingTaxFileNumber: '987654324',
       businessDescription: 'Industrial business',
       ifrsImplementationYear: '2025',
       ifrsReportingOption: 1, // OPTION_1
@@ -67,5 +76,14 @@ describe('headerSchema', () => {
     };
     const result = headerSchema.safeParse(recordWithOptionalFields);
     expect(result.success).toBe(true);
+  });
+
+  it('should fail validation for an invalid partnershipCount', () => {
+    const invalidRecord = { ...validHeaderRecord, partnershipCount: -1 };
+    const result = headerSchema.safeParse(invalidRecord);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.errors[0].message).toBe('Partnership count cannot be negative');
+    }
   });
 });
