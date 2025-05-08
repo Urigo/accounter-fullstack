@@ -53,13 +53,13 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ## 🔤 Phase 3: Encoding Utilities
 
-- [ ] Implement `toWindows1255(input: string): Buffer`
-- [ ] Implement `fromWindows1255(buffer: Buffer): string`
-- [ ] Use `iconv-lite` for encoding/decoding
-- [ ] Write unit tests:
-  - [ ] Hebrew → Windows-1255 → Hebrew
-  - [ ] English support
-  - [ ] Special characters and edge cases
+- [x] Implement `toWindows1255(input: string): Buffer`
+- [x] Implement `fromWindows1255(buffer: Buffer): string`
+- [x] Use `iconv-lite` for encoding/decoding
+- [x] Write unit tests:
+  - [x] Hebrew → Windows-1255 → Hebrew
+  - [x] English support
+  - [x] Special characters and edge cases
 
 ---
 
