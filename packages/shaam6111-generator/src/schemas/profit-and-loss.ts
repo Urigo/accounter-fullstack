@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import {
-  allowedCodesSet,
+  ALLOWED_PROFIT_LOSS_CODES,
   AllowedProfitLossCode,
-  codeNames,
-  CommonSummaryCode,
-  negativeAllowedCodesSet,
+  CommonProfitLossSummaryCode,
+  NEGATIVE_ALLOWED_PROFIT_LOSS_CODES,
+  PROFIT_LOSS_CODE_NAMES,
+  ProfitLossSummaryCode,
   SECTION_1_1,
   SECTION_1_4,
   SECTION_1_9,
@@ -14,7 +15,6 @@ import {
   SECTION_1_14,
   SECTION_1_15,
   SECTION_1_16,
-  SummaryCode,
 } from '../types/index.js';
 
 /**
@@ -22,8 +22,12 @@ import {
  * Based on the Israeli Tax Authority specification
  */
 
+// Create a set for faster lookup of allowed codes
+const allowedCodesSet = new Set(ALLOWED_PROFIT_LOSS_CODES);
+const negativeAllowedCodesSet = new Set<number>(NEGATIVE_ALLOWED_PROFIT_LOSS_CODES);
+
 function codeToName(code: AllowedProfitLossCode): string {
-  return `${codeNames[code]} (${code})`;
+  return `${PROFIT_LOSS_CODE_NAMES[code]} (${code})`;
 }
 
 // Schema for a single profit and loss record
@@ -52,7 +56,7 @@ const profitLossRecordSchema = z
   });
 
 function commonCumulativeCodeValidation(
-  code: CommonSummaryCode,
+  code: CommonProfitLossSummaryCode,
   sectionCodes: readonly AllowedProfitLossCode[],
 ) {
   return {
@@ -68,7 +72,7 @@ function commonCumulativeCodeValidation(
 
 // Define the validation logic for each summary code
 const summaryValidations: Record<
-  SummaryCode,
+  ProfitLossSummaryCode,
   { formula: (map: Map<number, number>) => number; description: string }
 > = {
   1000: commonCumulativeCodeValidation(1000, SECTION_1_1),
@@ -156,22 +160,20 @@ const summaryValidations: Record<
 
 // Schema for an array of profit and loss records
 export const profitLossArraySchema = z.array(profitLossRecordSchema).superRefine((records, ctx) => {
-  // Check for duplicate codes
-  const seenCodes = new Set<number>();
-  for (let i = 0; i < records.length; i++) {
-    const code = records[i].code as AllowedProfitLossCode;
-    if (seenCodes.has(code)) {
+  // Check for unique code values & create a map for faster lookups
+  const codeToAmountMap = new Map<AllowedProfitLossCode, number>();
+  records.map((record, i) => {
+    const code = record.code as AllowedProfitLossCode;
+    if (codeToAmountMap.has(code)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Duplicate code: ${codeToName(code)}`,
         path: [i, 'code'],
       });
+    } else {
+      codeToAmountMap.set(code, record.amount);
     }
-    seenCodes.add(code);
-  }
-
-  // Create a map for faster lookups
-  const codeToAmountMap = new Map(records.map(r => [r.code, r.amount]));
+  });
 
   // Validate each summary field with its formula
   Object.entries(summaryValidations).map(([codeStr, validation]) => {
