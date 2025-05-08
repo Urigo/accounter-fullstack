@@ -38,7 +38,7 @@ const profitLossRecordSchema = z
       .number()
       .int()
       .refine(code => allowedCodesSet.has(code as AllowedProfitLossCode), {
-        message: 'Invalid code for profit and loss section',
+        message: 'Invalid profit and loss code',
       }),
 
     // Amount field - must be a valid integer
@@ -60,7 +60,7 @@ function commonCumulativeCodeValidation(
   sectionCodes: readonly AllowedProfitLossCode[],
 ) {
   return {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return sectionCodes
         .filter(sectionCode => sectionCode !== code)
         .map(sectionCode => map.get(sectionCode) || 0)
@@ -73,13 +73,17 @@ function commonCumulativeCodeValidation(
 // Define the validation logic for each summary code
 const summaryValidations: Record<
   ProfitLossSummaryCode,
-  { formula: (map: Map<number, number>) => number; description: string }
+  { formula: (map: Map<AllowedProfitLossCode, number>) => number; description: string }
 > = {
   1000: commonCumulativeCodeValidation(1000, SECTION_1_1),
   1300: {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
-        [1306, 1308, 1307, 1310, 1320, 1330, 1340, 1350, 1360, 1371, 1372, 1390, 1400]
+        (
+          [
+            1306, 1308, 1307, 1310, 1320, 1330, 1340, 1350, 1360, 1371, 1372, 1390, 1400,
+          ] as AllowedProfitLossCode[]
+        )
           .map(code => map.get(code) || 0)
           .reduce((a, b) => a + b, 0) - (map.get(1450) || 0)
       );
@@ -87,12 +91,14 @@ const summaryValidations: Record<
     description: '1306+1308+1307+1310+1320+1330+1340+1350+1360+1371+1372+1390+1400-1450',
   },
   2000: {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
-        [
-          2005, 2006, 2011, 2012, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050, 2060, 2066, 2067,
-          2070, 2075, 2080, 2085, 2090,
-        ]
+        (
+          [
+            2005, 2006, 2011, 2012, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050, 2060, 2066,
+            2067, 2070, 2075, 2080, 2085, 2090,
+          ] as AllowedProfitLossCode[]
+        )
           .map(code => map.get(code) || 0)
           .reduce((a, b) => a + b, 0) -
         (map.get(2068) || 0) -
@@ -104,12 +110,14 @@ const summaryValidations: Record<
   },
   2500: commonCumulativeCodeValidation(2500, SECTION_1_4),
   3000: {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
-        [
-          3011, 3013, 3012, 3015, 3020, 3025, 3030, 3040, 3045, 3050, 3060, 3066, 3067, 3070, 3075,
-          3080, 3085, 3090, 3100, 3120, 3190,
-        ]
+        (
+          [
+            3011, 3013, 3012, 3015, 3020, 3025, 3030, 3040, 3045, 3050, 3060, 3066, 3067, 3070,
+            3075, 3080, 3085, 3090, 3100, 3120, 3190,
+          ] as AllowedProfitLossCode[]
+        )
           .map(code => map.get(code) || 0)
           .reduce((a, b) => a + b, 0) - (map.get(3068) || 0)
       );
@@ -118,13 +126,15 @@ const summaryValidations: Record<
       '3011+3013+3012+3015+3020+3025+3030+3040+3045+3050+3060+3066+3067-3068+3070+3075+3080+3085+3090+3100+3120+3190',
   },
   3500: {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
-        [
-          3511, 3513, 3512, 3515, 3520, 3530, 3535, 3540, 3545, 3550, 3560, 3566, 3567, 3570, 3575,
-          3580, 3590, 3595, 3600, 3610, 3620, 3625, 3631, 3632, 3640, 3650, 3660, 3665, 3680, 3685,
-          3690,
-        ]
+        (
+          [
+            3511, 3513, 3512, 3515, 3520, 3530, 3535, 3540, 3545, 3550, 3560, 3566, 3567, 3570,
+            3575, 3580, 3590, 3595, 3600, 3610, 3620, 3625, 3631, 3632, 3640, 3650, 3660, 3665,
+            3680, 3685, 3690,
+          ] as AllowedProfitLossCode[]
+        )
           .map(code => map.get(code) || 0)
           .reduce((a, b) => a + b, 0) - (map.get(3568) || 0)
       );
@@ -140,7 +150,7 @@ const summaryValidations: Record<
   5700: commonCumulativeCodeValidation(5700, SECTION_1_15),
   5800: commonCumulativeCodeValidation(5800, SECTION_1_16),
   6666: {
-    formula: (map: Map<number, number>) => {
+    formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
         (map.get(1000) || 0) -
         (map.get(1300) || 0) -
