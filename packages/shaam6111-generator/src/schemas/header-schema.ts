@@ -18,7 +18,8 @@ import { isValidIsraeliID } from '../validation/id-validation.js';
 export const headerSchema = z.object({
   taxFileNumber: z
     .string()
-    .length(9, { message: 'Tax file number must be exactly 9 digits' })
+    .min(5, { message: 'Tax file number must include at least 5 digits' })
+    .max(9, { message: 'Tax file number must include at most 9 digits' })
     .regex(/^[0-9]+$/, { message: 'Tax file number must contain only digits' })
     .superRefine((val, ctx) => {
       if (!isValidIsraeliID(val)) {
@@ -34,7 +35,8 @@ export const headerSchema = z.object({
     .regex(/^[0-9]{4}$/, { message: 'Tax year must contain only digits' }),
   idNumber: z
     .string()
-    .length(9, { message: 'ID number must be exactly 9 digits' })
+    .min(5, { message: 'ID number must include at least 5 digits' })
+    .max(9, { message: 'ID number must include at most 9 digits' })
     .regex(/^[0-9]+$/, { message: 'ID number must contain only digits' })
     .superRefine((val, ctx) => {
       if (!isValidIsraeliID(val)) {
@@ -46,7 +48,8 @@ export const headerSchema = z.object({
     }),
   vatFileNumber: z
     .string()
-    .length(9, { message: 'VAT file number must be exactly 9 digits' })
+    .min(5, { message: 'VAT file number must include at least 5 digits' })
+    .max(9, { message: 'VAT file number must include at most 9 digits' })
     .regex(/^[0-9]+$/, { message: 'VAT file number must contain only digits' })
     .superRefine((val, ctx) => {
       if (!isValidIsraeliID(val)) {
@@ -59,7 +62,8 @@ export const headerSchema = z.object({
     .optional(),
   withholdingTaxFileNumber: z
     .string()
-    .length(9, { message: 'Withholding tax file number must be exactly 9 digits' })
+    .min(5, { message: 'Withholding tax file number must include at least 5 digits' })
+    .max(9, { message: 'Withholding tax file number must include at most 9 digits' })
     .regex(/^[0-9]+$/, { message: 'Withholding tax file number must contain only digits' })
     .superRefine((val, ctx) => {
       if (!isValidIsraeliID(val)) {

@@ -30,7 +30,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Tax file number must be exactly 9 digits');
+      expect(result.error.errors[0].message).toBe('Tax file number must include at least 5 digits');
     }
   });
 
