@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   ALLOWED_TAX_ADJUSTMENT_CODES,
   AllowedTaxAdjustmentCode,
+  NEGATIVE_ALLOWED_TAX_ADJUSTMENTS_CODES,
   TAX_ADJUSTMENT_CODE_NAMES,
   TaxAdjustmentSummaryCode,
 } from '../types/index.js';
@@ -13,7 +14,7 @@ import {
 
 // Create a set for faster lookup of allowed codes
 export const allowedCodesSet = new Set(ALLOWED_TAX_ADJUSTMENT_CODES);
-export const negativeAllowedCodesSet = new Set<number>(ALLOWED_TAX_ADJUSTMENT_CODES);
+export const negativeAllowedCodesSet = new Set<number>(NEGATIVE_ALLOWED_TAX_ADJUSTMENTS_CODES);
 
 function codeToName(code: AllowedTaxAdjustmentCode): string {
   return `${TAX_ADJUSTMENT_CODE_NAMES[code]} (${code})`;
