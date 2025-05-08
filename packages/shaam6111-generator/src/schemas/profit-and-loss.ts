@@ -15,7 +15,7 @@ import {
   SECTION_1_15,
   SECTION_1_16,
   SummaryCode,
-} from '../types/profit-and-loss.js';
+} from '../types/index.js';
 
 /**
  * Schema for validating profit and loss records in SHAAM6111 reports
