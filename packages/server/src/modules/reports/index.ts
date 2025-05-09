@@ -1,5 +1,6 @@
 import balanceReport from './typeDefs/balance-report.graphql.js';
 import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
+import depreciationReport from './typeDefs/depreciation-report.graphql.js';
 import dynamicReport from './typeDefs/dynamic-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
@@ -29,6 +30,7 @@ export const reportsModule = createModule({
     yearlyLedger,
     dynamicReport,
     balanceReport,
+    depreciationReport,
   ],
   resolvers: [reportsResolvers, dynamicReportResolver, balanceReportResolver, pcn874Resolvers],
   providers: () => [DynamicReportProvider, BalanceReportProvider, VatReportProvider],
