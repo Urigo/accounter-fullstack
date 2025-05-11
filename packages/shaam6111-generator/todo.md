@@ -67,11 +67,11 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### 🧱 Record Generators
 
-- [ ] Implement `generateHeaderRecord()`
+- [x] Implement `generateHeaderRecord()`
 
-  - [ ] Fixed-width formatting
-  - [ ] Padding/truncating logic
-  - [ ] Tests for output length and format
+  - [x] Fixed-width formatting
+  - [x] Padding/truncating logic
+  - [x] Tests for output length and format
 
 - [ ] Implement generators for all other record types
 - [ ] Write tests for each record generator
