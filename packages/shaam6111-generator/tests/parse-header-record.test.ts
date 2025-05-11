@@ -186,8 +186,6 @@ describe('parseHeaderRecord', () => {
       // Pad to ensure sufficient length
       '                                                                                           ';
 
-    console.log('testtest', nonNumericHeaderLine.substring(94, 96));
-
     const result = parseHeaderRecord(nonNumericHeaderLine);
 
     // Assert the parsed values (non-numeric values should be parsed as 0 or default values)

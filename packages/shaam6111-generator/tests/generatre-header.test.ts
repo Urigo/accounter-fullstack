@@ -1,4 +1,4 @@
-import { generateHeaderRecord } from '../src/generators/header';
+import { generateHeaderRecord } from '../src/generators/generate-header';
 import {
   AccountingMethod,
   AccountingSystem,
@@ -73,7 +73,6 @@ describe('generateHeaderRecord', () => {
     };
 
     const result = generateHeaderRecord(header);
-    console.log(result);
     expect(
       result.startsWith(
         '00012345520250987654310000000000000000001234ניסיון!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!010101010121000000000999909999999999999999901002',

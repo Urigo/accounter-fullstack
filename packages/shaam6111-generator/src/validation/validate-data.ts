@@ -4,7 +4,12 @@ import {
   profitLossArraySchema,
   taxAdjustmentArraySchema,
 } from '../schemas/index.js';
-import { ReportData, ValidationErrorDetails, ValidationResult } from '../types/index.js';
+import {
+  IndividualOrCompanyEnum,
+  ReportData,
+  ValidationErrorDetails,
+  ValidationResult,
+} from '../types/index.js';
 
 /**
  * Validates a ReportData object using Zod schemas.
@@ -52,7 +57,7 @@ export function validateData(data: ReportData): ValidationResult {
   }
 
   // Validate balance sheet
-  if (data.balanceSheet) {
+  if (data.balanceSheet.length || data.individualOrCompany === IndividualOrCompanyEnum.COMPANY) {
     const balanceSheetValidation = balanceSheetArraySchema.safeParse(data.balanceSheet);
     if (!balanceSheetValidation.success) {
       balanceSheetValidation.error.errors.map(err => {

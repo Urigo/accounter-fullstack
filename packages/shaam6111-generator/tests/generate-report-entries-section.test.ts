@@ -1,4 +1,4 @@
-import { generateReportEntriesSection } from '../src/generators/report-entries';
+import { generateReportEntriesSection } from '../src/generators/generate-report-entries';
 import { ReportEntry } from '../src/types';
 
 describe('generateReportEntriesSection', () => {

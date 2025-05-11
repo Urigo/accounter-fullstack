@@ -18,7 +18,8 @@ export function parseReport(content: string): ReportData {
 
   // Determine if this is an individual or company report based on required fields
   // For simplicity, we'll check if balance sheet is included with value 1 as an indicator for a company
-  const isCompany = headerLine.length >= 107 && headerLine.charAt(106) === '1';
+  const isIndividual =
+    parseInt(headerLine.substring(112, 115).trim()) === 0 && parseInt(headerLine.charAt(105)) === 2;
 
   // Parse header record
   const header = parseHeaderRecord(headerLine);
@@ -34,9 +35,9 @@ export function parseReport(content: string): ReportData {
     profitAndLoss,
     taxAdjustment,
     balanceSheet,
-    individualOrCompany: isCompany
-      ? IndividualOrCompanyEnum.COMPANY
-      : IndividualOrCompanyEnum.INDIVIDUAL,
+    individualOrCompany: isIndividual
+      ? IndividualOrCompanyEnum.INDIVIDUAL
+      : IndividualOrCompanyEnum.COMPANY,
   };
 
   // Validate the report data using the schema

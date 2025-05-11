@@ -100,7 +100,7 @@ describe('Integration Test: generateReport', () => {
       expect(report).toBeUndefined(); // Expect the report to be undefined
     } catch (error) {
       expect(error).toBeInstanceOf(ValidationError);
-      console.log('Invalid Report Data:', error);
+      // TODO: validate the error message
     }
   });
 });
