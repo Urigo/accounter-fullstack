@@ -126,9 +126,9 @@ export interface HeaderRecord {
   taxYear: string;
   /** ID number or company registration number (9 digits) - mandatory field (מס' זהות/ח.פ) */
   idNumber: string;
-  /** VAT file number (9 digits) - mandatory if exists (מס' תיק מע"מ) */
+  /** VAT file number (9 digits) - if exists (מס' תיק מע"מ) */
   vatFileNumber?: string;
-  /** Withholding tax file number (9 digits) - mandatory if exists (מס' תיק ניכויים) */
+  /** Withholding tax file number (9 digits) - if exists (מס' תיק ניכויים) */
   withholdingTaxFileNumber?: string;
   /** Industry code (4 digits) - mandatory field (מס' ענף) */
   industryCode: string;

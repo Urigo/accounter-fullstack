@@ -34,6 +34,27 @@ export const reportSchema = z
       });
     }
 
+    if (data.header.profitLossEntryCount !== data.profitAndLoss.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Profit and Loss entry count does not match the number of records',
+      });
+    }
+
+    if (data.header.taxAdjustmentEntryCount !== data.taxAdjustment.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Tax Adjustment entry count does not match the number of records',
+      });
+    }
+
+    if (data.header.balanceSheetEntryCount !== (data.balanceSheet?.length ?? 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Balance Sheet entry count does not match the number of records',
+      });
+    }
+
     // validate rule 3.7 profitAndLoss code 6666 equals to taxAdjustment code 100
     const code6666Amount = data.profitAndLoss.find(item => item.code === 6666)?.amount || 0;
     const code100Amount = data.taxAdjustment.find(item => item.code === 100)?.amount || 0;
