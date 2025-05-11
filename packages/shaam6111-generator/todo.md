@@ -103,9 +103,8 @@ and validate Israeli SHAAM 6111 tax reports.
 - [x] Implement `parseReport(content: string): ReportData`
   - [x] Detect and dispatch per-record type
   - [x] Validate line counts and formats
-- [ ] Write integration tests:
-  - [ ] Full string → object
-  - [ ] Multi-line validation
+- [x] Write integration tests:
+  - [x] Full string → object
 
 ---
 
