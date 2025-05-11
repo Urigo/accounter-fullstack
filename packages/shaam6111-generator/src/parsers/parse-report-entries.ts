@@ -12,9 +12,9 @@ export function parseReportEntries(
 ): ReportEntry[] {
   // Define starting positions based on the specification
   const startPosition = {
-    profitAndLoss: 513, // Position 513 according to spec
-    taxAdjustment: 3213, // Position 3213 according to spec
-    balanceSheet: 5913, // Position 5913 according to spec
+    profitAndLoss: 512, // Position 512 according to spec
+    taxAdjustment: 3212, // Position 3212 according to spec
+    balanceSheet: 5912, // Position 5912 according to spec
   };
 
   // Determine maximum number of entries (150 for each section according to spec)

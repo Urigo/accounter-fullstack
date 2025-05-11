@@ -33,8 +33,8 @@ describe('Integration Test: parseReport', () => {
       '01' + // auditOpinionType (UNQUALIFIED)
       '2'; // amountsInThousands (NO)
 
-    // Pad to reach position 513 where profit/loss section starts
-    reportContent = reportContent.padEnd(513, '0');
+    // Pad to reach position 512 where profit/loss section starts
+    reportContent = reportContent.padEnd(512, '0');
 
     // Profit and Loss Section (8 entries)
     reportContent += '010000000000100000'; // Code 1000, Amount 100000
@@ -142,8 +142,8 @@ describe('Integration Test: parseReport', () => {
       '09' + // auditOpinionType (NONE)
       '2'; // amountsInThousands (NO)
 
-    // Pad to reach position 513 where profit/loss section starts
-    reportContent = reportContent.padEnd(513, '0');
+    // Pad to reach position 512 where profit/loss section starts
+    reportContent = reportContent.padEnd(512, '0');
 
     // Profit and Loss Section (8 entries)
     reportContent += '010000000000100000'; // Code 1000, Amount 100000
@@ -174,127 +174,94 @@ describe('Integration Test: parseReport', () => {
       reportContent += '000000000000000000';
     }
 
-    try {
-      // Parse the report
-      const result = parseReport(reportContent);
+    // Parse the report
+    const result = parseReport(reportContent);
 
-      // Verify header data
-      expect(result.header.taxFileNumber).toBe('123456782');
-      expect(result.header.taxYear).toBe('2025');
-      expect(result.header.businessType).toBe(3);
-      expect(result.header.includesBalanceSheet).toBe(2);
+    // Verify header data
+    expect(result.header.taxFileNumber).toBe('123456782');
+    expect(result.header.taxYear).toBe('2025');
+    expect(result.header.businessType).toBe(3);
+    expect(result.header.includesBalanceSheet).toBe(2);
 
-      // Verify profit and loss entries
-      expect(result.profitAndLoss.length).toBe(8);
-      expect(result.profitAndLoss[0].code).toBe(1000);
-      expect(result.profitAndLoss[0].amount).toBe(100_000);
-      expect(result.profitAndLoss[7].code).toBe(6666);
-      expect(result.profitAndLoss[7].amount).toBe(250_000);
+    // Verify profit and loss entries
+    expect(result.profitAndLoss.length).toBe(8);
+    expect(result.profitAndLoss[0].code).toBe(1000);
+    expect(result.profitAndLoss[0].amount).toBe(100_000);
+    expect(result.profitAndLoss[7].code).toBe(6666);
+    expect(result.profitAndLoss[7].amount).toBe(250_000);
 
-      // Verify tax adjustment entries
-      expect(result.taxAdjustment.length).toBe(2);
-      expect(result.taxAdjustment[0].code).toBe(100);
-      expect(result.taxAdjustment[0].amount).toBe(250_000);
-      expect(result.taxAdjustment[1].code).toBe(400);
-      expect(result.taxAdjustment[1].amount).toBe(300_000);
+    // Verify tax adjustment entries
+    expect(result.taxAdjustment.length).toBe(2);
+    expect(result.taxAdjustment[0].code).toBe(100);
+    expect(result.taxAdjustment[0].amount).toBe(250_000);
+    expect(result.taxAdjustment[1].code).toBe(400);
+    expect(result.taxAdjustment[1].amount).toBe(300_000);
 
-      // Verify balance sheet entries (empty for individual)
-      expect(result.balanceSheet.length).toBe(0);
+    // Verify balance sheet entries (empty for individual)
+    expect(result.balanceSheet.length).toBe(0);
 
-      // Verify individual or company classification
-      expect(result.individualOrCompany).toBe(IndividualOrCompanyEnum.INDIVIDUAL);
-    } catch (error) {
-      console.error('Error parsing report:', error);
-    }
+    // Verify individual or company classification
+    expect(result.individualOrCompany).toBe(IndividualOrCompanyEnum.INDIVIDUAL);
   });
 
-  // it('should handle reports with negative amounts', () => {
-  //   // Create a sample report with negative amounts
-  //   let reportContent =
-  //     // Header Section (simplified)
-  //     '123456789202598765432112345678998765432112341234Company Ltd                                       221121112002002002    912345678000000000122';
+  it('should handle reports with negative amounts', () => {
+    // Create a sample report with negative amounts
+    let reportContent =
+      // Header Section (simplified)
+      '12345678220259876543241212121203434343461234Company Ltd                                       020201021112009002002    91234567800000000001022';
 
-  //   // Pad to reach position 513 where profit/loss section starts
-  //   reportContent = reportContent.padEnd(513, ' ');
+    // Pad to reach position 512 where profit/loss section starts
+    reportContent = reportContent.padEnd(512, '0');
 
-  //   // Profit and Loss Section with negative amount
-  //   reportContent += '1001-000000075000'; // Code 1001, Amount -75000
-  //   reportContent += '66660000000125000'; // Code 6666, Amount 125000
+    // Profit and Loss Section (9 entries)
+    reportContent += '010000000000100000'; // Code 1000, Amount 100000
+    reportContent += '010100000000110000'; // Code 1010, Amount 110000
+    reportContent += '01090-000000010000'; // Code 1090, Amount 10000
+    reportContent += '030000000000050000'; // Code 3000, Amount 50000
+    reportContent += '030130000000050000'; // Code 3013, Amount 50000
+    reportContent += '050000000000200000'; // Code 5000, Amount 200000
+    reportContent += '050510000000150000'; // Code 5051, Amount 150000
+    reportContent += '050900000000050000'; // Code 5090, Amount 50000
+    reportContent += '066660000000250000'; // Code 6666, Amount 250000
 
-  //   // Fill remaining profit/loss entries with filler records
-  //   for (let i = 0; i < 148; i++) {
-  //     reportContent += '00000000000000000';
-  //   }
+    // Fill remaining profit/loss entries with filler records
+    for (let i = 0; i < 141; i++) {
+      reportContent += '000000000000000000';
+    }
 
-  //   // Tax Adjustment Section with negative amount
-  //   reportContent += '01000000000125000'; // Code 100, Amount 125000
-  //   reportContent += '0400-000000150000'; // Code 400, Amount -150000
+    // Tax Adjustment Section with negative amount
+    reportContent += '001000000000125000'; // Code 100, Amount 125000
+    reportContent += '00400-000000150000'; // Code 400, Amount -150000
 
-  //   // Fill remaining tax adjustment entries with filler records
-  //   for (let i = 0; i < 148; i++) {
-  //     reportContent += '00000000000000000';
-  //   }
+    // Fill remaining tax adjustment entries with filler records
+    for (let i = 0; i < 148; i++) {
+      reportContent += '000000000000000000';
+    }
 
-  //   // Balance Sheet Section with negative amount
-  //   reportContent += '6000-000000500000'; // Code 6000, Amount -500000
-  //   reportContent += '78000000000100000'; // Code 7800, Amount 100000
+    // Balance Sheet Section with negative amount
+    reportContent += '06000-000000500000'; // Code 6000, Amount -500000
+    reportContent += '078000000000100000'; // Code 7800, Amount 100000
 
-  //   // Fill remaining balance sheet entries with filler records
-  //   for (let i = 0; i < 148; i++) {
-  //     reportContent += '00000000000000000';
-  //   }
+    // Fill remaining balance sheet entries with filler records
+    for (let i = 0; i < 148; i++) {
+      reportContent += '000000000000000000';
+    }
 
-  //   // Parse the report
-  //   const result = parseReport(reportContent);
+    // Parse the report
+    const result = parseReport(reportContent);
 
-  //   // Verify entries with negative amounts
-  //   expect(result.profitAndLoss[0].code).toBe(1001);
-  //   expect(result.profitAndLoss[0].amount).toBe(-75_000);
+    // Verify entries with negative amounts
+    expect(result.profitAndLoss[0].code).toBe(1000);
+    expect(result.profitAndLoss[0].amount).toBe(100_000);
+    expect(result.profitAndLoss[2].code).toBe(1090);
+    expect(result.profitAndLoss[2].amount).toBe(-10_000);
 
-  //   expect(result.taxAdjustment[1].code).toBe(400);
-  //   expect(result.taxAdjustment[1].amount).toBe(-150_000);
+    expect(result.taxAdjustment[1].code).toBe(400);
+    expect(result.taxAdjustment[1].amount).toBe(-150_000);
 
-  //   expect(result.balanceSheet[0].code).toBe(6000);
-  //   expect(result.balanceSheet[0].amount).toBe(-500_000);
-  // });
-
-  // it('should handle multiline report content with carriage returns and line breaks', () => {
-  //   // Create a sample multiline report with line breaks
-  //   const reportContent =
-  //     // Header Section
-  //     '123456789202598765432112345678998765432112341234Company Ltd                                       221121112002002002    912345678000000000122\n' +
-  //     // Padding to position 513
-  //     ''.padEnd(513 - 142, ' ') +
-  //     '\n' +
-  //     // Profit and Loss Section (2 entries)
-  //     '10010000000075000\r\n' +
-  //     '66660000000125000\r\n' +
-  //     // Remaining profit/loss entries (simplified)
-  //     ''.padEnd(148 * 18, '0') +
-  //     '\n' +
-  //     // Tax Adjustment Section (2 entries)
-  //     '01000000000125000\r\n' +
-  //     '04000000000150000\r\n' +
-  //     // Remaining tax adjustment entries (simplified)
-  //     ''.padEnd(148 * 18, '0') +
-  //     '\n' +
-  //     // Balance Sheet Section (2 entries)
-  //     '60000000000500000\r\n' +
-  //     '78000000000100000\r\n' +
-  //     // Remaining balance sheet entries (simplified)
-  //     ''.padEnd(148 * 18, '0');
-
-  //   // Parse the report
-  //   const result = parseReport(reportContent);
-
-  //   // Verify the parsing worked correctly despite line breaks
-  //   expect(result.header.taxFileNumber).toBe('123456789');
-  //   expect(result.profitAndLoss.length).toBe(2);
-  //   expect(result.profitAndLoss[0].code).toBe(1001);
-  //   expect(result.profitAndLoss[0].amount).toBe(75_000);
-  //   expect(result.taxAdjustment.length).toBe(2);
-  //   expect(result.balanceSheet.length).toBe(2);
-  // });
+    expect(result.balanceSheet[0].code).toBe(6000);
+    expect(result.balanceSheet[0].amount).toBe(-500_000);
+  });
 
   it('should throw validation error for invalid report data', () => {
     // Create an invalid report with mismatched values between sections
@@ -302,8 +269,8 @@ describe('Integration Test: parseReport', () => {
       // Header Section
       '123456789202598765432112345678998765432112341234Company Ltd                                       221121112002002002    912345678000000000122';
 
-    // Pad to reach position 513 where profit/loss section starts
-    reportContent = reportContent.padEnd(513, ' ');
+    // Pad to reach position 512 where profit/loss section starts
+    reportContent = reportContent.padEnd(512, '0');
 
     // Profit and Loss Section
     reportContent += '66660000000250000'; // Code 6666, Amount 250000
@@ -327,7 +294,7 @@ describe('Integration Test: parseReport', () => {
     reportContent += '78000000000100000'; // Code 7800, Amount 100000
 
     // Fill remaining balance sheet entries with filler records
-    for (let i = 0; i < 148; i++) {
+    for (let i = 0; i < 118; i++) {
       reportContent += '00000000000000000';
     }
 

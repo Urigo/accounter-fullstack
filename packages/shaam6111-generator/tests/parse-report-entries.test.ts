@@ -4,8 +4,8 @@ describe('parseReportEntries', () => {
   // Test for valid profit and loss entries
   it('should correctly parse valid profit and loss entries', () => {
     // Create a sample content with valid entries
-    // The profitAndLoss section starts at position 513
-    let content = ''.padStart(513, '*'); // Padding to reach position 513
+    // The profitAndLoss section starts at position 512
+    let content = ''.padStart(512, '*'); // Padding to reach position 512
 
     // Add some valid entries (5 digits code + 13 digits amount)
     content += '001000000000012345'; // Code 100, Amount 12345
@@ -27,8 +27,8 @@ describe('parseReportEntries', () => {
   // Test for valid tax adjustment entries
   it('should correctly parse valid tax adjustment entries', () => {
     // Create a sample content with valid entries
-    // The taxAdjustment section starts at position 3213
-    let content = ''.padStart(3213, '*'); // Padding to reach position 3213
+    // The taxAdjustment section starts at position 3212
+    let content = ''.padStart(3212, '*'); // Padding to reach position 3212
 
     // Add some valid entries (5 digits code + 13 digits amount)
     content += '001000000000067890'; // Code 100, Amount 67890
@@ -46,8 +46,8 @@ describe('parseReportEntries', () => {
   // Test for valid balance sheet entries
   it('should correctly parse valid balance sheet entries', () => {
     // Create a sample content with valid entries
-    // The balanceSheet section starts at position 5913
-    let content = ''.padStart(5913, '*'); // Padding to reach position 5913
+    // The balanceSheet section starts at position 5912
+    let content = ''.padStart(5912, '*'); // Padding to reach position 5912
 
     // Add some valid entries (5 digits code + 13 digits amount)
     content += '060000000000055555'; // Code 6000, Amount 55555
@@ -65,7 +65,7 @@ describe('parseReportEntries', () => {
   // Test for content that is too short
   it('should handle content that is too short', () => {
     // Create content that doesn't reach the section position
-    const shortContent = ''.padStart(500, '*'); // Less than 513 needed for profitAndLoss
+    const shortContent = ''.padStart(500, '*'); // Less than 512 needed for profitAndLoss
 
     const result = parseReportEntries(shortContent, 'profitAndLoss');
 
@@ -76,7 +76,7 @@ describe('parseReportEntries', () => {
   // Test for content with invalid/malformed entries
   it('should handle content with invalid or malformed entries', () => {
     // Create a sample content with some invalid entries
-    let content = ''.padStart(513, '*'); // Padding to reach position 513
+    let content = ''.padStart(512, '*'); // Padding to reach position 512
 
     // Add some valid and invalid entries
     content += '001000000000012345'; // Valid: Code 100, Amount 12345
@@ -104,7 +104,7 @@ describe('parseReportEntries', () => {
 
   // Test for content with only filler records
   it('should filter out filler records (code 0, amount 0)', () => {
-    let content = ''.padStart(513, '*'); // Padding to reach position 513
+    let content = ''.padStart(512, '*'); // Padding to reach position 512
 
     // Add only filler records
     content += '000000000000000000';
@@ -119,7 +119,7 @@ describe('parseReportEntries', () => {
 
   // Test for records with code 0 but non-zero amount (should not be filtered)
   it('should not filter records with code 0 but non-zero amount', () => {
-    let content = ''.padStart(513, '*'); // Padding to reach position 513
+    let content = ''.padStart(512, '*'); // Padding to reach position 512
 
     content += '000000000000012345'; // Code 0, Amount 12345
 
@@ -131,7 +131,7 @@ describe('parseReportEntries', () => {
 
   // Test for records with non-zero code but amount 0 (should not be filtered)
   it('should not filter records with non-zero code but amount 0', () => {
-    let content = ''.padStart(513, '*'); // Padding to reach position 513
+    let content = ''.padStart(512, '*'); // Padding to reach position 512
 
     content += '001000000000000000'; // Code 100, Amount 0
 
