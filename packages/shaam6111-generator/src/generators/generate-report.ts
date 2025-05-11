@@ -1,8 +1,8 @@
 import { ValidationError } from '../types/index.js';
 import { ReportData } from '../types/report-data.js';
 import { validateData } from '../validation/index.js';
-import { generateHeaderRecord } from './header.js';
-import { generateReportEntriesSection } from './report-entries.js';
+import { generateHeaderRecord } from './generate-header.js';
+import { generateReportEntriesSection } from './generate-report-entries.js';
 
 /**
  * Generates a full report string for the SHAAM 6111 specification.
