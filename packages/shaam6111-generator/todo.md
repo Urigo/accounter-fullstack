@@ -73,15 +73,15 @@ and validate Israeli SHAAM 6111 tax reports.
   - [x] Padding/truncating logic
   - [x] Tests for output length and format
 
-- [ ] Implement generators for all other record types
-- [ ] Write tests for each record generator
+- [x] Implement generators for all other record types
+- [x] Write tests for each record generator
 
 ### 🧾 Full Report Generator
 
-- [ ] Implement `generateReport(data: ReportData): string`
-  - [ ] Validate before generating
-  - [ ] Assemble full file line-by-line
-- [ ] Write integration test for `generateReport()`
+- [x] Implement `generateReport(data: ReportData): string`
+  - [x] Validate before generating
+  - [x] Assemble full file section-by-section
+- [x] Write integration test for `generateReport()`
 
 ---
 
@@ -89,9 +89,9 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### 🧩 Record Parsers
 
-- [ ] Implement `parseHeaderRecord(line: string): HeaderRecord`
+- [x] Implement `parseHeaderRecord(line: string): HeaderRecord`
 
-  - [ ] Fixed-width slicing and conversion
+  - [x] Fixed-width slicing and conversion
   - [ ] Throw `ParsingError` on malformed input
   - [ ] Unit tests
 
