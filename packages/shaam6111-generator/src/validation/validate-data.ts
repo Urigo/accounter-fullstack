@@ -19,7 +19,7 @@ export function validateData(data: ReportData): ValidationResult {
   if (!headerValidation.success) {
     headerValidation.error.errors.map(err => {
       errors.push({
-        path: `header.${err.path.join('.')}`,
+        path: ['header', ...err.path].join('.'),
         message: err.message,
       });
     });
@@ -31,7 +31,7 @@ export function validateData(data: ReportData): ValidationResult {
     if (!profitLossValidation.success) {
       profitLossValidation.error.errors.map(err => {
         errors.push({
-          path: `profitAndLoss.${err.path.join('.')}`,
+          path: ['profitAndLoss', ...err.path].join('.'),
           message: err.message,
         });
       });
@@ -44,7 +44,7 @@ export function validateData(data: ReportData): ValidationResult {
     if (!taxAdjustmentValidation.success) {
       taxAdjustmentValidation.error.errors.map(err => {
         errors.push({
-          path: `taxAdjustment.${err.path.join('.')}`,
+          path: ['taxAdjustment', ...err.path].join('.'),
           message: err.message,
         });
       });
@@ -57,7 +57,7 @@ export function validateData(data: ReportData): ValidationResult {
     if (!balanceSheetValidation.success) {
       balanceSheetValidation.error.errors.map(err => {
         errors.push({
-          path: `balanceSheet.${err.path.join('.')}`,
+          path: ['balanceSheet', ...err.path].join('.'),
           message: err.message,
         });
       });
