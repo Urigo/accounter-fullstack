@@ -1,1 +1,2 @@
-export { validateData } from './validation/validate-data.js';
+export { generateReport } from './generators/index.js';
+export { validateData } from './validation/index.js';
