@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { IndividualOrCompanyEnum, ReportData } from '../src/types';
-import { validateData } from '../src/validation/validate-data';
+import { IndividualOrCompanyEnum, ReportData } from '../../src/types';
+import { validateData } from '../../src/validation/validate-data';
 
 // Mock data for testing
 const validReportData: ReportData = {
