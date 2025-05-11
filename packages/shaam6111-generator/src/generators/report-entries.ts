@@ -1,0 +1,32 @@
+import { ReportEntry } from '../types/index.js';
+
+/**
+ * Generates a fixed-width formatted string for the report entries section.
+ * @param entries An array of ReportEntry objects.
+ * @returns A string formatted according to the specification, 2700 characters long.
+ */
+export function generateReportEntriesSection(entries: ReportEntry[]): string {
+  const padOrTrim = (value: string, length: number, padChar = '0', alignRight = true): string => {
+    if (value.length > length) {
+      return value.slice(0, length);
+    }
+    return alignRight ? value.padStart(length, padChar) : value.padEnd(length, padChar);
+  };
+
+  const formattedEntries = entries.map(entry => {
+    const code = padOrTrim(entry.code.toFixed(0), 5);
+    const amount = padOrTrim(entry.amount.toFixed(0), 13);
+    return code + amount;
+  });
+
+  // Add phantom records if less than 150 entries
+  while (formattedEntries.length < 150) {
+    formattedEntries.push(padOrTrim('0', 5) + padOrTrim('0', 13));
+  }
+
+  // Join all entries into a single string
+  const result = formattedEntries.join('');
+
+  // Ensure the result is exactly 2700 characters long
+  return result.slice(0, 2700);
+}
