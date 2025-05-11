@@ -93,16 +93,16 @@ and validate Israeli SHAAM 6111 tax reports.
 
   - [x] Fixed-width slicing and conversion
   - [ ] Throw `ParsingError` on malformed input
-  - [ ] Unit tests
+  - [x] Unit tests
 
-- [ ] Implement parsers for all other record types
-- [ ] Write unit tests for each parser
+- [x] Implement parsers for all other record types
+- [x] Write unit tests for each parser
 
 ### 🧾 Full Report Parser
 
-- [ ] Implement `parseReport(content: string): ReportData`
-  - [ ] Detect and dispatch per-record type
-  - [ ] Validate line counts and formats
+- [x] Implement `parseReport(content: string): ReportData`
+  - [x] Detect and dispatch per-record type
+  - [x] Validate line counts and formats
 - [ ] Write integration tests:
   - [ ] Full string → object
   - [ ] Multi-line validation
