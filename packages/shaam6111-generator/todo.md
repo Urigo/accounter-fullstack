@@ -142,16 +142,16 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ## 📦 Finalization
 
-- [ ] Add README with usage examples
-- [ ] Add CLI or Node API interface (optional)
-- [ ] Lint and format code
-- [ ] Ensure 100% test coverage
-- [ ] Add GitHub Actions or CI pipeline
+- [x] Add README with usage examples
+- [x] Add CLI or Node API interface (optional)
+- [x] Lint and format code
+- [x] Ensure 100% test coverage
+- [x] Add GitHub Actions or CI pipeline
 
 ---
 
 ## 🧹 Polish and Publish
 
-- [ ] Run type checks and linter
+- [x] Run type checks and linter
 - [ ] Tag initial release
 - [ ] Publish to NPM

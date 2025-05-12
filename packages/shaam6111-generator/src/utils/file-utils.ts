@@ -1,5 +1,5 @@
-import { generateReport, generateReportString } from '../generators/generate-report.js';
-import { parseReport, parseReportString } from '../parsers/index.js';
+import { generateReport } from '../generators/generate-report.js';
+import { parseReport } from '../parsers/index.js';
 import { ReportData } from '../types/index.js';
 import { validateReport } from '../validation/index.js';
 import { fromWindows1255, toWindows1255 } from './encoding.js';
@@ -24,7 +24,7 @@ export function convertReportToFile(
     }
     reportString = report;
   } else {
-    reportString = validate ? generateReport(report) : generateReportString(report);
+    reportString = generateReport(report, validate);
   }
 
   // Convert the report string to Windows-1255 encoding
@@ -53,13 +53,9 @@ export async function readReportFromFile(
   const buffer = Buffer.from(arrayBuffer);
   const reportString = fromWindows1255(buffer);
 
-  // Return either the raw string or a parsed ReportData object
   if (parseToObject) {
-    if (validate) {
-      return parseReport(reportString);
-    }
-
-    return parseReportString(reportString);
+    // Return a parsed ReportData object
+    return parseReport(reportString, validate);
   }
 
   // If validate is true, validate the report string
