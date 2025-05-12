@@ -150,7 +150,7 @@ describe('parseHeaderRecord', () => {
 
   // Test for invalid header line (null)
   it('should throw an error for a null header line', () => {
-    expect(() => parseHeaderRecord('')).toThrow('Invalid header line: Insufficient data');
+    expect(() => parseHeaderRecord(null as unknown as string)).toThrow('Invalid header line: Insufficient data');
   });
 
   // Test for handling of non-numeric fields
