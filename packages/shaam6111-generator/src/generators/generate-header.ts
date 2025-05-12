@@ -30,11 +30,10 @@ export function generateHeaderRecord(header: HeaderRecord): string {
     padOrTrim(header.ifrsReportingOption?.toString() ?? '', 1) +
     padOrTrim(header.softwareRegistrationNumber ?? '99999999', 8) +
     padOrTrim(header.partnershipCount?.toString() ?? '999', 3) +
-    padOrTrim(header.partnershipProfitShare?.toFixed(2).replace('.', '') ?? '999999', 6) +
     padOrTrim(
-      header.partnershipProfitShare
-        ? header.partnershipProfitShare.toFixed(2).replace('.', '')
-        : '999999',
+      header.partnershipProfitShare == null
+        ? '999999'
+        : header.partnershipProfitShare.toFixed().replace('.', ''),
       6,
     ) +
     padOrTrim(header.currencyType.toString(), 2) +
