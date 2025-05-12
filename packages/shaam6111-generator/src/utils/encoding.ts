@@ -6,6 +6,9 @@ import iconv from 'iconv-lite';
  * @returns A Buffer containing the Windows-1255 encoded data.
  */
 export function toWindows1255(input: string): Buffer {
+  if (typeof input !== 'string') {
+    throw new TypeError('Input must be a string');
+  }
   return iconv.encode(input, 'windows-1255');
 }
 
