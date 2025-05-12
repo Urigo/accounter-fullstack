@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.10.6",
+    "@whatwg-node/fetch": "0.10.7",
     "diary": "0.4.5",
     "dotenv": "16.5.0",
     "node-kraken-api": "2.2.2",
