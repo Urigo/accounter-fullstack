@@ -216,13 +216,15 @@ console.log(decoded) // 'חברת תוכנה בע"מ'
 
 ### Generators
 
-- `generateReport(data: ReportData): string` - Generate a complete report
+- `generateReport(data: ReportData, validate?: boolean): string` - Generate a complete report, with
+  optional validation
 - `generateHeaderRecord(header: HeaderRecord): string` - Generate just the header section
 - `generateReportEntriesSection(entries: ReportEntry[]): string` - Generate a section of entries
 
 ### Parsers
 
-- `parseReport(content: string): ReportData` - Parse a complete report
+- `parseReport(content: string, validate?: boolean): ReportData` - Parse a complete report, with
+  optional validation
 - `parseHeaderRecord(headerLine: string): HeaderRecord` - Parse just the header section
 - `parseReportEntries(content: string, section: string): ReportEntry[]` - Parse a section of entries
 

@@ -3,7 +3,12 @@ import { validateData } from '../validation/index.js';
 import { parseHeaderRecord } from './parse-header.js';
 import { parseReportEntries } from './parse-report-entries.js';
 
-export function parseReportString(content: string): ReportData {
+/**
+ * Parses a SHAAM6111 report content string into a structured ReportData object
+ * @param content - The raw content of the SHAAM6111 report
+ * @returns A structured ReportData object
+ */
+export function parseReport(content: string, validate = true): ReportData {
   // Remove any carriage returns and split by line breaks to work with individual lines
   const headerLine =
     content
@@ -41,21 +46,12 @@ export function parseReportString(content: string): ReportData {
       : IndividualOrCompanyEnum.COMPANY,
   };
 
-  return reportData;
-}
-
-/**
- * Parses a SHAAM6111 report content string into a structured ReportData object
- * @param content - The raw content of the SHAAM6111 report
- * @returns A structured ReportData object
- */
-export function parseReport(content: string): ReportData {
-  const reportData = parseReportString(content);
-
   // Validate the report data using the schema
-  const validationResult = validateData(reportData);
-  if (!validationResult.isValid) {
-    throw new ValidationError('Validation failed', validationResult.errors);
+  if (validate) {
+    const validationResult = validateData(reportData);
+    if (!validationResult.isValid) {
+      throw new ValidationError('Validation failed', validationResult.errors);
+    }
   }
 
   return reportData;

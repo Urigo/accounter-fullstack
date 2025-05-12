@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateReportString } from '../../src/generators/generate-report';
-import { parseReportString } from '../../src/parsers/parse-report';
+import { generateReport } from '../../src/generators/generate-report';
+import { parseReport } from '../../src/parsers/parse-report';
 import { ReportData } from '../../src/types/index';
 import { validReportData1 } from '../fixtures/validDataSets/data1';
 
@@ -10,10 +10,10 @@ describe('Roundtrip Tests', () => {
   describe('Data Fixture Roundtrip', () => {
     it('should maintain data integrity when generating a report and parsing it back', () => {
       // Generate a report from the fixture data
-      const generatedReport = generateReportString(validReportData1);
+      const generatedReport = generateReport(validReportData1, false);
 
       // Parse the generated report back to data
-      const parsedData = parseReportString(generatedReport);
+      const parsedData = parseReport(generatedReport, false);
 
       // Check that the parsed data matches the original
       // Note: We need to normalize some fields for comparison because they might have
@@ -75,10 +75,10 @@ describe('Roundtrip Tests', () => {
       const originalReport = await readFile(reportFixturePath, 'utf-8');
 
       // Parse the report to data
-      const parsedData = parseReportString(originalReport);
+      const parsedData = parseReport(originalReport, false);
 
       // Generate a new report from the parsed data
-      const regeneratedReport = generateReportString(parsedData);
+      const regeneratedReport = generateReport(parsedData, false);
 
       // The regenerated report should match the original report
       // Note: There might be some normalization differences, so we compare important sections
@@ -114,16 +114,16 @@ describe('Roundtrip Tests', () => {
       const originalData: ReportData = validReportData1;
 
       // Convert to report string
-      const report = generateReportString(originalData);
+      const report = generateReport(originalData, false);
 
       // Convert back to data
-      const firstPassData = parseReportString(report);
+      const firstPassData = parseReport(report, false);
 
       // Convert to report string again
-      const secondReport = generateReportString(firstPassData);
+      const secondReport = generateReport(firstPassData, false);
 
       // Convert back to data again
-      const secondPassData = parseReportString(secondReport);
+      const secondPassData = parseReport(secondReport, false);
 
       // After multiple conversions, the data should still match the original
       expect(secondPassData.header.taxFileNumber).toBe(originalData.header.taxFileNumber);

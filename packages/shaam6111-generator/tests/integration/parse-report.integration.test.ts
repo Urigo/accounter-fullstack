@@ -1,4 +1,4 @@
-import { parseReportString } from '../../src/parsers';
+import { parseReport } from '../../src/parsers';
 import { IndividualOrCompanyEnum } from '../../src/types';
 
 describe('Integration Test: parseReport', () => {
@@ -76,7 +76,7 @@ describe('Integration Test: parseReport', () => {
     }
 
     // Parse the report
-    const result = parseReportString(reportContent);
+    const result = parseReport(reportContent, false);
 
     // Verify header data
     expect(result.header.taxFileNumber).toBe('123456782');
@@ -175,7 +175,7 @@ describe('Integration Test: parseReport', () => {
     }
 
     // Parse the report
-    const result = parseReportString(reportContent);
+    const result = parseReport(reportContent, false);
 
     // Verify header data
     expect(result.header.taxFileNumber).toBe('123456782');
@@ -248,7 +248,7 @@ describe('Integration Test: parseReport', () => {
     }
 
     // Parse the report
-    const result = parseReportString(reportContent);
+    const result = parseReport(reportContent, false);
 
     // Verify entries with negative amounts
     expect(result.profitAndLoss[0].code).toBe(1000);
@@ -299,6 +299,6 @@ describe('Integration Test: parseReport', () => {
     }
 
     // Expect validation error due to mismatch between code 6666 and code 100
-    expect(() => parseReportString(reportContent)).toThrow(/Validation failed/);
+    expect(() => parseReport(reportContent)).toThrow(/Validation failed/);
   });
 });
