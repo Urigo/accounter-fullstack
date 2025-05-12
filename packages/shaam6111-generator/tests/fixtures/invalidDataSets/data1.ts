@@ -43,7 +43,7 @@ export const invalidReportData1: ReportData = {
     { code: 6666, amount: 250_000 }, // Should equal code 100 in taxAdjustment, but doesn't
   ],
   taxAdjustment: [
-    { code: 100, amount: 350_000 }, // Error: Doesn't match code 6666 in profitAndLoss
+    { code: 100, amount: 350_000 }, // Error: Doesn't match code 6666 in profitAndLoss (150_000)
     { code: 103, amount: 75_000 },
     { code: 104, amount: 10_000 },
     { code: 370, amount: 5000 },
@@ -53,7 +53,7 @@ export const invalidReportData1: ReportData = {
   balanceSheet: [
     { code: 6000, amount: 500_000 },
     { code: 7000, amount: 350_000 },
-    { code: 7800, amount: 150_000 }, // Error: Should equal sum of codes 1450 and 2095 (100000), but doesn't
+    { code: 7800, amount: 150_000 }, // Error: Should equal sum of codes 1450 and 2095 (75_000), but doesn't
   ],
   individualOrCompany: IndividualOrCompanyEnum.COMPANY,
 };

@@ -33,7 +33,7 @@ const allowedCodesSet = new Set(ALLOWED_BALANCE_SHEET_CODES);
 const negativeAllowedCodesSet = new Set(NEGATIVE_ALLOWED_BALANCE_SHEET_CODES);
 
 function codeToName(code: AllowedBalanceSheetCode): string {
-  return `${BALANCE_SHEET_CODE_NAMES[code]} (${code})`;
+  return `${BALANCE_SHEET_CODE_NAMES[code] ?? 'Unknown code'} (${code})`;
 }
 
 // Zod schema for a single balance sheet record

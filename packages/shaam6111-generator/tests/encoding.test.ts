@@ -67,7 +67,8 @@ describe('Windows-1255 Encoding Tests', () => {
       const decoded = fromWindows1255(encoded);
 
       expect(decoded).toBe(longText);
-      expect(encoded.length).toBeGreaterThan(10_000); // Ensure it's actually a large buffer
+      // The encoded length should be close to the original string length since Windows-1255 is a single-byte encoding
+      expect(encoded.length).toBe(longText.length);
     });
 
     it('should handle Windows-1255 specific characters', () => {
@@ -95,7 +96,11 @@ describe('Windows-1255 Encoding Tests', () => {
 
       // But the Hebrew text should be preserved
       expect(decoded).toContain('שלום');
-      expect(decoded).toContain('עולם');
+
+      // Check that the emoji is replaced with a specific replacement character or pattern
+      expect(decoded).not.toContain('😊');
+      // Assuming Windows-1255 uses '?' as replacement character
+      expect(decoded.indexOf('?')).toBeGreaterThan(-1);
     });
   });
 

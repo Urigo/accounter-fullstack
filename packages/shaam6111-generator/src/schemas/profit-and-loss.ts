@@ -27,7 +27,7 @@ const allowedCodesSet = new Set(ALLOWED_PROFIT_LOSS_CODES);
 const negativeAllowedCodesSet = new Set<number>(NEGATIVE_ALLOWED_PROFIT_LOSS_CODES);
 
 function codeToName(code: AllowedProfitLossCode): string {
-  return `${PROFIT_LOSS_CODE_NAMES[code]} (${code})`;
+  return `${PROFIT_LOSS_CODE_NAMES[code] ?? 'Unknown code'} (${code})`;
 }
 
 // Schema for a single profit and loss record

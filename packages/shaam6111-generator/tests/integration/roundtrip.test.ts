@@ -19,43 +19,46 @@ describe('Roundtrip Tests', () => {
       // Note: We need to normalize some fields for comparison because they might have
       // different string vs number representations or formatting differences
 
-      // Header section comparison
-      expect(parsedData.header.taxFileNumber).toBe(validReportData1.header.taxFileNumber);
-      expect(parsedData.header.taxYear).toBe(validReportData1.header.taxYear);
-      expect(parsedData.header.idNumber).toBe(validReportData1.header.idNumber);
-      expect(parsedData.header.industryCode).toBe(validReportData1.header.industryCode);
-      expect(parsedData.header.businessType).toBe(validReportData1.header.businessType);
-      expect(parsedData.header.reportingMethod).toBe(validReportData1.header.reportingMethod);
-      expect(parsedData.header.accountingMethod).toBe(validReportData1.header.accountingMethod);
-      expect(parsedData.header.accountingSystem).toBe(validReportData1.header.accountingSystem);
-      expect(parsedData.header.includesProfitLoss).toBe(validReportData1.header.includesProfitLoss);
-      expect(parsedData.header.includesTaxAdjustment).toBe(
-        validReportData1.header.includesTaxAdjustment,
-      );
-      expect(parsedData.header.includesBalanceSheet).toBe(
-        validReportData1.header.includesBalanceSheet,
-      );
+      // Header section comparison using a utility function
+      const headerFields: Array<keyof ReportData['header']> = [
+        'taxFileNumber',
+        'taxYear',
+        'idNumber',
+        'industryCode',
+        'businessType',
+        'reportingMethod',
+        'accountingMethod',
+        'accountingSystem',
+        'includesProfitLoss',
+        'includesTaxAdjustment',
+        'includesBalanceSheet',
+      ];
+
+      headerFields.map(field => {
+        expect(parsedData.header[field]).toBe(validReportData1.header[field]);
+      });
+
+      // Helper function for comparing sections
+      function compareSections(
+        parsed: ReportData,
+        original: ReportData,
+        sectionName: 'profitAndLoss' | 'taxAdjustment' | 'balanceSheet',
+      ) {
+        expect(parsed[sectionName].length).toBe(original[sectionName].length);
+        for (let i = 0; i < original[sectionName].length; i++) {
+          expect(parsed[sectionName][i].code).toBe(original[sectionName][i].code);
+          expect(parsed[sectionName][i].amount).toBe(original[sectionName][i].amount);
+        }
+      }
 
       // Profit and Loss section comparison
-      expect(parsedData.profitAndLoss.length).toBe(validReportData1.profitAndLoss.length);
-      for (let i = 0; i < validReportData1.profitAndLoss.length; i++) {
-        expect(parsedData.profitAndLoss[i].code).toBe(validReportData1.profitAndLoss[i].code);
-        expect(parsedData.profitAndLoss[i].amount).toBe(validReportData1.profitAndLoss[i].amount);
-      }
+      compareSections(parsedData, validReportData1, 'profitAndLoss');
 
       // Tax Adjustment section comparison
-      expect(parsedData.taxAdjustment.length).toBe(validReportData1.taxAdjustment.length);
-      for (let i = 0; i < validReportData1.taxAdjustment.length; i++) {
-        expect(parsedData.taxAdjustment[i].code).toBe(validReportData1.taxAdjustment[i].code);
-        expect(parsedData.taxAdjustment[i].amount).toBe(validReportData1.taxAdjustment[i].amount);
-      }
+      compareSections(parsedData, validReportData1, 'taxAdjustment');
 
       // Balance Sheet section comparison
-      expect(parsedData.balanceSheet.length).toBe(validReportData1.balanceSheet.length);
-      for (let i = 0; i < validReportData1.balanceSheet.length; i++) {
-        expect(parsedData.balanceSheet[i].code).toBe(validReportData1.balanceSheet[i].code);
-        expect(parsedData.balanceSheet[i].amount).toBe(validReportData1.balanceSheet[i].amount);
-      }
+      compareSections(parsedData, validReportData1, 'balanceSheet');
 
       // Entity type comparison
       expect(parsedData.individualOrCompany).toBe(validReportData1.individualOrCompany);
@@ -146,10 +149,12 @@ describe('Roundtrip Tests', () => {
       expect(finalCode7800?.amount).toBe(originalCode7800?.amount);
 
       // Key validation values are preserved
+      // Rule 3.7: The profit/loss code 6666 (net profit) must equal tax adjustment code 100 (adjusted income)
       expect(originalCode6666?.amount).toBe(originalCode100?.amount); // Rule 3.7
       expect(finalCode6666?.amount).toBe(finalCode100?.amount); // Rule 3.7 still holds
 
-      // Rule 3.8 is preserved (1450 + 2095 = 7800)
+      // Rule 3.8: The sum of profit/loss codes 1450 (total assets) and 2095 (total liabilities)
+      // must equal balance sheet code 7800 (total balance)
       const originalSum =
         (originalData.profitAndLoss.find(e => e.code === 1450)?.amount || 0) +
         (originalData.profitAndLoss.find(e => e.code === 2095)?.amount || 0);
