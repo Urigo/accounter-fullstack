@@ -22,7 +22,7 @@ export function parseReport(content: string): ReportData {
   // Determine if this is an individual or company report based on required fields
   // For simplicity, we'll check if balance sheet is included with value 1 as an indicator for a company
   const isIndividual =
-    parseInt(headerLine.substring(112, 115).trim()) === 0 && parseInt(headerLine.charAt(105)) === 2;
+    parseInt(headerLine.substring(112, 115).trim()) === 0 && parseInt(headerLine.charAt(105)) === 2; // TODO: enhance this check
 
   // Parse header record
   const header = parseHeaderRecord(headerLine);
