@@ -31,7 +31,7 @@ export function generateReport(reportData: ReportData): string {
   // Generate the balance sheet section (if exists)
   const balanceSheetSection = reportData.balanceSheet
     ? generateReportEntriesSection(reportData.balanceSheet)
-    : ''.padEnd(2700, ' ');
+    : ''.padEnd(2700, '0');
 
   // Combine all sections into a single string
   const report =

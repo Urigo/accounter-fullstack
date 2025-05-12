@@ -16,7 +16,9 @@ export function parseReport(content: string): ReportData {
       .find(line => line.trim().length > 0) ?? '';
 
   if (!headerLine || headerLine.length !== 8612) {
-    throw new ValidationError('Validation failed: Header line is missing or has incorrect length.');
+    throw new ValidationError(
+      'Validation failed: Report parts are missing or have incorrect length.',
+    );
   }
 
   // Determine if this is an individual or company report based on required fields
