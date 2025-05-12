@@ -2246,24 +2246,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/typescript-resolvers@npm:4.5.0":
-  version: 4.5.0
-  resolution: "@graphql-codegen/typescript-resolvers@npm:4.5.0"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^5.1.0"
-    "@graphql-codegen/typescript": "npm:^4.1.6"
-    "@graphql-codegen/visitor-plugin-common": "npm:5.8.0"
-    "@graphql-tools/utils": "npm:^10.0.0"
-    auto-bind: "npm:~4.0.0"
-    tslib: "npm:~2.6.0"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-    graphql-sock: ^1.0.0
-  checksum: 10c0/f3974be56da1db5e6addc541999313d7cdf253c403d9b3a49d5222e57406af56e98fd013f1e2a755724a7161c8431717216f5cdc1f706490f625659d4c9faf50
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/typescript-resolvers@npm:^4.0.0":
+"@graphql-codegen/typescript-resolvers@npm:4.5.1, @graphql-codegen/typescript-resolvers@npm:^4.0.0":
   version: 4.5.1
   resolution: "@graphql-codegen/typescript-resolvers@npm:4.5.1"
   dependencies:
@@ -8219,7 +8202,7 @@ __metadata:
     "@graphql-codegen/graphql-modules-preset": "npm:4.0.16"
     "@graphql-codegen/schema-ast": "npm:4.1.0"
     "@graphql-codegen/typescript": "npm:4.1.6"
-    "@graphql-codegen/typescript-resolvers": "npm:4.5.0"
+    "@graphql-codegen/typescript-resolvers": "npm:4.5.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
     "@graphql-hive/cli": "npm:0.49.1"
     "@graphql-inspector/cli": "npm:5.0.8"
