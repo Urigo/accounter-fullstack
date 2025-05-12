@@ -58,7 +58,7 @@
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
     "@types/node": "22.15.3",
-    "@types/pg": "8.12.0",
+    "@types/pg": "8.15.1",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.1.2",
     "dotenv": "16.5.0",
