@@ -110,14 +110,14 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ## 🧪 Phase 6: Report Validation
 
-- [ ] Implement `validateReport(content: string): ValidationResult`
-  - [ ] Parse report
-  - [ ] Validate parsed data
-  - [ ] Aggregate and return results
-- [ ] Write tests for:
-  - [ ] Valid file
-  - [ ] Malformed file
-  - [ ] Missing/extra fields
+- [x] Implement `validateReport(content: string): ValidationResult`
+  - [x] Parse report
+  - [x] Validate parsed data
+  - [x] Aggregate and return results
+- [x] Write tests for:
+  - [x] Valid file
+  - [x] Malformed file
+  - [x] Missing/extra fields
 
 ---
 
