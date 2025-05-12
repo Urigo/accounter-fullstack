@@ -28,7 +28,12 @@ export function convertReportToFile(
   }
 
   // Convert the report string to Windows-1255 encoding
-  const encodedReport = toWindows1255(reportString);
+  let encodedReport: Buffer;
+  try {
+    encodedReport = toWindows1255(reportString);
+  } catch (error) {
+    throw new Error(`Failed to encode report to Windows-1255: ${(error as Error).message}`);
+  }
 
   // Create and return a File object with .dat extension
   return new File([encodedReport], fileName, {
@@ -51,7 +56,12 @@ export async function readReportFromFile(
   // Decode the buffer from Windows-1255 encoding
   const arrayBuffer = await reportFile.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const reportString = fromWindows1255(buffer);
+  let reportString: string;
+  try {
+    reportString = fromWindows1255(buffer);
+  } catch (error) {
+    throw new Error(`Failed to decode report from Windows-1255: ${(error as Error).message}`);
+  }
 
   if (parseToObject) {
     // Return a parsed ReportData object
