@@ -1,4 +1,5 @@
 import { HeaderRecord } from '../types/header.js';
+import { padOrTrim } from '../utils/generation-utils.js';
 
 /**
  * Generates a fixed-width formatted string for a HeaderRecord.
@@ -6,13 +7,6 @@ import { HeaderRecord } from '../types/header.js';
  * @returns A string formatted according to the SHAAM 6111 specification.
  */
 export function generateHeaderRecord(header: HeaderRecord): string {
-  const padOrTrim = (value: string, length: number, padChar = '0', alignRight = true): string => {
-    if (value.length > length) {
-      return value.slice(0, length);
-    }
-    return alignRight ? value.padStart(length, padChar) : value.padEnd(length, padChar);
-  };
-
   return (
     padOrTrim(header.taxFileNumber, 9) +
     padOrTrim(header.taxYear, 4) +
@@ -37,6 +31,12 @@ export function generateHeaderRecord(header: HeaderRecord): string {
     padOrTrim(header.softwareRegistrationNumber ?? '99999999', 8) +
     padOrTrim(header.partnershipCount?.toString() ?? '999', 3) +
     padOrTrim(header.partnershipProfitShare?.toFixed(2).replace('.', '') ?? '999999', 6) +
+    padOrTrim(
+      header.partnershipProfitShare
+        ? header.partnershipProfitShare.toFixed(2).replace('.', '')
+        : '999999',
+      6,
+    ) +
     padOrTrim(header.currencyType.toString(), 2) +
     padOrTrim(header.auditOpinionType?.toString() ?? '', 2) +
     padOrTrim(header.amountsInThousands.toString(), 1)
