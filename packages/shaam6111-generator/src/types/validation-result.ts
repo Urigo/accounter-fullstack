@@ -36,6 +36,10 @@ export class ValidationError extends Error {
     super(message);
     this.name = 'ValidationError';
     this.errors = errors;
+    // Maintains proper stack trace for where error was thrown
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ValidationError);
+    }
   }
 }
 

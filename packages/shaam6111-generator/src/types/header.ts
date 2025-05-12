@@ -69,7 +69,7 @@ export enum YesNo {
  * @export
  * @enum {number}
  */
-export enum IfrsReportingOption {
+export enum IFRSReportingOption {
   /** Option 1 (חלופה 1) */
   OPTION_1 = 1,
   /** Accounting adjustments for those who implemented Option 2 per directive 7/2010 (התאמות חשבונאיות למי שיישם את חלופה 2 בהוראת ביצוע 7/2010) */
@@ -162,7 +162,7 @@ export interface HeaderRecord {
    */
   ifrsImplementationYear?: string;
   /** IFRS reporting option (דווח בחלופה - יישום תקני חשבונאות) */
-  ifrsReportingOption?: IfrsReportingOption;
+  ifrsReportingOption?: IFRSReportingOption;
   /** Software registration certificate number (8 digits) - 99999999 if not applicable (מספר תעודת רישום - חייב ברישום תוכנה) */
   softwareRegistrationNumber?: string;
   /** For partnership reports: number of partners (3 digits) - 999 if not applicable (דוח זה בגין שותפות: מספר השותפים) */

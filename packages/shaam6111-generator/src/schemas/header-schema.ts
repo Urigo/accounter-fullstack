@@ -5,7 +5,7 @@ import {
   AuditOpinionType,
   BusinessType,
   CurrencyType,
-  IfrsReportingOption,
+  IFRSReportingOption,
   ReportingMethod,
   YesNo,
 } from '../types/index.js';
@@ -108,9 +108,10 @@ export const headerSchema = z.object({
   ifrsImplementationYear: z
     .string()
     .length(4, { message: 'IFRS implementation year must be exactly 4 digits' })
+    // Validates years between 2006-2099 or 9999 (special value indicating N/A)
     .regex(/^(200[6-9]|20[1-9][0-9]|9999)$/, { message: 'Invalid IFRS implementation year' })
     .optional(),
-  ifrsReportingOption: z.nativeEnum(IfrsReportingOption).optional(),
+  ifrsReportingOption: z.nativeEnum(IFRSReportingOption).optional(),
   softwareRegistrationNumber: z
     .string()
     .length(8, { message: 'Software registration number must be exactly 8 digits' })
