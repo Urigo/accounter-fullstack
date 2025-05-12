@@ -125,13 +125,13 @@ and validate Israeli SHAAM 6111 tax reports.
 
 ### 📁 Fixtures
 
-- [ ] Create fixture: `tests/fixtures/validReports/sample1.txt`
-- [ ] Create fixture: `tests/fixtures/invalidReports/sample1.txt`
+- [x] Create fixture: `tests/fixtures/validReports/sample1.txt`
+- [x] Create fixture: `tests/fixtures/invalidReports/sample1.txt`
 
 ### 🔁 Roundtrip Tests
 
-- [ ] Write test:
-  - [ ] Input → generate → parse → expect deep equality
+- [x] Write test:
+  - [x] Input → generate → parse → expect deep equality
 - [ ] Add encoding edge cases
 - [ ] Add tests for:
   - [ ] Extra/missing lines

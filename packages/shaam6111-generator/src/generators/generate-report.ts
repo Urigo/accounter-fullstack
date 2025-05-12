@@ -4,18 +4,7 @@ import { validateData } from '../validation/index.js';
 import { generateHeaderRecord } from './generate-header.js';
 import { generateReportEntriesSection } from './generate-report-entries.js';
 
-/**
- * Generates a full report string for the SHAAM 6111 specification.
- * @param reportData The ReportData object containing all sections of the report.
- * @returns A string formatted according to the SHAAM 6111 specification, 8612 characters long.
- */
-export function generateReport(reportData: ReportData): string {
-  // Validate the report data using the schema
-  const validationResult = validateData(reportData);
-  if (!validationResult.isValid) {
-    throw new ValidationError('Validation failed', validationResult.errors);
-  }
-
+export function generateReportString(reportData: ReportData): string {
   // Generate the header section
   const headerSection = generateHeaderRecord(reportData.header);
 
@@ -36,6 +25,23 @@ export function generateReport(reportData: ReportData): string {
   // Combine all sections into a single string
   const report =
     headerSection + fixture + profitAndLossSection + taxAdjustmentSection + balanceSheetSection;
+
+  return report;
+}
+
+/**
+ * Generates a full report string for the SHAAM 6111 specification.
+ * @param reportData The ReportData object containing all sections of the report.
+ * @returns A string formatted according to the SHAAM 6111 specification, 8612 characters long.
+ */
+export function generateReport(reportData: ReportData): string {
+  // Validate the report data using the schema
+  const validationResult = validateData(reportData);
+  if (!validationResult.isValid) {
+    throw new ValidationError('Validation failed', validationResult.errors);
+  }
+
+  const report = generateReportString(reportData);
 
   return report;
 }

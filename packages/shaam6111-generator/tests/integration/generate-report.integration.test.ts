@@ -1,4 +1,4 @@
-import { generateReport } from '../../src/generators/generate-report';
+import { generateReport } from '../../src';
 import { IndividualOrCompanyEnum, ReportData, ValidationError } from '../../src/types';
 
 describe('Integration Test: generateReport', () => {
