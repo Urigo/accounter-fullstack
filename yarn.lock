@@ -83,7 +83,7 @@ __metadata:
     "@mantine/dropzone": "npm:6.0.22"
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.2"
-    "@mui/material": "npm:7.0.2"
+    "@mui/material": "npm:7.1.0"
     "@mui/x-charts": "npm:7.29.1"
     "@radix-ui/react-accordion": "npm:1.2.8"
     "@radix-ui/react-avatar": "npm:1.1.7"
@@ -1045,7 +1045,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.25.7, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.27.0, @babel/runtime@npm:^7.27.1, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.25.7, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.27.1, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.27.1
   resolution: "@babel/runtime@npm:7.27.1"
   checksum: 10c0/530a7332f86ac5a7442250456823a930906911d895c0b743bf1852efc88a20a016ed4cd26d442d0ca40ae6d5448111e02a08dd638a4f1064b47d080e2875dc05
@@ -4486,22 +4486,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/core-downloads-tracker@npm:^7.0.2":
+"@mui/core-downloads-tracker@npm:^7.1.0":
   version: 7.1.0
   resolution: "@mui/core-downloads-tracker@npm:7.1.0"
   checksum: 10c0/6821bfa3884ce35480e843d196031d0d44a5da6e54d48171a44fc815c95e9fd9e1428b2a8a13545ab1cebecc2786cc302442808fcea459ad5daf42cfcc409d3b
   languageName: node
   linkType: hard
 
-"@mui/material@npm:7.0.2":
-  version: 7.0.2
-  resolution: "@mui/material@npm:7.0.2"
+"@mui/material@npm:7.1.0":
+  version: 7.1.0
+  resolution: "@mui/material@npm:7.1.0"
   dependencies:
-    "@babel/runtime": "npm:^7.27.0"
-    "@mui/core-downloads-tracker": "npm:^7.0.2"
-    "@mui/system": "npm:^7.0.2"
-    "@mui/types": "npm:^7.4.1"
-    "@mui/utils": "npm:^7.0.2"
+    "@babel/runtime": "npm:^7.27.1"
+    "@mui/core-downloads-tracker": "npm:^7.1.0"
+    "@mui/system": "npm:^7.1.0"
+    "@mui/types": "npm:^7.4.2"
+    "@mui/utils": "npm:^7.1.0"
     "@popperjs/core": "npm:^2.11.8"
     "@types/react-transition-group": "npm:^4.4.12"
     clsx: "npm:^2.1.1"
@@ -4512,7 +4512,7 @@ __metadata:
   peerDependencies:
     "@emotion/react": ^11.5.0
     "@emotion/styled": ^11.3.0
-    "@mui/material-pigment-css": ^7.0.2
+    "@mui/material-pigment-css": ^7.1.0
     "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4525,7 +4525,7 @@ __metadata:
       optional: true
     "@types/react":
       optional: true
-  checksum: 10c0/ca854ca668ec06d57ea9b26d968c1187b56e12cd48b1ed9cccf1c7c1753878e161364cfadbb826cfa2274137080d3cc87d4968a77a71d61f80c123e6978984f8
+  checksum: 10c0/c85fb340af32fdeb46a48e799a442af2a140bd75eca3c24919462e7c1a27ebb6457f1e9da68aea6f4557b54f662915fa42c6c9a642549d0d668275b18bbe865e
   languageName: node
   linkType: hard
 
@@ -4569,7 +4569,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/system@npm:^7.0.2":
+"@mui/system@npm:^7.1.0":
   version: 7.1.0
   resolution: "@mui/system@npm:7.1.0"
   dependencies:
@@ -4597,7 +4597,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^7.4.1, @mui/types@npm:^7.4.2":
+"@mui/types@npm:^7.4.2":
   version: 7.4.2
   resolution: "@mui/types@npm:7.4.2"
   dependencies:
@@ -4611,7 +4611,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^5.16.6 || ^6.0.0 || ^7.0.0, @mui/utils@npm:^7.0.2, @mui/utils@npm:^7.1.0":
+"@mui/utils@npm:^5.16.6 || ^6.0.0 || ^7.0.0, @mui/utils@npm:^7.1.0":
   version: 7.1.0
   resolution: "@mui/utils@npm:7.1.0"
   dependencies:
@@ -7571,18 +7571,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.15.1":
-  version: 8.15.1
-  resolution: "@types/pg@npm:8.15.1"
-  dependencies:
-    "@types/node": "npm:*"
-    pg-protocol: "npm:*"
-    pg-types: "npm:^4.0.1"
-  checksum: 10c0/68ab3b2ae56a9ef891fcefe814b4a4eb6da4f4f3860b56d2821de8fe024eb093895ffe152414c708d889f7110cd5b3839392d2955b07d38f111df8e6186c7e8c
-  languageName: node
-  linkType: hard
-
-"@types/pg@npm:^8.10.7":
+"@types/pg@npm:8.15.1, @types/pg@npm:^8.10.7":
   version: 8.15.1
   resolution: "@types/pg@npm:8.15.1"
   dependencies:
