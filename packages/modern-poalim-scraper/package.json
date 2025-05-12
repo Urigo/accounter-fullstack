@@ -20,13 +20,13 @@
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "date-fns": "4.1.0",
-    "inquirer": "12.6.0",
+    "inquirer": "12.6.1",
     "node-fetch": "3.3.2",
-    "puppeteer": "24.8.0",
+    "puppeteer": "24.8.2",
     "uuid": "11.1.0"
   },
   "devDependencies": {
-    "@types/inquirer": "9.0.7",
+    "@types/inquirer": "9.0.8",
     "@types/node-fetch": "2.6.12",
     "@types/uuid": "10.0.0",
     "concurrently": "9.1.2",
