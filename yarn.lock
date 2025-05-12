@@ -125,7 +125,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.11.0"
-    lucide-react: "npm:0.508.0"
+    lucide-react: "npm:0.509.0"
     next-themes: "npm:0.4.6"
     react: "npm:19.1.0"
     react-dnd: "npm:16.0.1"
@@ -15254,12 +15254,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:0.508.0":
-  version: 0.508.0
-  resolution: "lucide-react@npm:0.508.0"
+"lucide-react@npm:0.509.0":
+  version: 0.509.0
+  resolution: "lucide-react@npm:0.509.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/8eb9bc74ebeba85967328c236c5300aa2070d073e79cb88b6c968fd5d805d028aa3a64649d6b7711e92b5e2e873d8c961641d691e135e0e43056d3be1e3e7f87
+  checksum: 10c0/eb7434a99738d2a3b3a193c4e0cf51691a06223ec8eda514ea7fd96cdbd311069d25353cd9e720810e5c7ba3891186de6a0463c3ac5382cc1d981938847b9b95
   languageName: node
   linkType: hard
 
