@@ -12,6 +12,7 @@ import {
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
+import { Dialog, DialogContent } from '../ui/dialog.js';
 
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
@@ -167,21 +168,20 @@ export function ChargeExtendedInfoMenu({
           }}
         />
       </Modal>
-      <Modal
-        centered
-        opened={miscExpensesOpened}
-        onClose={closeMiscExpenses}
-        title="Insert Misc Expense"
-        onClick={event => event.stopPropagation()}
+      <Dialog
+        open={miscExpensesOpened}
+        onOpenChange={state => (state ? openMiscExpenses : closeMiscExpenses)}
       >
-        <InsertMiscExpense
-          onDone={() => {
-            closeMiscExpenses();
-            onChange?.();
-          }}
-          chargeId={chargeId}
-        />
-      </Modal>
+        <DialogContent className="sm:max-w-[425px]" onClick={event => event.stopPropagation()}>
+          <InsertMiscExpense
+            onDone={() => {
+              closeMiscExpenses();
+              onChange?.();
+            }}
+            chargeId={chargeId}
+          />
+        </DialogContent>
+      </Dialog>
       <Modal
         centered
         opened={uploadSalariesOpened}

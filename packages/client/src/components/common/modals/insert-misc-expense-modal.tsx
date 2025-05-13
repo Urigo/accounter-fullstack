@@ -1,9 +1,15 @@
-import { ReactElement } from 'react';
+import { ReactElement, useState } from 'react';
 import { PlaylistAdd } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Modal, Tooltip } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { MiscExpenseTransactionFieldsDocument } from '../../../gql/graphql.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../ui/dialog.js';
 import { InsertMiscExpense } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -37,7 +43,7 @@ export const InsertMiscExpenseModal = ({
   transactionId,
   chargeId,
 }: Props): ReactElement => {
-  const [opened, { open, close }] = useDisclosure(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: MiscExpenseTransactionFieldsDocument,
@@ -50,18 +56,23 @@ export const InsertMiscExpenseModal = ({
   const transaction = transactionData?.transactionsByIDs[0];
 
   function onInsertDone(): void {
-    close();
+    setDialogOpen(false);
     onDone?.();
   }
   return (
-    <>
-      <Tooltip label="Insert Related Misc Expense">
-        <ActionIcon onClick={open} loading={fetchingTransaction}>
-          <PlaylistAdd size={20} />
-        </ActionIcon>
-      </Tooltip>
-      {transaction && (
-        <Modal centered opened={opened} onClose={close} title="Insert Misc Expense">
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild onClick={() => setDialogOpen(true)}>
+        <Tooltip label="Insert Related Misc Expense">
+          <ActionIcon loading={fetchingTransaction}>
+            <PlaylistAdd size={20} />
+          </ActionIcon>
+        </Tooltip>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Insert Misc Expense</DialogTitle>
+        </DialogHeader>
+        {transaction && (
           <InsertMiscExpense
             onDone={onInsertDone}
             chargeId={chargeId}
@@ -79,8 +90,8 @@ export const InsertMiscExpenseModal = ({
                 (transaction?.amount.raw ?? 0) < 0 ? transaction?.counterparty?.id : undefined,
             }}
           />
-        </Modal>
-      )}
-    </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,9 +1,9 @@
-import { ReactElement } from 'react';
+import { ReactElement, useState } from 'react';
 import { Edit } from 'tabler-icons-react';
-import { ActionIcon, Modal, Tooltip } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { ActionIcon, Tooltip } from '@mantine/core';
 import { EditMiscExpenseFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType } from '../../../gql/index.js';
+import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.js';
 import { EditMiscExpense } from '../index.js';
 
 interface Props {
@@ -12,22 +12,24 @@ interface Props {
 }
 
 export const EditMiscExpenseModal = ({ onDone, data }: Props): ReactElement => {
-  const [opened, { open, close }] = useDisclosure(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   function onEditDone(): void {
-    close();
+    setDialogOpen(false);
     onDone?.();
   }
   return (
-    <>
-      <Tooltip label="Edit Misc Expense">
-        <ActionIcon onClick={open}>
-          <Edit size={20} />
-        </ActionIcon>
-      </Tooltip>
-      <Modal centered opened={opened} onClose={close} title="Edit Misc Expense">
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild onClick={() => setDialogOpen(true)}>
+        <Tooltip label="Edit Misc Expense">
+          <ActionIcon>
+            <Edit size={20} />
+          </ActionIcon>
+        </Tooltip>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
         <EditMiscExpense onDone={onEditDone} data={data} />
-      </Modal>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 };
