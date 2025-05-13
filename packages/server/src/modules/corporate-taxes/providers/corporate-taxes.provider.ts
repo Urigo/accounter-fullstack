@@ -31,6 +31,10 @@ const updateCorporateTax = sql<IUpdateCorporateTaxQuery>`
   tax_rate = COALESCE(
     $taxRate,
     tax_rate
+  ),
+  original_tax_rate = COALESCE(
+    $originalTaxRate,
+    original_tax_rate
   )
   WHERE
     corporate_id = $corporateId
@@ -38,8 +42,8 @@ const updateCorporateTax = sql<IUpdateCorporateTaxQuery>`
   RETURNING *;`;
 
 const insertCorporateTax = sql<IInsertCorporateTaxQuery>`
-  INSERT INTO accounter_schema.corporate_tax_variables (corporate_id, date, tax_rate)
-  VALUES ($corporateId, $date, $taxRate)
+  INSERT INTO accounter_schema.corporate_tax_variables (corporate_id, date, tax_rate, original_tax_rate)
+  VALUES ($corporateId, $date, $taxRate, $originalTaxRate)
   RETURNING *`;
 
 const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`

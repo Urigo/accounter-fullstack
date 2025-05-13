@@ -62,5 +62,7 @@ export type TaxReportYearProto = {
 
   taxableIncome: number;
   taxRate: number;
+  specialTaxableIncome: CommentaryProto;
+  specialTaxRate: number;
   annualTaxExpense: number;
 };

@@ -104,6 +104,8 @@ export const taxReport: ResolverFn<
       nontaxableLinkage,
       taxableIncomeAmount,
       taxRate,
+      specialTaxableIncome,
+      specialTaxRate,
       annualTaxExpenseAmount,
     } = await calculateTaxAmounts(
       context,
@@ -141,6 +143,8 @@ export const taxReport: ResolverFn<
 
       taxableIncome: taxableIncomeAmount,
       taxRate,
+      specialTaxableIncome,
+      specialTaxRate,
       annualTaxExpense: annualTaxExpenseAmount,
     });
   }
@@ -196,6 +200,11 @@ export const taxReportYearMapper: TaxReportYearResolvers = {
   taxableIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
     formatFinancialAmount(parent.taxableIncome, defaultLocalCurrency),
   taxRate: parent => parent.taxRate,
+  specialTaxableIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
+    amount: formatFinancialAmount(parent.specialTaxableIncome.amount, defaultLocalCurrency),
+    records: parent.specialTaxableIncome.records,
+  }),
+  specialTaxRate: parent => parent.specialTaxRate,
   annualTaxExpense: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
     formatFinancialAmount(parent.annualTaxExpense, defaultLocalCurrency),
 };

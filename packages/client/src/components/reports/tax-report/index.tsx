@@ -67,6 +67,13 @@ import { TaxReportFilter } from './tax-report-filters.js';
           formatted
         }
         taxRate
+        specialTaxableIncome {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
+        specialTaxRate
         annualTaxExpense {
           formatted
         }
@@ -117,6 +124,13 @@ import { TaxReportFilter } from './tax-report-filters.js';
           formatted
         }
         taxRate
+        specialTaxableIncome {
+          amount {
+            formatted
+          }
+          ...ReportCommentaryTableFields
+        }
+        specialTaxRate
         annualTaxExpense {
           formatted
         }
@@ -302,6 +316,29 @@ export const TaxReport = (): ReactElement => {
                   <td />
                   {referenceYearsData.map(report => (
                     <td key={report.year}>{(report.taxRate * 100).toFixed(1)}%</td>
+                  ))}
+                  <td />
+                </tr>
+
+                <ReportCommentaryRow
+                  dataRow={button => (
+                    <tr>
+                      <td>Income with Special Tax Rate</td>
+                      <td>{report.specialTaxableIncome.amount.formatted}</td>
+                      <th>{button}</th>
+                      {referenceYearsData.map(report => (
+                        <td key={report.year}>{report.specialTaxableIncome.amount.formatted}</td>
+                      ))}
+                    </tr>
+                  )}
+                  commentaryData={report.specialTaxableIncome}
+                />
+                <tr>
+                  <td>Special Tax Rate</td>
+                  <td>{(report.specialTaxRate * 100).toFixed(1)}%</td>
+                  <td />
+                  {referenceYearsData.map(report => (
+                    <td key={report.year}>{(report.specialTaxRate * 100).toFixed(1)}%</td>
                   ))}
                   <td />
                 </tr>

@@ -30,6 +30,8 @@ export default gql`
 
     taxableIncome: FinancialAmount!
     taxRate: Float!
+    specialTaxableIncome: ReportCommentary!
+    specialTaxRate: Float!
     annualTaxExpense: FinancialAmount!
   }
 

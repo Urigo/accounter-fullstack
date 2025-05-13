@@ -208,7 +208,17 @@ export async function calculateTaxAmounts(
     researchAndDevelopmentExpensesForTax;
 
   const taxRate = Number(taxRateVariables.tax_rate) / 100;
-  const annualTaxExpenseAmount = taxableIncomeAmount * taxRate;
+
+  // Special tax rate for special taxable income
+  const specialTaxableIncome = recordsByFinancialEntityIdAndSortCodeValidation(
+    decoratedLedgerRecords,
+    (_, sortCode) => sortCode === 933, // TODO: make sure this is the correct sort code for special taxable income
+    true,
+  );
+  const specialTaxRate = Number(taxRateVariables.original_tax_rate) / 100;
+
+  const annualTaxExpenseAmount =
+    taxableIncomeAmount * taxRate + specialTaxableIncome.amount * specialTaxRate;
 
   return {
     researchAndDevelopmentExpensesForTax,
@@ -220,6 +230,8 @@ export async function calculateTaxAmounts(
     nontaxableLinkage,
     taxableIncomeAmount,
     taxRate,
+    specialTaxableIncome,
+    specialTaxRate,
     annualTaxExpenseAmount,
   };
 }

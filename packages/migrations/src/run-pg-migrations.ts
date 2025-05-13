@@ -89,6 +89,7 @@ import migration_2025_04_08T14_28_54_drop_extended_transactions_view from './act
 import migration_2025_04_09T14_39_52_drop_extended_transactions_additions from './actions/2025-04-09T14-39-52.drop-extended-transactions-additions.js';
 import migration_2025_04_10T15_44_07_tax_excluded_flag from './actions/2025-04-10T15-44-07.tax-excluded-flag.js';
 import migration_2025_04_15T17_27_28_pcn874 from './actions/2025-04-15T17-27-28.pcn874.js';
+import migration_2025_05_13T12_28_00_corporate_special_tax_rate from './actions/2025-05-13T12-28-00.corporate-special-tax-rate.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -185,5 +186,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_04_09T14_39_52_drop_extended_transactions_additions,
       migration_2025_04_10T15_44_07_tax_excluded_flag,
       migration_2025_04_15T17_27_28_pcn874,
+      migration_2025_05_13T12_28_00_corporate_special_tax_rate,
     ],
   });
