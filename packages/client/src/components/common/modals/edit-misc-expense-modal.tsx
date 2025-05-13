@@ -20,7 +20,7 @@ export const EditMiscExpenseModal = ({ onDone, data }: Props): ReactElement => {
   }
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild onClick={() => setDialogOpen(true)}>
+      <DialogTrigger asChild>
         <Tooltip label="Edit Misc Expense">
           <ActionIcon>
             <Edit size={20} />

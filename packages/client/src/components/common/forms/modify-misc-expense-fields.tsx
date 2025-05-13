@@ -42,7 +42,7 @@ export const ModifyMiscExpenseFields = ({
             <FormLabel>Creditor</FormLabel>
             <Select
               onValueChange={field.onChange}
-              defaultValue={field.value ?? undefined}
+              value={field.value ?? undefined}
               disabled={fetchingFinancialEntities}
               required={isInsert}
             >
@@ -153,7 +153,7 @@ export const ModifyMiscExpenseFields = ({
                         ? date
                         : format(date, 'yyyy-MM-dd')
                       : undefined;
-                    if (newDate && newDate !== field.value) {
+                    if (newDate !== field.value) {
                       setValue('invoiceDate', newDate as TimelessDateString);
                       field.onChange(newDate);
                     }

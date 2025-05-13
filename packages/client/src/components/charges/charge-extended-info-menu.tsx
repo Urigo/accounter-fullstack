@@ -35,8 +35,7 @@ export function ChargeExtendedInfoMenu({
   const [opened, setOpened] = useState(false);
   const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
     useDisclosure(false);
-  const [miscExpensesOpened, { open: openMiscExpenses, close: closeMiscExpenses }] =
-    useDisclosure(false);
+  const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
   const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
     useDisclosure(false);
 
@@ -112,7 +111,7 @@ export function ChargeExtendedInfoMenu({
             onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               closeMenu();
-              openMiscExpenses();
+              setMiscExpensesOpened(true);
             }}
           >
             Add expense
@@ -168,14 +167,11 @@ export function ChargeExtendedInfoMenu({
           }}
         />
       </Modal>
-      <Dialog
-        open={miscExpensesOpened}
-        onOpenChange={state => (state ? openMiscExpenses : closeMiscExpenses)}
-      >
+      <Dialog open={miscExpensesOpened} onOpenChange={setMiscExpensesOpened}>
         <DialogContent className="sm:max-w-[425px]" onClick={event => event.stopPropagation()}>
           <InsertMiscExpense
             onDone={() => {
-              closeMiscExpenses();
+              setMiscExpensesOpened(false);
               onChange?.();
             }}
             chargeId={chargeId}
