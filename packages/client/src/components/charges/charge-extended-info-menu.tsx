@@ -12,6 +12,7 @@ import {
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
+import { Dialog, DialogContent } from '../ui/dialog.js';
 
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
@@ -34,8 +35,7 @@ export function ChargeExtendedInfoMenu({
   const [opened, setOpened] = useState(false);
   const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
     useDisclosure(false);
-  const [miscExpensesOpened, { open: openMiscExpenses, close: closeMiscExpenses }] =
-    useDisclosure(false);
+  const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
   const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
     useDisclosure(false);
 
@@ -111,7 +111,7 @@ export function ChargeExtendedInfoMenu({
             onClick={(event: ClickEvent): void => {
               event.stopPropagation();
               closeMenu();
-              openMiscExpenses();
+              setMiscExpensesOpened(true);
             }}
           >
             Add expense
@@ -167,21 +167,17 @@ export function ChargeExtendedInfoMenu({
           }}
         />
       </Modal>
-      <Modal
-        centered
-        opened={miscExpensesOpened}
-        onClose={closeMiscExpenses}
-        title="Insert Misc Expense"
-        onClick={event => event.stopPropagation()}
-      >
-        <InsertMiscExpense
-          onDone={() => {
-            closeMiscExpenses();
-            onChange?.();
-          }}
-          chargeId={chargeId}
-        />
-      </Modal>
+      <Dialog open={miscExpensesOpened} onOpenChange={setMiscExpensesOpened}>
+        <DialogContent className="sm:max-w-[425px]" onClick={event => event.stopPropagation()}>
+          <InsertMiscExpense
+            onDone={() => {
+              setMiscExpensesOpened(false);
+              onChange?.();
+            }}
+            chargeId={chargeId}
+          />
+        </DialogContent>
+      </Dialog>
       <Modal
         centered
         opened={uploadSalariesOpened}
