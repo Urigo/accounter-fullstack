@@ -24,7 +24,7 @@ import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
-import { BalanceReport } from './components/screens/reports/balance-report.js';
+import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
 import { FiltersContext } from './providers/filters-context.js';
