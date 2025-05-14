@@ -103,12 +103,12 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.8"
     "@radix-ui/react-tooltip": "npm:1.2.6"
     "@tailwindcss/vite": "npm:4.1.6"
-    "@tanstack/react-query": "npm:5.76.0"
+    "@tanstack/react-query": "npm:5.76.1"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
     "@types/react": "npm:19.1.4"
-    "@types/react-dom": "npm:19.1.4"
+    "@types/react-dom": "npm:19.1.5"
     "@urql/exchange-auth": "npm:2.2.1"
     "@vitejs/plugin-react": "npm:4.4.1"
     autoprefixer: "npm:10.4.21"
@@ -6864,14 +6864,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.76.0":
-  version: 5.76.0
-  resolution: "@tanstack/react-query@npm:5.76.0"
+"@tanstack/react-query@npm:5.76.1":
+  version: 5.76.1
+  resolution: "@tanstack/react-query@npm:5.76.1"
   dependencies:
     "@tanstack/query-core": "npm:5.76.0"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/d17b7840f00a6f6d6253f436f9d32d63d255e6945e81930a36b58deb39a5fb63f6911f4ccdf393570ccfc8675cf0439c1db1d8c87532fd09d93807aa9771f819
+  checksum: 10c0/35757f185ccd577e0763b18c2e29db621b40fb85419507d43a2a136fd47d8a4410f219fa9697142f7199577cc42c23dd117021cc8c072545eca133d5114148d9
   languageName: node
   linkType: hard
 
@@ -7370,12 +7370,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:19.1.4":
-  version: 19.1.4
-  resolution: "@types/react-dom@npm:19.1.4"
+"@types/react-dom@npm:19.1.5":
+  version: 19.1.5
+  resolution: "@types/react-dom@npm:19.1.5"
   peerDependencies:
     "@types/react": ^19.0.0
-  checksum: 10c0/6ae65e7dce761c06b6cdc38221eb320ecb17b1a346f6055053d549fa07c0ddfdb8274e051e7940b5769f2591c982001ebd5d8dc3e0738418d262021ef15c09fd
+  checksum: 10c0/2a29e77cf6bb6e9f57bcfa54509c216cad2e16e244f0bd56369966ec88c072b9c91f6011d14f9e18fbfe2b801b18b86f616de75e5c8aef0be73c1f74abb33b49
   languageName: node
   linkType: hard
 
