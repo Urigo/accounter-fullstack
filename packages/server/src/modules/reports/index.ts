@@ -12,6 +12,7 @@ import { BalanceReportProvider } from './providers/balance-report.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
 import { VatReportProvider } from './providers/vat-report.provider.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
+import { depreciationReportResolvers } from './resolvers/depreciation-report.resolver.js';
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
 import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
@@ -32,7 +33,13 @@ export const reportsModule = createModule({
     balanceReport,
     depreciationReport,
   ],
-  resolvers: [reportsResolvers, dynamicReportResolver, balanceReportResolver, pcn874Resolvers],
+  resolvers: [
+    reportsResolvers,
+    dynamicReportResolver,
+    balanceReportResolver,
+    pcn874Resolvers,
+    depreciationReportResolvers,
+  ],
   providers: () => [DynamicReportProvider, BalanceReportProvider, VatReportProvider],
 });
 

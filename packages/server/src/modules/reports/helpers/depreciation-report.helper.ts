@@ -29,9 +29,13 @@ export function calculateDepreciation(
   activationDate: Date,
   calculationYear: number,
   depreciationEndDate?: Date,
-): { yearlyDepreciationAmount: number; pastDepreciationAmount: number } {
-  // Normalize depreciation rate (convert percentage to decimal if needed)
-  const normalizedRate = depreciationRate > 1 ? depreciationRate / 100 : depreciationRate;
+): {
+  yearlyDepreciationAmount: number;
+  yearlyDepreciationRate: number;
+  pastDepreciationAmount: number;
+} {
+  // Normalize depreciation rate (convert percentage to decimal)
+  const normalizedRate = depreciationRate / 100;
 
   // Calculate end date if not provided
   if (!depreciationEndDate) {
@@ -58,7 +62,7 @@ export function calculateDepreciation(
 
   // If calculation date is before activation date, no depreciation applies
   if (isAfter(activationDate, calculationDate)) {
-    return { yearlyDepreciationAmount: 0, pastDepreciationAmount: 0 };
+    return { yearlyDepreciationAmount: 0, yearlyDepreciationRate: 0, pastDepreciationAmount: 0 };
   }
 
   // If depreciation ended before the calculation year, no yearly depreciation
@@ -69,6 +73,7 @@ export function calculateDepreciation(
 
     return {
       yearlyDepreciationAmount: 0,
+      yearlyDepreciationRate: 0,
       pastDepreciationAmount: totalDepreciation,
     };
   }
@@ -127,6 +132,7 @@ export function calculateDepreciation(
 
   return {
     yearlyDepreciationAmount,
+    yearlyDepreciationRate: 100 * (yearlyDepreciationAmount / annualDepreciationAmount),
     pastDepreciationAmount,
   };
 }

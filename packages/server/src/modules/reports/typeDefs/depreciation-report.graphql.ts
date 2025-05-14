@@ -10,11 +10,12 @@ export default gql`
   " input variables for depreciationReport "
   input DepreciationReportFilter {
     year: Int!
-    financialEntityId: UUID!
+    financialEntityId: UUID
   }
 
   " depreciation report result "
   type DepreciationReportResult {
+    id: ID!
     categories: [DepreciationReportCategory!]!
     summary: DepreciationReportSummaryRecord!
     year: Int!
@@ -22,16 +23,19 @@ export default gql`
 
   " Depreciation report summary record "
   type DepreciationReportSummaryRecord {
-    originalPrice: Int
-    reportYearsDelta: Int
-    depreciableProperties: Int!
-    reportYearsDepreciation: Int!
-    accumulatedDepreciation: Int!
-    overallDepreciation: Int!
-    reducedCost: Int!
+    id: ID!
+    originalCost: Int
+    reportYearDelta: Int
+    totalDepreciableCosts: Int!
+    reportYearClaimedDepreciation: Int!
+    pastYearsAccumulatedDepreciation: Int!
+    totalDepreciation: Int!
+    netValue: Int!
   }
 
+  " Depreciation report category group "
   type DepreciationReportCategory {
+    id: ID!
     category: DepreciationCategory!
     records: [DepreciationReportRecord!]!
     summary: DepreciationReportSummaryRecord!
@@ -39,18 +43,19 @@ export default gql`
 
   " Depreciation report record "
   type DepreciationReportRecord {
+    id: ID!
     chargeId: UUID!
-    description: String!
+    description: String
     purchaseDate: TimelessDate!
     activationDate: TimelessDate
-    originalPrice: Int
-    reportYearsDelta: Int
-    depreciableProperties: Int!
-    depreciationRateByLaw: Float!
-    depreciationRateClaimed: Float
-    reportYearsDepreciation: Int!
-    accumulatedDepreciation: Int!
-    overallDepreciation: Int!
-    reducedCost: Int!
+    originalCost: Int
+    reportYearDelta: Int
+    totalDepreciableCosts: Int!
+    statutoryDepreciationRate: Float!
+    claimedDepreciationRate: Float
+    reportYearClaimedDepreciation: Int!
+    pastYearsAccumulatedDepreciation: Int!
+    totalDepreciation: Int!
+    netValue: Int!
   }
 `;
