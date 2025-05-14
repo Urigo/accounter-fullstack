@@ -123,18 +123,20 @@ export const DepreciationReport = (): ReactElement => {
               <TableHead className="text-center border-x">Remaining</TableHead>
             </TableRow>
             <TableRow className="border-b border-black">
-              <TableHead>Assets List and Descriptions</TableHead>
-              <TableHead>Date of Purchase</TableHead>
-              <TableHead>Activation Date</TableHead>
-              <TableHead>Original Cost</TableHead>
-              <TableHead>Changes During the Year</TableHead>
-              <TableHead>Total Depreciable Assets</TableHead>
-              <TableHead>Statutory Depreciation Rate</TableHead>
-              <TableHead>Claimed Depreciation Rate</TableHead>
-              <TableHead>Depreciation Claimed This Year</TableHead>
-              <TableHead>Previous Tax Years Accumulated Depreciation</TableHead>
-              <TableHead>Total Depreciation</TableHead>
-              <TableHead>Net Book Value</TableHead>
+              <TableHead className="whitespace-normal">Assets List and Descriptions</TableHead>
+              <TableHead className="whitespace-normal">Date of Purchase</TableHead>
+              <TableHead className="whitespace-normal">Activation Date</TableHead>
+              <TableHead className="whitespace-normal">Original Cost</TableHead>
+              <TableHead className="whitespace-normal">Changes During the Year</TableHead>
+              <TableHead className="whitespace-normal">Total Depreciable Assets</TableHead>
+              <TableHead className="whitespace-normal">Statutory Depreciation Rate</TableHead>
+              <TableHead className="whitespace-normal">Claimed Depreciation Rate</TableHead>
+              <TableHead className="whitespace-normal">Depreciation Claimed This Year</TableHead>
+              <TableHead className="whitespace-normal">
+                Previous Tax Years Accumulated Depreciation
+              </TableHead>
+              <TableHead className="whitespace-normal">Total Depreciation</TableHead>
+              <TableHead className="whitespace-normal">Net Book Value</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
