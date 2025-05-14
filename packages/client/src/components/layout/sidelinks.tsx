@@ -6,6 +6,7 @@ import {
   Book,
   BookOpenCheck,
   Calculator,
+  ChartColumnDecreasing,
   ChartNoAxesCombined,
   CheckCheck,
   Factory,
@@ -103,6 +104,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/reports/corporate-tax-ruling-compliance',
         icon: <ParkingMeter size={18} />,
+      },
+      {
+        title: 'Depreciation Report',
+        label: '',
+        href: '/reports/depreciation',
+        icon: <ChartColumnDecreasing size={18} />,
       },
       {
         title: 'Accountant Approvals',
