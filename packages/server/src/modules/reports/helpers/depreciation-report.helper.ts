@@ -132,7 +132,8 @@ export function calculateDepreciation(
 
   return {
     yearlyDepreciationAmount,
-    yearlyDepreciationRate: 100 * (yearlyDepreciationAmount / annualDepreciationAmount),
+    yearlyDepreciationRate:
+      depreciationRate * (yearlyDepreciationAmount / annualDepreciationAmount),
     pastDepreciationAmount,
   };
 }

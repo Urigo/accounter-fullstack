@@ -21,8 +21,16 @@ export default gql`
     year: Int!
   }
 
-  " Depreciation report summary record "
-  type DepreciationReportSummaryRecord {
+  " Depreciation report category group "
+  type DepreciationReportCategory {
+    id: ID!
+    category: DepreciationCategory!
+    records: [DepreciationReportRecord!]!
+    summary: DepreciationReportSummaryRecord!
+  }
+
+  " Depreciation report record core fields "
+  interface DepreciationCoreRecord {
     id: ID!
     originalCost: Int
     reportYearDelta: Int
@@ -33,16 +41,20 @@ export default gql`
     netValue: Int!
   }
 
-  " Depreciation report category group "
-  type DepreciationReportCategory {
+  " Depreciation report summary record "
+  type DepreciationReportSummaryRecord implements DepreciationCoreRecord {
     id: ID!
-    category: DepreciationCategory!
-    records: [DepreciationReportRecord!]!
-    summary: DepreciationReportSummaryRecord!
+    originalCost: Int
+    reportYearDelta: Int
+    totalDepreciableCosts: Int!
+    reportYearClaimedDepreciation: Int!
+    pastYearsAccumulatedDepreciation: Int!
+    totalDepreciation: Int!
+    netValue: Int!
   }
 
   " Depreciation report record "
-  type DepreciationReportRecord {
+  type DepreciationReportRecord implements DepreciationCoreRecord {
     id: ID!
     chargeId: UUID!
     description: String
