@@ -24,7 +24,7 @@ __metadata:
     "@types/pg": "npm:8.15.1"
     got: "npm:14.4.7"
     pg-promise: "npm:11.13.0"
-    slonik: "npm:38.0.0"
+    slonik: "npm:47.3.0"
     tslib: "npm:2.8.1"
     zod: "npm:3.24.4"
   languageName: unknown
@@ -5035,7 +5035,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/api@npm:1.9.0":
+"@opentelemetry/api@npm:1.9.0, @opentelemetry/api@npm:^1.9.0":
   version: 1.9.0
   resolution: "@opentelemetry/api@npm:1.9.0"
   checksum: 10c0/9aae2fe6e8a3a3eeb6c1fdef78e1939cf05a0f37f8a4fae4d6bf2e09eb1e06f966ece85805626e01ba5fab48072b94f19b835449e58b6d26720ee19a58298add
@@ -6661,6 +6661,87 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@slonik/driver@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/driver@npm:47.3.0"
+  dependencies:
+    "@slonik/types": "npm:^47.3.0"
+    "@slonik/utilities": "npm:^47.3.0"
+    roarr: "npm:^7.21.1"
+    serialize-error: "npm:^8.0.0"
+    strict-event-emitter-types: "npm:^2.0.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/f397770ccff270add56081ffece1fc7c78b458c43d09ddcd3862a11312709316a8e7c7d4ccbe43c2a47e9e25201821b14658fa930b356ed90d099dde2514714c
+  languageName: node
+  linkType: hard
+
+"@slonik/errors@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/errors@npm:47.3.0"
+  dependencies:
+    "@slonik/types": "npm:^47.3.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/3875e664b98c5aae738c1bedfc5d803e3924a32ba92069161b993d8998805d1a4a0d8b3d2e5abf5dc10198e3636116c7b5210e61c5a43bcf6cfbfad8d5bb6701
+  languageName: node
+  linkType: hard
+
+"@slonik/pg-driver@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/pg-driver@npm:47.3.0"
+  dependencies:
+    "@slonik/driver": "npm:^47.3.0"
+    "@slonik/errors": "npm:^47.3.0"
+    "@slonik/sql-tag": "npm:^47.3.0"
+    "@slonik/types": "npm:^47.3.0"
+    "@slonik/utilities": "npm:^47.3.0"
+    pg: "npm:^8.13.1"
+    pg-query-stream: "npm:^4.9.6"
+    pg-types: "npm:^4.0.2"
+    postgres-array: "npm:^3.0.4"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/0f2026ef7ff12a5b43dd60c72b0d662ce00fabae714af299c27a6f7e76cf76bdb0205bc82b130384fb1f2402d192bedc864c0a0536c996ab9ed742cabb598fac
+  languageName: node
+  linkType: hard
+
+"@slonik/sql-tag@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/sql-tag@npm:47.3.0"
+  dependencies:
+    "@slonik/errors": "npm:^47.3.0"
+    "@slonik/types": "npm:^47.3.0"
+    roarr: "npm:^7.21.1"
+    safe-stable-stringify: "npm:^2.5.0"
+    serialize-error: "npm:^8.0.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/e126f9971f54fda1f01216308af090a0659f9ebfe2b1187969d63d4b869de61351d5b47dd5f1588e08fdf0b561dc0f3629c8a803e40ba32e1764a775886431e8
+  languageName: node
+  linkType: hard
+
+"@slonik/types@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/types@npm:47.3.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/1461be3ee01680b5f56029256ceb9e6d216ebe4363e83ca1d392c106942caa9e082709eb53b9d446019ddb8c3e6d24d7cb3a5313191a766f678b63856c1c6087
+  languageName: node
+  linkType: hard
+
+"@slonik/utilities@npm:^47.3.0":
+  version: 47.3.0
+  resolution: "@slonik/utilities@npm:47.3.0"
+  dependencies:
+    "@slonik/errors": "npm:^47.3.0"
+    "@slonik/types": "npm:^47.3.0"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/b1c20e2df5db16fb94ea4c050b368467e127a27d6452a0b1f2525cb22c52f955d7a3df6374f549f0811b4b9057efc1ec90ba9fa0ce27e2f59793beb59e91ff22
+  languageName: node
+  linkType: hard
+
 "@standard-schema/utils@npm:^0.3.0":
   version: 0.3.0
   resolution: "@standard-schema/utils@npm:0.3.0"
@@ -7338,7 +7419,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.15.1, @types/pg@npm:^8.10.7":
+"@types/pg@npm:8.15.1":
   version: 8.15.1
   resolution: "@types/pg@npm:8.15.1"
   dependencies:
@@ -16698,6 +16779,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"p-limit@npm:^6.2.0":
+  version: 6.2.0
+  resolution: "p-limit@npm:6.2.0"
+  dependencies:
+    yocto-queue: "npm:^1.1.1"
+  checksum: 10c0/448bf55a1776ca1444594d53b3c731e68cdca00d44a6c8df06a2f6e506d5bbd540ebb57b05280f8c8bff992a630ed782a69612473f769a7473495d19e2270166
+  languageName: node
+  linkType: hard
+
 "p-locate@npm:^4.1.0":
   version: 4.1.0
   resolution: "p-locate@npm:4.1.0"
@@ -17068,7 +17158,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-connection-string@npm:^2.7.0, pg-connection-string@npm:^2.8.5":
+"pg-connection-string@npm:^2.7.0":
   version: 2.8.5
   resolution: "pg-connection-string@npm:2.8.5"
   checksum: 10c0/5f65afc9dfc99ecf1583a1699c97511f3d505659c9c6a91db8cd0ffe862caa29060722712a034abd6da493356567261febf18b3a6ef223d0a219f0d50d959b97
@@ -17082,12 +17172,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-cursor@npm:^2.14.6":
-  version: 2.14.6
-  resolution: "pg-cursor@npm:2.14.6"
+"pg-cursor@npm:^2.15.0":
+  version: 2.15.0
+  resolution: "pg-cursor@npm:2.15.0"
   peerDependencies:
     pg: ^8
-  checksum: 10c0/13eae624d85350f94c8cf001854387e96858696b934ab7a310a90fb550f6657e1df63721881858f389c30bcb3a0ce4ccca98ef1a07649cad4ea75887c5ceb216
+  checksum: 10c0/0ed0753fca4777051a5fd02e495ca0cf82b5b536a3361038f2124497673b64bfe6412ecf008c85161ad4bf747bae6275c9a0b75a1264f13015378911179b92d3
   languageName: node
   linkType: hard
 
@@ -17121,7 +17211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-pool@npm:^3.8.0, pg-pool@npm:^3.9.6":
+"pg-pool@npm:^3.8.0":
   version: 3.9.6
   resolution: "pg-pool@npm:3.9.6"
   peerDependencies:
@@ -17144,7 +17234,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-protocol@npm:*, pg-protocol@npm:^1.6.0, pg-protocol@npm:^1.8.0, pg-protocol@npm:^1.9.5":
+"pg-protocol@npm:*, pg-protocol@npm:^1.8.0":
   version: 1.9.5
   resolution: "pg-protocol@npm:1.9.5"
   checksum: 10c0/5cb3444cf973adadd22ee9ea26bb1674f0d980ef8f9c66d426bbe67fc9cb5f0ca4a204bf7e432b3ab2ab59ac8227f4b18ab3b2e64eaed537e037e916991c7319
@@ -17158,14 +17248,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-query-stream@npm:^4.5.3":
-  version: 4.9.6
-  resolution: "pg-query-stream@npm:4.9.6"
+"pg-query-stream@npm:^4.9.6":
+  version: 4.10.0
+  resolution: "pg-query-stream@npm:4.10.0"
   dependencies:
-    pg-cursor: "npm:^2.14.6"
+    pg-cursor: "npm:^2.15.0"
   peerDependencies:
     pg: ^8
-  checksum: 10c0/17a134a7f276dcf6fbc88ed9cd7af55362e642564907680d413123fb6179b5e5514c06f5f0542927b24393654da8e9fab17565140274a60e48e5ea4705df38a8
+  checksum: 10c0/d1470d9f108ed6acfd823fb7a6a945e790941e2c12263ba9a5ed7f9516bdf0893a4a6c965e76c5f2f18a0c9608c1896f2cf9f090c5c156e483c21e292e2b1478
   languageName: node
   linkType: hard
 
@@ -17182,7 +17272,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-types@npm:^4.0.1":
+"pg-types@npm:^4.0.1, pg-types@npm:^4.0.2":
   version: 4.0.2
   resolution: "pg-types@npm:4.0.2"
   dependencies:
@@ -17219,7 +17309,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.16.0":
+"pg@npm:8.16.0, pg@npm:^8.13.1":
   version: 8.16.0
   resolution: "pg@npm:8.16.0"
   dependencies:
@@ -17238,28 +17328,6 @@ __metadata:
     pg-native:
       optional: true
   checksum: 10c0/24542229c7e5cbf69d654de32e8cdc8302c73f1338e56728543cb16364fb319d5689e03fa704b69a208105c7065c867cfccb9dbccccea2020bb5c64ead785713
-  languageName: node
-  linkType: hard
-
-"pg@npm:^8.11.3":
-  version: 8.15.6
-  resolution: "pg@npm:8.15.6"
-  dependencies:
-    pg-cloudflare: "npm:^1.2.5"
-    pg-connection-string: "npm:^2.8.5"
-    pg-pool: "npm:^3.9.6"
-    pg-protocol: "npm:^1.9.5"
-    pg-types: "npm:^2.1.0"
-    pgpass: "npm:1.x"
-  peerDependencies:
-    pg-native: ">=3.0.1"
-  dependenciesMeta:
-    pg-cloudflare:
-      optional: true
-  peerDependenciesMeta:
-    pg-native:
-      optional: true
-  checksum: 10c0/d4dc81020ebd137b6cf6228e43c643067acb8240079a07f7b9a7e97be0f33ad4d8c6f2a3f5b512ad87180e3d48e651fbd72885aa807ab58a715da8f3efea0fab
   languageName: node
   linkType: hard
 
@@ -17440,7 +17508,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postgres-array@npm:^3.0.2, postgres-array@npm:~3.0.1":
+"postgres-array@npm:^3.0.4, postgres-array@npm:~3.0.1":
   version: 3.0.4
   resolution: "postgres-array@npm:3.0.4"
   checksum: 10c0/47f3e648da512bacdd6a5ed55cf770605ec271330789faeece0fd13805a49f376d6e5c9e0e353377be11a9545e727dceaa2473566c505432bf06366ccd04c6b2
@@ -18870,7 +18938,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"safe-stable-stringify@npm:^2.4.3":
+"safe-stable-stringify@npm:^2.4.3, safe-stable-stringify@npm:^2.5.0":
   version: 2.5.0
   resolution: "safe-stable-stringify@npm:2.5.0"
   checksum: 10c0/baea14971858cadd65df23894a40588ed791769db21bafb7fd7608397dbdce9c5aac60748abae9995e0fc37e15f2061980501e012cd48859740796bea2987f49
@@ -19267,25 +19335,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:38.0.0":
-  version: 38.0.0
-  resolution: "slonik@npm:38.0.0"
+"slonik@npm:47.3.0":
+  version: 47.3.0
+  resolution: "slonik@npm:47.3.0"
   dependencies:
-    "@types/pg": "npm:^8.10.7"
+    "@opentelemetry/api": "npm:^1.9.0"
+    "@slonik/driver": "npm:^47.3.0"
+    "@slonik/errors": "npm:^47.3.0"
+    "@slonik/pg-driver": "npm:^47.3.0"
+    "@slonik/sql-tag": "npm:^47.3.0"
+    "@slonik/utilities": "npm:^47.3.0"
     get-stack-trace: "npm:^3.1.1"
     iso8601-duration: "npm:^1.3.0"
-    pg: "npm:^8.11.3"
-    pg-protocol: "npm:^1.6.0"
-    pg-query-stream: "npm:^4.5.3"
-    pg-types: "npm:^4.0.1"
-    postgres-array: "npm:^3.0.2"
+    p-limit: "npm:^6.2.0"
     postgres-interval: "npm:^4.0.2"
     roarr: "npm:^7.21.1"
-    safe-stable-stringify: "npm:^2.4.3"
     serialize-error: "npm:^8.0.0"
+    strict-event-emitter-types: "npm:^2.0.0"
   peerDependencies:
     zod: ^3
-  checksum: 10c0/c962ddb1f1240739470b98250d91675b0c748e4cf6320893fc4e11f111444725945fcae7ff28babf0da6cb3916aad603fbed70047eb6b64930eac6abd86d3fc9
+  checksum: 10c0/14773ec5f000a54e809d7f3dcafe20b562fa04972a4548c92e856b4c41ad499c3476585edabe31d34e82f3cf1d8173fef452d8e4231d791dd9c16ea0afc4727e
   languageName: node
   linkType: hard
 
@@ -19572,6 +19641,13 @@ __metadata:
     bare-events:
       optional: true
   checksum: 10c0/f5017998a5b6360ba652599d20ef308c8c8ab0e26c8e5f624f0706f0ea12624e94fdf1ec18318124498529a1b106a1ab1c94a1b1e1ad6c2eec7cb9c8ac1b9198
+  languageName: node
+  linkType: hard
+
+"strict-event-emitter-types@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "strict-event-emitter-types@npm:2.0.0"
+  checksum: 10c0/7a2985b81908c2a7d1de10afe3be1de3423b8ce6188dc32aeb3dbaf66d4ac3f11029d6931c67d972a3bb976bbd04d27ee090eeed1cbd089c5ba3e899a04ed1b7
   languageName: node
   linkType: hard
 
@@ -21836,7 +21912,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yocto-queue@npm:^1.0.0":
+"yocto-queue@npm:^1.0.0, yocto-queue@npm:^1.1.1":
   version: 1.2.1
   resolution: "yocto-queue@npm:1.2.1"
   checksum: 10c0/5762caa3d0b421f4bdb7a1926b2ae2189fc6e4a14469258f183600028eb16db3e9e0306f46e8ebf5a52ff4b81a881f22637afefbef5399d6ad440824e9b27f9f
