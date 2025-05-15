@@ -36,14 +36,18 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
       if (!filters) {
         throw new GraphQLError('No filters provided');
       }
-      let { year, financialEntityId } = filters;
+      const { year, financialEntityId: rawFinancialEntityId } = filters;
       if (!year) {
         throw new GraphQLError('Year filter is required');
       }
-      if (typeof year !== 'number' || year < 2000) {
+      if (typeof year !== 'number' || year < 2000 || year > new Date().getFullYear() + 5) {
         throw new GraphQLError('Invalid year provided');
       }
-      financialEntityId ||= defaultAdminBusinessId;
+
+      const financialEntityId = rawFinancialEntityId ?? defaultAdminBusinessId;
+      if (!financialEntityId) {
+        throw new GraphQLError('Unable to resolve financial entity ID');
+      }
 
       const yearBeginning = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
