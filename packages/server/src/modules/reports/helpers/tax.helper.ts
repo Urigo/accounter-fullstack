@@ -1,12 +1,8 @@
-import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import type { Injector } from 'graphql-modules';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { businessTripSummary } from '@modules/business-trips/resolvers/business-trip-summary.resolver.js';
 import { BusinessTripProto } from '@modules/business-trips/types.js';
 import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
-import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
-import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TimelessDateString } from '@shared/types';
 import { CommentaryProto } from '../types.js';
@@ -233,77 +229,5 @@ export async function calculateTaxAmounts(
     specialTaxableIncome,
     specialTaxRate,
     annualTaxExpenseAmount,
-  };
-}
-
-export async function calculateDepreciationAmount(injector: Injector, year: number) {
-  const yearBeginning = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31);
-
-  const depreciationRecords = await injector
-    .get(DepreciationProvider)
-    .getDepreciationRecordsByDates({
-      fromDate: yearBeginning,
-      toDate: yearEnd,
-    });
-
-  let rndDepreciationYearlyAmount = 0;
-  let gnmDepreciationYearlyAmount = 0;
-  let marketingDepreciationYearlyAmount = 0;
-
-  await Promise.all(
-    depreciationRecords.map(async record => {
-      if (!record.expiration_date) {
-        console.error('No expiration date for depreciation record', record);
-        return;
-      }
-
-      const depreciationCategory = await injector
-        .get(DepreciationCategoriesProvider)
-        .getDepreciationCategoriesByIdLoader.load(record.category);
-      if (!depreciationCategory) {
-        console.error('No depreciation category for depreciation record', record);
-        return;
-      }
-
-      const yearDays = differenceInDays(yearEnd, yearBeginning) + 1;
-      let daysOfRelevance = yearDays;
-      if (record.activation_date.getTime() > yearBeginning.getTime()) {
-        daysOfRelevance -= differenceInDays(record.activation_date, yearBeginning);
-      }
-      if (record.expiration_date.getTime() < yearEnd.getTime()) {
-        daysOfRelevance -= differenceInDays(yearEnd, record.expiration_date);
-      }
-      if (daysOfRelevance <= 0) {
-        console.error('No days of relevance for depreciation record', record);
-        return;
-      }
-
-      const part = daysOfRelevance / yearDays;
-      const yearlyPercent = Number(depreciationCategory.percentage) / 100;
-      switch (record.type) {
-        case 'RESEARCH_AND_DEVELOPMENT':
-          rndDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
-          break;
-        case 'GENERAL_AND_MANAGEMENT':
-          gnmDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
-          break;
-        case 'MARKETING':
-          marketingDepreciationYearlyAmount += Number(record.amount) * part * yearlyPercent;
-          break;
-        default:
-          throw new GraphQLError(`Unknown depreciation record type ${record.type}`);
-      }
-    }),
-  );
-
-  const totalDepreciationYearlyAmount =
-    rndDepreciationYearlyAmount + gnmDepreciationYearlyAmount + marketingDepreciationYearlyAmount;
-
-  return {
-    rndDepreciationYearlyAmount,
-    gnmDepreciationYearlyAmount,
-    marketingDepreciationYearlyAmount,
-    totalDepreciationYearlyAmount,
   };
 }

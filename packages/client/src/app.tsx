@@ -24,7 +24,8 @@ import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
-import { BalanceReport } from './components/screens/reports/balance-report.js';
+import { BalanceReport } from './components/screens/reports/balance-report/index.js';
+import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
 import { FiltersContext } from './providers/filters-context.js';
@@ -64,6 +65,7 @@ export function App(): ReactElement {
             <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
             <Route path="tax" element={<TaxReport />} />
             <Route path="tax/:year" element={<TaxReport />} />
+            <Route path="depreciation" element={<DepreciationReport />} />
             <Route path="yearly-ledger" element={<YearlyLedgerReport />} />
             <Route
               path="corporate-tax-ruling-compliance"

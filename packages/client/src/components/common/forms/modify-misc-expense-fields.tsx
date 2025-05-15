@@ -48,7 +48,7 @@ export const ModifyMiscExpenseFields = ({
             >
               <FormControl>
                 <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a verified email to display" />
+                  <SelectValue placeholder="Select creditor" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent onClick={event => event.stopPropagation()}>
@@ -80,7 +80,7 @@ export const ModifyMiscExpenseFields = ({
             >
               <FormControl>
                 <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a verified email to display" />
+                  <SelectValue placeholder="Select a debtor" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent onClick={event => event.stopPropagation()}>

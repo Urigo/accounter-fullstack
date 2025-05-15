@@ -1,5 +1,6 @@
 import balanceReport from './typeDefs/balance-report.graphql.js';
 import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
+import depreciationReport from './typeDefs/depreciation-report.graphql.js';
 import dynamicReport from './typeDefs/dynamic-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
@@ -11,6 +12,7 @@ import { BalanceReportProvider } from './providers/balance-report.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
 import { VatReportProvider } from './providers/vat-report.provider.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
+import { depreciationReportResolvers } from './resolvers/depreciation-report.resolver.js';
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
 import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
@@ -29,8 +31,15 @@ export const reportsModule = createModule({
     yearlyLedger,
     dynamicReport,
     balanceReport,
+    depreciationReport,
   ],
-  resolvers: [reportsResolvers, dynamicReportResolver, balanceReportResolver, pcn874Resolvers],
+  resolvers: [
+    reportsResolvers,
+    dynamicReportResolver,
+    balanceReportResolver,
+    pcn874Resolvers,
+    depreciationReportResolvers,
+  ],
   providers: () => [DynamicReportProvider, BalanceReportProvider, VatReportProvider],
 });
 

@@ -12,8 +12,8 @@ export function numberRounded(number: number): number {
 }
 
 export const formatStringifyAmount = (rawAmount: number, digits = 2): string => {
-  const formattedParts = rawAmount.toFixed(digits).split('.');
-  // add commas
-  formattedParts[0] = formattedParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return formattedParts.join('.');
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(rawAmount);
 };

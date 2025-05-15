@@ -6,13 +6,13 @@ import {
   BalanceReportScreenDocument,
   BalanceReportScreenQuery,
   Currency,
-} from '../../../gql/graphql.js';
-import { getCurrencyFormatter, TimelessDateString } from '../../../helpers/index.js';
-import { FiltersContext } from '../../../providers/filters-context.js';
-import { UserContext } from '../../../providers/user-provider.js';
-import { AccounterLoader, MultiSelect } from '../../common/index.js';
-import { PageLayout } from '../../layout/page-layout.js';
-import { Card, CardContent, CardDescription, CardHeader } from '../../ui/card.js';
+} from '../../../../gql/graphql.js';
+import { getCurrencyFormatter, TimelessDateString } from '../../../../helpers/index.js';
+import { FiltersContext } from '../../../../providers/filters-context.js';
+import { UserContext } from '../../../../providers/user-provider.jsx';
+import { AccounterLoader, MultiSelect } from '../../../common/index.js';
+import { PageLayout } from '../../../layout/page-layout.jsx';
+import { Card, CardContent, CardDescription, CardHeader } from '../../../ui/card.jsx';
 import {
   ChartContainer,
   ChartLegend,
@@ -20,9 +20,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '../../ui/chart.js';
-import { BalanceReportFilter, BalanceReportFilters, Period } from './balance-report-filters.js';
-import { ExtendedTransactionsCard } from './extended-transactions.js';
+} from '../../../ui/chart.jsx';
+import { BalanceReportFilter, BalanceReportFilters, Period } from './balance-report-filters.jsx';
+import { ExtendedTransactionsCard } from './extended-transactions.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
