@@ -31,6 +31,13 @@ describe('generateReportEntriesSection', () => {
     expect(result.endsWith(phantomRecord.repeat(149))).toBe(true);
   });
 
+  it('should format negative amounts correctly', () => {
+    const entries: ReportEntry[] = [{ code: 123, amount: -123.45 }];
+
+    const result = generateReportEntriesSection(entries);
+    expect(result.startsWith('00123-000000000123')).toBe(true);
+  });
+
   it('should handle more than 150 entries by truncating', () => {
     // Create 151 entries
     const entries: ReportEntry[] = Array.from({ length: 151 }, (_, i) => ({
