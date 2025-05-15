@@ -2352,21 +2352,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/core@npm:0.10.1":
-  version: 0.10.1
-  resolution: "@graphql-hive/core@npm:0.10.1"
-  dependencies:
-    "@graphql-tools/utils": "npm:^10.0.0"
-    "@whatwg-node/fetch": "npm:^0.10.1"
-    async-retry: "npm:^1.3.3"
-    lodash.sortby: "npm:^4.7.0"
-    tiny-lru: "npm:^8.0.2"
-  peerDependencies:
-    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/29979cbfc9650db278f2542e15a1aa116ec52c1b02b1d82c706ff339cc19751fdafbbb24093bd07818618c7b3480016830341ab27bdbd1739cf75419d782c171
-  languageName: node
-  linkType: hard
-
 "@graphql-hive/core@npm:0.11.0":
   version: 0.11.0
   resolution: "@graphql-hive/core@npm:0.11.0"
@@ -7834,7 +7819,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/fetch@npm:0.10.7, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.1, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.7":
+"@whatwg-node/fetch@npm:0.10.7, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.7":
   version: 0.10.7
   resolution: "@whatwg-node/fetch@npm:0.10.7"
   dependencies:
