@@ -30,4 +30,17 @@ describe('generateReportEntriesSection', () => {
     expect(result.length).toBe(2700);
     expect(result.endsWith(phantomRecord.repeat(149))).toBe(true);
   });
+
+  it('should handle more than 150 entries by truncating', () => {
+    // Create 151 entries
+    const entries: ReportEntry[] = Array.from({ length: 151 }, (_, i) => ({
+      code: 1000 + i,
+      amount: 1000 + i,
+    }));
+
+    const result = generateReportEntriesSection(entries);
+    expect(result.length).toBe(2700); // Should still be 2700 chars
+    // Should only contain first 150 entries (150 * 18 = 2700)
+    expect(result).not.toContain('01150'); // The 151st entry should be excluded
+  });
 });
