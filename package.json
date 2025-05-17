@@ -10,7 +10,7 @@
   },
   "packageManager": "yarn@4.9.1",
   "engines": {
-    "node": "23.11.0"
+    "node": "23.11.1"
   },
   "scripts": {
     "build": "yarn generate && yarn workspaces foreach --all run build",
@@ -58,7 +58,7 @@
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
     "@types/node": "22.15.18",
-    "@types/pg": "8.15.1",
+    "@types/pg": "8.15.2",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.1.2",
     "dotenv": "16.5.0",
