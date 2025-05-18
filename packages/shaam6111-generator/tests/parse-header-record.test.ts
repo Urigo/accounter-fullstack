@@ -204,4 +204,42 @@ describe('parseHeaderRecord', () => {
     expect(result.currencyType).toBe(0); // Default value
     expect(result.amountsInThousands).toBe(YesNo.NO); // Default value
   });
+
+  it('should handle misaligned fields in the header line', () => {
+    // Create a header line with a shifted field that would cause misalignment
+    const misalignedHeaderLine =
+      '123456789' + // taxFileNumber
+      '2025' + // taxYear
+      '987654321X' + // idNumber (extra character shifts all subsequent fields)
+      '123456789' + // vatFileNumber
+      '987654321' + // withholdingTaxFileNumber
+      '1234' + // industryCode
+      'Tech Company                                      ' + // businessDescription
+      '01' + // businessType
+      '01' + // reportingMethod
+      '01' + // accountingMethod
+      '01' + // accountingSystem
+      '1' + // isPartnership
+      '1' + // includesProfitLoss
+      '1' + // includesTaxAdjustment
+      '1' + // includesBalanceSheet
+      '010' + // profitLossEntryCount
+      '020' + // taxAdjustmentEntryCount
+      '030' + // balanceSheetEntryCount
+      '2025' + // ifrsImplementationYear
+      '1' + // ifrsReportingOption
+      '12345678' + // softwareRegistrationNumber
+      '005' + // partnershipCount
+      '001000' + // partnershipProfitShare
+      '01' + // currencyType
+      '01' + // auditOpinionType
+      '1' + // amountsInThousands
+      '                                                                                           ';
+
+    const result = parseHeaderRecord(misalignedHeaderLine);
+
+    // Check that fields after the misalignment are not as expected
+    // For example, the vatFileNumber should contain part of another field
+    expect(result.vatFileNumber).not.toBe('123456789');
+  });
 });

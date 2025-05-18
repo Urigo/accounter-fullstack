@@ -4,6 +4,7 @@ import { padOrTrim } from '../utils/generation-utils.js';
 /**
  * Generates a fixed-width formatted string for the report entries section.
  * @param entries An array of ReportEntry objects.
+ * @remarks If more than 150 entries are provided, only the first 150 will be included in the output.
  * @returns A string formatted according to the specification, 2700 characters long.
  */
 export function generateReportEntriesSection(entries: ReportEntry[]): string {
@@ -16,8 +17,9 @@ export function generateReportEntriesSection(entries: ReportEntry[]): string {
   });
 
   // Add phantom records if less than 150 entries
+  const phantomRecord = '000000000000000000';
   while (formattedEntries.length < 150) {
-    formattedEntries.push(padOrTrim('0', 5) + padOrTrim('0', 13));
+    formattedEntries.push(phantomRecord);
   }
 
   // Join all entries into a single string

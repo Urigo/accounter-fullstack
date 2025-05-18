@@ -26,13 +26,20 @@ export function validateData(data: ReportData): ValidationResult {
   const errors: ValidationErrorDetails[] = [];
 
   // Validate header
-  const headerValidation = headerSchema.safeParse(data.header);
-  if (!headerValidation.success) {
-    headerValidation.error.errors.map(err => {
-      errors.push({
-        path: ['header', ...err.path].join('.'),
-        message: err.message,
+  if (data.header) {
+    const headerValidation = headerSchema.safeParse(data.header);
+    if (!headerValidation.success) {
+      headerValidation.error.errors.map(err => {
+        errors.push({
+          path: `header.${err.path.join('.')}`,
+          message: err.message,
+        });
       });
+    }
+  } else {
+    errors.push({
+      path: 'header',
+      message: 'Header is required',
     });
   }
 
@@ -62,8 +69,10 @@ export function validateData(data: ReportData): ValidationResult {
     }
   }
 
-  // Validate balance sheet
-  if (data.balanceSheet.length || data.individualOrCompany === IndividualOrCompanyEnum.COMPANY) {
+  const hasBalanceSheet = Array.isArray(data.balanceSheet) && data.balanceSheet.length > 0;
+
+  // Validate balance sheet only when present
+  if (hasBalanceSheet) {
     const balanceSheetValidation = balanceSheetArraySchema.safeParse(data.balanceSheet);
     if (!balanceSheetValidation.success) {
       balanceSheetValidation.error.errors.map(err => {
@@ -75,7 +84,11 @@ export function validateData(data: ReportData): ValidationResult {
     }
   }
 
-  if (data.individualOrCompany === IndividualOrCompanyEnum.COMPANY && !data.balanceSheet) {
+  // Determine whether a balance sheet **must** be present
+  const mustHaveBalanceSheet = data.individualOrCompany === IndividualOrCompanyEnum.COMPANY;
+
+  // Enforce presence for companies
+  if (mustHaveBalanceSheet && !hasBalanceSheet) {
     errors.push({
       path: 'balanceSheet',
       message: 'Balance sheet is required for companies',
@@ -104,12 +117,18 @@ export function validateData(data: ReportData): ValidationResult {
   }
 
   // validate rule 3.7 profitAndLoss code 6666 equals to taxAdjustment code 100
-  const code6666Amount = data.profitAndLoss.find(item => item.code === 6666)?.amount || 0;
-  const code100Amount = data.taxAdjustment.find(item => item.code === 100)?.amount || 0;
-  if (code6666Amount !== code100Amount) {
+  const code6666Entry = data.profitAndLoss.find(item => item.code === 6666);
+  const code100Entry = data.taxAdjustment.find(item => item.code === 100);
+  if (code6666Entry && code100Entry && code6666Entry.amount !== code100Entry.amount) {
     errors.push({
       path: 'custom',
       message: 'Profit and Loss code 6666 must equal Tax Adjustment code 100',
+    });
+  } else if (!code6666Entry || !code100Entry) {
+    errors.push({
+      path: 'custom',
+      message:
+        'Both Profit and Loss code 6666 and Tax Adjustment code 100 must be present and equal',
     });
   }
 
@@ -145,11 +164,16 @@ export function validateData(data: ReportData): ValidationResult {
   }
 
   // validate rule 3.8 profitAndLoss sum of codes 1450 & 2095 equals to balanceSheet code 7800
-  const code1450Amount = data.profitAndLoss.find(item => item.code === 1450)?.amount || 0;
-  const code2095Amount = data.profitAndLoss.find(item => item.code === 2095)?.amount || 0;
-  const balanceSheet7800Amount = data.balanceSheet?.find(item => item.code === 7800)?.amount || 0;
+  const code1450Amount = data.profitAndLoss.find(item => item.code === 1450)?.amount;
+  const code2095Amount = data.profitAndLoss.find(item => item.code === 2095)?.amount;
+  const balanceSheet7800Amount = data.balanceSheet?.find(item => item.code === 7800)?.amount;
 
-  if (code1450Amount + code2095Amount !== balanceSheet7800Amount) {
+  if (
+    (code1450Amount !== undefined ||
+      code2095Amount !== undefined ||
+      balanceSheet7800Amount !== undefined) &&
+    (code1450Amount ?? 0) + (code2095Amount ?? 0) !== balanceSheet7800Amount
+  ) {
     errors.push({
       path: 'custom',
       message: 'Sum of Profit and Loss codes 1450 and 2095 must equal Balance Sheet code 7800',

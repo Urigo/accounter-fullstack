@@ -124,6 +124,7 @@ export const headerSchema = z.object({
     .optional(),
   partnershipProfitShare: z
     .number()
+    .int({ message: 'Partnership profit share must be an integer' })
     .min(0, { message: 'Partnership profit share cannot be negative' })
     .optional(),
   currencyType: z.nativeEnum(CurrencyType),

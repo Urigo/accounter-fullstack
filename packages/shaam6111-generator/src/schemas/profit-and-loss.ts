@@ -189,7 +189,7 @@ export const profitLossArraySchema = z
     });
 
     // Validate each summary field with its formula
-    Object.entries(summaryValidations).map(([codeStr, validation]) => {
+    for (const [codeStr, validation] of Object.entries(summaryValidations)) {
       const code = parseInt(codeStr) as AllowedProfitLossCode;
       if (codeToAmountMap.has(code)) {
         const actualAmount = codeToAmountMap.get(code);
@@ -204,5 +204,5 @@ export const profitLossArraySchema = z
           });
         }
       }
-    });
+    }
   });

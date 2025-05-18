@@ -100,11 +100,22 @@ describe('Integration Test: generateReport', () => {
     } as ReportData;
 
     try {
-      const report = generateReport(invalidReportData);
-      expect(report).toBeUndefined(); // Expect the report to be undefined
+      generateReport(invalidReportData);
+      // If we reach here, validation didn't throw as expected
+      assert.fail('Expected ValidationError to be thrown');
     } catch (error) {
       expect(error).toBeInstanceOf(ValidationError);
-      // TODO: validate the error message
+      // Validate specific validation errors
+      expect((error as ValidationError).errors).toContainEqual(
+        expect.objectContaining({
+          path: expect.stringContaining('header.taxFileNumber'),
+        }),
+      );
+      expect((error as ValidationError).errors).toContainEqual(
+        expect.objectContaining({
+          path: expect.stringContaining('header.taxYear'),
+        }),
+      );
     }
   });
 });

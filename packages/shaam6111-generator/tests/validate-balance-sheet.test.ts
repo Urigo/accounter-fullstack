@@ -38,7 +38,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Invalid balance sheet code');
+      expect(result.error.errors[0].message).toBe('Invalid balance sheet code: 99999');
     }
   });
 
@@ -52,7 +52,12 @@ describe('balanceSheetArraySchema', () => {
   });
 
   it('should fail validation for negative amounts on non-negative codes', () => {
-    const invalidRecords = [...validBalanceSheetRecords, { code: 7100, amount: -500 }];
+    const invalidRecords = validBalanceSheetRecords.map(record => {
+      if (record.code === 7100) {
+        record.amount = -500; // Negative amount for a non-negative code
+      }
+      return record;
+    });
     const result = balanceSheetArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -61,6 +66,8 @@ describe('balanceSheetArraySchema', () => {
   });
 
   it('should validate records with correct total assets and liabilities + equity', () => {
+    // Test validates the fundamental accounting equation: Total Assets (8888) = Total Liabilities + Equity (9999)
+    // Both totals are set to 10_000 to ensure the balance sheet equation is satisfied
     const validRecordsWithTotals = [
       { code: 7000, amount: 10_000 },
       { code: 7600, amount: 10_000 },

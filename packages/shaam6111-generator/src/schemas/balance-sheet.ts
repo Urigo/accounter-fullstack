@@ -29,8 +29,10 @@ import {
 } from '../types/index.js';
 
 // Create a set for faster lookup of allowed codes
-const allowedCodesSet = new Set(ALLOWED_BALANCE_SHEET_CODES);
-const negativeAllowedCodesSet = new Set(NEGATIVE_ALLOWED_BALANCE_SHEET_CODES);
+const allowedCodesSet = new Set<AllowedBalanceSheetCode>(ALLOWED_BALANCE_SHEET_CODES);
+const negativeAllowedCodesSet = new Set<NegativeAllowedBalanceSheetCode>(
+  NEGATIVE_ALLOWED_BALANCE_SHEET_CODES,
+);
 
 function codeToName(code: AllowedBalanceSheetCode): string {
   return `${BALANCE_SHEET_CODE_NAMES[code] ?? 'Unknown code'} (${code})`;
@@ -42,8 +44,14 @@ const balanceSheetRecordSchema = z
     code: z
       .number()
       .int()
-      .refine(code => allowedCodesSet.has(code as AllowedBalanceSheetCode), {
-        message: 'Invalid balance sheet code',
+      .superRefine((value, ctx) => {
+        if (!allowedCodesSet.has(value as AllowedBalanceSheetCode)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Invalid balance sheet code: ${value}`,
+            path: ['code'],
+          });
+        }
       }),
     amount: z.number().int(),
   })
@@ -182,7 +190,7 @@ export const balanceSheetArraySchema = z
     });
 
     // Validate each summary field with its formula
-    Object.entries(summaryValidations).map(([codeStr, validation]) => {
+    for (const [codeStr, validation] of Object.entries(summaryValidations)) {
       const code = parseInt(codeStr) as AllowedBalanceSheetCode;
       if (codeToAmountMap.has(code)) {
         const actualAmount = codeToAmountMap.get(code);
@@ -197,7 +205,7 @@ export const balanceSheetArraySchema = z
           });
         }
       }
-    });
+    }
 
     // Check total assets equals total liabilities + equity
     const totalAssets = codeToAmountMap.get(8888);

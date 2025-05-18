@@ -89,7 +89,7 @@ export const taxAdjustmentArraySchema = z
     const codeToAmountMap = checkForUniqueCodes(records, ctx);
 
     // Validate each summary field with its formula
-    Object.entries(summaryValidations).map(([codeStr, validation]) => {
+    for (const [codeStr, validation] of Object.entries(summaryValidations)) {
       const code = parseInt(codeStr) as AllowedTaxAdjustmentCode;
       if (codeToAmountMap.has(code)) {
         const actualAmount = codeToAmountMap.get(code);
@@ -104,7 +104,7 @@ export const taxAdjustmentArraySchema = z
           });
         }
       }
-    });
+    }
 
     // Check for unique code values
     checkForUniqueCodes(records, ctx);

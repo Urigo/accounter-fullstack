@@ -71,11 +71,23 @@ describe('headerSchema', () => {
       ifrsReportingOption: 1, // OPTION_1
       softwareRegistrationNumber: '12345678',
       partnershipCount: 2,
-      partnershipProfitShare: 50.25,
+      partnershipProfitShare: 50,
       auditOpinionType: 1, // UNQUALIFIED
     };
     const result = headerSchema.safeParse(recordWithOptionalFields);
     expect(result.success).toBe(true);
+    if (result.success) {
+      const data = result.data;
+      expect(data.vatFileNumber).toBe('123456782');
+      expect(data.withholdingTaxFileNumber).toBe('987654324');
+      expect(data.businessDescription).toBe('Industrial business');
+      expect(data.ifrsImplementationYear).toBe('2025');
+      expect(data.ifrsReportingOption).toBe(1);
+      expect(data.softwareRegistrationNumber).toBe('12345678');
+      expect(data.partnershipCount).toBe(2);
+      expect(data.partnershipProfitShare).toBe(50);
+      expect(data.auditOpinionType).toBe(1);
+    }
   });
 
   it('should fail validation for an invalid partnershipCount', () => {
@@ -84,6 +96,38 @@ describe('headerSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.errors[0].message).toBe('Partnership count cannot be negative');
+    }
+  });
+
+  it('should fail validation for an invalid tax year', () => {
+    const invalidRecord = { ...validHeaderRecord, taxYear: '20X5' };
+    const result = headerSchema.safeParse(invalidRecord);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.errors[0].message).toBe('Tax year must contain only digits');
+    }
+  });
+
+  it('should fail validation for an industry code not exactly 4 digits', () => {
+    const invalidRecord = { ...validHeaderRecord, industryCode: '123' };
+    const result = headerSchema.safeParse(invalidRecord);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.errors[0].message).toBe('Industry code must be exactly 4 digits');
+    }
+  });
+
+  it('should fail validation for a business description exceeding 50 characters', () => {
+    const invalidRecord = {
+      ...validHeaderRecord,
+      businessDescription: 'A'.repeat(51),
+    };
+    const result = headerSchema.safeParse(invalidRecord);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.errors[0].message).toBe(
+        'Business description cannot exceed 50 characters',
+      );
     }
   });
 });

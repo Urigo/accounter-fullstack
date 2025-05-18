@@ -87,7 +87,7 @@ export function parseHeaderRecord(headerLine: string): HeaderRecord {
     partnershipProfitShare: parseIntWithFallback(headerLine.substring(131, 137), undefined),
     currencyType: parseIntWithFallback(headerLine.substring(137, 139), 0),
     auditOpinionType: parseIntWithFallback(headerLine.substring(139, 141), undefined),
-    amountsInThousands: parseCharWithFallback(headerLine.charAt(141), 2) || 2,
+    amountsInThousands: parseCharWithFallback(headerLine.charAt(141), 2),
   };
 
   return header;

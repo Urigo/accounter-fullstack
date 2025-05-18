@@ -26,9 +26,13 @@ describe('generateReportEntriesSection', () => {
     const entries: ReportEntry[] = [{ code: 12_345, amount: 123.45 }];
 
     const result = generateReportEntriesSection(entries);
-    const phantomRecord = '00000000000000000';
+    const phantomRecord = '000000000000000000';
+    const expectedFirstEntry = '123450000000000123';
     expect(result.length).toBe(2700);
+    expect(result.startsWith(expectedFirstEntry)).toBe(true);
     expect(result.endsWith(phantomRecord.repeat(149))).toBe(true);
+    // Check that the pattern is repeated exactly 149 times
+    expect(result.substring(18).split(phantomRecord).length - 1).toBe(149);
   });
 
   it('should format negative amounts correctly', () => {

@@ -41,21 +41,27 @@ describe('taxAdjustmentArraySchema', () => {
   });
 
   it('should fail validation for negative amounts on non-negative codes', () => {
-    const invalidRecords = validTaxAdjustmentRecords.map(record =>
-      record.code === 110
-        ? { code: 110, amount: -500 }
-        : record.code === 370
-          ? { code: 370, amount: -3000 }
-          : record,
-    );
+    const invalidRecords = [...validTaxAdjustmentRecords];
+    // Replace records with negative amounts for codes that don't allow them
+    const index110 = invalidRecords.findIndex(record => record.code === 110);
+    const index370 = invalidRecords.findIndex(record => record.code === 370);
+    if (index110 >= 0) invalidRecords[index110] = { code: 110, amount: -500 };
+    if (index370 >= 0) invalidRecords[index370] = { code: 370, amount: -3000 };
+
     const result = taxAdjustmentArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.errors[0].message).toContain('does not allow negative amounts');
     }
+    if (!result.success) {
+      expect(result.error.errors[0].message).toContain('does not allow negative amounts');
+      expect(result.error.errors[0].path).toContain(index110);
+    }
   });
 
   it('should validate records with correct summary calculations', () => {
+    // Testing the summary calculation rule: code 370 should equal the sum of other specific codes
+    // In this simple case, we're just providing a few codes without triggering any sum validations
     const validRecordsWithSummary = [
       { code: 110, amount: 5000 },
       { code: 120, amount: 3000 },
@@ -66,6 +72,8 @@ describe('taxAdjustmentArraySchema', () => {
   });
 
   it('should fail validation for incorrect summary calculations', () => {
+    // Code 370 should equal the sum of codes 110 and 120, which is 8000
+    // Setting it to 1000 should trigger a validation error
     const invalidSummaryRecords = [
       { code: 110, amount: 5000 },
       { code: 120, amount: 3000 },
