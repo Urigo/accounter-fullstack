@@ -33,10 +33,10 @@ shaam-6111/
 │   │   ├── index.ts
 │   │   ├── headerSchema.ts
 │   │   └── [other record schemas].ts
-│   ├── generation/               # Report generation logic
+│   ├── generators/               # Report generation logic
 │   │   ├── index.ts
 │   │   └── generators/           # Individual record type generators
-│   ├── parsing/                  # Report parsing logic
+│   ├── parsers/                  # Report parsing logic
 │   │   ├── index.ts
 │   │   └── parsers/              # Individual record type parsers
 │   ├── validation/               # Validation logic
@@ -139,7 +139,7 @@ export interface ValidationResult {
   errors?: ValidationError[]
 }
 
-export interface ValidationError {
+export interface ValidationErrorDetail {
   path?: string // Path to the invalid field
   message: string // Developer-friendly error message
   code?: string // Error code (if applicable)
@@ -195,8 +195,8 @@ export interface ReportEntry {
 ```typescript
 // Error classes
 export class ValidationError extends Error {
-  public errors: ValidationError[]
-  constructor(message: string, errors: ValidationError[]) {
+  public errors: ValidationErrorDetail[]
+  constructor(message: string, errors: ValidationErrorDetail[]) {
     super(message)
     this.name = 'ValidationError'
     this.errors = errors

@@ -164,6 +164,7 @@ const summaryValidations: Record<
 // Zod schema for the array of balance sheet records
 export const balanceSheetArraySchema = z
   .array(balanceSheetRecordSchema)
+  .max(150)
   .superRefine((records, ctx) => {
     // Check for unique code values & create a map for faster lookups
     const codeToAmountMap = new Map<AllowedBalanceSheetCode, number>();

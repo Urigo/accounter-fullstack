@@ -83,6 +83,7 @@ const summaryValidations: Partial<
 // Schema for an array of Tax Adjustment records
 export const taxAdjustmentArraySchema = z
   .array(taxAdjustmentRecordSchema)
+  .max(150)
   .superRefine((records, ctx) => {
     // Check for unique code values & create a map for faster lookups
     const codeToAmountMap = checkForUniqueCodes(records, ctx);

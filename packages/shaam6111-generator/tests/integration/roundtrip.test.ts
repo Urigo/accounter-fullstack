@@ -136,16 +136,22 @@ describe('Roundtrip Tests', () => {
       expect(secondPassData.profitAndLoss.length).toBe(originalData.profitAndLoss.length);
       const originalCode6666 = originalData.profitAndLoss.find(entry => entry.code === 6666);
       const finalCode6666 = secondPassData.profitAndLoss.find(entry => entry.code === 6666);
+      expect(originalCode6666).toBeDefined();
+      expect(finalCode6666).toBeDefined();
       expect(finalCode6666?.amount).toBe(originalCode6666?.amount);
 
       // Check that tax adjustment codes and amounts are preserved
       const originalCode100 = originalData.taxAdjustment.find(entry => entry.code === 100);
       const finalCode100 = secondPassData.taxAdjustment.find(entry => entry.code === 100);
+      expect(originalCode100).toBeDefined();
+      expect(finalCode100).toBeDefined();
       expect(finalCode100?.amount).toBe(originalCode100?.amount);
 
       // Check that balance sheet codes and amounts are preserved
       const originalCode7800 = originalData.balanceSheet.find(entry => entry.code === 7800);
       const finalCode7800 = secondPassData.balanceSheet.find(entry => entry.code === 7800);
+      expect(originalCode7800).toBeDefined();
+      expect(finalCode7800).toBeDefined();
       expect(finalCode7800?.amount).toBe(originalCode7800?.amount);
 
       // Key validation values are preserved

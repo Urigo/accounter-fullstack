@@ -37,7 +37,7 @@ export function validateData(data: ReportData): ValidationResult {
   }
 
   // Validate profit and loss
-  if (data.profitAndLoss) {
+  if (Array.isArray(data.profitAndLoss)) {
     const profitLossValidation = profitLossArraySchema.safeParse(data.profitAndLoss);
     if (!profitLossValidation.success) {
       profitLossValidation.error.errors.map(err => {
@@ -50,7 +50,7 @@ export function validateData(data: ReportData): ValidationResult {
   }
 
   // Validate tax adjustment
-  if (data.taxAdjustment) {
+  if (Array.isArray(data.taxAdjustment)) {
     const taxAdjustmentValidation = taxAdjustmentArraySchema.safeParse(data.taxAdjustment);
     if (!taxAdjustmentValidation.success) {
       taxAdjustmentValidation.error.errors.map(err => {

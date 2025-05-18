@@ -169,37 +169,40 @@ const summaryValidations: Record<
 };
 
 // Schema for an array of profit and loss records
-export const profitLossArraySchema = z.array(profitLossRecordSchema).superRefine((records, ctx) => {
-  // Check for unique code values & create a map for faster lookups
-  const codeToAmountMap = new Map<AllowedProfitLossCode, number>();
-  records.map((record, i) => {
-    const code = record.code as AllowedProfitLossCode;
-    if (codeToAmountMap.has(code)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Duplicate code: ${codeToName(code)}`,
-        path: [i, 'code'],
-      });
-    } else {
-      codeToAmountMap.set(code, record.amount);
-    }
-  });
-
-  // Validate each summary field with its formula
-  Object.entries(summaryValidations).map(([codeStr, validation]) => {
-    const code = parseInt(codeStr) as AllowedProfitLossCode;
-    if (codeToAmountMap.has(code)) {
-      const actualAmount = codeToAmountMap.get(code);
-      const expectedAmount = validation.formula(codeToAmountMap);
-
-      if (actualAmount !== expectedAmount) {
-        const index = records.findIndex(r => r.code === code);
+export const profitLossArraySchema = z
+  .array(profitLossRecordSchema)
+  .max(150)
+  .superRefine((records, ctx) => {
+    // Check for unique code values & create a map for faster lookups
+    const codeToAmountMap = new Map<AllowedProfitLossCode, number>();
+    records.map((record, i) => {
+      const code = record.code as AllowedProfitLossCode;
+      if (codeToAmountMap.has(code)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Value for code ${codeToName(code)} should equal the sum: ${validation.description}`,
-          path: [index, 'amount'],
+          message: `Duplicate code: ${codeToName(code)}`,
+          path: [i, 'code'],
         });
+      } else {
+        codeToAmountMap.set(code, record.amount);
       }
-    }
+    });
+
+    // Validate each summary field with its formula
+    Object.entries(summaryValidations).map(([codeStr, validation]) => {
+      const code = parseInt(codeStr) as AllowedProfitLossCode;
+      if (codeToAmountMap.has(code)) {
+        const actualAmount = codeToAmountMap.get(code);
+        const expectedAmount = validation.formula(codeToAmountMap);
+
+        if (actualAmount !== expectedAmount) {
+          const index = records.findIndex(r => r.code === code);
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Value for code ${codeToName(code)} should equal the sum: ${validation.description}`,
+            path: [index, 'amount'],
+          });
+        }
+      }
+    });
   });
-});
