@@ -1,7 +1,6 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Select } from '@mantine/core';
 import { DatePickerInput, MonthPickerInput } from '@mantine/dates';
 import {
   Currency,
@@ -21,7 +20,8 @@ import {
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { CurrencyInput, SelectInput } from '../index.js';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
+import { ComboBox, CurrencyInput, NumberInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
   formManager: UseFormReturn<
@@ -67,18 +67,30 @@ export const ModifyDocumentFields = ({
 
   return (
     <>
-      <Controller
+      <FormField
         name="documentType"
         control={control}
         rules={{ required: 'Required' }}
         defaultValue={document?.documentType ?? DocumentType.Unprocessed}
-        render={({ field, fieldState }): ReactElement => (
-          <SelectInput
-            {...field}
-            selectionEnum={DocumentType}
-            error={fieldState.error?.message}
-            label="Type"
-          />
+        render={({ field }): ReactElement => (
+          <FormItem>
+            <FormLabel>Type</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+              <FormControl>
+                <SelectTrigger className="w-full truncate">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent onClick={event => event.stopPropagation()}>
+                {Object.entries(DocumentType).map(([label, value]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
         )}
       />
       {showExtendedFields && (
@@ -150,41 +162,42 @@ export const ModifyDocumentFields = ({
               </FormItem>
             )}
           />
-
-          <Controller
+          <FormField
             name="debtorId"
             control={control}
             defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                data={financialEntities}
-                value={field.value}
-                disabled={fetchingFinancialEntities}
-                label="Debtor"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Debtor</FormLabel>
+                <ComboBox
+                  {...field}
+                  data={financialEntities}
+                  value={field.value ?? undefined}
+                  disabled={fetchingFinancialEntities}
+                  placeholder="Scroll to see all options"
+                  formPart
+                />
+                <FormMessage />
+              </FormItem>
             )}
           />
-          <Controller
+          <FormField
             name="creditorId"
             control={control}
             defaultValue={isDocumentProcessed ? document?.creditor?.id : undefined}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                data={financialEntities}
-                value={field.value}
-                disabled={fetchingFinancialEntities}
-                label="Creditor"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Creditor</FormLabel>
+                <ComboBox
+                  {...field}
+                  data={financialEntities}
+                  value={field.value ?? undefined}
+                  disabled={fetchingFinancialEntities}
+                  placeholder="Scroll to see all options"
+                  formPart
+                />
+                <FormMessage />
+              </FormItem>
             )}
           />
           <Controller
@@ -322,6 +335,36 @@ export const ModifyDocumentFields = ({
               <FormMessage />
             </FormItem>
           </div>
+        )}
+      />
+
+      <FormField
+        name="exchangeRateOverride"
+        control={control}
+        defaultValue={isDocumentProcessed ? document?.exchangeRateOverride : undefined}
+        render={({ field }): ReactElement => (
+          <FormItem>
+            <FormLabel>
+              Exchange Rate Override
+              <span className="text-xs text-muted-foreground">
+                {`(${
+                  isDocumentProcessed
+                    ? (document?.amount?.currency ?? Currency.Ils)
+                    : defaultCurrency
+                } => ${Currency.Ils})`}
+              </span>
+            </FormLabel>
+            <FormControl>
+              <NumberInput
+                onValueChange={value => field.onChange(Number(value))}
+                value={field.value ?? undefined}
+                hideControls
+                decimalScale={5}
+                thousandSeparator=","
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

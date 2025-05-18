@@ -40,6 +40,7 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
         vatReportDateOverride
         noVatAmount
         allocationNumber
+        exchangeRateOverride
       }
     }
   }
