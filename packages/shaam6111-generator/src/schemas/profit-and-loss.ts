@@ -70,6 +70,11 @@ function commonCumulativeCodeValidation(
   };
 }
 
+// Define arrays for validation formulas
+const INCOME_COST_CODES = [
+  1306, 1308, 1307, 1310, 1320, 1330, 1340, 1350, 1360, 1371, 1372, 1390, 1400,
+] as const;
+
 // Define the validation logic for each summary code
 const summaryValidations: Record<
   ProfitLossSummaryCode,
@@ -79,16 +84,11 @@ const summaryValidations: Record<
   1300: {
     formula: (map: Map<AllowedProfitLossCode, number>) => {
       return (
-        (
-          [
-            1306, 1308, 1307, 1310, 1320, 1330, 1340, 1350, 1360, 1371, 1372, 1390, 1400,
-          ] as AllowedProfitLossCode[]
-        )
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) - (map.get(1450) || 0)
+        INCOME_COST_CODES.map(code => map.get(code) || 0).reduce((a, b) => a + b, 0) -
+        (map.get(1450) || 0)
       );
     },
-    description: '1306+1308+1307+1310+1320+1330+1340+1350+1360+1371+1372+1390+1400-1450',
+    description: `${INCOME_COST_CODES.join('+')}-1450`,
   },
   2000: {
     formula: (map: Map<AllowedProfitLossCode, number>) => {

@@ -105,9 +105,6 @@ export const taxAdjustmentArraySchema = z
         }
       }
     }
-
-    // Check for unique code values
-    checkForUniqueCodes(records, ctx);
   });
 
 function checkForUniqueCodes(
