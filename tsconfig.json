@@ -39,7 +39,8 @@
       "@accounter/hashavshevet-mesh": ["packages/hashavshevet-mesh/src/"],
       "@accounter/israeli-vat-scraper": ["packages/israeli-vat-scraper/src/"],
       "@accounter/payper-mesh": ["packages/payper-mesh/src/"],
-      "@accounter/pcn874-generator": ["packages/pcn874-generator/src/"]
+      "@accounter/pcn874-generator": ["packages/pcn874-generator/src/"],
+      "@accounter/shaam6111-generator": ["packages/shaam6111-generator/src/"]
     }
   },
   "exclude": ["**/node_modules", "**/dist"]

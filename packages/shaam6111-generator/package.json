@@ -1,0 +1,72 @@
+{
+  "name": "@accounter/shaam6111-generator",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Fully typed application that generates, parses, and validates SHAAM 6111 tax reports.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "directory": "packages/shaam6111-generator"
+  },
+  "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam6111-generator#readme",
+  "bugs": {
+    "url": "https://github.com/urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.0.0 || >= 20"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "shaam",
+    "shaam6111",
+    "accountancy",
+    "accountant",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "yarn lint && bob build",
+    "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
+    "prepublish": "yarn build",
+    "start": "node ./dist/esm/index.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "iconv-lite": "0.6.3",
+    "zod": "3.24.4"
+  },
+  "devDependencies": {
+    "bob-the-bundler": "7.0.1",
+    "eslint": "9.26.0",
+    "vitest": "3.1.3"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

@@ -1,0 +1,42 @@
+name: SHAAM6111 Generator Tests
+
+on:
+  push:
+    paths:
+      - 'packages/shaam6111-generator/**'
+      - '.github/workflows/shaam6111-generator-test.yml'
+  pull_request:
+    paths:
+      - 'packages/shaam6111-generator/**'
+      - '.github/workflows/shaam6111-generator-test.yml'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+
+      - name: Build
+        run: |
+          yarn workspace @accounter/shaam6111-generator build
+
+      - name: Run tests
+        run: |
+          yarn workspace @accounter/shaam6111-generator test
