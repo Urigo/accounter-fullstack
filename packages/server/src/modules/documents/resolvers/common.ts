@@ -51,6 +51,10 @@ export const commonFinancialDocumentsFields:
   noVatAmount: documentRoot =>
     documentRoot.no_vat_amount ? Number(documentRoot.no_vat_amount) : null,
   allocationNumber: documentRoot => documentRoot.allocation_number,
+  exchangeRateOverride: documentRoot =>
+    documentRoot.exchange_rate_override == null
+      ? null
+      : Number(documentRoot.exchange_rate_override),
 };
 
 export const commonChargeFields: DocumentsModule.ChargeResolvers = {

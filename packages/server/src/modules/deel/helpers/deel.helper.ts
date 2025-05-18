@@ -162,6 +162,7 @@ export async function uploadDeelInvoice(
       debtorId: ownerId,
       creditorId: DEEL_BUSINESS_ID,
       allocationNumber: null,
+      exchangeRateOverride: null,
     };
 
     // upload the document

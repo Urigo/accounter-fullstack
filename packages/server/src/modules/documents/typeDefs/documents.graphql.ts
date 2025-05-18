@@ -98,6 +98,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " invoice document "
@@ -115,6 +116,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " proforma document "
@@ -132,6 +134,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " receipt document "
@@ -148,6 +151,7 @@ export default gql`
     noVatAmount: Float
     isReviewed: Boolean
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " Invoice receipt document - חשבונית מס קבלה "
@@ -165,6 +169,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " Credit invoice document - חשבונית זיכוי "
@@ -182,6 +187,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " input variables for updateDocument "
@@ -199,6 +205,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " result type for updateCharge "
@@ -224,6 +231,7 @@ export default gql`
     vatReportDateOverride: TimelessDate
     noVatAmount: Float
     allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " result type for insertDocument "

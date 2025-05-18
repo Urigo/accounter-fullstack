@@ -233,6 +233,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           noVatAmount: fields.noVatAmount ?? null,
           isReviewed: true,
           allocationNumber: fields.allocationNumber ?? null,
+          exchangeRateOverride: fields.exchangeRateOverride ?? null,
         };
         const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
         if (!res || res.length === 0) {
@@ -315,6 +316,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           creditorId: record.creditorId ?? null,
           debtorId: record.debtorId ?? null,
           allocationNumber: record.allocationNumber ?? null,
+          exchangeRateOverride: record.exchangeRateOverride ?? null,
         };
         const res = await injector
           .get(DocumentsProvider)
