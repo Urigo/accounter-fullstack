@@ -15,7 +15,7 @@
   "author": "gilgardosh <gilgardosh@gmail.com>",
   "license": "MIT",
   "engines": {
-    "node": "^18.0.0 || >= 20"
+    "node": "^20.0.0 || >= 22"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

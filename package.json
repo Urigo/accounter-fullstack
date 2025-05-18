@@ -10,7 +10,7 @@
   },
   "packageManager": "yarn@4.9.1",
   "engines": {
-    "node": "23.11.1"
+    "node": "24.0.2"
   },
   "scripts": {
     "build": "yarn generate && yarn workspaces foreach --all run build",
