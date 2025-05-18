@@ -89,9 +89,14 @@ export async function ledgerEntryFromDocument(
 
   // handle non-local currencies
   if (document.currency_code !== defaultLocalCurrency) {
-    const exchangeRate = await injector
-      .get(ExchangeProvider)
-      .getExchangeRates(currency, defaultLocalCurrency, document.date);
+    let exchangeRate = 1;
+    if (document.exchange_rate_override) {
+      exchangeRate = Number(document.exchange_rate_override);
+    } else {
+      exchangeRate = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(currency, defaultLocalCurrency, document.date);
+    }
 
     // Set foreign amounts
     foreignTotalAmount = totalAmount;
