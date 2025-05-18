@@ -3,6 +3,8 @@ name: Require Changeset
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+    paths:
+      - 'packages/**'
     branches:
       - main
 
