@@ -166,6 +166,7 @@ export async function getDocumentFromFile(
       vatReportDateOverride: null,
       noVatAmount: null,
       allocationNumber: ocrData.allocationNumber,
+      exchangeRateOverride: null,
       ...sides,
     };
 

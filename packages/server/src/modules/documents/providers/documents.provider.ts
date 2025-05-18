@@ -138,6 +138,10 @@ const updateDocument = sql<IUpdateDocumentQuery>`
   allocation_number = COALESCE(
     $allocationNumber,
     allocation_number
+  ),
+  exchange_rate_override = COALESCE(
+    $exchangeRateOverride,
+    exchange_rate_override
   )
   WHERE
     id = $documentId
@@ -165,7 +169,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       no_vat_amount,
       creditor_id,
       debtor_id,
-      allocation_number
+      allocation_number,
+      exchange_rate_override
     )
     VALUES $$document(
       image,
@@ -181,7 +186,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       noVatAmount,
       creditorId,
       debtorId,
-      allocationNumber
+      allocationNumber,
+      exchangeRateOverride
     )
     RETURNING *;`;
 

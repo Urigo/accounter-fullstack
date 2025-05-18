@@ -124,6 +124,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
               creditorId: isOwnerCreditor ? defaultAdminBusinessId : counterpartyId,
               debtorId: isOwnerCreditor ? counterpartyId : defaultAdminBusinessId,
               allocationNumber: null, // TODO: add allocation number from GreenInvoice API
+              exchangeRateOverride: null,
             };
 
             const newDocumentPromise = injector

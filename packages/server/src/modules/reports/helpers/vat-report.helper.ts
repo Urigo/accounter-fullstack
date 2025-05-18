@@ -63,9 +63,14 @@ export async function adjustTaxRecord(
     }
 
     // get exchange rate
-    const rate = await injector
-      .get(ExchangeProvider)
-      .getExchangeRates(currency, defaultLocalCurrency, doc.date);
+    let rate = 1;
+    if (doc.exchange_rate_override) {
+      rate = Number(doc.exchange_rate_override);
+    } else {
+      rate = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(currency, defaultLocalCurrency, doc.date);
+    }
 
     const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
     const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
