@@ -66,13 +66,19 @@ export function sortTransactions(transactions: Transaction[], options: Options) 
   }
 
   return transactions.sort((a, b) => {
-    if (a.entryType > b.entryType) {
-      return 1;
+    const entryTypeCompare = a.entryType.localeCompare(b.entryType);
+    if (entryTypeCompare) {
+      return entryTypeCompare;
     }
-    if (a.entryType < b.entryType) {
-      return -1;
+    const invoiceDateCompare = a.invoiceDate.localeCompare(b.invoiceDate);
+    if (invoiceDateCompare) {
+      return invoiceDateCompare;
     }
-    return a.invoiceDate > b.invoiceDate ? 1 : -1;
+    const vatIdCompare = (a.vatId ?? '0').localeCompare(b.vatId ?? '0');
+    if (vatIdCompare) {
+      return vatIdCompare;
+    }
+    return a.invoiceSum > b.invoiceSum ? 1 : -1;
   });
 }
 
