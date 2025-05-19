@@ -12,6 +12,8 @@ export default gql`
   interface Business implements FinancialEntity {
     id: UUID!
     name: String!
+
+    pcn874RecordType: Pcn874RecordType
   }
 
   " response for paginated Financial Entities "
@@ -36,6 +38,8 @@ export default gql`
     optionalVAT: Boolean
 
     suggestions: Suggestions
+
+    pcn874RecordType: Pcn874RecordType
   }
 
   " input for business suggestions "
@@ -50,6 +54,8 @@ export default gql`
     id: UUID!
     name: String!
     email: String!
+
+    pcn874RecordType: Pcn874RecordType
   }
 
   extend type Mutation {
@@ -84,6 +90,8 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+
+    pcn874RecordType: Pcn874RecordType
   }
 
   " input for insertNewBusiness "
@@ -102,6 +110,7 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+    pcn874RecordType: Pcn874RecordType
   }
 
   " input for business suggestions "

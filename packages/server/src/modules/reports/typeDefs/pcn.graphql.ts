@@ -40,4 +40,21 @@ export default gql`
     content: String!
     diffContent: String
   }
+
+  " record type of PCN874 report "
+  enum Pcn874RecordType {
+    S1
+    S2
+    L1
+    L2
+    M
+    Y
+    I
+    T
+    K
+    R
+    P
+    H
+    C
+  }
 `;

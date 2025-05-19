@@ -174,6 +174,10 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   optional_vat = COALESCE(
     $optionalVat,
     optional_vat
+  ),
+  pcn874_record_type_override = COALESCE(
+    $pcn874RecordTypeOverride,
+    pcn874_record_type_override
   )
   WHERE
     id = $businessId
@@ -181,8 +185,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusinesses = sql<IInsertBusinessesQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country)
-  VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override)
+  VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride)
   RETURNING *;`;
 
 const deleteBusiness = sql<IDeleteBusinessQuery>`
