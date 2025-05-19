@@ -9,7 +9,9 @@ env:
   POSTGRES_DB: accounter
 
 on:
-  pull_request: {}
+  pull_request:
+    paths-ignore:
+      - .changeset/**/*
 
 jobs:
   # test:
