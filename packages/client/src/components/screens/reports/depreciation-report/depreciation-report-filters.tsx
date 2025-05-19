@@ -5,7 +5,7 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { DepreciationReportFilter } from '../../../../gql/graphql.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { NumberInput } from '../../../common/index.js';
+import { ComboBox, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogTrigger } from '../../../ui/dialog.js';
 import {
@@ -16,13 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../ui/select.js';
 
 interface DepreciationReportFiltersFormProps {
   filter: DepreciationReportFilter;
@@ -81,24 +74,14 @@ function DepreciationReportFiltersForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Owner</FormLabel>
-              <Select
-                onValueChange={field.onChange}
+              <ComboBox
+                {...field}
+                data={financialEntities}
                 value={field.value ?? undefined}
                 disabled={financialEntitiesFetching}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full truncate">
-                    <SelectValue placeholder="Select a financial entity" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent onClick={event => event.stopPropagation()}>
-                  {financialEntities.map(entity => (
-                    <SelectItem key={entity.value} value={entity.value}>
-                      {entity.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select a financial entity"
+                formPart
+              />
               <FormMessage />
             </FormItem>
           )}
