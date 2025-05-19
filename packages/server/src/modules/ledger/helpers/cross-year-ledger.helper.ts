@@ -330,6 +330,7 @@ function splitVatPayments(
       ...entry,
       debitAccountID1: entry.debitAccountID2,
       debitAmount1: entry.debitAmount2,
+      creditAmount1: entry.debitAmount2,
       localCurrencyDebitAmount1: entry.localCurrencyDebitAmount2!,
 
       localCurrencyCreditAmount1: entry.localCurrencyDebitAmount2!,
