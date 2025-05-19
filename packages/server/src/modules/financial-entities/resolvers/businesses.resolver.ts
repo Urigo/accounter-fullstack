@@ -99,6 +99,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         optionalVat: fields.optionalVAT,
         country: fields.country,
         suggestionData,
+        pcn874RecordTypeOverride: fields.pcn874RecordType,
       };
       try {
         if (
@@ -110,7 +111,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           fields.website ||
           fields.exemptDealer != null ||
           fields.suggestions ||
-          fields.optionalVAT != null
+          fields.optionalVAT != null ||
+          fields.pcn874RecordType
         ) {
           await injector
             .get(BusinessesProvider)
@@ -202,6 +204,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           optionalVat: fields.optionalVAT,
           country: fields.country,
           suggestions,
+          pcn874RecordTypeOverride: fields.pcn874RecordType,
         });
 
         let taxCategoryPromise: Promise<IInsertBusinessTaxCategoryResult | void> =
@@ -425,6 +428,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             governmentId: undefined,
             exemptDealer: false,
             optionalVat: false,
+            pcn874RecordTypeOverride: null,
           });
 
           if (!business) {
@@ -503,11 +507,13 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       return null;
     },
     optionalVAT: DbBusiness => DbBusiness.optional_vat,
+    pcn874RecordType: DbBusiness => DbBusiness.pcn874_record_type_override,
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,
     name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
+    pcn874RecordType: DbBusiness => DbBusiness.pcn874_record_type_override,
   },
   UpdateBusinessResponse: {
     __resolveType: (obj, _context, _info) => {
