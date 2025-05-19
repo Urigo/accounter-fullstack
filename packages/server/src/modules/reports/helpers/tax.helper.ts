@@ -208,7 +208,7 @@ export async function calculateTaxAmounts(
   // Special tax rate for special taxable income
   const specialTaxableIncome = recordsByFinancialEntityIdAndSortCodeValidation(
     decoratedLedgerRecords,
-    (_, sortCode) => sortCode === 933, // TODO: make sure this is the correct sort code for special taxable income
+    (_, sortCode) => sortCode === 991,
     true,
   );
   const specialTaxRate = Number(taxRateVariables.original_tax_rate) / 100;
