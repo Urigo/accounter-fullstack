@@ -5,7 +5,7 @@ import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/type
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import { DECREASED_VAT_RATIO } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
-import type { AccountantStatus } from '@shared/gql-types';
+import type { AccountantStatus, Pcn874RecordType } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
@@ -37,6 +37,7 @@ export type RawVatReportRecord = {
   localVatAfterDeduction?: number;
   vatNumber?: string | null;
   allocationNumber?: string | null;
+  pcn874RecordType?: Pcn874RecordType;
 };
 
 export async function adjustTaxRecord(
@@ -97,6 +98,7 @@ export async function adjustTaxRecord(
           ? doc.debtor_id !== charge.owner_id
           : doc.debtor_id === charge.owner_id,
       allocationNumber: doc.allocation_number,
+      pcn874RecordType: business.pcn874_record_type_override ?? undefined,
     };
 
     // set default amountBeforeVAT
