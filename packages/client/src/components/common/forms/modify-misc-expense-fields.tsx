@@ -8,8 +8,7 @@ import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
-import { CurrencyInput } from '../index.js';
+import { ComboBox, CurrencyInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
@@ -40,25 +39,14 @@ export const ModifyMiscExpenseFields = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Creditor</FormLabel>
-            <Select
-              onValueChange={field.onChange}
+            <ComboBox
+              {...field}
+              data={financialEntities}
               value={field.value ?? undefined}
               disabled={fetchingFinancialEntities}
-              required={isInsert}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select creditor" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent onClick={event => event.stopPropagation()}>
-                {financialEntities.map(entity => (
-                  <SelectItem key={entity.value} value={entity.value}>
-                    {entity.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select creditor"
+              formPart
+            />
             <FormMessage />
           </FormItem>
         )}
@@ -72,25 +60,14 @@ export const ModifyMiscExpenseFields = ({
         render={({ field }) => (
           <FormItem>
             <FormLabel>Debtor</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              required={isInsert}
+            <ComboBox
+              {...field}
+              data={financialEntities}
               value={field.value ?? undefined}
               disabled={fetchingFinancialEntities}
-            >
-              <FormControl>
-                <SelectTrigger className="w-full truncate">
-                  <SelectValue placeholder="Select a debtor" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent onClick={event => event.stopPropagation()}>
-                {financialEntities.map(entity => (
-                  <SelectItem key={entity.value} value={entity.value}>
-                    {entity.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Select debtor"
+              formPart
+            />
             <FormMessage />
           </FormItem>
         )}
