@@ -26,7 +26,7 @@ type ComboBoxProps = {
   triggerProps?: Omit<React.ComponentProps<typeof Button>, 'disabled'>;
   disabled?: boolean;
   onChange?: (...event: unknown[]) => void;
-  value?: string;
+  value?: string | null;
   formPart?: boolean;
 };
 
@@ -132,7 +132,7 @@ function DatumList({
   onChange?: (datum: string | null) => void;
   placeholder?: string;
   data: Array<Datum>;
-  value?: string;
+  value?: string | null;
 }) {
   return (
     <Command>
