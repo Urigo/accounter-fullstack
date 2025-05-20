@@ -8,7 +8,7 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
+import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
 import { Input } from '../../../ui/input';
 
@@ -69,26 +69,30 @@ export function FlightPathInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <ActionIcon className="mb-2">
-              <TrashX
-                size={20}
-                onClick={(): void => {
-                  remove(index);
-                  trigger(flightPathPath);
-                }}
-              />
-            </ActionIcon>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mb-2 size-7.5"
+              onClick={(): void => {
+                remove(index);
+                trigger(flightPathPath);
+              }}
+            >
+              <TrashX className="size-5" />
+            </Button>
           </div>
         ))}
-        <ActionIcon>
-          <PlaylistAdd
-            size={20}
-            onClick={(): void => {
-              append({} as FieldArray<T, ArrayPath<T>>);
-              trigger(flightPathPath);
-            }}
-          />
-        </ActionIcon>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => {
+            append({} as FieldArray<T, ArrayPath<T>>);
+            trigger(flightPathPath);
+          }}
+        >
+          <PlaylistAdd className="size-5" />
+        </Button>
       </div>
     </div>
   );

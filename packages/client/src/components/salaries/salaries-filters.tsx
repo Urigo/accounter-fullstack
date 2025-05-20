@@ -5,13 +5,14 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, MultiSelect } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
 import { isObjectEmpty, TimelessDateString } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
+import { Button } from '../ui/button.js';
 
 export type SalariesFilter = {
   fromDate: TimelessDateString;
@@ -216,9 +217,14 @@ export function SalariesFilters({ filter, setFilter }: SalariesFiltersProps): Re
         }
         modalSize="xl"
       />
-      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-        <Filter size={20} />
-      </ActionIcon>
+      <Button
+        variant="outline"
+        size="icon"
+        className="size-7.5"
+        onClick={(): void => setOpened(true)}
+      >
+        <Filter className="size-5" />
+      </Button>
     </div>
   );
 }

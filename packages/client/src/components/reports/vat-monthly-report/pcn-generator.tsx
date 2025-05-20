@@ -2,9 +2,9 @@ import { ReactElement, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
+import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -60,14 +60,15 @@ export const PCNGenerator = ({
 
   return (
     <Tooltip label="Generate and Download PCN874 File">
-      <ActionIcon
+      <Button
         disabled={fetching || isLoading}
-        variant="default"
+        variant="outline"
+        size="icon"
+        className="size-7.5"
         onClick={executeQuery}
-        size={30}
       >
-        <Report size={20} />
-      </ActionIcon>
+        <Report className="size-5" />
+      </Button>
     </Tooltip>
   );
 };

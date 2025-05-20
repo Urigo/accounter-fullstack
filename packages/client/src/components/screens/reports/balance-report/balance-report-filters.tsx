@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
+import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
@@ -12,6 +12,7 @@ import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-ent
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../../common/index.js';
+import { Button } from '../../../ui/button.js';
 
 export enum Period {
   MONTHLY = 'Monthly',
@@ -286,9 +287,14 @@ export function BalanceReportFilters({
         modalSize="xl"
       />
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-          <Filter size={20} />
-        </ActionIcon>
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => setOpened(true)}
+        >
+          <Filter className="size-5" />
+        </Button>
       </Indicator>
     </div>
   );

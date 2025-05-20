@@ -2,13 +2,14 @@ import { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useInsertBusinessTripAttendee } from '../../../../hooks/use-insert-business-trip-attendee.js';
+import { Button } from '../../../ui/button.js';
 
 export function AddAttendee(props: { businessTripId: string; onAdd?: () => void }): ReactElement {
   const { businessTripId, onAdd } = props;
@@ -17,16 +18,17 @@ export function AddAttendee(props: { businessTripId: string; onAdd?: () => void 
   return (
     <>
       <Tooltip label="Add Attendee">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={event => {
             event.stopPropagation();
             open();
           }}
-          size={30}
+          className="size-7.5"
         >
-          <Plus size={20} />
-        </ActionIcon>
+          <Plus className="size-5" />
+        </Button>
       </Tooltip>
       {opened && (
         <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />

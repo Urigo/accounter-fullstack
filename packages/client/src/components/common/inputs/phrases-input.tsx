@@ -8,7 +8,7 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
+import { Button } from '../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form';
 import { Input } from '../../ui/input';
 
@@ -64,14 +64,19 @@ export function PhrasesInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <ActionIcon>
-              <TrashX size={20} onClick={() => remove(index)} />
-            </ActionIcon>
+            <Button variant="ghost" size="icon" className="size-7.5" onClick={() => remove(index)}>
+              <TrashX className="size-5" />
+            </Button>
           </div>
         ))}
-        <ActionIcon>
-          <PlaylistAdd size={20} onClick={() => append(undefined as FieldArray<T>)} />
-        </ActionIcon>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          onClick={() => append(undefined as FieldArray<T>)}
+        >
+          <PlaylistAdd className="size-5" />
+        </Button>
       </div>
     </div>
   );

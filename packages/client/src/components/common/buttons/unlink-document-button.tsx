@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { PlugConnectedX } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';
 
 interface Props {
@@ -24,9 +24,9 @@ export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
       onConfirm={onUnlink}
       title="Are you sure you want to unlink this document from the charge?"
     >
-      <ActionIcon>
-        <PlugConnectedX size={20} />
-      </ActionIcon>
+      <Button variant="ghost" size="icon" className="size-7.5">
+        <PlugConnectedX className="size-5" />
+      </Button>
     </ConfirmationModal>
   );
 }

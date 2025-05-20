@@ -2,7 +2,7 @@ import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } f
 import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { AllChargesDocument, ChargeFilter } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -15,6 +15,7 @@ import {
   MergeChargesButton,
 } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
+import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -106,9 +107,18 @@ export const AllCharges = (): ReactElement => {
           initiallyOpened={!filter}
         />
         <Tooltip label="Expand all accounts">
-          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
-            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-          </ActionIcon>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setIsAllOpened(i => !i)}
+          >
+            {isAllOpened ? (
+              <LayoutNavbarCollapse className="size-5" />
+            ) : (
+              <LayoutNavbarExpand className="size-5" />
+            )}
+          </Button>
         </Tooltip>
         <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
       </div>,

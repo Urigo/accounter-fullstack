@@ -1,8 +1,8 @@
 import { ReactElement } from 'react';
 import { toast } from 'sonner';
 import { Trash } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { useDeleteMiscExpense } from '../../../hooks/use-delete-misc-expense.js';
+import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';
 
 interface Props {
@@ -30,9 +30,9 @@ export function DeleteMiscExpenseButton({ miscExpenseId, onChange }: Props): Rea
 
   return (
     <ConfirmationModal onConfirm={onDelete} title="Are you sure you want to delete this expense?">
-      <ActionIcon color="red">
-        <Trash size={20} />
-      </ActionIcon>
+      <Button className="size-7.5 text-red-500" variant="ghost">
+        <Trash className="size-5" />
+      </Button>
     </ConfirmationModal>
   );
 }

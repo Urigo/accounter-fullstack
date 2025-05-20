@@ -1,6 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { ZoomIn, ZoomInArea, ZoomOut, ZoomOutArea } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
+import { Button } from '../ui/button.js';
 
 interface Props {
   src: string;
@@ -91,34 +92,48 @@ export function ImageMagnifier({
       />
       <div className="absolute top-10 right-10 flex flex-row gap-1">
         <Tooltip label="Increase zoom">
-          <ActionIcon variant="transparent" onClick={(): void => setZoomLevel(i => i * 1.2)}>
-            <ZoomIn size={18} />
-          </ActionIcon>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setZoomLevel(i => i * 1.2)}
+          >
+            <ZoomIn className="size-5" />
+          </Button>
         </Tooltip>
         <Tooltip label="Decrease zoom">
-          <ActionIcon variant="transparent" onClick={(): void => setZoomLevel(i => i / 1.2)}>
-            <ZoomOut size={18} />
-          </ActionIcon>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setZoomLevel(i => i / 1.2)}
+          >
+            <ZoomOut className="size-5" />
+          </Button>
         </Tooltip>
         <Tooltip label="Expand zoom area">
-          <ActionIcon
-            variant="transparent"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7.5"
             onClick={(): void =>
               setMagnifierSize(size => ({ width: size.width * 1.2, height: size.height * 1.2 }))
             }
           >
-            <ZoomInArea size={18} />
-          </ActionIcon>
+            <ZoomInArea className="size-5" />
+          </Button>
         </Tooltip>
         <Tooltip label="Reduce zoom area">
-          <ActionIcon
-            variant="transparent"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7.5"
             onClick={(): void =>
               setMagnifierSize(size => ({ width: size.width / 1.2, height: size.height / 1.2 }))
             }
           >
-            <ZoomOutArea size={18} />
-          </ActionIcon>
+            <ZoomOutArea className="size-5" />
+          </Button>
         </Tooltip>
       </div>
     </div>

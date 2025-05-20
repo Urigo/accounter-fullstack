@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilter } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates.js';
@@ -11,6 +10,7 @@ import { isObjectEmpty } from '../../helpers/form.js';
 import { TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { PopUpModal } from '../common/index.js';
+import { Button } from '../ui/button.js';
 
 interface ChargeFilterFormProps {
   filter: ChargeFilter;
@@ -162,9 +162,14 @@ export function ChargeFilterFilter({ filter, setFilter }: ChargeFilterProps): Re
           />
         }
       />
-      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-        <Filter size={20} />
-      </ActionIcon>
+      <Button
+        variant="outline"
+        size="icon"
+        className="size-7.5"
+        onClick={(): void => setOpened(true)}
+      >
+        <Filter className="size-5" />
+      </Button>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, List, MultiSelect, Select, Text, Tooltip } from '@mantine/core';
+import { List, MultiSelect, Select, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
@@ -9,6 +9,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-update-business-trip-flights-expense.js';
+import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
@@ -181,28 +182,30 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
         {onChange && (
           <>
             <Tooltip label="Edit">
-              <ActionIcon
-                loading={updatingInProcess}
-                variant={isEditMode ? 'filled' : 'default'}
-                onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+              <Button
+                disabled={updatingInProcess}
+                variant={isEditMode ? 'default' : 'outline'}
+                size="icon"
+                className="size-7.5"
+                onClick={(event): void => {
                   event.stopPropagation();
                   setIsEditMode(curr => !curr);
                 }}
-                size={30}
               >
-                <Edit size={20} />
-              </ActionIcon>
+                <Edit className="size-5" />
+              </Button>
             </Tooltip>
             {isEditMode && (
               <Tooltip label="Confirm Changes">
-                <ActionIcon
+                <Button
                   type="submit"
                   form={`form ${flightExpense.id}`}
-                  variant="default"
-                  size={30}
+                  variant="outline"
+                  size="icon"
+                  className="size-7.5 text-green-500"
                 >
-                  <Check size={20} color="green" />
-                </ActionIcon>
+                  <Check className="size-5" />
+                </Button>
               </Tooltip>
             )}
 

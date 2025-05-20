@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AddBusinessTripFlightsExpenseInput,
@@ -10,6 +10,7 @@ import {
   FlightClass,
 } from '../../../../gql/graphql.js';
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
+import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { FlightPathInput } from '../parts/flight-path-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
@@ -24,16 +25,17 @@ export function AddFlightExpense(props: {
   return (
     <>
       <Tooltip label="Add Flight Expense">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(event): void => {
             event.stopPropagation();
             open();
           }}
-          size={30}
         >
-          <Plus size={20} />
-        </ActionIcon>
+          <Plus className="size-5" />
+        </Button>
       </Tooltip>
       {opened && (
         <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />

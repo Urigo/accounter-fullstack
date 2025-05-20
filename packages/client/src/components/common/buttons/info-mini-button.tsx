@@ -1,14 +1,11 @@
-import { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { InfoCircle } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps } from '@mantine/core';
-import { PolymorphicComponentProps } from '@mantine/utils';
+import { Button } from '../../ui/button.js';
 
-export function InfoMiniButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps>,
-): ReactElement {
+export function InfoMiniButton(props: ComponentProps<typeof Button>): ReactElement {
   return (
-    <ActionIcon {...props}>
-      <InfoCircle size={20} />
-    </ActionIcon>
+    <Button {...props} className="size-7.5">
+      <InfoCircle className="size-5" />
+    </Button>
   );
 }

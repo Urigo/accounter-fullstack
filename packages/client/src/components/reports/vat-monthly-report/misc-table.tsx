@@ -1,9 +1,9 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { ChargesTable } from '../../charges/charges-table.js';
+import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -42,9 +42,18 @@ export const MiscTable = ({
   return (
     <>
       <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <ActionIcon variant="default" onClick={(): void => setIsOpened(i => !i)} size={30}>
-          {isOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-        </ActionIcon>
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => setIsOpened(i => !i)}
+        >
+          {isOpened ? (
+            <LayoutNavbarCollapse className="size-5" />
+          ) : (
+            <LayoutNavbarExpand className="size-5" />
+          )}
+        </Button>
         Misc Charges (which are not on the above tables)
       </span>
       {isOpened && chargesData && (

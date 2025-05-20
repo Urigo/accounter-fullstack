@@ -1,13 +1,14 @@
-import { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { RefreshDot } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
+import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';
 
 type Props = {
   chargeId: string;
   onChange: () => void;
-} & ActionIconProps;
+} & ComponentProps<typeof Button>;
 
 export function RegenerateLedgerRecordsButton({
   chargeId,
@@ -28,9 +29,14 @@ export function RegenerateLedgerRecordsButton({
       title="Are you sure you want to regenerate ledger records?"
     >
       <Tooltip label="Regenerate Ledger">
-        <ActionIcon {...buttonProps}>
-          <RefreshDot size={20} />
-        </ActionIcon>
+        <Button
+          variant="outline"
+          size="icon"
+          {...buttonProps}
+          className={cn('size-7.5', buttonProps.className)}
+        >
+          <RefreshDot className="size-5" />
+        </Button>
       </Tooltip>
     </ConfirmationModal>
   );

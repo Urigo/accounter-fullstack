@@ -9,8 +9,9 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon, Select } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { useGetTags } from '../../../hooks/use-get-tags.js';
+import { Button } from '../../ui/button.js';
 import { SelectTagItem } from './index.js';
 
 type Props<T extends FieldValues> = {
@@ -74,14 +75,24 @@ export function TagsInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <ActionIcon>
-              <TrashX size={20} onClick={(): void => remove(index)} />
-            </ActionIcon>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7.5"
+              onClick={(): void => remove(index)}
+            >
+              <TrashX className="size-5" />
+            </Button>
           </div>
         ))}
-        <ActionIcon>
-          <PlaylistAdd size={20} onClick={(): void => append({} as FieldArray<T, ArrayPath<T>>)} />
-        </ActionIcon>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => append({} as FieldArray<T, ArrayPath<T>>)}
+        >
+          <PlaylistAdd className="size-5" />
+        </Button>
       </div>
     </div>
   );

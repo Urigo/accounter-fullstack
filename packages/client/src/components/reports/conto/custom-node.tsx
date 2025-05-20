@@ -8,7 +8,6 @@ import {
   Trash,
   X,
 } from 'lucide-react';
-import { ActionIcon } from '@mantine/core';
 import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -158,17 +157,18 @@ export const CustomNode: React.FC<Props> = props => {
               {!droppable && (
                 <div className="pl-2">
                   <Tooltip content="Expand records">
-                    <ActionIcon
-                      variant="default"
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-7.5"
                       onClick={(): void => setToggleLedger(i => !i)}
-                      size={30}
                     >
                       {toggleLedger ? (
-                        <PanelTopCloseIcon size={20} />
+                        <PanelTopCloseIcon className="size-5" />
                       ) : (
-                        <PanelTopOpenIcon size={20} />
+                        <PanelTopOpenIcon className="size-5" />
                       )}
-                    </ActionIcon>
+                    </Button>
                   </Tooltip>
                 </div>
               )}

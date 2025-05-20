@@ -2,7 +2,7 @@ import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } fro
 import { ChevronsLeftRightEllipsis, ChevronsRightLeft, Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Mark, Table, Text, Tooltip } from '@mantine/core';
+import { Mark, Table, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
@@ -13,6 +13,7 @@ import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterTableRow } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
 import { BusinessTransactionsFilters } from './business-transactions-filters.js';
 
@@ -95,22 +96,32 @@ export const BusinessTransactionsSummery = (): ReactElement => {
       <div className="flex flex-row gap-x-5">
         <BusinessTransactionsFilters filter={filter} setFilter={setFilter} />
         <Tooltip label="Expand all accounts">
-          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
-            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-          </ActionIcon>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setIsAllOpened(i => !i)}
+          >
+            {isAllOpened ? (
+              <LayoutNavbarCollapse className="size-5" />
+            ) : (
+              <LayoutNavbarExpand className="size-5" />
+            )}
+          </Button>
         </Tooltip>
         <Tooltip label="Expand all currencies">
-          <ActionIcon
-            variant="default"
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
             onClick={(): void => setIsExpandedCurrencies(i => !i)}
-            size={30}
           >
             {isExpandedCurrencies ? (
-              <ChevronsRightLeft size={20} />
+              <ChevronsRightLeft className="size-5" />
             ) : (
-              <ChevronsLeftRightEllipsis size={20} />
+              <ChevronsLeftRightEllipsis className="size-5" />
             )}
-          </ActionIcon>
+          </Button>
         </Tooltip>
       </div>,
     );

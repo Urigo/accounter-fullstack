@@ -10,8 +10,9 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
-import { ActionIcon, NumberInput } from '@mantine/core';
+import { NumberInput } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';
+import { Button } from '../../ui/button.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -96,26 +97,30 @@ export function ChargeSpreadInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <ActionIcon className="mb-2">
-              <TrashX
-                size={20}
-                onClick={(): void => {
-                  remove(index);
-                  trigger(chargeSpreadPath as Path<T>);
-                }}
-              />
-            </ActionIcon>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7.5 mb-2"
+              onClick={(): void => {
+                remove(index);
+                trigger(chargeSpreadPath as Path<T>);
+              }}
+            >
+              <TrashX className="size-5" />
+            </Button>
           </div>
         ))}
-        <ActionIcon>
-          <PlaylistAdd
-            size={20}
-            onClick={(): void => {
-              append({ year: `${new Date().getFullYear()}-01-01` } as FieldArray<T, ArrayPath<T>>);
-              trigger(chargeSpreadPath as Path<T>);
-            }}
-          />
-        </ActionIcon>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => {
+            append({ year: `${new Date().getFullYear()}-01-01` } as FieldArray<T, ArrayPath<T>>);
+            trigger(chargeSpreadPath as Path<T>);
+          }}
+        >
+          <PlaylistAdd className="size-5" />
+        </Button>
       </div>
     </div>
   );

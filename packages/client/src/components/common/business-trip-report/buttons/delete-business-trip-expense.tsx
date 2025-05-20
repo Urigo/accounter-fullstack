@@ -1,7 +1,8 @@
 import { ReactElement, useCallback } from 'react';
 import { Trash } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { useDeleteBusinessTripExpense } from '../../../../hooks/use-delete-business-trip-expense.js';
+import { Button } from '../../../ui/button.js';
 import { ConfirmationModal } from '../../modals/confirmation-modal.js';
 
 export function DeleteBusinessTripExpense(props: {
@@ -21,9 +22,9 @@ export function DeleteBusinessTripExpense(props: {
   return (
     <ConfirmationModal onConfirm={onExecute} title="Are you sure you want to remove expense?">
       <Tooltip label="Remove Expense">
-        <ActionIcon variant="default" loading={fetching} size={30}>
-          <Trash size={20} color="red" />
-        </ActionIcon>
+        <Button variant="outline" size="icon" className="size-7.5 text-red-500" disabled={fetching}>
+          <Trash className="size-5" />
+        </Button>
       </Tooltip>
     </ConfirmationModal>
   );

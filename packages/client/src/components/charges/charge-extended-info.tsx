@@ -1,7 +1,7 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { Photo, Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { Accordion, ActionIcon, Box, Collapse, Loader, Tooltip } from '@mantine/core';
+import { Accordion, Box, Collapse, Loader, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   ChargesTableErrorsFieldsFragmentDoc,
@@ -22,6 +22,7 @@ import { BusinessTripSummarizedReport, RegenerateLedgerRecordsButton } from '../
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
+import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
@@ -312,16 +313,18 @@ export function ChargeExtendedInfo({
                   <div className="flex flex-row items-center gap-2 justify-start w-full">
                     {hasDocs && (
                       <Tooltip label="Documents Gallery">
-                        <ActionIcon
-                          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+                        <Button
+                          onClick={event => {
                             event.stopPropagation();
                             toggle();
                           }}
                           variant="outline"
-                          loading={!galleryIsReady}
+                          disabled={!galleryIsReady}
+                          size="icon"
+                          className="size-7.5 text-gray-500"
                         >
-                          <Photo size={20} />
-                        </ActionIcon>
+                          <Photo className="size-5" />
+                        </Button>
                       </Tooltip>
                     )}
                     Documents

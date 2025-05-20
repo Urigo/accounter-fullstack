@@ -2,13 +2,14 @@ import { ReactElement, useCallback, useContext, useEffect, useState } from 'reac
 import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Table, Tooltip } from '@mantine/core';
+import { Table, Tooltip } from '@mantine/core';
 import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Button } from '../ui/button.js';
 import { AllBusinessesRow } from './all-businesses-row.js';
 import { BusinessesFilters } from './businesses-filters.js';
 
@@ -82,9 +83,18 @@ export const Businesses = (): ReactElement => {
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
         <Tooltip label="Expand all businesses">
-          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
-            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-          </ActionIcon>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setIsAllOpened(i => !i)}
+          >
+            {isAllOpened ? (
+              <LayoutNavbarCollapse className="size-5" />
+            ) : (
+              <LayoutNavbarExpand className="size-5" />
+            )}
+          </Button>
         </Tooltip>
         <MergeBusinessesButton selected={mergeSelectedBusinesses} resetMerge={onResetMerge} />
       </div>,

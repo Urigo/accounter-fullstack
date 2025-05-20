@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Card, Tooltip } from '@mantine/core';
+import { Card, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   BusinessTripAttendeeUpdateInput,
@@ -11,6 +11,7 @@ import {
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
+import { Button } from '../../../ui/button.js';
 import { ToggleExpansionButton } from '../../index.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
 import { AccommodationsTable } from './accommodations-table.js';
@@ -141,23 +142,30 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
         </td>
         <td className="flex items-center gap-2">
           <Tooltip label="Edit">
-            <ActionIcon
+            <Button
               loading={updatingInProcess}
-              variant={isEditMode ? 'filled' : 'default'}
+              variant={isEditMode ? 'default' : 'outline'}
+              size="icon"
+              className="size-7.5"
               onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
                 event.stopPropagation();
                 setIsEditMode(curr => !curr);
               }}
-              size={30}
             >
-              <Edit size={20} />
-            </ActionIcon>
+              <Edit className="size-5" />
+            </Button>
           </Tooltip>
           {isEditMode && (
             <Tooltip label="Confirm Changes">
-              <ActionIcon type="submit" form={`form ${attendee.id}`} variant="default" size={30}>
-                <Check size={20} color="green" />
-              </ActionIcon>
+              <Button
+                type="submit"
+                form={`form ${attendee.id}`}
+                variant="outline"
+                size="icon"
+                className="size-7.5 text-green-500"
+              >
+                <Check className="size-5" />
+              </Button>
             </Tooltip>
           )}
 
