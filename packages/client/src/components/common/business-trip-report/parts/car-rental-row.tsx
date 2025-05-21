@@ -128,11 +128,11 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
       <td>
         <Tooltip label="Edit">
           <Button
-            loading={updatingInProcess}
+            disabled={updatingInProcess}
             variant={isEditMode ? 'default' : 'outline'}
             size="icon"
             className="size-7.5"
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+            onClick={event => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}

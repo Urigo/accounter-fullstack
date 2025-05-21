@@ -64,7 +64,7 @@ export const InsertMiscExpenseModal = ({
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Tooltip label="Insert Related Misc Expense">
-          <Button variant="ghost" size="icon" className="size-7.5" loading={fetchingTransaction}>
+          <Button variant="ghost" size="icon" className="size-7.5" disabled={fetchingTransaction}>
             <PlaylistAdd className="size-5" />
           </Button>
         </Tooltip>

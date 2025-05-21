@@ -2,6 +2,7 @@ import type { ComponentProps, ReactElement } from 'react';
 import { RefreshDot } from 'tabler-icons-react';
 import { Tooltip } from '@mantine/core';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
+import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';
 

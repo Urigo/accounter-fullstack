@@ -143,11 +143,11 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
         <td className="flex items-center gap-2">
           <Tooltip label="Edit">
             <Button
-              loading={updatingInProcess}
+              disabled={updatingInProcess}
               variant={isEditMode ? 'default' : 'outline'}
               size="icon"
               className="size-7.5"
-              onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+              onClick={event => {
                 event.stopPropagation();
                 setIsEditMode(curr => !curr);
               }}

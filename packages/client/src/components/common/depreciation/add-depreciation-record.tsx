@@ -30,7 +30,7 @@ export function AddDepreciationRecord(props: {
           variant="outline"
           size="icon"
           className="size-7.5"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+          onClick={event => {
             event.stopPropagation();
             open();
           }}

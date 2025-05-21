@@ -2,6 +2,7 @@ import { ReactElement, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
+import { Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
