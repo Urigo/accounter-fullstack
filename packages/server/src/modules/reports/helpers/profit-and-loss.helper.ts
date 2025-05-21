@@ -286,7 +286,10 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     managementAndGeneralExpensesAmount;
 
   const { amount: financialExpensesAmount, records: financialExpensesRecords } =
-    amountBySortCodeValidation(decoratedLedgerRecords, sortCode => sortCode === 990);
+    amountBySortCodeValidation(
+      decoratedLedgerRecords,
+      sortCode => sortCode === 990 || sortCode === 991,
+    );
 
   const { amount: otherIncomeAmount, records: otherIncomeRecords } = amountBySortCodeValidation(
     decoratedLedgerRecords,
