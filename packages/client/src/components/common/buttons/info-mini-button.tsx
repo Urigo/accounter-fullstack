@@ -4,7 +4,7 @@ import { Button } from '../../ui/button.js';
 
 export function InfoMiniButton(props: ComponentProps<typeof Button>): ReactElement {
   return (
-    <Button {...props} className="size-7.5">
+    <Button variant="ghost" size="icon" className="size-7.5" {...props}>
       <InfoCircle className="size-5" />
     </Button>
   );

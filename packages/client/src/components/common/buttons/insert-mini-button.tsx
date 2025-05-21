@@ -8,7 +8,7 @@ export function InsertMiniButton(
 ): ReactElement {
   return (
     <Tooltip disabled={!props.tooltip} label={props.tooltip}>
-      <Button {...props} className="size-7.5">
+      <Button variant="ghost" size="icon" className="size-7.5" {...props}>
         <RowInsertTop className="size-5" />
       </Button>
     </Tooltip>
