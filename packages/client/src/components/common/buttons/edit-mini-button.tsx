@@ -6,12 +6,12 @@ import { Button } from '../../ui/button.js';
 export function EditMiniButton(
   props: ComponentProps<typeof Button> & {
     tooltip?: string;
-    onClick: (event: MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+    onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   },
 ): ReactElement {
   return (
     <Tooltip disabled={!props.tooltip} label={props.tooltip}>
-      <Button {...props} className="size-7.5" variant="ghost">
+      <Button className="size-7.5" variant="ghost" {...props}>
         <Edit className="size-5" />
       </Button>
     </Tooltip>

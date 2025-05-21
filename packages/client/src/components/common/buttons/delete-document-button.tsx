@@ -19,7 +19,7 @@ export function DeleteDocumentButton({ documentId }: Props): ReactElement {
 
   return (
     <ConfirmationModal onConfirm={onDelete} title="Are you sure you want to delete this document?">
-      <Button variant="outline" size="icon" className="size-7.5 text-red-500">
+      <Button variant="ghost" size="icon" className="size-7.5 text-red-500">
         <Trash className="size-5" />
       </Button>
     </ConfirmationModal>
