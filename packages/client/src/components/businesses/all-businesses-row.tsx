@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { ActionIcon, Paper } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import {
   AllBusinessesForScreenQuery,
   AllBusinessesRowFieldsFragment,
@@ -8,6 +8,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
 import { BusinessCard, ToggleMergeSelected } from '../common/index.js';
+import { Button } from '../ui/button.js';
 import { HebrewName } from './cells/hebrew-name.js';
 import { Name } from './cells/name.js';
 
@@ -48,19 +49,20 @@ export const AllBusinessesRow = ({
         <HebrewName data={business} />
         <td>
           <div className="flex flex-col gap-2">
-            <ActionIcon
-              variant="default"
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7.5"
               onClick={(): void => {
                 setOpened(i => !i);
               }}
-              size={30}
             >
               {isAllOpened || opened ? (
-                <LayoutNavbarCollapse size={20} />
+                <LayoutNavbarCollapse className="size-5" />
               ) : (
-                <LayoutNavbarExpand size={20} />
+                <LayoutNavbarExpand className="size-5" />
               )}
-            </ActionIcon>
+            </Button>
 
             {toggleMergeBusiness && (
               <ToggleMergeSelected

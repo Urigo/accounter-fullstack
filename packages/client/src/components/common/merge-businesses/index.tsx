@@ -1,7 +1,9 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Modal } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { cn } from '../../../lib/utils.js';
+import { Button } from '../../ui/button.js';
 import { MergeBusinessesSelectionForm } from './merge-businesses-selection-form.js';
 
 export function MergeBusinessesButton(props: {
@@ -11,17 +13,15 @@ export function MergeBusinessesButton(props: {
   const [opened, { close, open }] = useDisclosure(false);
   const { selected, resetMerge } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
-  const isMergable = distinctIDs.size >= 1;
+  const isMergeable = distinctIDs.size >= 1;
 
-  const [variant, setVariant] = useState<ActionIconProps['variant']>(
-    isMergable ? 'filled' : 'default',
+  const [variant, setVariant] = useState<'default' | 'outline'>(
+    isMergeable ? 'default' : 'outline',
   );
-  const [color, setColor] = useState<'blue' | 'gray'>(isMergable ? 'blue' : 'gray');
 
   useEffect(() => {
-    setVariant(isMergable ? 'filled' : 'default');
-    setColor(isMergable ? 'blue' : 'gray');
-  }, [isMergable]);
+    setVariant(isMergeable ? 'default' : 'outline');
+  }, [isMergeable]);
 
   const onDone = useCallback(() => {
     close();
@@ -30,18 +30,17 @@ export function MergeBusinessesButton(props: {
 
   return (
     <>
-      <ActionIcon
+      <Button
         onClick={(): void => {
-          if (isMergable) open();
+          if (isMergeable) open();
         }}
-        disabled={!isMergable}
+        disabled={!isMergeable}
         variant={variant}
-        color={color}
-        className={isMergable ? 'bg-blue-500' : undefined}
-        size={30}
+        className={cn('size-7.5', isMergeable ? ' bg-blue-500 hover:bg-blue-500/90' : '')}
+        size="icon"
       >
-        <ArrowsJoin2 size={20} color={color} />
-      </ActionIcon>
+        <ArrowsJoin2 className="size-5" />
+      </Button>
       <Modal opened={opened} onClose={close} size="auto" centered>
         <MergeBusinessesSelectionForm
           businessIds={Array.from(distinctIDs)}

@@ -1,8 +1,9 @@
 import { ReactElement, useState } from 'react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
-import { ActionIcon, Text, Tooltip } from '@mantine/core';
+import { Text, Tooltip } from '@mantine/core';
 import { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
+import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedBusiness = Extract<
@@ -42,13 +43,18 @@ export const TrialBalanceReportBusiness = ({
         </td>
         <td>
           <Tooltip label="Detailed records">
-            <ActionIcon variant="default" onClick={(): void => setIsExtended(i => !i)} size={30}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-7.5"
+              onClick={(): void => setIsExtended(i => !i)}
+            >
               {isExtended || isAllOpened ? (
-                <LayoutNavbarCollapse size={20} />
+                <LayoutNavbarCollapse className="size-5" />
               ) : (
-                <LayoutNavbarExpand size={20} />
+                <LayoutNavbarExpand className="size-5" />
               )}
-            </ActionIcon>
+            </Button>
           </Tooltip>
         </td>
       </tr>

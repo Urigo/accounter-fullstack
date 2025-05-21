@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { Control, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, List, Text, Tooltip } from '@mantine/core';
+import { List, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   UpdateBusinessTripAccommodationsExpenseInput,
@@ -9,6 +9,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/use-update-business-trip-accommodations-expense.js';
+import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
 import { NumberInput } from '../../index.js';
@@ -171,28 +172,30 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
         {onChange && (
           <>
             <Tooltip label="Edit">
-              <ActionIcon
-                loading={updatingInProcess}
-                variant={isEditMode ? 'filled' : 'default'}
-                onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+              <Button
+                disabled={updatingInProcess}
+                variant={isEditMode ? 'default' : 'outline'}
+                size="icon"
+                className="size-7.5"
+                onClick={(event): void => {
                   event.stopPropagation();
                   setIsEditMode(curr => !curr);
                 }}
-                size={30}
               >
-                <Edit size={20} />
-              </ActionIcon>
+                <Edit className="size-5" />
+              </Button>
             </Tooltip>
             {isEditMode && (
               <Tooltip label="Confirm Changes">
-                <ActionIcon
+                <Button
                   type="submit"
                   form={`form ${accommodationExpense.id}`}
-                  variant="default"
-                  size={30}
+                  variant="outline"
+                  size="icon"
+                  className="size-7.5 text-green-500"
                 >
-                  <Check size={20} color="green" />
-                </ActionIcon>
+                  <Check className="size-5" />
+                </Button>
               </Tooltip>
             )}
 

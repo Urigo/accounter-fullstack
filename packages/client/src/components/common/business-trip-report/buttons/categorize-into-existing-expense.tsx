@@ -3,17 +3,7 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { LayoutGridAdd } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import {
-  ActionIcon,
-  Grid,
-  Loader,
-  Modal,
-  NumberInput,
-  Overlay,
-  Select,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { Grid, Loader, Modal, NumberInput, Overlay, Select, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   CategorizeIntoExistingBusinessTripExpenseInput,
@@ -21,6 +11,7 @@ import {
   UncategorizedTransactionsByBusinessTripQuery,
 } from '../../../../gql/graphql.js';
 import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/use-categorize-into-existing-business-trip-expense.js';
+import { Button } from '../../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -58,16 +49,17 @@ export function CategorizeIntoExistingExpense(props: {
   return (
     <>
       <Tooltip label="Attach Uncategorized Transaction">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(event): void => {
             event.stopPropagation();
             open();
           }}
-          size={30}
         >
-          <LayoutGridAdd size={20} />
-        </ActionIcon>
+          <LayoutGridAdd className="size-5" />
+        </Button>
       </Tooltip>
       {opened && (
         <ModalContent

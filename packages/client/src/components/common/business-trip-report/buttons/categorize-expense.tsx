@@ -1,13 +1,14 @@
 import { ReactElement } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Edit } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripExpenseCategories,
   CategorizeBusinessTripExpenseInput,
 } from '../../../../gql/graphql.js';
 import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categorize-business-trip-expense.js';
+import { Button } from '../../../ui/button.js';
 
 export function CategorizeExpense(props: {
   businessTripId: string;
@@ -21,16 +22,17 @@ export function CategorizeExpense(props: {
   return (
     <>
       <Tooltip label="Categorize">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(event): void => {
             event.stopPropagation();
             open();
           }}
-          size={30}
         >
-          <Edit size={20} />
-        </ActionIcon>
+          <Edit className="size-5" />
+        </Button>
       </Tooltip>
       {opened && (
         <ModalContent

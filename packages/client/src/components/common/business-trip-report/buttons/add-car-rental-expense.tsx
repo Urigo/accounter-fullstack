@@ -1,10 +1,11 @@
 import { ReactElement, useState } from 'react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
-import { ActionIcon, Loader, Modal, NumberInput, Overlay, Tooltip } from '@mantine/core';
+import { Loader, Modal, NumberInput, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
+import { Button } from '../../../ui/button.js';
 import {
   Form,
   FormControl,
@@ -26,16 +27,17 @@ export function AddCarRentalExpense(props: {
   return (
     <>
       <Tooltip label="Add Car Rental Expense">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={event => {
             event.stopPropagation();
             open();
           }}
-          size={30}
+          className="size-7.5"
         >
-          <Plus size={20} />
-        </ActionIcon>
+          <Plus className="size-5" />
+        </Button>
       </Tooltip>
       {opened && (
         <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />

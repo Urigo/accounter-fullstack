@@ -1,7 +1,8 @@
 import { ReactElement } from 'react';
 import { WorldUpload } from 'tabler-icons-react';
-import { ActionIcon, Modal, Tooltip } from '@mantine/core';
+import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { Button } from '../../ui/button.js';
 import { InsertBusinessTrip } from '../index.js';
 
 interface Props {
@@ -18,9 +19,9 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
   return (
     <>
       <Tooltip label="Add New Business Trip">
-        <ActionIcon onClick={open}>
-          <WorldUpload size={20} />
-        </ActionIcon>
+        <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
+          <WorldUpload className="size-5" />
+        </Button>
       </Tooltip>
       <Modal centered opened={opened} onClose={close} title="Add Business Trip">
         <InsertBusinessTrip onDone={onInsertDone} />

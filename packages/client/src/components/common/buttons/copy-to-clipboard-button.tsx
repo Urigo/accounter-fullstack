@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Copy, Link } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { writeToClipboard } from '../../../helpers/index.js';
+import { Button } from '../../ui/button.js';
 
 interface Props {
   content: string;
@@ -10,8 +10,13 @@ interface Props {
 
 export const CopyToClipboardButton = ({ content, isLink }: Props): ReactElement => {
   return (
-    <ActionIcon variant="default" onClick={(): void => writeToClipboard(content)} size={30}>
-      {isLink ? <Link size={20} /> : <Copy size={20} />}
-    </ActionIcon>
+    <Button
+      variant="outline"
+      size="icon"
+      className="size-7.5"
+      onClick={(): void => writeToClipboard(content)}
+    >
+      {isLink ? <Link className="size-5" /> : <Copy className="size-5" />}
+    </Button>
   );
 };

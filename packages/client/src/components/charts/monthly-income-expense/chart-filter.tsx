@@ -3,12 +3,13 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Select } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import { Currency, IncomeExpenseChartFilters } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX, TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
+import { Button } from '../../ui/button.js';
 
 interface ChartFilterFormProps {
   filter: IncomeExpenseChartFilters;
@@ -150,9 +151,14 @@ export function ChartFilter({ filter, setFilter }: ChargeFilterProps): ReactElem
           />
         }
       />
-      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-        <Filter size={20} />
-      </ActionIcon>
+      <Button
+        variant="outline"
+        size="icon"
+        className="size-7.5"
+        onClick={(): void => setOpened(true)}
+      >
+        <Filter className="size-5" />
+      </Button>
     </>
   );
 }

@@ -1,16 +1,16 @@
-import { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { RowInsertTop } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
-import { PolymorphicComponentProps } from '@mantine/utils';
+import { Tooltip } from '@mantine/core';
+import { Button } from '../../ui/button.js';
 
 export function InsertMiniButton(
-  props: PolymorphicComponentProps<'button', ActionIconProps> & { tooltip?: string },
+  props: ComponentProps<typeof Button> & { tooltip?: string },
 ): ReactElement {
   return (
     <Tooltip disabled={!props.tooltip} label={props.tooltip}>
-      <ActionIcon {...props}>
-        <RowInsertTop size={20} />
-      </ActionIcon>
+      <Button variant="ghost" size="icon" className="size-7.5" {...props}>
+        <RowInsertTop className="size-5" />
+      </Button>
     </Tooltip>
   );
 }

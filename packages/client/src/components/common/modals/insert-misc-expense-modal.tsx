@@ -1,8 +1,9 @@
 import { ReactElement, useState } from 'react';
 import { PlaylistAdd } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { MiscExpenseTransactionFieldsDocument } from '../../../gql/graphql.js';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
@@ -63,9 +64,9 @@ export const InsertMiscExpenseModal = ({
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Tooltip label="Insert Related Misc Expense">
-          <ActionIcon loading={fetchingTransaction}>
-            <PlaylistAdd size={20} />
-          </ActionIcon>
+          <Button variant="ghost" size="icon" className="size-7.5" disabled={fetchingTransaction}>
+            <PlaylistAdd className="size-5" />
+          </Button>
         </Tooltip>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

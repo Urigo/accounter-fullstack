@@ -11,7 +11,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Indicator, MultiSelect, Pagination, Select, SimpleGrid } from '@mantine/core';
+import { Indicator, MultiSelect, Pagination, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilter, ChargeFilterType, ChargeSortByField } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates.js';
@@ -21,6 +21,7 @@ import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { accountantApprovalInputData, PopUpModal, SelectTagItem } from '../common/index.js';
+import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form.js';
 import { Label } from '../ui/label.js';
 import { Switch } from '../ui/switch.js';
@@ -509,9 +510,14 @@ export function ChargesFilters({
         />
       )}
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-          <Filter size={20} />
-        </ActionIcon>
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => setOpened(true)}
+        >
+          <Filter className="size-5" />
+        </Button>
       </Indicator>
     </div>
   );

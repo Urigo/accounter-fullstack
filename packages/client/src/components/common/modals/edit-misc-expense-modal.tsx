@@ -1,8 +1,9 @@
 import { ReactElement, useState } from 'react';
 import { Edit } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { EditMiscExpenseFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType } from '../../../gql/index.js';
+import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.js';
 import { EditMiscExpense } from '../index.js';
 
@@ -22,9 +23,9 @@ export const EditMiscExpenseModal = ({ onDone, data }: Props): ReactElement => {
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Tooltip label="Edit Misc Expense">
-          <ActionIcon>
-            <Edit size={20} />
-          </ActionIcon>
+          <Button variant="ghost" size="icon" className="size-7.5">
+            <Edit className="size-5" />
+          </Button>
         </Tooltip>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

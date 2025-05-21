@@ -1,9 +1,10 @@
 import { ReactElement } from 'react';
 import { Edit } from 'tabler-icons-react';
-import { ActionIcon, Modal, Tooltip } from '@mantine/core';
+import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { EditTagFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType } from '../../../gql/index.js';
+import { Button } from '../../ui/button.js';
 import { EditTag } from '../index.js';
 
 interface Props {
@@ -21,9 +22,9 @@ export const EditTagModal = ({ onDone, data }: Props): ReactElement => {
   return (
     <>
       <Tooltip label="Edit Tag">
-        <ActionIcon onClick={open}>
-          <Edit size={20} />
-        </ActionIcon>
+        <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
+          <Edit className="size-5" />
+        </Button>
       </Tooltip>
       <Modal centered opened={opened} onClose={close} title="Insert Business Trip">
         <EditTag close={close} onDone={onEditDone} data={data} />

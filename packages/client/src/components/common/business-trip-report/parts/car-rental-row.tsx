@@ -2,13 +2,14 @@ import { ReactElement, useState } from 'react';
 import { Car, Fuel } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, NumberInput, Text, Tooltip } from '@mantine/core';
+import { NumberInput, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   UpdateBusinessTripCarRentalExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripCarRentalExpense } from '../../../../hooks/use-update-business-trip-car-rental-expense.js';
+import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
@@ -126,28 +127,30 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
       </td>
       <td>
         <Tooltip label="Edit">
-          <ActionIcon
-            loading={updatingInProcess}
-            variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+          <Button
+            disabled={updatingInProcess}
+            variant={isEditMode ? 'default' : 'outline'}
+            size="icon"
+            className="size-7.5"
+            onClick={event => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}
-            size={30}
           >
-            <Edit size={20} />
-          </ActionIcon>
+            <Edit className="size-5" />
+          </Button>
         </Tooltip>
         {isEditMode && (
           <Tooltip label="Confirm Changes">
-            <ActionIcon
+            <Button
               type="submit"
               form={`form ${carRentalExpense.id}`}
-              variant="default"
-              size={30}
+              variant="outline"
+              size="icon"
+              className="size-7.5 text-green-500"
             >
-              <Check size={20} color="green" />
-            </ActionIcon>
+              <Check className="size-5" />
+            </Button>
           </Tooltip>
         )}
 

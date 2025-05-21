@@ -1,7 +1,8 @@
 import { ReactElement, useCallback } from 'react';
 import { Trash } from 'tabler-icons-react';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { useDeleteDepreciationRecord } from '../../../hooks/use-delete-depreciation-record.js';
+import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../modals/confirmation-modal.jsx';
 
 export function DeleteDepreciationRecord(props: {
@@ -24,9 +25,9 @@ export function DeleteDepreciationRecord(props: {
       title="Are you sure you want to delete the depreciation record?"
     >
       <Tooltip label="Remove Depreciation">
-        <ActionIcon variant="default" loading={fetching} size={30}>
-          <Trash size={20} color="red" />
-        </ActionIcon>
+        <Button variant="outline" size="icon" className="size-7.5 text-red-500" disabled={fetching}>
+          <Trash className="size-5" />
+        </Button>
       </Tooltip>
     </ConfirmationModal>
   );

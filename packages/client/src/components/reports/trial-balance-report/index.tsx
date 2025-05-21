@@ -2,11 +2,12 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceTable } from './trial-balance-table.js';
 
@@ -50,9 +51,18 @@ export const TrialBalanceReport = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <Tooltip label="Expand all accounts">
-          <ActionIcon variant="default" onClick={(): void => setIsAllOpened(i => !i)} size={30}>
-            {isAllOpened ? <LayoutNavbarCollapse size={20} /> : <LayoutNavbarExpand size={20} />}
-          </ActionIcon>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setIsAllOpened(i => !i)}
+          >
+            {isAllOpened ? (
+              <LayoutNavbarCollapse className="size-5" />
+            ) : (
+              <LayoutNavbarExpand className="size-5" />
+            )}
+          </Button>
         </Tooltip>
         <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />
       </div>,

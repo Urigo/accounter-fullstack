@@ -2,7 +2,7 @@ import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
 import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Mark, NavLink, Table, Tooltip } from '@mantine/core';
+import { Mark, NavLink, Table, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
@@ -11,6 +11,7 @@ import {
 } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
+import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -163,17 +164,18 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
               )}
               <th>
                 <Tooltip label="Expand all currencies">
-                  <ActionIcon
-                    variant="default"
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-7.5"
                     onClick={(): void => setISExtendAllCurrencies(i => !i)}
-                    size={30}
                   >
                     {isExtendAllCurrencies ? (
-                      <ChevronsRightLeft size={20} />
+                      <ChevronsRightLeft className="size-5" />
                     ) : (
-                      <ChevronsLeftRightEllipsis size={20} />
+                      <ChevronsLeftRightEllipsis className="size-5" />
                     )}
-                  </ActionIcon>
+                  </Button>
                 </Tooltip>
               </th>
               {isExtendAllCurrencies && (

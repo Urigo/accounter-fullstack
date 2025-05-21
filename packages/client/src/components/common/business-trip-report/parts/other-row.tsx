@@ -1,13 +1,14 @@
 import { ReactElement, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
-import { ActionIcon, Text, Tooltip } from '@mantine/core';
+import { Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportOtherRowFieldsFragmentDoc,
   UpdateBusinessTripOtherExpenseInput,
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { useUpdateBusinessTripOtherExpense } from '../../../../hooks/use-update-business-trip-other-expense.js';
+import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
 import { Switch } from '../../../ui/switch.js';
@@ -126,23 +127,30 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
       </td>
       <td>
         <Tooltip label="Edit">
-          <ActionIcon
-            loading={updatingInProcess}
-            variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+          <Button
+            disabled={updatingInProcess}
+            variant={isEditMode ? 'default' : 'outline'}
+            size="icon"
+            className="size-7.5"
+            onClick={(event): void => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}
-            size={30}
           >
-            <Edit size={20} />
-          </ActionIcon>
+            <Edit className="size-5" />
+          </Button>
         </Tooltip>
         {isEditMode && (
           <Tooltip label="Confirm Changes">
-            <ActionIcon type="submit" form={`form ${otherExpense.id}`} variant="default" size={30}>
-              <Check size={20} color="green" />
-            </ActionIcon>
+            <Button
+              type="submit"
+              form={`form ${otherExpense.id}`}
+              variant="outline"
+              size="icon"
+              className="size-7.5 text-green-500"
+            >
+              <Check className="size-5" />
+            </Button>
           </Tooltip>
         )}
 

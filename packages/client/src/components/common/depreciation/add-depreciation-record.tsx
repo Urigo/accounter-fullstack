@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
+import { Button } from '../../ui/button.js';
 import { CurrencyInput } from '../index.js';
 import { depreciationTypes } from './index.js';
 
@@ -25,16 +26,17 @@ export function AddDepreciationRecord(props: {
   return (
     <>
       <Tooltip label="Add Depreciation Record">
-        <ActionIcon
-          variant="default"
-          onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={event => {
             event.stopPropagation();
             open();
           }}
-          size={30}
         >
-          <Plus size={20} />
-        </ActionIcon>
+          <Plus className="size-5" />
+        </Button>
       </Tooltip>
       {opened && <ModalContent chargeId={chargeId} opened={opened} close={close} onAdd={onAdd} />}
     </>

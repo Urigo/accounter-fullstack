@@ -3,7 +3,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon, Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
+import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../helpers/dates.js';
@@ -12,6 +12,7 @@ import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-ent
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { PopUpModal } from '../../../common/index.js';
+import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
 
@@ -248,9 +249,14 @@ export function DocumentsFilters({
         modalSize="xl"
       />
       <Indicator inline size={16} disabled={!isFiltered}>
-        <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-          <Filter size={20} />
-        </ActionIcon>
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => setOpened(true)}
+        >
+          <Filter className="size-5" />
+        </Button>
       </Indicator>
     </div>
   );

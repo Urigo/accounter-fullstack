@@ -10,8 +10,9 @@ import {
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, NumberInput, Select } from '@mantine/core';
+import { NumberInput, Select } from '@mantine/core';
 import { AttendeesByBusinessTripDocument } from '../../../../gql/graphql.js';
+import { Button } from '../../../ui/button.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -150,26 +151,30 @@ export function AttendeesStayInput<T extends FieldValues>({
                 )}
               />
             </div>
-            <ActionIcon className="mb-2">
-              <TrashX
-                size={20}
-                onClick={(): void => {
-                  remove(index);
-                  trigger(attendeesStayPath as Path<T>);
-                }}
-              />
-            </ActionIcon>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mb-2 size-7.5"
+              onClick={(): void => {
+                remove(index);
+                trigger(attendeesStayPath as Path<T>);
+              }}
+            >
+              <TrashX className="size-5" />
+            </Button>
           </div>
         ))}
-        <ActionIcon>
-          <PlaylistAdd
-            size={20}
-            onClick={(): void => {
-              append({} as FieldArray<T, ArrayPath<T>>);
-              trigger(attendeesStayPath as Path<T>);
-            }}
-          />
-        </ActionIcon>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          onClick={(): void => {
+            append({} as FieldArray<T, ArrayPath<T>>);
+            trigger(attendeesStayPath as Path<T>);
+          }}
+        >
+          <PlaylistAdd className="size-5" />
+        </Button>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { File, Photo } from 'tabler-icons-react';
-import { ActionIcon, Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
+import { Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
 import { ImageMagnifier } from '../../common/index.js';
+import { Button } from '../../ui/button.js';
 import { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -18,9 +19,15 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
           <SimpleGrid cols={1}>
             <Tooltip disabled={!image} label="Open Image">
               <Indicator inline size={12} disabled={!!image} color="red" zIndex="auto">
-                <ActionIcon disabled={!image} onClick={(): void => setOpenImage(!!image)}>
-                  <Photo size={20} />
-                </ActionIcon>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7.5"
+                  disabled={!image}
+                  onClick={(): void => setOpenImage(!!image)}
+                >
+                  <Photo className="size-5" />
+                </Button>
               </Indicator>
             </Tooltip>
             <Tooltip disabled={!file} label="Open File">
@@ -31,14 +38,14 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <ActionIcon>
-                      <File size={20} />
-                    </ActionIcon>
+                    <Button variant="ghost" size="icon" className="size-7.5">
+                      <File className="size-5" />
+                    </Button>
                   </a>
                 ) : (
-                  <ActionIcon disabled>
-                    <File size={20} />
-                  </ActionIcon>
+                  <Button variant="ghost" size="icon" className="size-7.5" disabled>
+                    <File className="size-5" />
+                  </Button>
                 )}
               </Indicator>
             </Tooltip>

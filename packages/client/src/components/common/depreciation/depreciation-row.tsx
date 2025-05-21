@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { Check, Edit } from 'tabler-icons-react';
 import { useQuery } from 'urql';
-import { ActionIcon, Select, Tooltip } from '@mantine/core';
+import { Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   AllDepreciationCategoriesDocument,
@@ -13,6 +13,7 @@ import {
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
+import { Button } from '../../ui/button.js';
 import { CurrencyInput } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationTypes } from './index.js';
@@ -229,28 +230,30 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
       </td>
       <td>
         <Tooltip label="Edit">
-          <ActionIcon
-            loading={updatingInProcess || fetchingCategories}
-            variant={isEditMode ? 'filled' : 'default'}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+          <Button
+            disabled={updatingInProcess || fetchingCategories}
+            variant={isEditMode ? 'default' : 'outline'}
+            size="icon"
+            className="size-7.5"
+            onClick={(event): void => {
               event.stopPropagation();
               setIsEditMode(curr => !curr);
             }}
-            size={30}
           >
-            <Edit size={20} />
-          </ActionIcon>
+            <Edit className="size-5" />
+          </Button>
         </Tooltip>
         {isEditMode && (
           <Tooltip label="Confirm Changes">
-            <ActionIcon
+            <Button
               type="submit"
               form={`form ${depreciationRecord.id}`}
-              variant="default"
-              size={30}
+              variant="outline"
+              size="icon"
+              className="size-7.5 text-green-500"
             >
-              <Check size={20} color="green" />
-            </ActionIcon>
+              <Check className="size-5" />
+            </Button>
           </Tooltip>
         )}
 

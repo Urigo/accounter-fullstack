@@ -1,8 +1,8 @@
 import { ReactElement, useState } from 'react';
 import { Filter } from 'tabler-icons-react';
-import { ActionIcon } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';
 import { PopUpModal } from '../../common/index.js';
+import { Button } from '../../ui/button.js';
 
 interface CorporateTaxRulingComplianceReportFilterProps {
   years: number[];
@@ -33,9 +33,14 @@ export function CorporateTaxRulingComplianceReportFilter({
           />
         }
       />
-      <ActionIcon variant="default" onClick={(): void => setOpened(true)} size={30}>
-        <Filter size={20} />
-      </ActionIcon>
+      <Button
+        variant="outline"
+        size="icon"
+        className="size-7.5"
+        onClick={(): void => setOpened(true)}
+      >
+        <Filter className="size-5" />
+      </Button>
     </>
   );
 }

@@ -1,35 +1,32 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { ArrowsJoin2 } from 'tabler-icons-react';
-import { ActionIcon, ActionIconProps, Tooltip } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
+import { cn } from '../../../lib/utils.js';
+import { Button } from '../../ui/button.js';
 
 export function ToggleMergeSelected(props: {
   toggleMergeSelected: () => void;
   mergeSelected: boolean;
 }): ReactElement {
   const { mergeSelected, toggleMergeSelected } = props;
-  const [variant, setVariant] = useState<ActionIconProps['variant']>(
-    mergeSelected ? 'filled' : 'subtle',
-  );
-  const [color, setColor] = useState<'blue' | 'gray'>(mergeSelected ? 'blue' : 'gray');
+  const [variant, setVariant] = useState<'ghost' | 'default'>(mergeSelected ? 'default' : 'ghost');
 
   useEffect(() => {
-    setVariant(mergeSelected ? 'filled' : 'subtle');
-    setColor(mergeSelected ? 'blue' : 'gray');
+    setVariant(mergeSelected ? 'default' : 'ghost');
   }, [mergeSelected]);
 
   return (
     <Tooltip label="Select for merge">
-      <ActionIcon
-        onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>): void => {
+      <Button
+        onClick={event => {
           event.stopPropagation();
           toggleMergeSelected();
         }}
         variant={variant}
-        color={color}
-        className={mergeSelected ? 'bg-blue-500' : undefined}
+        className={cn('size-7.5', mergeSelected ? 'bg-blue-500 hover:bg-blue-500/90' : '')}
       >
-        <ArrowsJoin2 size={20} color={color} />
-      </ActionIcon>
+        <ArrowsJoin2 className="size-5" />
+      </Button>
     </Tooltip>
   );
 }
