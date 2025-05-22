@@ -60,6 +60,7 @@ export default gql`
   type TaxCategory implements FinancialEntity {
     id: UUID!
     name: String!
+    irsCode: Int
   }
 
   extend type Mutation {
@@ -77,6 +78,7 @@ export default gql`
   input UpdateTaxCategoryInput {
     name: String
     sortCode: Int
+    irsCode: Int
 
     hashavshevetName: String
   }
@@ -85,6 +87,7 @@ export default gql`
   input InsertTaxCategoryInput {
     name: String!
     sortCode: Int
+    irsCode: Int
     hashavshevetName: String
   }
 `;

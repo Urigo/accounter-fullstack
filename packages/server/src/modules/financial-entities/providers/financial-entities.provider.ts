@@ -44,6 +44,10 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
   type = COALESCE(
     $type,
     type
+  ),
+  irs_code = COALESCE(
+    $irsCode,
+    irs_code
   )
   WHERE
     id = $financialEntityId
@@ -51,8 +55,8 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
 `;
 
 const insertFinancialEntities = sql<IInsertFinancialEntitiesQuery>`
-  INSERT INTO accounter_schema.financial_entities (type, owner_id, name, sort_code)
-  VALUES $$financialEntities(type, ownerId, name, sortCode)
+  INSERT INTO accounter_schema.financial_entities (type, owner_id, name, sort_code, irs_code)
+  VALUES $$financialEntities(type, ownerId, name, sortCode, irsCode)
   RETURNING *;`;
 
 const deleteFinancialEntity = sql<IDeleteFinancialEntityQuery>`

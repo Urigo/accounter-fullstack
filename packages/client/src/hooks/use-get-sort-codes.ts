@@ -10,6 +10,7 @@ import { AllSortCodesDocument, AllSortCodesQuery } from '../gql/graphql.js';
       id
       key
       name
+      defaultIrsCode
     }
   }
 `;
@@ -20,6 +21,7 @@ type UseGetSortCodes = {
   fetching: boolean;
   refresh: () => void;
   sortCodes: SortCodes;
+  rawSortCodes: Array<NonNullable<AllSortCodesQuery['allSortCodes']>[number]>;
   selectableSortCodes: Array<{ value: string; label: string }>;
 };
 
@@ -39,6 +41,10 @@ export const useGetSortCodes = (): UseGetSortCodes => {
     return data?.allSortCodes?.sort((a, b) => ((a.name ?? '') > (b.name ?? '') ? 1 : -1)) ?? [];
   }, [data]);
 
+  const rawSortCodes = useMemo(() => {
+    return data?.allSortCodes ?? [];
+  }, [data]);
+
   const selectableSortCodes = useMemo(() => {
     return sortCodes.map(entity => ({
       value: entity.key.toString(),
@@ -50,6 +56,7 @@ export const useGetSortCodes = (): UseGetSortCodes => {
     fetching,
     refresh: () => fetch(),
     sortCodes,
+    rawSortCodes,
     selectableSortCodes,
   };
 };
