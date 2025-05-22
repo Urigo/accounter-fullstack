@@ -11,7 +11,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
-import { ComboBox, PhrasesInput, TagsInput } from '../index.js';
+import { ComboBox, NumberInput, PhrasesInput, TagsInput } from '../index.js';
 
 const pcn874RecordType: Record<Pcn874RecordType, string> = {
   C: 'INPUT_SELF_INVOICE',
@@ -43,7 +43,7 @@ export function ModifyBusinessFields({
   formManager,
   setFetching,
 }: ModalProps<boolean>): ReactElement {
-  const { control } = formManager;
+  const { control, watch, setValue } = formManager;
   const [tagsFetching, setTagsFetching] = useState(false);
 
   // Tax categories array handle
@@ -51,11 +51,26 @@ export function ModifyBusinessFields({
     useGetTaxCategories();
 
   // Sort codes array handle
-  const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
+  const {
+    selectableSortCodes: sortCodes,
+    fetching: fetchingSortCodes,
+    rawSortCodes,
+  } = useGetSortCodes();
 
   useEffect(() => {
     setFetching(tagsFetching || fetchingTaxCategories || fetchingSortCodes);
   }, [setFetching, tagsFetching, fetchingTaxCategories, fetchingSortCodes]);
+
+  const sortCode = watch('sortCode');
+
+  useEffect(() => {
+    if (sortCode) {
+      const sortCodeObj = rawSortCodes.find(({ key }) => key === sortCode);
+      if (sortCodeObj?.defaultIrsCode) {
+        setValue('irsCode', sortCodeObj.defaultIrsCode);
+      }
+    }
+  }, [rawSortCodes, sortCode, setValue]);
 
   return (
     <>
@@ -175,6 +190,33 @@ export function ModifyBusinessFields({
                 placeholder="Scroll to see all options"
                 formPart
               />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          name="irsCode"
+          control={control}
+          rules={{
+            validate: {
+              range: value =>
+                (Number(value) > 1 && Number(value) <= 9999) || 'Code must be between 1 and 9999',
+              integer: value => Number.isInteger(Number(value)) || 'Code must be an integer',
+            },
+          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>IRS Code</FormLabel>
+              <FormControl>
+                <NumberInput
+                  {...field}
+                  value={field.value ?? undefined}
+                  hideControls
+                  decimalScale={0}
+                  thousandSeparator=""
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
