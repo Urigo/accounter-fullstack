@@ -13,14 +13,14 @@ export type ExtendedBusiness = Extract<
 
 interface Props {
   record: ExtendedBusiness;
-  sortCodeId: number;
+  sortCodeKey: number;
   filter: TrialBalanceReportFilters;
   isAllOpened: boolean;
 }
 
 export const TrialBalanceReportBusiness = ({
   record,
-  sortCodeId,
+  sortCodeKey,
   filter,
   isAllOpened,
 }: Props): ReactElement => {
@@ -31,7 +31,7 @@ export const TrialBalanceReportBusiness = ({
   return (
     <>
       <tr key={record.business.id}>
-        <td>{sortCodeId}</td>
+        <td>{sortCodeKey}</td>
         <td>{record.business.id}</td>
         <td>{record.business.name ?? undefined}</td>
         <td>{rowDebit ? record?.debit?.formatted : undefined}</td>

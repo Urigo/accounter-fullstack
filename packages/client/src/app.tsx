@@ -26,6 +26,7 @@ import { DocumentsReport } from './components/screens/documents/all-documents/in
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
+import { SortCodes } from './components/screens/sort-codes/index.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
 import { FiltersContext } from './providers/filters-context.js';
@@ -81,6 +82,7 @@ export function App(): ReactElement {
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />
           <Route path="tax-categories" element={<TaxCategories />} />
+          <Route path="sort-codes" element={<SortCodes />} />
           <Route
             path="*"
             element={

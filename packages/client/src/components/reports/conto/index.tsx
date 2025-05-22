@@ -37,6 +37,7 @@ import { CustomData } from './types.js';
             name
             sortCode {
               id
+              key
               name
             }
           }
@@ -115,14 +116,14 @@ function updateSortCodesTreeNodes(
       return;
     }
 
-    const parentId = sortCodeMap.get(sortCode.id) ?? undefined;
+    const parentId = sortCodeMap.get(sortCode.key) ?? undefined;
     newTree.push({
       id: sortCode.id,
       parent: parentId ?? BANK_TREE_ROOT_ID,
       droppable: true,
       text: sortCode.name!,
       data: {
-        sortCode: sortCode.id,
+        sortCode: sortCode.key,
         isOpen: false,
       },
     });

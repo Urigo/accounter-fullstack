@@ -13,10 +13,46 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
       }
     },
+    sortCode: async (_, { key }, { injector }) => {
+      try {
+        return await injector
+          .get(SortCodesProvider)
+          .getSortCodesByIdLoader.load(key)
+          .then(sortCode => sortCode ?? null);
+      } catch (e) {
+        console.error(`Error fetching sort code ${key}`, e);
+        throw new GraphQLError((e as Error)?.message ?? `Error fetching sort code ${key}`);
+      }
+    },
+  },
+
+  Mutation: {
+    addSortCode: (_, { key, name, defaultIrsCode }, { injector }) => {
+      return injector
+        .get(SortCodesProvider)
+        .addSortCode({ key, name, defaultIrsCode })
+        .catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error adding sort code "${name}"`);
+        })
+        .then(() => true);
+    },
+    updateSortCode: (_, { key, fields }, { injector }) => {
+      return injector
+        .get(SortCodesProvider)
+        .updateSortCode({ key, ...fields })
+        .catch(e => {
+          console.error(JSON.stringify(e, null, 2));
+          throw new GraphQLError(`Error updating sort code ${key}`);
+        })
+        .then(() => true);
+    },
   },
   SortCode: {
-    id: dbSortCode => dbSortCode.key,
+    id: dbSortCode => dbSortCode.key.toString(),
+    key: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
+    defaultIrsCode: dbSortCode => dbSortCode.default_irs_code,
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,

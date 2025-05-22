@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect } from 'react';
+import { ReactElement, useContext, useEffect, useMemo } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -10,41 +10,50 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import {
-  AllTaxCategoriesForScreenDocument,
-  AllTaxCategoriesForScreenQuery,
-} from '../../gql/graphql.js';
-import { FiltersContext } from '../../providers/filters-context.js';
-import { DataTablePagination, InsertTaxCategory } from '../common/index.js';
-import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
-import { PageLayout } from '../layout/page-layout.js';
-import { Button } from '../ui/button.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { Name } from './cells/name.js';
-import { SortCode } from './cells/sort-code.js';
+import { AllSortCodesForScreenDocument, AllSortCodesForScreenQuery } from '../../../gql/graphql.js';
+import { FiltersContext } from '../../../providers/filters-context.js';
+import { DataTablePagination, EditSortCode, InsertSortCode } from '../../common/index.js';
+import { PageLayout } from '../../layout/page-layout.js';
+import { Button } from '../../ui/button.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllTaxCategoriesForScreen {
-    taxCategories {
+  query AllSortCodesForScreen {
+    allSortCodes {
       id
+      key
       name
-      sortCode {
-        id
-        key
-        name
-      }
+      defaultIrsCode
     }
   }
 `;
 
-type RowType = AllTaxCategoriesForScreenQuery['taxCategories'][number];
+type RowType = AllSortCodesForScreenQuery['allSortCodes'][number] & {
+  refetchSortCodes: () => void;
+};
 
 const columns: ColumnDef<RowType>[] = [
   {
+    id: 'key',
+    accessorKey: 'key',
+    cell: ({ row }) => <TableCell>{row.original.key}</TableCell>,
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Key
+          <ArrowUpDown />
+        </Button>
+      );
+    },
+  },
+  {
     id: 'name',
     accessorKey: 'name',
-    cell: ({ row }) => <Name data={row.original} />,
+    cell: ({ row }) => <TableCell>{row.original.name}</TableCell>,
     header: ({ column }) => {
       return (
         <Button
@@ -58,16 +67,16 @@ const columns: ColumnDef<RowType>[] = [
     },
   },
   {
-    id: 'sortCode',
-    accessorKey: 'sortCode.key',
-    cell: ({ row }) => <SortCode data={row.original} />,
+    id: 'defaultIrsCode',
+    accessorKey: 'defaultIrsCode',
+    cell: ({ row }) => <TableCell>{row.original.defaultIrsCode ?? ''}</TableCell>,
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Sort Code
+          Default IRS Code
           <ArrowUpDown />
         </Button>
       );
@@ -75,27 +84,36 @@ const columns: ColumnDef<RowType>[] = [
   },
   {
     id: 'edit',
-    cell: ({ row }) => <EditTaxCategory taxCategoryId={row.original.id} />,
+    cell: ({ row }) => (
+      <EditSortCode sortCodeKey={row.original.key} onAdd={row.original.refetchSortCodes} />
+    ),
   },
 ];
 
-export const TaxCategories = (): ReactElement => {
-  const [{ data, fetching, error }, refetchTaxCategories] = useQuery({
-    query: AllTaxCategoriesForScreenDocument,
+export const SortCodes = (): ReactElement => {
+  const [{ data, fetching, error }, refetchSortCodes] = useQuery({
+    query: AllSortCodesForScreenDocument,
   });
   const { setFiltersContext } = useContext(FiltersContext);
 
-  const taxCategories = data?.taxCategories ?? [];
+  const sortCodes = useMemo(
+    () =>
+      data?.allSortCodes?.map(sortCode => ({
+        ...sortCode,
+        refetchSortCodes,
+      })) ?? [],
+    [data?.allSortCodes, refetchSortCodes],
+  );
 
   const table = useReactTable({
-    data: taxCategories,
+    data: sortCodes,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
-        pageSize: 30,
+        pageSize: 100,
       },
     },
   });
@@ -105,9 +123,7 @@ export const TaxCategories = (): ReactElement => {
   useEffect(() => {
     setFiltersContext(
       <div className="flex items-center justify-end gap-10 space-x-2 py-4">
-        <div className="flex items-center justify-between px-2">
-          <DataTablePagination table={table} />
-        </div>
+        <DataTablePagination table={table} />
       </div>,
     );
   }, [setFiltersContext, table, pagination]);
@@ -115,16 +131,16 @@ export const TaxCategories = (): ReactElement => {
   useEffect(() => {
     if (error) {
       toast.error('Error', {
-        description: 'Error fetching tax categories',
+        description: 'Error fetching sort codes',
       });
     }
   }, [error]);
 
   return (
     <PageLayout
-      title={`Tax Categories (${taxCategories.length})`}
-      description="All tax categories"
-      headerActions={<InsertTaxCategory onAdd={() => refetchTaxCategories()} />}
+      title={`Sort Codes (${sortCodes.length})`}
+      description="All sort codes"
+      headerActions={<InsertSortCode onAdd={() => refetchSortCodes()} />}
     >
       {fetching ? (
         <div className="flex flex-row justify-center">
@@ -150,7 +166,7 @@ export const TaxCategories = (): ReactElement => {
               {table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="text-center py-8">
-                    No tax categories found
+                    No sort codes found
                   </TableCell>
                 </TableRow>
               ) : (

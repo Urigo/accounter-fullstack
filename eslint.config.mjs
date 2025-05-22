@@ -124,7 +124,6 @@ export default [
               'PCNFileResult',
               'PCNRawData',
               'SicknessDays',
-              'SortCode',
               'Suggestions',
               'ReportCommentary',
               'ReportCommentaryRecord',

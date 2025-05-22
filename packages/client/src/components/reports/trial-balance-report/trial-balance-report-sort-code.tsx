@@ -6,7 +6,7 @@ import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-re
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedSortCode = {
-  id: number;
+  key: number;
   name?: string | null;
   records: Array<ExtendedBusiness>;
   totalCredit: number;
@@ -40,7 +40,7 @@ export const TrialBalanceReportSortCode = ({
           <TrialBalanceReportBusiness
             key={record.business.id}
             record={record}
-            sortCodeId={sortCode.id}
+            sortCodeKey={sortCode.key}
             filter={filter}
             isAllOpened={isAllOpened}
           />
@@ -50,7 +50,7 @@ export const TrialBalanceReportSortCode = ({
         {sortCode.records.length > 1 ? (
           <>
             <td colSpan={2}>Group total:</td>
-            <td colSpan={1}>{sortCode.id}</td>
+            <td colSpan={1}>{sortCode.key}</td>
             <td colSpan={1}>
               {!!sortCode.totalDebit &&
                 `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.totalDebit)}`}
