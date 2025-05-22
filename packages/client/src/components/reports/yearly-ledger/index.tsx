@@ -31,6 +31,7 @@ import { DownloadCSV } from './download-csv.js';
           name
           sortCode {
             id
+            key
           }
         }
         openingBalance {
@@ -283,7 +284,7 @@ function EntityOpeningRows({ row }: { row: Row<RowType> }) {
           <div className="font-medium">{row.original.entity.name}</div>
         </TableCell>
         <TableCell>
-          <div className="font-medium">{row.original.entity.sortCode?.id}</div>
+          <div className="font-medium">{row.original.entity.sortCode?.key}</div>
         </TableCell>
         <TableCell />
         <TableCell />

@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
 import {
+  ArrowDown01,
   ArrowLeftRight,
   BadgeDollarSign,
   BarChartBig,
@@ -159,6 +160,12 @@ export const sidelinks: SideLink[] = [
         title: 'Tax Categories',
         label: '',
         href: '/tax-categories',
+        icon: <ArrowDown01 size={18} />,
+      },
+      {
+        title: 'Sort Codes',
+        label: '',
+        href: '/sort-codes',
         icon: <Book size={18} />,
       },
     ],

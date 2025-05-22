@@ -17,6 +17,7 @@ import type { ExtendedSortCode } from './trial-balance-report-sort-code.js';
         name
         sortCode {
           id
+          key
           name
         }
       }
@@ -63,7 +64,8 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
     for (const record of businessTransactionsSum) {
       // use default group if no sort code
       record.business.sortCode ??= {
-        id: -999,
+        id: '-999',
+        key: -999,
         name: 'Misc',
       };
       // ignore if no total sum
@@ -73,7 +75,7 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
         continue;
       }
 
-      const groupCode = roundNearest100(record.business.sortCode.id);
+      const groupCode = roundNearest100(record.business.sortCode.key);
       adjustedSortCodes[groupCode] ??= {
         sortCodes: {},
         totalCredit: 0,
@@ -84,7 +86,7 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
       };
       const group = adjustedSortCodes[groupCode];
 
-      group.sortCodes[record.business.sortCode.id] ??= {
+      group.sortCodes[record.business.sortCode.key] ??= {
         ...record.business.sortCode,
         totalCredit: 0,
         totalDebit: 0,
@@ -93,7 +95,7 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
         debit: 0,
         sum: 0,
       };
-      const sortCode = group.sortCodes[record.business.sortCode.id];
+      const sortCode = group.sortCodes[record.business.sortCode.key];
 
       sortCode.totalCredit += record.credit.raw;
       sortCode.totalDebit += record.debit.raw;

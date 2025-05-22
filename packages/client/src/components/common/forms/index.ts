@@ -12,5 +12,6 @@ export * from './modify-business-trip-fields.js';
 export * from './modify-document-fields.js';
 export * from './modify-misc-expense-fields.js';
 export * from './modify-salary-record.js';
+export * from './modify-sort-code-fields.js';
 export * from './upload-documents.js';
 export * from './upload-payroll-file.js';

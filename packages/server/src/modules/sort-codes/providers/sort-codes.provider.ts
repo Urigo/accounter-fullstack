@@ -7,6 +7,10 @@ import type {
   IGetAllSortCodesQuery,
   IGetAllSortCodesResult,
   IGetSortCodesByIdsQuery,
+  IInsertSortCodeParams,
+  IInsertSortCodeQuery,
+  IUpdateSortCodeParams,
+  IUpdateSortCodeQuery,
 } from '../types.js';
 
 const getAllSortCodes = sql<IGetAllSortCodesQuery>`
@@ -17,6 +21,26 @@ const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   SELECT sc.*
   FROM accounter_schema.sort_codes sc
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
+
+const insertSortCode = sql<IInsertSortCodeQuery>`
+    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code)
+    VALUES ($name, $key, $defaultIrsCode)
+    RETURNING *;
+  `;
+
+const updateSortCode = sql<IUpdateSortCodeQuery>`
+    UPDATE accounter_schema.sort_codes
+    SET name = COALESCE(
+      $name,
+      name
+    ),
+    default_irs_code = COALESCE(
+      $defaultIrsCode,
+      default_irs_code
+    )
+    WHERE key = $key
+    RETURNING *;
+  `;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -61,6 +85,16 @@ export class SortCodesProvider {
       cacheMap: this.cache,
     },
   );
+
+  public addSortCode(params: IInsertSortCodeParams) {
+    this.clearCache();
+    return insertSortCode.run(params, this.dbProvider);
+  }
+
+  public async updateSortCode(params: IUpdateSortCodeParams) {
+    this.clearCache();
+    return updateSortCode.run(params, this.dbProvider);
+  }
 
   public clearCache() {
     this.cache.clear();

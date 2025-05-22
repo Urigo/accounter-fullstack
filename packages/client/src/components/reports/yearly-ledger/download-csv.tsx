@@ -15,6 +15,7 @@ import { DownloadCSVButton } from '../../common/index.js';
         name
         sortCode {
           id
+          key
         }
       }
       openingBalance {
@@ -109,7 +110,7 @@ const dataRow: DataStructure<
 const convertToCSV = (ledgerRecords: LedgerCsvFieldsFragment): string => {
   const rows = [dataRow.map(({ key }) => key).join(',')];
   ledgerRecords.financialEntitiesInfo.map(financialEntityInfo => {
-    const openingRow1 = `${sanitizeString(financialEntityInfo.entity.name)},${financialEntityInfo.entity.sortCode?.id}`;
+    const openingRow1 = `${sanitizeString(financialEntityInfo.entity.name)},${financialEntityInfo.entity.sortCode?.key}`;
     const openingRow2 = `,Opening Balance,,,,,,,,${financialEntityInfo.openingBalance.raw.toFixed(2)}`;
     const closingRow1 = `Total,${sanitizeString(financialEntityInfo.entity.name)},,,,,,,${Math.abs(financialEntityInfo.totalDebit.raw).toFixed(2)} Debit,`;
     const closingRow2 = `,,,,,,,,${financialEntityInfo.totalCredit.raw.toFixed(2)} Credit,${financialEntityInfo.closingBalance.raw.toFixed(2)}`;

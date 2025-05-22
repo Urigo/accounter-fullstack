@@ -92,6 +92,7 @@ import migration_2025_04_15T17_27_28_pcn874 from './actions/2025-04-15T17-27-28.
 import migration_2025_05_13T12_28_00_corporate_special_tax_rate from './actions/2025-05-13T12-28-00.corporate-special-tax-rate.js';
 import migration_2025_05_18T13_02_20_override_documents_exchange_rate from './actions/2025-05-18T13-02-20.override-documents-exchange-rate.js';
 import migration_2025_05_19T15_45_46_override_pcn874_record_type from './actions/2025-05-19T15-45-46.override-pcn874-record-type.js';
+import migration_2025_05_22T12_13_40_shaam_6111_adjustments from './actions/2025-05-22T12-13-40.shaam-6111-adjustments.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -191,5 +192,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_05_13T12_28_00_corporate_special_tax_rate,
       migration_2025_05_18T13_02_20_override_documents_exchange_rate,
       migration_2025_05_19T15_45_46_override_pcn874_record_type,
+      migration_2025_05_22T12_13_40_shaam_6111_adjustments,
     ],
   });

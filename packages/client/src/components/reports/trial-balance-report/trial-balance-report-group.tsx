@@ -28,10 +28,10 @@ export const TrialBalanceReportGroup = ({
   return (
     <>
       {Object.values(data.sortCodes)
-        .sort((a, b) => a.id - b.id)
+        .sort((a, b) => a.key - b.key)
         .map((sortCode, i) => (
           <TrialBalanceReportSortCode
-            key={`${sortCode.id} ${i}`}
+            key={`${sortCode.key} ${i}`}
             sortCode={sortCode}
             filter={filter}
             isAllOpened={isAllOpened}

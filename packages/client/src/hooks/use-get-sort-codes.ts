@@ -8,6 +8,7 @@ import { AllSortCodesDocument, AllSortCodesQuery } from '../gql/graphql.js';
   query AllSortCodes {
     allSortCodes {
       id
+      key
       name
     }
   }
@@ -40,7 +41,7 @@ export const useGetSortCodes = (): UseGetSortCodes => {
 
   const selectableSortCodes = useMemo(() => {
     return sortCodes.map(entity => ({
-      value: entity.id.toString(),
+      value: entity.key.toString(),
       label: entity.name ?? '',
     }));
   }, [sortCodes]);

@@ -11,6 +11,7 @@ import { ReportSubCommentaryRow } from './report-sub-commentary-row.jsx';
     records {
       sortCode {
         id
+        key
         name
       }
       amount {
@@ -52,14 +53,14 @@ export const ReportCommentaryRow = ({ commentaryData, dataRow }: Props): ReactEl
               </thead>
               <tbody>
                 {records
-                  ?.sort((a, b) => (a.sortCode.id > b.sortCode.id ? 1 : -1))
+                  ?.sort((a, b) => a.sortCode.key - b.sortCode.key)
                   .map(record => (
                     <ReportSubCommentaryRow
-                      key={record.sortCode.id}
+                      key={record.sortCode.key}
                       dataRow={button => (
-                        <tr key={record.sortCode.id}>
+                        <tr key={record.sortCode.key}>
                           <td>
-                            {record.sortCode.id} - {record.sortCode.name}
+                            {record.sortCode.key} - {record.sortCode.name}
                           </td>
                           <td>{record.amount.formatted}</td>
                           <td>{button}</td>

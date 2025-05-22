@@ -32,6 +32,7 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
         phoneNumber
         sortCode {
           id
+          key
           name
         }
         taxCategory {
@@ -115,7 +116,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
     defaultValues: {
       ...business,
       taxCategory: business.taxCategory?.id,
-      sortCode: business?.sortCode?.id,
+      sortCode: business?.sortCode?.key,
     },
   });
 

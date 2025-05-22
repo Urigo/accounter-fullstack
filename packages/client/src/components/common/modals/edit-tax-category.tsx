@@ -29,6 +29,7 @@ import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js'
       name
       sortCode {
         id
+        key
         name
       }
     }
@@ -103,7 +104,7 @@ function EditTaxCategoryForm({
 }: EditTaxCategoryFormProps): ReactElement {
   const useFormManager = useForm<UpdateTaxCategoryInput>({
     defaultValues: {
-      sortCode: taxCategory.sortCode?.id,
+      sortCode: taxCategory.sortCode?.key,
       name: taxCategory.name,
     },
   });
