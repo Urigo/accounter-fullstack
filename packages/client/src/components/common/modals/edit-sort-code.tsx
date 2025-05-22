@@ -78,7 +78,7 @@ function ModalContent({ sortCodeKey, close, onAdd }: ModalContentProps): ReactEl
 
   if (!sortCode && !fetching) {
     toast.error('Error', {
-      description: "Couldn'nt find sort code",
+      description: "Couldn't find sort code",
     });
   }
 
