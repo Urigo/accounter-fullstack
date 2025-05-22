@@ -84,8 +84,10 @@ function ModalContent({ sortCodeKey, close, onAdd }: ModalContentProps): ReactEl
 
   return fetching ? (
     <Loader2 className="h-10 w-10 animate-spin" />
+  ) : sortCode ? (
+    <EditSortCodeForm sortCode={sortCode} close={close} onAdd={onAdd} />
   ) : (
-    <EditSortCodeForm sortCode={sortCode!} close={close} onAdd={onAdd} />
+    <div>Sort code not found</div>
   );
 }
 
@@ -115,7 +117,18 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
       dirtyBusinessFields as MakeBoolean<typeof fields>,
     );
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      dataToUpdate.defaultIrsCode &&= parseInt(dataToUpdate.defaultIrsCode.toString());
+      if (dataToUpdate.defaultIrsCode !== undefined) {
+        // Ensure it's a number before updating
+        const parsedValue =
+          typeof dataToUpdate.defaultIrsCode === 'string'
+            ? parseInt(dataToUpdate.defaultIrsCode, 10)
+            : dataToUpdate.defaultIrsCode;
+
+        // Only update if it's a valid number
+        if (!Number.isNaN(parsedValue)) {
+          dataToUpdate.defaultIrsCode = parsedValue;
+        }
+      }
       updateSortCode({ fields: dataToUpdate, key: sortCode.key }).then(res => {
         if (res) {
           onAdd?.(sortCode.key);

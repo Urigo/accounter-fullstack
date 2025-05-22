@@ -26,6 +26,10 @@ export function ModifySortCodeFields({ isInsert, formManager }: ModalProps<boole
         disabled={!isInsert}
         rules={{
           required: 'Required',
+          validate: {
+            positive: value => Number(value) > 0 || 'Key must be a positive number',
+            integer: value => Number.isInteger(Number(value)) || 'Key must be an integer',
+          },
         }}
         render={({ field }) => (
           <FormItem>
@@ -66,6 +70,13 @@ export function ModifySortCodeFields({ isInsert, formManager }: ModalProps<boole
       <FormField
         name="defaultIrsCode"
         control={control}
+        rules={{
+          validate: {
+            range: value =>
+              (Number(value) > 1 && Number(value) <= 9999) || 'Code must be between 1 and 9999',
+            integer: value => Number.isInteger(Number(value)) || 'Code must be an integer',
+          },
+        }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Default IRS Code</FormLabel>

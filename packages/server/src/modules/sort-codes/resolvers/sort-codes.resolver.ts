@@ -32,7 +32,10 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         .get(SortCodesProvider)
         .addSortCode({ key, name, defaultIrsCode })
         .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
+          console.error(
+            `Error adding sort code: key=${key}, name=${name}`,
+            JSON.stringify(e, null, 2),
+          );
           throw new GraphQLError(`Error adding sort code "${name}"`);
         })
         .then(() => true);
@@ -42,7 +45,7 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         .get(SortCodesProvider)
         .updateSortCode({ key, ...fields })
         .catch(e => {
-          console.error(JSON.stringify(e, null, 2));
+          console.error(`Error updating sort code: key=${key}`, JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating sort code ${key}`);
         })
         .then(() => true);

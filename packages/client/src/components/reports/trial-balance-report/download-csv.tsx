@@ -45,7 +45,7 @@ function handleGroupData(sortCode: string, groupData: SortCodeGroup): string {
   let groupString = '';
 
   Object.values(groupData.sortCodes)
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => a.key - b.key)
     .map(sortCode => {
       const sortCodeString = handleSortCode(sortCode);
       groupString += sortCodeString;
@@ -68,10 +68,10 @@ function handleSortCode(sortCode: ExtendedSortCode): string {
       const rowTotal = record?.total?.raw ?? 0;
       const rowDebit = record?.debit?.raw ?? 0;
       const rowCredit = record?.credit?.raw ?? 0;
-      const recordString = `${sortCode.id},${record.business.name ? `"${sanitizeString(record.business.name)}"` : ''},${rowDebit ? record?.debit?.raw : undefined},${rowCredit ? record?.credit?.raw : undefined},${rowTotal > 0.001 || rowTotal < -0.001 ? (record?.total?.raw ?? '') : ''}\r\n`;
+      const recordString = `${sortCode.key},${record.business.name ? `"${sanitizeString(record.business.name)}"` : ''},${rowDebit ? record?.debit?.raw : undefined},${rowCredit ? record?.credit?.raw : undefined},${rowTotal > 0.001 || rowTotal < -0.001 ? (record?.total?.raw ?? '') : ''}\r\n`;
       sortCodeString += recordString;
     });
-  const sortCodeSum = `${sortCode.id},Group total:,${sortCode.totalDebit ?? ''},${sortCode.totalCredit ?? ''},${sortCode.sum}\r\n`;
+  const sortCodeSum = `${sortCode.key},Group total:,${sortCode.totalDebit ?? ''},${sortCode.totalCredit ?? ''},${sortCode.sum}\r\n`;
   sortCodeString += sortCodeSum;
   const sortCodeSumDebit = sortCode.debit ? `,,,Total Debit Balances:,${sortCode.debit}\r\n` : '';
   sortCodeString += sortCodeSumDebit;

@@ -53,7 +53,7 @@ export const ReportCommentaryRow = ({ commentaryData, dataRow }: Props): ReactEl
               </thead>
               <tbody>
                 {records
-                  ?.sort((a, b) => (a.sortCode.key > b.sortCode.key ? 1 : -1))
+                  ?.sort((a, b) => a.sortCode.key - b.sortCode.key)
                   .map(record => (
                     <ReportSubCommentaryRow
                       key={record.sortCode.key}

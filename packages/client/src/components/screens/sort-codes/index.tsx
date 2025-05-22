@@ -130,6 +130,7 @@ export const SortCodes = (): ReactElement => {
 
   useEffect(() => {
     if (error) {
+      console.error('Error fetching sort codes', error);
       toast.error('Error', {
         description: 'Error fetching sort codes',
       });
