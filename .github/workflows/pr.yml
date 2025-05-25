@@ -66,6 +66,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Validate Changesets
+        uses: ./.github/workflows/require-changeset.yml
+
   compile:
     name: Compile forked PR
     runs-on: ubuntu-latest
