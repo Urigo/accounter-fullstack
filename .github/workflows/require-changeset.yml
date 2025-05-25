@@ -24,7 +24,7 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}
           # Find changeset files added or modified in this PR
-          if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^\.changeset\/.*\.md$'; then
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -P '^\.changeset/(?!@accounter).*\.md$'; then
             echo "::error ::No changeset found. Please add a changeset using 'yarn changeset' or 'npx changeset' before merging this pull request."
             exit 1
           fi
