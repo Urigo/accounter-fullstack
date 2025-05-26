@@ -87,7 +87,7 @@ export function FlightPathInput<T extends FieldValues>({
           size="icon"
           className="size-7.5"
           onClick={(): void => {
-            append({} as FieldArray<T, ArrayPath<T>>);
+            append('' as FieldArray<T, ArrayPath<T>>);
             trigger(flightPathPath);
           }}
         >

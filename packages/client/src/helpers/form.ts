@@ -54,6 +54,8 @@ export function relevantDataPicker<T>(
             'vat',
             'tags',
             'amount',
+            'defaultIrsCodes',
+            'irsCodes',
           ].includes(key) &&
           value
         ) {

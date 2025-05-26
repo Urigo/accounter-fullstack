@@ -45,7 +45,14 @@ function CreateSortCodeForm({ close, onAdd }: CreateSortCodeFormProps): ReactEle
 
   const onSubmit: SubmitHandler<AddSortCodeMutationVariables> = data => {
     data.key &&= parseInt(data.key.toString());
-    data.defaultIrsCode &&= parseInt(data.defaultIrsCode.toString());
+    if (data.defaultIrsCodes) {
+      if (!Array.isArray(data.defaultIrsCodes)) {
+        data.defaultIrsCodes = [data.defaultIrsCodes];
+      }
+      data.defaultIrsCodes = data.defaultIrsCodes
+        .filter(Boolean)
+        .map(code => parseInt(code.toString()));
+    }
     addSortCode(data).then(() => {
       close();
       onAdd?.();
