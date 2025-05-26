@@ -112,7 +112,6 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
   const { updateSortCode, fetching: updatingInProcess } = useUpdateSortCode();
 
   const onSubmit: SubmitHandler<EditSortCodeVariables> = ({ key: _, ...fields }) => {
-    console.log('fields', fields);
     const dataToUpdate = relevantDataPicker(
       fields,
       dirtyBusinessFields as MakeBoolean<typeof fields>,
@@ -120,7 +119,6 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       let defaultIrsCodes: number[] | undefined = undefined;
       if (dataToUpdate.defaultIrsCodes) {
-        console.log('defaultIrsCodes', dataToUpdate.defaultIrsCodes);
         if (!Array.isArray(dataToUpdate.defaultIrsCodes)) {
           dataToUpdate.defaultIrsCodes = [dataToUpdate.defaultIrsCodes];
         }

@@ -1,3 +1,5 @@
+import { ControllerFieldState } from 'react-hook-form';
+
 export type MakeBoolean<T> =
   T extends Record<string, unknown> ? { [K in keyof T]: MakeBoolean<T[K]> } : boolean | undefined;
 
@@ -84,4 +86,8 @@ export function isObjectEmpty(data: Record<string, unknown>): boolean {
           : !isObjectEmpty(value as Record<string, unknown>))),
   );
   return values.length === 0;
+}
+
+export function dirtyFieldMarker(fieldState: ControllerFieldState): string | undefined {
+  return fieldState.isDirty ? 'border-1 border-green-500' : undefined;
 }

@@ -8,6 +8,7 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
+import { dirtyFieldMarker } from '../../../../helpers/index.js';
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
@@ -16,11 +17,13 @@ import { NumberInput } from '../../index.js';
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
   irsCodesPath: Path<T>;
+  highlightIfDirty?: boolean;
 };
 
 export function IrsCodesInput<T extends FieldValues>({
   formManager,
   irsCodesPath,
+  highlightIfDirty,
 }: Props<T>): ReactElement {
   const { control, watch, trigger } = formManager;
   const { fields, append, remove } = useFieldArray({
@@ -58,7 +61,7 @@ export function IrsCodesInput<T extends FieldValues>({
                       'Duplicated codes found',
                   },
                 }}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormControl>
                       <NumberInput
@@ -67,6 +70,7 @@ export function IrsCodesInput<T extends FieldValues>({
                         hideControls
                         decimalScale={0}
                         thousandSeparator=""
+                        className={highlightIfDirty ? dirtyFieldMarker(fieldState) : undefined}
                       />
                     </FormControl>
                     <FormMessage />
@@ -86,34 +90,7 @@ export function IrsCodesInput<T extends FieldValues>({
               <TrashX className="size-5" />
             </Button>
           </div>
-        ))}{' '}
-        <FormField
-          name={irsCodesPath as Path<unknown>}
-          control={control}
-          rules={{
-            validate: {
-              unique: (value: number[] | undefined) => {
-                console.log(
-                  'unique validation',
-                  !value ||
-                    new Set(value.map(Number)).size === value.length ||
-                    'Duplicated codes found',
-                );
-                return (
-                  !value ||
-                  new Set(value.map(Number)).size === value.length ||
-                  'Duplicated codes found'
-                );
-              },
-            },
-          }}
-          render={({ field: _ }) => (
-            <FormItem>
-              <FormControl />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        ))}
         <Button
           variant="ghost"
           size="icon"
