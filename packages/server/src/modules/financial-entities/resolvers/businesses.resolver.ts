@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { UUID_REGEX } from '@shared/constants';
@@ -72,7 +73,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       if (hasFinancialEntitiesCoreProperties(fields)) {
         await injector
           .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({ ...fields, financialEntityId: businessId });
+          .updateFinancialEntity({
+            ...fields,
+            financialEntityId: businessId,
+            irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+          });
       }
 
       let suggestionData: IUpdateBusinessParams['suggestionData'] = null;
@@ -163,6 +168,15 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
+        let irsCodes = fields.irsCodes ? [...fields.irsCodes] : null;
+        if (!irsCodes && fields.sortCode) {
+          const sortCode = await injector
+            .get(SortCodesProvider)
+            .getSortCodesByIdLoader.load(fields.sortCode);
+          if (sortCode?.default_irs_codes) {
+            irsCodes = [...sortCode.default_irs_codes];
+          }
+        }
         const [financialEntity] = await injector
           .get(FinancialEntitiesProvider)
           .insertFinancialEntity({
@@ -170,6 +184,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
+            irsCodes,
           })
           .catch((e: Error) => {
             console.error(e);
@@ -402,6 +417,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               name: description,
               type: 'business',
               sortCode: null,
+              irsCodes: null,
             })
             .catch((e: Error) => {
               console.error(e);
@@ -464,7 +480,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     ...commonFinancialEntityFields,
     country: DbBusiness => DbBusiness.country,
     governmentId: DbBusiness => DbBusiness.vat_number,
-    name: DbBusiness => DbBusiness.name,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
@@ -511,7 +526,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,
-    name: DbBusiness => DbBusiness.name,
     email: DbBusiness => DbBusiness.email ?? '', // TODO: remove alternative ''
     pcn874RecordType: DbBusiness => DbBusiness.pcn874_record_type_override,
   },

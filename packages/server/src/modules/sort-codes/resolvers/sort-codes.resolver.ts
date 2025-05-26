@@ -27,10 +27,14 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
   },
 
   Mutation: {
-    addSortCode: (_, { key, name, defaultIrsCode }, { injector }) => {
+    addSortCode: (_, { key, name, defaultIrsCodes }, { injector }) => {
       return injector
         .get(SortCodesProvider)
-        .addSortCode({ key, name, defaultIrsCode })
+        .addSortCode({
+          key,
+          name,
+          defaultIrsCodes: defaultIrsCodes ? [...defaultIrsCodes] : undefined,
+        })
         .catch(e => {
           console.error(
             `Error adding sort code: key=${key}, name=${name}`,
@@ -43,7 +47,11 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     updateSortCode: (_, { key, fields }, { injector }) => {
       return injector
         .get(SortCodesProvider)
-        .updateSortCode({ key, ...fields })
+        .updateSortCode({
+          key,
+          ...fields,
+          defaultIrsCodes: fields.defaultIrsCodes ? [...fields.defaultIrsCodes] : undefined,
+        })
         .catch(e => {
           console.error(`Error updating sort code: key=${key}`, JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating sort code ${key}`);
@@ -55,7 +63,7 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     id: dbSortCode => dbSortCode.key.toString(),
     key: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
-    defaultIrsCode: dbSortCode => dbSortCode.default_irs_code,
+    defaultIrsCodes: dbSortCode => dbSortCode.default_irs_codes,
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,

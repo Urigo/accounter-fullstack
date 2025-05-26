@@ -1,3 +1,4 @@
+import { IGetBusinessesByIdsResult } from '@modules/financial-entities/types.js';
 import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
 import { optionalDateToTimelessDateString } from '@shared/helpers';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
@@ -42,7 +43,8 @@ export const businessTripAttendeesResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripAttendee: {
     id: dbBusinessTripAttendee => dbBusinessTripAttendee.id,
     name: dbBusinessTripAttendee => dbBusinessTripAttendee.name,
-    business: dbBusinessTripAttendee => dbBusinessTripAttendee,
+    business: dbBusinessTripAttendee =>
+      dbBusinessTripAttendee as unknown as IGetBusinessesByIdsResult, // TODO: temporary type casting, should be fixed later
     arrivalDate: dbBusinessTripAttendee =>
       optionalDateToTimelessDateString(dbBusinessTripAttendee.arrival),
     departureDate: dbBusinessTripAttendee =>

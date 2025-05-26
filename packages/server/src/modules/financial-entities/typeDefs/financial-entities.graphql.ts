@@ -18,6 +18,7 @@ export default gql`
   interface FinancialEntity {
     id: UUID!
     name: String!
+    irsCodes: [Int!]
   }
 
   extend interface Charge {

@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -39,7 +40,11 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       if (hasFinancialEntitiesCoreProperties(fields)) {
         await injector
           .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({ ...fields, financialEntityId: taxCategoryId });
+          .updateFinancialEntity({
+            ...fields,
+            financialEntityId: taxCategoryId,
+            irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+          });
       }
       const adjustedFields: IUpdateTaxCategoryParams = {
         hashavshevetName: fields.hashavshevetName,
@@ -76,6 +81,15 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
+        let irsCodes = fields.irsCodes ? [...fields.irsCodes] : null;
+        if (!irsCodes && fields.sortCode) {
+          const sortCode = await injector
+            .get(SortCodesProvider)
+            .getSortCodesByIdLoader.load(fields.sortCode);
+          if (sortCode?.default_irs_codes) {
+            irsCodes = sortCode.default_irs_codes;
+          }
+        }
         const [financialEntity] = await injector
           .get(FinancialEntitiesProvider)
           .insertFinancialEntity({
@@ -83,6 +97,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
+            irsCodes,
           })
           .catch((e: Error) => {
             console.error(e);
