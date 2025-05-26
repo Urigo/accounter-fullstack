@@ -10,6 +10,7 @@ export const commonFinancialEntityFields:
   | FinancialEntitiesModule.LtdFinancialEntityResolvers
   | FinancialEntitiesModule.PersonalFinancialEntityResolvers = {
   id: DbBusiness => DbBusiness.id,
+  irsCode: DbBusiness => DbBusiness.irs_code,
 };
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {

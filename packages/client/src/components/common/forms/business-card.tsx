@@ -49,6 +49,7 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
           description
         }
         optionalVAT
+        irsCode
       }
     }
   }
@@ -117,6 +118,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
       ...business,
       taxCategory: business.taxCategory?.id,
       sortCode: business?.sortCode?.key,
+      irsCode: business?.irsCode,
     },
   });
 
