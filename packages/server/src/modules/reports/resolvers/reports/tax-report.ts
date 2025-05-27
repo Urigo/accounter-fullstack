@@ -69,14 +69,9 @@ export const taxReport: ResolverFn<
       profitLossByYear.set(year, profitAndLoss);
     }
 
-    const {
-      profitBeforeTaxAmount,
-      profitBeforeTaxRecords,
-      researchAndDevelopmentExpensesAmount,
-      researchAndDevelopmentExpensesRecords,
-    } = profitAndLoss;
+    const { profitBeforeTax, researchAndDevelopmentExpenses } = profitAndLoss;
 
-    const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpensesAmount * -1;
+    const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpenses.amount * -1;
 
     let cumulativeResearchAndDevelopmentExpensesAmount = 0;
     for (const rndYear of [year - 2, year - 1, year]) {
@@ -88,7 +83,7 @@ export const taxReport: ResolverFn<
       }
 
       cumulativeResearchAndDevelopmentExpensesAmount +=
-        profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
+        profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
     }
 
     const taxableCumulativeResearchAndDevelopmentExpensesAmount =
@@ -113,18 +108,15 @@ export const taxReport: ResolverFn<
       decoratedLedgerRecords,
       adjustedResearchAndDevelopmentExpensesAmount,
       taxableCumulativeResearchAndDevelopmentExpensesAmount,
-      profitBeforeTaxAmount,
+      profitBeforeTax.amount,
     );
 
     yearlyReports.push({
       year,
-      profitBeforeTax: {
-        amount: profitBeforeTaxAmount,
-        records: profitBeforeTaxRecords,
-      },
+      profitBeforeTax,
       researchAndDevelopmentExpensesByRecords: {
         amount: adjustedResearchAndDevelopmentExpensesAmount,
-        records: researchAndDevelopmentExpensesRecords.map(record => ({
+        records: researchAndDevelopmentExpenses.records.map(record => ({
           ...record,
           amount: record.amount * -1,
           records: record.records.map(subRecord => ({
