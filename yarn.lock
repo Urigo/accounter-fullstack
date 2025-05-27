@@ -26,7 +26,7 @@ __metadata:
     pg-promise: "npm:11.13.0"
     slonik: "npm:38.0.0"
     tslib: "npm:2.8.1"
-    zod: "npm:3.25.28"
+    zod: "npm:3.25.30"
   languageName: unknown
   linkType: soft
 
@@ -107,7 +107,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.1.5"
+    "@types/react": "npm:19.1.6"
     "@types/react-dom": "npm:19.1.5"
     "@urql/exchange-auth": "npm:2.2.1"
     "@vitejs/plugin-react": "npm:4.5.0"
@@ -145,7 +145,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:6.3.5"
     vite-plugin-node-polyfills: "npm:0.23.0"
-    zod: "npm:3.25.28"
+    zod: "npm:3.25.30"
     zustand: "npm:5.0.5"
   languageName: unknown
   linkType: soft
@@ -282,7 +282,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
-    zod: "npm:3.25.28"
+    zod: "npm:3.25.30"
   languageName: unknown
   linkType: soft
 
@@ -325,7 +325,7 @@ __metadata:
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.8.3"
-    zod: "npm:3.25.28"
+    zod: "npm:3.25.30"
   languageName: unknown
   linkType: soft
 
@@ -337,7 +337,7 @@ __metadata:
     eslint: "npm:9.27.0"
     iconv-lite: "npm:0.6.3"
     vitest: "npm:3.1.4"
-    zod: "npm:3.25.28"
+    zod: "npm:3.25.30"
   languageName: unknown
   linkType: soft
 
@@ -7376,12 +7376,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.1.5":
-  version: 19.1.5
-  resolution: "@types/react@npm:19.1.5"
+"@types/react@npm:19.1.6":
+  version: 19.1.6
+  resolution: "@types/react@npm:19.1.6"
   dependencies:
     csstype: "npm:^3.0.2"
-  checksum: 10c0/e0811aadc65cf4030e2418c7975b524f126db806bacb85cffdbe5e50c3606e9a5ffe89ffe6bf9c945e03f5e8d5ed992686bc6bb478db1f3127cc50933f648e1e
+  checksum: 10c0/8b10b198e28997b3c57559750f8bcf5ae7b33c554b16b6f4fe2ece1d4de6a2fc8cb53e7effe08ec9cb939d2f479eb97c5e08aac2cf83b10a90164fe451cc8ea2
   languageName: node
   linkType: hard
 
@@ -21517,7 +21517,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:3.25.28, zod@npm:^3.20.2, zod@npm:^3.24.1":
+"zod@npm:3.25.30":
+  version: 3.25.30
+  resolution: "zod@npm:3.25.30"
+  checksum: 10c0/53cc090b949ed1776e241fb882d5de0f66096727aabbfb53ff9c64c875b575c9d3cbd75556bc816bcdd09aff0a26608e1c40d79dd863ab5c31a96331f1e7a4b9
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.20.2, zod@npm:^3.24.1":
   version: 3.25.28
   resolution: "zod@npm:3.25.28"
   checksum: 10c0/557fb621813d128f8090c43de65f9e8661ce9bd8bd29d7adc6b38b0a79e14729a8926e28a2e6eee2fa0ec0ea390cc549363f50235e8f45d2e4771906d1f87b20
