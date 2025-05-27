@@ -1,3 +1,5 @@
+import { ReportData } from '@accounter/shaam6111-generator';
+
 export * from './__generated__/types.js';
 export * from './__generated__/dynamic-report.types.js';
 export * from './__generated__/balance-report.types.js';
@@ -65,4 +67,9 @@ export type TaxReportYearProto = {
   specialTaxableIncome: CommentaryProto;
   specialTaxRate: number;
   annualTaxExpense: number;
+};
+
+export type Shaam6111ReportProto = {
+  reportData: ReportData;
+  businessId: string;
 };

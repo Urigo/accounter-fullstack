@@ -123,6 +123,8 @@ export default [
               'PaginatedFinancialEntities',
               'PCNFileResult',
               'PCNRawData',
+              'Shaam6111Header',
+              'Shaam6111ReportEntry',
               'SicknessDays',
               'Suggestions',
               'ReportCommentary',
