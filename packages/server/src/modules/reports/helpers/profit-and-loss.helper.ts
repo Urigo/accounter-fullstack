@@ -1,6 +1,9 @@
 import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
-import type { CommentaryProto } from '../types.js';
+import {
+  FilteringOptions,
+  recordsByFinancialEntityIdAndSortCodeValidations,
+} from './misc.helper.js';
 
 export type LedgerRecordDecorations = Partial<{
   credit_entity_sort_code1: number;
@@ -52,232 +55,61 @@ export function decorateLedgerRecords(
   });
 }
 
-export function updateRecords(
-  amountsByEntity: Map<number, { amount: number; records: Map<string, number> }>,
-  amount: number,
-  sortCode: number,
-  financialEntityId: string,
-) {
-  const currentRecord = amountsByEntity.get(sortCode);
-  if (currentRecord) {
-    currentRecord.amount += amount;
-    const record = currentRecord.records.get(financialEntityId);
-    if (record) {
-      currentRecord.records.set(financialEntityId, record + amount);
-    } else {
-      currentRecord.records.set(financialEntityId, amount);
-    }
-  } else {
-    amountsByEntity.set(sortCode, { amount, records: new Map([[financialEntityId, amount]]) });
-  }
-}
-
-export function amountBySortCodeValidation(
-  unfilteredRecords: DecoratedLedgerRecord[],
-  validation: (sortCode: number) => boolean,
-  negate: boolean = false,
-): CommentaryProto {
-  let amount = 0;
-  const amountsByEntity = new Map<
-    number,
-    {
-      amount: number;
-      records: Map<string, number>;
-    }
-  >();
-  const sign = negate ? -1 : 1;
-  unfilteredRecords.map(record => {
-    if (record.credit_entity1 && validation(record.credit_entity_sort_code1!)) {
-      const recordAmount = Number(record.credit_local_amount1) * sign;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.credit_entity_sort_code1!,
-        record.credit_entity1,
-      );
-      amount += recordAmount;
-    }
-    if (record.credit_entity2 && validation(record.credit_entity_sort_code2!)) {
-      const recordAmount = Number(record.credit_local_amount2) * sign;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.credit_entity_sort_code2!,
-        record.credit_entity2,
-      );
-      amount += recordAmount;
-    }
-    if (record.debit_entity1 && validation(record.debit_entity_sort_code1!)) {
-      const recordAmount = Number(record.debit_local_amount1) * sign * -1;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.debit_entity_sort_code1!,
-        record.debit_entity1,
-      );
-      amount += recordAmount;
-    }
-    if (record.debit_entity2 && validation(record.debit_entity_sort_code2!)) {
-      const recordAmount = Number(record.debit_local_amount2) * sign * -1;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.debit_entity_sort_code2!,
-        record.debit_entity2,
-      );
-      amount += recordAmount;
-    }
-  });
-
-  const records = Array.from(amountsByEntity.entries()).map(([sortCode, data]) => ({
-    sortCode,
-    amount: data.amount,
-    records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
-      financialEntityId,
-      amount,
-    })),
-  }));
-
-  return { amount, records };
-}
-
-export function amountByFinancialEntityIdAndSortCodeValidation(
-  unfilteredRecords: DecoratedLedgerRecord[],
-  validation: (financialEntityId: string, sortCode: number) => boolean,
-  negate: boolean = false,
-): number {
-  let amount = 0;
-  const sign = negate ? -1 : 1;
-  unfilteredRecords.map(record => {
-    if (
-      record.credit_entity1 &&
-      validation(record.credit_entity1, record.credit_entity_sort_code1!)
-    ) {
-      amount += Number(record.credit_local_amount1) * sign;
-    }
-    if (
-      record.credit_entity2 &&
-      validation(record.credit_entity2, record.credit_entity_sort_code2!)
-    ) {
-      amount += Number(record.credit_local_amount2) * sign;
-    }
-    if (record.debit_entity1 && validation(record.debit_entity1, record.debit_entity_sort_code1!)) {
-      amount += Number(record.debit_local_amount1) * sign * -1;
-    }
-    if (record.debit_entity2 && validation(record.debit_entity2, record.debit_entity_sort_code2!)) {
-      amount += Number(record.debit_local_amount2) * sign * -1;
-    }
-  });
-
-  return amount;
-}
-
-export function recordsByFinancialEntityIdAndSortCodeValidation(
-  unfilteredRecords: DecoratedLedgerRecord[],
-  validation: (financialEntityId: string, sortCode: number) => boolean,
-  negate: boolean = false,
-): CommentaryProto {
-  let amount = 0;
-  const amountsByEntity = new Map<
-    number,
-    {
-      amount: number;
-      records: Map<string, number>;
-    }
-  >();
-
-  const sign = negate ? -1 : 1;
-  unfilteredRecords.map(record => {
-    if (
-      record.credit_entity1 &&
-      validation(record.credit_entity1, record.credit_entity_sort_code1!)
-    ) {
-      const recordAmount = Number(record.credit_local_amount1) * sign;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.credit_entity_sort_code1!,
-        record.credit_entity1,
-      );
-      amount += recordAmount;
-    }
-    if (
-      record.credit_entity2 &&
-      validation(record.credit_entity2, record.credit_entity_sort_code2!)
-    ) {
-      const recordAmount = Number(record.credit_local_amount2) * sign;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.credit_entity_sort_code2!,
-        record.credit_entity2,
-      );
-      amount += recordAmount;
-    }
-    if (record.debit_entity1 && validation(record.debit_entity1, record.debit_entity_sort_code1!)) {
-      const recordAmount = Number(record.debit_local_amount1) * sign * -1;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.debit_entity_sort_code1!,
-        record.debit_entity1,
-      );
-      amount += recordAmount;
-    }
-    if (record.debit_entity2 && validation(record.debit_entity2, record.debit_entity_sort_code2!)) {
-      const recordAmount = Number(record.debit_local_amount2) * sign * -1;
-      updateRecords(
-        amountsByEntity,
-        recordAmount,
-        record.debit_entity_sort_code2!,
-        record.debit_entity2,
-      );
-      amount += recordAmount;
-    }
-  });
-
-  const records = Array.from(amountsByEntity.entries()).map(([sortCode, data]) => ({
-    sortCode,
-    amount: data.amount,
-    records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
-      financialEntityId,
-      amount,
-    })),
-  }));
-
-  return { amount, records };
-}
-
 export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedgerRecord[]) {
-  const { amount: revenueAmount, records: revenueRecords } = amountBySortCodeValidation(
-    decoratedLedgerRecords,
-    sortCode => Math.floor(sortCode / 100) === 8,
-  );
-
-  const { amount: costOfSalesAmount, records: costOfSalesRecords } = amountBySortCodeValidation(
-    decoratedLedgerRecords,
-    sortCode => [910, 911, 912].includes(sortCode),
-  );
+  const revenueFilter: FilteringOptions = {
+    rule: (_, sortCode) => [800, 810].includes(sortCode),
+  };
+  const costOfSalesFilter: FilteringOptions = {
+    rule: (_, sortCode) => [910, 911, 912].includes(sortCode),
+  };
+  const researchAndDevelopmentExpensesFilter: FilteringOptions = {
+    rule: (_, sortCode) => [920, 921, 922, 923, 924, 925, 930, 931].includes(sortCode),
+  };
+  const marketingExpensesFilter: FilteringOptions = {
+    rule: (_, sortCode) => [935, 936].includes(sortCode),
+  };
+  const managementAndGeneralExpensesFilter: FilteringOptions = {
+    rule: (_, sortCode) => [940, 941, 942, 943, 944, 945, 947, 948].includes(sortCode),
+  };
+  const financialExpensesFilter: FilteringOptions = {
+    rule: (_, sortCode) => [990, 991].includes(sortCode),
+  };
+  const otherIncomeFilter: FilteringOptions = {
+    rule: (_, sortCode) => sortCode === 995,
+  };
+  const [
+    revenue,
+    costOfSales,
+    researchAndDevelopmentExpenses,
+    marketingExpenses,
+    managementAndGeneralExpenses,
+    financialExpenses,
+    otherIncome,
+  ] = recordsByFinancialEntityIdAndSortCodeValidations(decoratedLedgerRecords, [
+    revenueFilter,
+    costOfSalesFilter,
+    researchAndDevelopmentExpensesFilter,
+    marketingExpensesFilter,
+    managementAndGeneralExpensesFilter,
+    financialExpensesFilter,
+    otherIncomeFilter,
+  ]);
+  const { amount: revenueAmount, records: revenueRecords } = revenue;
+  const { amount: costOfSalesAmount, records: costOfSalesRecords } = costOfSales;
 
   const grossProfitAmount = revenueAmount + costOfSalesAmount;
 
   const {
     amount: researchAndDevelopmentExpensesAmount,
     records: researchAndDevelopmentExpensesRecords,
-  } = amountBySortCodeValidation(decoratedLedgerRecords, sortCode =>
-    [920, 921, 922, 923, 924, 925, 930, 931].includes(sortCode),
-  );
+  } = researchAndDevelopmentExpenses;
 
-  const { amount: marketingExpensesAmount, records: marketingExpensesRecords } =
-    amountBySortCodeValidation(decoratedLedgerRecords, sortCode => [935, 936].includes(sortCode));
+  const { amount: marketingExpensesAmount, records: marketingExpensesRecords } = marketingExpenses;
 
   const {
     amount: managementAndGeneralExpensesAmount,
     records: managementAndGeneralExpensesRecords,
-  } = amountBySortCodeValidation(
-    decoratedLedgerRecords,
-    sortCode => sortCode >= 940 && sortCode <= 948, // 940, 941, 942, 943, 944, 945, 947, 948
-  );
+  } = managementAndGeneralExpenses;
 
   const operatingProfitAmount =
     grossProfitAmount +
@@ -285,16 +117,8 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     marketingExpensesAmount +
     managementAndGeneralExpensesAmount;
 
-  const { amount: financialExpensesAmount, records: financialExpensesRecords } =
-    amountBySortCodeValidation(
-      decoratedLedgerRecords,
-      sortCode => sortCode === 990 || sortCode === 991,
-    );
-
-  const { amount: otherIncomeAmount, records: otherIncomeRecords } = amountBySortCodeValidation(
-    decoratedLedgerRecords,
-    sortCode => sortCode === 995,
-  );
+  const { amount: financialExpensesAmount, records: financialExpensesRecords } = financialExpenses;
+  const { amount: otherIncomeAmount, records: otherIncomeRecords } = otherIncome;
 
   const profitBeforeTaxAmount = operatingProfitAmount + financialExpensesAmount + otherIncomeAmount;
   const profitBeforeTaxRecords = [
@@ -306,34 +130,30 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     ...financialExpensesRecords,
     ...otherIncomeRecords,
   ];
+  const profitBeforeTax = {
+    amount: profitBeforeTaxAmount,
+    records: profitBeforeTaxRecords,
+  };
 
   return {
-    revenueAmount,
-    revenueRecords,
+    revenue,
 
-    costOfSalesAmount,
-    costOfSalesRecords,
+    costOfSales,
 
     grossProfitAmount,
 
-    researchAndDevelopmentExpensesAmount,
-    researchAndDevelopmentExpensesRecords,
+    researchAndDevelopmentExpenses,
 
-    marketingExpensesAmount,
-    marketingExpensesRecords,
+    marketingExpenses,
 
-    managementAndGeneralExpensesAmount,
-    managementAndGeneralExpensesRecords,
+    managementAndGeneralExpenses,
 
     operatingProfitAmount,
 
-    financialExpensesAmount,
-    financialExpensesRecords,
+    financialExpenses,
 
-    otherIncomeAmount,
-    otherIncomeRecords,
+    otherIncome,
 
-    profitBeforeTaxAmount,
-    profitBeforeTaxRecords,
+    profitBeforeTax,
   };
 }

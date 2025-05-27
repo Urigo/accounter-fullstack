@@ -97,22 +97,22 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       const profitLossHelperReportAmounts = getProfitLossReportAmountsByYear(rndYear);
 
       cumulativeResearchAndDevelopmentExpensesAmount +=
-        profitLossHelperReportAmounts.researchAndDevelopmentExpensesAmount;
+        profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
     }
 
     const taxableCumulativeResearchAndDevelopmentExpensesAmount =
       cumulativeResearchAndDevelopmentExpensesAmount / 3;
 
-    const { researchAndDevelopmentExpensesAmount, profitBeforeTaxAmount } =
+    const { researchAndDevelopmentExpenses, profitBeforeTax } =
       getProfitLossReportAmountsByYear(year);
 
     const { annualTaxExpenseAmount } = await calculateTaxAmounts(
       context,
       year,
       decoratedLedgerByYear.get(year) ?? [],
-      researchAndDevelopmentExpensesAmount * -1,
+      researchAndDevelopmentExpenses.amount * -1,
       taxableCumulativeResearchAndDevelopmentExpensesAmount,
-      profitBeforeTaxAmount,
+      profitBeforeTax.amount,
     );
 
     const ledgerEntry: LedgerProto = {

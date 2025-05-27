@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
+import { amountByFinancialEntityIdAndSortCodeValidations } from '@modules/reports/helpers/misc.helper.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import {
   ProfitAndLossReportYearResolvers,
@@ -15,7 +16,6 @@ import {
 } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import {
-  amountBySortCodeValidation,
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
@@ -58,65 +58,37 @@ export const profitAndLossReport: ResolverFn<
     const decoratedLedgerRecords = decorateLedgerRecords(ledgerRecords, financialEntitiesDict);
 
     const {
-      revenueAmount,
-      revenueRecords,
-      costOfSalesAmount,
-      costOfSalesRecords,
+      revenue,
+      costOfSales,
       grossProfitAmount,
-      researchAndDevelopmentExpensesAmount,
-      researchAndDevelopmentExpensesRecords,
-      marketingExpensesAmount,
-      marketingExpensesRecords,
-      managementAndGeneralExpensesAmount,
-      managementAndGeneralExpensesRecords,
+      researchAndDevelopmentExpenses,
+      marketingExpenses,
+      managementAndGeneralExpenses,
       operatingProfitAmount,
-      financialExpensesAmount,
-      financialExpensesRecords,
-      otherIncomeAmount,
-      otherIncomeRecords,
-      profitBeforeTaxAmount,
+      financialExpenses,
+      otherIncome,
+      profitBeforeTax,
     } = getProfitLossReportAmounts(decoratedLedgerRecords);
 
-    const { amount: incomeTaxAmount } = amountBySortCodeValidation(
+    const [incomeTaxAmount] = amountByFinancialEntityIdAndSortCodeValidations(
       decoratedLedgerRecords,
-      sortCode => sortCode === 999,
+      [{ rule: (_, sortCode) => sortCode === 999 }],
     );
 
-    const netProfitAmount = profitBeforeTaxAmount + incomeTaxAmount;
+    const netProfitAmount = profitBeforeTax.amount + incomeTaxAmount;
 
     yearlyReports.push({
       year,
-      revenue: {
-        amount: revenueAmount,
-        records: revenueRecords,
-      },
-      costOfSales: {
-        amount: costOfSalesAmount,
-        records: costOfSalesRecords,
-      },
+      revenue,
+      costOfSales,
       grossProfit: grossProfitAmount,
-      researchAndDevelopmentExpenses: {
-        amount: researchAndDevelopmentExpensesAmount,
-        records: researchAndDevelopmentExpensesRecords,
-      },
-      marketingExpenses: {
-        amount: marketingExpensesAmount,
-        records: marketingExpensesRecords,
-      },
-      managementAndGeneralExpenses: {
-        amount: managementAndGeneralExpensesAmount,
-        records: managementAndGeneralExpensesRecords,
-      },
+      researchAndDevelopmentExpenses,
+      marketingExpenses,
+      managementAndGeneralExpenses,
       operatingProfit: operatingProfitAmount,
-      financialExpenses: {
-        amount: financialExpensesAmount,
-        records: financialExpensesRecords,
-      },
-      otherIncome: {
-        amount: otherIncomeAmount,
-        records: otherIncomeRecords,
-      },
-      profitBeforeTax: profitBeforeTaxAmount,
+      financialExpenses,
+      otherIncome,
+      profitBeforeTax: profitBeforeTax.amount,
       tax: incomeTaxAmount,
       netProfit: netProfitAmount,
     });
