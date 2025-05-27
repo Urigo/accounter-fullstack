@@ -70,7 +70,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
   T extends FilteringOptions[],
   R extends { [K in keyof T]: CommentaryProto },
 >(unfilteredRecords: DecoratedLedgerRecord[], filteringRules: T): R {
-  const comentaryProtos = filteringRules.map(() => ({
+  const commentaryProtos = filteringRules.map(() => ({
     amount: 0,
     amountsByEntity: new Map<
       number,
@@ -87,12 +87,12 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
           const sign = filteringRules[i].negate ? -1 : 1;
           const recordAmount = Number(record.credit_local_amount1) * sign;
           updateRecords(
-            comentaryProtos[i].amountsByEntity,
+            commentaryProtos[i].amountsByEntity,
             recordAmount,
             record.credit_entity_sort_code1!,
             record.credit_entity1,
           );
-          comentaryProtos[i].amount += recordAmount;
+          commentaryProtos[i].amount += recordAmount;
         }
       }
     }
@@ -102,12 +102,12 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
           const sign = filteringRules[i].negate ? -1 : 1;
           const recordAmount = Number(record.credit_local_amount2) * sign;
           updateRecords(
-            comentaryProtos[i].amountsByEntity,
+            commentaryProtos[i].amountsByEntity,
             recordAmount,
             record.credit_entity_sort_code2!,
             record.credit_entity2,
           );
-          comentaryProtos[i].amount += recordAmount;
+          commentaryProtos[i].amount += recordAmount;
         }
       }
     }
@@ -115,14 +115,14 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
       for (let i = 0; i < filteringRules.length; i++) {
         if (filteringRules[i].rule(record.debit_entity1, record.debit_entity_sort_code1!)) {
           const sign = filteringRules[i].negate ? -1 : 1;
-          const recordAmount = Number(record.debit_local_amount1) * sign;
+          const recordAmount = Number(record.debit_local_amount1) * sign * -1;
           updateRecords(
-            comentaryProtos[i].amountsByEntity,
+            commentaryProtos[i].amountsByEntity,
             recordAmount,
             record.debit_entity_sort_code1!,
             record.debit_entity1,
           );
-          comentaryProtos[i].amount += recordAmount;
+          commentaryProtos[i].amount += recordAmount;
         }
       }
     }
@@ -130,20 +130,20 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
       for (let i = 0; i < filteringRules.length; i++) {
         if (filteringRules[i].rule(record.debit_entity2, record.debit_entity_sort_code2!)) {
           const sign = filteringRules[i].negate ? -1 : 1;
-          const recordAmount = Number(record.debit_local_amount2) * sign;
+          const recordAmount = Number(record.debit_local_amount2) * sign * -1;
           updateRecords(
-            comentaryProtos[i].amountsByEntity,
+            commentaryProtos[i].amountsByEntity,
             recordAmount,
             record.debit_entity_sort_code2!,
             record.debit_entity2,
           );
-          comentaryProtos[i].amount += recordAmount;
+          commentaryProtos[i].amount += recordAmount;
         }
       }
     }
   });
 
-  return comentaryProtos.map(proto => ({
+  return commentaryProtos.map(proto => ({
     amount: proto.amount,
     records: Array.from(proto.amountsByEntity.entries()).map(([sortCode, data]) => ({
       sortCode,

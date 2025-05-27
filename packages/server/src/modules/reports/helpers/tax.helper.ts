@@ -56,6 +56,11 @@ export async function calculateTaxAmounts(
     throw new GraphQLError('No tax rate for year');
   }
 
+  const excludedTaxCategories = await injector
+    .get(TaxCategoriesProvider)
+    .getAllTaxCategories()
+    .then(res => res.filter(tc => !!tc.tax_excluded).map(tc => tc.id));
+
   const untaxableGiftsFilter: FilteringOptions = {
     rule: taxCategoryId => taxCategoryId === untaxableGiftsTaxCategoryId,
     negate: true,
@@ -93,11 +98,6 @@ export async function calculateTaxAmounts(
     const amount = summary.rows.find(row => row.type === 'TOTAL')?.excessExpenditure?.raw ?? 0;
     businessTripsExcessExpensesAmount += amount;
   });
-
-  const excludedTaxCategories = await injector
-    .get(TaxCategoriesProvider)
-    .getAllTaxCategories()
-    .then(res => res.filter(tc => !!tc.tax_excluded).map(tc => tc.id));
 
   const businessTripsExcludedFilter: FilteringOptions = {
     rule: (financialEntityId: string, sortCode: number) => {
