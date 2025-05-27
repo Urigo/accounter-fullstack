@@ -52,7 +52,7 @@ export function IrsCodesInput<T extends FieldValues>({
                 rules={{
                   validate: {
                     range: value =>
-                      (Number(value) > 1 && Number(value) <= 9999) ||
+                      (Number(value) >= 1 && Number(value) <= 9999) ||
                       'Code must be between 1 and 9999',
                     integer: value => Number.isInteger(Number(value)) || 'Code must be an integer',
                     unique: _value =>
@@ -70,7 +70,7 @@ export function IrsCodesInput<T extends FieldValues>({
                         hideControls
                         decimalScale={0}
                         thousandSeparator=""
-                        className={highlightIfDirty ? dirtyFieldMarker(fieldState) : undefined}
+                        className={highlightIfDirty ? dirtyFieldMarker(fieldState) : ''}
                       />
                     </FormControl>
                     <FormMessage />

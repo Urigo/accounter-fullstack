@@ -88,6 +88,6 @@ export function isObjectEmpty(data: Record<string, unknown>): boolean {
   return values.length === 0;
 }
 
-export function dirtyFieldMarker(fieldState: ControllerFieldState): string | undefined {
-  return fieldState.isDirty ? 'border-1 border-green-500' : undefined;
+export function dirtyFieldMarker(fieldState: ControllerFieldState): string {
+  return fieldState.isDirty ? 'border-1 border-green-500' : '';
 }

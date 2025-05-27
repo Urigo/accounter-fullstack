@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect } from 'react';
+import { ReactElement, useEffect } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
@@ -38,20 +38,14 @@ export function ModifyTaxCategoryFields({
 
   // on sort code change, update IRS code
   const sortCode = watch('sortCode');
-  const updateIrsCode = useCallback(
-    (sortCode: number) => {
+  useEffect(() => {
+    if (sortCode) {
       const sortCodeObj = rawSortCodes.find(sc => sc.key === sortCode);
       if (sortCodeObj?.defaultIrsCodes) {
         setValue('irsCodes', sortCodeObj.defaultIrsCodes, { shouldDirty: true });
       }
-    },
-    [rawSortCodes, setValue],
-  );
-  useEffect(() => {
-    if (sortCode) {
-      updateIrsCode(sortCode);
     }
-  }, [sortCode, updateIrsCode]);
+  }, [sortCode, rawSortCodes, setValue]);
 
   return (
     <>
@@ -70,7 +64,7 @@ export function ModifyTaxCategoryFields({
                 {...field}
                 value={field.value ?? undefined}
                 required
-                className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                className={isInsert ? '' : dirtyFieldMarker(fieldState)}
               />
             </FormControl>
             <FormMessage />
@@ -92,7 +86,7 @@ export function ModifyTaxCategoryFields({
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
-              className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+              className={isInsert ? '' : dirtyFieldMarker(fieldState)}
             />
           );
         }}

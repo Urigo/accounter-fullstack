@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import type {
   InsertNewBusinessInput,
@@ -66,8 +66,8 @@ export function ModifyBusinessFields({
 
   // on sort code change, update IRS code
   const sortCode = watch('sortCode');
-  const updateIrsCode = useCallback(
-    (sortCode: number) => {
+  useEffect(() => {
+    if (sortCode) {
       const sortCodeObj = rawSortCodes.find(sc => Number(sc.key) === Number(sortCode));
 
       if (sortCodeObj) {
@@ -77,14 +77,8 @@ export function ModifyBusinessFields({
           setValue('irsCodes', [], { shouldDirty: true });
         }
       }
-    },
-    [rawSortCodes, setValue],
-  );
-  useEffect(() => {
-    if (sortCode) {
-      updateIrsCode(sortCode);
     }
-  }, [sortCode, updateIrsCode]);
+  }, [sortCode, rawSortCodes, setValue]);
 
   return (
     <>
@@ -104,7 +98,7 @@ export function ModifyBusinessFields({
                   {...field}
                   value={field.value ?? undefined}
                   required
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -125,7 +119,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -156,7 +150,7 @@ export function ModifyBusinessFields({
                     <SelectItem
                       key={value}
                       value={value}
-                      className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                      className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                     >
                       {label}
                     </SelectItem>
@@ -181,7 +175,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -202,7 +196,7 @@ export function ModifyBusinessFields({
                 placeholder="Scroll to see all options"
                 formPart
                 triggerProps={{
-                  className: isInsert ? undefined : dirtyFieldMarker(fieldState),
+                  className: isInsert ? '' : dirtyFieldMarker(fieldState),
                 }}
               />
               <FormMessage />
@@ -224,7 +218,7 @@ export function ModifyBusinessFields({
                 placeholder="Scroll to see all options"
                 formPart
                 triggerProps={{
-                  className: isInsert ? undefined : dirtyFieldMarker(fieldState),
+                  className: isInsert ? '' : dirtyFieldMarker(fieldState),
                 }}
               />
               <FormMessage />
@@ -245,7 +239,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -266,7 +260,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -287,7 +281,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -308,7 +302,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />
@@ -325,9 +319,7 @@ export function ModifyBusinessFields({
               <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                 <FormControl>
                   <SelectTrigger
-                    className={
-                      'w-full truncate' + (isInsert ? undefined : dirtyFieldMarker(fieldState))
-                    }
+                    className={`w-full truncate ${isInsert ? '' : dirtyFieldMarker(fieldState)}`}
                   >
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -364,7 +356,7 @@ export function ModifyBusinessFields({
                 <Switch
                   checked={field.value === true}
                   onCheckedChange={field.onChange}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
             </FormItem>
@@ -384,7 +376,7 @@ export function ModifyBusinessFields({
                 <Switch
                   checked={field.value === true}
                   onCheckedChange={field.onChange}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
             </FormItem>
@@ -414,7 +406,7 @@ export function ModifyBusinessFields({
                 <Input
                   {...field}
                   value={field.value ?? undefined}
-                  className={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />

@@ -38,13 +38,11 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   Mutation: {
     updateTaxCategory: async (_, { taxCategoryId, fields }, { injector }) => {
       if (hasFinancialEntitiesCoreProperties(fields)) {
-        await injector
-          .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({
-            ...fields,
-            financialEntityId: taxCategoryId,
-            irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
-          });
+        await injector.get(FinancialEntitiesProvider).updateFinancialEntity({
+          ...fields,
+          financialEntityId: taxCategoryId,
+          irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+        });
       }
       const adjustedFields: IUpdateTaxCategoryParams = {
         hashavshevetName: fields.hashavshevetName,

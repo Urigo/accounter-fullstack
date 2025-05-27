@@ -71,13 +71,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   Mutation: {
     updateBusiness: async (_, { businessId, ownerId, fields }, { injector }) => {
       if (hasFinancialEntitiesCoreProperties(fields)) {
-        await injector
-          .get(FinancialEntitiesProvider)
-          .updateFinancialEntity({
-            ...fields,
-            financialEntityId: businessId,
-            irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
-          });
+        await injector.get(FinancialEntitiesProvider).updateFinancialEntity({
+          ...fields,
+          financialEntityId: businessId,
+          irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+        });
       }
 
       let suggestionData: IUpdateBusinessParams['suggestionData'] = null;
