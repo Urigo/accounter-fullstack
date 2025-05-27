@@ -122,15 +122,13 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
         const codes = Array.isArray(dataToUpdate.defaultIrsCodes)
           ? dataToUpdate.defaultIrsCodes
           : [dataToUpdate.defaultIrsCodes];
-        defaultIrsCodes = codes
-          .filter(code => code != null && code !== '')
-          .map(code => {
-            const parsed = Number(code);
-            if (!Number.isInteger(parsed) || parsed < 2 || parsed > 9999) {
-              throw new Error(`Invalid IRS code: ${code}`);
-            }
-            return parsed;
-          });
+        defaultIrsCodes = codes.filter(Boolean).map(code => {
+          const parsed = Number(code);
+          if (!Number.isInteger(parsed) || parsed < 2 || parsed > 9999) {
+            throw new Error(`Invalid IRS code: ${code}`);
+          }
+          return parsed;
+        });
       }
       updateSortCode({
         fields: { ...dataToUpdate, defaultIrsCodes },
