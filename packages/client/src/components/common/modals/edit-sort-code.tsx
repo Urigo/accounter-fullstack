@@ -29,7 +29,7 @@ import { ModifySortCodeFields } from '../forms/index.js';
       id
       key
       name
-      defaultIrsCode
+      defaultIrsCodes
     }
   }
 `;
@@ -117,19 +117,23 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
       dirtyBusinessFields as MakeBoolean<typeof fields>,
     );
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      if (dataToUpdate.defaultIrsCode !== undefined) {
-        // Ensure it's a number before updating
-        const parsedValue =
-          typeof dataToUpdate.defaultIrsCode === 'string'
-            ? parseInt(dataToUpdate.defaultIrsCode, 10)
-            : dataToUpdate.defaultIrsCode;
-
-        // Only update if it's a valid number
-        if (!Number.isNaN(parsedValue)) {
-          dataToUpdate.defaultIrsCode = parsedValue;
-        }
+      let defaultIrsCodes: number[] | undefined = undefined;
+      if (dataToUpdate.defaultIrsCodes) {
+        const codes = Array.isArray(dataToUpdate.defaultIrsCodes)
+          ? dataToUpdate.defaultIrsCodes
+          : [dataToUpdate.defaultIrsCodes];
+        defaultIrsCodes = codes.filter(Boolean).map(code => {
+          const parsed = Number(code);
+          if (!Number.isInteger(parsed) || parsed < 2 || parsed > 9999) {
+            throw new Error(`Invalid IRS code: ${code}`);
+          }
+          return parsed;
+        });
       }
-      updateSortCode({ fields: dataToUpdate, key: sortCode.key }).then(res => {
+      updateSortCode({
+        fields: { ...dataToUpdate, defaultIrsCodes },
+        key: sortCode.key,
+      }).then(res => {
         if (res) {
           onAdd?.(sortCode.key);
           close();

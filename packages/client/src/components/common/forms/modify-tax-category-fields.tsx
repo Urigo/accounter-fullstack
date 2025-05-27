@@ -2,9 +2,11 @@ import { ReactElement, useEffect } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
+import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
+import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -19,15 +21,31 @@ type ModalProps<T extends boolean> = {
 export function ModifyTaxCategoryFields({
   formManager,
   setFetching,
+  isInsert,
 }: ModalProps<boolean>): ReactElement {
-  const { control } = formManager;
+  const { control, watch, setValue } = formManager;
 
   // Sort codes array handle
-  const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
+  const {
+    selectableSortCodes: sortCodes,
+    fetching: fetchingSortCodes,
+    sortCodes: rawSortCodes,
+  } = useGetSortCodes();
 
   useEffect(() => {
     setFetching(fetchingSortCodes);
   }, [setFetching, fetchingSortCodes]);
+
+  // on sort code change, update IRS code
+  const sortCode = watch('sortCode');
+  useEffect(() => {
+    if (sortCode) {
+      const sortCodeObj = rawSortCodes.find(sc => sc.key === sortCode);
+      if (sortCodeObj?.defaultIrsCodes) {
+        setValue('irsCodes', sortCodeObj.defaultIrsCodes, { shouldDirty: true });
+      }
+    }
+  }, [sortCode, rawSortCodes, setValue]);
 
   return (
     <>
@@ -38,11 +56,16 @@ export function ModifyTaxCategoryFields({
           required: 'Required',
           minLength: { value: 2, message: 'Must be at least 2 characters' },
         }}
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel>Name</FormLabel>
             <FormControl>
-              <Input {...field} value={field.value ?? undefined} required />
+              <Input
+                {...field}
+                value={field.value ?? undefined}
+                required
+                className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -63,10 +86,16 @@ export function ModifyTaxCategoryFields({
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable
-              error={fieldState.error?.message}
+              className={isInsert ? '' : dirtyFieldMarker(fieldState)}
             />
           );
         }}
+      />
+
+      <IrsCodesInput
+        formManager={formManager}
+        irsCodesPath="irsCodes"
+        highlightIfDirty={!isInsert}
       />
     </>
   );

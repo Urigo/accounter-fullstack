@@ -20,7 +20,7 @@ import type {
 import { BusinessTripsProvider } from './business-trips.provider.js';
 
 const getBusinessTripsAttendeesByBusinessTripIds = sql<IGetBusinessTripsAttendeesByBusinessTripIdsQuery>`
-  SELECT bta.business_trip_id, bta.arrival, bta.departure, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at, fe.irs_code
+  SELECT bta.business_trip_id, bta.arrival, bta.departure, b.*, fe.type, fe.owner_id, fe.name, fe.sort_code, fe.created_at, fe.updated_at, fe.irs_codes
   FROM accounter_schema.financial_entities fe
   LEFT JOIN accounter_schema.business_trips_attendees bta
     ON bta.attendee_business_id = fe.id

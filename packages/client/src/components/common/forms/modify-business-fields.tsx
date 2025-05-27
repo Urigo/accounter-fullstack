@@ -5,12 +5,14 @@ import type {
   Pcn874RecordType,
   UpdateBusinessInput,
 } from '../../../gql/graphql.js';
+import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
+import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
 import { ComboBox, PhrasesInput, TagsInput } from '../index.js';
 
 const pcn874RecordType: Record<Pcn874RecordType, string> = {
@@ -42,8 +44,9 @@ type ModalProps<T extends boolean> = {
 export function ModifyBusinessFields({
   formManager,
   setFetching,
+  isInsert,
 }: ModalProps<boolean>): ReactElement {
-  const { control } = formManager;
+  const { control, watch, setValue } = formManager;
   const [tagsFetching, setTagsFetching] = useState(false);
 
   // Tax categories array handle
@@ -51,11 +54,31 @@ export function ModifyBusinessFields({
     useGetTaxCategories();
 
   // Sort codes array handle
-  const { selectableSortCodes: sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
+  const {
+    selectableSortCodes: sortCodes,
+    fetching: fetchingSortCodes,
+    sortCodes: rawSortCodes,
+  } = useGetSortCodes();
 
   useEffect(() => {
     setFetching(tagsFetching || fetchingTaxCategories || fetchingSortCodes);
   }, [setFetching, tagsFetching, fetchingTaxCategories, fetchingSortCodes]);
+
+  // on sort code change, update IRS code
+  const sortCode = watch('sortCode');
+  useEffect(() => {
+    if (sortCode) {
+      const sortCodeObj = rawSortCodes.find(sc => Number(sc.key) === Number(sortCode));
+
+      if (sortCodeObj) {
+        if (sortCodeObj.defaultIrsCodes) {
+          setValue('irsCodes', sortCodeObj.defaultIrsCodes, { shouldDirty: true });
+        } else {
+          setValue('irsCodes', [], { shouldDirty: true });
+        }
+      }
+    }
+  }, [sortCode, rawSortCodes, setValue]);
 
   return (
     <>
@@ -67,11 +90,16 @@ export function ModifyBusinessFields({
             required: 'Required',
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} required />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  required
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -84,11 +112,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Hebrew Name</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -101,7 +133,7 @@ export function ModifyBusinessFields({
           rules={{
             required: 'Required',
           }}
-          render={({ field }): ReactElement => (
+          render={({ field, fieldState }): ReactElement => (
             <FormItem>
               <FormLabel>Locality</FormLabel>
               <Select required onValueChange={field.onChange} value={field.value ?? undefined}>
@@ -115,7 +147,11 @@ export function ModifyBusinessFields({
                     { value: 'Israel', label: 'Local' },
                     { value: 'FOREIGN', label: 'Foreign' },
                   ].map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
+                    <SelectItem
+                      key={value}
+                      value={value}
+                      className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                    >
                       {label}
                     </SelectItem>
                   ))}
@@ -132,11 +168,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 8, message: 'Must be at least 8 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Government ID</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -146,7 +186,7 @@ export function ModifyBusinessFields({
         <FormField
           name="taxCategory"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Tax Category</FormLabel>
               <ComboBox
@@ -155,6 +195,9 @@ export function ModifyBusinessFields({
                 disabled={fetchingTaxCategories}
                 placeholder="Scroll to see all options"
                 formPart
+                triggerProps={{
+                  className: isInsert ? '' : dirtyFieldMarker(fieldState),
+                }}
               />
               <FormMessage />
             </FormItem>
@@ -164,7 +207,7 @@ export function ModifyBusinessFields({
         <FormField
           name="sortCode"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Sort Code</FormLabel>
               <ComboBox
@@ -174,6 +217,9 @@ export function ModifyBusinessFields({
                 disabled={fetchingSortCodes}
                 placeholder="Scroll to see all options"
                 formPart
+                triggerProps={{
+                  className: isInsert ? '' : dirtyFieldMarker(fieldState),
+                }}
               />
               <FormMessage />
             </FormItem>
@@ -186,11 +232,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Address</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -203,11 +253,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -220,11 +274,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Website</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -237,11 +295,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -251,12 +313,14 @@ export function ModifyBusinessFields({
         <FormField
           name="pcn874RecordType"
           control={control}
-          render={({ field }): ReactElement => (
+          render={({ field, fieldState }): ReactElement => (
             <FormItem>
               <FormLabel>PCN874 Record Type</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                 <FormControl>
-                  <SelectTrigger className="w-full truncate">
+                  <SelectTrigger
+                    className={`w-full truncate ${isInsert ? '' : dirtyFieldMarker(fieldState)}`}
+                  >
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                 </FormControl>
@@ -273,17 +337,27 @@ export function ModifyBusinessFields({
           )}
         />
 
+        <IrsCodesInput
+          formManager={formManager}
+          irsCodesPath="irsCodes"
+          highlightIfDirty={!isInsert}
+        />
+
         <FormField
           name="exemptDealer"
           control={control}
           defaultValue={false}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
                 <FormLabel>Exempt Dealer</FormLabel>
               </div>
               <FormControl>
-                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                <Switch
+                  checked={field.value === true}
+                  onCheckedChange={field.onChange}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -293,13 +367,17 @@ export function ModifyBusinessFields({
           name="optionalVAT"
           control={control}
           defaultValue={false}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
               <div className="space-y-0.5">
                 <FormLabel>Optional VAT</FormLabel>
               </div>
               <FormControl>
-                <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                <Switch
+                  checked={field.value === true}
+                  onCheckedChange={field.onChange}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -321,11 +399,15 @@ export function ModifyBusinessFields({
           rules={{
             minLength: { value: 2, message: 'Must be at least 2 characters' },
           }}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Charge description</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? undefined} />
+                <Input
+                  {...field}
+                  value={field.value ?? undefined}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
       id
       key
       name
-      defaultIrsCode
+      defaultIrsCodes
     }
   }
 `;
@@ -67,20 +67,18 @@ const columns: ColumnDef<RowType>[] = [
     },
   },
   {
-    id: 'defaultIrsCode',
-    accessorKey: 'defaultIrsCode',
-    cell: ({ row }) => <TableCell>{row.original.defaultIrsCode ?? ''}</TableCell>,
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Default IRS Code
-          <ArrowUpDown />
-        </Button>
-      );
-    },
+    id: 'defaultIrsCodes',
+    accessorKey: 'defaultIrsCodes',
+    cell: ({ row }) => (
+      <TableCell className="flex flex-wrap gap-1 p-1">
+        {row.original.defaultIrsCodes?.map(code => (
+          <Button key={code} variant="outline" disabled className="p-1 w-15">
+            {code}
+          </Button>
+        ))}
+      </TableCell>
+    ),
+    header: 'Default IRS Codes',
   },
   {
     id: 'edit',

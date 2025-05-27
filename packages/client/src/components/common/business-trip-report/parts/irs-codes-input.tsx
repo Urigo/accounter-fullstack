@@ -8,29 +8,30 @@ import {
   UseFormReturn,
 } from 'react-hook-form';
 import { PlaylistAdd, TrashX } from 'tabler-icons-react';
+import { dirtyFieldMarker } from '../../../../helpers/index.js';
 import { Button } from '../../../ui/button.js';
-import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
-import { Input } from '../../../ui/input';
+import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Label } from '../../../ui/label.js';
+import { NumberInput } from '../../index.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
-  flightPathPath: Path<T>;
-  flightPathData?: string[];
-  fetchingAttendees?: boolean;
+  irsCodesPath: Path<T>;
+  highlightIfDirty?: boolean;
 };
 
-export function FlightPathInput<T extends FieldValues>({
+export function IrsCodesInput<T extends FieldValues>({
   formManager,
-  flightPathPath,
-  flightPathData,
+  irsCodesPath,
+  highlightIfDirty,
 }: Props<T>): ReactElement {
   const { control, watch, trigger } = formManager;
   const { fields, append, remove } = useFieldArray({
     control,
-    name: flightPathPath as ArrayPath<T>,
+    name: irsCodesPath as ArrayPath<T>,
   });
 
-  const watchFieldArray = watch(flightPathPath);
+  const watchFieldArray = watch(irsCodesPath);
   const controlledFields = fields.map((field, index) => {
     return {
       ...field,
@@ -38,30 +39,38 @@ export function FlightPathInput<T extends FieldValues>({
     };
   });
 
-  if (!flightPathData) {
-    return <div>Cannot edit flight path stay, lacking some mandatory information!</div>;
-  }
-
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">Flight Path</span>
+      <Label className="mantine-InputWrapper-label mantine-Select-label">IRS Codes</Label>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
             <div className="w-full mt-1 relative rounded-md shadow-xs">
               <FormField
-                name={`${flightPathPath}.${index}` as Path<T>}
+                name={`${irsCodesPath}.${index}` as Path<T>}
                 control={control}
                 rules={{
-                  required: 'Required',
+                  validate: {
+                    range: value =>
+                      (Number(value) >= 1 && Number(value) <= 9999) ||
+                      'Code must be between 1 and 9999',
+                    integer: value => Number.isInteger(Number(value)) || 'Code must be an integer',
+                    unique: _value =>
+                      !watchFieldArray ||
+                      new Set(watchFieldArray.map(Number)).size === watchFieldArray.length ||
+                      'Duplicated codes found',
+                  },
                 }}
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormControl>
-                      <Input
+                      <NumberInput
                         {...field}
                         value={field.value ?? undefined}
-                        placeholder="Destination"
+                        hideControls
+                        decimalScale={0}
+                        thousandSeparator=""
+                        className={highlightIfDirty ? dirtyFieldMarker(fieldState) : ''}
                       />
                     </FormControl>
                     <FormMessage />
@@ -75,7 +84,7 @@ export function FlightPathInput<T extends FieldValues>({
               className="mb-2 size-7.5"
               onClick={(): void => {
                 remove(index);
-                trigger(flightPathPath);
+                trigger(irsCodesPath);
               }}
             >
               <TrashX className="size-5" />
@@ -87,8 +96,8 @@ export function FlightPathInput<T extends FieldValues>({
           size="icon"
           className="size-7.5"
           onClick={(): void => {
-            append('' as FieldArray<T, ArrayPath<T>>);
-            trigger(flightPathPath);
+            append(undefined as FieldArray<T, ArrayPath<T>>);
+            trigger(irsCodesPath);
           }}
         >
           <PlaylistAdd className="size-5" />

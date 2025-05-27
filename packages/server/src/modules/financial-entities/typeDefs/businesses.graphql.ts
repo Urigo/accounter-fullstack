@@ -14,6 +14,7 @@ export default gql`
     name: String!
 
     pcn874RecordType: Pcn874RecordType
+    irsCodes: [Int!]
   }
 
   " response for paginated Financial Entities "
@@ -40,6 +41,7 @@ export default gql`
     suggestions: Suggestions
 
     pcn874RecordType: Pcn874RecordType
+    irsCodes: [Int!]
   }
 
   " input for business suggestions "
@@ -56,6 +58,7 @@ export default gql`
     email: String!
 
     pcn874RecordType: Pcn874RecordType
+    irsCodes: [Int!]
   }
 
   extend type Mutation {
@@ -92,6 +95,7 @@ export default gql`
     optionalVAT: Boolean
 
     pcn874RecordType: Pcn874RecordType
+    irsCodes: [Int!]
   }
 
   " input for insertNewBusiness "
@@ -111,6 +115,7 @@ export default gql`
     suggestions: SuggestionsInput
     optionalVAT: Boolean
     pcn874RecordType: Pcn874RecordType
+    irsCodes: [Int!]
   }
 
   " input for business suggestions "

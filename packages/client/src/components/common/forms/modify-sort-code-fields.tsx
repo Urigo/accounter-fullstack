@@ -3,6 +3,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.jsx';
 import { Input } from '../../ui/input.jsx';
+import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
 import { NumberInput } from '../inputs/number-input.js';
 import type { EditSortCodeVariables } from '../modals/edit-sort-code.js';
 
@@ -67,32 +68,7 @@ export function ModifySortCodeFields({ isInsert, formManager }: ModalProps<boole
         )}
       />
 
-      <FormField
-        name="defaultIrsCode"
-        control={control}
-        rules={{
-          validate: {
-            range: value =>
-              (Number(value) > 1 && Number(value) <= 9999) || 'Code must be between 1 and 9999',
-            integer: value => Number.isInteger(Number(value)) || 'Code must be an integer',
-          },
-        }}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Default IRS Code</FormLabel>
-            <FormControl>
-              <NumberInput
-                {...field}
-                value={field.value ?? undefined}
-                hideControls
-                decimalScale={0}
-                thousandSeparator=""
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <IrsCodesInput formManager={formManager} irsCodesPath="defaultIrsCodes" />
     </>
   );
 }
