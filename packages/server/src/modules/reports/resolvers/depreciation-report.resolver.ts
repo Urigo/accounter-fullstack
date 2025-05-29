@@ -113,10 +113,12 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
+          const amount = Math.round(Number(record.amount));
+
           const { yearlyDepreciationAmount, yearlyDepreciationRate, pastDepreciationAmount } =
             calculateDepreciation(
               Number(depreciationCategory.category.percentage),
-              Number(record.amount),
+              amount,
               record.activation_date,
               year,
               record.expiration_date ?? undefined,
@@ -124,8 +126,8 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
 
           const activationYear = record.activation_date.getFullYear();
 
-          const originalCost = activationYear === year ? 0 : Number(record.amount);
-          const reportYearDelta = activationYear === year ? Number(record.amount) : 0;
+          const originalCost = activationYear === year ? 0 : amount;
+          const reportYearDelta = activationYear === year ? amount : 0;
           const totalDepreciableCosts = originalCost + reportYearDelta;
           const totalDepreciation = yearlyDepreciationAmount + pastDepreciationAmount;
 
@@ -137,15 +139,15 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
               charge.transactions_min_debit_date ?? record.activation_date,
             ),
             activationDate: dateToTimelessDateString(record.activation_date),
-            originalCost: Math.round(originalCost),
-            reportYearDelta: Math.round(reportYearDelta),
-            totalDepreciableCosts: Math.round(totalDepreciableCosts),
+            originalCost,
+            reportYearDelta,
+            totalDepreciableCosts,
             statutoryDepreciationRate: Number(depreciationCategory.category.percentage),
             claimedDepreciationRate: yearlyDepreciationRate,
-            reportYearClaimedDepreciation: Math.round(yearlyDepreciationAmount),
-            pastYearsAccumulatedDepreciation: Math.round(pastDepreciationAmount),
-            totalDepreciation: Math.round(totalDepreciation),
-            netValue: Math.round(totalDepreciableCosts - totalDepreciation),
+            reportYearClaimedDepreciation: yearlyDepreciationAmount,
+            pastYearsAccumulatedDepreciation: pastDepreciationAmount,
+            totalDepreciation,
+            netValue: totalDepreciableCosts - totalDepreciation,
           };
 
           depreciationCategory.assets.push(assetRecord);
@@ -178,13 +180,13 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
           records: category.assets,
           summary: {
             id: `${financialEntityId}-${category.category.id}-${year}`,
-            originalCost: Math.round(category.originalCost),
-            reportYearDelta: Math.round(category.reportYearDelta),
-            totalDepreciableCosts: Math.round(category.totalDepreciableCosts),
-            reportYearClaimedDepreciation: Math.round(category.reportYearClaimedDepreciation),
-            pastYearsAccumulatedDepreciation: Math.round(category.pastYearsAccumulatedDepreciation),
-            totalDepreciation: Math.round(category.totalDepreciation),
-            netValue: Math.round(category.netValue),
+            originalCost: category.originalCost,
+            reportYearDelta: category.reportYearDelta,
+            totalDepreciableCosts: category.totalDepreciableCosts,
+            reportYearClaimedDepreciation: category.reportYearClaimedDepreciation,
+            pastYearsAccumulatedDepreciation: category.pastYearsAccumulatedDepreciation,
+            totalDepreciation: category.totalDepreciation,
+            netValue: category.netValue,
           },
         };
         summary.originalCost += category.originalCost;
@@ -202,16 +204,34 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         categories,
         summary: {
           id: `${financialEntityId}-${year}`,
-          originalCost: Math.round(summary.originalCost),
-          reportYearDelta: Math.round(summary.reportYearDelta),
-          totalDepreciableCosts: Math.round(summary.totalDepreciableCosts),
-          reportYearClaimedDepreciation: Math.round(summary.reportYearClaimedDepreciation),
-          pastYearsAccumulatedDepreciation: Math.round(summary.pastYearsAccumulatedDepreciation),
-          totalDepreciation: Math.round(summary.totalDepreciation),
-          netValue: Math.round(summary.netValue),
+          originalCost: summary.originalCost,
+          reportYearDelta: summary.reportYearDelta,
+          totalDepreciableCosts: summary.totalDepreciableCosts,
+          reportYearClaimedDepreciation: summary.reportYearClaimedDepreciation,
+          pastYearsAccumulatedDepreciation: summary.pastYearsAccumulatedDepreciation,
+          totalDepreciation: summary.totalDepreciation,
+          netValue: summary.netValue,
         },
         year,
       };
     },
+  },
+  DepreciationReportSummaryRecord: {
+    originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
+    reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
+    totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),
+    reportYearClaimedDepreciation: record => Math.round(record.reportYearClaimedDepreciation),
+    pastYearsAccumulatedDepreciation: record => Math.round(record.pastYearsAccumulatedDepreciation),
+    totalDepreciation: record => Math.round(record.totalDepreciation),
+    netValue: record => Math.round(record.netValue),
+  },
+  DepreciationReportRecord: {
+    originalCost: record => (record.originalCost ? Math.round(record.originalCost) : null),
+    reportYearDelta: record => (record.reportYearDelta ? Math.round(record.reportYearDelta) : null),
+    totalDepreciableCosts: record => Math.round(record.totalDepreciableCosts),
+    reportYearClaimedDepreciation: record => Math.round(record.reportYearClaimedDepreciation),
+    pastYearsAccumulatedDepreciation: record => Math.round(record.pastYearsAccumulatedDepreciation),
+    totalDepreciation: record => Math.round(record.totalDepreciation),
+    netValue: record => Math.round(record.netValue),
   },
 };

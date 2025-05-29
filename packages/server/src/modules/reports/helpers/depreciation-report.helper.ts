@@ -1,7 +1,6 @@
 import {
   addDays,
   differenceInDays,
-  endOfYear,
   getDaysInYear,
   getYear,
   isAfter,
@@ -17,7 +16,7 @@ import { DepreciationProvider } from '@modules/depreciation/providers/depreciati
 /**
  * Calculates depreciation amounts for accounting purposes
  * @param depreciationRate - Annual depreciation rate (e.g., 0.07 for 7%)
- * @param value - Initial value of the asset in USD
+ * @param value - Initial value of the asset in ILS
  * @param activationDate - Date when the asset depreciation began
  * @param calculationYear - Year for which to calculate depreciation (as of December 31st)
  * @param depreciationEndDate - Optional date when depreciation ends (e.g., asset sold)
@@ -34,6 +33,7 @@ export function calculateDepreciation(
   yearlyDepreciationRate: number;
   pastDepreciationAmount: number;
 } {
+  const valueAmount = Math.round(value);
   // Normalize depreciation rate (convert percentage to decimal)
   const normalizedRate = depreciationRate / 100;
 
@@ -69,7 +69,10 @@ export function calculateDepreciation(
   if (isBefore(depreciationEndDate, startOfCalculationYear)) {
     // Calculate total depreciation up to the end date
     const totalYearsActive = differenceInDays(depreciationEndDate, activationDate) / 365.25;
-    const totalDepreciation = Math.min(value, value * normalizedRate * totalYearsActive);
+    const totalDepreciation = Math.min(
+      valueAmount,
+      Math.round(valueAmount * normalizedRate * totalYearsActive),
+    );
 
     return {
       yearlyDepreciationAmount: 0,
@@ -79,7 +82,7 @@ export function calculateDepreciation(
   }
 
   // Calculate annual depreciation amount
-  const annualDepreciationAmount = value * normalizedRate;
+  const annualDepreciationAmount = Math.round(valueAmount * normalizedRate);
 
   // Handle different cases for calculation
   const activationYear = getYear(activationDate);
@@ -91,22 +94,20 @@ export function calculateDepreciation(
   let pastDepreciationAmount = 0;
 
   if (activationYear < calculationYear) {
-    // Full years before calculation year
-    const fullYearsBeforeCalculation = calculationYear - activationYear - 1;
-
-    if (fullYearsBeforeCalculation > 0) {
-      pastDepreciationAmount += fullYearsBeforeCalculation * annualDepreciationAmount;
-    }
-
-    // Add partial year for activation year
-    const daysInActivationYear = getDaysInYear(activationDate);
-    const daysActiveInFirstYear = differenceInDays(endOfYear(activationDate), activationDate) + 1;
+    // Use recursion to calculate past depreciation for previous years
+    const prevYearDepreciation = calculateDepreciation(
+      depreciationRate,
+      valueAmount,
+      activationDate,
+      calculationYear - 1,
+      depreciationEndDate,
+    );
     pastDepreciationAmount +=
-      annualDepreciationAmount * (daysActiveInFirstYear / daysInActivationYear);
+      prevYearDepreciation.yearlyDepreciationAmount + prevYearDepreciation.pastDepreciationAmount;
   }
 
   // Cap past depreciation at asset value
-  pastDepreciationAmount = Math.min(pastDepreciationAmount, value);
+  pastDepreciationAmount = Math.min(pastDepreciationAmount, valueAmount);
 
   // Calculate depreciation for the calculation year
   let yearlyDepreciationAmount = 0;
@@ -115,19 +116,17 @@ export function calculateDepreciation(
     // Asset activated during calculation year
     const daysInYear = getDaysInYear(calculationDate);
     const daysActive = differenceInDays(effectiveEndDate, activationDate) + 1;
-    yearlyDepreciationAmount = annualDepreciationAmount * (daysActive / daysInYear);
+    yearlyDepreciationAmount = Math.round(annualDepreciationAmount * (daysActive / daysInYear));
   } else if (isSameYear(depreciationEndDate, calculationDate)) {
-    // Asset depreciation ended during calculation year
-    const daysInYear = getDaysInYear(calculationDate);
-    const daysActive = differenceInDays(depreciationEndDate, startOfCalculationYear) + 1;
-    yearlyDepreciationAmount = annualDepreciationAmount * (daysActive / daysInYear);
+    // Use remaining value for the year if depreciation ends this year
+    yearlyDepreciationAmount = Math.max(0, valueAmount - pastDepreciationAmount);
   } else {
     // Asset active for the full calculation year
     yearlyDepreciationAmount = annualDepreciationAmount;
   }
 
   // Ensure we don't depreciate more than the remaining value
-  const remainingValue = Math.max(0, value - pastDepreciationAmount);
+  const remainingValue = Math.max(0, valueAmount - pastDepreciationAmount);
   yearlyDepreciationAmount = Math.min(yearlyDepreciationAmount, remainingValue);
 
   return {
