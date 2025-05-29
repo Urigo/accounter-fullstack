@@ -26,6 +26,7 @@ import { DocumentsReport } from './components/screens/documents/all-documents/in
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
+import { Shaam6111Report } from './components/screens/reports/shaam6111-report/index.js';
 import { SortCodes } from './components/screens/sort-codes/index.js';
 import { TagsManager } from './components/tags/index.js';
 import { TaxCategories } from './components/tax-categories/index.js';
@@ -67,6 +68,7 @@ export function App(): ReactElement {
             <Route path="tax" element={<TaxReport />} />
             <Route path="tax/:year" element={<TaxReport />} />
             <Route path="depreciation" element={<DepreciationReport />} />
+            <Route path="shaam6111" element={<Shaam6111Report />} />
             <Route path="yearly-ledger" element={<YearlyLedgerReport />} />
             <Route
               path="corporate-tax-ruling-compliance"

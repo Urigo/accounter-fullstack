@@ -25,7 +25,7 @@ type ComboBoxProps = {
   placeholder?: string;
   triggerProps?: Omit<React.ComponentProps<typeof Button>, 'disabled'>;
   disabled?: boolean;
-  onChange?: (...event: unknown[]) => void;
+  onChange?: ((datum: string | null) => void) | undefined;
   value?: string | null;
   formPart?: boolean;
 };
