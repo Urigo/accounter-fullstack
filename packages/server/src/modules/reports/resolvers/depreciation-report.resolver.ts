@@ -113,10 +113,12 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
+          const amount = Math.round(Number(record.amount));
+
           const { yearlyDepreciationAmount, yearlyDepreciationRate, pastDepreciationAmount } =
             calculateDepreciation(
               Number(depreciationCategory.category.percentage),
-              Number(record.amount),
+              amount,
               record.activation_date,
               year,
               record.expiration_date ?? undefined,
@@ -124,8 +126,8 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
 
           const activationYear = record.activation_date.getFullYear();
 
-          const originalCost = activationYear === year ? 0 : Math.round(Number(record.amount));
-          const reportYearDelta = activationYear === year ? Math.round(Number(record.amount)) : 0;
+          const originalCost = activationYear === year ? 0 : amount;
+          const reportYearDelta = activationYear === year ? amount : 0;
           const totalDepreciableCosts = originalCost + reportYearDelta;
           const totalDepreciation = yearlyDepreciationAmount + pastDepreciationAmount;
 
