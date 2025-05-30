@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "@graphql-mesh/cli": "0.100.4",
-    "@types/mime-types": "2.1.4",
+    "@types/mime-types": "3.0.0",
     "mime-types": "3.0.1"
   },
   "publishConfig": {
