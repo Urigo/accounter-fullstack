@@ -20,7 +20,10 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
-import type { IInsertDeelInvoiceRecordsParams } from '../types.js';
+import type {
+  IGetEmployeeIDsByContractIdsResult,
+  IInsertDeelInvoiceRecordsParams,
+} from '../types.js';
 
 const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff'; // TODO: replace with DB based business id
 
@@ -232,11 +235,18 @@ export function convertMatchToDeelInvoiceRecord(
   };
 }
 
-export function getDeelChargeDescription(workers?: DeelWorker[]) {
-  const workerNames = workers
-    ?.filter(w => w.name)
-    .map(w => w.name?.split(' ')[0])
-    .filter(w => w && w !== 'Deel');
+export async function getDeelChargeDescription(injector: Injector, workers?: DeelWorker[]) {
+  const contractIds = (workers?.map(w => w.contract_id).filter(id => !!id) as string[]) ?? [];
+  const contracts = await injector
+    .get(DeelContractsProvider)
+    .getEmployeeByContractIdLoader.loadMany(contractIds)
+    .then(
+      contract =>
+        contract.filter(
+          id => !!id && !(id instanceof Error),
+        ) as IGetEmployeeIDsByContractIdsResult[],
+    );
+  const workerNames = contracts.map(c => c.contractor_name.split(' ')[0]);
   const workersDescription = workerNames?.length ? ` for ${workerNames.join(', ')}` : '';
   const description = `Deel payment${workersDescription}`;
   return description;
@@ -321,7 +331,7 @@ export async function getChargeMatchesForPayments(
     if (receiptChargeMap.has(receipt.id)) {
       continue;
     }
-    const description = getDeelChargeDescription(receipt.workers);
+    const description = await getDeelChargeDescription(injector, receipt.workers);
     const [charge] = await injector.get(ChargesProvider).generateCharge({
       ownerId,
       userDescription: description,

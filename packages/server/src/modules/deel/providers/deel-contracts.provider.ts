@@ -68,6 +68,24 @@ export class DeelContractsProvider {
       cacheMap: this.cache,
     },
   );
+  private async batchEmployeesByContractIds(contractIds: readonly string[]) {
+    const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.dbProvider);
+    return contractIds.map(id => {
+      const contract = contracts.find(contract => contract.contract_id === id);
+      if (!contract) {
+        throw new Error(`Missing Deel contract for ID [${id}]`);
+      }
+      return contract;
+    });
+  }
+
+  public getEmployeeByContractIdLoader = new DataLoader(
+    (contractIds: readonly string[]) => this.batchEmployeesByContractIds(contractIds),
+    {
+      cacheKeyFn: key => `worker-contract-full-${key}`,
+      cacheMap: this.cache,
+    },
+  );
 
   private async batchEmployeeIdsByDocumentIds(documentIds: readonly string[]) {
     const employeeMatches = await getEmployeeIdsByDocumentIds.run({ documentIds }, this.dbProvider);
