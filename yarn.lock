@@ -188,7 +188,7 @@ __metadata:
     "@graphql-mesh/store": "npm:0.104.3"
     "@graphql-mesh/types": "npm:0.104.3"
     "@graphql-mesh/utils": "npm:0.104.3"
-    "@types/mime-types": "npm:2.1.4"
+    "@types/mime-types": "npm:3.0.0"
     graphql: "npm:16.11.0"
     mime-types: "npm:3.0.1"
     path: "npm:0.12.7"
@@ -7261,10 +7261,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mime-types@npm:2.1.4":
-  version: 2.1.4
-  resolution: "@types/mime-types@npm:2.1.4"
-  checksum: 10c0/a10d57881d14a053556b3d09292de467968d965b0a06d06732c748da39b3aa569270b5b9f32529fd0e9ac1e5f3b91abb894f5b1996373254a65cb87903c86622
+"@types/mime-types@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@types/mime-types@npm:3.0.0"
+  checksum: 10c0/be809e6a030c838d19df782657d9ceaf4a89d0cb80eb08dc94d9ea9203dcce58d55b0c6a4d0363d77c750710a515a57d21ceb7aea33f122c76300cb4d610e66a
   languageName: node
   linkType: hard
 
