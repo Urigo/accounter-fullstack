@@ -784,7 +784,7 @@
                     },
                     "solek": {
                       "type": ["string", "null"],
-                      "enum": ["I", "L", "V", "_", "K", null]
+                      "enum": ["I", "L", "V", "_", "K", "T", null]
                     },
                     "specificDate": {
                       "type": "null"
