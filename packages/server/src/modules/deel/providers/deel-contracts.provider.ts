@@ -82,7 +82,7 @@ export class DeelContractsProvider {
   public getEmployeeByContractIdLoader = new DataLoader(
     (contractIds: readonly string[]) => this.batchEmployeesByContractIds(contractIds),
     {
-      cacheKeyFn: key => `worker-contract-${key}`,
+      cacheKeyFn: key => `worker-contract-full-${key}`,
       cacheMap: this.cache,
     },
   );
