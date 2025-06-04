@@ -292,6 +292,7 @@ __metadata:
   dependencies:
     "@accounter/green-invoice-graphql": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
+    "@accounter/shaam6111-generator": "workspace:^"
     "@ai-sdk/anthropic": "npm:1.2.12"
     "@envelop/generic-auth": "npm:9.1.3"
     "@envelop/graphql-modules": "npm:7.1.3"
@@ -329,7 +330,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/shaam6111-generator@workspace:packages/shaam6111-generator":
+"@accounter/shaam6111-generator@workspace:^, @accounter/shaam6111-generator@workspace:packages/shaam6111-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/shaam6111-generator@workspace:packages/shaam6111-generator"
   dependencies:
