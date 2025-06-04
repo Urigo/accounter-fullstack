@@ -113,6 +113,12 @@ export const sidelinks: SideLink[] = [
         icon: <ChartColumnDecreasing size={18} />,
       },
       {
+        title: 'Shaam 6111 Report',
+        label: '',
+        href: '/reports/shaam6111',
+        icon: <HandCoins size={18} />,
+      },
+      {
         title: 'Accountant Approvals',
         label: '',
         href: '/accountant-approvals',

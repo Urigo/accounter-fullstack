@@ -19,6 +19,7 @@
   "dependencies": {
     "@accounter/green-invoice-graphql": "workspace:^",
     "@accounter/pcn874-generator": "workspace:^",
+    "@accounter/shaam6111-generator": "workspace:^",
     "@ai-sdk/anthropic": "1.2.12",
     "@envelop/generic-auth": "9.1.3",
     "@envelop/graphql-modules": "7.1.3",

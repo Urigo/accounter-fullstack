@@ -12,6 +12,8 @@ export enum BusinessType {
   SERVICE = 3,
   /** Report includes more than one business (הדוח כולל יותר מעסק אחד) */
   MULTIPLE = 4,
+  /** Combination (שילוב) */
+  COMBINATION = 99,
 }
 
 /**

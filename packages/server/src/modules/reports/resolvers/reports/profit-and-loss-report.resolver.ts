@@ -36,11 +36,18 @@ export const profitAndLossReport: ResolverFn<
 
   const from = new Date(Math.min(...years), 0, 1);
   const to = new Date(Math.max(...years) + 1, 0, 0);
-  const ledgerRecords = await injector
+  const ledgerRecordsPromise = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ fromDate: from, toDate: to });
 
-  const financialEntities = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
+  const financialEntitiesPromise = await injector
+    .get(FinancialEntitiesProvider)
+    .getAllFinancialEntities();
+
+  const [ledgerRecords, financialEntities] = await Promise.all([
+    ledgerRecordsPromise,
+    financialEntitiesPromise,
+  ]);
 
   const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 

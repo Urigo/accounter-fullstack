@@ -69,17 +69,33 @@ const balanceSheetRecordSchema = z
     }
   });
 
+function cumulativeCodeValidationFormula(
+  code: BalanceSheetSummaryCode,
+  sectionCodes: readonly AllowedBalanceSheetCode[],
+  subtractSectionCodes?: readonly AllowedBalanceSheetCode[],
+) {
+  return (map: Map<AllowedBalanceSheetCode, number>) => {
+    const sectionAmount = sectionCodes
+      .filter(sectionCode => sectionCode !== code)
+      .map(sectionCode => map.get(sectionCode) || 0)
+      .reduce((a, b) => a + b, 0);
+    const subtractAmount = subtractSectionCodes
+      ? subtractSectionCodes
+          .filter(sectionCode => sectionCode !== code)
+          .map(sectionCode => map.get(sectionCode) || 0)
+          .reduce((a, b) => a + b, 0)
+      : 0;
+    return sectionAmount - subtractAmount;
+  };
+}
+
 function commonCumulativeCodeValidation(
   code: CommonBalanceSheetSummaryCode,
   sectionCodes: readonly AllowedBalanceSheetCode[],
+  subtractSectionCodes?: readonly AllowedBalanceSheetCode[],
 ) {
   return {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return sectionCodes
-        .filter(sectionCode => sectionCode !== code)
-        .map(sectionCode => map.get(sectionCode) || 0)
-        .reduce((a, b) => a + b, 0);
-    },
+    formula: cumulativeCodeValidationFormula(code, sectionCodes, subtractSectionCodes),
     description: 'Sum of all subsections',
   };
 }
@@ -93,13 +109,7 @@ const summaryValidations: Record<
   7100: commonCumulativeCodeValidation(7100, SECTION_1_27),
   7200: commonCumulativeCodeValidation(7200, SECTION_1_28),
   7300: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return (
-        ([7310, 7320, 7330, 7350, 7360, 7390] as AllowedBalanceSheetCode[])
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) - (map.get(7380) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(7300, [7310, 7320, 7330, 7350, 7360, 7390], [7380]),
     description: '7310+7320+7330+7350+7360-7380+7390',
   },
   7400: commonCumulativeCodeValidation(7400, SECTION_1_30),
@@ -107,20 +117,11 @@ const summaryValidations: Record<
   7700: commonCumulativeCodeValidation(7700, SECTION_1_32),
   7800: commonCumulativeCodeValidation(7800, SECTION_1_33),
   8000: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return (
-        (
-          [
-            8010, 8020, 8025, 8030, 8040, 8050, 8060, 8080, 8090, 8095, 8100, 8105, 8170,
-          ] as AllowedBalanceSheetCode[]
-        )
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) -
-        ([8110, 8120, 8130, 8140, 8150, 8160, 8180, 8190] as AllowedBalanceSheetCode[])
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(
+      8000,
+      [8010, 8020, 8025, 8030, 8040, 8050, 8060, 8080, 8090, 8095, 8100, 8105, 8170],
+      [8110, 8120, 8130, 8140, 8150, 8160, 8180, 8190],
+    ),
     description:
       '8010+8020+8025+8030+8040+8050+8060+8080+8090+8095+8100+8105-8110-8120-8130-8140-8150-8160+8170-8180-8190',
   },
@@ -131,19 +132,14 @@ const summaryValidations: Record<
   8600: commonCumulativeCodeValidation(8600, SECTION_1_41),
   8700: commonCumulativeCodeValidation(8700, SECTION_1_36),
   8888: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return ([7000, 8000, 8700, 8200, 8300, 8400, 8500, 8600] as AllowedBalanceSheetCode[])
-        .map(code => map.get(code) || 0)
-        .reduce((a, b) => a + b, 0);
-    },
+    formula: cumulativeCodeValidationFormula(
+      8888,
+      [7000, 8000, 8700, 8200, 8300, 8400, 8500, 8600],
+    ),
     description: '7000+8000+8700+8200+8300+8400+8500+8600',
   },
   9000: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return ([9100, 9200, 9400, 9500] as AllowedBalanceSheetCode[])
-        .map(code => map.get(code) || 0)
-        .reduce((a, b) => a + b, 0);
-    },
+    formula: cumulativeCodeValidationFormula(9000, [9100, 9200, 9400, 9500]),
     description: '9100+9200+9400+9500',
   },
   9100: commonCumulativeCodeValidation(9100, SECTION_1_43),
@@ -152,19 +148,13 @@ const summaryValidations: Record<
   9500: commonCumulativeCodeValidation(9500, SECTION_1_46),
   9600: commonCumulativeCodeValidation(9600, SECTION_1_48),
   9700: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return (map.get(9710) || 0) - (map.get(9720) || 0) + (map.get(9790) || 0);
-    },
+    formula: cumulativeCodeValidationFormula(9700, [9710, 9790], [9720]),
     description: '9710-9720+9790',
   },
   9800: commonCumulativeCodeValidation(9800, SECTION_1_50),
   9900: commonCumulativeCodeValidation(9900, SECTION_1_51),
   9999: {
-    formula: (map: Map<AllowedBalanceSheetCode, number>) => {
-      return ([9000, 9600, 9700, 9800, 9900] as AllowedBalanceSheetCode[])
-        .map(code => map.get(code) || 0)
-        .reduce((a, b) => a + b, 0);
-    },
+    formula: cumulativeCodeValidationFormula(9999, [9000, 9600, 9700, 9800, 9900]),
     description: '9000+9600+9700+9800+9900',
   },
 };

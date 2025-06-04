@@ -1,17 +1,10 @@
+import type { Shaam6111Data } from '@shared/gql-types';
+
+export type { DateOrString } from './__generated__/balance-report.types.js';
 export * from './__generated__/types.js';
 export * from './__generated__/dynamic-report.types.js';
 export * from './__generated__/balance-report.types.js';
-export type {
-  IGetReportByBusinessIdAndDatesParams,
-  IGetReportByBusinessIdAndDatesResult,
-  IGetReportByBusinessIdAndDatesQuery,
-  IUpdateReportParams,
-  IUpdateReportResult,
-  IUpdateReportQuery,
-  IInsertReportParams,
-  IInsertReportResult,
-  IInsertReportQuery,
-} from './__generated__/vat-report.types.js';
+export * from './__generated__/vat-report.types.js';
 
 export type CommentaryProto = {
   amount: number;
@@ -65,4 +58,9 @@ export type TaxReportYearProto = {
   specialTaxableIncome: CommentaryProto;
   specialTaxRate: number;
   annualTaxExpense: number;
+};
+
+export type Shaam6111ReportProto = {
+  reportData: Shaam6111Data;
+  businessId: string;
 };

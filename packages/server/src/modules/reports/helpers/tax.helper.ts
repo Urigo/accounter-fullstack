@@ -10,7 +10,7 @@ import {
   FilteringOptions,
   recordsByFinancialEntityIdAndSortCodeValidations,
 } from './misc.helper.js';
-import { DecoratedLedgerRecord } from './profit-and-loss.helper.js';
+import { DecoratedLedgerRecord, getProfitLossReportAmounts } from './profit-and-loss.helper.js';
 
 export async function calculateTaxAmounts(
   context: GraphQLModules.Context,
@@ -159,4 +159,25 @@ export async function calculateTaxAmounts(
     specialTaxRate,
     annualTaxExpenseAmount,
   };
+}
+
+export function calculateCumulativeRnDExpenses(
+  year: number,
+  decoratedLedgerByYear: Map<number, DecoratedLedgerRecord[]>,
+  profitLossByYear: Map<number, ReturnType<typeof getProfitLossReportAmounts>> = new Map(),
+): number {
+  let cumulativeResearchAndDevelopmentExpensesAmount = 0;
+  for (const rndYear of [year - 2, year - 1, year]) {
+    let profitLossHelperReportAmounts = profitLossByYear.get(rndYear);
+    if (!profitLossHelperReportAmounts) {
+      const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
+      profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
+      profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
+    }
+
+    cumulativeResearchAndDevelopmentExpensesAmount +=
+      profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
+  }
+
+  return cumulativeResearchAndDevelopmentExpensesAmount;
 }

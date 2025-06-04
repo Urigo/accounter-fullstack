@@ -7,7 +7,10 @@ import {
   getProfitLossReportAmounts,
   type DecoratedLedgerRecord,
 } from '@modules/reports/helpers/profit-and-loss.helper.js';
-import { calculateTaxAmounts } from '@modules/reports/helpers/tax.helper.js';
+import {
+  calculateCumulativeRnDExpenses,
+  calculateTaxAmounts,
+} from '@modules/reports/helpers/tax.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
@@ -92,13 +95,11 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       return amounts;
     }
 
-    let cumulativeResearchAndDevelopmentExpensesAmount = 0;
-    for (const rndYear of [year - 2, year - 1, year]) {
-      const profitLossHelperReportAmounts = getProfitLossReportAmountsByYear(rndYear);
-
-      cumulativeResearchAndDevelopmentExpensesAmount +=
-        profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
-    }
+    const cumulativeResearchAndDevelopmentExpensesAmount = calculateCumulativeRnDExpenses(
+      year,
+      decoratedLedgerByYear,
+      profitLossByYear,
+    );
 
     const taxableCumulativeResearchAndDevelopmentExpensesAmount =
       cumulativeResearchAndDevelopmentExpensesAmount / 3;
