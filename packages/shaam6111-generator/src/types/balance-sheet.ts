@@ -122,13 +122,13 @@ export const COMMON_BALANCE_SHEET_SUMMARY_CODES = [
 // Define the summary codes that are not simple sums
 export const UNCOMMON_BALANCE_SHEET_SUMMARY_CODES = [7300, 8000, 8888, 9000, 9700, 9999] as const;
 
-export const _BALANCE_SHEET_SUMMARY_CODES = [
+export const BALANCE_SHEET_SUMMARY_CODES = [
   ...COMMON_BALANCE_SHEET_SUMMARY_CODES,
   ...UNCOMMON_BALANCE_SHEET_SUMMARY_CODES,
 ] as const;
 
 export type CommonBalanceSheetSummaryCode = (typeof COMMON_BALANCE_SHEET_SUMMARY_CODES)[number];
-export type BalanceSheetSummaryCode = (typeof _BALANCE_SHEET_SUMMARY_CODES)[number];
+export type BalanceSheetSummaryCode = (typeof BALANCE_SHEET_SUMMARY_CODES)[number];
 
 export const BALANCE_SHEET_CODE_NAMES: Record<AllowedBalanceSheetCode, string> = {
   7000: 'סה"כ רכוש שוטף',

@@ -55,17 +55,33 @@ const profitLossRecordSchema = z
     }
   });
 
+function cumulativeCodeValidationFormula(
+  code: ProfitLossSummaryCode,
+  sectionCodes: readonly AllowedProfitLossCode[],
+  subtractSectionCodes?: readonly AllowedProfitLossCode[],
+) {
+  return (map: Map<AllowedProfitLossCode, number>) => {
+    const sectionAmount = sectionCodes
+      .filter(sectionCode => sectionCode !== code)
+      .map(sectionCode => map.get(sectionCode) || 0)
+      .reduce((a, b) => a + b, 0);
+    const subtractAmount = subtractSectionCodes
+      ? subtractSectionCodes
+          .filter(sectionCode => sectionCode !== code)
+          .map(sectionCode => map.get(sectionCode) || 0)
+          .reduce((a, b) => a + b, 0)
+      : 0;
+    return sectionAmount - subtractAmount;
+  };
+}
+
 function commonCumulativeCodeValidation(
   code: CommonProfitLossSummaryCode,
   sectionCodes: readonly AllowedProfitLossCode[],
+  subtractSectionCodes?: readonly AllowedProfitLossCode[],
 ) {
   return {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return sectionCodes
-        .filter(sectionCode => sectionCode !== code)
-        .map(sectionCode => map.get(sectionCode) || 0)
-        .reduce((a, b) => a + b, 0);
-    },
+    formula: cumulativeCodeValidationFormula(code, sectionCodes, subtractSectionCodes),
     description: 'Sum of all subsections',
   };
 }
@@ -82,63 +98,44 @@ const summaryValidations: Record<
 > = {
   1000: commonCumulativeCodeValidation(1000, SECTION_1_1),
   1300: {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return (
-        INCOME_COST_CODES.map(code => map.get(code) || 0).reduce((a, b) => a + b, 0) -
-        (map.get(1450) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(1300, INCOME_COST_CODES, [1450]),
     description: `${INCOME_COST_CODES.join('+')}-1450`,
   },
   2000: {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return (
-        (
-          [
-            2005, 2006, 2011, 2012, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050, 2060, 2066,
-            2067, 2070, 2075, 2080, 2085, 2090,
-          ] as AllowedProfitLossCode[]
-        )
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) -
-        (map.get(2068) || 0) -
-        (map.get(2095) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(
+      2000,
+      [
+        2005, 2006, 2011, 2012, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050, 2060, 2066, 2067,
+        2070, 2075, 2080, 2085, 2090,
+      ],
+      [2068, 2095],
+    ),
     description:
       '2005+2006+2011+2012+2015+2020+2025+2030+2035+2040+2045+2050+2060+2066+2067-2068+2070+2075+2080+2085+2090-2095',
   },
   2500: commonCumulativeCodeValidation(2500, SECTION_1_4),
   3000: {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return (
-        (
-          [
-            3011, 3013, 3012, 3015, 3020, 3025, 3030, 3040, 3045, 3050, 3060, 3066, 3067, 3070,
-            3075, 3080, 3085, 3090, 3100, 3120, 3190,
-          ] as AllowedProfitLossCode[]
-        )
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) - (map.get(3068) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(
+      3000,
+      [
+        3011, 3013, 3012, 3015, 3020, 3025, 3030, 3040, 3045, 3050, 3060, 3066, 3067, 3070, 3075,
+        3080, 3085, 3090, 3100, 3120, 3190,
+      ],
+      [3068],
+    ),
     description:
       '3011+3013+3012+3015+3020+3025+3030+3040+3045+3050+3060+3066+3067-3068+3070+3075+3080+3085+3090+3100+3120+3190',
   },
   3500: {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return (
-        (
-          [
-            3511, 3513, 3512, 3515, 3520, 3530, 3535, 3540, 3545, 3550, 3560, 3566, 3567, 3570,
-            3575, 3580, 3590, 3595, 3600, 3610, 3620, 3625, 3631, 3632, 3640, 3650, 3660, 3665,
-            3680, 3685, 3690,
-          ] as AllowedProfitLossCode[]
-        )
-          .map(code => map.get(code) || 0)
-          .reduce((a, b) => a + b, 0) - (map.get(3568) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(
+      3000,
+      [
+        3511, 3513, 3512, 3515, 3520, 3530, 3535, 3540, 3545, 3550, 3560, 3566, 3567, 3570, 3575,
+        3580, 3590, 3595, 3600, 3610, 3620, 3625, 3631, 3632, 3640, 3650, 3660, 3665, 3680, 3685,
+        3690,
+      ],
+      [3568],
+    ),
     description:
       '3511+3513+3512+3515+3520+3530+3535+3540+3545+3550+3560+3566+3567-3568+3570+3575+3580+3590+3595+3600+3610+3620+3625+3631+3632+3640+3650+3660+3665+3680+3685+3690',
   },
@@ -150,20 +147,11 @@ const summaryValidations: Record<
   5700: commonCumulativeCodeValidation(5700, SECTION_1_15),
   5800: commonCumulativeCodeValidation(5800, SECTION_1_16),
   6666: {
-    formula: (map: Map<AllowedProfitLossCode, number>) => {
-      return (
-        (map.get(1000) || 0) -
-        (map.get(1300) || 0) -
-        (map.get(2000) || 0) -
-        (map.get(2500) || 0) -
-        (map.get(3000) || 0) -
-        (map.get(3500) || 0) +
-        (map.get(5000) || 0) +
-        (map.get(5100) || 0) +
-        (map.get(5200) || 0) -
-        (map.get(5300) || 0)
-      );
-    },
+    formula: cumulativeCodeValidationFormula(
+      6666,
+      [1000, 5000, 5100, 5200],
+      [1300, 2000, 2500, 3000, 3500, 5300],
+    ),
     description: '1000-1300-2000-2500-3000-3500+5000+5100+5200-5300',
   },
 };
