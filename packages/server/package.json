@@ -44,12 +44,12 @@
     "pg": "8.16.0",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.0.0",
-    "zod": "3.25.30"
+    "zod": "3.25.49"
   },
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "5.0.2",
-    "@types/pg": "8.15.2",
+    "@types/pg": "8.15.4",
     "nodemon": "3.1.10",
     "pino-pretty": "13.0.0",
     "rimraf": "6.0.1",
