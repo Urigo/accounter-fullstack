@@ -629,6 +629,25 @@ async function isTransactionNew(
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
   fillInDefaultValues(transaction, columns, logger, 'Poalim Foreign');
 
+  const direction = transaction.eventActivityTypeCode === 2 ? -1 : 1;
+  const amount = transaction.eventAmount * direction;
+  if (transaction.transactionType === 'TODAY') {
+    logger.log(`Today transaction -
+  ${reverse(transaction.activityDescription)},
+  ${currency}${amount.toLocaleString()},
+  ${transaction.accountNumber}
+`);
+    return false;
+  }
+  if (transaction.transactionType === 'FUTURE') {
+    logger.log(`Future transaction -
+  ${reverse(transaction.activityDescription)},
+  ${currency}${amount.toLocaleString()},
+  ${transaction.accountNumber}
+`);
+    return false;
+  }
+
   try {
     const res = await getPoalimForeignTransactions
       .run(
@@ -675,23 +694,7 @@ async function insertTransactions<
 >(transactions: NormalizedForeignTransaction[], pool: Pool, currency: T, logger: Logger) {
   const transactionsToInsert: Array<U['transactions'][number]> = [];
   for (const transaction of transactions) {
-    const direction = transaction.eventActivityTypeCode === 2 ? -1 : 1;
-    const amount = transaction.eventAmount * direction;
-    if (transaction.transactionType === 'TODAY') {
-      logger.log(`Today transaction -
-              ${reverse(transaction.activityDescription)},
-              ${currency}${amount.toLocaleString()},
-              ${transaction.accountNumber}
-            `);
-      continue;
-    } else if (transaction.transactionType === 'FUTURE') {
-      logger.log(`Future transaction -
-                ${reverse(transaction.activityDescription)},
-                ${currency}${amount.toLocaleString()},
-                ${transaction.accountNumber}
-              `);
-      continue;
-    } else if (
+    if (
       differenceInMonths(
         new Date(),
         new Date(convertNumberDateToString(transaction.executingDate)),
@@ -762,7 +765,7 @@ async function insertTransactions<
     transactionsToInsert.push(transactionToInsert as U['transactions'][number]);
   }
   if (transactionsToInsert.length > 0) {
-    let insertPoalimIlsTransactions: TaggedQuery<
+    let insertPoalimForeignTransactions: TaggedQuery<
       | IInsertPoalimCadTransactionsQuery
       | IInsertPoalimEurTransactionsQuery
       | IInsertPoalimGbpTransactionsQuery
@@ -770,22 +773,22 @@ async function insertTransactions<
     >;
     switch (currency) {
       case 'usd':
-        insertPoalimIlsTransactions = insertPoalimUsdTransactions;
+        insertPoalimForeignTransactions = insertPoalimUsdTransactions;
         break;
       case 'eur':
-        insertPoalimIlsTransactions = insertPoalimEurTransactions;
+        insertPoalimForeignTransactions = insertPoalimEurTransactions;
         break;
       case 'gbp':
-        insertPoalimIlsTransactions = insertPoalimGbpTransactions;
+        insertPoalimForeignTransactions = insertPoalimGbpTransactions;
         break;
       case 'cad':
-        insertPoalimIlsTransactions = insertPoalimCadTransactions;
+        insertPoalimForeignTransactions = insertPoalimCadTransactions;
         break;
       default:
         throw new Error('Invalid currency');
     }
     try {
-      const res = await insertPoalimIlsTransactions.run(
+      const res = await insertPoalimForeignTransactions.run(
         { transactions: transactionsToInsert },
         pool,
       );
@@ -798,6 +801,7 @@ async function insertTransactions<
       });
     } catch (error) {
       logger.error(`Failed to insert Poalim ${currency} transactions`, error);
+      console.log(JSON.stringify(transactionsToInsert, null, 2));
       throw new Error('Failed to insert transactions');
     }
   }
