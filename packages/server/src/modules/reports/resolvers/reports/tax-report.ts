@@ -15,7 +15,7 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
-import { calculateTaxAmounts } from '../../helpers/tax.helper.js';
+import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from '../../helpers/tax.helper.js';
 
 export const taxReport: ResolverFn<
   ResolversTypes['TaxReport'],
@@ -73,18 +73,11 @@ export const taxReport: ResolverFn<
 
     const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpenses.amount * -1;
 
-    let cumulativeResearchAndDevelopmentExpensesAmount = 0;
-    for (const rndYear of [year - 2, year - 1, year]) {
-      let profitLossHelperReportAmounts = profitLossByYear.get(rndYear);
-      if (!profitLossHelperReportAmounts) {
-        const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
-        profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
-        profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
-      }
-
-      cumulativeResearchAndDevelopmentExpensesAmount +=
-        profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
-    }
+    const cumulativeResearchAndDevelopmentExpensesAmount = calculateCumulativeRnDExpenses(
+      year,
+      decoratedLedgerByYear,
+      profitLossByYear,
+    );
 
     const taxableCumulativeResearchAndDevelopmentExpensesAmount =
       cumulativeResearchAndDevelopmentExpensesAmount / 3;

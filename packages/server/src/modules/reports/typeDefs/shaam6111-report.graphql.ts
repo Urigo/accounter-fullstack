@@ -58,6 +58,8 @@ export default gql`
     SERVICE
     "Report includes more than one business (הדוח כולל יותר מעסק אחד)"
     MULTIPLE
+    "Combination (שילוב)"
+    COMBINATION
   }
 
   " Reporting method enum (שיטת דיווח) "

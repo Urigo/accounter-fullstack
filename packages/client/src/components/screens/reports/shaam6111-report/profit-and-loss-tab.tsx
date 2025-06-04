@@ -121,7 +121,7 @@ export function ProfitAndLossTab({
           <h3 className="text-lg font-bold border-b pb-2">נתוני רווח והפסד</h3>
           {referenceYear && selectedYear !== referenceYear && (
             <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
-              מציג שינויים לעומת {Number.parseInt(referenceYear) - 1}
+              מציג שינויים לעומת {referenceYear}
             </span>
           )}
         </div>

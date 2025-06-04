@@ -18,7 +18,12 @@ import { CodeField } from './code-field.js';
   }
 `;
 
-const codeOrder: Array<{ title: string; color: string; codes: number[]; sumCode?: number }> = [
+const codeOrder: Array<{
+  title: string;
+  color: keyof typeof colorMap;
+  codes: number[];
+  sumCode?: number;
+}> = [
   {
     title: 'התאמות חשבונאיות למי שיישם את חלופה 2 בהוראת ביצוע 7/2010 בנושא IFRS',
     color: 'red',
@@ -58,6 +63,15 @@ const codeOrder: Array<{ title: string; color: string; codes: number[]; sumCode?
   },
 ];
 
+const colorMap = {
+  red: { header: 'text-red-700', sum: 'bg-red-50 border-red-200' },
+  yellow: { header: 'text-yellow-700', sum: 'bg-yellow-50 border-yellow-200' },
+  emerald: { header: 'text-emerald-700', sum: 'bg-emerald-50 border-emerald-200' },
+  sky: { header: 'text-sky-700', sum: 'bg-sky-50 border-sky-200' },
+  violet: { header: 'text-violet-700', sum: 'bg-violet-50 border-violet-200' },
+  pink: { header: 'text-pink-700', sum: 'bg-pink-50 border-pink-200' },
+};
+
 type TaxAdjustmentTab = {
   data: FragmentType<typeof Shaam6111DataContentTaxAdjustmentFragmentDoc>;
   referenceData?: FragmentType<typeof Shaam6111DataContentTaxAdjustmentFragmentDoc>;
@@ -91,8 +105,8 @@ export function TaxAdjustmentTab({
         </div>
 
         {codeOrder.map(section => {
-          const headerClasses = `text-${section.color}-700`;
-          const sumClasses = `bg-${section.color}-50 border-${section.color}-200`;
+          const { header: headerClasses, sum: sumClasses } =
+            colorMap[section.color] || colorMap.red;
           return (
             <Fragment key={section.title}>
               <div className="bg-gray-50 p-4 rounded-md">

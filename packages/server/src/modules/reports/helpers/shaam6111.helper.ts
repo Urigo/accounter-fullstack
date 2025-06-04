@@ -7,8 +7,11 @@ import {
   BusinessType,
   CurrencyType,
   IFRSReportingOption,
+  IndividualOrCompanyEnum,
   NEGATIVE_ALLOWED_BALANCE_SHEET_CODES,
   PROFIT_LOSS_CODE_NAMES,
+  ReportData,
+  ReportEntry,
   ReportingMethod,
   SECTION_1_1,
   SECTION_1_4,
@@ -53,7 +56,7 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from './profit-and-loss.helper.js';
-import { calculateTaxAmounts } from './tax.helper.js';
+import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
 
 function cumulativeCodeFormula(
   code: number,
@@ -239,18 +242,11 @@ async function getTaxAdjustmentEntries(
 
   const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpenses.amount * -1;
 
-  let cumulativeResearchAndDevelopmentExpensesAmount = 0;
-  for (const rndYear of [year - 2, year - 1, year]) {
-    let profitLossHelperReportAmounts = profitLossByYear.get(rndYear);
-    if (!profitLossHelperReportAmounts) {
-      const rndDecoratedLedgerRecords = decoratedLedgerByYear.get(rndYear) ?? [];
-      profitLossHelperReportAmounts = getProfitLossReportAmounts(rndDecoratedLedgerRecords);
-      profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
-    }
-
-    cumulativeResearchAndDevelopmentExpensesAmount +=
-      profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
-  }
+  const cumulativeResearchAndDevelopmentExpensesAmount = calculateCumulativeRnDExpenses(
+    year,
+    decoratedLedgerByYear,
+    profitLossByYear,
+  );
 
   const taxableCumulativeResearchAndDevelopmentExpensesAmount =
     cumulativeResearchAndDevelopmentExpensesAmount / 3;
@@ -378,10 +374,10 @@ async function getTaxAdjustmentEntries(
   return taxAdjustment;
 }
 
-async function getBalanceSheetEntries(
+function getBalanceSheetEntries(
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   financialEntitiesByIrsCodeDict: Map<number, IGetAllFinancialEntitiesResult[]>,
-): Promise<Shaam6111ReportEntry[]> {
+): Shaam6111ReportEntry[] {
   const balanceSheetAmounts = amountByFinancialEntityIdAndSortCodeValidations(
     decoratedLedgerRecords,
     Object.entries(BALANCE_SHEET_CODE_NAMES).map(([stringCode]) => {
@@ -415,6 +411,11 @@ async function getBalanceSheetEntries(
     }),
   );
 
+  const cumulativeProfit =
+    getProfitAndLossEntries(decoratedLedgerRecords, financialEntitiesByIrsCodeDict).find(
+      entry => entry.code === 6666,
+    )?.amount || 0;
+
   // NOTE: the rules order is important here, as some codes depend on others
   // e.g. 7000 depends on 7100, 7200, etc.
   const rules: {
@@ -423,10 +424,7 @@ async function getBalanceSheetEntries(
   }[] = [
     {
       code: 9980,
-      rule: () =>
-        getProfitAndLossEntries(decoratedLedgerRecords, financialEntitiesByIrsCodeDict).find(
-          entry => entry.code === 6666,
-        )?.amount || 0,
+      rule: () => cumulativeProfit,
     },
     {
       code: 7100,
@@ -633,10 +631,7 @@ export async function getShaam6111Data(
     },
     [] as DecoratedLedgerRecord[],
   );
-  const balanceSheet = await getBalanceSheetEntries(
-    ledgerSinceForever,
-    financialEntitiesByIrsCodeDict,
-  );
+  const balanceSheet = getBalanceSheetEntries(ledgerSinceForever, financialEntitiesByIrsCodeDict);
 
   const header: SchemaTypes.Shaam6111Header = {
     taxFileNumber: business.vat_number,
@@ -679,115 +674,148 @@ export async function getShaam6111Data(
 }
 
 export function accountingMethodSafeParser(
-  accountingMethod: AccountingMethod,
-): SchemaTypes.AccountingMethod {
+  accountingMethod: SchemaTypes.AccountingMethod,
+): AccountingMethod {
   switch (accountingMethod) {
-    case AccountingMethod.DOUBLE_ENTRY:
-      return 'DOUBLE_ENTRY';
-    case AccountingMethod.SINGLE_ENTRY:
-      return 'SINGLE_ENTRY';
+    case 'DOUBLE_ENTRY':
+      return AccountingMethod.DOUBLE_ENTRY;
+    case 'SINGLE_ENTRY':
+      return AccountingMethod.SINGLE_ENTRY;
     default:
       throw new GraphQLError(`Unknown accounting method: ${accountingMethod}`);
   }
 }
 
 export function accountingSystemSafeParser(
-  accountingSystem: AccountingSystem,
-): SchemaTypes.AccountingSystem {
+  accountingSystem: SchemaTypes.AccountingSystem,
+): AccountingSystem {
   switch (accountingSystem) {
-    case AccountingSystem.COMPUTERIZED:
-      return 'COMPUTERIZED';
-    case AccountingSystem.MANUAL:
-      return 'MANUAL';
+    case 'COMPUTERIZED':
+      return AccountingSystem.COMPUTERIZED;
+    case 'MANUAL':
+      return AccountingSystem.MANUAL;
     default:
       throw new GraphQLError(`Unknown accounting system: ${accountingSystem}`);
   }
 }
 
 export function auditOpinionTypeSafeParser(
-  auditOpinionType?: AuditOpinionType,
-): SchemaTypes.AuditOpinionType | undefined {
+  auditOpinionType?: SchemaTypes.AuditOpinionType | null,
+): AuditOpinionType | undefined {
   if (auditOpinionType == null) {
     return undefined;
   }
   switch (auditOpinionType) {
-    case AuditOpinionType.UNQUALIFIED:
-      return 'UNQUALIFIED';
-    case AuditOpinionType.UNQUALIFIED_WITH_GOING_CONCERN:
-      return 'UNQUALIFIED_WITH_GOING_CONCERN';
-    case AuditOpinionType.UNQUALIFIED_WITH_OTHER_EMPHASES:
-      return 'UNQUALIFIED_WITH_OTHER_EMPHASES';
-    case AuditOpinionType.QUALIFIED:
-      return 'QUALIFIED';
-    case AuditOpinionType.ADVERSE:
-      return 'ADVERSE';
-    case AuditOpinionType.DISCLAIMER:
-      return 'DISCLAIMER';
-    case AuditOpinionType.NONE:
-      return 'NONE';
+    case 'UNQUALIFIED':
+      return AuditOpinionType.UNQUALIFIED;
+    case 'UNQUALIFIED_WITH_GOING_CONCERN':
+      return AuditOpinionType.UNQUALIFIED_WITH_GOING_CONCERN;
+    case 'UNQUALIFIED_WITH_OTHER_EMPHASES':
+      return AuditOpinionType.UNQUALIFIED_WITH_OTHER_EMPHASES;
+    case 'QUALIFIED':
+      return AuditOpinionType.QUALIFIED;
+    case 'ADVERSE':
+      return AuditOpinionType.ADVERSE;
+    case 'DISCLAIMER':
+      return AuditOpinionType.DISCLAIMER;
+    case 'NONE':
+      return AuditOpinionType.NONE;
     default:
       throw new GraphQLError(`Unknown audit opinion type: ${auditOpinionType}`);
   }
 }
 
-export function businessTypeSafeParser(businessType: BusinessType): SchemaTypes.BusinessType {
+export function businessTypeSafeParser(businessType: SchemaTypes.BusinessType): BusinessType {
   switch (businessType) {
-    case BusinessType.COMMERCIAL:
-      return 'COMMERCIAL';
-    case BusinessType.INDUSTRIAL:
-      return 'INDUSTRIAL';
-    case BusinessType.SERVICE:
-      return 'SERVICE';
-    case BusinessType.MULTIPLE:
-      return 'MULTIPLE';
+    case 'COMMERCIAL':
+      return BusinessType.COMMERCIAL;
+    case 'INDUSTRIAL':
+      return BusinessType.INDUSTRIAL;
+    case 'SERVICE':
+      return BusinessType.SERVICE;
+    case 'MULTIPLE':
+      return BusinessType.MULTIPLE;
+    case 'COMBINATION':
+      return BusinessType.COMBINATION;
     default:
       throw new GraphQLError(`Unknown business type: ${businessType}`);
   }
 }
 
-export function currencyTypeSafeParser(currencyType: CurrencyType): SchemaTypes.CurrencyType {
+export function currencyTypeSafeParser(currencyType: SchemaTypes.CurrencyType): CurrencyType {
   switch (currencyType) {
-    case CurrencyType.SHEKELS:
-      return 'SHEKELS';
-    case CurrencyType.DOLLARS:
-      return 'DOLLARS';
+    case 'SHEKELS':
+      return CurrencyType.SHEKELS;
+    case 'DOLLARS':
+      return CurrencyType.DOLLARS;
     default:
       throw new GraphQLError(`Unknown currency type: ${currencyType}`);
   }
 }
 
 export function ifrsReportingOptionSafeParser(
-  ifrsReportingOption?: IFRSReportingOption,
-): SchemaTypes.IfrsReportingOption | undefined {
+  ifrsReportingOption?: SchemaTypes.IfrsReportingOption,
+): IFRSReportingOption | undefined {
   if (ifrsReportingOption == null) {
     return undefined;
   }
   switch (ifrsReportingOption) {
-    case IFRSReportingOption.OPTION_1:
-      return 'OPTION_1';
-    case IFRSReportingOption.OPTION_2_ADJUSTMENTS:
-      return 'OPTION_2_ADJUSTMENTS';
-    case IFRSReportingOption.OPTION_3_ADJUSTMENTS:
-      return 'OPTION_3_ADJUSTMENTS';
-    case IFRSReportingOption.NONE:
-      return 'NONE';
+    case 'OPTION_1':
+      return IFRSReportingOption.OPTION_1;
+    case 'OPTION_2_ADJUSTMENTS':
+      return IFRSReportingOption.OPTION_2_ADJUSTMENTS;
+    case 'OPTION_3_ADJUSTMENTS':
+      return IFRSReportingOption.OPTION_3_ADJUSTMENTS;
+    case 'NONE':
+      return IFRSReportingOption.NONE;
     default:
       throw new GraphQLError(`Unknown IFRS reporting option: ${ifrsReportingOption}`);
   }
 }
 
 export function reportingMethodSafeParser(
-  reportingMethod: ReportingMethod,
-): SchemaTypes.ReportingMethod {
+  reportingMethod: SchemaTypes.ReportingMethod,
+): ReportingMethod {
   switch (reportingMethod) {
-    case ReportingMethod.CASH:
-      return 'CASH';
-    case ReportingMethod.ACCRUAL:
-      return 'ACCRUAL';
-    case ReportingMethod.DOLLAR_REGULATIONS:
-      return 'DOLLAR_REGULATIONS';
+    case 'CASH':
+      return ReportingMethod.CASH;
+    case 'ACCRUAL':
+      return ReportingMethod.ACCRUAL;
+    case 'DOLLAR_REGULATIONS':
+      return ReportingMethod.DOLLAR_REGULATIONS;
     default:
       throw new GraphQLError(`Unknown reporting method: ${reportingMethod}`);
+  }
+}
+
+export function yesNoSafeParser(yesNo: boolean): YesNo {
+  switch (yesNo) {
+    case true:
+      return YesNo.YES;
+    case false:
+      return YesNo.NO;
+    default:
+      throw new GraphQLError(`Unknown Yes/No value: ${yesNo}`);
+  }
+}
+
+export function yesNoOptionalSafeParser(yesNo?: boolean | null): YesNo | undefined {
+  if (yesNo == null) {
+    return undefined;
+  }
+  return yesNoSafeParser(yesNo);
+}
+
+export function individualOrCompanySafeParser(
+  individualOrCompany: SchemaTypes.IndividualOrCompany,
+): IndividualOrCompanyEnum {
+  switch (individualOrCompany) {
+    case 'INDIVIDUAL':
+      return IndividualOrCompanyEnum.INDIVIDUAL;
+    case 'COMPANY':
+      return IndividualOrCompanyEnum.COMPANY;
+    default:
+      throw new GraphQLError(`Unknown individual or company type: ${individualOrCompany}`);
   }
 }
 
@@ -807,4 +835,60 @@ export function yesNoToOptionalBoolean(yesNo?: YesNo): boolean | undefined {
     return undefined;
   }
   return yesNoToBoolean(yesNo);
+}
+
+export function convertLocalReportDataToShaam6111ReportData(
+  localReportData: SchemaTypes.Shaam6111Data,
+): ReportData {
+  const profitAndLoss: ReportEntry[] = localReportData.profitAndLoss.map(entry => ({
+    code: entry.code,
+    amount: entry.amount,
+  }));
+  const taxAdjustment: ReportEntry[] = localReportData.taxAdjustment.map(entry => ({
+    code: entry.code,
+    amount: entry.amount,
+  }));
+  const balanceSheet: ReportEntry[] = localReportData.balanceSheet
+    ? localReportData.balanceSheet.map(entry => ({
+        code: entry.code,
+        amount: entry.amount,
+      }))
+    : [];
+  const adjustedReportData: ReportData = {
+    profitAndLoss,
+    taxAdjustment,
+    balanceSheet,
+    header: {
+      ...localReportData.header,
+      vatFileNumber: localReportData.header.vatFileNumber || undefined,
+      withholdingTaxFileNumber: localReportData.header.withholdingTaxFileNumber || undefined,
+      businessDescription: localReportData.header.businessDescription || undefined,
+      businessType: businessTypeSafeParser(localReportData.header.businessType),
+      reportingMethod: reportingMethodSafeParser(localReportData.header.reportingMethod),
+      accountingMethod: accountingMethodSafeParser(localReportData.header.accountingMethod),
+      accountingSystem: accountingSystemSafeParser(localReportData.header.accountingSystem),
+      isPartnership: yesNoOptionalSafeParser(localReportData.header.isPartnership),
+      includesProfitLoss: yesNoSafeParser(localReportData.header.includesProfitLoss),
+      includesTaxAdjustment: yesNoSafeParser(localReportData.header.includesTaxAdjustment),
+      includesBalanceSheet: yesNoSafeParser(localReportData.header.includesBalanceSheet),
+      profitLossEntryCount: localReportData.profitAndLoss.length,
+      taxAdjustmentEntryCount: localReportData.taxAdjustment.length,
+      balanceSheetEntryCount: localReportData.balanceSheet?.length,
+      ifrsImplementationYear: localReportData.header.ifrsImplementationYear || undefined,
+      ifrsReportingOption: localReportData.header.ifrsReportingOption
+        ? ifrsReportingOptionSafeParser(localReportData.header.ifrsReportingOption)
+        : undefined,
+      softwareRegistrationNumber: localReportData.header.softwareRegistrationNumber || undefined,
+      partnershipCount: localReportData.header.partnershipCount || undefined,
+      partnershipProfitShare: localReportData.header.partnershipProfitShare || undefined,
+      currencyType: currencyTypeSafeParser(localReportData.header.currencyType),
+      auditOpinionType: auditOpinionTypeSafeParser(localReportData.header.auditOpinionType),
+      amountsInThousands: yesNoSafeParser(localReportData.header.amountsInThousands),
+    },
+    individualOrCompany: individualOrCompanySafeParser(
+      localReportData.individualOrCompany ?? 'COMPANY', // TODO: deduce default value from header
+    ),
+  };
+
+  return adjustedReportData;
 }

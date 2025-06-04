@@ -102,7 +102,7 @@ export function Shaam6111Filters({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="year-select" className="flex items-center gap-2">
+            <Label htmlFor="reference-year-select" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               שנת השוואה
             </Label>
@@ -110,7 +110,7 @@ export function Shaam6111Filters({
               value={referenceYear}
               onValueChange={value => setReferenceYear(value === 'none' ? undefined : value)}
             >
-              <SelectTrigger id="year-select">
+              <SelectTrigger id="reference-year-select">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

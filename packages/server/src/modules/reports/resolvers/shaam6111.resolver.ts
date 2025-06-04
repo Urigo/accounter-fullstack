@@ -1,6 +1,10 @@
 import { GraphQLError } from 'graphql';
+import { generateReport } from '@accounter/shaam6111-generator';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { getShaam6111Data } from '../helpers/shaam6111.helper.js';
+import {
+  convertLocalReportDataToShaam6111ReportData,
+  getShaam6111Data,
+} from '../helpers/shaam6111.helper.js';
 import type { ReportsModule } from '../types.js';
 
 export const shaam6111Resolvers: ReportsModule.Resolvers = {
@@ -32,9 +36,11 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
     },
     data: ({ reportData }) => reportData,
     file: ({ reportData }) => {
+      const adjustedReportData = convertLocalReportDataToShaam6111ReportData(reportData);
+      const reportContent = generateReport(adjustedReportData, true);
       return {
         id: `shaam6111-${reportData.header.idNumber}-${reportData.header.taxYear}-file`,
-        reportContent: '', // TODO: generate report content based on reportData
+        reportContent,
         diffContent: '', // TODO: implement diff content
         fileName: `shaam6111-${reportData.header.idNumber}-${reportData.header.taxYear}-file`, // TODO: check if specific file name format is required
       };

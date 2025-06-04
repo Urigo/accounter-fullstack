@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '../../../ui/tabs.js';
 import { BalanceSheetTab } from './balance-sheet-tab.js';
 import { HeaderTab } from './header-tab.js';
 import { ProfitAndLossTab } from './profit-and-loss-tab.js';
-import { TaxAdjustmentTab } from './tax-adjustment-tab.jsx';
+import { TaxAdjustmentTab } from './tax-adjustment-tab.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

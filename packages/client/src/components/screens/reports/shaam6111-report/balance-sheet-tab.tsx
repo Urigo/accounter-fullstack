@@ -135,7 +135,7 @@ const liabilities2: Array<{ title: string; codes: number[]; sumCode: number }> =
   },
   {
     title: 'התחייבויות בשל סיום יחסי עובד-מעביד',
-    codes: [9700, 9710, 9720, 9790],
+    codes: [9710, 9720, 9790],
     sumCode: 9700,
   },
   {

@@ -158,12 +158,12 @@ const getBooleanText = (value: boolean) => {
   return value ? 'כן' : 'לא';
 };
 
-type ProfitAndLossTab = {
+type HeaderTabProps = {
   data: FragmentType<typeof Shaam6111DataContentHeaderFragmentDoc>;
   businessInfo: FragmentType<typeof Shaam6111DataContentHeaderBusinessFragmentDoc>;
 };
 
-export function HeaderTab({ data, businessInfo }: ProfitAndLossTab) {
+export function HeaderTab({ data, businessInfo }: HeaderTabProps) {
   const { header } = getFragmentData(Shaam6111DataContentHeaderFragmentDoc, data);
   const business = getFragmentData(Shaam6111DataContentHeaderBusinessFragmentDoc, businessInfo);
   return (

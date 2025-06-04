@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { DataField } from './data-field.js';
 
@@ -17,13 +18,20 @@ export const CodeField = ({
     amount: number;
   }[];
   code: number;
-  referenceValue?: string;
   showEmptyFields: boolean;
 }) => {
-  const codeObj = codes.find(c => c.code === code);
-  const value = codeObj?.amount || 0;
-  const label = codeObj?.label || 'לא זוהה קוד';
-  const referenceValue = referenceCodes?.find(c => c.code === code)?.amount.toString() || '';
+  const { value, label } = useMemo(() => {
+    const codeObj = codes.find(c => c.code === code);
+    return {
+      value: codeObj?.amount || 0,
+      label: codeObj?.label || 'לא זוהה קוד',
+    };
+  }, [codes, code]);
+
+  const referenceValue = useMemo(
+    () => referenceCodes?.find(c => c.code === code)?.amount.toString() || '',
+    [referenceCodes, code],
+  );
 
   return (
     <DataField

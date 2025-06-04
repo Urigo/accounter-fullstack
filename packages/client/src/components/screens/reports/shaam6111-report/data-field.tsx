@@ -30,8 +30,12 @@ export const DataField = ({
       return null;
     }
 
-    const current = Number.parseFloat(currentValue.replace(/,/g, '')) || 0;
-    const previous = Number.parseFloat(referenceValue.replace(/,/g, '')) || 0;
+    const parseFinancialValue = (value: string): number => {
+      return Number.parseFloat(value.replace(/[,\s₪]/g, '')) || 0;
+    };
+
+    const current = parseFinancialValue(currentValue);
+    const previous = parseFinancialValue(referenceValue);
 
     if (previous === 0) return null;
 

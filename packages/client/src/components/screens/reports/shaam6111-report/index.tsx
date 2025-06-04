@@ -35,20 +35,14 @@ export function Shaam6111Report() {
   const [selectedYear, setSelectedYear] = useState<string | undefined>(undefined);
   const [referenceYear, setReferenceYear] = useState<string | undefined>(undefined);
 
-  const [{ data, fetching }, fetch] = useQuery({
+  const [{ data, fetching }] = useQuery({
     query: Shaam6111ReportScreenDocument,
     variables: {
-      year: Number.parseInt(selectedYear!),
+      year: selectedYear ? Number.parseInt(selectedYear, 10) : 0,
       businessId: selectedBusiness,
     },
     pause: !selectedYear || !selectedBusiness,
   });
-
-  useEffect(() => {
-    if (selectedYear && selectedBusiness) {
-      fetch({ requestPolicy: 'network-only' });
-    }
-  }, [selectedYear, selectedBusiness, fetch]);
 
   useEffect(() => {
     setFiltersContext(
