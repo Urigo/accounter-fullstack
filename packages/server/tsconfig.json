@@ -15,9 +15,15 @@
       "@shared/helpers": ["./shared/helpers/index.js"],
       "@shared/errors": ["./shared/errors.js"],
       "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/index.js"],
-      "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"]
+      "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"],
+      "@accounter/shaam6111-generator": ["../../shaam6111-generator/src/index.js"]
     }
   },
-  "include": ["src", "../green-invoice-graphql/src", "../pcn874-generator/src"],
+  "include": [
+    "src",
+    "../green-invoice-graphql/src",
+    "../pcn874-generator/src",
+    "../shaam6111-generator/src"
+  ],
   "exclude": ["**/__generated__", "**/dist/**"]
 }
