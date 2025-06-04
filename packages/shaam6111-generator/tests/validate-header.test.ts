@@ -44,7 +44,7 @@ describe('headerSchema', () => {
   });
 
   it('should fail validation for an invalid enum value', () => {
-    const invalidRecord = { ...validHeaderRecord, businessType: 99 };
+    const invalidRecord = { ...validHeaderRecord, businessType: 55 };
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {

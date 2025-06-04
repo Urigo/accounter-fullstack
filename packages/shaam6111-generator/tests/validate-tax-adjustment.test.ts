@@ -8,7 +8,7 @@ const validTaxAdjustmentRecords = [
   { code: 130, amount: 2000 },
   { code: 140, amount: 1000 },
   { code: 150, amount: 1500 },
-  { code: 370, amount: 2500 },
+  { code: 370, amount: 8500 },
   { code: 400, amount: 2000 },
   { code: 430, amount: 1000 },
   { code: 480, amount: 500 },
@@ -64,7 +64,7 @@ describe('taxAdjustmentArraySchema', () => {
     // In this simple case, we're just providing a few codes without triggering any sum validations
     const validRecordsWithSummary = [
       { code: 110, amount: 5000 },
-      { code: 120, amount: 3000 },
+      { code: 130, amount: 3000 },
       { code: 370, amount: 2000 },
     ];
     const result = taxAdjustmentArraySchema.safeParse(validRecordsWithSummary);
