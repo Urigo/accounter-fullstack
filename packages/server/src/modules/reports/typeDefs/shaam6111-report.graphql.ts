@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    shaam6111(year: Int!, businessId: UUID!): Shaam6111Report! @auth(role: ACCOUNTANT)
+    shaam6111(year: Int!, businessId: UUID): Shaam6111Report! @auth(role: ACCOUNTANT)
     shaam6111ByYear(businessId: UUID, fromYear: Int!, toYear: Int!): [Shaam6111Report!]!
       @auth(role: ACCOUNTANT)
   }
@@ -184,5 +184,6 @@ export default gql`
   type Shaam6111ReportEntry {
     code: Int!
     amount: Int!
+    label: String!
   }
 `;

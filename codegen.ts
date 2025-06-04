@@ -118,7 +118,6 @@ const config: CodegenConfig = {
           FinancialCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Salary: '@modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
-          Shaam6111Data: '@accounter/shaam6111-generator#ReportData',
           Shaam6111Report: '@modules/reports/types.js#Shaam6111ReportProto',
           SortCode: '@modules/sort-codes/types.js#IGetSortCodesByIdsResult',
           Tag: '@modules/tags/types.js#IGetAllTagsResult',

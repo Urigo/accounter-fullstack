@@ -3,9 +3,11 @@ import {
   AccountingMethod,
   AccountingSystem,
   AuditOpinionType,
+  BALANCE_SHEET_CODE_NAMES,
   BusinessType,
   CurrencyType,
   IFRSReportingOption,
+  NEGATIVE_ALLOWED_BALANCE_SHEET_CODES,
   PROFIT_LOSS_CODE_NAMES,
   ReportingMethod,
   SECTION_1_1,
@@ -17,6 +19,25 @@ import {
   SECTION_1_14,
   SECTION_1_15,
   SECTION_1_16,
+  SECTION_1_21,
+  SECTION_1_27,
+  SECTION_1_28,
+  SECTION_1_30,
+  SECTION_1_32,
+  SECTION_1_33,
+  SECTION_1_36,
+  SECTION_1_37,
+  SECTION_1_38,
+  SECTION_1_39,
+  SECTION_1_40,
+  SECTION_1_41,
+  SECTION_1_43,
+  SECTION_1_44,
+  SECTION_1_45,
+  SECTION_1_46,
+  SECTION_1_48,
+  SECTION_1_50,
+  SECTION_1_51,
   TAX_ADJUSTMENT_CODE_NAMES,
   YesNo,
 } from '@accounter/shaam6111-generator';
@@ -37,18 +58,27 @@ import { calculateTaxAmounts } from './tax.helper.js';
 function cumulativeCodeFormula(
   code: number,
   sectionCodes: readonly number[],
-  map: Map<number, { amount: number }>,
+  subtractSectionCodes?: readonly number[],
 ) {
-  return sectionCodes
-    .filter(sectionCode => sectionCode !== code)
-    .map(sectionCode => map.get(sectionCode)?.amount || 0)
-    .reduce((a, b) => a + b, 0);
+  return (map: Map<number, { amount: number }>) => {
+    const sectionCodeAmounts = sectionCodes
+      .filter(sectionCode => sectionCode !== code)
+      .map(sectionCode => map.get(sectionCode)?.amount || 0)
+      .reduce((a, b) => a + b, 0);
+    const subtractSectionCodeAmounts = subtractSectionCodes?.length
+      ? subtractSectionCodes
+          .filter(sectionCode => sectionCode !== code)
+          .map(sectionCode => map.get(sectionCode)?.amount || 0)
+          .reduce((a, b) => a + b, 0)
+      : 0;
+    return sectionCodeAmounts - subtractSectionCodeAmounts;
+  };
 }
 
-async function getProfitAndLossEntries(
+function getProfitAndLossEntries(
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   financialEntitiesByIrsCodeDict: Map<number, IGetAllFinancialEntitiesResult[]>,
-): Promise<Shaam6111ReportEntry[]> {
+): Shaam6111ReportEntry[] {
   const profitAndLossAmounts = amountByFinancialEntityIdAndSortCodeValidations(
     decoratedLedgerRecords,
     Object.entries(PROFIT_LOSS_CODE_NAMES).map(([code]) => {
@@ -79,7 +109,7 @@ async function getProfitAndLossEntries(
   }[] = [
     {
       code: 1000,
-      rule: map => cumulativeCodeFormula(1000, SECTION_1_1, map),
+      rule: cumulativeCodeFormula(1000, SECTION_1_1),
     },
     {
       code: 1300,
@@ -105,7 +135,7 @@ async function getProfitAndLossEntries(
     },
     {
       code: 2500,
-      rule: map => cumulativeCodeFormula(2500, SECTION_1_4, map),
+      rule: cumulativeCodeFormula(2500, SECTION_1_4),
     },
     {
       code: 3000,
@@ -119,42 +149,43 @@ async function getProfitAndLossEntries(
     },
     {
       code: 3500,
-      rule: map =>
+      rule: cumulativeCodeFormula(
+        3500,
         [
           3511, 3513, 3512, 3515, 3520, 3530, 3535, 3540, 3545, 3550, 3560, 3566, 3567, 3570, 3575,
           3580, 3590, 3595, 3600, 3610, 3620, 3625, 3631, 3632, 3640, 3650, 3660, 3665, 3680, 3685,
           3690,
-        ]
-          .map(code => map.get(code)?.amount || 0)
-          .reduce((a, b) => a + b, 0) - (map.get(3568)?.amount || 0),
+        ],
+        [3568],
+      ),
     },
     {
       code: 5000,
-      rule: map => cumulativeCodeFormula(5000, SECTION_1_9, map),
+      rule: cumulativeCodeFormula(5000, SECTION_1_9),
     },
     {
       code: 5100,
-      rule: map => cumulativeCodeFormula(5100, SECTION_1_10, map),
+      rule: cumulativeCodeFormula(5100, SECTION_1_10),
     },
     {
       code: 5200,
-      rule: map => cumulativeCodeFormula(5200, SECTION_1_11, map),
+      rule: cumulativeCodeFormula(5200, SECTION_1_11),
     },
     {
       code: 5300,
-      rule: map => cumulativeCodeFormula(5300, SECTION_1_12, map),
+      rule: cumulativeCodeFormula(5300, SECTION_1_12),
     },
     {
       code: 5600,
-      rule: map => cumulativeCodeFormula(5600, SECTION_1_14, map),
+      rule: cumulativeCodeFormula(5600, SECTION_1_14),
     },
     {
       code: 5700,
-      rule: map => cumulativeCodeFormula(5700, SECTION_1_15, map),
+      rule: cumulativeCodeFormula(5700, SECTION_1_15),
     },
     {
       code: 5800,
-      rule: map => cumulativeCodeFormula(5800, SECTION_1_16, map),
+      rule: cumulativeCodeFormula(5800, SECTION_1_16),
     },
     {
       code: 6666,
@@ -173,12 +204,12 @@ async function getProfitAndLossEntries(
   ];
 
   // Apply the rules to the tax adjustment codes map
-  rules.map(({ code, rule }) => {
+  for (const { code, rule } of rules) {
     const entry = profitAndLossCodesMap.get(code);
     if (entry) {
       entry.amount = rule(profitAndLossCodesMap);
     }
-  });
+  }
 
   const profitAndLoss = Array.from(profitAndLossCodesMap.entries())
     .map(([code, { amount, label }]) => ({
@@ -329,12 +360,12 @@ async function getTaxAdjustmentEntries(
   ];
 
   // Apply the rules to the tax adjustment codes map
-  rules.map(({ code, rule }) => {
+  for (const { code, rule } of rules) {
     const entry = taxAdjustmentCodesMap.get(code);
     if (entry) {
       entry.amount = rule(taxAdjustmentCodesMap);
     }
-  });
+  }
 
   const taxAdjustment = Array.from(taxAdjustmentCodesMap.entries())
     .map(([code, { amount, label }]) => ({
@@ -345,6 +376,186 @@ async function getTaxAdjustmentEntries(
     .sort((a, b) => a.code - b.code); // Sort by code
 
   return taxAdjustment;
+}
+
+async function getBalanceSheetEntries(
+  decoratedLedgerRecords: DecoratedLedgerRecord[],
+  financialEntitiesByIrsCodeDict: Map<number, IGetAllFinancialEntitiesResult[]>,
+): Promise<Shaam6111ReportEntry[]> {
+  const balanceSheetAmounts = amountByFinancialEntityIdAndSortCodeValidations(
+    decoratedLedgerRecords,
+    Object.entries(BALANCE_SHEET_CODE_NAMES).map(([stringCode]) => {
+      const code = parseInt(stringCode, 10);
+      return {
+        rule: financialEntityId => {
+          const financialEntitiesByIrsCode = financialEntitiesByIrsCodeDict.get(code) || [];
+          return financialEntitiesByIrsCode.some(entity => entity.id === financialEntityId);
+        },
+        negate: code >= 7000 && code < 9000,
+      };
+    }),
+  );
+
+  const balanceSheetCodesMap = new Map<number, { amount: number; label: string }>(
+    Object.entries(BALANCE_SHEET_CODE_NAMES).map(([code, label], index) => {
+      const codeInt = parseInt(code, 10);
+      let amount = Math.round(balanceSheetAmounts[index] ?? 0);
+
+      // for codes that are not allowed to be negative, we ensure the amount is positive
+      if (!(NEGATIVE_ALLOWED_BALANCE_SHEET_CODES as readonly number[]).includes(codeInt)) {
+        amount = Math.abs(amount);
+      }
+      return [
+        codeInt,
+        {
+          label,
+          amount,
+        },
+      ];
+    }),
+  );
+
+  // NOTE: the rules order is important here, as some codes depend on others
+  // e.g. 7000 depends on 7100, 7200, etc.
+  const rules: {
+    code: number;
+    rule: (codesMap: Map<number, { amount: number; label: string }>) => number;
+  }[] = [
+    {
+      code: 9980,
+      rule: () =>
+        getProfitAndLossEntries(decoratedLedgerRecords, financialEntitiesByIrsCodeDict).find(
+          entry => entry.code === 6666,
+        )?.amount || 0,
+    },
+    {
+      code: 7100,
+      rule: cumulativeCodeFormula(7100, SECTION_1_27),
+    },
+    {
+      code: 7200,
+      rule: cumulativeCodeFormula(7200, SECTION_1_28),
+    },
+    {
+      code: 7300,
+      rule: cumulativeCodeFormula(7300, [7310, 7320, 7330, 7350, 7360, 7390], [7380]),
+    },
+    {
+      code: 7400,
+      rule: cumulativeCodeFormula(7400, SECTION_1_30),
+    },
+    {
+      code: 7600,
+      rule: cumulativeCodeFormula(7600, SECTION_1_21),
+    },
+    {
+      code: 7700,
+      rule: cumulativeCodeFormula(7700, SECTION_1_32),
+    },
+    {
+      code: 7800,
+      rule: cumulativeCodeFormula(7800, SECTION_1_33),
+    },
+    {
+      code: 7000,
+      rule: cumulativeCodeFormula(7000, [7100, 7200, 7300, 7400, 7600, 7700, 7800]),
+    },
+    {
+      code: 8000,
+      rule: cumulativeCodeFormula(
+        8000,
+        [8010, 8020, 8025, 8030, 8040, 8050, 8060, 8080, 8090, 8095, 8100, 8105, 8170],
+        [8110, 8120, 8130, 8140, 8150, 8160, 8180, 8190],
+      ),
+    },
+    {
+      code: 8200,
+      rule: cumulativeCodeFormula(8200, SECTION_1_37),
+    },
+    {
+      code: 8300,
+      rule: cumulativeCodeFormula(8300, SECTION_1_38),
+    },
+    {
+      code: 8400,
+      rule: cumulativeCodeFormula(8400, SECTION_1_39),
+    },
+    {
+      code: 8500,
+      rule: cumulativeCodeFormula(8500, SECTION_1_40),
+    },
+    {
+      code: 8600,
+      rule: cumulativeCodeFormula(8600, SECTION_1_41),
+    },
+    {
+      code: 8700,
+      rule: cumulativeCodeFormula(8700, SECTION_1_36),
+    },
+    {
+      code: 8888,
+      rule: cumulativeCodeFormula(8888, [7000, 8000, 8200, 8300, 8400, 8500, 8600, 8700]),
+    },
+    {
+      code: 9100,
+      rule: cumulativeCodeFormula(9100, SECTION_1_43),
+    },
+    {
+      code: 9200,
+      rule: cumulativeCodeFormula(9200, SECTION_1_44),
+    },
+    {
+      code: 9400,
+      rule: cumulativeCodeFormula(9400, SECTION_1_45),
+    },
+    {
+      code: 9500,
+      rule: cumulativeCodeFormula(9500, SECTION_1_46),
+    },
+    {
+      code: 9000,
+      rule: cumulativeCodeFormula(9000, [9100, 9200, 9400, 9500]),
+    },
+    {
+      code: 9600,
+      rule: cumulativeCodeFormula(9600, SECTION_1_48),
+    },
+    {
+      code: 9700,
+      rule: map =>
+        (map.get(9710)?.amount || 0) - (map.get(9720)?.amount || 0) + (map.get(9790)?.amount || 0),
+    },
+    {
+      code: 9800,
+      rule: cumulativeCodeFormula(9800, SECTION_1_50),
+    },
+    {
+      code: 9900,
+      rule: cumulativeCodeFormula(9900, SECTION_1_51),
+    },
+    {
+      code: 9999,
+      rule: cumulativeCodeFormula(9999, [9000, 9600, 9700, 9800, 9900]),
+    },
+  ];
+
+  // Apply the rules to the tax adjustment codes map
+  for (const { code, rule } of rules) {
+    const entry = balanceSheetCodesMap.get(code);
+    if (entry) {
+      entry.amount = rule(balanceSheetCodesMap);
+    }
+  }
+
+  const balanceSheet = Array.from(balanceSheetCodesMap.entries())
+    .map(([code, { amount, label }]) => ({
+      code,
+      label,
+      amount,
+    }))
+    .sort((a, b) => a.code - b.code); // Sort by code
+
+  return balanceSheet;
 }
 
 export async function getShaam6111Data(
@@ -369,11 +580,11 @@ export async function getShaam6111Data(
     throw new Error(`Invalid year. Must be between 2000 and 2100. Received: ${year}`);
   }
 
-  const from = new Date(year - 2, 0, 1, 0, 0, 0, 1); // Note: take 2 years before the earliest year requested, to calculate R&D spread over 3 years
-  const to = new Date(year + 1, 0, 0);
+  const fromDate = new Date(1990, 0, 1, 0, 0, 0, 1); // TODO: maybe take company init date as from date
+  const toDate = new Date(year + 1, 0, 0);
   const ledgerRecordsPromise = injector
     .get(LedgerProvider)
-    .getLedgerRecordsByDates({ fromDate: from, toDate: to });
+    .getLedgerRecordsByDates({ fromDate, toDate });
 
   const financialEntitiesPromise = injector
     .get(FinancialEntitiesProvider)
@@ -398,30 +609,34 @@ export async function getShaam6111Data(
   });
 
   const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
-  for (let year = from.getFullYear(); year <= to.getFullYear(); year++) {
-    if (from.getFullYear() > to.getFullYear()) {
-      break;
-    }
-
-    decoratedLedgerByYear.set(year, []);
-  }
-
   ledgerRecords.map(record => {
     const year = record.invoice_date.getFullYear();
     const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
+    if (!decoratedLedgerByYear.has(year)) {
+      decoratedLedgerByYear.set(year, []);
+    }
+    // Add the decorated record to the corresponding year
     decoratedLedgerByYear.get(year)?.push(decoratedRecord);
   });
 
-  const profitAndLoss: Shaam6111ReportEntry[] = await getProfitAndLossEntries(
+  const profitAndLoss = getProfitAndLossEntries(
     decoratedLedgerByYear.get(year) || [],
     financialEntitiesByIrsCodeDict,
   );
-  const taxAdjustment: Shaam6111ReportEntry[] = await getTaxAdjustmentEntries(
-    context,
-    year,
-    decoratedLedgerByYear,
+  const taxAdjustment = await getTaxAdjustmentEntries(context, year, decoratedLedgerByYear);
+  const ledgerSinceForever = Array.from(decoratedLedgerByYear.entries()).reduce(
+    (acc, [ledgerYear, records]) => {
+      if (ledgerYear <= year) {
+        return acc.concat(records);
+      }
+      return acc;
+    },
+    [] as DecoratedLedgerRecord[],
   );
-  const balanceSheet: Shaam6111ReportEntry[] = [];
+  const balanceSheet = await getBalanceSheetEntries(
+    ledgerSinceForever,
+    financialEntitiesByIrsCodeDict,
+  );
 
   const header: SchemaTypes.Shaam6111Header = {
     taxFileNumber: business.vat_number,
