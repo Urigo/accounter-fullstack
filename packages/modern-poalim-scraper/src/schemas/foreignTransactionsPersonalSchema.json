@@ -238,7 +238,7 @@
                   "type": "string"
                 },
                 "formattedValueDate": {
-                  "type": "string"
+                  "type": ["string", "null"]
                 },
                 "metadata": {
                   "type": "object",
