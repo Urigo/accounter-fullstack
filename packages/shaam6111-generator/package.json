@@ -55,12 +55,12 @@
   },
   "dependencies": {
     "iconv-lite": "0.6.3",
-    "zod": "3.25.49"
+    "zod": "3.25.56"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
     "eslint": "9.28.0",
-    "vitest": "3.2.1"
+    "vitest": "3.2.2"
   },
   "publishConfig": {
     "directory": "dist",
