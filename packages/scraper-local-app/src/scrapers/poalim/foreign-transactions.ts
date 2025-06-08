@@ -2,6 +2,7 @@ import { differenceInMonths } from 'date-fns';
 import Listr, { ListrTaskWrapper, type ListrTask } from 'listr';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
+import { z } from 'zod';
 import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
 import { sql, TaggedQuery } from '@pgtyped/runtime';
@@ -471,6 +472,58 @@ const insertPoalimUsdTransactions = sql<IInsertPoalimUsdTransactionsQuery>`
   )
   RETURNING id, account_number, activity_description, event_activity_type_code, event_amount, executing_date;`;
 
+const PoalimForeignTransactionSchema = z.object({
+  metadataAttributesOriginalEventKey: z.record(z.any()).nullable(),
+  metadataAttributesContraBranchNumber: z.record(z.any()).nullable(),
+  metadataAttributesContraAccountNumber: z.record(z.any()).nullable(),
+  metadataAttributesContraBankNumber: z.record(z.any()).nullable(),
+  metadataAttributesContraAccountFieldNameLable: z.record(z.any()).nullable(),
+  metadataAttributesDataGroupCode: z.record(z.any()).nullable(),
+  metadataAttributesCurrencyRate: z.record(z.any()).nullable(),
+  metadataAttributesContraCurrencyCode: z.record(z.any()).nullable(),
+  metadataAttributesRateFixingCode: z.record(z.any()).nullable(),
+
+  executingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // ISO date format
+  formattedExecutingDate: z.string().max(24),
+  valueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  formattedValueDate: z.string().max(24),
+  originalSystemId: z.number().int(),
+  activityDescription: z.string().max(30),
+  eventAmount: z.number().refine(n => n >= -99_999_999.99 && n <= 99_999_999.99),
+  currentBalance: z.number().refine(n => n >= -99_999_999.99 && n <= 99_999_999.99),
+  referenceCatenatedNumber: z.number().int(),
+  referenceNumber: z.number().int(),
+  currencyRate: z.number().refine(n => n >= -999.999_999_9 && n <= 999.999_999_9),
+
+  eventDetails: z.string().max(20).nullable(),
+  rateFixingCode: z.number().int(),
+  contraCurrencyCode: z.number().int(),
+  eventActivityTypeCode: z.number().int(),
+  transactionType: z.string().max(7),
+  rateFixingShortDescription: z.string().max(9),
+  currencyLongDescription: z.string(),
+  activityTypeCode: z.number().int(),
+  eventNumber: z.number().int(),
+  validityDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+
+  comments: z.string().max(30).nullable(),
+  commentExistenceSwitch: z.number().int().min(0).max(1),
+  accountName: z.string().max(30).nullable(),
+  contraBankNumber: z.number().int(),
+  contraBranchNumber: z.number().int(),
+  contraAccountNumber: z.number().int(),
+  originalEventKey: z.number().int().min(0).max(1),
+  contraAccountFieldNameLable: z.string().max(30).nullable(),
+  dataGroupCode: z.number().int().min(0).max(1),
+  rateFixingDescription: z.string().max(34).nullable(),
+  urlAddressNiar: z.string().max(30).nullable(),
+  currencySwiftCode: z.string().length(3),
+  urlAddress: z.string().max(80).nullable(),
+  bankNumber: z.number().int(),
+  branchNumber: z.number().int(),
+  accountNumber: z.number().int(),
+});
+
 function normalizeForeignTransactionMetadata(
   transaction: ForeignTransaction,
   accountObject: {
@@ -762,7 +815,17 @@ async function insertTransactions<
       branchNumber: transaction.branchNumber,
       accountNumber: transaction.accountNumber,
     };
-    transactionsToInsert.push(transactionToInsert as U['transactions'][number]);
+
+    const validation = PoalimForeignTransactionSchema.safeParse(transactionToInsert);
+
+    if (validation.success) {
+      transactionsToInsert.push(transactionToInsert as U['transactions'][number]);
+    } else {
+      logger.error(
+        `Failed to validate Poalim ${currency} transaction`,
+        JSON.stringify(validation.error, null, 2),
+      );
+    }
   }
   if (transactionsToInsert.length > 0) {
     let insertPoalimForeignTransactions: TaggedQuery<

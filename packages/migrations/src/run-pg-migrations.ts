@@ -95,6 +95,7 @@ import migration_2025_05_19T15_45_46_override_pcn874_record_type from './actions
 import migration_2025_05_22T12_13_40_shaam_6111_adjustments from './actions/2025-05-22T12-13-40.shaam-6111-adjustments.js';
 import migration_2025_05_26T12_23_36_convert_irs_code_column_to_array from './actions/2025-05-26T12-23-36.convert-irs-code-column-to-array.js';
 import migration_2025_05_26T12_23_36_convert_irs_code_column_to_array2 from './actions/2025-05-26T12-23-36.convert-irs-code-column-to-array2.js';
+import migration_2025_06_08T12_23_53_poalim_foreign_less_strict from './actions/2025-06-08T12-23-53.poalim-foreign-less-strict.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -197,5 +198,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_05_22T12_13_40_shaam_6111_adjustments,
       migration_2025_05_26T12_23_36_convert_irs_code_column_to_array,
       migration_2025_05_26T12_23_36_convert_irs_code_column_to_array2,
+      migration_2025_06_08T12_23_53_poalim_foreign_less_strict,
     ],
   });
