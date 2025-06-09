@@ -89,5 +89,6 @@ export default gql`
     sortCode: Int
     irsCode: Int
     hashavshevetName: String
+    taxExcluded: Boolean
   }
 `;

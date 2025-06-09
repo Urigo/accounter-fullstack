@@ -94,7 +94,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             ownerId: defaultAdminBusinessId,
             name: fields.name,
             sortCode: fields.sortCode,
-            type: 'business',
+            type: 'tax_category',
             irsCode,
           })
           .catch((e: Error) => {
@@ -109,6 +109,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         const [taxCategory] = await injector.get(TaxCategoriesProvider).insertTaxCategory({
           id: financialEntity.id,
           hashavshevetName: fields.hashavshevetName,
+          taxExcluded: fields.taxExcluded ?? false,
         });
 
         return { ...financialEntity, ...taxCategory };
