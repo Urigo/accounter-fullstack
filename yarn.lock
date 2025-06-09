@@ -40,7 +40,7 @@ __metadata:
     "@types/uuid": "npm:10.0.0"
     date-fns: "npm:4.1.0"
     dotenv: "npm:16.5.0"
-    fast-xml-parser: "npm:5.2.4"
+    fast-xml-parser: "npm:5.2.5"
     graphql: "npm:16.11.0"
     lodash: "npm:4.17.21"
     moment: "npm:2.30.1"
@@ -76,7 +76,7 @@ __metadata:
   dependencies:
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.0"
-    "@hookform/resolvers": "npm:5.1.0"
+    "@hookform/resolvers": "npm:5.1.1"
     "@mantine/carousel": "npm:6.0.22"
     "@mantine/core": "npm:6.0.22"
     "@mantine/dates": "npm:6.0.22"
@@ -3834,14 +3834,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hookform/resolvers@npm:5.1.0":
-  version: 5.1.0
-  resolution: "@hookform/resolvers@npm:5.1.0"
+"@hookform/resolvers@npm:5.1.1":
+  version: 5.1.1
+  resolution: "@hookform/resolvers@npm:5.1.1"
   dependencies:
     "@standard-schema/utils": "npm:^0.3.0"
   peerDependencies:
     react-hook-form: ^7.55.0
-  checksum: 10c0/5bd28ef58a182102f40b7fa2bc73a5e423c8bcf9cb25fee91cb8933026e7efba6f9adfda1ee637294de59c5467c938f4fb99c77a73bbb8c6180482c69d31cbbd
+  checksum: 10c0/74601ba4abb3159bbaa25175af9459a2c0337a28d8c0a5be95c7ae7b0a76ddafcf63c03eea8561fd099fe80b226194ad09e3824c53b9beda38393ff9fd264a03
   languageName: node
   linkType: hard
 
@@ -11917,14 +11917,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:5.2.4":
-  version: 5.2.4
-  resolution: "fast-xml-parser@npm:5.2.4"
+"fast-xml-parser@npm:5.2.5":
+  version: 5.2.5
+  resolution: "fast-xml-parser@npm:5.2.5"
   dependencies:
     strnum: "npm:^2.1.0"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10c0/a7ba613606dfdd9906a0f64293eea32e5ae38a798cc463d11ff514d0a303a07a5beef8d4ade9e73499e1376f86aa179c1c5f698c647824b4527c847b98fb415b
+  checksum: 10c0/d1057d2e790c327ccfc42b872b91786a4912a152d44f9507bf053f800102dfb07ece3da0a86b33ff6a0caa5a5cad86da3326744f6ae5efb0c6c571d754fe48cd
   languageName: node
   linkType: hard
 
