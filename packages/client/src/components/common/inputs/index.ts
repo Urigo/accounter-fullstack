@@ -1,6 +1,7 @@
 export * from './charge-spread-input.js';
 export * from './combo-box.js';
 export * from './currency-input.js';
+export * from './date-picker-input.js';
 export * from './drag-file.js';
 export * from './input.js';
 export * from './multi-select.js';
