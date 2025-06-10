@@ -81,6 +81,7 @@ export default gql`
     irsCode: Int
 
     hashavshevetName: String
+    taxExcluded: Boolean
   }
 
   " input for insertTaxCategory "
@@ -89,5 +90,6 @@ export default gql`
     sortCode: Int
     irsCode: Int
     hashavshevetName: String
+    taxExcluded: Boolean
   }
 `;

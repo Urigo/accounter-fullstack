@@ -109,7 +109,7 @@ RETURNING *;
 
 const insertTaxCategory = sql<IInsertTaxCategoryQuery>`
   INSERT INTO accounter_schema.tax_categories (id, hashavshevet_name, tax_excluded)
-  VALUES ($id, $hashavshevetName, $tax_excluded)
+  VALUES ($id, $hashavshevetName, $taxExcluded)
   RETURNING *;`;
 
 const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`

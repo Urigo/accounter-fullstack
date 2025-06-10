@@ -1,16 +1,16 @@
 import { ReactElement, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
+import { Loader } from '@mantine/core';
 import { EditTransactionDocument, UpdateTransactionInput } from '../../../gql/graphql.js';
 import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../ui/form.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
-import { SimpleGrid } from '../index.js';
+import { DatePickerInput, SimpleGrid } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -91,55 +91,63 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
           <form onSubmit={handleSubmit(onTransactionSubmit)}>
             <div className="flex-row px-10 h-max justify-start block">
               <SimpleGrid cols={3}>
-                <Controller
+                <FormField
                   name="counterpartyId"
                   control={control}
                   defaultValue={transaction.counterparty?.id}
                   rules={{
-                    required: 'Required',
                     minLength: { value: 2, message: 'Minimum 2 characters' },
                   }}
-                  render={({ field, fieldState }): ReactElement => (
-                    <Select
-                      {...field}
-                      data={financialEntities}
-                      value={field.value}
-                      disabled={fetchingFinancialEntities}
-                      label="Counterparty"
-                      placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                    />
+                  render={({ field }): ReactElement => (
+                    <FormItem>
+                      <FormLabel>Counterparty</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value ?? undefined}
+                        disabled={fetchingFinancialEntities}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full truncate">
+                            <SelectValue placeholder="Scroll to see all options" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent onClick={event => event.stopPropagation()}>
+                          {financialEntities.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
                 {transaction?.account.__typename === 'CardFinancialAccount' ? (
-                  <Controller
+                  <FormField
                     name="effectiveDate"
                     control={control}
-                    defaultValue={transaction.effectiveDate}
                     rules={{
                       pattern: {
                         value: TIMELESS_DATE_REGEX,
                         message: 'Date must be im format yyyy-mm-dd',
                       },
                     }}
-                    render={({ field, fieldState }): ReactElement => (
-                      <DatePickerInput
-                        {...field}
-                        onChange={(date?: Date | string | null): void => {
-                          const newDate = date
-                            ? typeof date === 'string'
-                              ? date
-                              : format(date, 'yyyy-MM-dd')
-                            : undefined;
-                          if (newDate !== field.value) field.onChange(newDate);
-                        }}
-                        value={field.value ? new Date(field.value) : undefined}
-                        label="Effective Date"
-                        error={fieldState.error?.message}
-                        popoverProps={{ withinPortal: true }}
-                      />
+                    render={({ field }): ReactElement => (
+                      <FormItem>
+                        <FormLabel>Effective Date</FormLabel>
+                        <FormControl>
+                          <DatePickerInput
+                            {...field}
+                            onChange={(date?: Date | null): void => {
+                              const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                              if (newDate !== field.value) field.onChange(newDate);
+                            }}
+                            value={field.value ? new Date(field.value) : undefined}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
                   />
                 ) : (
