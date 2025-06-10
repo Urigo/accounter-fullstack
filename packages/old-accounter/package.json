@@ -20,7 +20,7 @@
     "@accounter/modern-poalim-scraper": "workspace:^",
     "date-fns": "4.1.0",
     "dotenv": "16.5.0",
-    "fast-xml-parser": "5.2.4",
+    "fast-xml-parser": "5.2.5",
     "graphql": "16.11.0",
     "lodash": "4.17.21",
     "moment": "2.30.1",
