@@ -8,7 +8,7 @@ alter table accounter_schema.sort_codes
 
 update accounter_schema.sort_codes
     set default_irs_code = default_irs_codes[1]
-    where default_irs_code is not null and array_length(default_irs_codes, 1) > 0;
+    where default_irs_codes is not null and array_length(default_irs_codes, 1) > 0;
 
 alter table accounter_schema.financial_entities
     add if not exists irs_code smallint;
