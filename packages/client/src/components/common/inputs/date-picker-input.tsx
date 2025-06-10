@@ -46,8 +46,8 @@ export function DatePickerInput({ value: date, onChange, disabled, ...props }: P
         disabled={disabled}
         value={value}
         onChange={e => {
-          const date = new Date(e.target.value);
           setValue(e.target.value);
+          const date = e.target.value ? new Date(e.target.value) : undefined;
           if (isValidDate(date)) {
             onChange?.(date);
             setMonth(date);
@@ -84,9 +84,9 @@ export function DatePickerInput({ value: date, onChange, disabled, ...props }: P
             captionLayout="dropdown"
             month={month}
             onMonthChange={setMonth}
-            onSelect={date => {
+            onSelect={(date?: Date | null) => {
               onChange?.(date);
-              setValue(formatDate(date));
+              setValue(formatDate(date ?? undefined));
               setOpen(false);
             }}
           />

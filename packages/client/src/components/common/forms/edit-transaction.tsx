@@ -50,16 +50,6 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
     defaultValues: transaction ?? ({} as UpdateTransactionInput),
   });
 
-  useEffect(() => {
-    if (transaction) {
-      formManager.reset({
-        counterpartyId: transaction.counterparty?.id,
-        effectiveDate: transaction.effectiveDate,
-        isFee: transaction.isFee,
-      });
-    }
-  }, [transaction, formManager]);
-
   // Ensure the form is hydrated once the data arrives
   useEffect(() => {
     if (transaction) formManager.reset(transaction);
