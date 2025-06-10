@@ -78,7 +78,7 @@ const columns: ColumnDef<RowType>[] = [
         )}
       </TableCell>
     ),
-    header: 'Default IRS Codes',
+    header: 'Default IRS Code',
   },
   {
     id: 'edit',
