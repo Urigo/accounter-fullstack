@@ -29,7 +29,7 @@ import { ModifySortCodeFields } from '../forms/index.js';
       id
       key
       name
-      defaultIrsCodes
+      defaultIrsCode
     }
   }
 `;
@@ -117,21 +117,17 @@ function EditSortCodeForm({ sortCode, close, onAdd }: EditSortCodeFormProps): Re
       dirtyBusinessFields as MakeBoolean<typeof fields>,
     );
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      let defaultIrsCodes: number[] | undefined = undefined;
-      if (dataToUpdate.defaultIrsCodes) {
-        const codes = Array.isArray(dataToUpdate.defaultIrsCodes)
-          ? dataToUpdate.defaultIrsCodes
-          : [dataToUpdate.defaultIrsCodes];
-        defaultIrsCodes = codes.filter(Boolean).map(code => {
-          const parsed = Number(code);
-          if (!Number.isInteger(parsed) || parsed < 2 || parsed > 9999) {
-            throw new Error(`Invalid IRS code: ${code}`);
-          }
-          return parsed;
-        });
+      let defaultIrsCode: number | undefined = undefined;
+      if (dataToUpdate.defaultIrsCode) {
+        const code = dataToUpdate.defaultIrsCode;
+        const parsed = Number(code);
+        if (!Number.isInteger(parsed) || parsed < 2 || parsed > 9999) {
+          throw new Error(`Invalid IRS code: ${code}`);
+        }
+        defaultIrsCode = parsed;
       }
       updateSortCode({
-        fields: { ...dataToUpdate, defaultIrsCodes },
+        fields: { ...dataToUpdate, defaultIrsCode },
         key: sortCode.key,
       }).then(res => {
         if (res) {

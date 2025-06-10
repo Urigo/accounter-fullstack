@@ -12,8 +12,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
-import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
-import { ComboBox, PhrasesInput, TagsInput } from '../index.js';
+import { ComboBox, NumberInput, PhrasesInput, TagsInput } from '../index.js';
 
 const pcn874RecordType: Record<Pcn874RecordType, string> = {
   C: 'INPUT_SELF_INVOICE',
@@ -71,10 +70,10 @@ export function ModifyBusinessFields({
       const sortCodeObj = rawSortCodes.find(sc => Number(sc.key) === Number(sortCode));
 
       if (sortCodeObj) {
-        if (sortCodeObj.defaultIrsCodes) {
-          setValue('irsCodes', sortCodeObj.defaultIrsCodes, { shouldDirty: true });
+        if (sortCodeObj.defaultIrsCode) {
+          setValue('irsCode', sortCodeObj.defaultIrsCode, { shouldDirty: true });
         } else {
-          setValue('irsCodes', [], { shouldDirty: true });
+          setValue('irsCode', null, { shouldDirty: true });
         }
       }
     }
@@ -212,6 +211,9 @@ export function ModifyBusinessFields({
               <FormLabel>Sort Code</FormLabel>
               <ComboBox
                 {...field}
+                onChange={val => {
+                  field.onChange(Number(val));
+                }}
                 data={sortCodes}
                 value={field.value?.toString()}
                 disabled={fetchingSortCodes}
@@ -337,10 +339,24 @@ export function ModifyBusinessFields({
           )}
         />
 
-        <IrsCodesInput
-          formManager={formManager}
-          irsCodesPath="irsCodes"
-          highlightIfDirty={!isInsert}
+        <FormField
+          name="irsCode"
+          control={control}
+          render={({ field, fieldState }): ReactElement => (
+            <FormItem>
+              <FormLabel>IRS Code</FormLabel>
+              <FormControl>
+                <NumberInput
+                  {...field}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                  value={field.value ?? undefined}
+                  hideControls
+                  decimalScale={0}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
         <FormField

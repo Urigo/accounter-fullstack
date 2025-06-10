@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
       id
       key
       name
-      defaultIrsCodes
+      defaultIrsCode
     }
   }
 `;
@@ -67,15 +67,15 @@ const columns: ColumnDef<RowType>[] = [
     },
   },
   {
-    id: 'defaultIrsCodes',
-    accessorKey: 'defaultIrsCodes',
+    id: 'defaultIrsCode',
+    accessorKey: 'defaultIrsCode',
     cell: ({ row }) => (
       <TableCell className="flex flex-wrap gap-1 p-1">
-        {row.original.defaultIrsCodes?.map(code => (
-          <Button key={code} variant="outline" disabled className="p-1 w-15">
-            {code}
+        {row.original.defaultIrsCode && (
+          <Button variant="outline" disabled className="p-1 w-15">
+            {row.original.defaultIrsCode}
           </Button>
-        ))}
+        )}
       </TableCell>
     ),
     header: 'Default IRS Codes',
