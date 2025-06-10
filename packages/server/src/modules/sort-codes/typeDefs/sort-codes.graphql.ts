@@ -8,14 +8,14 @@ export default gql`
   }
 
   extend type Mutation {
-    addSortCode(name: String!, key: Int!, defaultIrsCodes: [Int!]): Boolean! @auth(role: ACCOUNTANT)
+    addSortCode(name: String!, key: Int!, defaultIrsCode: Int): Boolean! @auth(role: ACCOUNTANT)
     updateSortCode(key: Int!, fields: UpdateSortCodeFieldsInput!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " input variables for updateSortCode "
   input UpdateSortCodeFieldsInput {
     name: String
-    defaultIrsCodes: [Int!]
+    defaultIrsCode: Int
   }
 
   " Sort Code "
@@ -23,7 +23,7 @@ export default gql`
     id: ID!
     key: Int!
     name: String
-    defaultIrsCodes: [Int!]
+    defaultIrsCode: Int
   }
 
   extend type LtdFinancialEntity {
