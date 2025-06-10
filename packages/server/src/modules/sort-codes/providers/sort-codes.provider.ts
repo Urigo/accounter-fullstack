@@ -23,8 +23,8 @@ const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
 
 const insertSortCode = sql<IInsertSortCodeQuery>`
-    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_codes)
-    VALUES ($name, $key, $defaultIrsCodes)
+    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code)
+    VALUES ($name, $key, $defaultIrsCode)
     RETURNING *;
   `;
 
@@ -34,9 +34,9 @@ const updateSortCode = sql<IUpdateSortCodeQuery>`
       $name,
       name
     ),
-    default_irs_codes = COALESCE(
-      $defaultIrsCodes,
-      default_irs_codes
+    default_irs_code = COALESCE(
+      $defaultIrsCode,
+      default_irs_code
     )
     WHERE key = $key
     RETURNING *;

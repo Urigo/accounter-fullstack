@@ -10,7 +10,7 @@ import { AllSortCodesDocument, AllSortCodesQuery } from '../gql/graphql.js';
       id
       key
       name
-      defaultIrsCodes
+      defaultIrsCode
     }
   }
 `;

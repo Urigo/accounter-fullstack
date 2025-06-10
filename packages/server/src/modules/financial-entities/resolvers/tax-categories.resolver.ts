@@ -41,7 +41,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         await injector.get(FinancialEntitiesProvider).updateFinancialEntity({
           ...fields,
           financialEntityId: taxCategoryId,
-          irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+          irsCode: fields.irsCode ?? null,
         });
       }
       const adjustedFields: IUpdateTaxCategoryParams = {
@@ -79,13 +79,13 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
-        let irsCodes = fields.irsCodes ? [...fields.irsCodes] : null;
-        if (!irsCodes && fields.sortCode) {
+        let irsCode = fields.irsCode ?? null;
+        if (!irsCode && fields.sortCode) {
           const sortCode = await injector
             .get(SortCodesProvider)
             .getSortCodesByIdLoader.load(fields.sortCode);
-          if (sortCode?.default_irs_codes) {
-            irsCodes = sortCode.default_irs_codes;
+          if (sortCode?.default_irs_code) {
+            irsCode = sortCode.default_irs_code;
           }
         }
         const [financialEntity] = await injector
@@ -95,7 +95,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
-            irsCodes,
+            irsCode,
           })
           .catch((e: Error) => {
             console.error(e);

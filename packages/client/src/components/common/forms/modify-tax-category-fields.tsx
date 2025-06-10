@@ -6,7 +6,7 @@ import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
+import { NumberInput } from '../index.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -41,8 +41,8 @@ export function ModifyTaxCategoryFields({
   useEffect(() => {
     if (sortCode) {
       const sortCodeObj = rawSortCodes.find(sc => sc.key === sortCode);
-      if (sortCodeObj?.defaultIrsCodes) {
-        setValue('irsCodes', sortCodeObj.defaultIrsCodes, { shouldDirty: true });
+      if (sortCodeObj?.defaultIrsCode) {
+        setValue('irsCode', sortCodeObj.defaultIrsCode, { shouldDirty: true });
       }
     }
   }, [sortCode, rawSortCodes, setValue]);
@@ -79,6 +79,9 @@ export function ModifyTaxCategoryFields({
           return (
             <Select
               {...field}
+              onChange={val => {
+                field.onChange(Number(val));
+              }}
               data={sortCodes}
               value={field.value?.toString()}
               disabled={fetchingSortCodes}
@@ -92,10 +95,24 @@ export function ModifyTaxCategoryFields({
         }}
       />
 
-      <IrsCodesInput
-        formManager={formManager}
-        irsCodesPath="irsCodes"
-        highlightIfDirty={!isInsert}
+      <FormField
+        name="irsCode"
+        control={control}
+        render={({ field, fieldState }): ReactElement => (
+          <FormItem>
+            <FormLabel>IRS Code</FormLabel>
+            <FormControl>
+              <NumberInput
+                {...field}
+                className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                value={field.value ?? undefined}
+                hideControls
+                decimalScale={0}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
     </>
   );

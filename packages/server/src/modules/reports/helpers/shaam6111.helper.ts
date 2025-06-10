@@ -597,12 +597,10 @@ export async function getShaam6111Data(
   const financialEntitiesByIrsCodeDict = new Map<number, IGetAllFinancialEntitiesResult[]>();
   financialEntities.map(entity => {
     financialEntitiesDict.set(entity.id, entity);
-    if (entity.irs_codes) {
-      for (const irsCode of entity.irs_codes) {
-        const entities = financialEntitiesByIrsCodeDict.get(irsCode) || [];
-        entities.push(entity);
-        financialEntitiesByIrsCodeDict.set(irsCode, entities);
-      }
+    if (entity.irs_code) {
+      const entities = financialEntitiesByIrsCodeDict.get(entity.irs_code) || [];
+      entities.push(entity);
+      financialEntitiesByIrsCodeDict.set(entity.irs_code, entities);
     }
   });
 

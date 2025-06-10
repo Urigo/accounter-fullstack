@@ -27,13 +27,13 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
   },
 
   Mutation: {
-    addSortCode: (_, { key, name, defaultIrsCodes }, { injector }) => {
+    addSortCode: (_, { key, name, defaultIrsCode }, { injector }) => {
       return injector
         .get(SortCodesProvider)
         .addSortCode({
           key,
           name,
-          defaultIrsCodes: defaultIrsCodes ? [...defaultIrsCodes] : undefined,
+          defaultIrsCode: defaultIrsCode ?? undefined,
         })
         .catch(e => {
           console.error(
@@ -50,7 +50,6 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         .updateSortCode({
           key,
           ...fields,
-          defaultIrsCodes: fields.defaultIrsCodes ? [...fields.defaultIrsCodes] : undefined,
         })
         .catch(e => {
           console.error(`Error updating sort code: key=${key}`, JSON.stringify(e, null, 2));
@@ -63,7 +62,7 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     id: dbSortCode => dbSortCode.key.toString(),
     key: dbSortCode => dbSortCode.key,
     name: dbSortCode => dbSortCode.name,
-    defaultIrsCodes: dbSortCode => dbSortCode.default_irs_codes,
+    defaultIrsCode: dbSortCode => dbSortCode.default_irs_code,
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,

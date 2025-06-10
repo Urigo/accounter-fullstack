@@ -74,7 +74,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         await injector.get(FinancialEntitiesProvider).updateFinancialEntity({
           ...fields,
           financialEntityId: businessId,
-          irsCodes: fields.irsCodes ? [...fields.irsCodes] : null,
+          irsCode: fields.irsCode ?? null,
         });
       }
 
@@ -166,13 +166,13 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
-        let irsCodes = fields.irsCodes ? [...fields.irsCodes] : null;
-        if (!irsCodes && fields.sortCode) {
+        let irsCode = fields.irsCode ?? null;
+        if (!irsCode && fields.sortCode) {
           const sortCode = await injector
             .get(SortCodesProvider)
             .getSortCodesByIdLoader.load(fields.sortCode);
-          if (sortCode?.default_irs_codes) {
-            irsCodes = [...sortCode.default_irs_codes];
+          if (sortCode?.default_irs_code) {
+            irsCode = sortCode.default_irs_code;
           }
         }
         const [financialEntity] = await injector
@@ -182,7 +182,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
-            irsCodes,
+            irsCode,
           })
           .catch((e: Error) => {
             console.error(e);
@@ -415,7 +415,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               name: description,
               type: 'business',
               sortCode: null,
-              irsCodes: null,
+              irsCode: null,
             })
             .catch((e: Error) => {
               console.error(e);

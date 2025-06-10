@@ -4,7 +4,8 @@ import { NumericFormat, NumericFormatProps } from 'react-number-format';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 
-export interface NumberInputProps extends Omit<NumericFormatProps, 'value' | 'onValueChange'> {
+export interface NumberInputProps
+  extends Omit<NumericFormatProps, 'value' | 'onValueChange' | 'onChange'> {
   stepper?: number;
   thousandSeparator?: string;
   placeholder?: string;
@@ -18,6 +19,7 @@ export interface NumberInputProps extends Omit<NumericFormatProps, 'value' | 'on
   fixedDecimalScale?: boolean;
   decimalScale?: number;
   hideControls?: boolean;
+  onChange?: (value: number | null | undefined) => void;
 }
 
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(function NumberInput(
@@ -35,6 +37,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     prefix,
     value: controlledValue,
     hideControls = false,
+    onChange,
     ...props
   },
   ref,
@@ -79,6 +82,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     if (onValueChange) {
       onValueChange(newValue);
     }
+    onChange?.(newValue == null ? undefined : newValue);
   };
 
   const handleBlur = () => {

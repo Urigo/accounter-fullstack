@@ -3,8 +3,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.jsx';
 import { Input } from '../../ui/input.jsx';
-import { IrsCodesInput } from '../business-trip-report/parts/irs-codes-input.js';
-import { NumberInput } from '../inputs/number-input.js';
+import { NumberInput } from '../index.js';
 import type { EditSortCodeVariables } from '../modals/edit-sort-code.js';
 
 type ModalProps<T extends boolean> = {
@@ -68,7 +67,24 @@ export function ModifySortCodeFields({ isInsert, formManager }: ModalProps<boole
         )}
       />
 
-      <IrsCodesInput formManager={formManager} irsCodesPath="defaultIrsCodes" />
+      <FormField
+        name="defaultIrsCode"
+        control={control}
+        render={({ field }): ReactElement => (
+          <FormItem>
+            <FormLabel>Default IRS Code</FormLabel>
+            <FormControl>
+              <NumberInput
+                {...field}
+                value={field.value ?? undefined}
+                hideControls
+                decimalScale={0}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 }

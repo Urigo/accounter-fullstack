@@ -32,7 +32,7 @@ import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js'
         key
         name
       }
-      irsCodes
+      irsCode
     }
   }
 `;
@@ -107,7 +107,7 @@ function EditTaxCategoryForm({
     defaultValues: {
       sortCode: taxCategory.sortCode?.key,
       name: taxCategory.name,
-      irsCodes: taxCategory.irsCodes,
+      irsCode: taxCategory.irsCode,
     },
   });
   const { handleSubmit } = useFormManager;

@@ -110,7 +110,7 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
                       {...field}
                       value={field.value ?? undefined}
                       hideControls
-                      decimalScale={2}
+                      decimalScale={0}
                       thousandSeparator=","
                     />
                   </FormControl>
