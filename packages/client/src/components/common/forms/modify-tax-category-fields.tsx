@@ -6,6 +6,7 @@ import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
+import { Switch } from '../../ui/switch.js';
 import { NumberInput } from '../index.js';
 
 type ModalProps<T extends boolean> = {
@@ -111,6 +112,21 @@ export function ModifyTaxCategoryFields({
               />
             </FormControl>
             <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="taxExcluded"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between">
+            <div className="space-y-0.5">
+              <FormLabel>Tax excluded category</FormLabel>
+            </div>
+            <FormControl>
+              <Switch onCheckedChange={field.onChange} checked={field.value ?? undefined} />
+            </FormControl>
           </FormItem>
         )}
       />

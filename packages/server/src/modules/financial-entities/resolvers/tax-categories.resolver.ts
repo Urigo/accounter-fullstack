@@ -46,10 +46,11 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       }
       const adjustedFields: IUpdateTaxCategoryParams = {
         hashavshevetName: fields.hashavshevetName,
+        taxExcluded: fields.taxExcluded,
         taxCategoryId,
       };
       try {
-        if (fields.hashavshevetName) {
+        if (fields.hashavshevetName || fields.taxExcluded != null) {
           await injector
             .get(TaxCategoriesProvider)
             .updateTaxCategory(adjustedFields)

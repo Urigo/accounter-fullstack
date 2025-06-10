@@ -81,6 +81,7 @@ export default gql`
     irsCode: Int
 
     hashavshevetName: String
+    taxExcluded: Boolean
   }
 
   " input for insertTaxCategory "
