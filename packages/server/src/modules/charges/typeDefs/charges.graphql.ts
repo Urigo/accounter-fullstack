@@ -410,6 +410,10 @@ export default gql`
     charges(filter: ChargeFilter): [Charge!]!
   }
 
+  extend type BankDepositFinancialAccount {
+    charges(filter: ChargeFilter): [Charge!]!
+  }
+
   extend type LtdFinancialEntity {
     charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
   }

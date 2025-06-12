@@ -2,9 +2,9 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
+import { getEntriesFromFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type {
@@ -28,13 +28,87 @@ import {
   validateTransactionBasicVariables,
 } from '../../helpers/utils.helper.js';
 
+type AccountTransactions = {
+  accountId: string;
+  mainTransaction: IGetTransactionsByChargeIdsResult;
+  interestTransactions: IGetTransactionsByChargeIdsResult[];
+};
+
+function classifySides(accounts: AccountTransactions[]): {
+  creditor: AccountTransactions;
+  debtor: AccountTransactions;
+} {
+  if (accounts.length !== 2) {
+    throw new LedgerError('Deposit charge must have 2 counterparties');
+  }
+  const [account1, account2] = accounts;
+
+  const account1Side = Number(account1.mainTransaction.amount) >= 0;
+  const account2Side = Number(account2.mainTransaction.amount) >= 0;
+
+  if (account1Side === account2Side) {
+    throw new Error('Both accounts are on the same side');
+  }
+
+  return {
+    debtor: account1Side ? account2 : account1,
+    creditor: account1Side ? account1 : account2,
+  };
+}
+
+function classifyTransactions(transactions: IGetTransactionsByChargeIdsResult[]) {
+  const groups = new Map<string, IGetTransactionsByChargeIdsResult[]>();
+  transactions.map(t => {
+    if (!t.account_id) {
+      return;
+    }
+    if (!groups.has(t.account_id)) {
+      groups.set(t.account_id, []);
+    }
+    groups.get(t.account_id)!.push(t);
+  });
+
+  if (groups.size !== 2) {
+    throw new LedgerError('Deposit charge must have 2 counterparties');
+  }
+
+  const accounts: AccountTransactions[] = Array.from(groups.entries()).map(
+    ([accountId, transactions]) => {
+      const [mainTransaction, interestTransactions] = transactions.reduce(
+        (
+          [mainTransaction, interestTransactions]: [
+            IGetTransactionsByChargeIdsResult,
+            IGetTransactionsByChargeIdsResult[],
+          ],
+          current,
+        ) => {
+          if (mainTransaction.id === current.id) {
+            return [mainTransaction, interestTransactions];
+          }
+          return Math.abs(Number(current.amount)) > Math.abs(Number(mainTransaction.amount))
+            ? [current, [mainTransaction, ...interestTransactions]]
+            : [mainTransaction, [current, ...interestTransactions]];
+        },
+        [transactions[0], []],
+      );
+
+      return {
+        accountId,
+        mainTransaction,
+        interestTransactions,
+      };
+    },
+  );
+
+  return classifySides(accounts);
+}
+
 export const generateLedgerRecordsForBankDeposit: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const chargeId = charge.id;
   const {
     injector,
     adminContext: {
@@ -44,6 +118,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       },
     },
   } = context;
+  const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
 
@@ -58,84 +133,140 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       }
     >();
 
-    const transactionsPromise = injector
+    // generate ledger from transactions
+    const mainFinancialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    const interestLedgerEntries: StrictLedgerProto[] = [];
+
+    const dates = new Set<number>();
+    const currencies = new Set<Currency>();
+
+    const transactions = await injector
       .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
 
-    const bankDepositTransactionsPromise = injector
-      .get(BankDepositTransactionsProvider)
-      .getDepositTransactionsByChargeId(chargeId);
+    // split into origin + destination main transactions, and interest / fee transactions
+    const { creditor, debtor } = classifyTransactions(transactions);
 
-    const [transactions, bankDepositTransactions] = await Promise.all([
-      transactionsPromise,
-      bankDepositTransactionsPromise,
-    ]);
-
-    const entriesPromises: Array<Promise<void>> = [];
-    const financialAccountLedgerEntries: StrictLedgerProto[] = [];
-    const interestLedgerEntries: StrictLedgerProto[] = [];
-    const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
-
-    let isWithdrawal = false;
-
-    // generate ledger from transactions
-    const [mainTransaction, interestTransactions] = transactions.reduce(
-      (
-        [mainTransaction, interestTransactions]: [
-          IGetTransactionsByChargeIdsResult,
-          IGetTransactionsByChargeIdsResult[],
-        ],
-        current,
-      ) => {
-        if (mainTransaction.id === current.id) {
-          return [mainTransaction, interestTransactions];
-        }
-        return Number(current.amount) > Number(mainTransaction.amount)
-          ? [current, [mainTransaction, ...interestTransactions]]
-          : [mainTransaction, [current, ...interestTransactions]];
-      },
-      [transactions[0], []],
+    // basic entries from main transactions (transfer between accounts)
+    const mainTransactionPromises = [creditor.mainTransaction, debtor.mainTransaction].map(
+      async transaction =>
+        ledgerEntryFromMainTransaction(
+          transaction,
+          context,
+          chargeId,
+          charge.owner_id,
+          charge.business_id ?? undefined,
+        )
+          .then(ledgerEntry => {
+            mainFinancialAccountLedgerEntries.push(ledgerEntry);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            dates.add(ledgerEntry.valueDate.getTime());
+            currencies.add(ledgerEntry.currency);
+          })
+          .catch(e => {
+            if (e instanceof LedgerError) {
+              errors.add(e.message);
+            } else {
+              throw e;
+            }
+          }),
     );
 
-    if (Number(mainTransaction.amount) > 0) {
-      isWithdrawal = true;
-    }
+    // create a ledger record for interest transactions
+    const interestTransactionsPromises = [
+      ...creditor.interestTransactions,
+      ...debtor.interestTransactions,
+    ].map(async transaction => {
+      if (transaction.is_fee) {
+        // entries from fee transactions
+        try {
+          const ledgerEntries = await getEntriesFromFeeTransaction(
+            transaction,
+            charge,
+            context,
+          ).catch(e => {
+            if (e instanceof LedgerError) {
+              errors.add(e.message);
+            } else {
+              throw e;
+            }
+          });
 
-    const mainTransactionPromise = async () =>
-      ledgerEntryFromMainTransaction(
-        mainTransaction,
-        context,
-        chargeId,
-        charge.owner_id,
-        charge.business_id ?? undefined,
-      )
-        .then(ledgerEntry => {
-          financialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
-        })
-        .catch(e => {
+          if (!ledgerEntries) {
+            return;
+          }
+
+          feeFinancialAccountLedgerEntries.push(...ledgerEntries);
+          ledgerEntries.map(ledgerEntry => {
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            dates.add(ledgerEntry.valueDate.getTime());
+            currencies.add(ledgerEntry.currency);
+          });
+        } catch (e) {
           if (e instanceof LedgerError) {
             errors.add(e.message);
           } else {
             throw e;
           }
-        });
+        }
+      } else {
+        // for each interest transaction, create a ledger record
+        const { currency, valueDate, transactionBusinessId } =
+          validateTransactionBasicVariables(transaction);
 
-    // create a ledger record for fee transactions
-    const interestTransactionsPromises = interestTransactions.map(async transaction => {
-      // for each transaction, create a ledger record
-      const { currency, valueDate, transactionBusinessId } =
-        validateTransactionBasicVariables(transaction);
+        const businessTaxCategory = await injector
+          .get(TaxCategoriesProvider)
+          .taxCategoryByBusinessAndOwnerIDsLoader.load({
+            businessId: transactionBusinessId,
+            ownerId: charge.owner_id,
+          });
+        if (!businessTaxCategory) {
+          errors.add(`Business ID="${transactionBusinessId}" is missing tax category`);
+          return;
+        }
 
-      const businessTaxCategory = await injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByBusinessAndOwnerIDsLoader.load({
-          businessId: transactionBusinessId,
+        let amount = Number(transaction.amount);
+        let foreignAmount: number | undefined = undefined;
+
+        if (currency !== defaultLocalCurrency) {
+          // get exchange rate for currency
+          const exchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+
+          foreignAmount = amount;
+          // calculate amounts in ILS:
+          amount = exchangeRate * amount;
+        }
+
+        const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
+
+        const isCreditorCounterparty = amount > 0;
+
+        const ledgerEntry: StrictLedgerProto = {
+          id: transaction.id,
+          invoiceDate: transaction.event_date,
+          valueDate,
+          currency,
+          creditAccountID1: isCreditorCounterparty ? businessTaxCategory.id : accountTaxCategoryId,
+          creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyCreditAmount1: Math.abs(amount),
+          debitAccountID1: isCreditorCounterparty ? accountTaxCategoryId : businessTaxCategory.id,
+          debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+          localCurrencyDebitAmount1: Math.abs(amount),
+          description: transaction.source_description ?? undefined,
+          reference: transaction.source_id,
+          isCreditorCounterparty,
           ownerId: charge.owner_id,
-        });
-      if (!businessTaxCategory) {
-        errors.add(`Business ID="${transactionBusinessId}" is missing tax category`);
-        return;
+          currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+          chargeId,
+        };
+
+        interestLedgerEntries.push(ledgerEntry);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        dates.add(ledgerEntry.valueDate.getTime());
+        currencies.add(ledgerEntry.currency);
       }
 
       let amount = Number(transaction.amount);
@@ -188,20 +319,23 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       });
     });
 
-    entriesPromises.push(
-      mainTransactionPromise(),
+    const entriesPromises: Array<Promise<void>> = [
+      ...mainTransactionPromises,
       ...interestTransactionsPromises,
       expensesLedgerPromise,
-    );
-
+    ];
     await Promise.all(entriesPromises);
+
+    // exchange rate between main transactions
+
+    // if withdrawal - exchange rate between main transaction and deposit transaction
 
     const miscLedgerEntries: StrictLedgerProto[] = [];
 
     const miscLedgerEntriesPromise = async () => {
       // handle exchange rates
       if (isWithdrawal) {
-        const mainLedgerEntry = financialAccountLedgerEntries[0];
+        const mainLedgerEntry = mainFinancialAccountLedgerEntries[0];
         if (!mainLedgerEntry) {
           throw new LedgerError('Main ledger entry not found');
         }
@@ -271,7 +405,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
             const exchangeAmount = calculateExchangeRate(
               mainLedgerEntry.creditAccountID1,
               [
-                ...financialAccountLedgerEntries,
+                ...mainFinancialAccountLedgerEntries,
                 convertLedgerRecordToProto(depositLedgerRecord, context),
               ],
               defaultLocalCurrency,
@@ -317,7 +451,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     });
 
     const records = [
-      ...financialAccountLedgerEntries,
+      ...mainFinancialAccountLedgerEntries,
       ...interestLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscLedgerEntries,
@@ -327,7 +461,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
-    const mainLedgerEntry = financialAccountLedgerEntries[0];
+    const mainLedgerEntry = mainFinancialAccountLedgerEntries[0];
     if (!mainLedgerEntry.isCreditorCounterparty) {
       allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
     }

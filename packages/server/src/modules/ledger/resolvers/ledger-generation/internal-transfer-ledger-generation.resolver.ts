@@ -40,7 +40,14 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
   try {
     // validate ledger records are balanced
-    const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+    const ledgerBalance = new Map<
+      string,
+      {
+        amount: number;
+        entityId: string;
+        foreignAmounts?: Partial<Record<currency, { local: number; foreign: number }>>;
+      }
+    >();
 
     const dates = new Set<number>();
     const currencies = new Set<currency>();
