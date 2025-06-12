@@ -6,7 +6,7 @@
     "composite": true,
     "jsx": "react-jsx",
     "noUnusedParameters": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["DOM", "DOM.Iterable"],
     "useDefineForClassFields": true,
     "esModuleInterop": false,
     "noEmit": true

@@ -1,13 +1,21 @@
 {
+  "display": "Node 24",
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
     "types": ["vitest/globals"],
 
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "lib": ["esnext", "dom"],
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "node16",
+    "lib": [
+      "es2024",
+      "ESNext.Array",
+      "ESNext.Collection",
+      "ESNext.Iterator",
+      "ESNext.Promise",
+      "dom"
+    ],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "importHelpers": true,
