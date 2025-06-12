@@ -14,6 +14,7 @@
     "start": "node dist/index.js",
     "test:hapoalim": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-poalim.js\"",
     "test:isracard": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-isracard.js\"",
+    "test:leumi": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-leumi.js\"",
     "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },
   "dependencies": {

@@ -21,11 +21,6 @@ export type LeumiOptions = {
   startDate?: Date;
 
   /**
-   * if set, will set the timeout in milliseconds of puppeteer's `page.setDefaultTimeout`.
-   */
-  defaultTimeout?: number;
-
-  /**
    * shows the browser while scraping, good for debugging (default false)
    */
   showBrowser?: boolean;
@@ -643,13 +638,13 @@ async function login(credentials: LeumiCredentials, page?: Page): Promise<Scrape
 }
 
 async function fetchData(page: Page, startDate?: Date): Promise<ScraperScrapingResult> {
-  const minimumStartMoment = addDays(subYears(new Date(), 3), 1);
-  const defaultStartMoment = addDays(subYears(new Date(), 1), 1);
-  const startMoment = max([minimumStartMoment, startDate || defaultStartMoment]);
+  const minimumStartDate = addDays(subYears(new Date(), 3), 1);
+  const defaultStartDate = addDays(subYears(new Date(), 1), 1);
+  const usedStartDate = max([minimumStartDate, startDate || defaultStartDate]);
 
   await navigateTo(TRANSACTIONS_URL, page);
 
-  const accounts = await fetchTransactions(page, startMoment);
+  const accounts = await fetchTransactions(page, usedStartDate);
 
   return {
     success: true,
@@ -657,99 +652,88 @@ async function fetchData(page: Page, startDate?: Date): Promise<ScraperScrapingR
   };
 }
 
-async function scrape(
-  page: Page,
-  credentials: LeumiCredentials,
-  options: LeumiOptions,
-): Promise<ScraperScrapingResult> {
-  let cleanups: Array<() => Promise<void>> = [];
-  console.log(ScraperProgressTypes.StartScraping);
-  console.log('initialize scraper');
-  console.log(ScraperProgressTypes.Initializing);
-
-  //   // initialize the browser page
-  //   console.log('initialize browser page');
-
-  //   const { timeout, showBrowser } = options;
-
-  //   const headless = !showBrowser;
-  //   console.log(`launch a browser with headless mode = ${headless}`);
-
-  //   const browser = await puppeteer.launch({
-  //     env: 'DEBUG' in process.env ? { DEBUG: '*', ...process.env } : undefined,
-  //     headless,
-  //     timeout,
-  //   });
-
-  //   cleanups.push(async () => {
-  //     console.log('closing the browser');
-  //     await browser.close();
-  //   });
-
-  //   console.log('create a new browser page');
-  //   const page = await browser.newPage();
-
+async function pagePrep(page: Page, context: LeumiContext) {
   await page.setCacheEnabled(false); // Clear cache and avoid 300's response status
 
-  cleanups.push(() => page.close());
-
-  if (options.defaultTimeout) {
-    page.setDefaultTimeout(options.defaultTimeout);
-  }
+  context.cleanups.push(() => page.close());
 
   const viewport = {
     width: 1024,
     height: 768,
   };
-  console.log(`set viewport to width ${viewport.width}, height ${viewport.height}`);
   await page.setViewport(viewport);
 
   page.on('requestfailed', request => {
-    console.log('Request failed: %s %s', request.failure()?.errorText, request.url());
+    console.error(`Request failed: ${request.failure()?.errorText} ${request.url()}`);
   });
+}
 
-  let loginResult;
+async function terminate(
+  result: ScraperScrapingResult | ErrorResult,
+  context: LeumiContext,
+): Promise<ScraperScrapingResult> {
   try {
-    loginResult = await login(credentials, page);
-  } catch (e) {
-    loginResult =
-      e instanceof TimeoutError
-        ? createTimeoutError((e as Error).message)
-        : createGenericError((e as Error).message);
-  }
-
-  let scrapeResult;
-  if (loginResult.success) {
-    try {
-      scrapeResult = await fetchData(page, options.startDate ?? new Date()); // TODO: use the furthest date possible
-    } catch (e) {
-      scrapeResult =
-        e instanceof TimeoutError
-          ? createTimeoutError((e as Error).message)
-          : createGenericError((e as Error).message);
-    }
-  } else {
-    scrapeResult = loginResult;
-  }
-
-  try {
-    const success = scrapeResult && scrapeResult.success === true;
+    const success = !!result?.success;
 
     console.log(`terminating browser with success = ${success}`);
     console.log(ScraperProgressTypes.Terminating);
 
-    await Promise.all(cleanups.reverse().map(cleanup => cleanup()));
-    cleanups = [];
+    await runCleanups(context);
   } catch (e) {
-    scrapeResult = createGenericError((e as Error).message);
+    result = createGenericError((e as Error).message);
   }
-  console.log(ScraperProgressTypes.EndScraping);
 
-  return scrapeResult;
+  return result;
+}
+
+async function runCleanups(context: LeumiContext) {
+  await Promise.all(context.cleanups.reverse().map(cleanup => cleanup()));
+  context.cleanups = [];
 }
 
 export type LeumiCredentials = { username: string; password: string };
 
-export async function leumi(page: Page, credentials: LeumiCredentials, options?: LeumiOptions) {
-  await scrape(page, credentials, { ...options });
+type LeumiContext = {
+  cleanups: Array<() => Promise<void>>;
+};
+
+export async function leumi(
+  page: Page,
+  credentials: LeumiCredentials,
+  options: LeumiOptions = {},
+): Promise<ScraperScrapingResult> {
+  const context: LeumiContext = {
+    cleanups: [],
+  };
+  console.log(ScraperProgressTypes.StartScraping);
+  console.log('initialize scraper');
+  console.log(ScraperProgressTypes.Initializing);
+
+  await pagePrep(page, context);
+
+  let loginResult: ScraperScrapingResult | ErrorResult;
+  try {
+    loginResult = await login(credentials, page);
+  } catch (e) {
+    const error =
+      e instanceof TimeoutError
+        ? createTimeoutError((e as Error).message)
+        : createGenericError((e as Error).message);
+    return await terminate(error, context);
+  }
+
+  if (!loginResult.success) {
+    return await terminate(loginResult, context);
+  }
+
+  try {
+    const scrapeResult = await fetchData(page, options.startDate ?? new Date()); // TODO: use the furthest date possible
+    return await terminate(scrapeResult, context);
+  } catch (e) {
+    const error =
+      e instanceof TimeoutError
+        ? createTimeoutError((e as Error).message)
+        : createGenericError((e as Error).message);
+    return await terminate(error, context);
+  }
 }
