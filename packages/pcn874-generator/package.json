@@ -52,7 +52,7 @@
     "start": "node ./dist"
   },
   "dependencies": {
-    "zod": "3.25.56"
+    "zod": "3.25.57"
   },
   "publishConfig": {
     "directory": "dist",
