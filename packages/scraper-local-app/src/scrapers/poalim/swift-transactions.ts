@@ -381,7 +381,14 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
           const newTransactions: SwiftTransaction[] = [];
           for (const transaction of transactions) {
             if (await isTransactionNew(transaction, ctx.pool, ctx.logger)) {
-              newTransactions.push(transaction);
+              if (transaction.swiftStatusDesc === 'בהמתנה לאישור הבנק בחו"ל') {
+                // Skip pending transactions
+                ctx.logger.log(
+                  `Transaction ${transaction.transferCatenatedId} is still pending approval from the foreign bank. ${transaction.bankNumber}:${transaction.branchNumber}:${transaction.accountNumber} - ${transaction.chargePartyName} - ${transaction.formattedStartDate} - ${transaction.swiftCurrencyInstructedAmount33B}`,
+                );
+              } else {
+                newTransactions.push(transaction);
+              }
             }
           }
           ctx[bankKey][swiftKey].newTransactions = newTransactions;
@@ -415,6 +422,12 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
               { switfTransactions: insertableTransactions },
               ctx.pool,
             );
+
+            for (const transaction of insertableTransactions) {
+              ctx.logger.log(
+                `success in insert to Poalim Swift - ${transaction.bankNumber}:${transaction.branchNumber}:${transaction.accountNumber} - ${transaction.chargePartyName} - ${transaction.formattedStartDate} - ${transaction.swiftCurrencyInstructedAmount33B}`,
+              );
+            }
           } catch (error) {
             ctx.logger.error(error);
             throw new Error('Failed to insert swift transactions');
