@@ -172,7 +172,10 @@ async function fetchSwiftTransactions(
             is SHEKEL`);
       return false;
     }
-    if (transaction.dataOriginCode !== 2) {
+    if (
+      transaction.dataOriginCode !== 2 ||
+      transaction.swiftStatusDesc === 'בהמתנה לאישור הבנק בחו"ל'
+    ) {
       // skip non-ready transactions
       logger.log(`Swift transaction
           ${transaction.startDate}
@@ -381,14 +384,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
           const newTransactions: SwiftTransaction[] = [];
           for (const transaction of transactions) {
             if (await isTransactionNew(transaction, ctx.pool, ctx.logger)) {
-              if (transaction.swiftStatusDesc === 'בהמתנה לאישור הבנק בחו"ל') {
-                // Skip pending transactions
-                ctx.logger.log(
-                  `Transaction ${transaction.transferCatenatedId} is still pending approval from the foreign bank. ${transaction.bankNumber}:${transaction.branchNumber}:${transaction.accountNumber} - ${transaction.chargePartyName} - ${transaction.formattedStartDate} - ${transaction.swiftCurrencyInstructedAmount33B}`,
-                );
-              } else {
-                newTransactions.push(transaction);
-              }
+              newTransactions.push(transaction);
             }
           }
           ctx[bankKey][swiftKey].newTransactions = newTransactions;
