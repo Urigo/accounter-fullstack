@@ -8,24 +8,24 @@ guide and mark tasks as done (`- [x]`) when completed.
 
 ## 1. Project Scaffolding & Tooling
 
-- [ ] **Initialize repository & basic config**
-  - [ ] `git init`
-  - [ ] Create `package.json` with:
+- [x] **Initialize repository & basic config**
+  - [x] `git init`
+  - [x] Create `package.json` with:
     - name: `opcn1214-generator`
     - version: `0.1.0`
     - description, keywords, license MIT, repository placeholder.
-  - [ ] Install dependencies:
+  - [x] Install dependencies:
     - `zod`, `date-fns`
-  - [ ] Install devDependencies:
+  - [x] Install devDependencies:
     - `typescript`, `ts-node`, `vitest`, `@types/node`, `eslint`, `eslint-config-prettier`,
       `prettier`, `eslint-plugin-import`, `eslint-plugin-vitest`, `typedoc`, Rollup plugins (later).
-  - [ ] Create `tsconfig.json`:
+  - [x] Create `tsconfig.json`:
     - target ES2022, module ESNext, declaration true, resolveJsonModule true, strict mode, outDir
       `dist`, rootDir `src`.
-  - [ ] Configure ESLint & Prettier:
+  - [x] Configure ESLint & Prettier:
     - `.eslintrc.js` integrating TypeScript rules + Prettier.
     - `.prettierrc` default.
-  - [ ] Setup Vitest:
+  - [x] Setup Vitest:
     - `vitest.config.ts` for Node environment.
   - [ ] Create directory structure:
     - `src/` with subfolders:
@@ -101,34 +101,34 @@ guide and mark tasks as done (`- [x]`) when completed.
 - [ ] Define TypeScript interfaces in `src/types/spec.ts`:
   ```ts
   export interface SpecField {
-    fieldCode: string
-    fieldName: string
-    start: number
-    length: number
-    type: 'string' | 'number' | 'date'
-    required: boolean
-    format?: string
-    rtl?: boolean
-    enumValues?: string[]
-    defaultValue?: string | number | null
-    padding?: 'left' | 'right'
-    description?: string
-    businessRules?: string[] // optional notes
+    fieldCode: string;
+    fieldName: string;
+    start: number;
+    length: number;
+    type: "string" | "number" | "date";
+    required: boolean;
+    format?: string;
+    rtl?: boolean;
+    enumValues?: string[];
+    defaultValue?: string | number | null;
+    padding?: "left" | "right";
+    description?: string;
+    businessRules?: string[]; // optional notes
   }
   export interface RecordSpec {
-    recordType: string
-    recordLength: number
-    repeatable: boolean
-    minOccurs?: number
-    maxOccurs?: number
-    orderIndex: number
-    description?: string
-    fields: SpecField[]
-    placeholderIfEmpty?: boolean // optional: generate placeholder if no entries
+    recordType: string;
+    recordLength: number;
+    repeatable: boolean;
+    minOccurs?: number;
+    maxOccurs?: number;
+    orderIndex: number;
+    description?: string;
+    fields: SpecField[];
+    placeholderIfEmpty?: boolean; // optional: generate placeholder if no entries
   }
   export interface YearSpec {
-    year: number
-    records: RecordSpec[]
+    year: number;
+    records: RecordSpec[];
   }
   ```
 
@@ -577,43 +577,43 @@ guide and mark tasks as done (`- [x]`) when completed.
 
   ```ts
   export interface ValidationError {
-    field: string
-    message: string
-    code: string
-    recordType: string
-    recordIndex?: number
-    value?: any
-    expected?: string
+    field: string;
+    message: string;
+    code: string;
+    recordType: string;
+    recordIndex?: number;
+    value?: any;
+    expected?: string;
   }
   export interface ParseError extends ValidationError {
-    lineNumber: number
-    position?: number
+    lineNumber: number;
+    position?: number;
   }
   export interface GenerateError extends ValidationError {
     // no extra fields or reuse same shape
   }
   export interface ValidationResult {
-    isValid: boolean
-    errors: ValidationError[]
+    isValid: boolean;
+    errors: ValidationError[];
   }
   export interface ParseResult {
-    success: boolean
-    data?: ReportData
-    errors?: ParseError[]
+    success: boolean;
+    data?: ReportData;
+    errors?: ParseError[];
   }
   export interface GenerateResult {
-    success: boolean
-    reportText?: string
-    errors?: GenerateError[]
+    success: boolean;
+    reportText?: string;
+    errors?: GenerateError[];
   }
   ```
 
 - [ ] In `src/index.ts`, export:
 
   ```ts
-  export { parse } from './parser'
-  export { generate } from './generator'
-  export { validate } from './validator'
+  export { parse } from "./parser";
+  export { generate } from "./generator";
+  export { validate } from "./validator";
   export type {
     ReportData,
     ValidationError,
@@ -621,8 +621,8 @@ guide and mark tasks as done (`- [x]`) when completed.
     GenerateError,
     ParseResult,
     GenerateResult,
-    ValidationResult
-  } from './types/errors'
+    ValidationResult,
+  } from "./types/errors";
   ```
 
 - [ ] Write unit tests for orchestration in `tests/unit/parser-index.spec.ts`,
@@ -691,15 +691,15 @@ For each record type `<XXXX>` in optional sections:
 
     ```ts
     export interface TaxYearConfig {
-      year: number
+      year: number;
       maxRecords: {
-        relatedCompanies: number
-        shareholders: number
-        rdInvestments: number
-        foreignIncomes: number
-        capitalGainsAppendices: number
+        relatedCompanies: number;
+        shareholders: number;
+        rdInvestments: number;
+        foreignIncomes: number;
+        capitalGainsAppendices: number;
         // any other counts
-      }
+      };
       // any year-specific flags or overrides
     }
     ```
@@ -838,14 +838,14 @@ For each record type `<XXXX>` in optional sections:
   - Basic usage:
 
     ```ts
-    import { generate, parse, validate } from 'opcn1214-generator'
+    import { generate, parse, validate } from "opcn1214-generator";
 
-    const reportText = '...'
-    const result = parse(reportText, 2024)
+    const reportText = "...";
+    const result = parse(reportText, 2024);
     if (result.success) {
-      console.log(result.data)
+      console.log(result.data);
     } else {
-      console.error(result.errors)
+      console.error(result.errors);
     }
     ```
 

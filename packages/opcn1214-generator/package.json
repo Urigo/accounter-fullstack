@@ -8,10 +8,6 @@
     "url": "https://github.com/urigo/accounter-fullstack.git",
     "directory": "packages/opcn1214-generator"
   },
-  "homepage": "https://github.com/urigo/accounter-fullstack/packages/opcn1214-generator#readme",
-  "bugs": {
-    "url": "https://github.com/urigo/accounter-fullstack/issues"
-  },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
   "engines": {
@@ -21,27 +17,18 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/typings/index.d.cts",
-        "default": "./dist/cjs/index.js"
-      },
-      "import": {
-        "types": "./dist/typings/index.d.ts",
-        "default": "./dist/esm/index.js"
-      },
-      "default": {
-        "types": "./dist/typings/index.d.ts",
-        "default": "./dist/esm/index.js"
-      }
-    },
-    "./package.json": "./package.json"
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
   },
-  "typings": "dist/typings/index.d.ts",
+  "types": "dist/types/index.d.ts",
   "keywords": [
-    "shaam",
-    "opcn1214",
+    "1214",
+    "opcn",
     "accountancy",
-    "accountant",
+    "israeli-tax",
+    "tax-forms",
     "accounter"
   ],
   "scripts": {
@@ -54,18 +41,22 @@
     "test:watch": "vitest --watch"
   },
   "dependencies": {
-    "zod": "3.25.56"
+    "date-fns": "4.1.0",
+    "zod": "3.25.67"
   },
   "devDependencies": {
+    "@types/node": "24.0.3",
+    "@typescript-eslint/eslint-plugin": "8.34.1",
+    "@typescript-eslint/parser": "8.34.1",
     "bob-the-bundler": "7.0.1",
-    "eslint": "9.28.0",
-    "vitest": "3.2.2"
-  },
-  "publishConfig": {
-    "directory": "dist",
-    "access": "public"
-  },
-  "typescript": {
-    "definition": "dist/typings/index.d.ts"
+    "eslint": "9.29.0",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-vitest": "0.5.4",
+    "prettier": "3.5.3",
+    "ts-node": "10.9.2",
+    "typedoc": "0.28.5",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
   }
 }
