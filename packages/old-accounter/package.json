@@ -24,7 +24,7 @@
     "graphql": "16.11.0",
     "lodash": "4.17.21",
     "moment": "2.30.1",
-    "pg": "8.16.0",
+    "pg": "8.16.1",
     "uuid": "11.1.0"
   },
   "devDependencies": {

@@ -44,7 +44,7 @@ __metadata:
     graphql: "npm:16.11.0"
     lodash: "npm:4.17.21"
     moment: "npm:2.30.1"
-    pg: "npm:8.16.0"
+    pg: "npm:8.16.1"
     uuid: "npm:11.1.0"
   languageName: unknown
   linkType: soft
@@ -63,7 +63,7 @@ __metadata:
     dotenv: "npm:16.5.0"
     dotenv-cli: "npm:8.0.0"
     listr: "npm:0.14.3"
-    pg: "npm:8.16.0"
+    pg: "npm:8.16.1"
     rimraf: "npm:6.0.1"
     tsup: "npm:8.5.0"
     typescript: "npm:5.8.3"
@@ -103,7 +103,7 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.9"
     "@radix-ui/react-tooltip": "npm:1.2.7"
     "@tailwindcss/vite": "npm:4.1.10"
-    "@tanstack/react-query": "npm:5.80.7"
+    "@tanstack/react-query": "npm:5.80.10"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -222,7 +222,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.17.1"
     pino-pretty: "npm:13.0.0"
-    puppeteer: "npm:24.10.1"
+    puppeteer: "npm:24.10.2"
   languageName: unknown
   linkType: soft
 
@@ -254,7 +254,7 @@ __metadata:
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.10"
-    puppeteer: "npm:24.10.1"
+    puppeteer: "npm:24.10.2"
     typescript: "npm:5.8.3"
     uuid: "npm:11.1.0"
   languageName: unknown
@@ -320,7 +320,7 @@ __metadata:
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.10"
-    pg: "npm:8.16.0"
+    pg: "npm:8.16.1"
     pino-pretty: "npm:13.0.0"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.0.1"
@@ -6938,21 +6938,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.80.7":
-  version: 5.80.7
-  resolution: "@tanstack/query-core@npm:5.80.7"
-  checksum: 10c0/bd96393e1a94aebc4d10da05e03de89ddce09d7266d0fcff2785480c544425d732f9fb03ecb93c96520980f57655f143452b9701f9bcb620cd07a04077018583
+"@tanstack/query-core@npm:5.80.10":
+  version: 5.80.10
+  resolution: "@tanstack/query-core@npm:5.80.10"
+  checksum: 10c0/6391f4439f1f4676f5efeb07271e6b0b1418bd1192779f55cac537f0b35ec31c729eb43a30e0269534328c259c3ed6dd2f31555c42c68b6dd0c9ede410d46eb1
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.80.7":
-  version: 5.80.7
-  resolution: "@tanstack/react-query@npm:5.80.7"
+"@tanstack/react-query@npm:5.80.10":
+  version: 5.80.10
+  resolution: "@tanstack/react-query@npm:5.80.10"
   dependencies:
-    "@tanstack/query-core": "npm:5.80.7"
+    "@tanstack/query-core": "npm:5.80.10"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/2d2fb8a7c60fe94c90f3345050673e217366e968fd28565a92bf4097a320c7c73bc6ecaa1b20ca70a705accbf8618a9888016c5a1813bb57fe86b6c824973a21
+  checksum: 10c0/1a759b264cc94b389f802f1183183a3fbe1669ec1bb354951cfab6b6cf175276885c5f5c9b3fc00340a87140fdff4b9cf0c688fb7af103d34fb3b209d33a0a95
   languageName: node
   linkType: hard
 
@@ -8089,7 +8089,7 @@ __metadata:
     graphql: "npm:16.11.0"
     husky: "npm:9.1.7"
     lint-staged: "npm:16.1.2"
-    pg: "npm:8.16.0"
+    pg: "npm:8.16.1"
     prettier: "npm:3.5.3"
     prettier-plugin-sql: "npm:0.19.1"
     rimraf: "npm:6.0.1"
@@ -17036,10 +17036,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pg-cloudflare@npm:^1.2.6":
+  version: 1.2.6
+  resolution: "pg-cloudflare@npm:1.2.6"
+  checksum: 10c0/db339518ed763982c45a94c96cedba1b25819fe32e9d3a4df6f82cd647c716ff9b5009f3c8b90f2940b0a1889387710ef764c9e3e7ddd8397d217309d663a2c8
+  languageName: node
+  linkType: hard
+
 "pg-connection-string@npm:^2.7.0, pg-connection-string@npm:^2.9.0":
   version: 2.9.0
   resolution: "pg-connection-string@npm:2.9.0"
   checksum: 10c0/7145d00688200685a9d9931a7fc8d61c75f348608626aef88080ece956ceb4ff1cbdee29c3284e41b7a3345bab0e4f50f9edc256e270bfa3a563af4ea78bb490
+  languageName: node
+  linkType: hard
+
+"pg-connection-string@npm:^2.9.1":
+  version: 2.9.1
+  resolution: "pg-connection-string@npm:2.9.1"
+  checksum: 10c0/9a646529bbc0843806fc5de98ce93735a4612b571f11867178a85665d11989a827e6fd157388ca0e34ec948098564fce836c178cfd499b9f0e8cd9972b8e2e5c
   languageName: node
   linkType: hard
 
@@ -17082,6 +17096,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pg-pool@npm:^3.10.1":
+  version: 3.10.1
+  resolution: "pg-pool@npm:3.10.1"
+  peerDependencies:
+    pg: ">=8.0"
+  checksum: 10c0/a00916b7df64226cc597fe769e3a757ff9b11562dc87ce5b0a54101a18c1fe282daaa2accaf27221e81e1e4cdf4da6a33dab09614734d32904d6c4e11c44a079
+  languageName: node
+  linkType: hard
+
 "pg-promise@npm:11.14.0":
   version: 11.14.0
   resolution: "pg-promise@npm:11.14.0"
@@ -17100,6 +17123,13 @@ __metadata:
   version: 1.10.0
   resolution: "pg-protocol@npm:1.10.0"
   checksum: 10c0/7d0d64fe9df50262d907fd476454e1e36f41f5f66044c3ba6aa773fb8add1d350a9c162306e5c33e99bdfbdcc1140dd4ca74f66eda41d0aaceb5853244dcdb65
+  languageName: node
+  linkType: hard
+
+"pg-protocol@npm:^1.10.1":
+  version: 1.10.1
+  resolution: "pg-protocol@npm:1.10.1"
+  checksum: 10c0/f684e4aaae52b296139b5ee573819e5eedbdd09c5dc4616a139da2034716f0bd83e30ab478ad688415e4bc77b5e59335f4e1b41b4890472541b12e217c375adb
   languageName: node
   linkType: hard
 
@@ -17164,7 +17194,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.16.0, pg@npm:^8.11.3":
+"pg@npm:8.16.1":
+  version: 8.16.1
+  resolution: "pg@npm:8.16.1"
+  dependencies:
+    pg-cloudflare: "npm:^1.2.6"
+    pg-connection-string: "npm:^2.9.1"
+    pg-pool: "npm:^3.10.1"
+    pg-protocol: "npm:^1.10.1"
+    pg-types: "npm:2.2.0"
+    pgpass: "npm:1.0.5"
+  peerDependencies:
+    pg-native: ">=3.0.1"
+  dependenciesMeta:
+    pg-cloudflare:
+      optional: true
+  peerDependenciesMeta:
+    pg-native:
+      optional: true
+  checksum: 10c0/f5053a37074a01cb889085b6242659784c0345bb10ca9d0e6d7ea1bbbd0d0e63b3e212c7fa3fc66d6838ce9f03eed3b9aff44dd3ffc5f1cbb1eee6468c2e2b15
+  languageName: node
+  linkType: hard
+
+"pg@npm:^8.11.3":
   version: 8.16.0
   resolution: "pg@npm:8.16.0"
   dependencies:
@@ -17655,7 +17707,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:24.10.1":
+"puppeteer-core@npm:24.10.2":
+  version: 24.10.2
+  resolution: "puppeteer-core@npm:24.10.2"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.10.5"
+    chromium-bidi: "npm:5.1.0"
+    debug: "npm:^4.4.1"
+    devtools-protocol: "npm:0.0.1452169"
+    typed-query-selector: "npm:^2.12.0"
+    ws: "npm:^8.18.2"
+  checksum: 10c0/00cfb5bd3eda7c1268551d11a00323cc1990ce984886a581fd6cf123e832bea5b2100b5a6ec3e8a0c29819e28d4aa9d7766942c9d67745dd7013077d2c56418e
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:*":
   version: 24.10.1
   resolution: "puppeteer@npm:24.10.1"
   dependencies:
@@ -17668,6 +17734,22 @@ __metadata:
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
   checksum: 10c0/ae9722f89093c58167131bab88dfbdfcd91ab8d5ff62d1237c89b4f91e71dd3d524d52012519056b6badaa480aeb7f7a8d2358f7d6a52bf8a40923955b0baf62
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:24.10.2":
+  version: 24.10.2
+  resolution: "puppeteer@npm:24.10.2"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.10.5"
+    chromium-bidi: "npm:5.1.0"
+    cosmiconfig: "npm:^9.0.0"
+    devtools-protocol: "npm:0.0.1452169"
+    puppeteer-core: "npm:24.10.2"
+    typed-query-selector: "npm:^2.12.0"
+  bin:
+    puppeteer: lib/cjs/puppeteer/node/cli.js
+  checksum: 10c0/4e32665afe3054291556a5e1315b2179f4c1f648270e1194a47da570320e0ed1a0e730efbe15e2aa5a9c9cc7ef99d0fc214287a6ee1a75e38897b58a9a9db213
   languageName: node
   linkType: hard
 
