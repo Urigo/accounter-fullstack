@@ -11,7 +11,6 @@ export default [
   {
     ignores: ["dist", "node_modules"],
   },
-  eslint.configs.recommended,
   {
     plugins: {
       import: importPlugin,
