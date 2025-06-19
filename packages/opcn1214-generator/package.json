@@ -32,12 +32,13 @@
     "accounter"
   ],
   "scripts": {
-    "build": "yarn lint && bob build",
+    "clean": "rimraf dist",
+    "build": "yarn clean && yarn lint && bob build",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prepublish": "yarn build",
     "start": "node ./dist/esm/index.js",
-    "test": "vitest",
+    "test": "vitest --coverage",
     "test:watch": "vitest --watch"
   },
   "dependencies": {
@@ -54,9 +55,14 @@
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-vitest": "0.5.4",
     "prettier": "3.5.3",
+    "rimraf": "6.0.1",
     "ts-node": "10.9.2",
     "typedoc": "0.28.5",
     "typescript": "5.8.3",
     "vitest": "3.2.4"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
   }
 }
