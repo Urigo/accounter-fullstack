@@ -308,7 +308,7 @@ __metadata:
     ai: "npm:4.3.16"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
-    cloudinary: "npm:2.6.1"
+    cloudinary: "npm:2.7.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.1.0"
     dotenv: "npm:16.5.0"
@@ -9637,13 +9637,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cloudinary@npm:2.6.1":
-  version: 2.6.1
-  resolution: "cloudinary@npm:2.6.1"
+"cloudinary@npm:2.7.0":
+  version: 2.7.0
+  resolution: "cloudinary@npm:2.7.0"
   dependencies:
     lodash: "npm:^4.17.21"
     q: "npm:^1.5.1"
-  checksum: 10c0/148693dfe8fb1ba918f1e2c3e7bfd6f46224b00f157978b7919260a31e6db7e17dd8d3416360253c1125aa9dbd1fb08913962e10b9c2b5e083597814a2c2f875
+  checksum: 10c0/8c6d262d057d5c56f3b0b3666fd520ff11d3cabde23fddfa54d96c50b6634592a7aca18849347d0f03b035e09ef2faf0cdfbba3c71d2697acdd0e857e9cd9ed8
   languageName: node
   linkType: hard
 
