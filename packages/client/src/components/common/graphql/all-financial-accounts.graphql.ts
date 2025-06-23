@@ -13,6 +13,9 @@
       ... on CryptoWalletFinancialAccount {
         name
       }
+      ... on BankDepositFinancialAccount {
+        name
+      }
     }
   }
 `;
