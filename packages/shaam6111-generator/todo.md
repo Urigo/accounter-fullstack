@@ -68,7 +68,6 @@ and validate Israeli SHAAM 6111 tax reports.
 ### 🧱 Record Generators
 
 - [x] Implement `generateHeaderRecord()`
-
   - [x] Fixed-width formatting
   - [x] Padding/truncating logic
   - [x] Tests for output length and format
@@ -90,7 +89,6 @@ and validate Israeli SHAAM 6111 tax reports.
 ### 🧩 Record Parsers
 
 - [x] Implement `parseHeaderRecord(line: string): HeaderRecord`
-
   - [x] Fixed-width slicing and conversion
   - [ ] Throw `ParsingError` on malformed input
   - [x] Unit tests
