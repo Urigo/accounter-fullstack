@@ -272,14 +272,12 @@ export const headerSchema = z.object({
 ### Test Cases
 
 1. **Generation Tests**
-
    - Generate reports from complete valid data
    - Attempt generation with invalid data to verify errors
    - Test each record type individually
    - Test full reports with multiple record types
 
 2. **Parsing Tests**
-
    - Parse valid reports of different structures
    - Attempt parsing of malformed reports to verify error handling
    - Verify bidirectional consistency by generating, parsing, and comparing data
@@ -293,19 +291,16 @@ export const headerSchema = z.object({
 ## 9. Implementation Guidelines
 
 1. **Type Safety**
-
    - Use strict TypeScript typing throughout the codebase
    - Avoid any `any` types or type assertions where possible
    - Leverage TypeScript's advanced type features for better developer experience
 
 2. **Code Organization**
-
    - Keep the codebase modular with clear separation of concerns
    - Isolate parsing, generation, and validation logic
    - Use namespaces or submodules to organize related functionality
 
 3. **Performance Considerations**
-
    - While there are no specific performance requirements, avoid unnecessary processing
    - Use efficient algorithms for parsing and generation
    - Consider memory usage when handling large reports

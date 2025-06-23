@@ -65,7 +65,9 @@ export const TagsManager = (): ReactElement => {
           {allTags?.map(tag => (
             <div key={tag.id} className="flex items-center gap-2 text-gray-600 mb-2">
               <div className="w-full mt-1 relative rounded-md shadow-xs">
-                {tag.namePath?.map((_, i) => <span key={i} className="ms-2" />)}
+                {tag.namePath?.map((_, i) => (
+                  <span key={i} className="ms-2" />
+                ))}
                 {tag.name}
               </div>
               <EditTagModal data={tag} />
