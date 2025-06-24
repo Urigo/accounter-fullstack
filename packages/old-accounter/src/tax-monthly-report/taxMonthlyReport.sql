@@ -287,29 +287,29 @@ ORDER BY
   debit_account_1;
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 SELECT
-  gen_random_uuid ();
+  gen_random_uuid();
 
 UPDATE accounter_schema.saved_tax_reports_2020_03_04_05_06_07_08_09
 SET
-  id = gen_random_uuid ()
+  id = gen_random_uuid()
 WHERE
   id IS NULL;
 
@@ -571,7 +571,7 @@ WHERE
 -- Merge and insert new transactions into existing table
 SELECT
   *,
-  gen_random_uuid () AS id,
+  gen_random_uuid() AS id,
   (
     SELECT
       t1.reviewed
@@ -850,7 +850,7 @@ INSERT INTO
   )
 SELECT
   *,
-  gen_random_uuid () -- into table accounter_schema.saved_tax_reports_2020_03_04
+  gen_random_uuid() -- into table accounter_schema.saved_tax_reports_2020_03_04
 FROM
   get_tax_report_of_month ('2020-12-01') -- order by to_date(date_3, 'DD/MM/YYYY'), original_id
 ;
