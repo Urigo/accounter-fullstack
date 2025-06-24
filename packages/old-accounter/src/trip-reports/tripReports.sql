@@ -150,7 +150,7 @@ FROM
 
 SELECT
   *,
-  gen_random_uuid () AS id,
+  gen_random_uuid() AS id,
   (
     SELECT
       t1.reviewed
