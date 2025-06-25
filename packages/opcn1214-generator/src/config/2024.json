@@ -1,0 +1,69 @@
+{
+  "year": 2024,
+  "records": [
+    {
+      "recordType": "1000",
+      "recordLength": 50,
+      "repeatable": false,
+      "orderIndex": 1,
+      "description": "Header record - contains basic report information",
+      "fields": [
+        {
+          "fieldCode": "1000_01",
+          "fieldName": "exampleStringField",
+          "start": 0,
+          "length": 10,
+          "type": "string",
+          "required": true,
+          "padding": "right",
+          "rtl": false,
+          "description": "Example string field for testing"
+        },
+        {
+          "fieldCode": "1000_02",
+          "fieldName": "exampleNumberField",
+          "start": 10,
+          "length": 5,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "Example numeric field for testing"
+        },
+        {
+          "fieldCode": "1000_03",
+          "fieldName": "exampleDateField",
+          "start": 15,
+          "length": 8,
+          "type": "date",
+          "required": false,
+          "format": "YYYYMMDD",
+          "padding": "left",
+          "description": "Example date field in YYYYMMDD format"
+        },
+        {
+          "fieldCode": "1000_04",
+          "fieldName": "exampleHebrewField",
+          "start": 23,
+          "length": 15,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "rtl": true,
+          "description": "Example Hebrew text field"
+        },
+        {
+          "fieldCode": "1000_05",
+          "fieldName": "exampleEnumField",
+          "start": 38,
+          "length": 2,
+          "type": "string",
+          "required": true,
+          "enumValues": ["01", "02", "03"],
+          "defaultValue": "01",
+          "padding": "left",
+          "description": "Example enum field with predefined values"
+        }
+      ]
+    }
+  ]
+}
