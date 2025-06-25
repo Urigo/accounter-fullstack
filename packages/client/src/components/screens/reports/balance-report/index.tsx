@@ -287,7 +287,7 @@ export const BalanceReport = (): ReactElement => {
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
-                    tickFormatter={value => getPeriodLabel(value, filter.period)}
+                    tickFormatter={value => getPeriodLabel(String(value), filter.period)}
                   />
 
                   <ChartTooltip
