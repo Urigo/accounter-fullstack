@@ -17,9 +17,9 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/types/index.d.ts"
+      "import": "./dist/esm/index.js"
     }
   },
   "types": "dist/types/index.d.ts",
@@ -32,8 +32,8 @@
     "accounter"
   ],
   "scripts": {
-    "clean": "rimraf dist",
     "build": "yarn clean && yarn lint && bob build",
+    "clean": "rimraf dist",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "prepublish": "yarn build",
