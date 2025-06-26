@@ -98,6 +98,7 @@ import migration_2025_05_26T12_23_36_convert_irs_code_column_to_array2 from './a
 import migration_2025_06_08T12_23_53_poalim_foreign_less_strict from './actions/2025-06-08T12-23-53.poalim-foreign-less-strict.js';
 import migration_2025_06_09T18_11_34_convert_irs_codes_array_column_to_single from './actions/2025-06-09T18-11-34.convert-irs-codes-array-column-to-single.js';
 import migration_2025_06_10T10_45_37_convert_irs_codes_array_column_to_single2 from './actions/2025-06-10T10-45-37.convert-irs-codes-array-column-to-single2.js';
+import migration_2025_06_26T20_52_26_migrate_from_multiple_tables_to_single_poalim_foreign_table from './actions/2025-06-26T20-52-26.migrate-from-multiple-tables-to-single-poalim-foreign-table.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -203,5 +204,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_06_08T12_23_53_poalim_foreign_less_strict,
       migration_2025_06_09T18_11_34_convert_irs_codes_array_column_to_single,
       migration_2025_06_10T10_45_37_convert_irs_codes_array_column_to_single2,
+      migration_2025_06_26T20_52_26_migrate_from_multiple_tables_to_single_poalim_foreign_table,
     ],
   });
