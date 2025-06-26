@@ -517,12 +517,12 @@ alter table accounter_schema.transactions_raw_list
 
 alter table accounter_schema.transactions_raw_list
     add constraint transactions_raw_list_check
-        check ((((((((((((((creditcard_id IS NOT NULL))::integer + ((poalim_ils_id IS NOT NULL))::integer) +
+        check (((((((((((((creditcard_id IS NOT NULL))::integer + ((poalim_ils_id IS NOT NULL))::integer) +
                             ((poalim_foreign_id IS NOT NULL))::integer) + ((poalim_swift_id IS NOT NULL))::integer) +
                         ((kraken_id IS NOT NULL))::integer) + ((etana_id IS NOT NULL))::integer) +
                       ((etherscan_id IS NOT NULL))::integer) + ((amex_id IS NOT NULL))::integer) +
                     ((cal_id IS NOT NULL))::integer) + ((bank_discount_id IS NOT NULL))::integer) +
-                  ((max_creditcard_id IS NOT NULL))::integer) + ((poalim_deposit_id IS NOT NULL))::integer) = 1);
+                  ((max_creditcard_id IS NOT NULL))::integer) = 1);
 
 -- PART 6: drop single currency triggers, activate the new one
 
