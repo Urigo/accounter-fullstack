@@ -579,7 +579,7 @@ export async function getForeignTransactions(bankKey: string, account: ScrapedAc
     {
       title: `Check for New Transactions`,
       skip: ctx =>
-        ctx[bankKey][foreignKey]?.transactions &&
+        !ctx[bankKey][foreignKey]?.transactions ||
         Object.keys(ctx[bankKey][foreignKey].transactions).length === 0,
       task: async (ctx, task) => {
         const allColumns = ctx[bankKey].columns![`poalim_foreign_account_transactions`];
