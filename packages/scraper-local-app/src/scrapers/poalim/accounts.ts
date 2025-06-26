@@ -69,7 +69,7 @@ export async function getPoalimAccounts(bankKey: string) {
         try {
           ctx[bankKey].columns ??= {};
           await Promise.all(
-            ['ils', 'eur', 'usd', 'gbp', 'cad'].map(async currency => {
+            ['ils', 'foreign'].map(async currency => {
               ctx[bankKey].columns![`poalim_${currency}_account_transactions`] =
                 await getTableColumns.run(
                   { tableName: `poalim_${currency}_account_transactions` },
