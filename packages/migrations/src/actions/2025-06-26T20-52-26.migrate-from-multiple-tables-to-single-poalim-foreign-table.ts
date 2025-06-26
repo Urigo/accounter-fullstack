@@ -443,8 +443,7 @@ BEGIN
               FROM accounter_schema.poalim_ils_account_transactions
               WHERE text_code IN (22, 23)) AS s
                  LEFT JOIN accounter_schema.transactions_raw_list tr
-                           ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_usd_id,
-                                       tr.poalim_cad_id) = s.id
+                           ON COALESCE(tr.poalim_ils_id, tr.poalim_foreign_id) = s.id
                  LEFT JOIN accounter_schema.transactions t
                            ON tr.id = t.source_id
         WHERE t.charge_id IS NOT NULL
