@@ -1,7 +1,7 @@
 /**
  * Field specification for OPCN 1214 records
  */
-export interface SpecField {
+export interface HeaderSpecField {
   /** Unique field code identifier (e.g., "1000_01") */
   fieldCode: string
   /** Human-readable field name */
@@ -24,8 +24,22 @@ export interface SpecField {
   defaultValue?: string | number | null
   /** Padding direction for the field */
   padding?: 'left' | 'right'
+  /** Padding character for the field */
+  paddingChar?: string
   /** Field description for documentation */
   description?: string
+}
+
+export interface SpecSumSubField {
+  amountLength: number
+}
+
+/**
+ * Sum field specification for OPCN 1214 records
+ */
+export interface SumSpecSection {
+  subFields: SpecSumSubField[]
+  abstractAmounts: boolean
 }
 
 /**
@@ -44,8 +58,16 @@ export interface RecordSpec {
   maxOccurs?: number
   /** Order index for record sequence validation */
   orderIndex: number
-  /** Array of field specifications for this record */
-  fields: SpecField[]
+  /** Filler length (for future use) */
+  fillerLength: number
+  /** Total length of the header section */
+  headerLength: number
+  /** Array of header field specifications for this record */
+  headerFields: HeaderSpecField[]
+  /** Total length of the sum section */
+  sumLength?: number
+  /** A specification of sum field for this record */
+  sumSection?: SumSpecSection
   /** Record description for documentation */
   description?: string
 }
