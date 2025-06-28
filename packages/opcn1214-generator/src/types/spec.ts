@@ -11,7 +11,7 @@ export interface HeaderSpecField {
   /** Field length in characters */
   length: number
   /** Data type of the field */
-  type: 'string' | 'number' | 'date'
+  type: 'string' | 'number' | 'date' | 'percentage'
   /** Whether this field is required */
   required: boolean
   /** Optional format pattern (e.g., "YYYYMMDD" for dates) */
