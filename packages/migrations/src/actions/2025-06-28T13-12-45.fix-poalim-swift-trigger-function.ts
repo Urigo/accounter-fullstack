@@ -1,7 +1,7 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2025-06-18T13-12-45.fix-poalim-swift-trigger-function.sql',
+  name: '2025-06-28T13-12-45.fix-poalim-swift-trigger-function.sql',
   run: ({ sql }) => sql`
 create or replace function accounter_schema.insert_poalim_swift_transaction_handler() returns trigger
     language plpgsql
@@ -50,20 +50,10 @@ BEGIN
         -- check if matching charge exists for source:
         SELECT t.charge_id
         INTO charge_id_var
-        FROM (SELECT formatted_value_date, event_details, id, 'GBP' as currency, event_amount
-              FROM accounter_schema.poalim_gbp_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'EUR', event_amount
-              FROM accounter_schema.poalim_eur_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'CAD', event_amount
-              FROM accounter_schema.poalim_cad_account_transactions
-              UNION
-              SELECT formatted_value_date, event_details, id, 'USD', event_amount
-              FROM accounter_schema.poalim_usd_account_transactions) AS s
+        FROM (SELECT formatted_value_date, event_details, id, currency, event_amount
+              FROM accounter_schema.poalim_foreign_account_transactions) AS s
                  LEFT JOIN accounter_schema.transactions_raw_list tr
-                           ON COALESCE(tr.poalim_ils_id, tr.poalim_eur_id, tr.poalim_gbp_id, tr.poalim_cad_id,
-                                       tr.poalim_usd_id) = s.id
+                           ON COALESCE(tr.poalim_ils_id, tr.poalim_foreign_id) = s.id
                  LEFT JOIN accounter_schema.transactions t
                            ON tr.id = t.source_id
         WHERE t.charge_id IS NOT NULL
@@ -107,7 +97,7 @@ BEGIN
         RETURNING id INTO transaction_id_var;
     END IF;
     RETURN NEW;
-END ;
+END;
 $$;
 `,
 } satisfies MigrationExecutor;
