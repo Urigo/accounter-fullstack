@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
-    "@emotion/styled": "11.14.0",
+    "@emotion/styled": "11.14.1",
     "@hookform/resolvers": "5.1.1",
     "@mantine/carousel": "6.0.22",
     "@mantine/core": "6.0.22",
@@ -71,17 +71,17 @@
     "urql": "4.2.2",
     "vaul": "1.1.2",
     "zod": "3.25.67",
-    "zustand": "5.0.5"
+    "zustand": "5.0.6"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.10",
+    "@tailwindcss/vite": "4.1.11",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
     "@vitejs/plugin-react": "4.6.0",
     "autoprefixer": "10.4.21",
-    "tailwindcss": "4.1.10",
+    "tailwindcss": "4.1.11",
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.8.3",
     "vite": "7.0.0",
