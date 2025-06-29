@@ -1,14 +1,14 @@
-name: SHAAM6111 Generator Tests
+name: OPCN1214 Generator Tests
 
 on:
   push:
     paths:
-      - 'packages/shaam6111-generator/**'
-      - '.github/workflows/shaam6111-generator-test.yml'
+      - 'packages/opcn1214-generator/**'
+      - '.github/workflows/opcn1214-generator-test.yml'
   pull_request:
     paths:
-      - 'packages/shaam6111-generator/**'
-      - '.github/workflows/shaam6111-generator-test.yml'
+      - 'packages/opcn1214-generator/**'
+      - '.github/workflows/opcn1214-generator-test.yml'
 
 jobs:
   test:
@@ -35,8 +35,8 @@ jobs:
 
       - name: Build
         run: |
-          yarn workspace @accounter/shaam6111-generator build
+          yarn workspace @accounter/opcn1214-generator build
 
       - name: Run tests
         run: |
-          yarn workspace @accounter/shaam6111-generator test
+          yarn workspace @accounter/opcn1214-generator test

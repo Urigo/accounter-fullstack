@@ -1,0 +1,68 @@
+{
+  "name": "@accounter/opcn1214-generator",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Fully typed application that generates, parses, and validates OPCN 1214 tax reports.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "directory": "packages/opcn1214-generator"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^20.0.0 || >= 22"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "types": "dist/types/index.d.ts",
+  "keywords": [
+    "1214",
+    "opcn",
+    "accountancy",
+    "israeli-tax",
+    "tax-forms",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "yarn clean && yarn lint && bob build",
+    "clean": "rimraf dist",
+    "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
+    "prepublish": "yarn build",
+    "start": "node ./dist/esm/index.js",
+    "test": "vitest --coverage",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "date-fns": "4.1.0",
+    "zod": "3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.3",
+    "@typescript-eslint/eslint-plugin": "8.34.1",
+    "@typescript-eslint/parser": "8.34.1",
+    "bob-the-bundler": "7.0.1",
+    "eslint": "9.29.0",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-vitest": "0.5.4",
+    "prettier": "3.5.3",
+    "rimraf": "6.0.1",
+    "ts-node": "10.9.2",
+    "typedoc": "0.28.5",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  }
+}

@@ -1,0 +1,3579 @@
+{
+  "year": 2024,
+  "records": [
+    {
+      "recordType": "1000",
+      "recordLength": 4232,
+      "repeatable": false,
+      "orderIndex": 1,
+      "description": "פרטים על - החברה חלק א',ב' בטופס פרטי המסייע/ת במילוי הדו''ח כל שאר הדו''ח (קוד וסכום)",
+      "fillerLength": 128,
+      "headerLength": 2048,
+      "headerFields": [
+        {
+          "fieldCode": "1000_4_01",
+          "fieldName": "fileNumber",
+          "start": 136,
+          "length": 9,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר תיק"
+        },
+        {
+          "fieldCode": "1000_4_02",
+          "fieldName": "taxYear",
+          "start": 145,
+          "length": 4,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "format": "YYYY",
+          "description": "שנת המס - שנת המס"
+        },
+        {
+          "fieldCode": "1000_4_03",
+          "fieldName": "softwareName",
+          "start": 149,
+          "length": 15,
+          "type": "string",
+          "required": true,
+          "padding": "left",
+          "description": "שם בית תוכנה"
+        },
+        {
+          "fieldCode": "1000_4_04",
+          "fieldName": "saveDate",
+          "start": 164,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך שמירה"
+        },
+        {
+          "fieldCode": "1000_4_05",
+          "fieldName": "writtenName",
+          "start": 174,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "description": "שם רשום. במידה ולא תואם למרשמים, השם נלקח מהמרשים"
+        },
+
+        {
+          "fieldCode": "1000_4_06",
+          "fieldName": "deductionFile",
+          "start": 224,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "תיק ניכויים"
+        },
+        {
+          "fieldCode": "1000_4_07",
+          "fieldName": "vatFile",
+          "start": 233,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "תיק מע\"מ"
+        },
+        {
+          "fieldCode": "1000_4_08",
+          "fieldName": "occupationDescription",
+          "start": 242,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "תיאור עיסוק"
+        },
+        {
+          "fieldCode": "1000_4_09",
+          "fieldName": "mailingAddress",
+          "start": 292,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "rtl": true,
+          "padding": "right",
+          "description": "כתובת למשלוח דואר"
+        },
+        {
+          "fieldCode": "1000_4_10",
+          "fieldName": "businessAddress",
+          "start": 342,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "rtl": true,
+          "padding": "right",
+          "description": "כתובת העסק"
+        },
+        {
+          "fieldCode": "1000_4_11",
+          "fieldName": "accountingSystemAddress",
+          "start": 392,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "כתובת בה מוחזקת מערכת החשבונות"
+        },
+        {
+          "fieldCode": "1000_4_12",
+          "fieldName": "email",
+          "start": 442,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "כתובת מייל"
+        },
+        {
+          "fieldCode": "1000_4_13",
+          "fieldName": "phonePrefix",
+          "start": 492,
+          "length": 3,
+          "type": "string",
+          "required": true,
+          "padding": "left",
+          "description": "קידומת טלפון"
+        },
+        {
+          "fieldCode": "1000_4_14",
+          "fieldName": "phoneNumber",
+          "start": 495,
+          "length": 7,
+          "type": "number",
+          "description": "מספר טלפון"
+        },
+        {
+          "fieldCode": "1000_4_15",
+          "fieldName": "phoneFaxPrefix",
+          "start": 502,
+          "length": 3,
+          "type": "string",
+          "required": false,
+          "rtl": false,
+          "defaultValue": "000",
+          "padding": "left",
+          "description": "קידומת טלפון/פקס"
+        },
+        {
+          "fieldCode": "1000_4_16",
+          "fieldName": "phoneFaxNumber",
+          "start": 505,
+          "length": 7,
+          "type": "number",
+          "required": false,
+          "defaultValue": "0000000",
+          "description": "מספר  טלפון/פקס"
+        },
+        {
+          "fieldCode": "1000_4_17",
+          "fieldName": "filler",
+          "start": 512,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "padding": "left",
+          "description": "Filler"
+        },
+        {
+          "fieldCode": "1000_4_18",
+          "fieldName": "assistingOfficeName",
+          "start": 562,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם המשרד המסייע"
+        },
+        {
+          "fieldCode": "1000_4_19",
+          "fieldName": "assistingOfficeContactPerson",
+          "start": 613,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם איש קשר במשרד המסייע"
+        },
+        {
+          "fieldCode": "1000_4_20",
+          "fieldName": "assistantName",
+          "start": 662,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם המסייע"
+        },
+        {
+          "fieldCode": "1000_4_21",
+          "fieldName": "assistantProfession",
+          "start": 712,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מקצוע המסייע"
+        },
+        {
+          "fieldCode": "1000_4_22",
+          "fieldName": "assistantVatRegistrationNumber",
+          "start": 762,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עוסק מורשה (מסייע)"
+        },
+
+        {
+          "fieldCode": "1000_4_23",
+          "fieldName": "assistantAddress",
+          "start": 771,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "כתובת המסייע"
+        },
+        {
+          "fieldCode": "1000_4_24",
+          "fieldName": "assistantPhonePrefix",
+          "start": 821,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "enumValues": [2, 3, 4, 8, 9, 72, 73, 74, 76, 77, 50, 52, 53,54, 55,57, 58, 59 ],
+          "padding": "left",
+          "description": "קידומת טלפון מסייע"
+        },
+        {
+          "fieldCode": "1000_4_25",
+          "fieldName": "assistantPhone",
+          "start": 824,
+          "length": 7,
+          "type": "number",
+          "required": false,
+          "defaultValue": "0000000",
+          "description": "טלפון מסייע"
+        },
+        {
+          "fieldCode": "1000_4_26",
+          "fieldName": "foreignAttachmentExistsFlag",
+          "start": 831,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "defaultValue": 2,
+          "description": "קיים נספח חו\"ל"
+        },
+        {
+          "fieldCode": "1000_4_27",
+          "fieldName": "capitalAttachmentExistsFlag",
+          "start": 832,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "defaultValue":2,
+          "description": "קיים נספח רווחי הון"
+        },
+        {
+          "fieldCode": "1000_4_28",
+          "fieldName": "businessTurnoverAboveThresholdFlag",
+          "start": 833,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1 - חייב בטופס 6111 (יש למלא בנוסף שדה 297 עם ערך 8); 2 - לא חייב (יש למלא בנוסף שדה 297 עם ערך 9); 3 - לא רלוונטי",
+          "enumValues": [1, 2, 3],
+          "defaultValue": 0,
+          "description": "מחזור מכלל העסקים הוא מעל 256/410 ש\"ח"
+        },
+        {
+          "fieldCode": "1000_4_29",
+          "fieldName": "financialStatementsAttachedFlag",
+          "start": 834,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון צורפו לדו\"ח דוחות כספיים ודו\"ח התאמה"
+        },
+        {
+          "fieldCode": "1000_4_30",
+          "fieldName": "familyBusinessFlag",
+          "start": 835,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון החברה חברה משפחתית"
+        },
+        {
+          "fieldCode": "1000_4_31",
+          "fieldName": "businessLicenseNumber",
+          "start": 836,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר תיק הנישום"
+        },
+        {
+          "fieldCode": "1000_4_32",
+          "fieldName": "companyHouseFlag",
+          "start": 845,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון חברת בית"
+        },
+
+        {
+          "fieldCode": "1000_4_33",
+          "fieldName": "report1343Flag",
+          "start": 846,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון טופס - 1343"
+        },
+        {
+          "fieldCode": "1000_4_34",
+          "fieldName": "report1344Flag",
+          "start": 847,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון טופס - 1344"
+        },
+        {
+          "fieldCode": "1000_4_35",
+          "fieldName": "claimedBenefitsFlagUnderCapitalInvestmentsEncouregementLawFlag",
+          "start": 848,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון נתבעות הטבות לפי חוק לעידוד השקעון הון"
+        },
+        {
+          "fieldCode": "1000_4_36",
+          "fieldName": "preferredEnterprizesFlag",
+          "start": 849,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון במפעל מועדף"
+        },
+        {
+          "fieldCode": "1000_4_37",
+          "fieldName": "benefitedEnterprizesFlag",
+          "start": 850,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון במפעל מוטב"
+        },
+        {
+          "fieldCode": "1000_4_38",
+          "fieldName": "preferredFactoryNotificationDate",
+          "start": 851,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "defaultValue": "0000000000",
+          "description": "תאריך הודעה במפעל מוטב"
+        },
+        {
+          "fieldCode": "1000_4_39",
+          "fieldName": "dividendDistributionFlag",
+          "start": 861,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון חולק דיבידנד"
+        },
+        {
+          "fieldCode": "1000_4_40",
+          "fieldName": "specialYearFlag",
+          "start": 862,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון שנה מיוחדת"
+        },
+        {
+          "fieldCode": "1000_4_41",
+          "fieldName": "balanceDate",
+          "start": 863,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "defaultValue": "0000000000",
+          "description": "תאריך המאזן"
+        },
+        {
+          "fieldCode": "1000_4_42",
+          "fieldName": "foreignInvestorFlag",
+          "start": 873,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון משקיעי חוץ"
+        },
+        {
+          "fieldCode": "1000_4_43",
+          "fieldName": "consolidatedReportFlag",
+          "start": 874,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1 - דו\"ח זה מאוחד לפי סעיף 23 לחוק; 2 - החברה מאחדת עם חברת האם; 3 - לא רלוונטי",
+          "enumValues": [1,2,3],
+          "description": "דוח מאוחד"
+        },
+        {
+          "fieldCode": "1000_4_44",
+          "fieldName": "partnershipMemberFlag",
+          "start": 875,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון התאגיד שותף בשותפות"
+        },
+
+        {
+          "fieldCode": "1000_4_45",
+          "fieldName": "KibbutzFlag",
+          "start": 876,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון קיבוץ"
+        },
+        {
+          "fieldCode": "1000_4_46",
+          "fieldName": "taxPlanningActionFlag",
+          "start": 877,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "קיימת פעולת תכנון מס"
+        },
+        {
+          "fieldCode": "1000_4_47",
+          "fieldName": "affiliatedPartyTransactionsFlag",
+          "start": 878,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון לחברה היו עסקאות עם צדדים קשורים"
+        },
+        {
+          "fieldCode": "1000_4_48",
+          "fieldName": "hasControlOverLegalEntityFlag",
+          "start": 879,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "החברה בעלת שליטה בחבר בני אדם"
+        },
+        {
+          "fieldCode": "1000_4_49",
+          "fieldName": "holdsRightsInLegalEntityFlag",
+          "start": 880,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "החברה בעלת זכויות בחבר בני אדם"
+        },
+        {
+          "fieldCode": "1000_4_50",
+          "fieldName": "accountingStandardsFlag",
+          "start": 881,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון תקנים חשבונאים"
+        },
+        {
+          "fieldCode": "1000_4_51",
+          "fieldName": "advancePaymentsRequiredFlag",
+          "start": 882,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון החברה דורשת מקדמות"
+        },
+        {
+          "fieldCode": "1000_4_52",
+          "fieldName": "constructionIncomeFlag",
+          "start": 883,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "לחברה יש הכנסות מבניין"
+        },
+        {
+          "fieldCode": "1000_4_53",
+          "fieldName": "filler",
+          "start": 884,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "defaultValue": "0",
+          "description": "Filler"
+        },
+        {
+          "fieldCode": "1000_4_54",
+          "fieldName": "trustCompanyFlag",
+          "start": 885,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "defaultValue": 0,
+          "description": "סימון החברה היא חברה בנאמנות"
+        },
+        {
+          "fieldCode": "1000_4_55",
+          "fieldName": "otherTaxableIncomeSource",
+          "start": 886,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "הכנסה חייבת אחרת בארץ ובחו\"ל - מקור"
+        },
+        {
+          "fieldCode": "1000_4_56",
+          "fieldName": "otherTaxableIncomeAmount",
+          "start": 936,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הכנסה חייבת אחרת בארץ ובחו\"ל - סכום"
+        },
+
+        {
+          "fieldCode": "1000_4_57",
+          "fieldName": "otherTaxableIncomeRate",
+          "start": 948,
+          "length": 5,
+          "type": "percentage",
+          "required": false,
+          "padding": "left",
+          "description": "הכנסה חייבת אחרת בארץ ובחו\"ל - שיעור"
+        },
+        {
+          "fieldCode": "1000_4_58",
+          "fieldName": "field070AttachmentsCount",
+          "start": 953,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר אישורים מצורפים - בשדה 070 - תרומות לפי ס' 46"
+        },
+        {
+          "fieldCode": "1000_4_59",
+          "fieldName": "field010AttachmentsCount",
+          "start": 956,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר אישורים מצורפים - בשדה 010 - מס הכנסה שנוכה במקור מהחברה"
+        },
+        {
+          "fieldCode": "1000_4_60",
+          "fieldName": "totalAttachments",
+          "start": 959,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר כולל של נספחים (ששודרו ולא שודרו)"
+        },
+        {
+          "fieldCode": "1000_4_61",
+          "fieldName": "unsentCapitalAttachments",
+          "start": 961,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר נספחי רווח הון שלא שודרו"
+        },
+        {
+          "fieldCode": "1000_4_62",
+          "fieldName": "lossOrNoProfitTransactionFlag",
+          "start": 963,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סומן סיבה עסקת הפסד או שאין בה רווח"
+        },
+        {
+          "fieldCode": "1000_4_63",
+          "fieldName": "over5ImprovementExpenseBalancesFlag",
+          "start": 964,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סומן סיבה מעל 5 יתרות הוצאות השבחה (שבגינה לא שודרו נספחי רווח הון)"
+        },
+        {
+          "fieldCode": "1000_4_64",
+          "fieldName": "over14AttachmentsFlag",
+          "start": 965,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סומן סיבה שיש לו מעל 14 נספחים"
+        },
+
+        {
+          "fieldCode": "1000_4_65",
+          "fieldName": "otherReasonCapitalAttachmentsUnsentFlag",
+          "start": 966,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סומן סיבה אחרת (שבגינה לא שודרו נספחי רווח הון)"
+        },
+        {
+          "fieldCode": "1000_4_66",
+          "fieldName": "otherReasonCapitalAttachmentsUnsent",
+          "start": 967,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "סיבה שבגללה לא שודרו נספחי רווח הון"
+        },
+        {
+          "fieldCode": "1000_4_67",
+          "fieldName": "filler",
+          "start": 1017,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "defaultValue": "0",
+          "description": "Filler"
+        },
+        {
+          "fieldCode": "1000_4_68",
+          "fieldName": "filler",
+          "start": 1018,
+          "length": 10,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "Filler"
+        },
+        {
+          "fieldCode": "1000_4_69",
+          "fieldName": "companyReceivedLegalOpinionDeclarationFlag",
+          "start": 1028,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "הצהרת מנהלי החברה - החברה קבלה \"חוות דעת\""
+        },
+        {
+          "fieldCode": "1000_4_70",
+          "fieldName": "companyAdoptedReportableTaxPositionFlag",
+          "start": 1029,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "החברה נקטה בעמדה חייבת בדיווח"
+        },
+        {
+          "fieldCode": "1000_4_71",
+          "fieldName": "nonDeductibleSalaryExpensesFlag",
+          "start": 1030,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סימון קיימות הוצאות שער שלא מותרות בניכוי"
+        },
+        {
+          "fieldCode": "1000_4_72",
+          "fieldName": "closelyHeldCompanyFlag",
+          "start": 1031,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סימון חברת מעטים לפי סעיף 62א'"
+        },
+        {
+          "fieldCode": "1000_4_73",
+          "fieldName": "partOfMultinationalGroupFlag",
+          "start": 1032,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון החברה היא חלק מבקוצה רב לאומית"
+        },
+        {
+          "fieldCode": "1000_4_74",
+          "fieldName": "reportableTaxPositionNumber1",
+          "start": 1033,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עמדה חייבת בדיווח - עמדה ראשונה"
+        },
+        {
+          "fieldCode": "1000_4_75",
+          "fieldName": "reportableTaxPositionNumber2",
+          "start": 1036,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עמדה חייבת בדיווח - עמדה שנייה"
+        },
+
+        {
+          "fieldCode": "1000_4_76",
+          "fieldName": "reportableTaxPositionNumber3",
+          "start": 1039,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עמדה חייבת בדיווח - עמדה שלישית"
+        },
+        {
+          "fieldCode": "1000_4_77",
+          "fieldName": "reportableTaxPositionNumber4",
+          "start": 1042,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עמדה חייבת בדיווח - עמדה רביעית"
+        },
+        {
+          "fieldCode": "1000_4_78",
+          "fieldName": "reportableTaxPositionNumber5",
+          "start": 1045,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר עמדה חייבת בדיווח - עמדה חמישית"
+        },
+        {
+          "fieldCode": "1000_4_79",
+          "fieldName": "filler",
+          "start": 1048,
+          "length": 15,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler"
+        },
+        {
+          "fieldCode": "1000_4_80",
+          "fieldName": "noBankAccountFlag",
+          "start": 1063,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סימון - לא קיים חשבון בנק"
+        },
+        {
+          "fieldCode": "1000_4_81",
+          "fieldName": "qualifyingCompanyAcquisitionFlag",
+          "start": 1064,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון - רכישה של \"חברה מזכה\""
+        },
+        {
+          "fieldCode": "1000_4_82",
+          "fieldName": "acquisitionAmountFromIsraeliCompany",
+          "start": 1065,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום רכישה מחברה ישראלית"
+        },
+        {
+          "fieldCode": "1000_4_83",
+          "fieldName": "acquisitionAmountFromForeignCompany",
+          "start": 1077,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום רכישה מחברה זרה"
+        },
+        {
+          "fieldCode": "1000_4_84",
+          "fieldName": "qualifyingCompanyAcquisitionFlag",
+          "start": 1089,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "סימון - רכישה של \"חברה מזכה\""
+        },
+        {
+          "fieldCode": "1000_4_85",
+          "fieldName": "qualifyingCompanyAcquisitionDepreciationAmount",
+          "start": 1090,
+          "length": 12,
+          "type": "string",
+          "required": false,
+          "defaultValue": "000000000000",
+          "padding": "left",
+          "description": "סכום הפחתה בגין רכישה של \"חברה מזכה\""
+        },
+        {
+          "fieldCode": "1000_4_86",
+          "fieldName": "filler1",
+          "start": 1102,
+          "length": 1082,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 2048,
+      "sumSection": {
+        "abstractAmounts": true,
+        "maxFields": 61,
+        "start": 2184,
+        "subFields": [
+          {
+            "fieldCode": "008",
+            "amountLength": 1,
+            "enumValues": [1]
+          },
+          {
+            "fieldCode": "010",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "011", 
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "012",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "013",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "014",
+            "amountLength": 3,
+            "enumValues": [1, 2, 12]
+          },
+          {
+            "fieldCode": "015",
+            "amountLength": 2,
+            "enumValues": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+          },
+          {
+            "fieldCode": "018",
+            "amountLength": 1,
+            "required": true,
+            "enumValues": [2, 3, 4, 5, 6, 7],
+            "description": "2-מפעל מאושר/מוטב/מועדף/טכנולוגי, 3-מוסד כספי, 4-אחר, 5-מפעל מאושר.מוטב בשנת הטבה אחרונה, 6-מפעל מאושר.מוטב בשנה שלפני הטבה אחרונה, 7-חברת בית"
+          },
+          {
+            "fieldCode": "020",
+            "amountLength": 12,
+            "description": "23%"
+          },
+          {
+            "fieldCode": "021",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "023",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "024",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "026",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "027",
+            "amountLength": 12,
+            "description": "סכום מכירות (לא כולל רווח הון מניירות ערך סחירים) ששודרו ולא שודרו"
+          },
+          {
+            "fieldCode": "028",
+            "amountLength": 2,
+            "description": "מספר טופסי רווח הון שצורפו (ששודרו ולא שודרו)"
+          },
+          {
+            "fieldCode": "029",
+            "amountLength": 12,
+            "description": "סכום מכירות מניירות ערך סחירים, ששודרו ולא שודרו"
+          },
+          {
+            "fieldCode": "030",
+            "amountLength": 12,
+            "description": "23%"
+          },
+          {
+            "fieldCode": "031",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "032",
+            "amountLength": 12,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "033",
+            "amountLength": 3,
+            "enumValues": [5, 8, 10, 15, 115, 20],
+            "description": "הערך 115 מסמל 11.5%"
+          },
+          {
+            "fieldCode": "039",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "040",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "043",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "045",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "046",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "047",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "051",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "061",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "062",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "063",
+            "amountLength": 3,
+            "enumValues": [10, 11, 15, 18]
+          },
+          {
+            "fieldCode": "064",
+            "amountLength": 12,
+            "description": "בחלק ח בטופס- רווח (1/4-31/12) נוסף של בנק בהיקף גדול - שדה חדש"
+          },
+          {
+            "fieldCode": "065",
+            "amountLength": 12,
+            "description": "בחלק יג בטופס- הפסד אחר המוגבל בקיזוז מצורף טופס 1344 - שדה חדש"
+          },
+          {
+            "fieldCode": "068",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "069",
+            "amountLength": 12,
+            "description": "(בחלק טו של טופס 1214)"
+          },
+          {
+            "fieldCode": "070",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "072",
+            "amountLength": 12,
+            "required": true,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "080",
+            "amountLength": 12,
+            "description": "חובה בחברה משפחתית - יכול להיות 0"
+          },
+          {
+            "fieldCode": "081",
+            "amountLength": 12,
+            "required": true,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "084",
+            "amountLength": 12,
+            "description": "חובה בחברת בית - יכול להיות 0"
+          },
+          {
+            "fieldCode": "086",
+            "amountLength": 12,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "088",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "089",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "091",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "094",
+            "amountLength": 12,
+            "required": true,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "096",
+            "amountLength": 12,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "097",
+            "amountLength": 12,
+            "description": "יכול להיות 0"
+          },
+          {
+            "fieldCode": "101",
+            "amountLength": 1,
+            "enumValues": [1, 9]
+          },
+          {
+            "fieldCode": "102",
+            "amountLength": 1,
+            "enumValues": [1, 2, 3, 4, 5, 6, 9],
+            "description": "1-נתבעו הטבות כמפעל מוטב, 2-שנת הדו\"ח היא שנת הבחירה, 3-קבלן משנה, 4-נתבעו הטבות כמפעל מועדף, 5-נתבעו הטבות כמפעל טכנולוגי, 6-מועדף וטכנולוגי, 9-לא צורפו טפסים"
+          },
+          {
+            "fieldCode": "105",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "106",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "107",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "108",
+            "amountLength": 1,
+            "enumValues": [1, 2]
+          },
+          {
+            "fieldCode": "113",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "114",
+            "amountLength": 1,
+            "enumValues": [4],
+            "description": "4-חברה קבלנית (ללא טופס 50)"
+          },
+          {
+            "fieldCode": "115",
+            "amountLength": 2,
+            "enumValues": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+          },
+          {
+            "fieldCode": "121",
+            "amountLength": 12,
+            "description": "סכום ההשקעה המצטברת (בחלק יא' של טופס 1214), יכול להכיל 0"
+          },
+          {
+            "fieldCode": "122",
+            "amountLength": 1,
+            "enumValues": [1, 2]
+          },
+          {
+            "fieldCode": "126",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "127",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "128",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "141",
+            "amountLength": 3
+          },
+          {
+            "fieldCode": "142",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "143",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "145",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "146",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "148",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "149",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "151",
+            "amountLength": 12,
+            "description": "מפעל טכנולוגי- אזור פיתוח א- בשיעור 7.5% (בחלק ו' של הטופס)"
+          },
+          {
+            "fieldCode": "152",
+            "amountLength": 12,
+            "description": "מפעל טכנולוגי- אזור אחר- בשיעור 12% (בחלק ו' של הטופס)"
+          },
+          {
+            "fieldCode": "155",
+            "amountLength": 12,
+            "description": "דיבידנד בשיעור מס חברות 23% (בחלק ו' של הטופס)"
+          },
+          {
+            "fieldCode": "157",
+            "amountLength": 12,
+            "description": "הכנסה מדיבידנד מחברה זרה בשיעור 30% (בחלק ו' של הטופס)"
+          },
+          {
+            "fieldCode": "159",
+            "amountLength": 12,
+            "description": "הכנסה מועברת לפי סעיף 62א (בחלק יד' של הטופס) יכול לקבל 0"
+          },
+          {
+            "fieldCode": "160",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "162",
+            "amountLength": 1,
+            "description": "בחלק א' פרטים על החברה– סעיף 16",
+            "enumValues": [1, 9]
+          },
+          {
+            "fieldCode": "163",
+            "amountLength": 12,
+            "description": "מפעל טכנולוגי- מועדף מיוחד- בשיעור 6% (בחלק ו' של הטופס)"
+          },
+          {
+            "fieldCode": "164",
+            "amountLength": 12,
+            "description": "הפסד ממפעל טכנולוגי"
+          },
+          {
+            "fieldCode": "165",
+            "amountLength": 12,
+            "description": "בחלק טז'– סך השקעות בחברות מו\"פ כאשר יש ערך בשדה זה, יש צורך למלא נתונים ברשומה 1030 כמפורט בסעיף 4- פרטים על השקעות בחברות מו\"פ"
+          },
+          {
+            "fieldCode": "185",
+            "amountLength": 12,
+            "description": "בחלק טז- תרומות למוסדות בארה\"ב"
+          },
+          {
+            "fieldCode": "187",
+            "amountLength": 12,
+            "description": "בחלק ו'"
+          },
+          {
+            "fieldCode": "188",
+            "amountLength": 3,
+            "enumValues": [5, 7, 9, 11],
+            "description": "בחלק ו'"
+          },
+          {
+            "fieldCode": "191",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "209",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "211",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "217",
+            "amountLength": 12,
+            "description": "הכנסה צבורה עד 31.12.2020 (בחלק יא' של טופס 1214)"
+          },
+          {
+            "fieldCode": "218",
+            "amountLength": 12,
+            "description": "הכנסה צבורה נבחרת (בחלק יא' של טופס 1214)"
+          },
+          {
+            "fieldCode": "219",
+            "amountLength": 12,
+            "description": "המס התיאורטי שהיה חל על החברה לפי סעיף 4 (בחלק יא' של טופס 1214)"
+          },
+          {
+            "fieldCode": "221",
+            "amountLength": 12,
+            "description": "סכום ההשקעה המיועדת (בחלק יא' של טופס 1214)"
+          },
+          {
+            "fieldCode": "225",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "226",
+            "amountLength": 1,
+            "enumValues": [1, 2, 3, 4, 9],
+            "description": "1 סעיפים 54-58א, 2 סעיף 60א, 3 סעיף 60ב, 4 חבר– בני אדם, 9 אגודה שיתופית אחרת (לא קיבוץ)"
+          },
+          {
+            "fieldCode": "227",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "253",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "259",
+            "amountLength": 2,
+            "enumValues": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+          },
+          {
+            "fieldCode": "263",
+            "amountLength": 1,
+            "required": true,
+            "enumValues": [1, 2, 3, 9]
+          },
+          {
+            "fieldCode": "271",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "273",
+            "amountLength": 1,
+            "required": true,
+            "enumValues": [1, 2, 3, 9],
+            "description": "1–סומן כן על \"חוות דעת\" (1 בפוזיציה 1029), 2–סומן כן על \"החברה נקטה בעמדה חייבת בדיווח\" (1 בפוזיציה 1030), 3–סומן כן בשניהם (1 בפוזיציה 1029 וב 1030), 9-סומן לא בשניהם (2 בפוזיציה 1029 וב 1030)"
+          },
+          {
+            "fieldCode": "277",
+            "amountLength": 12,
+            "description": "ניתן למלא עד 9 ספרות, היתר אפסים משמאל. רק אם שדה 280 מלא, נלקחים הערכים שמולאו בקודים 277 278, אחרת פרטי חשבון בנק נלקחים מהתל\"ם"
+          },
+          {
+            "fieldCode": "278",
+            "amountLength": 5,
+            "description": "בנק–2 פוזיציות שמאליות סניף-3 פוזיציות ימניות רק אם שדה 280 מלא, נלקחים הערכים שמולאו בקודים 277 278, אחרת פרטי חשבון בנק נלקחים מהתל\"ם"
+          },
+          {
+            "fieldCode": "280",
+            "amountLength": 1,
+            "enumValues": [1],
+            "description": "1 (במקרה ששונה חשבון הבנק וצורפה אסמכתא מתאימה); פרטי חשבון בנק נלקחים מהמעודכן בתל\"ם במידה ורוצים לשנות את פרטי חשבון הבנק, יש צורך בשדה זה. רק אם שדה 280 מלא, נלקחים הערכים שמולאו בקודים 277 278"
+          },
+          {
+            "fieldCode": "286",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "290",
+            "amountLength": 12
+          },
+          {
+            "fieldCode": "297",
+            "amountLength": 1,
+            "enumValues": [8, 9]
+          },
+          {
+            "fieldCode": "299",
+            "amountLength": 12
+          }
+        ]
+      }
+    },
+    {
+      "recordType": "1010",
+      "recordLength": 1160,
+      "repeatable": true,
+      "orderIndex": 2,
+      "description": "חברות קשורות בארץ ובחו\"ל (חלק ג בטופס)",
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "1010_4_1",
+          "fieldName": "serialNumber",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר סידורי"
+        },
+        {
+          "fieldCode": "1010_4_2",
+          "fieldName": "companyName",
+          "start": 138,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם החברה"
+        },
+        {
+          "fieldCode": "1010_4_3",
+          "fieldName": "companyFileNumber",
+          "start": 188,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר תיק החברה"
+        },
+        {
+          "fieldCode": "1010_4_4",
+          "fieldName": "affiliationType",
+          "start": 197,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=אם; 2=בת; 3=שותפות; 4=תאגיד קשור לקיבוץ; 5=חברות שיש בהן שליטה משותפת; 6=חברת נכדה; 7=חברת סבתא; 8=אחר",
+          "enumValues": [1,2,3,4,5,6,7,8],
+          "description": "סוג הקשר"
+        },
+        {
+          "fieldCode": "1010_4_5",
+          "fieldName": "managingTaxAuthorityOffice",
+          "start": 198,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "משרד השומה בו מתנהל תיק החברה"
+        },
+        {
+          "fieldCode": "1010_4_6",
+          "fieldName": "filler",
+          "start": 200,
+          "length": 960,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "maxOccurs": 3
+    },
+    {
+      "recordType": "1020",
+      "recordLength": 1160,
+      "repeatable": true,
+      "orderIndex": 3,
+      "description": "פרטים על בעלי מניות וסכומים (חק ד בטופס)",
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "1020_4_01",
+          "fieldName": "serialNumber",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר סידורי"
+        },
+        {
+          "fieldCode": "1020_4_02",
+          "fieldName": "fileOrIdNumber",
+          "start": 138,
+          "length": 9,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר זהות/תיק"
+        },
+        {
+          "fieldCode": "1020_4_03",
+          "fieldName": "fullName",
+          "start": 147,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "rtl": "true",
+          "padding": "right",
+          "description": "שם מלא"
+        },
+        {
+          "fieldCode": "1020_4_04",
+          "fieldName": "isControllingShareholder",
+          "start": 197,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "נישום בעל שליטה בחברה"
+        },
+        {
+          "fieldCode": "1020_4_05",
+          "fieldName": "dividendRights",
+          "start": 198,
+          "length": 5,
+          "type": "percentage",
+          "required": false,
+          "padding": "left",
+          "description": "זכות לדיבידנד"
+        },
+        {
+          "fieldCode": "1020_4_06",
+          "fieldName": "votingRights",
+          "start": 203,
+          "length": 5,
+          "type": "percentage",
+          "required": false,
+          "padding": "left",
+          "description": "זכות הצבעה"
+        },
+        {
+          "fieldCode": "1020_4_07",
+          "fieldName": "otherRights",
+          "start": 208,
+          "length": 5,
+          "type": "percentage",
+          "required": false,
+          "padding": "left",
+          "description": "זכויות אחרות"
+        },
+        {
+          "fieldCode": "1020_4_08",
+          "fieldName": "substantialShareholderFlag",
+          "start": 213,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=סומן",
+          "enumValues": [1],
+          "description": "סימון נישום בעל מניות מהותי"
+        },
+        {
+          "fieldCode": "1020_4_09",
+          "fieldName": "months1to9Salary",
+          "start": 214,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "משכורת לחודשים 1-9"
+        },
+        {
+          "fieldCode": "1020_4_10",
+          "fieldName": "months10to12Salary",
+          "start": 226,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "משכורת לחודשים 10-12"
+        },
+        {
+          "fieldCode": "1020_4_11",
+          "fieldName": "otherPayments",
+          "start": 238,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "תשלומים אחרים"
+        },
+        {
+          "fieldCode": "1020_4_12",
+          "fieldName": "filler",
+          "start": 250,
+          "length": 910,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "maxOccurs": 99
+    },
+    {
+      "recordType": "1030",
+      "recordLength": 336,
+      "repeatable": true,
+      "orderIndex": 4,
+      "description": "פרטים על השקעות בחברות מו\"פ",
+      "fillerLength": 128,
+      "headerLength": 200,
+      "headerFields": [
+        {
+          "fieldCode": "1030_4_01",
+          "fieldName": "affiliation",
+          "start": 136,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=חברה",
+          "enumValues": [1],
+          "defaultValue": 1,
+          "description": "שייכות"
+        },
+        {
+          "fieldCode": "1030_4_02",
+          "fieldName": "companyName",
+          "start": 137,
+          "length": 50,
+          "type": "string",
+          "required": true,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם החברה"
+        },
+        {
+          "fieldCode": "1030_4_03",
+          "fieldName": "companyFileNumber",
+          "start": 187,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר תיק חברה"
+        },
+        {
+          "fieldCode": "1030_4_04",
+          "fieldName": "investmentAmount",
+          "start": 196,
+          "length": 12,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "סכום השקעה"
+        },
+        {
+          "fieldCode": "1030_4_05",
+          "fieldName": "filler",
+          "start": 208,
+          "length": 128,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "maxOccurs": 5
+    },
+    {
+      "recordType": "2000",
+      "recordLength": 2184,
+      "repeatable": false,
+      "orderIndex": 5,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "2000_4_01",
+          "fieldName": "otherTaxableIncomeDetails",
+          "start": 136,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פירוט הכנסה חייבת אחרת"
+        },
+        {
+          "fieldCode": "2000_4_02",
+          "fieldName": "otherTaxableIncome",
+          "start": 186,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הכנסה חייבת אחרת"
+        },
+        {
+          "fieldCode": "2000_4_03",
+          "fieldName": "foreignTaxPaidOnOtherIncome",
+          "start": 198,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מס ששולם מחו\"ל בגין הכנסה חייבת אחרת"
+        },
+        {
+          "fieldCode": "2000_4_04",
+          "fieldName": "totalTaxableForeignIncome",
+          "start": 210,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סה\"כ הכנסות חייבות מחו\"ל"
+        },
+        {
+          "fieldCode": "2000_4_05",
+          "fieldName": "totalForeignLoss",
+          "start": 222,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סה\"כ הפסד מחו\"ל"
+        },
+        {
+          "fieldCode": "2000_4_06",
+          "fieldName": "taxExemptionForIsraeliHoldingCompany",
+          "start": 234,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "פטור השתתפות לחברת החזקות ישראלית"
+        },
+        {
+          "fieldCode": "2000_4_07",
+          "fieldName": "taxRefundDecleration",
+          "start": 246,
+          "length": 1,
+          "type": "number",
+          "required": true,
+          "format": "1=כן, 2=לא",
+          "enumValues": [2, 1],
+          "description": "הצהרה - החזר מיסים"
+        },
+        {
+          "fieldCode": "2000_4_08",
+          "fieldName": "taxRefundAmountDeclaration",
+          "start": 247,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום החזר מסים הצהרה"
+        },
+        {
+          "fieldCode": "2000_4_09",
+          "fieldName": "filler",
+          "start": 259,
+          "length": 901,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "נספח חו\"ל"
+    },
+    {
+      "recordType": "2200",
+      "recordLength": 1210,
+      "repeatable": true,
+      "maxOccurs": 30,
+      "orderIndex": 6,
+      "fillerLength": 128,
+      "headerLength": 50,
+      "headerFields": [
+        {
+          "fieldCode": "2200_4_01",
+          "fieldName": "code",
+          "start": 136,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "קוד (תואם לקוד בהספח ד - חו\"ל)"
+        },
+        {
+          "fieldCode": "2200_4_02",
+          "fieldName": "totalDeductionsOffsetsExemptions",
+          "start": 149,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ניכויים, קיזוזים ופטורים"
+        },
+        {
+          "fieldCode": "2200_4_03",
+          "fieldName": "filler",
+          "start": 151,
+          "length": 35,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "פירוט הכנסות לפי מדינות חו\"ל"
+    },
+    {
+      "recordType": "3027",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 7,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3027_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [27],
+          "defaultValue": 27,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3027_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3027_4_03",
+          "fieldName": "isExpropriation",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "הפקעה"
+        },
+        {
+          "fieldCode": "3027_4_04",
+          "fieldName": "propertyDetails",
+          "start": 142,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס"
+        },
+        {
+          "fieldCode": "3027_4_05",
+          "fieldName": "propertyLocation",
+          "start": 192,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=חו\"ל; 2=ישראל",
+          "enumValues": [1,2],
+          "description": "מקום הנכס"
+        },
+        {
+          "fieldCode": "3027_4_06",
+          "fieldName": "isAffiliatedParty",
+          "start": 193,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1,2],
+          "description": "צד קשור"
+        },
+        {
+          "fieldCode": "3027_4_07",
+          "fieldName": "buyerName",
+          "start": 194,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם הרוכש"
+        },
+        {
+          "fieldCode": "3027_4_08",
+          "fieldName": "dateCode15",
+          "start": 224,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 15"
+        },
+        {
+          "fieldCode": "3027_4_09",
+          "fieldName": "dateCode20",
+          "start": 234,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 20"
+        },
+        {
+          "fieldCode": "3027_4_10",
+          "fieldName": "dateCode53",
+          "start": 244,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 53"
+        },
+        {
+          "fieldCode": "3027_4_11",
+          "fieldName": "taxCalculationSoftwareNumber",
+          "start": 254,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר בתל\"ם: יש לתת מספר רציף לפי סדר מילוי רווחי ההון"
+        },
+        {
+          "fieldCode": "3027_4_12",
+          "fieldName": "filler",
+          "start": 256,
+          "length": 904,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - מניות"
+    },
+    {
+      "recordType": "3050",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 8,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3050_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [50],
+          "defaultValue": 50,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3050_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3050_4_03",
+          "fieldName": "isExpropriation",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "הפקעה"
+        },
+        {
+          "fieldCode": "3050_4_04",
+          "fieldName": "propertyDetails",
+          "start": 142,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס"
+        },
+        {
+          "fieldCode": "3050_4_05",
+          "fieldName": "purchaseDate",
+          "start": 192,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קניה"
+        },
+        {
+          "fieldCode": "3050_4_06",
+          "fieldName": "dateCode15",
+          "start": 202,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 15"
+        },
+        {
+          "fieldCode": "3050_4_07",
+          "fieldName": "filler",
+          "start": 212,
+          "length": 948,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - מס שבח"
+    },
+    {
+      "recordType": "3051",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 9,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3051_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [51],
+          "defaultValue": 51,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3051_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3051_4_03",
+          "fieldName": "propertyDetails",
+          "start": 141,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס"
+        },
+        {
+          "fieldCode": "3051_4_04",
+          "fieldName": "propertyLocation",
+          "start": 191,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=חו\"ל; 2=ישראל",
+          "enumValues": [1,2],
+          "description": "מקום הנכס"
+        },
+        {
+          "fieldCode": "3051_4_05",
+          "fieldName": "isAffiliatedParty",
+          "start": 192,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1,2],
+          "description": "צד קשור"
+        },
+        {
+          "fieldCode": "3051_4_06",
+          "fieldName": "buyerName",
+          "start": 193,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם הרוכש"
+        },
+        {
+          "fieldCode": "3051_4_07",
+          "fieldName": "dateCode15",
+          "start": 223,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 15"
+        },
+        {
+          "fieldCode": "3051_4_08",
+          "fieldName": "taxCalculationSoftwareNumber",
+          "start": 233,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר בתל\"ם: יש לתת מספר רציף לפי סדר מילוי רווחי ההון"
+        },
+        {
+          "fieldCode": "3051_4_09",
+          "fieldName": "virtualCurrencyWalletAddress",
+          "start": 235,
+          "length": 150,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "כתובת ארנק וירטואלי"
+        },
+        {
+          "fieldCode": "3051_4_10",
+          "fieldName": "virtualCurrencyWalletAddress2",
+          "start": 385,
+          "length": 150,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "כתובת ארנק וירטואלי נוסף"
+        },
+        {
+          "fieldCode": "3051_4_11",
+          "fieldName": "filler",
+          "start": 535,
+          "length": 625,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - עסקה מאולצת - מטבע וירטואלי"
+    },
+    {
+      "recordType": "3054",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 10,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3054_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [54],
+          "defaultValue": 54,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3054_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3054_4_03",
+          "fieldName": "propertyDetails",
+          "start": 141,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס"
+        },
+        {
+          "fieldCode": "3054_4_04",
+          "fieldName": "purchaseDate",
+          "start": 191,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קניה"
+        },
+        {
+          "fieldCode": "3054_4_05",
+          "fieldName": "dateCode15",
+          "start": 201,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 15"
+        },
+        {
+          "fieldCode": "3054_4_06",
+          "fieldName": "filler",
+          "start": 211,
+          "length": 949,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - עסקה ממכירת יחידות השתתפות בשותפות נפט"
+    },
+    {
+      "recordType": "3060",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 11,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3060_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [60],
+          "defaultValue": 60,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3060_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3060_4_03",
+          "fieldName": "foreignAsset",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "נכס חו\"ל"
+        },
+        {
+          "fieldCode": "3060_4_04",
+          "fieldName": "affiliatedPartySale",
+          "start": 142,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "מכירה לצד קשור"
+        },
+        {
+          "fieldCode": "3060_4_05",
+          "fieldName": "affiliatedPartyPurchase",
+          "start": 143,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רכישה מצד קשור"
+        },
+        {
+          "fieldCode": "3060_4_06",
+          "fieldName": "investmentFundProfit",
+          "start": 144,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רווח מקרן השקעות"
+        },
+        {
+          "fieldCode": "3060_4_07",
+          "fieldName": "deductorA",
+          "start": 145,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - א"
+        },
+        {
+          "fieldCode": "3060_4_08",
+          "fieldName": "branchA",
+          "start": 175,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - א"
+        },
+        {
+          "fieldCode": "3060_4_09",
+          "fieldName": "accountA",
+          "start": 178,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - א"
+        },
+        {
+          "fieldCode": "3060_4_10",
+          "fieldName": "deductorB",
+          "start": 187,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ב"
+        },
+        {
+          "fieldCode": "3060_4_11",
+          "fieldName": "branchB",
+          "start": 217,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ב"
+        },
+        {
+          "fieldCode": "3060_4_12",
+          "fieldName": "accountB",
+          "start": 220,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ב"
+        },
+        {
+          "fieldCode": "3060_4_13",
+          "fieldName": "deductorC",
+          "start": 229,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ג"
+        },
+        {
+          "fieldCode": "3060_4_14",
+          "fieldName": "branchC",
+          "start": 259,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ג"
+        },
+        {
+          "fieldCode": "3060_4_15",
+          "fieldName": "accountC",
+          "start": 262,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ג"
+        },
+        {
+          "fieldCode": "3060_4_16",
+          "fieldName": "deductorD",
+          "start": 271,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ד"
+        },
+        {
+          "fieldCode": "3060_4_17",
+          "fieldName": "branchD",
+          "start": 301,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ד"
+        },
+        {
+          "fieldCode": "3060_4_18",
+          "fieldName": "accountD",
+          "start": 304,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ד"
+        },
+        {
+          "fieldCode": "3060_4_19",
+          "fieldName": "lossesToCarryForward",
+          "start": 313,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הפסדים להעברה"
+        },
+        {
+          "fieldCode": "3060_4_20",
+          "fieldName": "filler",
+          "start": 323,
+          "length": 837,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - ניירות ערך"
+    },
+    {
+      "recordType": "3063",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 12,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3063_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [63],
+          "defaultValue": 63,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3063_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3063_4_03",
+          "fieldName": "foreignAsset",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "נכס חו\"ל"
+        },
+        {
+          "fieldCode": "3063_4_04",
+          "fieldName": "lossesToCarryForward",
+          "start": 142,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הפסדים להעברה"
+        },
+        {
+          "fieldCode": "3063_4_05",
+          "fieldName": "filler",
+          "start": 152,
+          "length": 1008,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - ני\"ע לפי סעיף 6"
+    },
+    {
+      "recordType": "3064",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 13,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3064_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [64],
+          "defaultValue": 64,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3064_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3064_4_03",
+          "fieldName": "foreignAsset",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "נכס חו\"ל"
+        },
+        {
+          "fieldCode": "3064_4_04",
+          "fieldName": "affiliatedPartySale",
+          "start": 142,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "מכירה לצד קשור"
+        },
+        {
+          "fieldCode": "3064_4_05",
+          "fieldName": "affiliatedPartyPurchase",
+          "start": 143,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רכישה מצד קשור"
+        },
+        {
+          "fieldCode": "3064_4_06",
+          "fieldName": "investmentFundProfit",
+          "start": 144,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רווח מקרן השקעות"
+        },
+        {
+          "fieldCode": "3064_4_07",
+          "fieldName": "deductorA",
+          "start": 145,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - א"
+        },
+        {
+          "fieldCode": "3064_4_08",
+          "fieldName": "branchA",
+          "start": 175,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - א"
+        },
+        {
+          "fieldCode": "3064_4_09",
+          "fieldName": "accountA",
+          "start": 178,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - א"
+        },
+        {
+          "fieldCode": "3064_4_10",
+          "fieldName": "deductorB",
+          "start": 187,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ב"
+        },
+        {
+          "fieldCode": "3064_4_11",
+          "fieldName": "branchB",
+          "start": 217,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ב"
+        },
+        {
+          "fieldCode": "3064_4_12",
+          "fieldName": "accountB",
+          "start": 220,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ב"
+        },
+        {
+          "fieldCode": "3064_4_13",
+          "fieldName": "deductorC",
+          "start": 229,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ג"
+        },
+        {
+          "fieldCode": "3064_4_14",
+          "fieldName": "branchC",
+          "start": 259,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ג"
+        },
+        {
+          "fieldCode": "3064_4_15",
+          "fieldName": "accountC",
+          "start": 262,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ג"
+        },
+        {
+          "fieldCode": "3064_4_16",
+          "fieldName": "deductorD",
+          "start": 271,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ד"
+        },
+        {
+          "fieldCode": "3064_4_17",
+          "fieldName": "branchD",
+          "start": 301,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ד"
+        },
+        {
+          "fieldCode": "3064_4_18",
+          "fieldName": "accountD",
+          "start": 304,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ד"
+        },
+        {
+          "fieldCode": "3064_4_19",
+          "fieldName": "lossesToCarryForward",
+          "start": 313,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הפסדים להעברה"
+        },
+        {
+          "fieldCode": "3064_4_20",
+          "fieldName": "filler",
+          "start": 323,
+          "length": 837,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - REIT"
+    },
+    {
+      "recordType": "3065",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 14,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3065_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [65],
+          "defaultValue": 65,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3065_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3065_4_03",
+          "fieldName": "foreignAsset",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "נכס חו\"ל"
+        },
+        {
+          "fieldCode": "3065_4_04",
+          "fieldName": "affiliatedPartySale",
+          "start": 142,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "מכירה לצד קשור"
+        },
+        {
+          "fieldCode": "3065_4_05",
+          "fieldName": "affiliatedPartyPurchase",
+          "start": 143,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רכישה מצד קשור"
+        },
+        {
+          "fieldCode": "3065_4_06",
+          "fieldName": "investmentFundProfit",
+          "start": 144,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "רווח מקרן השקעות"
+        },
+        {
+          "fieldCode": "3065_4_07",
+          "fieldName": "withholdingTax",
+          "start": 145,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "2=לא נוכה, רווחים שנבעו בתקופה שבין ינואר ליוני 2024; 3=לא נוכה, רווחים שנבעו בתקופה שבין יולי לדצמבר 2024",
+          "enumValues": [2, 3],
+          "description": "מס במקור"
+        },
+        {
+          "fieldCode": "3065_4_08",
+          "fieldName": "deductorA",
+          "start": 146,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - א"
+        },
+        {
+          "fieldCode": "3065_4_09",
+          "fieldName": "branchA",
+          "start": 176,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - א"
+        },
+        {
+          "fieldCode": "3065_4_10",
+          "fieldName": "accountA",
+          "start": 179,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - א"
+        },
+        {
+          "fieldCode": "3065_4_11",
+          "fieldName": "deductorB",
+          "start": 188,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ב"
+        },
+        {
+          "fieldCode": "3065_4_12",
+          "fieldName": "branchB",
+          "start": 218,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ב"
+        },
+        {
+          "fieldCode": "3065_4_13",
+          "fieldName": "accountB",
+          "start": 221,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ב"
+        },
+        {
+          "fieldCode": "3065_4_14",
+          "fieldName": "deductorC",
+          "start": 230,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ג"
+        },
+        {
+          "fieldCode": "3065_4_15",
+          "fieldName": "branchC",
+          "start": 260,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ג"
+        },
+        {
+          "fieldCode": "3065_4_16",
+          "fieldName": "accountC",
+          "start": 263,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ג"
+        },
+        {
+          "fieldCode": "3065_4_17",
+          "fieldName": "deductorD",
+          "start": 272,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "מנכה - ד"
+        },
+        {
+          "fieldCode": "3065_4_18",
+          "fieldName": "branchD",
+          "start": 302,
+          "length": 3,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סניף - ד"
+        },
+        {
+          "fieldCode": "3065_4_19",
+          "fieldName": "accountD",
+          "start": 305,
+          "length": 9,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "חשבון - ד"
+        },
+        {
+          "fieldCode": "3065_4_20",
+          "fieldName": "lossesToCarryForward",
+          "start": 314,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הפסדים להעברה"
+        },
+        {
+          "fieldCode": "3065_4_21",
+          "fieldName": "taxCalculationSoftwareNumber",
+          "start": 324,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר בתל\"ם: יש לתת מספר רציף לפי סדר מילוי רווחי ההון"
+        },
+        {
+          "fieldCode": "3065_4_22",
+          "fieldName": "filler",
+          "start": 326,
+          "length": 837,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - לא נוכה מס במקור (1322)"
+    },
+    {
+      "recordType": "3066",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 15,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3066_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [66],
+          "defaultValue": 66,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3066_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3066_4_03",
+          "fieldName": "foreignAsset",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "נכס חו\"ל"
+        },
+        {
+          "fieldCode": "3066_4_04",
+          "fieldName": "withholdingTax",
+          "start": 142,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "2=לא נוכה, רווחים שנבעו בתקופה שבין ינואר ליוני 2024; 3=לא נוכה, רווחים שנבעו בתקופה שבין יולי לדצמבר 2024",
+          "enumValues": [2, 3],
+          "description": "מס במקור"
+        },
+        {
+          "fieldCode": "3066_4_05",
+          "fieldName": "lossesToCarryForward",
+          "start": 143,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "הפסדים להעברה"
+        },
+        {
+          "fieldCode": "3066_4_06",
+          "fieldName": "taxCalculationSoftwareNumber",
+          "start": 153,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר בתל\"ם: יש לתת מספר רציף לפי סדר מילוי רווחי ההון"
+        },
+        {
+          "fieldCode": "3066_4_07",
+          "fieldName": "filler",
+          "start": 155,
+          "length": 1005,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - לא נוכה מס במקור (1326)"
+    },
+    {
+      "recordType": "3077",
+      "recordLength": 2184,
+      "repeatable": true,
+      "orderIndex": 16,
+      "fillerLength": 128,
+      "headerLength": 1024,
+      "headerFields": [
+        {
+          "fieldCode": "3077_4_01",
+          "fieldName": "transactionSymbol",
+          "start": 136,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [77],
+          "defaultValue": 77,
+          "description": "סמל העסקה"
+        },
+        {
+          "fieldCode": "3077_4_02",
+          "fieldName": "attachmentNumber",
+          "start": 138,
+          "length": 3,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר נספח (מספר עוקב של הנספח: 1, 2, 3...)"
+        },
+        {
+          "fieldCode": "3077_4_03",
+          "fieldName": "isExpropriation",
+          "start": 141,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1, 2],
+          "description": "הפקעה"
+        },
+        {
+          "fieldCode": "3077_4_04",
+          "fieldName": "propertyDetails",
+          "start": 142,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס"
+        },
+        {
+          "fieldCode": "3077_4_05",
+          "fieldName": "propertyLocation",
+          "start": 192,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=חו\"ל; 2=ישראל",
+          "enumValues": [1,2],
+          "description": "מקום הנכס"
+        },
+        {
+          "fieldCode": "3077_4_06",
+          "fieldName": "isAffiliatedParty",
+          "start": 193,
+          "length": 1,
+          "type": "number",
+          "required": false,
+          "format": "1=כן, 2=לא",
+          "enumValues": [1,2],
+          "description": "צד קשור"
+        },
+        {
+          "fieldCode": "3077_4_07",
+          "fieldName": "buyerName",
+          "start": 194,
+          "length": 30,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "שם הרוכש"
+        },
+        {
+          "fieldCode": "3077_4_08",
+          "fieldName": "dateCode15",
+          "start": 224,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 15"
+        },
+        {
+          "fieldCode": "3077_4_09",
+          "fieldName": "dateCode20",
+          "start": 234,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך קוד 20"
+        },
+        {
+          "fieldCode": "3077_4_10",
+          "fieldName": "improvementBalancesCount",
+          "start": 244,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר יתרות השבחה (מספר פעמים שמילאו קוד 50)"
+        },
+        {
+          "fieldCode": "3077_4_11",
+          "fieldName": "improvementExpenseAmount_1",
+          "start": 246,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ההוצאה על ההשבחה (1)"
+        },
+        {
+          "fieldCode": "3077_4_12",
+          "fieldName": "accumulatedDepreciationAmount_1",
+          "start": 258,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום הפחת שנצבר (1)"
+        },
+        {
+          "fieldCode": "3077_4_13",
+          "fieldName": "dateCode50_1",
+          "start": 270,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך של קוד 50 - תאריך השבחה (1)"
+        },
+        {
+          "fieldCode": "3077_4_14",
+          "fieldName": "improvementExpenseAmount_2",
+          "start": 280,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ההוצאה על ההשבחה (2)"
+        },
+        {
+          "fieldCode": "3077_4_15",
+          "fieldName": "accumulatedDepreciationAmount_2",
+          "start": 292,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום הפחת שנצבר (2)"
+        },
+        {
+          "fieldCode": "3077_4_16",
+          "fieldName": "dateCode50_2",
+          "start": 304,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך של קוד 50 - תאריך השבחה (2)"
+        },
+        {
+          "fieldCode": "3077_4_17",
+          "fieldName": "improvementExpenseAmount_3",
+          "start": 314,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ההוצאה על ההשבחה (3)"
+        },
+        {
+          "fieldCode": "3077_4_18",
+          "fieldName": "accumulatedDepreciationAmount_3",
+          "start": 326,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום הפחת שנצבר (3)"
+        },
+        {
+          "fieldCode": "3077_4_19",
+          "fieldName": "dateCode50_3",
+          "start": 338,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך של קוד 50 - תאריך השבחה (3)"
+        },
+        {
+          "fieldCode": "3077_4_20",
+          "fieldName": "improvementExpenseAmount_4",
+          "start": 348,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ההוצאה על ההשבחה (4)"
+        },
+        {
+          "fieldCode": "3077_4_21",
+          "fieldName": "accumulatedDepreciationAmount_4",
+          "start": 360,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום הפחת שנצבר (4)"
+        },
+        {
+          "fieldCode": "3077_4_22",
+          "fieldName": "dateCode50_4",
+          "start": 372,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך של קוד 50 - תאריך השבחה (4)"
+        },
+        {
+          "fieldCode": "3077_4_23",
+          "fieldName": "improvementExpenseAmount_5",
+          "start": 382,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום ההוצאה על ההשבחה (5)"
+        },
+        {
+          "fieldCode": "3077_4_24",
+          "fieldName": "accumulatedDepreciationAmount_5",
+          "start": 394,
+          "length": 12,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "סכום הפחת שנצבר (5)"
+        },
+        {
+          "fieldCode": "3077_4_25",
+          "fieldName": "dateCode50_5",
+          "start": 406,
+          "length": 10,
+          "type": "date",
+          "required": true,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך של קוד 50 - תאריך השבחה (5)"
+        },
+        {
+          "fieldCode": "3077_4_26",
+          "fieldName": _____,
+          "start": 416,
+          "length": 50,
+          "type": "string",
+          "required": false,
+          "rtl": true,
+          "padding": "right",
+          "description": "פרטי הנכס שנרכש לחילוף"
+        },
+        {
+          "fieldCode": "3077_4_27",
+          "fieldName": ______,
+          "start": 466,
+          "length": 10,
+          "type": "date",
+          "required": false,
+          "format": "DD/MM/YYYY",
+          "description": "תאריך רכישה של שיחלוף הנכס"
+        },
+        {
+          "fieldCode": "3077_4_28",
+          "fieldName": _____,
+          "start": 476,
+          "length": 10,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מחיר הנכס הנרכש בשיחלוף הנכס"
+        },
+        {
+          "fieldCode": "3077_4_29",
+          "fieldName": "taxCalculationSoftwareNumber",
+          "start": 486,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "padding": "left",
+          "description": "מספר בתל\"ם: יש לתת מספר רציף לפי סדר מילוי רווחי ההון"
+        },
+        {
+          "fieldCode": "3077_4_30",
+          "fieldName": "virtualCurrencyWalletAddress",
+          "start": 488,
+          "length": 150,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "כתובת ארנק וירטואלי"
+        },
+        {
+          "fieldCode": "3077_4_31",
+          "fieldName": "virtualCurrencyWalletAddress2",
+          "start": 638,
+          "length": 150,
+          "type": "string",
+          "required": false,
+          "padding": "right",
+          "description": "כתובת ארנק וירטואלי נוסף"
+        },
+        {
+          "fieldCode": "3077_4_32",
+          "fieldName": "filler",
+          "start": 788,
+          "length": 372,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "Filler1"
+        }
+      ],
+      "sumLength": 1024,
+      "sumSection": {
+        _____
+      },
+      "description": "רווחי הון - לא נוכה מס במקור (כולל מוניטין)"
+    },
+    {
+      "recordType": "9999",
+      "recordLength": 150,
+      "repeatable": false,
+      "orderIndex": 17,
+      "fillerLength": 128,
+      "headerLength": 14,
+      "headerFields": [
+        {
+          "fieldCode": "9999_4_01",
+          "fieldName": "reportsCount",
+          "start": 137,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "enumValues": [1],
+          "defaultValue": 1,
+          "padding": "left",
+          "description": "מספר טפסי 1214"
+        },
+        {
+          "fieldCode": "9999_4_02",
+          "fieldName": "record1010Count",
+          "start": 139,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "format": "max 3",
+          "enumValues": [1, 2, 3],
+          "padding": "left",
+          "description": "מספר טפסי 1214 - חברות קשורות בארץ ובחו\"ל (רשומה 1010)"
+        },
+        {
+          "fieldCode": "9999_4_03",
+          "fieldName": "record1020Count",
+          "start": 141,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "format": "max 99",
+          "padding": "left",
+          "description": "מספר טפסי 1214 - פרטים על בעלי מניות וסכומים (רשומה 1020)"
+        },
+        {
+          "fieldCode": "9999_4_04",
+          "fieldName": "record2000Flag",
+          "start": 143,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "format": "1=קיים נספח חו\"ל", 
+          "enumValues": [1],
+          "padding": "left",
+          "description": "נספח חו\"ל"
+        },
+        {
+          "fieldCode": "9999_4_05",
+          "fieldName": "record30__Count",
+          "start": 145,
+          "length": 2,
+          "type": "number",
+          "required": true,
+          "format": "max 14",
+          "padding": "left",
+          "description": "מספר נספחי רווח הון"
+        },
+        {
+          "fieldCode": "9999_4_06",
+          "fieldName": "record2200Count",
+          "start": 147,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר רשומות מדינות חו\"ל (רשומות 2200)"
+        },
+        {
+          "fieldCode": "9999_4_07",
+          "fieldName": "record1030Count",
+          "start": 149,
+          "length": 2,
+          "type": "number",
+          "required": false,
+          "padding": "left",
+          "description": "מספר רשומות פרטים על השקעות בחברות מו\"פ (רשומות 1030)"
+        }
+      ],
+      "description": "רשומה סופית- רשומת בקרה"
+    }
+  ]
+}
