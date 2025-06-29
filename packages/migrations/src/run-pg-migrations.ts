@@ -101,6 +101,7 @@ import migration_2025_06_10T10_45_37_convert_irs_codes_array_column_to_single2 f
 import migration_2025_06_26T20_52_26_migrate_from_multiple_tables_to_single_poalim_foreign_table from './actions/2025-06-26T20-52-26.migrate-from-multiple-tables-to-single-poalim-foreign-table.js';
 import migration_2025_06_28T13_12_45_fix_poalim_swift_trigger_function from './actions/2025-06-28T13-12-45.fix-poalim-swift-trigger-function.js';
 import migration_2025_06_29T12_27_18_support_jpy_currency from './actions/2025-06-29T12-27-18.support-jpy-currency.js';
+import migration_2025_06_29T15_28_00_currency_fix from './actions/2025-06-29T15-28-00.currency-fix.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -209,5 +210,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_06_26T20_52_26_migrate_from_multiple_tables_to_single_poalim_foreign_table,
       migration_2025_06_28T13_12_45_fix_poalim_swift_trigger_function,
       migration_2025_06_29T12_27_18_support_jpy_currency,
+      migration_2025_06_29T15_28_00_currency_fix,
     ],
   });
