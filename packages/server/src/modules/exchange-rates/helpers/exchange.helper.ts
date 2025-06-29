@@ -60,9 +60,9 @@ export function getRateForCurrency(
   }
   if (
     currencyCode &&
-    [Currency.Usd, Currency.Eur, Currency.Gbp, Currency.Cad].includes(currencyCode)
+    [Currency.Usd, Currency.Eur, Currency.Gbp, Currency.Cad, Currency.Jpy].includes(currencyCode)
   ) {
-    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp' | 'cad';
+    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp' | 'cad' | 'jpy';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {
       throw new Error(

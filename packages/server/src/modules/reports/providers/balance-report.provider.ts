@@ -27,18 +27,19 @@ with transactions AS (SELECT
         WHEN t.currency = 'EUR' THEN t.amount * (lr.eur / lr.usd) -- Convert EUR => ILS => USD
         WHEN t.currency = 'GBP' THEN t.amount * (lr.gbp / lr.usd) -- Convert GBP => ILS => USD
         WHEN t.currency = 'CAD' THEN t.amount * (lr.cad / lr.usd) -- Convert CAD => ILS => USD
+        WHEN t.currency = 'JPY' THEN t.amount * (lr.jpy / lr.usd) -- Convert JPY => ILS => USD
         WHEN t.currency = 'USDC' OR t.currency = 'GRT' OR t.currency = 'ETH' THEN t.amount * lr2.value -- Convert Crypto => USD
         ELSE NULL
     END AS amount_usd
 FROM accounter_schema.transactions t
 LEFT JOIN accounter_schema.charges c ON t.charge_id = c.id
 LEFT JOIN LATERAL (
-    SELECT er.usd, er.eur, er.gbp, er.cad
+    SELECT er.usd, er.eur, er.gbp, er.cad, er.jpy
     FROM accounter_schema.exchange_rates er
     WHERE er.exchange_date <= t.debit_date
     ORDER BY er.exchange_date DESC
     LIMIT 1
-) lr ON t.currency = 'ILS' OR t.currency = 'EUR' OR t.currency ='GBP' OR t.currency = 'CAD'
+) lr ON t.currency = 'ILS' OR t.currency = 'EUR' OR t.currency ='GBP' OR t.currency = 'CAD' OR t.currency = 'JPY'
 LEFT JOIN LATERAL (
     SELECT cer.value
     FROM accounter_schema.crypto_exchange_rates cer

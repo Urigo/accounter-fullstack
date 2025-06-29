@@ -28,7 +28,7 @@ export type ForeignTransaction = (
   | ForeignTransactionsPersonalSchema
   | ForeignTransactionsBusinessSchema
 )['balancesAndLimitsDataList'][number]['transactions'][number];
-type ForeignCurrency = 'USD' | 'EUR' | 'GBP' | 'CAD';
+type ForeignCurrency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'JPY';
 export type NormalizedForeignTransaction = ForeignTransaction & {
   currency: ForeignCurrency;
   metadataAttributesOriginalEventKey?: Json | null;
@@ -179,7 +179,7 @@ const PoalimForeignTransactionSchema = z.object({
   originalSystemId: z.number().int(),
   activityDescription: z.string().max(30),
   eventAmount: z.number().refine(n => n >= -99_999_999.99 && n <= 99_999_999.99),
-  currency: z.enum(['USD', 'EUR', 'GBP', 'CAD']),
+  currency: z.enum(['USD', 'EUR', 'GBP', 'CAD', 'JPY']),
   currentBalance: z.number().refine(n => n >= -99_999_999.99 && n <= 99_999_999.99),
   referenceCatenatedNumber: z.number().int(),
   referenceNumber: z.number().int(),
@@ -305,6 +305,9 @@ async function normalizeForeignTransactionsForAccount(
           break;
         case 140:
           accountCurrency = 'CAD';
+          break;
+        case 248:
+          accountCurrency = 'JPY';
           break;
         default:
           throw new Error(`New Poalim account currency - ${foreignAccountsArray.currencyCode}`);

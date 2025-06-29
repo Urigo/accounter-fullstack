@@ -21,6 +21,8 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
     currencySymbol = '£';
   } else if (currency_code === 'CAD') {
     currencySymbol = 'C$';
+  } else if (currency_code === 'JPY') {
+    currencySymbol = '¥';
   } else if (currency_code === 'GRT') {
     currencySymbol = 'GRT';
   } else if (currency_code === 'USDC') {

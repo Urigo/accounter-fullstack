@@ -13,6 +13,7 @@ export default gql`
     gbp: Float
     eur: Float
     cad: Float
+    jpy: Float
     ils: Float
     eth: Float
     grt: Float
