@@ -18,6 +18,7 @@ import { Card, CardContent, CardTitle } from '../../ui/card.js';
         gbp
         eur
         cad
+        jpy
         ils
         eth
         grt

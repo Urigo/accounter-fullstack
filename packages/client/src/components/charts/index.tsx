@@ -38,6 +38,7 @@ import { StatsCard } from './stats-card.js';
             eur
             gbp
             usd
+            jpy
             date
           }
           debitExchangeRates {
@@ -45,6 +46,7 @@ import { StatsCard } from './stats-card.js';
             eur
             gbp
             usd
+            jpy
             date
           }
         }
@@ -95,9 +97,14 @@ export const ChartPage = (): ReactElement => {
         // Filter crypto as we're lacking the conversion rates
         if (
           // TODO: implement crypto exchange and add here
-          [Currency.Eur, Currency.Gbp, Currency.Ils, Currency.Usd, Currency.Cad].includes(
-            transaction.amount?.currency,
-          )
+          [
+            Currency.Eur,
+            Currency.Gbp,
+            Currency.Ils,
+            Currency.Usd,
+            Currency.Cad,
+            Currency.Jpy,
+          ].includes(transaction.amount?.currency)
         ) {
           transactions.push(transaction);
         }
@@ -119,7 +126,7 @@ export const ChartPage = (): ReactElement => {
         {} as Record<string, Array<Transaction>>,
       ) ?? {};
 
-    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad or GBP, convert to USD. If its USD, do nothing
+    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad, Jpy or GBP, convert to USD. If its USD, do nothing
     const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];
     Object.entries(transactionsByMonth).map(([key, value]) => {
       let converted: Array<Transaction | null> = value.map(item => {
@@ -180,6 +187,24 @@ export const ChartPage = (): ReactElement => {
         }
         if (item.amount.currency === Currency.Cad) {
           const rateToILS = item.debitExchangeRates?.cad || item.eventExchangeRates?.cad;
+          const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
+          if (!rateToILS || !rateToUSD) {
+            return null;
+          }
+          const rate = rateToUSD / rateToILS;
+          const amount = numberToDecimalJS(item.amount.raw * rate);
+          return {
+            ...item,
+            amount: {
+              ...item.amount,
+              raw: amount,
+              currency: Currency.Usd,
+              formatted: `$${amount} `,
+            },
+          };
+        }
+        if (item.amount.currency === Currency.Jpy) {
+          const rateToILS = item.debitExchangeRates?.jpy || item.eventExchangeRates?.jpy;
           const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rateToILS || !rateToUSD) {
             return null;

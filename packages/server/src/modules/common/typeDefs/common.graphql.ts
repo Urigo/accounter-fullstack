@@ -85,6 +85,7 @@ export default gql`
     GBP
     EUR
     CAD
+    JPY
     GRT
     USDC
     ETH
