@@ -47,6 +47,10 @@ BEGIN
         FROM accounter_schema.financial_accounts
         WHERE account_number = NEW.account_number::TEXT;
 
+        IF (account_id_var IS NULL) THEN
+            RAISE EXCEPTION 'Account not found for account number: %', NEW.account_number;
+        END IF;
+
         -- check if matching charge exists for source:
         SELECT t.charge_id
         INTO charge_id_var
@@ -57,8 +61,7 @@ BEGIN
                  LEFT JOIN accounter_schema.transactions t
                            ON tr.id = t.source_id
         WHERE t.charge_id IS NOT NULL
-            AND (s.formatted_value_date = NEW.formatted_start_date
-                OR s.formatted_value_date = NEW.formatted_end_date)
+            AND s.formatted_value_date = NEW.formatted_start_date
             AND currency_code::text = s.currency
             AND (s.event_details LIKE '%' || TRIM(LEFT(NEW.charge_party_name, 13)) || '%'
                 AND NEW.amount::NUMERIC = s.event_amount)
@@ -85,7 +88,7 @@ BEGIN
                 ),
                 currency_code,
                 NEW.formatted_start_date::DATE,
-                new.formatted_start_date::DATE,
+                NEW.formatted_start_date::DATE,
                 fee_amount * -1,
                 0,
                 NULL,
