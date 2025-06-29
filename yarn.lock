@@ -39,7 +39,7 @@ __metadata:
     "@types/pg": "npm:8.15.4"
     "@types/uuid": "npm:10.0.0"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     fast-xml-parser: "npm:5.2.5"
     graphql: "npm:16.11.0"
     lodash: "npm:4.17.21"
@@ -59,7 +59,7 @@ __metadata:
     "@types/listr": "npm:0.14.9"
     "@types/pg": "npm:8.15.4"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     dotenv-cli: "npm:8.0.0"
     listr: "npm:0.14.3"
     pg: "npm:8.16.3"
@@ -120,7 +120,7 @@ __metadata:
     dayjs: "npm:1.11.13"
     decimal.js: "npm:10.5.0"
     deep-equal: "npm:2.2.3"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.11.0"
@@ -157,7 +157,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.8"
     csv-parse: "npm:5.6.0"
     diary: "npm:0.4.5"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     pg-promise: "npm:11.14.0"
     tsup: "npm:8.5.0"
   languageName: unknown
@@ -169,7 +169,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.8"
     diary: "npm:0.4.5"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     pg-promise: "npm:11.14.0"
     tsup: "npm:8.5.0"
   languageName: unknown
@@ -231,7 +231,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.8"
     diary: "npm:0.4.5"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     node-kraken-api: "npm:2.2.2"
     pg-promise: "npm:11.14.0"
     tsup: "npm:8.5.0"
@@ -310,7 +310,7 @@ __metadata:
     cloudinary: "npm:2.7.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     dotenv-cli: "npm:8.0.0"
     graphql: "npm:16.11.0"
     graphql-modules: "npm:3.0.0"
@@ -8062,7 +8062,7 @@ __metadata:
     "@types/pg": "npm:8.15.4"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.0"
-    dotenv: "npm:16.5.0"
+    dotenv: "npm:16.6.1"
     eslint: "npm:9.30.0"
     eslint-config-flat-gitignore: "npm:2.1.0"
     glob: "npm:11.0.3"
@@ -10766,7 +10766,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:16.5.0, dotenv@npm:^16.0.0, dotenv@npm:^16.0.3, dotenv@npm:^16.3.0, dotenv@npm:^16.3.1":
+"dotenv@npm:16.6.1":
+  version: 16.6.1
+  resolution: "dotenv@npm:16.6.1"
+  checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.0.0, dotenv@npm:^16.0.3, dotenv@npm:^16.3.0, dotenv@npm:^16.3.1":
   version: 16.5.0
   resolution: "dotenv@npm:16.5.0"
   checksum: 10c0/5bc94c919fbd955bf0ba44d33922a1e93d1078e64a1db5c30faeded1d996e7a83c55332cb8ea4fae5a9ca4d0be44cbceb95c5811e70f9f095298df09d1997dd9
