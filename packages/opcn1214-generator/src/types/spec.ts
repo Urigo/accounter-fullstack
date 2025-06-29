@@ -1,7 +1,7 @@
 /**
  * Field specification for OPCN 1214 records
  */
-export interface HeaderSpecField {
+export interface HeaderSpecField<T extends string | number = string | number> {
   /** Unique field code identifier (e.g., "1000_01") */
   fieldCode: string
   /** Human-readable field name */
@@ -19,9 +19,9 @@ export interface HeaderSpecField {
   /** True if field contains Hebrew text (right-to-left) */
   rtl?: boolean
   /** Allowed enum values for validation */
-  enumValues?: string[]
+  enumValues?: T[]
   /** Default value if field is not provided */
-  defaultValue?: string | number | null
+  defaultValue?: T | null
   /** Padding direction for the field */
   padding?: 'left' | 'right'
   /** Padding character for the field */
@@ -31,15 +31,21 @@ export interface HeaderSpecField {
 }
 
 export interface SpecSumSubField {
+  fieldCode: string
   amountLength: number
+  required: boolean
+  enumValues?: string[]
+  description?: string
 }
 
 /**
  * Sum field specification for OPCN 1214 records
  */
 export interface SumSpecSection {
+  start?: number
+  abstractAmounts?: boolean
+  maxFields?: number
   subFields: SpecSumSubField[]
-  abstractAmounts: boolean
 }
 
 /**
