@@ -80,7 +80,7 @@
     "vitest": "3.2.4"
   },
   "resolutions": {
-    "@theguild/eslint-config/eslint-plugin-unicorn": "56.0.1",
+    "@theguild/eslint-config/eslint-plugin-unicorn": "59.0.1",
     "graphql": "16.11.0"
   },
   "lint-staged": {
