@@ -1,6 +1,6 @@
 {
   "name": "@accounter/green-invoice-graphql",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "type": "module",
   "description": "Graphql proxy for Green Invoice API",
   "repository": {
