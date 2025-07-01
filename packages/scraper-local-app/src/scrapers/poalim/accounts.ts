@@ -133,9 +133,6 @@ export async function getPoalimAccounts(bankKey: string) {
             if (dbAccount.mymail_entitlement_switch !== account.mymailEntitlementSwitch) {
               diffs.push('mymailEntitlementSwitch');
             }
-            if (dbAccount.party_account_involvement_code !== account.partyAccountInvolvementCode) {
-              diffs.push('partyAccountInvolvementCode');
-            }
             if (dbAccount.party_preferred_indication !== account.partyPreferredIndication) {
               diffs.push('partyPreferredIndication');
             }

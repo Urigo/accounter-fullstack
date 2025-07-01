@@ -30,7 +30,8 @@
       },
       "partyAccountInvolvementCode": {
         "type": "integer",
-        "enum": [1, 201]
+        "enum": [1, 201, 603],
+        "description": "User role: 1 - Owner, 201 - Partner, 603 - Viewer"
       },
       "accountDealDate": {
         "type": "integer",
