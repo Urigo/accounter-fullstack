@@ -152,6 +152,13 @@ const AccountantApprovals = lazy(() =>
   })),
 );
 
+// Workflows
+const YearEndAudit = lazy(() =>
+  import('../components/screens/operations/year-end-audit/index.js').then(m => ({
+    default: m.YearEndAudit,
+  })),
+);
+
 // Other
 const Salaries = lazy(() =>
   import('../components/salaries/index.js').then(m => ({ default: m.Salaries })),
@@ -546,6 +553,22 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Validate Reports',
                   breadcrumb: 'Validate',
+                },
+              },
+            ],
+          },
+
+          // Workflows section
+          {
+            path: 'workflows',
+            handle: { breadcrumb: 'Workflows' },
+            children: [
+              {
+                path: 'year-end-audit',
+                element: withSuspense(YearEndAudit),
+                handle: {
+                  title: 'Year End Audit',
+                  breadcrumb: 'Year-End',
                 },
               },
             ],
