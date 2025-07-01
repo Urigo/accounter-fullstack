@@ -221,7 +221,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.17.1"
     pino-pretty: "npm:13.0.0"
-    puppeteer: "npm:24.11.1"
+    puppeteer: "npm:24.11.2"
   languageName: unknown
   linkType: soft
 
@@ -253,7 +253,7 @@ __metadata:
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.10"
-    puppeteer: "npm:24.11.1"
+    puppeteer: "npm:24.11.2"
     typescript: "npm:5.8.3"
     uuid: "npm:11.1.0"
   languageName: unknown
@@ -17599,7 +17599,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:24.11.1":
+"puppeteer-core@npm:24.11.2":
+  version: 24.11.2
+  resolution: "puppeteer-core@npm:24.11.2"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.10.5"
+    chromium-bidi: "npm:5.1.0"
+    debug: "npm:^4.4.1"
+    devtools-protocol: "npm:0.0.1464554"
+    typed-query-selector: "npm:^2.12.0"
+    ws: "npm:^8.18.3"
+  checksum: 10c0/e2c15048b9dd2d793f99f1d30606aa4313842f95606507dfbd9e56d689a9c2042b5ceea119adc6ee5eb93ac01a2151f2eba88e88785099fc41561c7ac6998104
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:*":
   version: 24.11.1
   resolution: "puppeteer@npm:24.11.1"
   dependencies:
@@ -17612,6 +17626,22 @@ __metadata:
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
   checksum: 10c0/1c608bff226777c41c67d8daadd7946119b25bf948c36e27dfb1cba1093621fcd269eaf6bb5c976002cafb83fa1eb20e4ad219a8ce150d87a06526727b597297
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:24.11.2":
+  version: 24.11.2
+  resolution: "puppeteer@npm:24.11.2"
+  dependencies:
+    "@puppeteer/browsers": "npm:2.10.5"
+    chromium-bidi: "npm:5.1.0"
+    cosmiconfig: "npm:^9.0.0"
+    devtools-protocol: "npm:0.0.1464554"
+    puppeteer-core: "npm:24.11.2"
+    typed-query-selector: "npm:^2.12.0"
+  bin:
+    puppeteer: lib/cjs/puppeteer/node/cli.js
+  checksum: 10c0/6d5af3ae3a96569adfdd07a91a4c053e9ea866adb1360b67cf6706b729ead440dc629d5aa2ad351aa9f068d89625c866b4be08bfd15c2b8c07e043e7e2663a4b
   languageName: node
   linkType: hard
 
@@ -21494,7 +21524,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.12.0, ws@npm:^8.17.1, ws@npm:^8.18.2, ws@npm:^8.5.0":
+"ws@npm:^8.12.0, ws@npm:^8.17.1, ws@npm:^8.18.2, ws@npm:^8.18.3, ws@npm:^8.5.0":
   version: 8.18.3
   resolution: "ws@npm:8.18.3"
   peerDependencies:
