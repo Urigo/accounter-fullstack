@@ -74,6 +74,11 @@ export const ROUTES = {
     ALL: '/bank-deposits',
   },
 
+  WORKFLOWS: {
+    ROOT: '/workflows',
+    YEAR_END_AUDIT: '/workflows/year-end-audit',
+  },
+
   ACCOUNTANT_APPROVALS: '/accountant-approvals',
   SALARIES: '/salaries',
   TAGS: '/tags',

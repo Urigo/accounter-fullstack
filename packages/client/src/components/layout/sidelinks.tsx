@@ -16,6 +16,7 @@ import {
   Files,
   HandCoins,
   IdCard,
+  ListChecks,
   ParkingMeter,
   PlaneTakeoff,
   Puzzle,
@@ -253,6 +254,20 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.CHARTS.MONTHLY_INCOME_EXPENSE,
         icon: <BarChartBig size={18} />,
+      },
+    ],
+  },
+  {
+    title: 'Workflows',
+    label: '',
+    href: '',
+    icon: <ListChecks size={18} />,
+    sub: [
+      {
+        title: 'Year-end audit',
+        label: '',
+        href: ROUTES.WORKFLOWS.YEAR_END_AUDIT,
+        icon: <ListChecks size={18} />,
       },
     ],
   },
