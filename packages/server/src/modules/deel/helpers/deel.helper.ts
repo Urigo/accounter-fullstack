@@ -153,7 +153,10 @@ export async function uploadDeelInvoice(
     const newDocumentFromInvoice: IInsertDocumentsParams['document'][number] = {
       image: imageUrl ?? null,
       file: fileUrl ?? null,
-      documentType: DocumentType.Invoice,
+      documentType:
+        match.breakdown_contract_type === 'prepaid_billing'
+          ? DocumentType.Other
+          : DocumentType.Invoice,
       serialNumber: match.label,
       date: match.issued_at,
       amount: Number(match.breakdown_total_payment_currency),
@@ -202,6 +205,7 @@ export function convertMatchToDeelInvoiceRecord(
     contractCountry: nullifyEmptyStrings(match.breakdown_contract_country),
     contractId: match.contract_id,
     contractStartDate: nullifyEmptyStrings(match.breakdown_contract_start_date),
+    contractType: nullifyEmptyStrings(match.breakdown_contract_type),
     contractorEmail: nullifyEmptyStrings(match.breakdown_contractor_email),
     contractorEmployeeName: match.breakdown_contractor_employee_name,
     contractorUniqueIdentifier: nullifyEmptyStrings(match.breakdown_contractor_unique_identifier),
@@ -214,6 +218,7 @@ export function convertMatchToDeelInvoiceRecord(
     expenses: match.breakdown_expenses,
     frequency: nullifyEmptyStrings(match.breakdown_frequency),
     generalLedgerAccount: nullifyEmptyStrings(match.breakdown_general_ledger_account),
+    groupId: nullifyEmptyStrings(match.breakdown_group_id),
     id: match.id,
     isOverdue: match.is_overdue,
     issuedAt: match.issued_at,

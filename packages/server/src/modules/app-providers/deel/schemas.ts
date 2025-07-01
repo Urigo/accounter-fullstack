@@ -217,6 +217,7 @@ const paymentBreakdownRecordSchema = z
     contract_start_date: z
       .union([z.string().datetime(), z.literal('')])
       .describe('Start date of the contract.'),
+    contract_type: z.string(),
     contractor_email: z
       .union([z.literal(''), z.string().email()])
       .describe("Worker's email address."),
@@ -232,6 +233,7 @@ const paymentBreakdownRecordSchema = z
       .enum(['', 'hourly', 'daily', 'monthly', 'custom'])
       .describe('Frequency of payment (e.g., monthly, weekly).'),
     general_ledger_account: z.literal('').describe('General ledger account for the payment.'),
+    group_id: z.string(),
     // invoice_number: z
     //   .string()
     //   .optional()
