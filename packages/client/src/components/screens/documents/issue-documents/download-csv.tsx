@@ -18,7 +18,7 @@ export const DownloadCSV = ({ businessesData, form }: Props): ReactElement => {
     const issueMonthText = issueMonth
       ? issueMonth.substring(0, 7).replace(/-/g, '_')
       : format(new Date(), 'yyyy_MM');
-    const fileName = `documents_generation_${issueMonthText}.csv`;
+    const fileName = `documents_generation_${issueMonthText}`;
 
     // content
     const content = generateDocumentsInfo
