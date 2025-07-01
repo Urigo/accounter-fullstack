@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { AccountantApprovalProvider } from './providers/accountant-approval.provider.js';
 import { accountantApprovalResolvers } from './resolvers/accountant-approval.resolver.js';
 import accountantApproval from './typeDefs/accountant-approval.graphql.js';
 
@@ -9,6 +10,7 @@ export const accountantApprovalModule = createModule({
   dirname: __dirname,
   typeDefs: [accountantApproval],
   resolvers: [accountantApprovalResolvers],
+  providers: [AccountantApprovalProvider],
 });
 
 export * as AccountantApprovalTypes from './types.js';
