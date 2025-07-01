@@ -15,6 +15,7 @@ import {
   Files,
   HandCoins,
   IdCard,
+  ListChecks,
   ParkingMeter,
   PlaneTakeoff,
   Puzzle,
@@ -219,6 +220,20 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/charts/monthly-income-expense',
         icon: <BarChartBig size={18} />,
+      },
+    ],
+  },
+  {
+    title: 'Workflows',
+    label: '',
+    href: '',
+    icon: <ListChecks size={18} />,
+    sub: [
+      {
+        title: 'Year-end audit',
+        label: '',
+        href: '/workflows/year-end-audit',
+        icon: <ListChecks size={18} />,
       },
     ],
   },
