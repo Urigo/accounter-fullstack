@@ -12,6 +12,7 @@ import SimpleStep from './step-simple.js';
 
 export function AuditFlowContent() {
   const totalSteps = 21;
+  const YEAR = 2024; // TODO: Example year, should be dynamic
 
   // Track step statuses to avoid double counting
   const stepStatusesRef = useRef<Map<string, StepStatus>>(new Map());
@@ -63,6 +64,7 @@ export function AuditFlowContent() {
         {/* Step 1 - Custom component with server data */}
         <Step01ValidateCharges
           id="1"
+          year={YEAR}
           title="Validate All Charges"
           description="Ensure all charges of the year were reviewed, handle pending charges"
           onStatusChange={handleStatusChange}
