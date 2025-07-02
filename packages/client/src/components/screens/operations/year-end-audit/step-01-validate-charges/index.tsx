@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { useQuery } from 'urql';
-import { AccountantApprovalStatusDocument } from '../../../../../gql/graphql.js';
+import {
+  AccountantApprovalStatusDocument,
+  AccountantStatus,
+  ChargeSortByField,
+} from '../../../../../gql/graphql.js';
+import { TimelessDateString } from '../../../../../helpers/dates.js';
+import { UserContext } from '../../../../../providers/user-provider.js';
 import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
@@ -35,7 +41,9 @@ interface ChargeValidationData {
   unapprovedCount: number;
 }
 
-interface Step01Props extends BaseStepProps {}
+interface Step01Props extends BaseStepProps {
+  year: number;
+}
 
 export function Step01ValidateCharges(props: Step01Props) {
   const [status, setStatus] = useState<StepStatus>('loading');
@@ -68,8 +76,8 @@ export function Step01ValidateCharges(props: Step01Props) {
   const [{ data, fetching }, fetchStatus] = useQuery({
     query: AccountantApprovalStatusDocument,
     variables: {
-      fromDate: '2024-01-01',
-      toDate: '2024-12-31',
+      fromDate: `${props.year}-01-01` as TimelessDateString,
+      toDate: `${props.year}-12-31` as TimelessDateString,
     },
   });
 
@@ -110,11 +118,34 @@ export function Step01ValidateCharges(props: Step01Props) {
     }
   }, [data]);
 
-  const actions: StepAction[] = [
-    { label: 'Review Charges', href: '/charges/review' },
-    { label: 'Pending Charges', href: '/charges/pending' },
-    { label: 'Setup Bi-weekly Followup', href: '/followup/setup' },
-  ];
+  const { userContext } = useContext(UserContext);
+
+  const href = useMemo(() => {
+    const params = new URLSearchParams();
+    const chargesFilters = {
+      byOwners: [userContext?.context.adminBusinessId],
+      fromAnyDate: `${props.year}-01-01`,
+      toAnyDate: `${props.year}-12-31`,
+      accountantStatus: [AccountantStatus.Pending, AccountantStatus.Unapproved],
+      sortBy: {
+        field: ChargeSortByField.Date,
+        asc: false,
+      },
+    };
+
+    function encodeChargesFilters(json: Record<string, unknown>) {
+      const jsonString = JSON.stringify(json);
+      const encoded = encodeURIComponent(jsonString);
+      return encoded;
+    }
+
+    // Add it as a single encoded parameter
+    params.append('chargesFilters', encodeChargesFilters(chargesFilters));
+
+    return `/charges?${params}`;
+  }, [userContext?.context.adminBusinessId, props.year]);
+
+  const actions: StepAction[] = [{ label: 'Review Charges', href }];
 
   const refreshData = async () => {
     await fetchStatus();
