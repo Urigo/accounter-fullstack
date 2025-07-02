@@ -73,6 +73,7 @@ export function AuditFlowContent() {
         {/* Step 2 - Custom component with server data */}
         <Step02LedgerChanges
           id="2"
+          year={YEAR}
           title="Check Pending Ledger Changes"
           description="Ensure no pending ledger changes exist"
           onStatusChange={handleStatusChange}
