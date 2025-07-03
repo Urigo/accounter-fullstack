@@ -135,7 +135,7 @@ __metadata:
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.6.3"
     recharts: "npm:2.15.4"
-    sonner: "npm:2.0.5"
+    sonner: "npm:2.0.6"
     tabler-icons-react: "npm:1.56.0"
     tailwind-merge: "npm:3.3.1"
     tailwindcss: "npm:4.1.11"
@@ -19323,13 +19323,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sonner@npm:2.0.5":
-  version: 2.0.5
-  resolution: "sonner@npm:2.0.5"
+"sonner@npm:2.0.6":
+  version: 2.0.6
+  resolution: "sonner@npm:2.0.6"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
     react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-  checksum: 10c0/38ec98e2f5d7e086825307f737a90bdc8639182d184e002719c2368bf3a9259c340f41afda731716d2b78c40e5e3aa9165058375be42f6a93bda0876b9b433ba
+  checksum: 10c0/df6ab28ebc53d612ea9caa3b9ac2d12b7b15b619750c5bcf6c4e064a720cb24b383fd5ce074f5fe5183115c69d7f505226649cf157e25e954447ec4ed8749291
   languageName: node
   linkType: hard
 
