@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -7,7 +7,6 @@ import {
   ChargeSortByField,
 } from '../../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../../helpers/dates.js';
-import { UserContext } from '../../../../../providers/user-provider.js';
 import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
@@ -44,6 +43,7 @@ interface ChargeValidationData {
 
 interface Step01Props extends BaseStepProps {
   year: number;
+  adminBusinessId?: string;
 }
 
 export function Step01ValidateCharges(props: Step01Props) {
@@ -83,8 +83,12 @@ export function Step01ValidateCharges(props: Step01Props) {
   });
 
   useEffect(() => {
-    if (fetching) setStatus('loading');
-  }, [fetching]);
+    if (!props.adminBusinessId) {
+      setStatus('blocked');
+    } else if (fetching) {
+      setStatus('loading');
+    }
+  }, [props.adminBusinessId, fetching]);
 
   useEffect(() => {
     if (data?.accountantApprovalStatus) {
@@ -119,13 +123,9 @@ export function Step01ValidateCharges(props: Step01Props) {
     }
   }, [data]);
 
-  const { userContext } = useContext(UserContext);
-
   const href = useMemo(() => {
     return getAllChargesHref({
-      byOwners: userContext?.context.adminBusinessId
-        ? [userContext.context.adminBusinessId]
-        : undefined,
+      byOwners: props.adminBusinessId ? [props.adminBusinessId] : undefined,
       fromAnyDate: `${props.year}-01-01` as TimelessDateString,
       toAnyDate: `${props.year}-12-31` as TimelessDateString,
       accountantStatus: [AccountantStatus.Pending, AccountantStatus.Unapproved],
@@ -134,7 +134,7 @@ export function Step01ValidateCharges(props: Step01Props) {
         asc: false,
       },
     });
-  }, [userContext?.context.adminBusinessId, props.year]);
+  }, [props.adminBusinessId, props.year]);
 
   const actions: StepAction[] = [{ label: 'Review Charges', href }];
 
