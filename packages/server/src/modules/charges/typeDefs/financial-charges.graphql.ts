@@ -19,6 +19,10 @@ export default gql`
       description: String!
       balanceRecords: [InsertMiscExpenseInput!]!
     ): FinancialCharge! @auth(role: ACCOUNTANT)
+    generateFinancialCharges(
+      date: TimelessDate!
+      ownerId: UUID!
+    ): FinancialChargesGenerationResult! @auth(role: ADMIN)
   }
 
   " financial charge "
@@ -39,5 +43,16 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " result type for generateFinancialCharges "
+  type FinancialChargesGenerationResult {
+    id: ID!
+    revaluationCharge: Charge!
+    taxExpensesCharge: Charge!
+    depreciationCharge: Charge!
+    recoveryReserveCharge: Charge!
+    vacationReserveCharge: Charge!
+    bankDepositsRevaluationCharge: Charge!
   }
 `;
