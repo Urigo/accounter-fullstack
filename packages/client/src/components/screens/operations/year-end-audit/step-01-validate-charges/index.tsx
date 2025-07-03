@@ -12,6 +12,7 @@ import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
+import { getAllChargesHref } from '../../../charges/all-charges.js';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -121,28 +122,18 @@ export function Step01ValidateCharges(props: Step01Props) {
   const { userContext } = useContext(UserContext);
 
   const href = useMemo(() => {
-    const params = new URLSearchParams();
-    const chargesFilters = {
-      byOwners: [userContext?.context.adminBusinessId],
-      fromAnyDate: `${props.year}-01-01`,
-      toAnyDate: `${props.year}-12-31`,
+    return getAllChargesHref({
+      byOwners: userContext?.context.adminBusinessId
+        ? [userContext.context.adminBusinessId]
+        : undefined,
+      fromAnyDate: `${props.year}-01-01` as TimelessDateString,
+      toAnyDate: `${props.year}-12-31` as TimelessDateString,
       accountantStatus: [AccountantStatus.Pending, AccountantStatus.Unapproved],
       sortBy: {
         field: ChargeSortByField.Date,
         asc: false,
       },
-    };
-
-    function encodeChargesFilters(json: Record<string, unknown>) {
-      const jsonString = JSON.stringify(json);
-      const encoded = encodeURIComponent(jsonString);
-      return encoded;
-    }
-
-    // Add it as a single encoded parameter
-    params.append('chargesFilters', encodeChargesFilters(chargesFilters));
-
-    return `/charges?${params}`;
+    });
   }, [userContext?.context.adminBusinessId, props.year]);
 
   const actions: StepAction[] = [{ label: 'Review Charges', href }];
