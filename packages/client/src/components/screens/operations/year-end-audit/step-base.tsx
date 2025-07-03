@@ -65,6 +65,7 @@ interface BaseStepCardProps extends BaseStepProps {
   hasSubsteps?: boolean;
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
+  disabled?: boolean;
 }
 
 export function BaseStepCard({
@@ -78,17 +79,23 @@ export function BaseStepCard({
   hasSubsteps = false,
   isExpanded = false,
   onToggleExpanded,
-  onStatusChange,
   level = 0,
+  disabled = false,
 }: BaseStepCardProps) {
   return (
-    <div className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''}`}>
+    <div className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''} relative`}>
       <Card className="mb-4">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {hasSubsteps ? (
-                <Button variant="ghost" size="sm" onClick={onToggleExpanded} className="p-0 h-auto">
+                <Button
+                  disabled={disabled}
+                  variant="ghost"
+                  size="sm"
+                  onClick={onToggleExpanded}
+                  className="p-0 h-auto"
+                >
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
                   ) : (
@@ -118,8 +125,9 @@ export function BaseStepCard({
                   key={index}
                   variant="outline"
                   size="sm"
+                  disabled={disabled}
                   onClick={action.onClick}
-                  asChild={!!action.href}
+                  asChild={!!action.href && !disabled}
                 >
                   {action.href ? <a href={action.href}>{action.label}</a> : action.label}
                 </Button>
@@ -129,6 +137,13 @@ export function BaseStepCard({
         )}
         {children}
       </Card>
+
+      {/* disabled overlay */}
+      {disabled && (
+        <Card
+          className={`absolute inset-0 bg-gray-500 opacity-50 pointer-events-auto z-10 ${level > 0 ? 'ml-4' : ''}`}
+        />
+      )}
     </div>
   );
 }
