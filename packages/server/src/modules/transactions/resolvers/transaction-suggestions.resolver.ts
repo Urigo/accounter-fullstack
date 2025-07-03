@@ -439,11 +439,7 @@ function missingInfoSuggestionsWrapper(
 
 export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
   Query: {
-    similarTransactions: async (
-      _,
-      { transactionId, withMissingInfo = false },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    similarTransactions: async (_, { transactionId, withMissingInfo = false }, { injector }) => {
       if (!transactionId?.trim()) {
         throw new GraphQLError('Transaction ID is required');
       }
