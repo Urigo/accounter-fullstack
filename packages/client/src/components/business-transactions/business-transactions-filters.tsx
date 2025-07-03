@@ -13,6 +13,12 @@ import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
 
+export function encodeTransactionsFilters(
+  filter?: BusinessTransactionsFilter | null,
+): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
 interface BusinessTransactionsFilterFormProps {
   filter: BusinessTransactionsFilter;
   setFilter: (filter: BusinessTransactionsFilter) => void;

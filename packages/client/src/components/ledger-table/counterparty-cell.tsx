@@ -2,6 +2,7 @@ import { ReactElement, useCallback } from 'react';
 import { NavLink } from '@mantine/core';
 import { ChargeFilter } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { getBusinessTransactionsHref } from '../business-transactions/index.js';
 
 type Props = {
   account?: {
@@ -32,18 +33,12 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
         }
       }
 
-      const params = new URLSearchParams();
-      const filterObject = {
+      return getBusinessTransactionsHref({
         ownerIds: currentFilters.byOwners || [],
         businessIDs: [businessID],
         ...(currentFilters.fromDate && { fromDate: currentFilters.fromDate }),
         ...(currentFilters.toDate && { toDate: currentFilters.toDate }),
-      };
-
-      // Add it as a single encoded parameter
-      params.append('transactionsFilters', JSON.stringify(filterObject));
-
-      return `/business-transactions?${params.toString()}`;
+      });
     },
     [encodedFilters],
   );

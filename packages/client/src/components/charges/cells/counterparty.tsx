@@ -7,6 +7,7 @@ import {
 } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { getBusinessTransactionsHref } from '../../business-transactions/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -65,23 +66,12 @@ export const Counterparty = ({ data }: Props): ReactElement => {
         ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
         : {};
 
-      const encodedNewFilters = {
-        fromDate: currentFilters.fromDate
-          ? `%252C%2522fromDate%2522%253A%2522${currentFilters.fromDate}%2522`
-          : '',
-        toDate: currentFilters.toDate
-          ? `%252C%2522toDate%2522%253A%2522${currentFilters.toDate}%2522`
-          : '',
-        ownerIds:
-          currentFilters.byOwners && currentFilters.byOwners.length > 0
-            ? `%2522${currentFilters.byOwners.join('%2522%252C%2522')}%2522`
-            : '',
-      };
-      return `/business-transactions?transactionsFilters=%257B%2522ownerIds%2522%253A%255B${
-        encodedNewFilters.ownerIds
-      }%255D%252C%2522businessIDs%2522%253A%255B%2522${encodeURIComponent(businessID)}%2522%255D${
-        encodedNewFilters.fromDate
-      }${encodedNewFilters.toDate}%257D`;
+      return getBusinessTransactionsHref({
+        fromDate: currentFilters.fromDate,
+        toDate: currentFilters.toDate,
+        ownerIds: currentFilters.byOwners,
+        businessIDs: [businessID],
+      });
     },
     [encodedFilters],
   );

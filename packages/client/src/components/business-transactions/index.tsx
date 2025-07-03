@@ -15,7 +15,10 @@ import { AccounterTableRow } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
-import { BusinessTransactionsFilters } from './business-transactions-filters.js';
+import {
+  BusinessTransactionsFilters,
+  encodeTransactionsFilters,
+} from './business-transactions-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -59,6 +62,19 @@ import { BusinessTransactionsFilters } from './business-transactions-filters.js'
     }
   }
 `;
+
+export function getBusinessTransactionsHref(filter?: BusinessTransactionsFilter | null): string {
+  const params = new URLSearchParams();
+
+  const transactionsFilters = encodeTransactionsFilters(filter);
+  if (transactionsFilters) {
+    // Add it as a single encoded parameter
+    params.append('transactionsFilters', transactionsFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/business-transactions${queryParams}`;
+}
 
 type BusinessTransactionsSum = Extract<
   BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],

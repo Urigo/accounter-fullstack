@@ -26,6 +26,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form.js
 import { Label } from '../ui/label.js';
 import { Switch } from '../ui/switch.js';
 
+export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;
@@ -467,7 +471,7 @@ export function ChargesFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeChargesFilters(filter);
     const oldFilter = get('chargesFilters');
     if (newFilter !== oldFilter) {
       set('chargesFilters', newFilter);
