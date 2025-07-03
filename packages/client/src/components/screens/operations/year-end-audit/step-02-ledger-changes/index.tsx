@@ -1,9 +1,8 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Settings } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeSortByField, LedgerValidationStatusDocument } from '../../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../../helpers/index.js';
-import { UserContext } from '../../../../../providers/user-provider.js';
 import { Badge } from '../../../../ui/badge.js';
 import { CardContent } from '../../../../ui/card.js';
 import { getAllChargesHref } from '../../../charges/all-charges.js';
@@ -27,18 +26,18 @@ import {
 
 interface Step02Props extends BaseStepProps {
   year: number;
+  adminBusinessId?: string;
 }
 
 export function Step02LedgerChanges(props: Step02Props) {
   const [status, setStatus] = useState<StepStatus>('blocked');
   const [pendingChanges, setPendingChanges] = useState<number>(Infinity);
-  const { userContext } = useContext(UserContext);
 
   const [{ data, fetching }, fetchStatus] = useQuery({
     query: LedgerValidationStatusDocument,
     variables: {
       filters: {
-        byOwners: userContext ? [userContext.context.adminBusinessId] : [],
+        byOwners: props.adminBusinessId ? [props.adminBusinessId] : [],
         fromAnyDate: `${props.year}-01-01` as TimelessDateString,
         toAnyDate: `${props.year}-12-31` as TimelessDateString,
       },
@@ -47,7 +46,7 @@ export function Step02LedgerChanges(props: Step02Props) {
   });
 
   useEffect(() => {
-    if (!data && !fetching && userContext?.context.adminBusinessId) {
+    if (!data && !fetching && props.adminBusinessId) {
       fetchStatus();
     }
   });
@@ -80,9 +79,7 @@ export function Step02LedgerChanges(props: Step02Props) {
 
   const href = useMemo(() => {
     return getAllChargesHref({
-      byOwners: userContext?.context.adminBusinessId
-        ? [userContext.context.adminBusinessId]
-        : undefined,
+      byOwners: props.adminBusinessId ? [props.adminBusinessId] : undefined,
       fromAnyDate: `${props.year}-01-01` as TimelessDateString,
       toAnyDate: `${props.year}-12-31` as TimelessDateString,
       sortBy: {
@@ -90,7 +87,7 @@ export function Step02LedgerChanges(props: Step02Props) {
         asc: false,
       },
     });
-  }, [userContext?.context.adminBusinessId, props.year]);
+  }, [props.adminBusinessId, props.year]);
 
   const actions: StepAction[] = [{ label: 'View Ledger Status', href }];
 
