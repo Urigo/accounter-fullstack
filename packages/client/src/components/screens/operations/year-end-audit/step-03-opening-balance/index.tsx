@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Calculator } from 'lucide-react';
+import { TimelessDateString } from '../../../../../helpers/dates.js';
+import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.js';
+import { getContoReportHref } from '../../../../reports/conto/index.js';
+import { getTrialBalanceReportHref } from '../../../../reports/trial-balance-report/index.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
@@ -10,51 +14,78 @@ interface UserType {
   balanceStatus?: 'verified' | 'pending' | 'missing';
 }
 
-interface Step03Props extends BaseStepProps {}
+interface Step03Props extends BaseStepProps {
+  year: number;
+  adminBusinessId?: string;
+}
 
 // Sub-step components
-function SubStep3A({ level }: { level: number }) {
+function SubStep3A({
+  level,
+  year,
+  adminBusinessId,
+  disabled,
+}: {
+  level: number;
+  year: number;
+  adminBusinessId: string;
+  disabled: boolean;
+}) {
+  const contoHref = getContoReportHref({
+    fromDate: `${year - 1}-01-01` as TimelessDateString,
+    toDate: `${year - 1}-12-31` as TimelessDateString,
+    ownerIds: [adminBusinessId],
+  });
+  const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
+
   return (
-    <BaseStepCard
-      id="3a"
-      title="New Users"
-      description="Not relevant for new users"
-      status="completed"
-      level={level}
-      actions={[{ label: 'Mark as N/A', onClick: () => {} }]}
-    />
+    <>
+      <BaseStepCard
+        id="3a"
+        title="Migrating Users"
+        description="Create balance charge and dynamic report"
+        status="pending"
+        level={level}
+        actions={[
+          { label: 'Create Balance Charge', onClick: () => setBalanceChargeModalOpen(true) },
+          { label: 'Generate Dynamic Report', href: contoHref },
+          // { label: 'Upload Conto 331 Report', href: '/upload/conto331' },
+        ]}
+        disabled={disabled}
+      />
+      <BalanceChargeModal
+        open={balanceChargeModalOpen}
+        onOpenChange={setBalanceChargeModalOpen}
+        onClose={() => setBalanceChargeModalOpen(false)}
+      />
+    </>
   );
 }
 
-function SubStep3B({ level }: { level: number }) {
+function SubStep3B({
+  level,
+  year,
+  adminBusinessId,
+  disabled,
+}: {
+  level: number;
+  year: number;
+  adminBusinessId: string;
+  disabled: boolean;
+}) {
+  const href = getTrialBalanceReportHref({
+    toDate: `${year - 1}-12-31` as TimelessDateString,
+    ownerIds: [adminBusinessId],
+  });
   return (
     <BaseStepCard
       id="3b"
-      title="Migrating Users"
-      description="Create balance charge and dynamic report"
-      status="pending"
-      level={level}
-      actions={[
-        { label: 'Create Balance Charge', href: '/balance/create' },
-        { label: 'Generate Dynamic Report', href: '/reports/dynamic' },
-        { label: 'Upload Conto 331 Report', href: '/upload/conto331' },
-      ]}
-    />
-  );
-}
-
-function SubStep3C({ level }: { level: number }) {
-  return (
-    <BaseStepCard
-      id="3c"
       title="Continuing Users"
       description="Compare with previous year final trial balance"
       status="pending"
       level={level}
-      actions={[
-        { label: 'Compare Trial Balance', href: '/balance/compare' },
-        { label: 'View Previous Year', href: '/reports/previous-year' },
-      ]}
+      actions={[{ label: 'View Previous Year Ending Balance', href }]}
+      disabled={disabled}
     />
   );
 }
@@ -63,6 +94,12 @@ export default function Step03OpeningBalance(props: Step03Props) {
   const [status, setStatus] = useState<StepStatus>('loading');
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!props.adminBusinessId) {
+      setStatus('blocked');
+    }
+  }, [props.adminBusinessId]);
 
   // Report status changes to parent
   useEffect(() => {
@@ -110,13 +147,24 @@ export default function Step03OpeningBalance(props: Step03Props) {
         onToggleExpanded={() => setIsExpanded(!isExpanded)}
       />
 
-      <Collapsible open={isExpanded}>
-        <CollapsibleContent className="space-y-2">
-          <SubStep3A level={1} />
-          <SubStep3B level={1} />
-          <SubStep3C level={1} />
-        </CollapsibleContent>
-      </Collapsible>
+      {props.adminBusinessId && (
+        <Collapsible open={isExpanded}>
+          <CollapsibleContent className="space-y-2">
+            <SubStep3A
+              level={1}
+              year={props.year}
+              adminBusinessId={props.adminBusinessId}
+              disabled={userType?.type !== 'migrating'}
+            />
+            <SubStep3B
+              level={1}
+              year={props.year}
+              adminBusinessId={props.adminBusinessId}
+              disabled={userType?.type !== 'continuing'}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </>
   );
 }
