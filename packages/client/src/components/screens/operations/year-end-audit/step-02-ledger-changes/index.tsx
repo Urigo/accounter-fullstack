@@ -6,6 +6,7 @@ import { TimelessDateString } from '../../../../../helpers/index.js';
 import { UserContext } from '../../../../../providers/user-provider.js';
 import { Badge } from '../../../../ui/badge.js';
 import { CardContent } from '../../../../ui/card.js';
+import { getAllChargesHref } from '../../../charges/all-charges.js';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -78,27 +79,17 @@ export function Step02LedgerChanges(props: Step02Props) {
   }, [data]);
 
   const href = useMemo(() => {
-    const params = new URLSearchParams();
-    const chargesFilters = {
-      byOwners: [userContext?.context.adminBusinessId],
-      fromAnyDate: `${props.year}-01-01`,
-      toAnyDate: `${props.year}-12-31`,
+    return getAllChargesHref({
+      byOwners: userContext?.context.adminBusinessId
+        ? [userContext.context.adminBusinessId]
+        : undefined,
+      fromAnyDate: `${props.year}-01-01` as TimelessDateString,
+      toAnyDate: `${props.year}-12-31` as TimelessDateString,
       sortBy: {
         field: ChargeSortByField.Date,
         asc: false,
       },
-    };
-
-    function encodeChargesFilters(json: Record<string, unknown>) {
-      const jsonString = JSON.stringify(json);
-      const encoded = encodeURIComponent(jsonString);
-      return encoded;
-    }
-
-    // Add it as a single encoded parameter
-    params.append('chargesFilters', encodeChargesFilters(chargesFilters));
-
-    return `/charges-ledger-validation?${params}`;
+    });
   }, [userContext?.context.adminBusinessId, props.year]);
 
   const actions: StepAction[] = [{ label: 'View Ledger Status', href }];
