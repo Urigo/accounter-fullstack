@@ -1,4 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -447,7 +448,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
         throw new GraphQLError('Transaction ID is required');
       }
 
-      const mainTransaction = await injector
+      const mainTransactionPromise = injector
         .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId)
         .catch(e => {
@@ -455,8 +456,21 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
           throw new GraphQLError('Error fetching transaction');
         });
 
+      const chargePromise = injector
+        .get(ChargesProvider)
+        .getChargeByTransactionIdLoader.load(transactionId)
+        .catch(e => {
+          console.error('Error fetching charge', { transactionId, error: e });
+          throw new GraphQLError('Error fetching charge');
+        });
+
+      const [mainTransaction, charge] = await Promise.all([mainTransactionPromise, chargePromise]);
+
       if (!mainTransaction) {
         throw new GraphQLError(`Transaction not found: ${transactionId}`);
+      }
+      if (!charge) {
+        throw new GraphQLError(`Charge not found for transaction: ${transactionId}`);
       }
 
       const similarTransactions = await injector
@@ -465,7 +479,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
           details: mainTransaction.source_description,
           counterAccount: mainTransaction.counter_account,
           withMissingInfo,
-          ownerId: defaultAdminBusinessId,
+          ownerId: charge.owner_id,
         })
         .catch(e => {
           console.error('Error fetching similar transactions:', {

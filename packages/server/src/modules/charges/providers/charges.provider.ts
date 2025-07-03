@@ -236,7 +236,7 @@ export class ChargesProvider {
       },
       this.dbProvider,
     )) as ChargeRequiredWrapper<IGetChargesByTransactionIdsResult>[];
-    return transactionIds.map(id => charges.find(charge => charge.id === id));
+    return transactionIds.map(id => charges.find(charge => charge.transaction_id === id));
   }
 
   public getChargeByTransactionIdLoader = new DataLoader(
