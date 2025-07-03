@@ -22,6 +22,11 @@ import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
 import { CONTO_REPORT_FILTERS_KEY } from './index.js';
 
+export function encodeContoReportFilters(filter?: ContoReportFiltersType | null): string | null {
+  if (!filter || isObjectEmpty(filter)) return null;
+  return encodeURIComponent(JSON.stringify(filter));
+}
+
 export type ContoReportFiltersType = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;
 };
