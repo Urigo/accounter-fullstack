@@ -2,6 +2,7 @@ import type { ComponentProps, ReactElement } from 'react';
 import { ExternalLink } from 'tabler-icons-react';
 import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
+import { getChargeHref } from '../../screens/charges/charge.js';
 import { Button } from '../../ui/button.js';
 
 export function ChargeNavigateButton(
@@ -12,7 +13,7 @@ export function ChargeNavigateButton(
       <Button
         onClick={event => {
           event.stopPropagation();
-          window.open(`/charges/${props.chargeId}`, '_blank', 'noreferrer');
+          window.open(getChargeHref(props.chargeId), '_blank', 'noreferrer');
         }}
         {...props}
         className={cn('size-7.5', props.className)}

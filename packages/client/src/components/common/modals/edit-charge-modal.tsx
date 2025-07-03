@@ -2,6 +2,7 @@ import { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { EditChargeDocument } from '../../../gql/graphql.js';
+import { getChargeHref } from '../../screens/charges/charge.js';
 import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -81,7 +82,7 @@ export const EditChargeModalContent = ({
             ID: {chargeId}
             <CopyToClipboardButton
               isLink
-              content={`${window.location.origin}/charges/${chargeId}`}
+              content={`${window.location.origin}${getChargeHref(chargeId)}`}
             />
           </div>
         </div>

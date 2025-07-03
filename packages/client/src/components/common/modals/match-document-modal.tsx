@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { getChargeHref } from '../../screens/charges/charge.js';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher/index.js';
 import { CopyToClipboardButton, PopUpDrawer } from '../index.js';
 
@@ -24,7 +25,7 @@ export const MatchDocumentModal = ({
             Charge ID: {chargeId}
             <CopyToClipboardButton
               isLink
-              content={`${window.location.origin}/charges/${chargeId}`}
+              content={`${window.location.origin}${getChargeHref(chargeId)}`}
             />
           </div>
         </div>

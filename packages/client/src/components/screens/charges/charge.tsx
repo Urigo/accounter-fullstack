@@ -20,6 +20,10 @@ import {
   }
 `;
 
+export function getChargeHref(chargeId: string): string {
+  return `/charges/${chargeId}`;
+}
+
 type Props = {
   chargeId?: string;
 };
