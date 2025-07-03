@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useContext, useRef, useState } from 'react';
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
+import { UserContext } from '../../../../providers/user-provider.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
@@ -11,6 +12,8 @@ import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
 
 export function AuditFlowContent() {
+  const { userContext } = useContext(UserContext);
+
   const totalSteps = 21;
   const YEAR = 2024; // TODO: Example year, should be dynamic
 
@@ -65,6 +68,7 @@ export function AuditFlowContent() {
         <Step01ValidateCharges
           id="1"
           year={YEAR}
+          adminBusinessId={userContext?.context.adminBusinessId}
           title="Validate All Charges"
           description="Ensure all charges of the year were reviewed, handle pending charges"
           onStatusChange={handleStatusChange}
@@ -74,6 +78,7 @@ export function AuditFlowContent() {
         <Step02LedgerChanges
           id="2"
           year={YEAR}
+          adminBusinessId={userContext?.context.adminBusinessId}
           title="Check Pending Ledger Changes"
           description="Ensure no pending ledger changes exist"
           onStatusChange={handleStatusChange}
@@ -82,6 +87,8 @@ export function AuditFlowContent() {
         {/* Step 3 - Custom component with substeps */}
         <Step03OpeningBalance
           id="3"
+          year={YEAR}
+          adminBusinessId={userContext?.context.adminBusinessId}
           title="Verify Opening Balance"
           description="Handle opening balance verification based on user type"
           onStatusChange={handleStatusChange}
