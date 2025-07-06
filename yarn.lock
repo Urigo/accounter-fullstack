@@ -127,7 +127,7 @@ __metadata:
     lucide-react: "npm:0.525.0"
     next-themes: "npm:0.4.6"
     react: "npm:19.1.0"
-    react-day-picker: "npm:9.7.0"
+    react-day-picker: "npm:9.8.0"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.1.0"
     react-error-boundary: "npm:6.0.0"
@@ -17870,16 +17870,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-day-picker@npm:9.7.0":
-  version: 9.7.0
-  resolution: "react-day-picker@npm:9.7.0"
+"react-day-picker@npm:9.8.0":
+  version: 9.8.0
+  resolution: "react-day-picker@npm:9.8.0"
   dependencies:
     "@date-fns/tz": "npm:1.2.0"
     date-fns: "npm:4.1.0"
     date-fns-jalali: "npm:4.1.0-0"
   peerDependencies:
     react: ">=16.8.0"
-  checksum: 10c0/c08c45a53aebceda1c938d2e4c95eb1702dcf149715e3457739f8930dce19a3be5780e5bad12dcc9d244d50b7e0efb226c336d81c1c062f616cf422e6a3804a6
+  checksum: 10c0/910dfbc59e9fece7f5365a2a23ed497e07f227a733289e8141b858b6ce482087df6b01f2ba4f9f7e452ebc3465af0e227f192708a673396221865df07e5ab2ac
   languageName: node
   linkType: hard
 
