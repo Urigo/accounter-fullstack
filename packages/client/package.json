@@ -61,7 +61,7 @@
     "react-dnd": "16.0.1",
     "react-dom": "19.1.0",
     "react-error-boundary": "6.0.0",
-    "react-hook-form": "7.59.0",
+    "react-hook-form": "7.60.0",
     "react-number-format": "5.4.4",
     "react-router-dom": "7.6.3",
     "recharts": "2.15.4",
