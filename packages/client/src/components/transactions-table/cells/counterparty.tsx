@@ -93,7 +93,7 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
 
   return (
     <>
-      <div className="flex flex-wrap gap-1 items-center justify-center">
+      <div className="flex flex-wrap flex-col justify-center">
         {counterparty?.id ? (
           <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
             {name}
