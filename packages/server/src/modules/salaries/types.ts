@@ -1,15 +1,6 @@
 export * from './__generated__/types.js';
+export type { stringArray } from './__generated__/salaries.types.js';
 export * from './__generated__/salaries.types.js';
 export * from './__generated__/employees.types.js';
 export * from './__generated__/recovery.types.js';
-export type {
-  IGetAllPensionFundsParams,
-  IGetAllPensionFundsResult,
-  IGetAllPensionFundsQuery,
-  IGetAllTrainingFundsParams,
-  IGetAllTrainingFundsResult,
-  IGetAllTrainingFundsQuery,
-  IGetAllFundsParams,
-  IGetAllFundsResult,
-  IGetAllFundsQuery,
-} from './__generated__/funds.types.js';
+export * from './__generated__/funds.types.js';
