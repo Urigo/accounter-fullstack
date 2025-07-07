@@ -40,7 +40,7 @@ function DepreciationReportFiltersForm({
   const form = useForm<DepreciationReportFilter>({
     defaultValues: { ...filter },
   });
-  const { control, handleSubmit, watch } = form;
+  const { control, handleSubmit } = form;
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
 
@@ -48,9 +48,6 @@ function DepreciationReportFiltersForm({
     setFilter({ ...data, year: Number(data.year) });
     close();
   };
-
-  const yearValue = watch('year');
-  console.log('yearValue', yearValue, typeof yearValue);
 
   return (
     <Form {...form}>

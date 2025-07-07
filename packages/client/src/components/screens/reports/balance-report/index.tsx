@@ -162,10 +162,12 @@ export const BalanceReport = (): ReactElement => {
       try {
         return JSON.parse(decodeURIComponent(uriFilters)) as BalanceReportFilter;
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {}
+      } catch (error) {
+        console.log('Error parsing balance report filters from URL:', error);
+      }
     }
     return defaultFilters;
-  }, []);
+  }, [userContext?.context.adminBusinessId]);
   const [filter, setFilter] = useState<BalanceReportFilter>(initialFilters);
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
