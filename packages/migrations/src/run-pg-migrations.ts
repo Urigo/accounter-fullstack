@@ -103,6 +103,7 @@ import migration_2025_06_28T13_12_45_fix_poalim_swift_trigger_function from './a
 import migration_2025_06_29T12_27_18_support_jpy_currency from './actions/2025-06-29T12-27-18.support-jpy-currency.js';
 import migration_2025_06_29T15_28_00_currency_fix from './actions/2025-06-29T15-28-00.currency-fix.js';
 import migration_2025_06_30T16_20_19_deel_data_update from './actions/2025-06-30T16-20-19.deel-data-update.js';
+import migration_2025_07_03T10_47_48_move_admin_businesses_info_to_designated_table from './actions/2025-07-03T10-47-48.move-admin-businesses-info-to-designated-table.js';
 import migration_2025_07_07T10_30_32_support_aud_currency from './actions/2025-07-07T10-30-32.support-aud-currency.js';
 import migration_2025_07_10T14_13_43_swift_table_extension from './actions/2025-07-10T14-13-43.swift-table-extension.js';
 import migration_2025_07_14T14_35_02_swift_multiple_currencies_handle from './actions/2025-07-14T14-35-02.swift-multiple-currencies-handle.js';
@@ -219,5 +220,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_07_07T10_30_32_support_aud_currency,
       migration_2025_07_10T14_13_43_swift_table_extension,
       migration_2025_07_14T14_35_02_swift_multiple_currencies_handle,
+      migration_2025_07_03T10_47_48_move_admin_businesses_info_to_designated_table,
     ],
   });
