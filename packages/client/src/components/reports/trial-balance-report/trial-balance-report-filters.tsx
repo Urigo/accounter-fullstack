@@ -19,6 +19,12 @@ export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;
 };
 
+export function encodeTrialBalanceReportFilters(
+  filter?: TrialBalanceReportFilters | null,
+): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
 interface TrialBalanceReportFilterFormProps {
   filter: TrialBalanceReportFilters;
   setFilter: (filter: TrialBalanceReportFilters) => void;

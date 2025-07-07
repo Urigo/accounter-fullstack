@@ -19,7 +19,11 @@ import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { ContoReportFilters, ContoReportFiltersType } from './conto-report-filters.js';
+import {
+  ContoReportFilters,
+  ContoReportFiltersType,
+  encodeContoReportFilters,
+} from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
 import { SaveTemplate } from './conto-report-save-template.js';
 import { DownloadCSV } from './download-csv.js';
@@ -88,6 +92,19 @@ import { CustomData } from './types.js';
 const BANK_TREE_ROOT_ID = 'bank';
 export const REPORT_TREE_ROOT_ID = 'report';
 export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
+
+export function getContoReportHref(filter?: ContoReportFiltersType | null): string {
+  const params = new URLSearchParams();
+
+  const contoReportFilters = encodeContoReportFilters(filter);
+  if (contoReportFilters) {
+    // Add it as a single encoded parameter
+    params.append(CONTO_REPORT_FILTERS_KEY, contoReportFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/reports/conto${queryParams}`;
+}
 
 function buildSortCodeFinancialEntitiesMaps(tree: NodeModel<CustomData>[]) {
   const sortCodeMap = new Map<number, string | number>();

@@ -9,6 +9,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
+import { getChargeHref } from '../../../screens/charges/charge.js';
 import {
   Account,
   Counterparty,
@@ -97,7 +98,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                     onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
                       event.stopPropagation();
                       window.open(
-                        `/charges/${uncategorizedTransaction.transaction.chargeId}`,
+                        getChargeHref(uncategorizedTransaction.transaction.chargeId),
                         '_blank',
                         'noreferrer',
                       );

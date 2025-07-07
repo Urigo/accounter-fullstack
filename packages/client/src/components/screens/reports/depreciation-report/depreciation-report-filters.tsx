@@ -3,6 +3,7 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { DepreciationReportFilter } from '../../../../gql/graphql.js';
+import { isObjectEmpty } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { ComboBox, NumberInput } from '../../../common/index.js';
@@ -16,6 +17,14 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+
+export function encodeDepreciationReportFilters(
+  filter?: DepreciationReportFilter | null,
+): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
+export const DEPRECIATION_REPORT_FILTERS_QUERY_PARAM = 'depreciationReportFilters';
 
 interface DepreciationReportFiltersFormProps {
   filter: DepreciationReportFilter;
@@ -31,7 +40,7 @@ function DepreciationReportFiltersForm({
   const form = useForm<DepreciationReportFilter>({
     defaultValues: { ...filter },
   });
-  const { control, handleSubmit, watch } = form;
+  const { control, handleSubmit } = form;
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
 
@@ -39,9 +48,6 @@ function DepreciationReportFiltersForm({
     setFilter({ ...data, year: Number(data.year) });
     close();
   };
-
-  const yearValue = watch('year');
-  console.log('yearValue', yearValue, typeof yearValue);
 
   return (
     <Form {...form}>
@@ -110,10 +116,10 @@ export function DepreciationReportFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = filter ? encodeURIComponent(JSON.stringify(filter)) : null;
-    const oldFilter = get('depreciationReportFilters');
+    const newFilter = encodeDepreciationReportFilters(filter);
+    const oldFilter = get(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM);
     if (newFilter !== oldFilter) {
-      set('depreciationReportFilters', newFilter);
+      set(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, newFilter);
     }
   }, [filter, get, set]);
 

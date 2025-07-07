@@ -6,13 +6,19 @@ import { Filter } from 'tabler-icons-react';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
-import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
+
+export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
+export const BALANCE_REPORT_FILTERS_QUERY_PARAM = 'balanceReportFilters';
 
 export enum Period {
   MONTHLY = 'Monthly',
@@ -254,10 +260,10 @@ export function BalanceReportFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = filter ? encodeURIComponent(JSON.stringify(filter)) : null;
-    const oldFilter = get('balanceReportFilters');
+    const newFilter = encodeBalanceReportFilters(filter);
+    const oldFilter = get(BALANCE_REPORT_FILTERS_QUERY_PARAM);
     if (newFilter !== oldFilter) {
-      set('balanceReportFilters', newFilter);
+      set(BALANCE_REPORT_FILTERS_QUERY_PARAM, newFilter);
     }
   }, [filter, get, set]);
 

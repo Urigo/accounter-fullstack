@@ -2,6 +2,7 @@ import { ReactElement } from 'react';
 import { NavLink } from '@mantine/core';
 import { NewFetchedDocumentFieldsFragmentDoc } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getChargeHref } from '../screens/charges/charge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -36,7 +37,7 @@ export const NewDocumentsList = ({ data }: Props): ReactElement => {
             label={`${doc.charge!.counterparty?.name ?? 'Unknown'} - ${doc.charge!.userDescription}`}
             onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
               event.stopPropagation();
-              window.open(`/charges/${doc.charge!.id}`, '_blank', 'noreferrer');
+              window.open(getChargeHref(doc.charge!.id), '_blank', 'noreferrer');
             }}
           />
         ))}

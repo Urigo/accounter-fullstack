@@ -11,6 +11,7 @@ import {
 } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
+import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
 
@@ -221,7 +222,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 key={index}
                 onClick={event => {
                   event.stopPropagation();
-                  window.open(`/charges/${row.chargeId}`, '_blank', 'noreferrer');
+                  window.open(getChargeHref(row.chargeId), '_blank', 'noreferrer');
                 }}
               >
                 <td>

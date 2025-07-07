@@ -19,7 +19,11 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { DepreciationRecordRow } from './depreciation-record-row.js';
-import { DepreciationReportFilters } from './depreciation-report-filters.js';
+import {
+  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
+  DepreciationReportFilters,
+  encodeDepreciationReportFilters,
+} from './depreciation-report-filters.js';
 import { DepreciationSummaryRow } from './depreciation-summary-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -72,20 +76,40 @@ import { DepreciationSummaryRow } from './depreciation-summary-row.js';
   }
 `;
 
+export function getDepreciationReportHref(filter?: DepreciationReportFilter | null): string {
+  const params = new URLSearchParams();
+
+  const depreciationReportFilters = encodeDepreciationReportFilters(filter);
+  if (depreciationReportFilters) {
+    // Add it as a single encoded parameter
+    params.append(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, depreciationReportFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/reports/depreciation${queryParams}`;
+}
+
 export const DepreciationReport = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
   const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<DepreciationReportFilter>(
-    get('depreciationReportFilters')
-      ? (JSON.parse(
-          decodeURIComponent(get('depreciationReportFilters') as string),
-        ) as DepreciationReportFilter)
-      : {
-          financialEntityId: userContext?.context.adminBusinessId,
-          year: new Date().getFullYear(),
-        },
-  );
+  const initialFilters = useMemo((): DepreciationReportFilter => {
+    const defaultFilters: DepreciationReportFilter = {
+      financialEntityId: userContext?.context.adminBusinessId,
+      year: new Date().getFullYear(),
+    };
+    const uriFilters = get(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM);
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as DepreciationReportFilter;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        console.error('Failed to parse depreciation report filters from URL', error);
+      }
+    }
+    return defaultFilters;
+  }, [userContext?.context.adminBusinessId]);
+  const [filter, setFilter] = useState<DepreciationReportFilter>(initialFilters);
 
   const [{ data, fetching }] = useQuery({
     query: DepreciationReportScreenDocument,

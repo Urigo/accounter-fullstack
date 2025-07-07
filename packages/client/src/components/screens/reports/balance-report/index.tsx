@@ -8,6 +8,7 @@ import {
   Currency,
 } from '../../../../gql/graphql.js';
 import { getCurrencyFormatter, TimelessDateString } from '../../../../helpers/index.js';
+import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.jsx';
 import { AccounterLoader, MultiSelect } from '../../../common/index.js';
@@ -21,7 +22,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '../../../ui/chart.jsx';
-import { BalanceReportFilter, BalanceReportFilters, Period } from './balance-report-filters.jsx';
+import {
+  BALANCE_REPORT_FILTERS_QUERY_PARAM,
+  BalanceReportFilter,
+  BalanceReportFilters,
+  encodeBalanceReportFilters,
+  Period,
+} from './balance-report-filters.jsx';
 import { ExtendedTransactionsCard } from './extended-transactions.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -51,6 +58,19 @@ import { ExtendedTransactionsCard } from './extended-transactions.jsx';
     }
   }
 `;
+
+export function getBalanceReportHref(filter?: BalanceReportFilter | null): string {
+  const params = new URLSearchParams();
+
+  const balanceReportFilters = encodeBalanceReportFilters(filter);
+  if (balanceReportFilters) {
+    // Add it as a single encoded parameter
+    params.append(BALANCE_REPORT_FILTERS_QUERY_PARAM, balanceReportFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/reports/balance${queryParams}`;
+}
 
 const chartConfig = {
   income: {
@@ -126,15 +146,29 @@ const formatter = getCurrencyFormatter(Currency.Usd);
 export const BalanceReport = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
-  const [filter, setFilter] = useState<BalanceReportFilter>({
-    ownerId: userContext?.context.adminBusinessId,
-    toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
-    period: Period.MONTHLY,
-    fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
-    excludedCounterparties: [],
-    includedTags: [],
-    excludedTags: [],
-  });
+  const { get } = useUrlQuery();
+  const initialFilters = useMemo((): BalanceReportFilter => {
+    const defaultFilters: BalanceReportFilter = {
+      ownerId: userContext?.context.adminBusinessId,
+      toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
+      period: Period.MONTHLY,
+      fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
+      excludedCounterparties: [],
+      includedTags: [],
+      excludedTags: [],
+    };
+    const uriFilters = get(BALANCE_REPORT_FILTERS_QUERY_PARAM);
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as BalanceReportFilter;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {
+        console.log('Error parsing balance report filters from URL:', error);
+      }
+    }
+    return defaultFilters;
+  }, [userContext?.context.adminBusinessId]);
+  const [filter, setFilter] = useState<BalanceReportFilter>(initialFilters);
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
 

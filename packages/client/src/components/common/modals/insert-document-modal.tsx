@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { getChargeHref } from '../../screens/charges/charge.js';
 import { CopyToClipboardButton, InsertDocument, PopUpDrawer } from '../index.js';
 
 interface Props {
@@ -23,7 +24,7 @@ export const InsertDocumentModal = ({
             Charge ID: {chargeId}
             <CopyToClipboardButton
               isLink
-              content={`${window.location.origin}/charges/${chargeId}`}
+              content={`${window.location.origin}${getChargeHref(chargeId)}`}
             />
           </div>
         </div>

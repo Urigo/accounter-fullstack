@@ -13,6 +13,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
+import { getChargeHref } from '../../../screens/charges/charge.js';
 import { CurrencyInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -241,7 +242,7 @@ export const CoreExpenseRow = ({
               className="[&>*>.mantine-NavLink-label]:font-semibold"
               onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
                 event.stopPropagation();
-                window.open(`/charges/${id}`, '_blank', 'noreferrer');
+                window.open(getChargeHref(id), '_blank', 'noreferrer');
               }}
             />
           ))}
