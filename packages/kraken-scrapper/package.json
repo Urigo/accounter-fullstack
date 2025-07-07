@@ -14,7 +14,7 @@
     "diary": "0.4.5",
     "dotenv": "16.6.1",
     "node-kraken-api": "2.2.2",
-    "pg-promise": "11.14.0"
+    "pg-promise": "11.15.0"
   },
   "devDependencies": {
     "tsup": "8.5.0"
