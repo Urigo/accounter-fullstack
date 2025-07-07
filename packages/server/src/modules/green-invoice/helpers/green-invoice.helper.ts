@@ -66,16 +66,18 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
 
 export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceCurrency {
   switch (currency) {
+    case Currency.Aud:
+      return 'AUD';
+    case Currency.Cad:
+      return 'CAD';
     case Currency.Eur:
       return 'EUR';
     case Currency.Gbp:
       return 'GBP';
-    case Currency.Cad:
-      return 'CAD';
-    case Currency.Jpy:
-      return 'JPY';
     case Currency.Ils:
       return 'ILS';
+    case Currency.Jpy:
+      return 'JPY';
     case Currency.Usd:
       return 'USD';
     case Currency.Eth:

@@ -9,12 +9,15 @@ export default gql`
 
   " represent a financial amount in a specific currency "
   type ExchangeRates {
-    usd: Float
-    gbp: Float
-    eur: Float
+    " fiat currencies "
+    aud: Float
     cad: Float
-    jpy: Float
+    eur: Float
+    gbp: Float
     ils: Float
+    jpy: Float
+    usd: Float
+    " crypto currencies "
     eth: Float
     grt: Float
     usdc: Float

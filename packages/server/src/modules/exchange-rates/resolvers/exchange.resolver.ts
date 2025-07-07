@@ -64,6 +64,15 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
       return parseFloat(exchangeRates.jpy);
     },
+    aud: async (timelessDate, _, { injector }) => {
+      const exchangeRates = await injector
+        .get(FiatExchangeProvider)
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.aud) {
+        return null;
+      }
+      return parseFloat(exchangeRates.aud);
+    },
     ils: () => {
       return 1;
     },

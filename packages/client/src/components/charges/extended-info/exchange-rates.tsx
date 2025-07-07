@@ -14,12 +14,13 @@ import { Card, CardContent, CardTitle } from '../../ui/card.js';
     __typename
     ... on FinancialCharge {
       exchangeRates {
-        usd
-        gbp
-        eur
+        aud
         cad
-        jpy
+        eur
+        gbp
         ils
+        jpy
+        usd
         eth
         grt
         usdc
