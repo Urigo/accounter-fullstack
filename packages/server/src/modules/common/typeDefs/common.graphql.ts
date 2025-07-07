@@ -80,15 +80,18 @@ export default gql`
 
   " All possible currencies "
   enum Currency {
-    USD
-    ILS
-    GBP
-    EUR
+    " FIAT currencies "
+    AUD
     CAD
+    EUR
+    GBP
+    ILS
     JPY
+    USD
+    " Crypto currencies "
+    ETH
     GRT
     USDC
-    ETH
   }
 
   " meta info for page pagination "

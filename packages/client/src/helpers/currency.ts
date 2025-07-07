@@ -23,6 +23,8 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
     currencySymbol = 'C$';
   } else if (currency_code === 'JPY') {
     currencySymbol = '¥';
+  } else if (currency_code === 'AUD') {
+    currencySymbol = 'A$';
   } else if (currency_code === 'GRT') {
     currencySymbol = 'GRT';
   } else if (currency_code === 'USDC') {

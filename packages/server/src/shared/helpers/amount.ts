@@ -58,6 +58,8 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Cad;
     case 'JPY':
       return Currency.Jpy;
+    case 'AUD':
+      return Currency.Aud;
     case 'ILS':
       return Currency.Ils;
     case 'GRT':
@@ -91,6 +93,8 @@ export function getCurrencySymbol(currency: Currency) {
       return 'C$';
     case Currency.Jpy:
       return '¥';
+    case Currency.Aud:
+      return 'A$';
     case Currency.Ils:
       return '₪';
     case Currency.Grt:

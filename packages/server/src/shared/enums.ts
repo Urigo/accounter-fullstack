@@ -20,13 +20,14 @@ export enum TransactionDirection {
 }
 
 export enum Currency {
+  Aud = 'AUD',
+  Cad = 'CAD',
   Eth = 'ETH',
   Eur = 'EUR',
   Gbp = 'GBP',
-  Cad = 'CAD',
-  Jpy = 'JPY',
   Grt = 'GRT',
   Ils = 'ILS',
+  Jpy = 'JPY',
   Usd = 'USD',
   Usdc = 'USDC',
 }
