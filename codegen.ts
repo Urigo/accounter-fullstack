@@ -53,6 +53,7 @@ const config: CodegenConfig = {
           TransactionDirection: '@shared/enums#TransactionDirection',
         },
         mappers: {
+          AdminBusiness: '@modules/financial-entities/types.js#IGetAllAdminBusinessesResult',
           BalanceTransactions: '@modules/reports/types.js#IGetNormalizedBalanceTransactionsResult',
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
