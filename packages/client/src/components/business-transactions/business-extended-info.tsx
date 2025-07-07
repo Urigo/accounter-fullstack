@@ -124,7 +124,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const isGbp = isExtendAllCurrencies || currencies.has(Currency.Gbp);
   const isCad = isExtendAllCurrencies || currencies.has(Currency.Cad);
   const isJpy = isExtendAllCurrencies || currencies.has(Currency.Jpy);
-  const isAud = isExtendAllCurrencies || currencies.has(Currency.AUD);
+  const isAud = isExtendAllCurrencies || currencies.has(Currency.Aud);
 
   const businessName = transactions[0]?.business.name ?? 'unknown';
 
