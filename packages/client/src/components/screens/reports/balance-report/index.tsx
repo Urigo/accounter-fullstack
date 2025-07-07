@@ -147,15 +147,8 @@ export const BalanceReport = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
   const { get } = useUrlQuery();
-  const uriFilters = get(BALANCE_REPORT_FILTERS_QUERY_PARAM);
   const initialFilters = useMemo((): BalanceReportFilter => {
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as BalanceReportFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {}
-    }
-    return {
+    const defaultFilters: BalanceReportFilter = {
       ownerId: userContext?.context.adminBusinessId,
       toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
       period: Period.MONTHLY,
@@ -164,7 +157,15 @@ export const BalanceReport = (): ReactElement => {
       includedTags: [],
       excludedTags: [],
     };
-  }, [uriFilters]);
+    const uriFilters = get(BALANCE_REPORT_FILTERS_QUERY_PARAM);
+    if (uriFilters) {
+      try {
+        return JSON.parse(decodeURIComponent(uriFilters)) as BalanceReportFilter;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (error) {}
+    }
+    return defaultFilters;
+  }, []);
   const [filter, setFilter] = useState<BalanceReportFilter>(initialFilters);
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
