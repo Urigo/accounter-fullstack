@@ -1,6 +1,5 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
 import { format, sub } from 'date-fns';
-import { useUrlQuery } from 'packages/client/src/hooks/use-url-query.js';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 import { useQuery } from 'urql';
 import {
@@ -9,6 +8,7 @@ import {
   Currency,
 } from '../../../../gql/graphql.js';
 import { getCurrencyFormatter, TimelessDateString } from '../../../../helpers/index.js';
+import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.jsx';
 import { AccounterLoader, MultiSelect } from '../../../common/index.js';
