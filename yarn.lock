@@ -26,7 +26,7 @@ __metadata:
     pg-promise: "npm:11.15.0"
     slonik: "npm:38.0.0"
     tslib: "npm:2.8.1"
-    zod: "npm:3.25.71"
+    zod: "npm:3.25.74"
   languageName: unknown
   linkType: soft
 
@@ -143,9 +143,9 @@ __metadata:
     typescript: "npm:5.8.3"
     urql: "npm:4.2.2"
     vaul: "npm:1.1.2"
-    vite: "npm:7.0.1"
+    vite: "npm:7.0.2"
     vite-plugin-node-polyfills: "npm:0.23.0"
-    zod: "npm:3.25.71"
+    zod: "npm:3.25.74"
     zustand: "npm:5.0.6"
   languageName: unknown
   linkType: soft
@@ -282,7 +282,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
-    zod: "npm:3.25.71"
+    zod: "npm:3.25.74"
   languageName: unknown
   linkType: soft
 
@@ -326,7 +326,7 @@ __metadata:
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.8.3"
-    zod: "npm:3.25.71"
+    zod: "npm:3.25.74"
   languageName: unknown
   linkType: soft
 
@@ -338,7 +338,7 @@ __metadata:
     eslint: "npm:9.30.1"
     iconv-lite: "npm:0.6.3"
     vitest: "npm:3.2.4"
-    zod: "npm:3.25.71"
+    zod: "npm:3.25.74"
   languageName: unknown
   linkType: soft
 
@@ -21249,9 +21249,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:7.0.1":
-  version: 7.0.1
-  resolution: "vite@npm:7.0.1"
+"vite@npm:7.0.2":
+  version: 7.0.2
+  resolution: "vite@npm:7.0.2"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.4.6"
@@ -21300,7 +21300,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/2bfa3c5505b9d5b393b3b0f22e57c3e2f7a5d50460595277082488e38b70c838e261f35b09cbdaa0698081f3038ce3450633f6fc0d88dfc9f000880c3ed05217
+  checksum: 10c0/a68c0302c820b39fe1119c2bc9dda865f48f6abd1629346c189e4983aef7d30e698c55ffff879d4ca6858cb3650c94b085a822215af9bd74d1eb8ceb2ce3e8c6
   languageName: node
   linkType: hard
 
@@ -21895,10 +21895,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:3.25.71":
-  version: 3.25.71
-  resolution: "zod@npm:3.25.71"
-  checksum: 10c0/ccb251859609e6eed04b83f96ad7b2b7a189ca78b47176cde2c368102a5416b9c472e91b3fd96ceaa5043b2e513b3aec39fd99c36686ad2ad84f6c440afca53a
+"zod@npm:3.25.74":
+  version: 3.25.74
+  resolution: "zod@npm:3.25.74"
+  checksum: 10c0/59e38b046ac333b5bd1ba325a83b6798721227cbfb1e69dfc7159bd7824b904241ab923026edb714fafefec3624265ae374a70aee9a5a45b365bd31781ffa105
   languageName: node
   linkType: hard
 
