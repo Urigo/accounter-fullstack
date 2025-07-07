@@ -85,7 +85,7 @@
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.8.3",
     "vite": "7.0.2",
-    "vite-plugin-node-polyfills": "0.23.0"
+    "vite-plugin-node-polyfills": "0.24.0"
   },
   "overrides": {
     "react-is": "19.1.0"
