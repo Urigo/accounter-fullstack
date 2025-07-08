@@ -153,9 +153,9 @@ const AccountantApprovals = lazy(() =>
 );
 
 // Workflows
-const YearEndAudit = lazy(() =>
+const AnnualAudit = lazy(() =>
   import('../components/screens/operations/year-end-audit/index.js').then(m => ({
-    default: m.YearEndAudit,
+    default: m.AnnualAuditFlow,
   })),
 );
 
@@ -564,11 +564,11 @@ export const routes: RouteObject[] = [
             handle: { breadcrumb: 'Workflows' },
             children: [
               {
-                path: 'year-end-audit',
-                element: withSuspense(YearEndAudit),
+                path: 'annual-audit',
+                element: withSuspense(AnnualAudit),
                 handle: {
-                  title: 'Year End Audit',
-                  breadcrumb: 'Year-End',
+                  title: 'Annual Audit',
+                  breadcrumb: 'Annual Audit',
                 },
               },
             ],

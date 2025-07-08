@@ -76,7 +76,7 @@ export const ROUTES = {
 
   WORKFLOWS: {
     ROOT: '/workflows',
-    YEAR_END_AUDIT: '/workflows/year-end-audit',
+    ANNUAL_AUDIT: '/workflows/annual-audit',
   },
 
   ACCOUNTANT_APPROVALS: '/accountant-approvals',
