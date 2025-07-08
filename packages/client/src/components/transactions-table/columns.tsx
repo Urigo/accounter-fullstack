@@ -58,6 +58,28 @@ export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFrag
 
 export const columns: ColumnDef<TransactionsTableRowType>[] = [
   {
+    accessorKey: 'counterparty.name',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Counterparty
+          {column.getIsSorted() &&
+            (column.getIsSorted() === 'asc' ? (
+              <ChevronUp className="ml-2 h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-2 h-4 w-4" />
+            ))}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return <Counterparty transaction={row.original} />;
+    },
+  },
+  {
     accessorKey: 'eventDate',
     sortingFn: row => {
       return 'eventDate' in row.original && row.original.eventDate
@@ -197,28 +219,6 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
     },
     cell: ({ row }) => {
       return <SourceID transaction={row.original} />;
-    },
-  },
-  {
-    accessorKey: 'counterparty.name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Counterparty
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      return <Counterparty transaction={row.original} />;
     },
   },
   {

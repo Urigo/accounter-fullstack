@@ -12,7 +12,7 @@ export const Account = ({ transaction }: Props): ReactElement => {
   const accountName = account.name;
 
   return (
-    <div className="flex flex-col gap-2 items-center">
+    <div className="flex flex-col justify-center">
       <p>{accountType}</p>
       <p>{accountName}</p>
     </div>
