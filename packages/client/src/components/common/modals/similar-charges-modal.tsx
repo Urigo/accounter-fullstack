@@ -245,8 +245,8 @@ export function SimilarChargesModal({
     query: SimilarChargesDocument,
     variables: {
       chargeId,
-      withMissingTags: true,
-      withMissingDescription: false,
+      withMissingTags: !!tagIds,
+      withMissingDescription: !!description,
     },
   });
 
