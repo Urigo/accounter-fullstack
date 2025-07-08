@@ -23,6 +23,13 @@ export type Config = {
   amexAccounts?: AmexCredentials[];
   calAccounts?: CalCredentials[];
   maxAccounts?: MaxCredentials[];
+  /**
+   * If true, the scraper will run multiple tasks concurrently.
+   * This is useful for scraping multiple accounts at once.
+   * If false, the tasks will run sequentially.
+   * Defaults to true.
+   */
+  concurrentScraping?: boolean;
 };
 
 const { Pool } = pg;
@@ -36,6 +43,10 @@ export async function scrape() {
   const pool = new Pool(config.database);
   const logger = new Logger();
   const scraper = await init({ headless: !config.showBrowser });
+
+  // If concurrentScraping is not defined, default to true
+  // If it is defined, use its value (true or false)
+  const concurrent = config.concurrentScraping == null ? true : config.concurrentScraping === true;
 
   // Poalim accounts must be initiated before tasks list, as they might require phone code to be entered
   const poalimContexts = await Promise.all(
@@ -143,7 +154,7 @@ export async function scrape() {
           }) as ListrTask,
       ) ?? []),
     ],
-    { concurrent: true },
+    { concurrent },
   );
 
   await tasksList.run({ logger, scraper, pool }).catch(err => {
