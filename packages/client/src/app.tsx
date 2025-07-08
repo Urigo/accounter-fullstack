@@ -24,7 +24,7 @@ import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
-import { AnnualAuditFlow } from './components/screens/operations/year-end-audit/index.jsx';
+import { AnnualAuditFlow } from './components/screens/operations/annual-audit/index.jsx';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
 import { Shaam6111Report } from './components/screens/reports/shaam6111-report/index.js';
