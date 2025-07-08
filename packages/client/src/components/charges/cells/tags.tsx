@@ -4,6 +4,7 @@ import { ChargesTableTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../g
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
+import { SimilarChargesModal } from '../../common/modals/similar-charges-modal.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -49,6 +50,8 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
   const [tags, setTags] = useState<typeof originalTags>(originalTags ?? []);
 
+  const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
+
   const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
   const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
 
@@ -65,11 +68,12 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
   }, [tags.length, hasAlternative, missingInfoSuggestions?.tags]);
 
   const updateTag = useCallback(
-    (tags?: Array<{ id: string }>) => {
-      updateCharge({
+    async (tags?: Array<{ id: string }>) => {
+      await updateCharge({
         chargeId,
         fields: { tags: tags?.map(t => ({ id: t.id })) },
-      }).then(onChange);
+      });
+      setSimilarChargesOpen(true);
     },
     [chargeId, updateCharge, onChange],
   );
@@ -102,6 +106,14 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
           disabled={fetching}
         />
       )}
+
+      <SimilarChargesModal
+        chargeId={chargeId}
+        tagIds={missingInfoSuggestions!.tags}
+        open={similarChargesOpen}
+        onOpenChange={setSimilarChargesOpen}
+        onClose={onChange}
+      />
     </td>
   );
 };

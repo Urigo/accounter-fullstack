@@ -23,6 +23,8 @@ import type {
   IGetChargesByMissingRequiredInfoQuery,
   IGetChargesByTransactionIdsQuery,
   IGetChargesByTransactionIdsResult,
+  IGetSimilarChargesParams,
+  IGetSimilarChargesQuery,
   IUpdateAccountantApprovalParams,
   IUpdateAccountantApprovalQuery,
   IUpdateAccountantApprovalResult,
@@ -183,6 +185,24 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC, ID;
   `;
+
+const getSimilarCharges = sql<IGetSimilarChargesQuery>`
+      SELECT *
+      FROM accounter_schema.extended_charges
+      WHERE (CASE WHEN $withMissingTags IS TRUE THEN
+        tags IS NULL
+     ELSE
+        TRUE
+     END)
+        AND (CASE WHEN $withMissingDescription IS TRUE THEN
+        user_description IS NULL
+     ELSE
+        TRUE
+     END)
+        AND (
+          (business_id IS NOT NULL AND business_id = $businessId)
+          OR (business_array IS NOT NULL AND business_array @> $businessArray AND business_array <@ $businessArray)
+        ) AND owner_id = $ownerId;`;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<
@@ -361,6 +381,18 @@ export class ChargesProvider {
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetChargesByFiltersResult[]
     >;
+  }
+
+  public async getSimilarCharges(params: IGetSimilarChargesParams) {
+    try {
+      return getSimilarCharges.run(params, this.dbProvider) as Promise<
+        IGetChargesByFiltersResult[]
+      >;
+    } catch (error) {
+      const message = 'Failed to fetch similar charges';
+      console.error(message, error);
+      throw new Error(message);
+    }
   }
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {

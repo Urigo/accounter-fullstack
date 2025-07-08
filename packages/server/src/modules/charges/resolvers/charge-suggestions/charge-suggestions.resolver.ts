@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
@@ -585,6 +587,48 @@ const commonChargeFields: ChargesModule.ChargeResolvers = {
 };
 
 export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
+  Query: {
+    similarCharges: async (
+      _,
+      { chargeId, withMissingTags = false, withMissingDescription = false },
+      { injector },
+    ) => {
+      if (!chargeId?.trim()) {
+        throw new GraphQLError('Charge ID is required');
+      }
+
+      const mainCharge = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(chargeId)
+        .catch(e => {
+          console.error('Error fetching charge', { chargeId, error: e });
+          throw new GraphQLError('Error fetching charge');
+        });
+
+      if (!mainCharge) {
+        throw new GraphQLError(`Charge not found: ${chargeId}`);
+      }
+
+      const similarCharges = await injector
+        .get(ChargesProvider)
+        .getSimilarCharges({
+          businessId: mainCharge.business_id,
+          withMissingTags,
+          withMissingDescription,
+          ownerId: mainCharge.owner_id,
+        })
+        .catch(e => {
+          console.error('Error fetching similar charges:', {
+            chargeId,
+            businessId: mainCharge.business_id,
+            businessArray: mainCharge.business_array,
+            error: e.message,
+          });
+          throw new GraphQLError('Error fetching similar charges');
+        });
+      return similarCharges;
+    },
+  },
   CommonCharge: commonChargeFields,
   FinancialCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
