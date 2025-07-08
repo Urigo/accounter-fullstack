@@ -33,7 +33,7 @@ type Charge = {
   description?: string;
   tags: string[];
   taxCategoryName?: string;
-  businessTripName?: String;
+  businessTripName?: string;
   ledgerRecords: number;
   documents: number;
   transactions: number;
