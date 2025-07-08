@@ -14,6 +14,7 @@ import {
 import { ThemeIcon } from '@mantine/core';
 import { ChargesTableTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getChargeTypeName } from '../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -31,40 +32,54 @@ export const TypeCell = ({ data }: Props): ReactElement => {
   const charge = getFragmentData(ChargesTableTypeFieldsFragmentDoc, data);
   const { __typename } = charge;
 
-  const type = useMemo((): {
+  const { text, icon } = useMemo((): {
     text: string;
     icon: ReactElement;
   } => {
+    const text = getChargeTypeName(__typename);
+    let icon = <Coin />; // Default icon
     switch (__typename) {
       case 'CommonCharge':
-        return { text: 'Common', icon: <Coin /> };
+        icon = <Coin />;
+        break;
       case 'BusinessTripCharge':
-        return { text: 'Business Trip', icon: <Plane /> };
+        icon = <Plane />;
+        break;
       case 'DividendCharge':
-        return { text: 'Dividend', icon: <Gift /> };
+        icon = <Gift />;
+        break;
       case 'ConversionCharge':
-        return { text: 'Conversion', icon: <Transform /> };
+        icon = <Transform />;
+        break;
       case 'SalaryCharge':
-        return { text: 'Salary', icon: <Wallet /> };
+        icon = <Wallet />;
+        break;
       case 'InternalTransferCharge':
-        return { text: 'Internal Transfer', icon: <TransferIn /> };
+        icon = <TransferIn />;
+        break;
       case 'MonthlyVatCharge':
-        return { text: 'Monthly VAT', icon: <ReceiptTax /> };
+        icon = <ReceiptTax />;
+        break;
       case 'BankDepositCharge':
-        return { text: 'Bank Deposit', icon: <PigMoney /> };
+        icon = <PigMoney />;
+        break;
       case 'CreditcardBankCharge':
-        return { text: 'Credit Card Bank Charge', icon: <CreditCard /> };
+        icon = <CreditCard />;
+        break;
       case 'FinancialCharge':
-        return { text: 'Financial Charge', icon: <Scale /> };
-      default:
-        return { text: 'Unknown', icon: <Coin /> };
+        icon = <Scale />;
+        break;
     }
+    return {
+      text,
+      icon,
+    };
   }, [__typename]);
   return (
     <td>
-      <div>{type.text}</div>
+      <div>{text}</div>
       <ThemeIcon radius="xl" size="xl">
-        {type.icon}
+        {icon}
       </ThemeIcon>
     </td>
   );
