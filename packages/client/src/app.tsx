@@ -24,7 +24,7 @@ import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
-import { YearEndAudit } from './components/screens/operations/year-end-audit/index.js';
+import { AnnualAuditFlow } from './components/screens/operations/year-end-audit/index.jsx';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
 import { Shaam6111Report } from './components/screens/reports/shaam6111-report/index.js';
@@ -83,7 +83,7 @@ export function App(): ReactElement {
             <Route path="validate-reports" element={<ValidateReportsScreen />} />
           </Route>
           <Route path="workflows">
-            <Route path="year-end-audit" element={<YearEndAudit />} />
+            <Route path="annual-audit" element={<AnnualAuditFlow />} />
           </Route>
           <Route path="salaries" element={<Salaries />} />
           <Route path="tags" element={<TagsManager />} />
