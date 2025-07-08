@@ -280,7 +280,7 @@ export function SimilarChargesModal({
         description: c.userDescription || undefined,
         tags: c.tags.map(tag => tag.name),
         taxCategoryName: c.taxCategory?.name,
-        businessTripName: 'businessTrip' in c ? c.businessTrip?.name : undefined,
+        businessTripName: c.__typename === 'BusinessTripCharge' ? c.businessTrip?.name : undefined,
         ledgerRecords: c.metadata?.ledgerCount ?? 0,
         documents: c.metadata?.documentsCount ?? 0,
         transactions: c.metadata?.transactionsCount ?? 0,
