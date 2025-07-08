@@ -613,6 +613,7 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         .get(ChargesProvider)
         .getSimilarCharges({
           businessId: mainCharge.business_id,
+          businessArray: mainCharge.business_array,
           withMissingTags,
           withMissingDescription,
           ownerId: mainCharge.owner_id,
