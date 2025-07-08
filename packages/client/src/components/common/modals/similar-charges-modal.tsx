@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { SimilarChargesDocument } from '../../../gql/graphql.js';
-import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
+import { useBatchUpdateCharges } from '../../../hooks/use-batch-update-charges.js';
 import { Button } from '../../ui/button.jsx';
 import { Card } from '../../ui/card.jsx';
 import { Checkbox } from '../../ui/checkbox.jsx';
@@ -342,24 +342,21 @@ function SimilarChargesTable({
     },
   });
 
-  const { updateCharge } = useUpdateCharge();
+  const { batchUpdateCharges } = useBatchUpdateCharges();
 
   const onApproveSelected = useCallback(async () => {
     const ids = table.getSelectedRowModel().rows.map(row => row.original.id);
 
-    // Avoid overloading the server with Promise.all
-    for (const id of ids) {
-      await updateCharge({
-        chargeId: id,
-        fields: {
-          ...(tagIds ? { tags: tagIds } : {}),
-          ...(description ? { userDescription: description } : {}),
-        },
-      });
-    }
+    await batchUpdateCharges({
+      chargeIds: ids,
+      fields: {
+        ...(tagIds ? { tags: tagIds } : {}),
+        ...(description ? { userDescription: description } : {}),
+      },
+    });
 
     onOpenChange(false);
-  }, [updateCharge, onOpenChange, table, tagIds, description]);
+  }, [batchUpdateCharges, onOpenChange, table, tagIds, description]);
 
   useEffect(() => {
     if (data.length === 0) {

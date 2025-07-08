@@ -5,6 +5,8 @@ import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   accountant_status,
+  IBatchUpdateChargesParams,
+  IBatchUpdateChargesQuery,
   IDeleteChargesByIdsParams,
   IDeleteChargesByIdsQuery,
   IGenerateChargeParams,
@@ -136,6 +138,50 @@ const updateCharge = sql<IUpdateChargeQuery>`
   )
   WHERE
     id = $chargeId
+  RETURNING *;
+`;
+
+const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
+  UPDATE accounter_schema.charges
+  SET
+  owner_id = COALESCE(
+    $ownerId,
+    owner_id
+  ),
+  user_description = COALESCE(
+    $userDescription,
+    user_description
+  ),
+  type = COALESCE(
+    $type,
+    type
+  ),
+  is_property = COALESCE(
+    $isProperty,
+    is_property
+  ),
+  invoice_payment_currency_diff = COALESCE(
+    $isInvoicePaymentDifferentCurrency,
+    invoice_payment_currency_diff
+  ),
+  accountant_status = COALESCE(
+    $accountantStatus,
+    accountant_status
+  ),
+  tax_category_id = COALESCE(
+    $taxCategoryId,
+    tax_category_id
+  ),
+  optional_vat = COALESCE(
+    $optionalVAT,
+    optional_vat
+  ),
+  documents_optional_flag = COALESCE(
+    $optionalDocuments,
+    documents_optional_flag
+  )
+  WHERE
+    id in $$chargeIds
   RETURNING *;
 `;
 
@@ -322,6 +368,12 @@ export class ChargesProvider {
 
   public updateCharge(params: IUpdateChargeParams) {
     return updateCharge.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IUpdateChargeResult>[]
+    >;
+  }
+
+  public batchUpdateCharges(params: IBatchUpdateChargesParams) {
+    return batchUpdateCharges.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateChargeResult>[]
     >;
   }

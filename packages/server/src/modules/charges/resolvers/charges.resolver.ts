@@ -11,6 +11,11 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import {
+  batchUpdateChargesBusinessTrip,
+  batchUpdateChargesTags,
+  batchUpdateChargesYearsSpread,
+} from '../helpers/batch-update-charges.js';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
@@ -19,6 +24,7 @@ import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.pro
 import type {
   accountant_statusArray,
   ChargesModule,
+  IBatchUpdateChargesParams,
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
@@ -332,12 +338,107 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         return { charge: updatedCharge };
       } catch (e) {
+        let message = 'Error updating charges';
+        if (e instanceof GraphQLError) {
+          message = e.message;
+        }
         return {
           __typename: 'CommonError',
-          message:
-            (e as Error)?.message ??
-            (e as { errors: Error[] })?.errors.map(e => e.message).toString() ??
-            'Unknown error',
+          message,
+        };
+      }
+    },
+    batchUpdateCharges: async (_, { chargeIds, fields }, { injector }) => {
+      if (!chargeIds || chargeIds.length === 0) {
+        return {
+          __typename: 'CommonError',
+          message: 'No charges provided for update',
+        };
+      }
+      const adjustedFields: IBatchUpdateChargesParams = {
+        accountantStatus: fields.accountantApproval,
+        type: fields.isConversion ? 'CONVERSION' : undefined,
+        isProperty: fields.isProperty,
+        isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
+        ownerId: fields.ownerId,
+        userDescription: fields.userDescription,
+        taxCategoryId: fields.defaultTaxCategoryID,
+        optionalVAT: fields.optionalVAT,
+        optionalDocuments: fields.optionalDocuments,
+        chargeIds,
+      };
+      try {
+        chargeIds.map(chargeId => {
+          injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
+        });
+        const res = await injector
+          .get(ChargesProvider)
+          .batchUpdateCharges({ ...adjustedFields })
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError(`Error updating charges (IDs "${chargeIds.join('", "')}")`);
+          });
+        const updatedCharges = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.loadMany(res.map(c => c.id))
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError(
+              `Error loading updated charges (IDs "${chargeIds.join('", "')}")`,
+            );
+          });
+
+        // check if all charges were updated successfully
+        if (!updatedCharges) {
+          throw new GraphQLError(`Updated charges not found (IDs "${chargeIds.join('", "')}")`);
+        }
+        if (updatedCharges.some(charge => !charge || charge instanceof Error)) {
+          throw new GraphQLError(
+            `Some updated charges not found (IDs "${chargeIds.join('", "')}")`,
+          );
+        }
+
+        // Type assertion as error handling is done above
+        const charges = updatedCharges as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
+
+        const indirectUpdatesPromises: Array<Promise<unknown>> = [];
+
+        // handle tags
+        if (fields?.tags) {
+          indirectUpdatesPromises.push(
+            batchUpdateChargesTags(
+              injector,
+              fields.tags.map(t => t.id),
+              chargeIds,
+            ),
+          );
+        }
+
+        // handle business trip
+        if (fields?.businessTripID) {
+          indirectUpdatesPromises.push(
+            batchUpdateChargesBusinessTrip(injector, fields.businessTripID, chargeIds),
+          );
+        }
+
+        // handle charge spread
+        if (fields?.yearsOfRelevance?.length) {
+          indirectUpdatesPromises.push(
+            batchUpdateChargesYearsSpread(injector, fields.yearsOfRelevance, chargeIds),
+          );
+        }
+
+        await Promise.all(indirectUpdatesPromises);
+
+        return { charges };
+      } catch (e) {
+        let message = 'Error updating charges';
+        if (e instanceof GraphQLError) {
+          message = e.message;
+        }
+        return {
+          __typename: 'CommonError',
+          message,
         };
       }
     },
