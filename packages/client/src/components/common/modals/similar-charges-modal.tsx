@@ -130,7 +130,10 @@ const columns: ColumnDef<Charge>[] = [
   {
     accessorKey: 'date',
     header: 'Date',
-    cell: ({ row }) => <div>{format(row.getValue('date'), 'yyyy-MM-dd')}</div>,
+    cell: ({ row }) => {
+      const date = row.getValue('date') as Date | undefined;
+      return <div>{date ? format(new Date(date), 'yyyy-MM-dd') : 'Missing'}</div>;
+    },
   },
   {
     accessorKey: 'amountRaw',
@@ -177,14 +180,15 @@ const columns: ColumnDef<Charge>[] = [
       const miscExpenses: number = row.getValue('miscExpenses') || 0;
       const ledgerRecords: number = row.getValue('ledgerRecords') || 0;
       return (
-        <div className="flex flex-col justify-center">
-          {transactions && <div>Transactions: {transactions}</div>}
-          {documents && <div>Documents: {documents}</div>}
-          {miscExpenses && <div>Misc Expenses: {miscExpenses}</div>}
-          {ledgerRecords && <div>Ledger Records: {ledgerRecords}</div>}
+        <div className="flex flex-col justify-center text-sm">
+          {transactions > 0 && <div>Transactions: {transactions}</div>}
+          {documents > 0 && <div>Documents: {documents}</div>}
+          {miscExpenses > 0 && <div>Misc Expenses: {miscExpenses}</div>}
+          {ledgerRecords > 0 && <div>Ledger Records: {ledgerRecords}</div>}
         </div>
       );
     },
+    enableSorting: false,
   },
 ];
 
@@ -255,11 +259,12 @@ export function SimilarChargesModal({
     return charges;
   }, [data, onDialogChange]);
 
+  const shouldShowModal = useMemo(() => {
+    return open && (!!tagIds || !!description) && charges.length > 0;
+  }, [open, tagIds, description, charges.length]);
+
   return (
-    <Dialog
-      open={open && (!!tagIds || !!description) && charges.length > 0}
-      onOpenChange={onDialogChange}
-    >
+    <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
       <DialogContent className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
         <ErrorBoundary fallback={<div>Error fetching similar charges</div>}>
           {fetching ? (
@@ -328,7 +333,7 @@ function SimilarChargesTable({
   }, [data.length, onOpenChange]);
 
   if (!data.length) {
-    return;
+    return null;
   }
 
   return (

@@ -64,7 +64,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
         setSimilarChargesOpen(true);
       }
     },
-    [chargeId, updateCharge, onChange],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -88,7 +88,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
 
       <SimilarChargesModal
         chargeId={chargeId}
-        description={charge.missingInfoSuggestions!.description!}
+        description={charge.missingInfoSuggestions?.description ?? undefined}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
         onClose={onChange}

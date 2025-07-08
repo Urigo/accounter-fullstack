@@ -32,7 +32,9 @@ type Charges = Extract<
 
 type UseBatchUpdateCharges = {
   fetching: boolean;
-  batchUpdateCharges: (variables: BatchUpdateChargesMutationVariables) => Promise<Charges | void>;
+  batchUpdateCharges: (
+    variables: BatchUpdateChargesMutationVariables,
+  ) => Promise<Charges | undefined>;
 };
 
 const NOTIFICATION_ID = 'batchUpdateCharges';
@@ -58,7 +60,7 @@ export const useBatchUpdateCharges = (): UseBatchUpdateCharges => {
         if (data) {
           toast.success('Success', {
             id: notificationId,
-            description: 'Charge updated',
+            description: `${chargeIds.length} charge${chargeIds.length > 1 ? 's' : ''} updated`,
           });
           return data.batchUpdateCharges.charges;
         }

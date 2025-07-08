@@ -237,7 +237,7 @@ function SimilarTransactionsTable({
   }, [data.length, onOpenChange]);
 
   if (!data.length) {
-    return;
+    return null;
   }
 
   return (

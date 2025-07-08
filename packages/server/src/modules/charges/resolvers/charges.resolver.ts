@@ -368,9 +368,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeIds,
       };
       try {
-        chargeIds.map(chargeId => {
+        for (const chargeId of chargeIds) {
           injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        });
+        }
         const res = await injector
           .get(ChargesProvider)
           .batchUpdateCharges({ ...adjustedFields })

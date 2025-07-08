@@ -29,8 +29,7 @@ export async function batchUpdateChargesTags(
   for (const [i, pastTags] of pastTagsForCharges.entries()) {
     const chargeId = chargeIds[i];
     if (!chargeId) {
-      console.error(`Charge ID at index ${i} is undefined`);
-      continue;
+      throw new GraphQLError(`Charge ID at index ${i} is undefined`);
     }
     // clear removed tags
     const tagsToRemove = pastTags.filter(tagId => !tags.includes(tagId));
@@ -101,12 +100,6 @@ export async function batchUpdateChargesYearsSpread(
   await injector
     .get(ChargeSpreadProvider)
     .deleteAllChargeSpreadByChargeIds({ chargeIds })
-    .catch(e => {
-      console.error(e);
-      throw new GraphQLError(
-        `Error deleting spread records for charge IDs "${chargeIds.join('", "')}"`,
-      );
-    })
     .catch(e => {
       console.error(e);
       throw new GraphQLError(
