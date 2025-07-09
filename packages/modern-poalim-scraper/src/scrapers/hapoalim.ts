@@ -9,8 +9,6 @@ import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSc
 import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
 import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
 import accountDataSchemaFile from '../schemas/accountDataSchema.json' with { type: 'json' };
-import foreignSwiftTransactionSchema from '../schemas/foreignSwiftTransaction.json' with { type: 'json' };
-import foreignSwiftTransactionsSchema from '../schemas/foreignSwiftTransactions.json' with { type: 'json' };
 import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' with { type: 'json' };
 import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' with { type: 'json' };
 import depositsSchema from '../schemas/hapoalimDepositsSchema.json' with { type: 'json' };
@@ -18,6 +16,8 @@ import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSch
 import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
 import { validateSchema } from '../utils/validate-schema.js';
+import { SwiftTransactionSchema } from '../zod-schemas/swift-transaction-schema.js';
+import { SwiftTransactionsSchema } from '../zod-schemas/swift-transactions-schema.js';
 
 type ForeignTransactionsSchema<T extends boolean> = T extends true
   ? ForeignTransactionsBusinessSchema
@@ -298,10 +298,11 @@ export async function hapoalim(
             isValid: false,
           };
         }
-        const validation = await validateSchema(foreignSwiftTransactionsSchema, data);
+        const validation = SwiftTransactionsSchema.safeParse(data);
         return {
           data,
-          ...validation,
+          isValid: validation.success,
+          errors: validation.error,
         };
       }
 
@@ -339,10 +340,11 @@ export async function hapoalim(
             isValid: false,
           };
         }
-        const validation = await validateSchema(foreignSwiftTransactionSchema, data);
+        const validation = SwiftTransactionSchema.safeParse(data);
         return {
           data,
-          ...validation,
+          isValid: validation.success,
+          errors: validation.error,
         };
       }
 
