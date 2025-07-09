@@ -5,6 +5,8 @@ import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   accountant_status,
+  IBatchUpdateChargesParams,
+  IBatchUpdateChargesQuery,
   IDeleteChargesByIdsParams,
   IDeleteChargesByIdsQuery,
   IGenerateChargeParams,
@@ -23,6 +25,8 @@ import type {
   IGetChargesByMissingRequiredInfoQuery,
   IGetChargesByTransactionIdsQuery,
   IGetChargesByTransactionIdsResult,
+  IGetSimilarChargesParams,
+  IGetSimilarChargesQuery,
   IUpdateAccountantApprovalParams,
   IUpdateAccountantApprovalQuery,
   IUpdateAccountantApprovalResult,
@@ -137,6 +141,50 @@ const updateCharge = sql<IUpdateChargeQuery>`
   RETURNING *;
 `;
 
+const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
+  UPDATE accounter_schema.charges
+  SET
+  owner_id = COALESCE(
+    $ownerId,
+    owner_id
+  ),
+  user_description = COALESCE(
+    $userDescription,
+    user_description
+  ),
+  type = COALESCE(
+    $type,
+    type
+  ),
+  is_property = COALESCE(
+    $isProperty,
+    is_property
+  ),
+  invoice_payment_currency_diff = COALESCE(
+    $isInvoicePaymentDifferentCurrency,
+    invoice_payment_currency_diff
+  ),
+  accountant_status = COALESCE(
+    $accountantStatus,
+    accountant_status
+  ),
+  tax_category_id = COALESCE(
+    $taxCategoryId,
+    tax_category_id
+  ),
+  optional_vat = COALESCE(
+    $optionalVAT,
+    optional_vat
+  ),
+  documents_optional_flag = COALESCE(
+    $optionalDocuments,
+    documents_optional_flag
+  )
+  WHERE
+    id in $$chargeIds
+  RETURNING *;
+`;
+
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
   UPDATE accounter_schema.charges
   SET
@@ -183,6 +231,24 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC, ID;
   `;
+
+const getSimilarCharges = sql<IGetSimilarChargesQuery>`
+      SELECT *
+      FROM accounter_schema.extended_charges
+      WHERE (CASE WHEN $withMissingTags IS TRUE THEN
+        tags IS NULL
+     ELSE
+        TRUE
+     END)
+        AND (CASE WHEN $withMissingDescription IS TRUE THEN
+        user_description IS NULL
+     ELSE
+        TRUE
+     END)
+        AND (
+          (business_id IS NOT NULL AND business_id = $businessId)
+          OR (business_array IS NOT NULL AND business_array @> $businessArray AND business_array <@ $businessArray)
+        ) AND owner_id = $ownerId;`;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<
@@ -306,6 +372,12 @@ export class ChargesProvider {
     >;
   }
 
+  public batchUpdateCharges(params: IBatchUpdateChargesParams) {
+    return batchUpdateCharges.run(params, this.dbProvider) as Promise<
+      ChargeRequiredWrapper<IUpdateChargeResult>[]
+    >;
+  }
+
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
     return updateAccountantApproval.run(params, this.dbProvider) as Promise<
       ChargeRequiredWrapper<IUpdateAccountantApprovalResult>[]
@@ -361,6 +433,18 @@ export class ChargesProvider {
     return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
       IGetChargesByFiltersResult[]
     >;
+  }
+
+  public async getSimilarCharges(params: IGetSimilarChargesParams) {
+    try {
+      return getSimilarCharges.run(params, this.dbProvider) as Promise<
+        IGetChargesByFiltersResult[]
+      >;
+    } catch (error) {
+      const message = 'Failed to fetch similar charges';
+      console.error(message, error);
+      throw new Error(message);
+    }
   }
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {

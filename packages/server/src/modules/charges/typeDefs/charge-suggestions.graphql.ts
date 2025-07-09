@@ -2,6 +2,15 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    " get similar charges "
+    similarCharges(
+      chargeId: UUID!
+      withMissingTags: Boolean
+      withMissingDescription: Boolean
+    ): [Charge!]! @auth(role: ACCOUNTANT)
+  }
+
   extend interface Charge {
     " missing info suggestions data "
     missingInfoSuggestions: ChargeSuggestions

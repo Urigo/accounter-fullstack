@@ -13,6 +13,8 @@ export default gql`
   extend type Mutation {
     updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult!
       @auth(role: ACCOUNTANT)
+    batchUpdateCharges(chargeIds: [UUID!]!, fields: UpdateChargeInput!): BatchUpdateChargesResult!
+      @auth(role: ACCOUNTANT)
     mergeCharges(
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
@@ -319,9 +321,17 @@ export default gql`
   " result type for updateCharge "
   union UpdateChargeResult = UpdateChargeSuccessfulResult | CommonError
 
+  " result type for batchUpdateCharges "
+  union BatchUpdateChargesResult = BatchUpdateChargesSuccessfulResult | CommonError
+
   " successful result type for updateCharge "
   type UpdateChargeSuccessfulResult {
     charge: Charge!
+  }
+
+  " successful result type for batchUpdateCharges "
+  type BatchUpdateChargesSuccessfulResult {
+    charges: [Charge!]!
   }
 
   " result type for mergeCharge "

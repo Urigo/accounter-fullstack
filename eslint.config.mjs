@@ -94,6 +94,7 @@ export default [
           exceptions: {
             types: [
               'AccountantApproval',
+              'BatchUpdateChargesSuccessfulResult',
               'BusinessTripSummary',
               'BusinessTripSummaryRow',
               'ChargeMetadata',

@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { ReactElement, useCallback, useMemo, useState } from 'react';
 import { Indicator } from '@mantine/core';
 import {
   ChargesTableDescriptionFieldsFragmentDoc,
@@ -7,6 +7,7 @@ import {
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton } from '../../common/index.js';
+import { SimilarChargesModal } from '../../common/modals/similar-charges-modal.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -30,6 +31,7 @@ type Props = {
 };
 
 export const Description = ({ data, onChange }: Props): ReactElement => {
+  const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
   const charge = getFragmentData(ChargesTableDescriptionFieldsFragmentDoc, data);
   const isError = useMemo(
     () => charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description),
@@ -53,15 +55,16 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
 
   const updateUserDescription = useCallback(
-    (value?: string) => {
+    async (value?: string) => {
       if (value !== undefined) {
-        updateCharge({
+        await updateCharge({
           chargeId,
           fields: { userDescription: value },
-        }).then(onChange);
+        });
+        setSimilarChargesOpen(true);
       }
     },
-    [chargeId, updateCharge, onChange],
+    [chargeId, updateCharge],
   );
 
   return (
@@ -82,6 +85,14 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
           />
         )}
       </div>
+
+      <SimilarChargesModal
+        chargeId={chargeId}
+        description={charge.missingInfoSuggestions?.description ?? undefined}
+        open={similarChargesOpen}
+        onOpenChange={setSimilarChargesOpen}
+        onClose={onChange}
+      />
     </td>
   );
 };
