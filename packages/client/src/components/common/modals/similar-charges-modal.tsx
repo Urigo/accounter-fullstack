@@ -175,10 +175,10 @@ const columns: ColumnDef<Charge>[] = [
     accessorKey: 'moreInfo',
     header: 'More Info',
     cell: ({ row }) => {
-      const transactions: number = row.getValue('transactions') || 0;
-      const documents: number = row.getValue('documents') || 0;
-      const miscExpenses: number = row.getValue('miscExpenses') || 0;
-      const ledgerRecords: number = row.getValue('ledgerRecords') || 0;
+      const transactions: number = row.original.transactions || 0;
+      const documents: number = row.original.documents || 0;
+      const miscExpenses: number = row.original.miscExpenses || 0;
+      const ledgerRecords: number = row.original.ledgerRecords || 0;
       return (
         <div className="flex flex-col justify-center text-sm">
           {transactions > 0 && <div>Transactions: {transactions}</div>}
@@ -265,7 +265,10 @@ export function SimilarChargesModal({
 
   return (
     <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
-      <DialogContent className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
+      <DialogContent
+        className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]"
+        onClick={e => e.stopPropagation()}
+      >
         <ErrorBoundary fallback={<div>Error fetching similar charges</div>}>
           {fetching ? (
             <AccounterLoader />

@@ -109,10 +109,10 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
 
       <SimilarChargesModal
         chargeId={chargeId}
-        tagIds={missingInfoSuggestions!.tags}
+        tagIds={missingInfoSuggestions?.tags?.map(t => ({ id: t.id }))}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
-        onClose={onChange}
+        onClose={() => {}}
       />
     </td>
   );

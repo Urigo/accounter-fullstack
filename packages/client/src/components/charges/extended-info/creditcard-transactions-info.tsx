@@ -36,8 +36,6 @@ type Props = {
 
 export const CreditcardTransactionsInfo = ({ chargeProps }: Props): ReactNode => {
   const charge = getFragmentData(CreditcardBankChargeInfoFragmentDoc, chargeProps);
-  const hasTransactions =
-    charge.__typename === 'CreditcardBankCharge' && !!charge.creditCardTransactions;
   const transactions = useMemo(() => {
     if (charge.__typename === 'CreditcardBankCharge' && charge.creditCardTransactions) {
       return charge.creditCardTransactions.map(rawTransaction =>
@@ -47,7 +45,6 @@ export const CreditcardTransactionsInfo = ({ chargeProps }: Props): ReactNode =>
     return [];
   }, [charge]);
 
-  console.log('hasTransactions', hasTransactions);
   return transactions.length ? (
     <Table>
       <TableHeader>
