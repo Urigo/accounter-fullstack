@@ -112,7 +112,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
         tagIds={missingInfoSuggestions?.tags?.map(t => ({ id: t.id }))}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
-        onClose={() => {}}
+        onClose={onChange}
       />
     </td>
   );
