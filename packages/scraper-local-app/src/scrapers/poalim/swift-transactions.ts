@@ -20,7 +20,7 @@ type SwiftContext = {
 type SwiftTransaction = ForeignSwiftTransactions['swiftsList'][number];
 
 const checkForExistingSwiftTransaction = sql<ICheckForExistingSwiftTransactionQuery>`
-  SELECT transfer_catenated_id
+  SELECT id
   FROM accounter_schema.poalim_swift_account_transactions
   WHERE transfer_catenated_id = $transferCatenatedId;`;
 
@@ -50,33 +50,27 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
 
                                                                   swift_senders_reference_20,
                                                                   swift_bank_operation_code_23B,
+                                                                  swift_instruction_code_23e,
                                                                   swift_value_date_currency_amount_32A,
                                                                   swift_currency_instructed_amount_33B,
+                                                                  swift_exchange_rate_36,
 
-                                                                  swift_ordering_customer_50K_1,
-                                                                  swift_ordering_customer_50K_2,
-                                                                  swift_ordering_customer_50K_3,
-                                                                  swift_ordering_customer_50K_4,
-                                                                  swift_ordering_customer_50K_5,
+                                                                  swift_ordering_customer_50k,
 
                                                                   swift_ordering_institution_52A,
 
-                                                                  swift_ordering_institution_52D_1,
-                                                                  swift_ordering_institution_52D_2,
-                                                                  swift_ordering_institution_52D_3,
+                                                                  swift_ordering_institution_52d,
 
                                                                   swift_senders_correspondent_53A,
 
                                                                   swift_receivers_correspondent_54A,
-                                                                  swift_beneficiary_customer_59_1,
-                                                                  swift_beneficiary_customer_59_2,
-                                                                  swift_beneficiary_customer_59_3,
-                                                                  swift_beneficiary_customer_59_4,
-                                                                  swift_beneficiary_customer_59_5,
-                                                                  swift_remittance_information_70_1,
-                                                                  swift_remittance_information_70_2,
+                                                                  swift_account_with_institution_57,
+                                                                  swift_beneficiary_customer_59,
+                                                                  swift_remittance_information_70,
                                                                   swift_details_of_charges_71A,
-                                                                  swift_senders_charges_71F
+                                                                  swift_senders_charges_71F,
+                                                                  swift_senders_to_receiver_information_72,
+                                                                  swift_regulatory_reporting_77b
 ) VALUES $$switfTransactions(accountNumber,
                               branchNumber,
                               bankNumber,
@@ -102,33 +96,28 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
 
                               swiftSendersReference20,
                               swiftBankOperationCode23B,
+                              swiftInstructionCode23E,
                               swiftValueDateCurrencyAmount32A,
                               swiftCurrencyInstructedAmount33B,
+                              swiftExchangeRate36,
 
-                              swiftOrderingCustomer50K1,
-                              swiftOrderingCustomer50K2,
-                              swiftOrderingCustomer50K3,
-                              swiftOrderingCustomer50K4,
-                              swiftOrderingCustomer50K5,
+                              swiftOrderingCustomer50K,
 
                               swiftOrderingInstitution52A,
 
-                              swiftOrderingInstitution52D_1,
-                              swiftOrderingInstitution52D2,
-                              swiftOrderingInstitution52D3,
+                              swiftOrderingInstitution52D,
 
                               swiftSendersCorrespondent53A,
 
                               swiftReceiversCorrespondent54A,
-                              swiftBeneficiaryCustomer59_1,
-                              swiftBeneficiaryCustomer59_2,
-                              swiftBeneficiaryCustomer59_3,
-                              swiftBeneficiaryCustomer59_4,
-                              swiftBeneficiaryCustomer59_5,
-                              swiftRemittanceInformation70_1,
-                              swiftRemittanceInformation70_2,
+                              swiftAccountWithInstitution57,
+                              swiftBeneficiaryCustomer59,
+                              swiftRemittanceInformation70,
                               swiftDetailsOfCharges71A,
-                              swiftSendersCharges71F)
+                              swiftSendersCharges71F,
+                              
+                              swiftSendersToReceiverInformation72,
+                              swiftRegulatoryReporting77B)
   RETURNING *;`;
 
 async function fetchSwiftTransactions(
@@ -210,34 +199,46 @@ async function isTransactionNew(
   }
 }
 
+function getCodeExtensions(
+  swiftTransferDetailsList: ForeignSwiftTransaction['swiftTransferDetailsList'],
+  index: number,
+): string {
+  if (index >= swiftTransferDetailsList.length) {
+    return '';
+  }
+  if (swiftTransferDetailsList[index].swiftTransferAttributeCode !== null) {
+    return '';
+  }
+
+  const value = swiftTransferDetailsList[index].swiftTransferAttributeValue;
+  return `\n${value}${getCodeExtensions(swiftTransferDetailsList, index + 1)}`;
+}
+
 function findElement(
   transaction: ForeignSwiftTransaction,
   attribute: string,
   defaultEmptyString: boolean = false,
 ) {
-  return (
-    transaction.swiftTransferDetailsList.find(
-      element => element.swiftTransferAttributeCode === attribute,
-    )?.swiftTransferAttributeValue ?? (defaultEmptyString ? ' ' : null)
-  );
-}
-
-function findElementOffset(
-  transaction: ForeignSwiftTransaction,
-  attribute: string,
-  offset: number,
-  defaultEmptyString: boolean = false,
-) {
+  const emptyValue = defaultEmptyString ? ' ' : null;
   const index = transaction.swiftTransferDetailsList.findIndex(
     element => element.swiftTransferAttributeCode === attribute,
   );
-  if (index === -1 || index + offset >= transaction.swiftTransferDetailsList.length) {
-    return defaultEmptyString ? ' ' : null;
+
+  // if the attribute is not found, return empty value
+  if (index === -1) {
+    return emptyValue;
   }
-  return (
-    transaction.swiftTransferDetailsList[index + offset]?.swiftTransferAttributeValue ??
-    (defaultEmptyString ? ' ' : null)
-  );
+  let value = transaction.swiftTransferDetailsList[index].swiftTransferAttributeValue;
+
+  // if the value is null or undefined, return empty value
+  if (value === null || value === undefined) {
+    return emptyValue;
+  }
+
+  // look for value extensions
+  value += getCodeExtensions(transaction.swiftTransferDetailsList, index + 1);
+
+  return value;
 }
 
 async function normalizeTransaction(
@@ -298,31 +299,19 @@ async function normalizeTransaction(
 
       swiftSendersReference20: findElement(foreignSwiftTransaction, ':20:'),
       swiftBankOperationCode23B: findElement(foreignSwiftTransaction, ':23B:'),
+      swiftInstructionCode23E: findElement(foreignSwiftTransaction, ':23E:'),
       swiftValueDateCurrencyAmount32A: findElement(foreignSwiftTransaction, ':32A:'),
 
       swiftCurrencyInstructedAmount33B: findElement(foreignSwiftTransaction, ':33B:', true),
+      swiftExchangeRate36: findElement(foreignSwiftTransaction, ':36:', true),
 
-      swiftOrderingCustomer50K1:
-        findElementOffset(foreignSwiftTransaction, ':50K:', 0) ??
-        findElementOffset(foreignSwiftTransaction, ':50F:', 0, true),
-      swiftOrderingCustomer50K2:
-        findElementOffset(foreignSwiftTransaction, ':50K:', 1) ??
-        findElementOffset(foreignSwiftTransaction, ':50F:', 1, true),
-      swiftOrderingCustomer50K3:
-        findElementOffset(foreignSwiftTransaction, ':50K:', 2) ??
-        findElementOffset(foreignSwiftTransaction, ':50F:', 2, true),
-      swiftOrderingCustomer50K4:
-        findElementOffset(foreignSwiftTransaction, ':50K:', 3) ??
-        findElementOffset(foreignSwiftTransaction, ':50F:', 3, true),
-      swiftOrderingCustomer50K5:
-        findElementOffset(foreignSwiftTransaction, ':50K:', 4) ??
-        findElementOffset(foreignSwiftTransaction, ':50F:', 4, true),
+      swiftOrderingCustomer50K:
+        findElement(foreignSwiftTransaction, ':50K:') ??
+        findElement(foreignSwiftTransaction, ':50F:', true),
 
       swiftOrderingInstitution52A: findElement(foreignSwiftTransaction, ':52A:', true),
 
-      swiftOrderingInstitution52D_1: findElementOffset(foreignSwiftTransaction, ':52D:', 0, true),
-      swiftOrderingInstitution52D2: findElementOffset(foreignSwiftTransaction, ':52D:', 1, true),
-      swiftOrderingInstitution52D3: findElementOffset(foreignSwiftTransaction, ':52D:', 2, true),
+      swiftOrderingInstitution52D: findElement(foreignSwiftTransaction, ':52D:', true),
 
       swiftSendersCorrespondent53A:
         findElement(foreignSwiftTransaction, ':53B:') ??
@@ -330,28 +319,23 @@ async function normalizeTransaction(
 
       swiftReceiversCorrespondent54A: findElement(foreignSwiftTransaction, ':54A:', true),
 
-      swiftBeneficiaryCustomer59_1:
+      swiftAccountWithInstitution57:
+        findElement(foreignSwiftTransaction, ':57A:') ??
+        findElement(foreignSwiftTransaction, ':57D:', true),
+
+      swiftBeneficiaryCustomer59:
         findElement(foreignSwiftTransaction, ':59:') ??
         findElement(foreignSwiftTransaction, ':59F:', true),
-      swiftBeneficiaryCustomer59_2: findElement(foreignSwiftTransaction, ':59:')
-        ? findElementOffset(foreignSwiftTransaction, ':59:', 1, true)
-        : findElementOffset(foreignSwiftTransaction, ':59F:', 1, true),
-      swiftBeneficiaryCustomer59_3: findElement(foreignSwiftTransaction, ':59:')
-        ? findElementOffset(foreignSwiftTransaction, ':59:', 2, true)
-        : findElementOffset(foreignSwiftTransaction, ':59F:', 2, true),
-      swiftBeneficiaryCustomer59_4: findElement(foreignSwiftTransaction, ':59:')
-        ? findElementOffset(foreignSwiftTransaction, ':59:', 3, true)
-        : findElementOffset(foreignSwiftTransaction, ':59F:', 3, true),
-      swiftBeneficiaryCustomer59_5: findElement(foreignSwiftTransaction, ':59:')
-        ? findElementOffset(foreignSwiftTransaction, ':59:', 4, true)
-        : findElementOffset(foreignSwiftTransaction, ':59F:', 4, true),
 
-      swiftRemittanceInformation70_1: findElementOffset(foreignSwiftTransaction, ':70:', 0, true),
-      swiftRemittanceInformation70_2: findElementOffset(foreignSwiftTransaction, ':70:', 1, true),
+      swiftRemittanceInformation70: findElement(foreignSwiftTransaction, ':70:', true),
 
       swiftDetailsOfCharges71A: findElement(foreignSwiftTransaction, ':71A:', true),
 
       swiftSendersCharges71F: findElement(foreignSwiftTransaction, ':71F:', true),
+
+      swiftSendersToReceiverInformation72: findElement(foreignSwiftTransaction, ':72:', true),
+
+      swiftRegulatoryReporting77B: findElement(foreignSwiftTransaction, ':77B:', true),
     };
 
     return insertableTransaction;
