@@ -1,10 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider';
-import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { YearOfRelevanceInput } from '@shared/gql-types';
-import { ChargeSpreadProvider } from '../providers/charge-spread.provider';
+import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 
 export async function batchUpdateChargesTags(
   injector: Injector,
