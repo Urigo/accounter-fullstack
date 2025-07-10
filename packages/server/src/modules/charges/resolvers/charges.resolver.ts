@@ -36,7 +36,7 @@ import {
 } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
-  Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult'> = {
+  Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
     chargesByIDs: async (_, { chargeIDs }, { injector }) => {
       if (chargeIDs.length === 0) {
@@ -517,6 +517,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
       if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
         return 'CommonError';
       return 'UpdateChargeSuccessfulResult';
+    },
+  },
+  BatchUpdateChargesResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'BatchUpdateChargesSuccessfulResult';
     },
   },
   MergeChargeResult: {
