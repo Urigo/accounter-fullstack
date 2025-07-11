@@ -109,3 +109,5 @@ export const SwiftTransactionsSchema = z
     swiftStatusCode: SwiftStatusCodeSchema,
   })
   .strict();
+
+export type SwiftTransactions = z.infer<typeof SwiftTransactionsSchema>;

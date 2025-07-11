@@ -185,3 +185,5 @@ export const SwiftTransactionSchema = z
     swiftTransferDetailsList: z.array(SwiftTransferDetailsItemSchema),
   })
   .strict();
+
+export type SwiftTransaction = z.infer<typeof SwiftTransactionSchema>;
