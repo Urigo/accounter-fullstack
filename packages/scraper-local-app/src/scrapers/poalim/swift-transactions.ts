@@ -1,7 +1,7 @@
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { ForeignSwiftTransaction } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignSwiftTransaction.js';
-import type { ForeignSwiftTransactions } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignSwiftTransactions.js';
+import type { SwiftTransaction as ForeignSwiftTransaction } from '@accounter/modern-poalim-scraper/dist/zod-schemas/swift-transaction-schema.js';
+import type { SwiftTransactions } from '@accounter/modern-poalim-scraper/dist/zod-schemas/swift-transactions-schema.js';
 import { sql } from '@pgtyped/runtime';
 import type {
   ICheckForExistingSwiftTransactionQuery,
@@ -17,7 +17,7 @@ type SwiftContext = {
   newTransactions?: SwiftTransaction[];
   insertableTransactions?: SwiftTransaction[];
 };
-type SwiftTransaction = ForeignSwiftTransactions['swiftsList'][number];
+type SwiftTransaction = SwiftTransactions['swiftsList'][number];
 
 const checkForExistingSwiftTransaction = sql<ICheckForExistingSwiftTransactionQuery>`
   SELECT id
