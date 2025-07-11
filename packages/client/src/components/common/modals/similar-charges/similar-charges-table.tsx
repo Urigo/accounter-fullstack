@@ -2,8 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { ErrorBoundary } from 'react-error-boundary';
-import { useQuery } from 'urql';
 import {
   ColumnDef,
   flexRender,
@@ -12,17 +10,68 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import { SimilarChargesDocument } from '../../../gql/graphql.js';
-import { getChargeTypeName } from '../../../helpers/index.js';
-import { useBatchUpdateCharges } from '../../../hooks/use-batch-update-charges.js';
-import { Button } from '../../ui/button.jsx';
-import { Card } from '../../ui/card.jsx';
-import { Checkbox } from '../../ui/checkbox.jsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog.jsx';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.jsx';
-import { AccounterLoader } from '../index.js';
+import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
+import { SimilarChargesTableFragmentDoc } from '../../../../gql/graphql.js';
+import { getChargeTypeName } from '../../../../helpers/index.js';
+import { useBatchUpdateCharges } from '../../../../hooks/use-batch-update-charges.js';
+import { Button } from '../../../ui/button.js';
+import { Card } from '../../../ui/card.js';
+import { Checkbox } from '../../../ui/checkbox.js';
+import { DialogHeader, DialogTitle } from '../../../ui/dialog.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../ui/table.js';
 
-type Charge = {
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment SimilarChargesTable on Charge {
+    id
+    __typename
+    counterparty {
+      name
+      id
+    }
+    minEventDate
+    minDebitDate
+    minDocumentsDate
+    totalAmount {
+      raw
+      formatted
+    }
+    vat {
+      raw
+      formatted
+    }
+    userDescription
+    tags {
+      id
+      name
+    }
+    taxCategory {
+      id
+      name
+    }
+    ... on BusinessTripCharge {
+      businessTrip {
+        id
+        name
+      }
+    }
+    metadata {
+      transactionsCount
+      documentsCount
+      ledgerCount
+      miscExpensesCount
+    }
+  }
+`;
+
+export type SimilarCharge = {
   id: string;
   chargeType: string;
   counterpartyName?: string;
@@ -41,61 +90,7 @@ type Charge = {
   miscExpenses: number;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query SimilarCharges(
-    $chargeId: UUID!
-    $withMissingTags: Boolean!
-    $withMissingDescription: Boolean!
-  ) {
-    similarCharges(
-      chargeId: $chargeId
-      withMissingTags: $withMissingTags
-      withMissingDescription: $withMissingDescription
-    ) {
-      id
-      __typename
-      counterparty {
-        name
-        id
-      }
-      minEventDate
-      minDebitDate
-      minDocumentsDate
-      totalAmount {
-        raw
-        formatted
-      }
-      vat {
-        raw
-        formatted
-      }
-      userDescription
-      tags {
-        id
-        name
-      }
-      taxCategory {
-        id
-        name
-      }
-      ... on BusinessTripCharge {
-        businessTrip {
-          id
-          name
-        }
-      }
-      metadata {
-        transactionsCount
-        documentsCount
-        ledgerCount
-        miscExpensesCount
-      }
-    }
-  }
-`;
-
-const columns: ColumnDef<Charge>[] = [
+const columns: ColumnDef<SimilarCharge>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -192,50 +187,28 @@ const columns: ColumnDef<Charge>[] = [
   },
 ];
 
-export function SimilarChargesModal({
-  chargeId,
+export function SimilarChargesTable({
+  data,
   tagIds,
   description,
-  open,
   onOpenChange,
-  onClose,
 }: {
-  chargeId: string;
+  data: FragmentType<typeof SimilarChargesTableFragmentDoc>[];
   tagIds?: { id: string }[];
   description?: string;
-  open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClose?: () => void;
 }) {
-  const [{ data, fetching }, fetchSimilarCharges] = useQuery({
-    pause: true,
-    query: SimilarChargesDocument,
-    variables: {
-      chargeId,
-      withMissingTags: !!tagIds,
-      withMissingDescription: !!description,
-    },
-  });
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = React.useState({});
 
-  useEffect(() => {
-    if (open && (tagIds || description)) {
-      fetchSimilarCharges();
-    }
-  }, [open, tagIds, description, fetchSimilarCharges, chargeId]);
-
-  const onDialogChange = useCallback(
-    (openState: boolean) => {
-      onOpenChange(openState);
-      if (open && !openState) {
-        onClose?.();
-      }
-    },
-    [onOpenChange, onClose, open],
+  const similarCharges = useMemo(
+    () => data.map(charge => getFragmentData(SimilarChargesTableFragmentDoc, charge)),
+    [data],
   );
 
-  const charges = useMemo((): Charge[] => {
-    const charges: Charge[] =
-      data?.similarCharges.map(c => ({
+  const charges = useMemo((): SimilarCharge[] => {
+    const charges: SimilarCharge[] =
+      similarCharges.map(c => ({
         id: c.id,
         chargeType: getChargeTypeName(c.__typename),
         counterpartyName: c.counterparty?.name,
@@ -254,54 +227,13 @@ export function SimilarChargesModal({
         miscExpenses: c.metadata?.miscExpensesCount ?? 0,
       })) ?? [];
     if (data && charges.length === 0) {
-      onDialogChange(false);
+      onOpenChange(false);
     }
     return charges;
-  }, [data, onDialogChange]);
-
-  const shouldShowModal = useMemo(() => {
-    return open && (!!tagIds || !!description) && charges.length > 0;
-  }, [open, tagIds, description, charges.length]);
-
-  return (
-    <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
-      <DialogContent
-        className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]"
-        onClick={e => e.stopPropagation()}
-      >
-        <ErrorBoundary fallback={<div>Error fetching similar charges</div>}>
-          {fetching ? (
-            <AccounterLoader />
-          ) : tagIds || description ? (
-            <SimilarChargesTable
-              data={charges}
-              tagIds={tagIds}
-              description={description}
-              onOpenChange={onDialogChange}
-            />
-          ) : null}
-        </ErrorBoundary>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function SimilarChargesTable({
-  data,
-  tagIds,
-  description,
-  onOpenChange,
-}: {
-  data: Charge[];
-  tagIds?: { id: string }[];
-  description?: string;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = React.useState({});
+  }, [data, onOpenChange]);
 
   const table = useReactTable({
-    data,
+    data: charges,
     columns,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

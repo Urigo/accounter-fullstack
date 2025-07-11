@@ -3,8 +3,7 @@ import { Group, Indicator, Text } from '@mantine/core';
 import { ChargesTableTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
-import { ConfirmMiniButton, ListCapsule } from '../../common/index.js';
-import { SimilarChargesModal } from '../../common/modals/similar-charges-modal.js';
+import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -107,7 +106,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
         />
       )}
 
-      <SimilarChargesModal
+      <SimilarChargesByIdModal
         chargeId={chargeId}
         tagIds={missingInfoSuggestions?.tags?.map(t => ({ id: t.id }))}
         open={similarChargesOpen}

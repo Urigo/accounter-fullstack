@@ -6,8 +6,7 @@ import {
 } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
-import { ConfirmMiniButton } from '../../common/index.js';
-import { SimilarChargesModal } from '../../common/modals/similar-charges-modal.js';
+import { ConfirmMiniButton, SimilarChargesByIdModal } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -86,7 +85,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
         )}
       </div>
 
-      <SimilarChargesModal
+      <SimilarChargesByIdModal
         chargeId={chargeId}
         description={charge.missingInfoSuggestions?.description ?? undefined}
         open={similarChargesOpen}
