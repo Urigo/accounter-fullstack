@@ -104,6 +104,7 @@ import migration_2025_06_29T12_27_18_support_jpy_currency from './actions/2025-0
 import migration_2025_06_29T15_28_00_currency_fix from './actions/2025-06-29T15-28-00.currency-fix.js';
 import migration_2025_06_30T16_20_19_deel_data_update from './actions/2025-06-30T16-20-19.deel-data-update.js';
 import migration_2025_07_07T10_30_32_support_aud_currency from './actions/2025-07-07T10-30-32.support-aud-currency.js';
+import migration_2025_07_10T14_13_43_swift_table_extension from './actions/2025-07-10T14-13-43.swift-table-extension.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -215,5 +216,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_06_29T15_28_00_currency_fix,
       migration_2025_06_30T16_20_19_deel_data_update,
       migration_2025_07_07T10_30_32_support_aud_currency,
+      migration_2025_07_10T14_13_43_swift_table_extension,
     ],
   });
