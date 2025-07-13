@@ -245,6 +245,16 @@ const getSimilarCharges = sql<IGetSimilarChargesQuery>`
      ELSE
         TRUE
      END)
+        AND (CASE WHEN $tagsDifferentThan::UUID[] IS NOT NULL THEN
+        NOT((tags @> $tagsDifferentThan) AND (tags <@ $tagsDifferentThan))
+     ELSE
+        TRUE
+     END)
+        AND (CASE WHEN $descriptionDifferentThan::TEXT IS NOT NULL THEN
+        NOT(user_description = $descriptionDifferentThan)
+     ELSE
+        TRUE
+     END)
         AND (
           (business_id IS NOT NULL AND business_id = $businessId)
           OR (business_array IS NOT NULL AND business_array @> $businessArray AND business_array <@ $businessArray)

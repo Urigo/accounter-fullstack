@@ -629,6 +629,35 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         });
       return similarCharges;
     },
+    similarChargesByBusiness: async (
+      _,
+      { businessId, ownerId: ownerIdInput, tagsDifferentThan, descriptionDifferentThan },
+      { injector, adminContext },
+    ) => {
+      if (!businessId?.trim()) {
+        throw new GraphQLError('Business ID is required');
+      }
+
+      const ownerId = ownerIdInput?.trim() || adminContext.defaultAdminBusinessId;
+
+      const similarCharges = await injector
+        .get(ChargesProvider)
+        .getSimilarCharges({
+          businessId,
+          tagsDifferentThan: tagsDifferentThan ? [...tagsDifferentThan] : undefined,
+          descriptionDifferentThan,
+          ownerId,
+        })
+        .catch(e => {
+          console.error('Error fetching similar charges:', {
+            businessId,
+            ownerId,
+            error: e.message,
+          });
+          throw new GraphQLError('Error fetching similar charges by business');
+        });
+      return similarCharges;
+    },
   },
   CommonCharge: commonChargeFields,
   FinancialCharge: commonChargeFields,

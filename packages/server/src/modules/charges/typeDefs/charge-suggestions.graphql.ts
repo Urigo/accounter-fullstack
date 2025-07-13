@@ -9,6 +9,12 @@ export default gql`
       withMissingTags: Boolean
       withMissingDescription: Boolean
     ): [Charge!]! @auth(role: ACCOUNTANT)
+    similarChargesByBusiness(
+      businessId: UUID!
+      ownerId: UUID
+      tagsDifferentThan: [String!]
+      descriptionDifferentThan: String
+    ): [Charge!]! @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {
