@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'urql';
 import { SimilarChargesDocument } from '../../../../gql/graphql.js';
-import { Dialog, DialogContent } from '../../../ui/dialog.jsx';
+import { Dialog, DialogContent } from '../../../ui/dialog.js';
 import { AccounterLoader } from '../../index.js';
-import { SimilarChargesTable } from './similar-charges-table.jsx';
+import { SimilarChargesTable } from './similar-charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -55,7 +55,7 @@ export function SimilarChargesByIdModal({
     if (open && (tagIds || description)) {
       fetchSimilarCharges();
     }
-  }, [open, tagIds, description, fetchSimilarCharges, chargeId]);
+  }, [open, tagIds, description, fetchSimilarCharges]);
 
   const onDialogChange = useCallback(
     (openState: boolean) => {

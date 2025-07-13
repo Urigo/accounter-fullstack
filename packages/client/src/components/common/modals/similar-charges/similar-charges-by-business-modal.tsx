@@ -55,7 +55,7 @@ export function SimilarChargesByBusinessModal({
     if (open && (tagIds || description)) {
       fetchSimilarCharges();
     }
-  }, [open, tagIds, description, fetchSimilarCharges, businessId]);
+  }, [open, tagIds, description, fetchSimilarCharges]);
 
   const onDialogChange = useCallback(
     (openState: boolean) => {

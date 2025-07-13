@@ -226,11 +226,14 @@ export function SimilarChargesTable({
         transactions: c.metadata?.transactionsCount ?? 0,
         miscExpenses: c.metadata?.miscExpensesCount ?? 0,
       })) ?? [];
+    return charges;
+  }, [similarCharges]);
+
+  useEffect(() => {
     if (data && charges.length === 0) {
       onOpenChange(false);
     }
-    return charges;
-  }, [data, onOpenChange]);
+  }, [data, charges.length, onOpenChange]);
 
   const table = useReactTable({
     data: charges,
