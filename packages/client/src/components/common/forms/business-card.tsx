@@ -12,7 +12,7 @@ import { MakeBoolean, relevantDataPicker } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { Form } from '../../ui/form.js';
-import { CopyToClipboardButton } from '../index.js';
+import { CopyToClipboardButton, SimilarChargesByBusinessModal } from '../index.js';
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -108,6 +108,14 @@ interface ContentProps {
 
 function BusinessCardContent({ business, refetchBusiness }: ContentProps): ReactElement {
   const [fetching, setFetching] = useState<boolean>(false);
+  const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
+  const [similarChargesData, setSimilarChargesData] = useState<
+    | {
+        tagIds?: { id: string }[];
+        description?: string;
+      }
+    | undefined
+  >(undefined);
   const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessLoading } = useUpdateBusiness();
@@ -127,7 +135,7 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
     formState: { dirtyFields: dirtyBusinessFields },
   } = formManager;
 
-  const onBusinessSubmit: SubmitHandler<UpdateBusinessInput> = data => {
+  const onBusinessSubmit: SubmitHandler<UpdateBusinessInput> = async data => {
     if (!business || !userContext?.context.adminBusinessId) {
       return;
     }
@@ -143,11 +151,21 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
         dataToUpdate.suggestions.phrases = data.suggestions!.phrases!.map(tag => tag);
       }
 
-      updateDbBusiness({
+      await updateDbBusiness({
         businessId: business.id,
         ownerId: userContext.context.adminBusinessId,
         fields: dataToUpdate,
-      }).then(() => refetchBusiness());
+      });
+
+      if (dataToUpdate.suggestions?.tags?.length || dataToUpdate.suggestions?.description) {
+        setSimilarChargesData({
+          tagIds: dataToUpdate.suggestions?.tags?.map(t => ({ id: t.id })),
+          description: dataToUpdate.suggestions?.description ?? undefined,
+        });
+        setSimilarChargesOpen(true);
+      } else {
+        refetchBusiness();
+      }
     }
   };
 
@@ -186,6 +204,15 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
           </form>
         </Form>
       </div>
+
+      <SimilarChargesByBusinessModal
+        businessId={business.id}
+        tagIds={similarChargesData?.tagIds}
+        description={similarChargesData?.description}
+        open={similarChargesOpen}
+        onOpenChange={setSimilarChargesOpen}
+        onClose={refetchBusiness}
+      />
     </>
   );
 }

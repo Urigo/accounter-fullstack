@@ -16,13 +16,13 @@ export function updateSuggestions(
   merge: boolean = false,
 ): Json {
   if (currentSuggestions && typeof currentSuggestions === 'object') {
-    const newTags = newSuggestions.tags?.map(tag => tag.id) ?? [];
     const currentTags = 'tags' in currentSuggestions ? (currentSuggestions.tags as Tag[]) : [];
+    const newTags = newSuggestions.tags?.map(tag => tag.id) ?? currentTags;
     const tags = merge ? [...currentTags, ...newTags] : newTags;
 
-    const newPhrases = newSuggestions.phrases ?? [];
     const currentPhrases =
       'phrases' in currentSuggestions ? (currentSuggestions.phrases as string[]) : [];
+    const newPhrases = newSuggestions.phrases ?? currentPhrases;
     const phrases = merge ? [...currentPhrases, ...newPhrases] : newPhrases;
 
     const description =
