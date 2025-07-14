@@ -6,8 +6,8 @@ import { Indicator } from '@mantine/core';
 import { isObjectEmpty } from '../../../../helpers/index.js';
 import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
 import { ComboBox, NumberInput } from '../../../common/index.js';
-import { Button } from '../../../ui/button.jsx';
-import { Dialog, DialogContent, DialogFooter, DialogTrigger } from '../../../ui/dialog.jsx';
+import { Button } from '../../../ui/button.js';
+import { Dialog, DialogContent, DialogFooter, DialogTrigger } from '../../../ui/dialog.js';
 import {
   Form,
   FormControl,
@@ -15,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '../../../ui/form.jsx';
+} from '../../../ui/form.js';
 
 export type AnnualAuditFlowFilter = {
   year: number;

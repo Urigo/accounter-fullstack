@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { BaseStepCard, type BaseStepProps, type StepAction, type StepStatus } from './step-base.js';
+import {
+  BaseStepCard,
+  type BaseStepProps,
+  type StepAction,
+  type StepStatus,
+} from './step-base.jsx';
 
 interface SimpleStepProps extends BaseStepProps {
   defaultStatus?: StepStatus;

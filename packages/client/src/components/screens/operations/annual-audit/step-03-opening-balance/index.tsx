@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Calculator } from 'lucide-react';
 import { TimelessDateString } from '../../../../../helpers/dates.js';
-import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.js';
-import { getContoReportHref } from '../../../../reports/conto/index.js';
-import { getTrialBalanceReportHref } from '../../../../reports/trial-balance-report/index.js';
+import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.jsx';
+import { getContoReportHref } from '../../../../reports/conto/index.jsx';
+import { getTrialBalanceReportHref } from '../../../../reports/trial-balance-report/index.jsx';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
+import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
 
 interface UserType {
   type: 'new' | 'migrating' | 'continuing';

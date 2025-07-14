@@ -2,23 +2,23 @@ import { ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useS
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
-import { UserContext } from '../../../../providers/user-provider.jsx';
-import { PageLayout } from '../../../layout/page-layout.jsx';
-import { Button } from '../../../ui/button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
-import { Progress } from '../../../ui/progress.jsx';
+import { UserContext } from '../../../../providers/user-provider.js';
+import { PageLayout } from '../../../layout/page-layout.js';
+import { Button } from '../../../ui/button.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
+import { Progress } from '../../../ui/progress.js';
 import {
   ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM,
   AnnualAuditFlowFilter,
   AnnualAuditFlowFilters,
   encodeAnnualAuditFlowFilters,
-} from './annual-audit-filters.jsx';
+} from './annual-audit-filters.js';
 // Import step components
-import { Step01ValidateCharges } from './step-01-validate-charges/index.jsx';
-import { Step02LedgerChanges } from './step-02-ledger-changes/index.jsx';
-import Step03OpeningBalance from './step-03-opening-balance/index.jsx';
-import type { StepStatus } from './step-base.jsx';
-import SimpleStep from './step-simple.jsx';
+import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
+import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
+import Step03OpeningBalance from './step-03-opening-balance/index.js';
+import type { StepStatus } from './step-base.js';
+import SimpleStep from './step-simple.js';
 
 export function getAnnualAuditFlowHref(filter?: AnnualAuditFlowFilter | null): string {
   const params = new URLSearchParams();
