@@ -14,11 +14,15 @@ import { SimilarChargesTable } from './similar-charges-table.js';
     $chargeId: UUID!
     $withMissingTags: Boolean!
     $withMissingDescription: Boolean!
+    $tagsDifferentThan: [String!]
+    $descriptionDifferentThan: String
   ) {
     similarCharges(
       chargeId: $chargeId
       withMissingTags: $withMissingTags
       withMissingDescription: $withMissingDescription
+      tagsDifferentThan: $tagsDifferentThan
+      descriptionDifferentThan: $descriptionDifferentThan
     ) {
       id
       ...SimilarChargesTable
@@ -41,7 +45,7 @@ export function SimilarChargesByIdModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClose?: () => void;
-  showChargesWithExistingSuggestions?: boolean; // This prop is not used in the current implementation, but can be added later if needed
+  showChargesWithExistingSuggestions?: boolean;
 }) {
   const [{ data, fetching }, fetchSimilarCharges] = useQuery({
     pause: true,

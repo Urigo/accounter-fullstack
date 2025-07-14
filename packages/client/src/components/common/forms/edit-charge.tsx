@@ -88,17 +88,17 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
           description?: string;
         } = {};
         if (dataToUpdate.tags) {
-          if (
-            (dataToUpdate.tags?.length ?? 0) === (charge.missingInfoSuggestions?.tags?.length ?? 0)
-          ) {
-            for (const tag of charge.missingInfoSuggestions?.tags ?? []) {
-              if (!dataToUpdate.tags?.some(t => t.id === tag.id)) {
-                nonsimilarData.tagIds = dataToUpdate.tags?.map(tag => ({ id: tag.id }));
-                break;
-              }
-            }
-          } else {
-            nonsimilarData.tagIds = dataToUpdate.tags?.map(tag => ({ id: tag.id }));
+          const suggestedTags = charge.missingInfoSuggestions?.tags ?? [];
+          const suggestedTagIds = new Set(suggestedTags.map(t => t.id));
+          const updatedTagIds = new Set(dataToUpdate.tags.map(t => t.id));
+
+          // Check if tags differ from suggestions
+          const tagsAreDifferent =
+            suggestedTagIds.size !== updatedTagIds.size ||
+            [...suggestedTagIds].some(id => !updatedTagIds.has(id));
+
+          if (tagsAreDifferent) {
+            nonsimilarData.tagIds = dataToUpdate.tags.map(tag => ({ id: tag.id }));
           }
         }
         // if (
