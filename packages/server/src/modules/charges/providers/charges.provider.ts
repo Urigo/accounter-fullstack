@@ -258,7 +258,8 @@ const getSimilarCharges = sql<IGetSimilarChargesQuery>`
         AND (
           (business_id IS NOT NULL AND business_id = $businessId)
           OR (business_array IS NOT NULL AND business_array @> $businessArray AND business_array <@ $businessArray)
-        ) AND owner_id = $ownerId;`;
+        ) AND owner_id = $ownerId
+     ORDER BY (COALESCE(documents_min_date, transactions_min_debit_date, transactions_min_event_date, ledger_min_value_date, ledger_min_invoice_date), COALESCE(transactions_min_event_date, documents_min_date), id) DESC;`;
 
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<
