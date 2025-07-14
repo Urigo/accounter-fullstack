@@ -115,7 +115,7 @@ __metadata:
     class-variance-authority: "npm:0.7.1"
     clsx: "npm:2.1.1"
     cmdk: "npm:1.1.1"
-    csv-parse: "npm:5.6.0"
+    csv-parse: "npm:6.0.0"
     date-fns: "npm:4.1.0"
     dayjs: "npm:1.11.13"
     decimal.js: "npm:10.6.0"
@@ -155,7 +155,7 @@ __metadata:
   resolution: "@accounter/etana-scrapper@workspace:packages/etana-scrapper"
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.8"
-    csv-parse: "npm:5.6.0"
+    csv-parse: "npm:6.0.0"
     diary: "npm:0.4.5"
     dotenv: "npm:16.6.1"
     pg-promise: "npm:11.15.0"
@@ -10153,10 +10153,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csv-parse@npm:5.6.0":
-  version: 5.6.0
-  resolution: "csv-parse@npm:5.6.0"
-  checksum: 10c0/52f5e6c45359902e0c8e57fc2eeed41366dc6b6d283b495b538dd50c8e8510413d6f924096ea056319cbbb8ed26e111c3a3485d7985c021bcf5abaa9e92425c7
+"csv-parse@npm:6.0.0":
+  version: 6.0.0
+  resolution: "csv-parse@npm:6.0.0"
+  checksum: 10c0/d4db63e00bdfcaa2889a96cfaea2a2fdecd03e98f4c6a9446aff93c109074718828a3f5353da636eef9314cf2b18b5cf8a4da040ab5fdade1c056a1b5979ba99
   languageName: node
   linkType: hard
 
