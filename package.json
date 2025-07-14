@@ -36,7 +36,9 @@
     "seed": "tsx scripts/seed.ts",
     "server:build": "yarn --cwd packages/server build",
     "setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn db:init && yarn generate",
-    "test": "vitest"
+    "test": "vitest",
+    "storybook": "yarn workspace @accounter/storybook storybook",
+    "storybook:build": "yarn workspace @accounter/storybook build"
   },
   "devDependencies": {
     "@changesets/changelog-github": "0.5.1",

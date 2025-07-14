@@ -1,0 +1,25 @@
+{
+  "extends": "../client/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@accounter/client": ["../client/src"],
+      "@accounter/client/*": ["../client/src/*"]
+    }
+  },
+  "include": [
+    ".storybook/**/*",
+    "stories/**/*",
+    "../client/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "storybook-static"
+  ]
+}
