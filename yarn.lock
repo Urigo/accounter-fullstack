@@ -81,7 +81,7 @@ __metadata:
     "@mantine/dates": "npm:6.0.22"
     "@mantine/dropzone": "npm:6.0.22"
     "@mantine/hooks": "npm:6.0.22"
-    "@minoru/react-dnd-treeview": "npm:3.5.2"
+    "@minoru/react-dnd-treeview": "npm:3.5.3"
     "@mui/material": "npm:7.2.0"
     "@mui/x-charts": "npm:7.29.1"
     "@radix-ui/react-accordion": "npm:1.2.11"
@@ -4451,9 +4451,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@minoru/react-dnd-treeview@npm:3.5.2":
-  version: 3.5.2
-  resolution: "@minoru/react-dnd-treeview@npm:3.5.2"
+"@minoru/react-dnd-treeview@npm:3.5.3":
+  version: 3.5.3
+  resolution: "@minoru/react-dnd-treeview@npm:3.5.3"
   dependencies:
     "@juggle/resize-observer": "npm:^3.4.0"
     dnd-multi-backend: "npm:^8.1.2"
@@ -4465,7 +4465,7 @@ __metadata:
     react: 18.x || 19.x
     react-dnd: 15.x || 16.x
     react-dom: 18.x || 19.x
-  checksum: 10c0/71f8ece99107d53719cd29e56b25605306277f056ec6b25cd998d8a0ca07d2f8bf318aa7a2e42002de8c81335c450d136546fa0796370d8879bb2185f9e27426
+  checksum: 10c0/7cc0bae920c5c70ea81c84cde0fa2aba92a9bf8da94dc869985a8d2190704f436a2c187652c8941d75dab9e07529d1c2088a769cb790a7136ddc8da6ba649169
   languageName: node
   linkType: hard
 
