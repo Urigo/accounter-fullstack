@@ -79,6 +79,13 @@ export function SimilarChargesByIdModal({
     [onOpenChange, onClose, open],
   );
 
+  // Trigger close function the modal if there are no similar charges and the modal is open
+  useEffect(() => {
+    if (open && !fetching && data?.similarCharges.length === 0) {
+      onClose?.();
+    }
+  }, [open, fetching, data, onClose]);
+
   const shouldShowModal = useMemo(() => {
     return open && (!!tagIds || !!description) && data && data?.similarCharges.length > 0;
   }, [open, tagIds, description, data]);
