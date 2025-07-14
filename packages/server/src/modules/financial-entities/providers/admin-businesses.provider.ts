@@ -10,16 +10,20 @@ import type {
 } from '../types.js';
 
 const getAdminBusinessesByIds = sql<IGetAdminBusinessesByIdsQuery>`
-    SELECT ab.*, b.name, b.vat_number
+    SELECT ab.*, f.name, b.vat_number
     FROM accounter_schema.businesses_admin ab
     INNER JOIN accounter_schema.businesses b
+      USING (id)
+    INNER JOIN accounter_schema.financial_entities f
       USING (id)
     WHERE ab.id IN $$ids;`;
 
 const getAllAdminBusinesses = sql<IGetAllAdminBusinessesQuery>`
-    SELECT ab.*, b.name, b.vat_number
+    SELECT ab.*, f.name, b.vat_number
     FROM accounter_schema.businesses_admin ab
     INNER JOIN accounter_schema.businesses b
+      USING (id)
+    INNER JOIN accounter_schema.financial_entities f
       USING (id)
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
