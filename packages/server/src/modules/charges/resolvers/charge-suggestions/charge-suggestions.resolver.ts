@@ -590,7 +590,13 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
   Query: {
     similarCharges: async (
       _,
-      { chargeId, withMissingTags = false, withMissingDescription = false },
+      {
+        chargeId,
+        withMissingTags = false,
+        withMissingDescription = false,
+        descriptionDifferentThan,
+        tagsDifferentThan,
+      },
       { injector },
     ) => {
       if (!chargeId?.trim()) {
@@ -616,6 +622,8 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
           businessArray: mainCharge.business_array,
           withMissingTags,
           withMissingDescription,
+          tagsDifferentThan: tagsDifferentThan ? [...tagsDifferentThan] : undefined,
+          descriptionDifferentThan,
           ownerId: mainCharge.owner_id,
         })
         .catch(e => {

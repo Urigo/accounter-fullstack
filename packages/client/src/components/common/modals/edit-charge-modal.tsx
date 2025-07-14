@@ -29,6 +29,13 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
       tags {
         id
       }
+      missingInfoSuggestions {
+        ... on ChargeSuggestions {
+          tags {
+            id
+          }
+        }
+      }
       optionalVAT
       optionalDocuments
       ... on BusinessTripCharge {

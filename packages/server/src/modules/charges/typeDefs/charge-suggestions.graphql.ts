@@ -8,6 +8,8 @@ export default gql`
       chargeId: UUID!
       withMissingTags: Boolean
       withMissingDescription: Boolean
+      tagsDifferentThan: [String!]
+      descriptionDifferentThan: String
     ): [Charge!]! @auth(role: ACCOUNTANT)
     similarChargesByBusiness(
       businessId: UUID!
