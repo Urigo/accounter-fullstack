@@ -154,7 +154,7 @@ const AccountantApprovals = lazy(() =>
 
 // Workflows
 const AnnualAudit = lazy(() =>
-  import('../components/screens/operations/year-end-audit/index.js').then(m => ({
+  import('../components/screens/operations/annual-audit/index.js').then(m => ({
     default: m.AnnualAuditFlow,
   })),
 );
