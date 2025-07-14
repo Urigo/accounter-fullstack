@@ -3,15 +3,15 @@ import { AlertTriangle, Settings } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeSortByField, LedgerValidationStatusDocument } from '../../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../../helpers/index.js';
-import { Badge } from '../../../../ui/badge.js';
-import { CardContent } from '../../../../ui/card.js';
-import { getAllChargesHref } from '../../../charges/all-charges.js';
+import { Badge } from '../../../../ui/badge.jsx';
+import { CardContent } from '../../../../ui/card.jsx';
+import { getAllChargesHref } from '../../../charges/all-charges.jsx';
 import {
   BaseStepCard,
   type BaseStepProps,
   type StepAction,
   type StepStatus,
-} from '../step-base.js';
+} from '../step-base.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

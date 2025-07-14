@@ -7,17 +7,17 @@ import {
   ChargeSortByField,
 } from '../../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../../helpers/dates.js';
-import { Badge } from '../../../../ui/badge.js';
-import { Button } from '../../../../ui/button.js';
-import { CardContent } from '../../../../ui/card.js';
+import { Badge } from '../../../../ui/badge.jsx';
+import { Button } from '../../../../ui/button.jsx';
+import { CardContent } from '../../../../ui/card.jsx';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { getAllChargesHref } from '../../../charges/all-charges.js';
+import { getAllChargesHref } from '../../../charges/all-charges.jsx';
 import {
   BaseStepCard,
   type BaseStepProps,
   type StepAction,
   type StepStatus,
-} from '../step-base.js';
+} from '../step-base.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

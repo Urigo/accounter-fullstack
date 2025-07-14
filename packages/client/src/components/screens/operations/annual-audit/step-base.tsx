@@ -2,9 +2,9 @@
 
 import { ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, Loader2 } from 'lucide-react';
-import { Badge } from '../../../ui/badge.js';
-import { Button } from '../../../ui/button.js';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card.js';
+import { Badge } from '../../../ui/badge.jsx';
+import { Button } from '../../../ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card.jsx';
 
 export type StepStatus = 'completed' | 'in-progress' | 'pending' | 'blocked' | 'loading';
 

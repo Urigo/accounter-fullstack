@@ -25,7 +25,7 @@ import { MissingInfoCharges } from './components/screens/charges/missing-info-ch
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocumentScreen } from './components/screens/documents/issue-document.js';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
-import { AnnualAuditFlow } from './components/screens/operations/year-end-audit/index.js';
+import { AnnualAuditFlow } from './components/screens/operations/annual-audit/index.jsx';
 import { PageNotFound } from './components/screens/page-not-found.js';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
