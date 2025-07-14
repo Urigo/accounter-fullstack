@@ -20,7 +20,13 @@ import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Switch } from '../../ui/switch.js';
-import { ChargeSpreadInput, InsertBusinessTripModal, SimpleGrid, TagsInput } from '../index.js';
+import {
+  ChargeSpreadInput,
+  InsertBusinessTripModal,
+  SimilarChargesByIdModal,
+  SimpleGrid,
+  TagsInput,
+} from '../index.js';
 
 type Props = {
   charge: EditChargeQuery['chargesByIDs'][number];
@@ -32,6 +38,14 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
   const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
   const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
+  const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
+  const [similarChargesData, setSimilarChargesData] = useState<
+    | {
+        tagIds?: { id: string }[];
+        description?: string;
+      }
+    | undefined
+  >(undefined);
 
   const formManager = useForm<UpdateChargeInput>({
     defaultValues: {
@@ -52,15 +66,14 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
     // setValue,
   } = formManager;
 
-  const onChargeSubmit: SubmitHandler<UpdateChargeInput> = data => {
+  const onChargeSubmit: SubmitHandler<UpdateChargeInput> = async data => {
     if (!charge) {
       return;
     }
 
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
-    close();
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      updateCharge({
+      await updateCharge({
         chargeId: charge.id,
         fields: {
           ...dataToUpdate,
@@ -68,7 +81,38 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
             ? Object.values(data.yearsOfRelevance)
             : undefined,
         },
-      }).then(() => onChange?.());
+      });
+      if (dataToUpdate.tags?.length || dataToUpdate.userDescription) {
+        const nonsimilarData: {
+          tagIds?: { id: string }[];
+          description?: string;
+        } = {};
+        if (dataToUpdate.tags) {
+          if (
+            (dataToUpdate.tags?.length ?? 0) === (charge.missingInfoSuggestions?.tags?.length ?? 0)
+          ) {
+            for (const tag of charge.missingInfoSuggestions?.tags ?? []) {
+              if (!dataToUpdate.tags?.some(t => t.id === tag.id)) {
+                nonsimilarData.tagIds = dataToUpdate.tags?.map(tag => ({ id: tag.id }));
+                break;
+              }
+            }
+          } else {
+            nonsimilarData.tagIds = dataToUpdate.tags?.map(tag => ({ id: tag.id }));
+          }
+        }
+        // if (
+        //   dataToUpdate.userDescription &&
+        //   dataToUpdate.userDescription !== charge.missingInfoSuggestions?.description
+        // ) {
+        //   nonsimilarData.description = dataToUpdate.userDescription;
+        // }
+        setSimilarChargesData(nonsimilarData);
+        setSimilarChargesOpen(true);
+      } else {
+        close();
+        onChange?.();
+      }
     }
   };
 
@@ -110,193 +154,208 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   }, [businessTripsData, setBusinessTrips]);
 
   return (
-    <Form {...formManager}>
-      <form onSubmit={handleSubmit(onChargeSubmit)}>
-        <div className="flex-row px-10 h-max justify-start block">
-          <SimpleGrid cols={3}>
-            <FormField
-              name="userDescription"
-              control={control}
-              defaultValue={charge.userDescription}
-              rules={{
-                required: 'Required',
-                minLength: { value: 2, message: 'Must be at least 2 characters' },
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value ?? undefined} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Controller
-              name="ownerId"
-              control={control}
-              defaultValue={charge.owner?.id}
-              rules={{
-                required: 'Required',
-                minLength: { value: 2, message: 'Minimum 2 characters' },
-              }}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={businesses}
-                  value={field.value}
-                  disabled={fetchingBusinesses}
-                  label="Owner"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-            <Controller
-              name="defaultTaxCategoryID"
-              control={control}
-              defaultValue={charge.taxCategory?.id}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={taxCategories}
-                  value={field.value}
-                  disabled={fetchingTaxCategories}
-                  label="Tax Category Override"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-            <Controller
-              name="businessTripID"
-              control={control}
-              defaultValue={'businessTrip' in charge ? charge.businessTrip?.id : undefined}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={businessTrips}
-                  value={field.value}
-                  disabled={fetchingBusinessTrips}
-                  label="Business Trip"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  rightSection={<InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />}
-                />
-              )}
-            />
-            <TagsInput formManager={formManager} tagsPath="tags" />
+    <>
+      <Form {...formManager}>
+        <form onSubmit={handleSubmit(onChargeSubmit)}>
+          <div className="flex-row px-10 h-max justify-start block">
+            <SimpleGrid cols={3}>
+              <FormField
+                name="userDescription"
+                control={control}
+                defaultValue={charge.userDescription}
+                rules={{
+                  required: 'Required',
+                  minLength: { value: 2, message: 'Must be at least 2 characters' },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? undefined} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Controller
+                name="ownerId"
+                control={control}
+                defaultValue={charge.owner?.id}
+                rules={{
+                  required: 'Required',
+                  minLength: { value: 2, message: 'Minimum 2 characters' },
+                }}
+                render={({ field, fieldState }): ReactElement => (
+                  <Select
+                    {...field}
+                    data={businesses}
+                    value={field.value}
+                    disabled={fetchingBusinesses}
+                    label="Owner"
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="defaultTaxCategoryID"
+                control={control}
+                defaultValue={charge.taxCategory?.id}
+                render={({ field, fieldState }): ReactElement => (
+                  <Select
+                    {...field}
+                    data={taxCategories}
+                    value={field.value}
+                    disabled={fetchingTaxCategories}
+                    label="Tax Category Override"
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="businessTripID"
+                control={control}
+                defaultValue={'businessTrip' in charge ? charge.businessTrip?.id : undefined}
+                render={({ field, fieldState }): ReactElement => (
+                  <Select
+                    {...field}
+                    data={businessTrips}
+                    value={field.value}
+                    disabled={fetchingBusinessTrips}
+                    label="Business Trip"
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                    rightSection={<InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />}
+                  />
+                )}
+              />
+              <TagsInput formManager={formManager} tagsPath="tags" />
 
-            <FormField
-              name="isProperty"
-              control={control}
-              defaultValue={charge.property}
-              render={({ field }) => (
-                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Is Property</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      disabled
-                      checked={field.value === true}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="isProperty"
+                control={control}
+                defaultValue={charge.property}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Is Property</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        disabled
+                        checked={field.value === true}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="isConversion"
-              control={control}
-              defaultValue={charge.conversion}
-              render={({ field }) => (
-                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Is Conversion</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="isConversion"
+                control={control}
+                defaultValue={charge.conversion}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Is Conversion</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="isInvoicePaymentDifferentCurrency"
-              control={control}
-              defaultValue={charge.isInvoicePaymentDifferentCurrency}
-              render={({ field }) => (
-                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Is Invoice-Payment currency difference</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="isInvoicePaymentDifferentCurrency"
+                control={control}
+                defaultValue={charge.isInvoicePaymentDifferentCurrency}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Is Invoice-Payment currency difference</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="optionalVAT"
-              control={control}
-              defaultValue={charge.optionalVAT ?? false}
-              render={({ field }) => (
-                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Optional VAT</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <FormField
+                name="optionalVAT"
+                control={control}
+                defaultValue={charge.optionalVAT ?? false}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Optional VAT</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              name="optionalDocuments"
-              control={control}
-              defaultValue={charge.optionalDocuments ?? false}
-              render={({ field }) => (
-                <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Optional Documents</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <ChargeSpreadInput formManager={formManager} chargeSpreadPath="yearsOfRelevance" />
-          </SimpleGrid>
-        </div>
-        <div className="mt-10 mb-5 flex justify-center gap-5">
-          <button
-            type="submit"
-            onClick={(): (() => Promise<void>) => handleSubmit(onChargeSubmit)}
-            className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            disabled={isChargeLoading || Object.keys(dirtyChargeFields).length === 0}
-          >
-            Accept
-          </button>
-          <button
-            type="button"
-            className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
-            onClick={close}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </Form>
+              <FormField
+                name="optionalDocuments"
+                control={control}
+                defaultValue={charge.optionalDocuments ?? false}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Optional Documents</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <ChargeSpreadInput formManager={formManager} chargeSpreadPath="yearsOfRelevance" />
+            </SimpleGrid>
+          </div>
+          <div className="mt-10 mb-5 flex justify-center gap-5">
+            <button
+              type="submit"
+              onClick={(): (() => Promise<void>) => handleSubmit(onChargeSubmit)}
+              className="mt-8 text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+              disabled={isChargeLoading || Object.keys(dirtyChargeFields).length === 0}
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              className="mt-8 text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
+              onClick={close}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Form>
+
+      <SimilarChargesByIdModal
+        chargeId={charge.id}
+        tagIds={similarChargesData?.tagIds}
+        description={similarChargesData?.description}
+        open={similarChargesOpen}
+        onOpenChange={setSimilarChargesOpen}
+        onClose={() => {
+          close();
+          onChange?.();
+        }}
+        showChargesWithExistingSuggestions
+      />
+    </>
   );
 };

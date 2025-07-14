@@ -86,6 +86,7 @@ export function SimilarChargesByBusinessModal({
               tagIds={tagIds}
               description={description}
               onOpenChange={onDialogChange}
+              title="Similar Charges by Business"
             />
           ) : null}
         </ErrorBoundary>

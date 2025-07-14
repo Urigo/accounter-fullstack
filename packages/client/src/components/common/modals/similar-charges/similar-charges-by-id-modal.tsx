@@ -33,6 +33,7 @@ export function SimilarChargesByIdModal({
   open,
   onOpenChange,
   onClose,
+  showChargesWithExistingSuggestions = false,
 }: {
   chargeId: string;
   tagIds?: { id: string }[];
@@ -40,14 +41,21 @@ export function SimilarChargesByIdModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onClose?: () => void;
+  showChargesWithExistingSuggestions?: boolean; // This prop is not used in the current implementation, but can be added later if needed
 }) {
   const [{ data, fetching }, fetchSimilarCharges] = useQuery({
     pause: true,
     query: SimilarChargesDocument,
     variables: {
       chargeId,
-      withMissingTags: !!tagIds,
-      withMissingDescription: !!description,
+      withMissingTags: showChargesWithExistingSuggestions ? false : !!tagIds,
+      withMissingDescription: showChargesWithExistingSuggestions ? false : !!description,
+      tagsDifferentThan: showChargesWithExistingSuggestions
+        ? tagIds
+          ? tagIds.map(t => t.id)
+          : undefined
+        : undefined,
+      descriptionDifferentThan: showChargesWithExistingSuggestions ? description : undefined,
     },
   });
 

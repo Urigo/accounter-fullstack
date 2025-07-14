@@ -192,11 +192,13 @@ export function SimilarChargesTable({
   tagIds,
   description,
   onOpenChange,
+  title = 'Similar Charges',
 }: {
   data: FragmentType<typeof SimilarChargesTableFragmentDoc>[];
   tagIds?: { id: string }[];
   description?: string;
   onOpenChange: (open: boolean) => void;
+  title?: string;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
@@ -277,7 +279,7 @@ export function SimilarChargesTable({
   return (
     <>
       <DialogHeader className="flex flex-row items-center justify-between">
-        <DialogTitle>Charges</DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <Button onClick={onApproveSelected}>Approve selected</Button>
       </DialogHeader>
       <Card>
