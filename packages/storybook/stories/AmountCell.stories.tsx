@@ -1,15 +1,61 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-// Update the import path below to the correct location of AmountCell
-import { AmountCell } from '../../client/src/components/ledger-table/amount-cell';
 
-// If the file does not exist, create 'amount-cell.tsx' in the specified folder and export AmountCell from it.
-
-// Mock the Currency enum since we can't import the full GraphQL schema
+// Mock the Currency enum to avoid GraphQL dependency
 const Currency = {
   Ils: 'ILS',
   Usd: 'USD',
   Eur: 'EUR',
 } as const;
+
+// Copy the component types locally to avoid GraphQL imports
+type AmountData = {
+  foreignAmount?: {
+    formatted: string;
+    currency: string;
+  } | null;
+  localAmount?: {
+    formatted: string;
+  } | null;
+};
+
+type Props = AmountData & {
+  diff?: AmountData;
+};
+
+// Copy the AmountCell component locally with mock Currency
+const AmountCell = ({ foreignAmount, localAmount, diff }: Props): React.ReactElement => {
+  const isForeign = foreignAmount != null && foreignAmount.currency !== Currency.Ils;
+  const isLocalAmountDiff = diff && diff.localAmount?.formatted !== localAmount?.formatted;
+  const isForeignAmountDiff = diff && diff.foreignAmount?.formatted !== foreignAmount?.formatted;
+
+  return (
+    <div className="flex flex-col">
+      {(localAmount || isLocalAmountDiff) && (
+        <>
+          <div className="flex gap-2 items-center">
+            {isForeign && (
+              <p className={isForeignAmountDiff ? 'line-through' : ''}>{foreignAmount.formatted}</p>
+            )}
+            {isForeignAmountDiff && diff.foreignAmount && (
+              <p className="border-2 border-yellow-500 rounded-md">
+                {diff.foreignAmount.formatted}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2 items-center">
+            {localAmount != null && (
+              <p className={isLocalAmountDiff ? 'line-through' : ''}>{localAmount.formatted}</p>
+            )}
+            {isLocalAmountDiff && diff.localAmount && (
+              <p className="border-2 border-yellow-500 rounded-md">{diff.localAmount.formatted}</p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const meta = {
   title: 'Components/LedgerTable/AmountCell',
