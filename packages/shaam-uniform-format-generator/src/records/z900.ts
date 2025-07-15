@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SHAAM_VERSION } from '../constants.js';
 import { CRLF, padLeft, padRight } from '../format/index.js';
 
 /**
@@ -20,7 +21,6 @@ export const Z900Schema = z.object({
   recordNumber: z.string().min(1).max(9).describe('Sequential record number'),
   vatId: z.string().min(1).max(9).describe('VAT identification number'),
   uniqueId: z.string().min(1).max(15).describe('Unique business identifier'),
-  systemCode: z.string().min(1).max(8).describe('Reporting system code'),
   totalRecords: z.string().min(1).max(15).describe('Total number of records in file'),
   reserved: z.string().max(50).default('').describe('Reserved field for future use'),
 });
@@ -37,7 +37,7 @@ export function encodeZ900(input: Z900): string {
     formatField(input.recordNumber, 9, 'right'), // Field 1151: Record number (9)
     formatField(input.vatId, 9, 'left'), // Field 1152: VAT ID (9)
     formatField(input.uniqueId, 15, 'left'), // Field 1153: Unique ID (15)
-    formatField(input.systemCode, 8, 'left'), // Field 1154: System code (8)
+    formatField(SHAAM_VERSION, 8, 'left'), // Field 1154: SHAAM version (8)
     formatField(input.totalRecords, 15, 'right'), // Field 1155: Total records (15)
     formatField(input.reserved, 50, 'left'), // Field 1156: Reserved (50)
   ];
@@ -71,12 +71,16 @@ export function parseZ900(line: string): Z900 {
     throw new Error(`Invalid Z900 record code: expected "Z900", got "${code}"`);
   }
 
+  // Validate the SHAAM version field
+  if (systemCode !== SHAAM_VERSION) {
+    throw new Error(`Invalid SHAAM version: expected "${SHAAM_VERSION}", got "${systemCode}"`);
+  }
+
   const parsed: Z900 = {
     code,
     recordNumber,
     vatId,
     uniqueId,
-    systemCode,
     totalRecords,
     reserved,
   };

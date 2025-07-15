@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SHAAM_VERSION } from '../constants.js';
 import { CRLF, padLeft, padRight } from '../format/index.js';
 
 /**
@@ -16,11 +17,10 @@ function formatField(value: string, width: number, align: 'left' | 'right'): str
  * Fields 1100-1105 based on SHAAM 1.31 specification
  */
 export const A100Schema = z.object({
-  code: z.string().length(4).describe('Record type code - always "A100"'),
+  code: z.literal('A100').describe('Record type code - always "A100"'),
   recordNumber: z.string().min(1).max(9).describe('Sequential record number'),
   vatId: z.string().min(1).max(9).describe('VAT identification number'),
   uniqueId: z.string().min(1).max(15).describe('Unique business identifier'),
-  systemCode: z.string().min(1).max(8).describe('Reporting system code'),
   reserved: z.string().max(50).default('').describe('Reserved field for future use'),
 });
 
@@ -36,7 +36,7 @@ export function encodeA100(input: A100): string {
     formatField(input.recordNumber, 9, 'right'), // Field 1101: Record number (9)
     formatField(input.vatId, 9, 'left'), // Field 1102: VAT ID (9)
     formatField(input.uniqueId, 15, 'left'), // Field 1103: Unique ID (15)
-    formatField(input.systemCode, 8, 'left'), // Field 1104: System code (8)
+    formatField(SHAAM_VERSION, 8, 'left'), // Field 1104: SHAAM version (8)
     formatField(input.reserved, 50, 'left'), // Field 1105: Reserved (50)
   ];
 
@@ -68,12 +68,16 @@ export function parseA100(line: string): A100 {
     throw new Error(`Invalid A100 record code: expected "A100", got "${code}"`);
   }
 
+  // Validate the SHAAM version field
+  if (systemCode !== SHAAM_VERSION) {
+    throw new Error(`Invalid SHAAM version: expected "${SHAAM_VERSION}", got "${systemCode}"`);
+  }
+
   const parsed: A100 = {
     code,
     recordNumber,
     vatId,
     uniqueId,
-    systemCode,
     reserved,
   };
 
