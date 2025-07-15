@@ -6,45 +6,45 @@ import { z } from 'zod';
 
 // Business metadata schema
 export const BusinessMetadataSchema = z.object({
-  businessId: z.string(),
-  name: z.string(),
-  taxId: z.string(),
+  businessId: z.string().min(1, 'Business ID is required'),
+  name: z.string().min(1, 'Business name is required'),
+  taxId: z.string().min(1, 'Tax ID is required'),
   reportingPeriod: z.object({
-    startDate: z.string(),
-    endDate: z.string(),
+    startDate: z.string().min(1, 'Start date is required'),
+    endDate: z.string().min(1, 'End date is required'),
   }),
 });
 
 // Document schema
 export const DocumentSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  date: z.string(),
+  id: z.string().min(1, 'Document ID is required'),
+  type: z.string().min(1, 'Document type is required'),
+  date: z.string().min(1, 'Document date is required'),
   amount: z.number(),
   description: z.string().optional(),
 });
 
 // Journal entry schema
 export const JournalEntrySchema = z.object({
-  id: z.string(),
-  date: z.string(),
+  id: z.string().min(1, 'Journal entry ID is required'),
+  date: z.string().min(1, 'Journal entry date is required'),
   amount: z.number(),
-  accountId: z.string(),
+  accountId: z.string().min(1, 'Account ID is required'),
   description: z.string().optional(),
 });
 
 // Account schema
 export const AccountSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.string(),
+  id: z.string().min(1, 'Account ID is required'),
+  name: z.string().min(1, 'Account name is required'),
+  type: z.string().min(1, 'Account type is required'),
   balance: z.number(),
 });
 
 // Inventory item schema
 export const InventoryItemSchema = z.object({
-  id: z.string(),
-  name: z.string(),
+  id: z.string().min(1, 'Inventory item ID is required'),
+  name: z.string().min(1, 'Inventory item name is required'),
   quantity: z.number(),
   unitPrice: z.number(),
 });

@@ -1,6 +1,39 @@
 /**
- * Fixed-width encoding utilities
+ * Fixed-wiexport function formatField(
+  value: string,
+  width: number,
+  align: 'left' | 'right',
+  padChar = ' '
+): string {
+  if (align === 'left') {
+    return padRight(value, width, padChar);
+  }
+  return padLeft(value, width, padChar);
+} utilities
  */
+
+import { padLeft, padRight } from '../../format/padding.js';
+
+/**
+ * Formats a field value with specified width and alignment
+ *
+ * @param value - The value to format
+ * @param width - Target field width
+ * @param align - Alignment ('left' or 'right')
+ * @param padChar - Character to use for padding (default: space)
+ * @returns Formatted fixed-width string
+ */
+export function formatField(
+  value: string,
+  width: number,
+  align: 'left' | 'right',
+  padChar = ' ',
+): string {
+  if (align === 'left') {
+    return padRight(value, width, padChar);
+  }
+  return padLeft(value, width, padChar);
+}
 
 /**
  * Encodes a value to fixed-width format with padding
@@ -18,11 +51,5 @@ export function encodeFixedWidth(
   align: 'left' | 'right' = 'left',
 ): string {
   const str = String(value);
-
-  if (str.length >= width) {
-    return str.substring(0, width);
-  }
-
-  const padding = padChar.repeat(width - str.length);
-  return align === 'left' ? str + padding : padding + str;
+  return formatField(str, width, align, padChar);
 }

@@ -2,8 +2,22 @@
  * Input validation utilities
  */
 
+import { ZodError } from 'zod';
 import type { ReportInput, ValidationError } from '../types/index.js';
 import { ReportInputSchema } from '../types/index.js';
+import { ShaamFormatError } from './errors.js';
+
+/**
+ * Converts Zod errors to ValidationError format
+ */
+function convertZodErrorsToValidationErrors(zodError: ZodError): ValidationError[] {
+  return zodError.errors.map((error, index) => ({
+    recordType: 'input',
+    recordIndex: index,
+    field: error.path.join('.') || 'unknown',
+    message: error.message,
+  }));
+}
 
 /**
  * Validates report input data against the schema
@@ -21,17 +35,32 @@ export function validateInput(
   try {
     ReportInputSchema.parse(input);
   } catch (error) {
-    if (mode === 'fail-fast') {
-      throw error;
-    }
+    if (error instanceof ZodError) {
+      const validationErrors = convertZodErrorsToValidationErrors(error);
 
-    // TODO: Convert Zod errors to ValidationError format
-    errors.push({
-      recordType: 'unknown',
-      recordIndex: 0,
-      field: 'unknown',
-      message: 'Validation failed',
-    });
+      if (mode === 'fail-fast') {
+        throw new ShaamFormatError(
+          `Validation failed: ${validationErrors[0]?.message || 'Unknown error'}`,
+          validationErrors,
+        );
+      }
+
+      errors.push(...validationErrors);
+    } else {
+      // Handle non-Zod errors
+      const unknownError: ValidationError = {
+        recordType: 'unknown',
+        recordIndex: 0,
+        field: 'unknown',
+        message: error instanceof Error ? error.message : 'Unknown validation error',
+      };
+
+      if (mode === 'fail-fast') {
+        throw new ShaamFormatError('Validation failed', [unknownError]);
+      }
+
+      errors.push(unknownError);
+    }
   }
 
   return errors;
