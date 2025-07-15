@@ -9,7 +9,9 @@
     "storybook": "storybook dev -p 6006"
   },
   "dependencies": {
-    "@accounter/client": "workspace:*"
+    "@accounter/client": "workspace:*",
+    "@tabler/icons-react": "^3.34.0",
+    "lucide-react": "0.525.0"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^8.4.7",

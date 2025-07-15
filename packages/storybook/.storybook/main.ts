@@ -27,24 +27,20 @@ const config: StorybookConfig = {
   },
   
   viteFinal: async (config) => {
-    // Import the client's vite config to inherit all configurations
-    const { mergeConfig } = await import('vite');
-    const { default: clientViteConfig } = await import('../../client/vite.config.ts');
+    const { default: tailwindcss } = await import('@tailwindcss/vite');
+    const { nodePolyfills } = await import('vite-plugin-node-polyfills');
     
-    // Merge client config with storybook config
-    const mergedConfig = mergeConfig(config, {
-      plugins: clientViteConfig.plugins,
-      define: clientViteConfig.define,
-      optimizeDeps: clientViteConfig.optimizeDeps,
-      build: {
-        ...clientViteConfig.build,
-        rollupOptions: {
-          external: ['react', 'react-dom'],
-        },
-      },
-    });
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      tailwindcss(),
+      nodePolyfills({
+        include: ['path', 'stream', 'util'],
+        exclude: ['http'],
+        globals: { Buffer: true, global: true, process: true },
+      })
+    );
     
-    return mergedConfig;
+    return config;
   },
   
   docs: {
