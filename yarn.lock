@@ -330,6 +330,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator":
+  version: 0.0.0-use.local
+  resolution: "@accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator"
+  dependencies:
+    bob-the-bundler: "npm:7.0.1"
+    eslint: "npm:9.31.0"
+    iconv-lite: "npm:0.6.3"
+    vitest: "npm:3.2.4"
+    zod: "npm:3.25.76"
+  languageName: unknown
+  linkType: soft
+
 "@accounter/shaam6111-generator@workspace:^, @accounter/shaam6111-generator@workspace:packages/shaam6111-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/shaam6111-generator@workspace:packages/shaam6111-generator"
