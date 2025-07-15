@@ -107,7 +107,7 @@ schemas + TS types [ ] Implement `encodeXXX` and `parseXXX` [ ] Write round-trip
 
 ### Closing Record: Z900
 
-[ ] Scaffold `src/records/Z900.ts` [ ] Zod schema, TS type, encoder, parser, tests
+[x] Scaffold `src/records/Z900.ts` [x] Zod schema, TS type, encoder, parser, tests
 
 ---
 
