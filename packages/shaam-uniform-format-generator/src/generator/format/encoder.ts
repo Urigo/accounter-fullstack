@@ -1,15 +1,5 @@
 /**
- * Fixed-wiexport function formatField(
-  value: string,
-  width: number,
-  align: 'left' | 'right',
-  padChar = ' '
-): string {
-  if (align === 'left') {
-    return padRight(value, width, padChar);
-  }
-  return padLeft(value, width, padChar);
-} utilities
+ * Fixed-width formatting utilities
  */
 
 import { padLeft, padRight } from '../../format/padding.js';

@@ -9,6 +9,7 @@ export * from './types/index.js';
 export * from './generator/index.js';
 export * from './parser/index.js';
 export * from './validation/index.js';
+export * from './records/index.js';
 
 // Main API
 export { generateUniformFormatReport } from './api/generate-report.js';
