@@ -9,7 +9,7 @@ export * from './types/index.js';
 export * from './generator/index.js';
 export * from './parser/index.js';
 export * from './validation/index.js';
-export * from './records/index.js';
+export * from './generator/records/index.js';
 export * from './constants.js';
 
 // Main API
