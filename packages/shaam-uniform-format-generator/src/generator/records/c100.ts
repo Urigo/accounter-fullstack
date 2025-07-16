@@ -239,9 +239,7 @@ export function parseC100(line: string): C100 {
       .replace(/^0+/, '') || '0';
   pos += 8; // positions 46-53
   const documentIssueTime = cleanLine.slice(pos, pos + 4).trim();
-  const processedDocumentIssueTime = documentIssueTime
-    ? documentIssueTime.replace(/^0+/, '') || '0'
-    : '';
+  const processedDocumentIssueTime = documentIssueTime === '0000' ? '' : documentIssueTime;
   pos += 4; // positions 54-57
   const customerName = cleanLine.slice(pos, pos + 50).trim();
   pos += 50; // positions 58-107
@@ -263,9 +261,7 @@ export function parseC100(line: string): C100 {
   const processedCustomerVatId = customerVatId ? customerVatId.replace(/^0+/, '') || '0' : '';
   pos += 9; // positions 253-261
   const documentValueDate = cleanLine.slice(pos, pos + 8).trim();
-  const processedDocumentValueDate = documentValueDate
-    ? documentValueDate.replace(/^0+/, '') || '0'
-    : '';
+  const processedDocumentValueDate = documentValueDate === '00000000' ? '' : documentValueDate;
   pos += 8; // positions 262-269
   const foreignCurrencyAmount = cleanLine.slice(pos, pos + 15).trim();
   pos += 15; // positions 270-284
@@ -294,7 +290,7 @@ export function parseC100(line: string): C100 {
   const cancelledAttribute2 = cleanLine.slice(pos, pos + 8).trim();
   pos += 8; // positions 409-416
   const documentDate = cleanLine.slice(pos, pos + 7).trim();
-  const processedDocumentDate = documentDate ? documentDate.replace(/^0+/, '') || '0' : '';
+  const processedDocumentDate = documentDate === '0000000' ? '' : documentDate;
   pos += 7; // positions 417-423
   const branchKey = cleanLine.slice(pos, pos + 8).trim();
   pos += 8; // positions 424-431

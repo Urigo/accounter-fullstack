@@ -196,6 +196,7 @@ export function parseD110(line: string): D110 {
   const baseDocumentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
   const transactionType = cleanLine.slice(pos, pos + 1).trim();
+  const processedTransactionType = transactionType === '0' ? '' : transactionType;
   pos += 1;
   const internalCatalogCode = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
@@ -257,7 +258,7 @@ export function parseD110(line: string): D110 {
     lineNumber,
     baseDocumentType,
     baseDocumentNumber,
-    transactionType,
+    transactionType: processedTransactionType,
     internalCatalogCode,
     goodsServiceDescription,
     manufacturerName,
