@@ -12,7 +12,11 @@ export const Z900Schema = z.object({
   recordNumber: z.string().min(1).max(9).describe('Sequential record number - numeric field'),
   vatId: z.string().min(1).max(9).describe('VAT identification number - numeric field'),
   uniqueId: z.string().min(1).max(15).describe('Unique business identifier - numeric field'),
-  totalRecords: z.string().min(1).max(15).describe('Total number of records in file - numeric field'),
+  totalRecords: z
+    .string()
+    .min(1)
+    .max(15)
+    .describe('Total number of records in file - numeric field'),
   reserved: z.string().max(50).default('').describe('Reserved field for future use'),
 });
 

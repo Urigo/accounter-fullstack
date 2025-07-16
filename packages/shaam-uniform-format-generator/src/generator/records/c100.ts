@@ -212,18 +212,36 @@ export function parseC100(line: string): C100 {
   let pos = 0;
   const code = cleanLine.slice(pos, pos + 4).trim();
   pos += 4; // positions 1-4
-  const recordNumber = cleanLine.slice(pos, pos + 9).trim().replace(/^0+/, '') || '0';
+  const recordNumber =
+    cleanLine
+      .slice(pos, pos + 9)
+      .trim()
+      .replace(/^0+/, '') || '0';
   pos += 9; // positions 5-13
-  const vatId = cleanLine.slice(pos, pos + 9).trim().replace(/^0+/, '') || '0';
+  const vatId =
+    cleanLine
+      .slice(pos, pos + 9)
+      .trim()
+      .replace(/^0+/, '') || '0';
   pos += 9; // positions 14-22
-  const documentType = cleanLine.slice(pos, pos + 3).trim().replace(/^0+/, '') || '0';
+  const documentType =
+    cleanLine
+      .slice(pos, pos + 3)
+      .trim()
+      .replace(/^0+/, '') || '0';
   pos += 3; // positions 23-25
   const documentId = cleanLine.slice(pos, pos + 20).trim();
   pos += 20; // positions 26-45
-  const documentIssueDate = cleanLine.slice(pos, pos + 8).trim().replace(/^0+/, '') || '0';
+  const documentIssueDate =
+    cleanLine
+      .slice(pos, pos + 8)
+      .trim()
+      .replace(/^0+/, '') || '0';
   pos += 8; // positions 46-53
   const documentIssueTime = cleanLine.slice(pos, pos + 4).trim();
-  const processedDocumentIssueTime = documentIssueTime ? documentIssueTime.replace(/^0+/, '') || '0' : '';
+  const processedDocumentIssueTime = documentIssueTime
+    ? documentIssueTime.replace(/^0+/, '') || '0'
+    : '';
   pos += 4; // positions 54-57
   const customerName = cleanLine.slice(pos, pos + 50).trim();
   pos += 50; // positions 58-107
@@ -245,7 +263,9 @@ export function parseC100(line: string): C100 {
   const processedCustomerVatId = customerVatId ? customerVatId.replace(/^0+/, '') || '0' : '';
   pos += 9; // positions 253-261
   const documentValueDate = cleanLine.slice(pos, pos + 8).trim();
-  const processedDocumentValueDate = documentValueDate ? documentValueDate.replace(/^0+/, '') || '0' : '';
+  const processedDocumentValueDate = documentValueDate
+    ? documentValueDate.replace(/^0+/, '') || '0'
+    : '';
   pos += 8; // positions 262-269
   const foreignCurrencyAmount = cleanLine.slice(pos, pos + 15).trim();
   pos += 15; // positions 270-284
