@@ -6,7 +6,7 @@ describe('C100 Record', () => {
     code: 'C100',
     recordNumber: '1',
     vatId: '123456789',
-    documentType: '01',
+    documentType: '1', // Will be encoded as '001' then parsed back as '1'
     documentId: 'DOC001',
     documentIssueDate: '20240315',
     documentIssueTime: '1430',
@@ -118,9 +118,9 @@ describe('C100 Record', () => {
 
       // Check specific field positions
       expect(withoutCrlf.slice(0, 4)).toBe('C100'); // Record code - left-aligned
-      expect(withoutCrlf.slice(4, 13)).toBe('        1'); // Record number - right-aligned (numeric)
-      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // VAT ID - left-aligned - already 9 chars
-      expect(withoutCrlf.slice(22, 25)).toBe(' 01'); // Document type - right-aligned (numeric)
+      expect(withoutCrlf.slice(4, 13)).toBe('000000001'); // Record number - zero-padded (numeric)
+      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // VAT ID - zero-padded (numeric)
+      expect(withoutCrlf.slice(22, 25)).toBe('001'); // Document type - zero-padded (numeric)
       expect(withoutCrlf.slice(25, 45)).toBe('DOC001              '); // Document ID - left-aligned (alphanumeric)
     });
 
@@ -138,7 +138,7 @@ describe('C100 Record', () => {
       // Should still be exactly 445 characters
       expect(withoutCrlf).toHaveLength(445);
 
-      // VAT ID should be truncated to 9 chars and left-aligned
+      // VAT ID should be truncated to 9 chars and zero-padded
       expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // Already 9 chars when truncated from 1234567890
 
       // Document ID should be truncated to 20 chars and left-aligned
@@ -157,11 +157,11 @@ describe('C100 Record', () => {
       const encoded = encodeC100(shortFields);
       const withoutCrlf = encoded.replace(/\r\n$/, '');
 
-      // Record number should be right-aligned with spaces (numeric field)
-      expect(withoutCrlf.slice(4, 13)).toBe('       42');
+      // Record number should be zero-padded (numeric field)
+      expect(withoutCrlf.slice(4, 13)).toBe('000000042');
 
-      // VAT ID should be left-aligned with spaces (left-aligned per requirement)
-      expect(withoutCrlf.slice(13, 22)).toBe('123      ');
+      // VAT ID should be zero-padded (numeric field)
+      expect(withoutCrlf.slice(13, 22)).toBe('000000123');
 
       // Document ID should be left-aligned with spaces (alphanumeric field)
       expect(withoutCrlf.slice(25, 45)).toBe('SHORT               ');
@@ -176,7 +176,7 @@ describe('C100 Record', () => {
       expect(parsed.code).toBe('C100');
       expect(parsed.recordNumber).toBe('1');
       expect(parsed.vatId).toBe('123456789');
-      expect(parsed.documentType).toBe('01');
+      expect(parsed.documentType).toBe('1');
       expect(parsed.documentId).toBe('DOC001');
       expect(parsed.documentIssueDate).toBe('20240315');
       expect(parsed.documentIssueTime).toBe('1430');
@@ -244,7 +244,7 @@ describe('C100 Record', () => {
         {
           ...validC100,
           recordNumber: '999999999',
-          documentType: '05',
+          documentType: '5', // Will be encoded as '005' then parsed back as '5'
           cancelledDocument: 'Y',
         },
         {

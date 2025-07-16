@@ -1,15 +1,6 @@
 import { z } from 'zod';
-import { CRLF, padLeft, padRight } from '../../format/index.js';
-
-/**
- * Helper function to format a field with specified width and alignment
- */
-function formatField(value: string, width: number, align: 'left' | 'right'): string {
-  if (align === 'left') {
-    return padRight(value, width);
-  }
-  return padLeft(value, width);
-}
+import { CRLF } from '../../format/index.js';
+import { formatField, formatNumericField } from '../index.js';
 
 /**
  * C100 Record Schema - Document header record
@@ -163,12 +154,12 @@ export type C100 = z.infer<typeof C100Schema>;
 export function encodeC100(input: C100): string {
   const fields = [
     formatField(input.code, 4, 'left'), // Field 1200: Record code (4) - positions 1-4 - Alphanumeric
-    formatField(input.recordNumber, 9, 'right'), // Field 1201: Record number (9) - positions 5-13 - Numeric
-    formatField(input.vatId, 9, 'left'), // Field 1202: VAT ID (9) - positions 14-22 - Left-aligned per requirement
-    formatField(input.documentType, 3, 'right'), // Field 1203: Document type (3) - positions 23-25 - Numeric
+    formatNumericField(input.recordNumber, 9), // Field 1201: Record number (9) - positions 5-13 - Numeric
+    formatNumericField(input.vatId, 9), // Field 1202: VAT ID (9) - positions 14-22 - Numeric
+    formatNumericField(input.documentType, 3), // Field 1203: Document type (3) - positions 23-25 - Numeric
     formatField(input.documentId, 20, 'left'), // Field 1204: Document ID (20) - positions 26-45 - Alphanumeric
-    formatField(input.documentIssueDate, 8, 'right'), // Field 1205: Document issue date (8) - positions 46-53 - Numeric
-    formatField(input.documentIssueTime, 4, 'right'), // Field 1206: Document issue time (4) - positions 54-57 - Numeric
+    formatNumericField(input.documentIssueDate, 8), // Field 1205: Document issue date (8) - positions 46-53 - Numeric
+    formatNumericField(input.documentIssueTime, 4), // Field 1206: Document issue time (4) - positions 54-57 - Numeric
     formatField(input.customerName, 50, 'left'), // Field 1207: Customer name (50) - positions 58-107 - Alphanumeric
     formatField(input.customerStreet, 50, 'left'), // Field 1208: Customer street (50) - positions 108-157 - Alphanumeric
     formatField(input.customerHouseNumber, 10, 'left'), // Field 1209: Customer house number (10) - positions 158-167 - Alphanumeric
@@ -177,22 +168,22 @@ export function encodeC100(input: C100): string {
     formatField(input.customerCountry, 30, 'left'), // Field 1212: Customer country (30) - positions 206-235 - Alphanumeric
     formatField(input.customerCountryCode, 2, 'left'), // Field 1213: Customer country code (2) - positions 236-237 - Alphanumeric
     formatField(input.customerPhone, 15, 'left'), // Field 1214: Customer phone (15) - positions 238-252 - Alphanumeric
-    formatField(input.customerVatId, 9, 'left'), // Field 1215: Customer VAT ID (9) - positions 253-261 - Numeric
-    formatField(input.documentValueDate, 8, 'right'), // Field 1216: Document value date (8) - positions 262-269 - Numeric
-    formatField(input.foreignCurrencyAmount, 15, 'left'), // Field 1217: Foreign currency amount (15) - positions 270-284 - Alphanumeric but monetary
+    formatNumericField(input.customerVatId, 9), // Field 1215: Customer VAT ID (9) - positions 253-261 - Numeric
+    formatNumericField(input.documentValueDate, 8), // Field 1216: Document value date (8) - positions 262-269 - Numeric
+    formatField(input.foreignCurrencyAmount, 15, 'left'), // Field 1217: Foreign currency amount (15) - positions 270-284 - Alphanumeric
     formatField(input.currencyCode, 3, 'left'), // Field 1218: Currency code (3) - positions 285-287 - Alphanumeric
-    formatField(input.amountBeforeDiscount, 15, 'right'), // Field 1219: Amount before discount (15) - positions 288-302 - Alphanumeric but monetary
-    formatField(input.documentDiscount, 15, 'right'), // Field 1220: Document discount (15) - positions 303-317 - Alphanumeric but monetary
-    formatField(input.amountAfterDiscountExcludingVat, 15, 'right'), // Field 1221: Amount after discount excluding VAT (15) - positions 318-332 - Alphanumeric but monetary
-    formatField(input.vatAmount, 15, 'right'), // Field 1222: VAT amount (15) - positions 333-347 - Alphanumeric but monetary
-    formatField(input.amountIncludingVat, 15, 'right'), // Field 1223: Amount including VAT (15) - positions 348-362 - Alphanumeric but monetary
-    formatField(input.withholdingTaxAmount, 12, 'right'), // Field 1224: Withholding tax amount (12) - positions 363-374 - Alphanumeric but monetary
+    formatField(input.amountBeforeDiscount, 15, 'left'), // Field 1219: Amount before discount (15) - positions 288-302 - Alphanumeric
+    formatField(input.documentDiscount, 15, 'left'), // Field 1220: Document discount (15) - positions 303-317 - Alphanumeric
+    formatField(input.amountAfterDiscountExcludingVat, 15, 'left'), // Field 1221: Amount after discount excluding VAT (15) - positions 318-332 - Alphanumeric
+    formatField(input.vatAmount, 15, 'left'), // Field 1222: VAT amount (15) - positions 333-347 - Alphanumeric
+    formatField(input.amountIncludingVat, 15, 'left'), // Field 1223: Amount including VAT (15) - positions 348-362 - Alphanumeric
+    formatField(input.withholdingTaxAmount, 12, 'left'), // Field 1224: Withholding tax amount (12) - positions 363-374 - Alphanumeric
     formatField(input.customerKey, 15, 'left'), // Field 1225: Customer key (15) - positions 375-389 - Alphanumeric
     formatField(input.matchingField, 10, 'left'), // Field 1226: Matching field (10) - positions 390-399 - Alphanumeric
     formatField(input.cancelledAttribute1, 8, 'left'), // Field 1227: Cancelled attribute 1 (8) - positions 400-407 - Alphanumeric (deprecated)
     formatField(input.cancelledDocument, 1, 'left'), // Field 1228: Cancelled document (1) - positions 408-408 - Alphanumeric
     formatField(input.cancelledAttribute2, 8, 'left'), // Field 1229: Cancelled attribute 2 (8) - positions 409-416 - Alphanumeric (deprecated)
-    formatField(input.documentDate, 7, 'right'), // Field 1230: Document date (7) - positions 417-423 - Numeric
+    formatNumericField(input.documentDate, 7), // Field 1230: Document date (7) - positions 417-423 - Numeric
     formatField(input.branchKey, 8, 'left'), // Field 1231: Branch key (8) - positions 424-431 - Alphanumeric
     formatField(input.cancelledAttribute3, 1, 'left'), // Field 1232: Cancelled attribute 3 (1) - positions 432-432 - Alphanumeric (deprecated)
     formatField(input.actionExecutor, 13, 'left'), // Field 1233: Action executor (13) - positions 433-445 - Alphanumeric
@@ -221,17 +212,18 @@ export function parseC100(line: string): C100 {
   let pos = 0;
   const code = cleanLine.slice(pos, pos + 4).trim();
   pos += 4; // positions 1-4
-  const recordNumber = cleanLine.slice(pos, pos + 9).trim();
+  const recordNumber = cleanLine.slice(pos, pos + 9).trim().replace(/^0+/, '') || '0';
   pos += 9; // positions 5-13
-  const vatId = cleanLine.slice(pos, pos + 9).trim();
+  const vatId = cleanLine.slice(pos, pos + 9).trim().replace(/^0+/, '') || '0';
   pos += 9; // positions 14-22
-  const documentType = cleanLine.slice(pos, pos + 3).trim();
+  const documentType = cleanLine.slice(pos, pos + 3).trim().replace(/^0+/, '') || '0';
   pos += 3; // positions 23-25
   const documentId = cleanLine.slice(pos, pos + 20).trim();
   pos += 20; // positions 26-45
-  const documentIssueDate = cleanLine.slice(pos, pos + 8).trim();
+  const documentIssueDate = cleanLine.slice(pos, pos + 8).trim().replace(/^0+/, '') || '0';
   pos += 8; // positions 46-53
   const documentIssueTime = cleanLine.slice(pos, pos + 4).trim();
+  const processedDocumentIssueTime = documentIssueTime ? documentIssueTime.replace(/^0+/, '') || '0' : '';
   pos += 4; // positions 54-57
   const customerName = cleanLine.slice(pos, pos + 50).trim();
   pos += 50; // positions 58-107
@@ -250,8 +242,10 @@ export function parseC100(line: string): C100 {
   const customerPhone = cleanLine.slice(pos, pos + 15).trim();
   pos += 15; // positions 238-252
   const customerVatId = cleanLine.slice(pos, pos + 9).trim();
+  const processedCustomerVatId = customerVatId ? customerVatId.replace(/^0+/, '') || '0' : '';
   pos += 9; // positions 253-261
   const documentValueDate = cleanLine.slice(pos, pos + 8).trim();
+  const processedDocumentValueDate = documentValueDate ? documentValueDate.replace(/^0+/, '') || '0' : '';
   pos += 8; // positions 262-269
   const foreignCurrencyAmount = cleanLine.slice(pos, pos + 15).trim();
   pos += 15; // positions 270-284
@@ -280,6 +274,7 @@ export function parseC100(line: string): C100 {
   const cancelledAttribute2 = cleanLine.slice(pos, pos + 8).trim();
   pos += 8; // positions 409-416
   const documentDate = cleanLine.slice(pos, pos + 7).trim();
+  const processedDocumentDate = documentDate ? documentDate.replace(/^0+/, '') || '0' : '';
   pos += 7; // positions 417-423
   const branchKey = cleanLine.slice(pos, pos + 8).trim();
   pos += 8; // positions 424-431
@@ -299,7 +294,7 @@ export function parseC100(line: string): C100 {
     documentType,
     documentId,
     documentIssueDate,
-    documentIssueTime,
+    documentIssueTime: processedDocumentIssueTime,
     customerName,
     customerStreet,
     customerHouseNumber,
@@ -308,8 +303,8 @@ export function parseC100(line: string): C100 {
     customerCountry,
     customerCountryCode,
     customerPhone,
-    customerVatId,
-    documentValueDate,
+    customerVatId: processedCustomerVatId,
+    documentValueDate: processedDocumentValueDate,
     foreignCurrencyAmount,
     currencyCode,
     amountBeforeDiscount,
@@ -323,7 +318,7 @@ export function parseC100(line: string): C100 {
     cancelledAttribute1,
     cancelledDocument,
     cancelledAttribute2,
-    documentDate,
+    documentDate: processedDocumentDate,
     branchKey,
     cancelledAttribute3,
     actionExecutor,
