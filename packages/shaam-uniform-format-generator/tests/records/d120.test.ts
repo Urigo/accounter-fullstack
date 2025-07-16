@@ -15,7 +15,7 @@ describe('D120 Record', () => {
     accountNumber: '678901',
     checkNumber: '1234',
     paymentDueDate: '20250101',
-    lineAmount: '100.00',
+    lineAmount: '100',
     acquirerCode: '1',
     cardBrand: 'VISA',
     creditTransactionType: '1',
@@ -45,28 +45,28 @@ describe('D120 Record', () => {
         code: 'D120',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '',
-        documentNumber: '',
-        lineNumber: '',
-        paymentMethod: '',
-        bankNumber: '',
-        branchNumber: '',
-        accountNumber: '',
-        checkNumber: '',
-        paymentDueDate: '',
-        lineAmount: '',
-        acquirerCode: '',
-        cardBrand: '',
-        creditTransactionType: '',
-        firstPaymentAmount: '',
-        installmentsCount: '',
-        additionalPaymentAmount: '',
-        reserved1: '',
-        branchId: '',
-        reserved2: '',
-        documentDate: '',
-        headerLinkField: '',
-        reserved: '',
+        documentType: '123', // Required according to CSV spec
+        documentNumber: 'DOC001', // Required according to CSV spec
+        lineNumber: '1', // Required according to CSV spec
+        paymentMethod: '1', // Required according to CSV spec
+        bankNumber: '', // Optional/conditional
+        branchNumber: '', // Optional/conditional
+        accountNumber: '', // Optional/conditional
+        checkNumber: '', // Optional/conditional
+        paymentDueDate: '', // Optional
+        lineAmount: '100', // Required according to CSV spec
+        acquirerCode: '', // Optional
+        cardBrand: '', // Optional
+        creditTransactionType: '', // Optional
+        firstPaymentAmount: '', // Deprecated
+        installmentsCount: '', // Deprecated
+        additionalPaymentAmount: '', // Deprecated
+        reserved1: '', // Deprecated
+        branchId: '', // Conditionally required
+        reserved2: '', // Deprecated
+        documentDate: '20250101', // Required according to CSV spec
+        headerLinkField: '', // Optional
+        reserved: '', // Optional
       };
       expect(() => D120Schema.parse(minimalD120)).not.toThrow();
     });
@@ -96,13 +96,13 @@ describe('D120 Record', () => {
 
       const encoded = encodeD120(testRecord);
 
-      // Record number should be right-padded to 9 chars
-      expect(encoded.substring(4, 13)).toBe('       42');
+      // Record number should be zero-padded to 9 chars (numeric field per CSV spec)
+      expect(encoded.substring(4, 13)).toBe('000000042');
 
-      // VAT ID should be left-padded to 9 chars
-      expect(encoded.substring(13, 22)).toBe('123      ');
+      // VAT ID should be zero-padded to 9 chars (numeric field per CSV spec)
+      expect(encoded.substring(13, 22)).toBe('000000123');
 
-      // Document number should be left-padded to 20 chars
+      // Document number should be left-padded to 20 chars (alphanumeric field)
       expect(encoded.substring(25, 45)).toBe('SHORT               ');
     });
   });
@@ -139,18 +139,57 @@ describe('D120 Record', () => {
     });
 
     it('should trim field values correctly', () => {
-      // Create a line with padded values
+      // Create a line with padded values according to CSV spec format
       const paddedLine =
         'D120' + // code (4)
-        '       42' + // recordNumber (9) - right padded
-        '123      ' + // vatId (9) - left padded
-        ' '.repeat(3 + 20 + 4 + 1 + 10 + 10 + 15 + 10 + 8 + 15 + 1 + 20 + 1 + 7 + 8 + 7 + 60); // rest
+        '000000042' + // recordNumber (9) - zero-padded numeric
+        '000000123' + // vatId (9) - zero-padded numeric
+        '001' + // documentType (3) - zero-padded numeric
+        'DOC001              ' + // documentNumber (20) - left-aligned alphanumeric
+        '0001' + // lineNumber (4) - zero-padded numeric
+        '1' + // paymentMethod (1) - numeric
+        '0000000012' + // bankNumber (10) - zero-padded numeric
+        '0000000345' + // branchNumber (10) - zero-padded numeric
+        '000000000678901' + // accountNumber (15) - zero-padded numeric
+        '0000001234' + // checkNumber (10) - zero-padded numeric
+        '20250101' + // paymentDueDate (8) - zero-padded numeric
+        '100.00         ' + // lineAmount (15) - left-aligned alphanumeric
+        '1' + // acquirerCode (1) - numeric
+        'VISA                ' + // cardBrand (20) - left-aligned alphanumeric
+        '1' + // creditTransactionType (1) - numeric
+        '' + // firstPaymentAmount (0) - deprecated
+        '' + // installmentsCount (0) - deprecated
+        '' + // additionalPaymentAmount (0) - deprecated
+        '' + // reserved1 (0) - deprecated
+        'BR001  ' + // branchId (7) - left-aligned alphanumeric
+        '' + // reserved2 (0) - deprecated
+        '20250101' + // documentDate (8) - zero-padded numeric
+        '0000001' + // headerLinkField (7) - zero-padded numeric
+        ' '.repeat(60); // reserved (60) - left-aligned alphanumeric
 
       expect(paddedLine.length).toBe(222); // Ensure our test line is correct length
 
       const parsed = parseD120(paddedLine);
+
+      // Numeric fields should have leading zeros stripped when parsed
       expect(parsed.recordNumber).toBe('42');
       expect(parsed.vatId).toBe('123');
+      expect(parsed.documentType).toBe('1');
+      expect(parsed.documentNumber).toBe('DOC001');
+      expect(parsed.lineNumber).toBe('1');
+      expect(parsed.paymentMethod).toBe('1');
+      expect(parsed.bankNumber).toBe('12');
+      expect(parsed.branchNumber).toBe('345');
+      expect(parsed.accountNumber).toBe('678901');
+      expect(parsed.checkNumber).toBe('1234');
+      expect(parsed.paymentDueDate).toBe('20250101');
+      expect(parsed.lineAmount).toBe('100.00');
+      expect(parsed.acquirerCode).toBe('1');
+      expect(parsed.cardBrand).toBe('VISA');
+      expect(parsed.creditTransactionType).toBe('1');
+      expect(parsed.branchId).toBe('BR001');
+      expect(parsed.documentDate).toBe('20250101');
+      expect(parsed.headerLinkField).toBe('1');
     });
   });
 
@@ -168,27 +207,27 @@ describe('D120 Record', () => {
         code: 'D120',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '',
-        documentNumber: '',
-        lineNumber: '',
-        paymentMethod: '',
-        bankNumber: '',
-        branchNumber: '',
-        accountNumber: '',
-        checkNumber: '',
-        paymentDueDate: '',
-        lineAmount: '',
-        acquirerCode: '',
-        cardBrand: '',
-        creditTransactionType: '',
-        firstPaymentAmount: '',
-        installmentsCount: '',
-        additionalPaymentAmount: '',
-        reserved1: '',
-        branchId: '',
-        reserved2: '',
-        documentDate: '',
-        headerLinkField: '',
+        documentType: '123', // Required according to CSV spec
+        documentNumber: 'DOC001', // Required according to CSV spec
+        lineNumber: '1', // Required according to CSV spec
+        paymentMethod: '1', // Required according to CSV spec
+        bankNumber: '', // Optional/conditional
+        branchNumber: '', // Optional/conditional
+        accountNumber: '', // Optional/conditional
+        checkNumber: '', // Optional/conditional
+        paymentDueDate: '', // Optional
+        lineAmount: '100', // Required according to CSV spec
+        acquirerCode: '', // Optional
+        cardBrand: '', // Optional
+        creditTransactionType: '', // Optional
+        firstPaymentAmount: '', // Deprecated
+        installmentsCount: '', // Deprecated
+        additionalPaymentAmount: '', // Deprecated
+        reserved1: '', // Deprecated
+        branchId: '', // Conditionally required
+        reserved2: '', // Deprecated
+        documentDate: '20250101', // Required according to CSV spec
+        headerLinkField: '', // Optional
         reserved: '',
       };
 
@@ -201,18 +240,18 @@ describe('D120 Record', () => {
     it('should handle records with maximum field lengths', () => {
       const maxLength: D120 = {
         code: 'D120',
-        recordNumber: '123456789',
-        vatId: '987654321',
+        recordNumber: '999999',
+        vatId: '999999999',
         documentType: '999',
         documentNumber: 'A'.repeat(20),
         lineNumber: '9999',
         paymentMethod: '9',
-        bankNumber: '1234567890',
-        branchNumber: '0987654321',
-        accountNumber: 'B'.repeat(15),
-        checkNumber: 'C'.repeat(10),
+        bankNumber: '999',
+        branchNumber: '999',
+        accountNumber: '123456789012345',
+        checkNumber: '1234567890',
         paymentDueDate: '20251231',
-        lineAmount: 'D'.repeat(15),
+        lineAmount: '9999999999999', // 13 digits max according to schema
         acquirerCode: '6',
         cardBrand: 'E'.repeat(20),
         creditTransactionType: '5',
