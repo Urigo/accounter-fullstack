@@ -17,80 +17,143 @@ function formatField(value: string | undefined, width: number, align: 'left' | '
  * Fields 1250-1275 based on SHAAM 1.31 specification table
  */
 export const D110Schema = z.object({
+  // Field 1250: Record code (4) - Required - Alphanumeric
   code: z.literal('D110').describe('Record type code - always "D110"'),
-  recordNumber: z.string().min(1).max(9).describe('Sequential record number'),
-  vatId: z.string().min(1).max(9).describe('VAT identification number'),
-  documentType: z.string().max(3).default('').describe('Document type'),
-  documentNumber: z.string().max(20).default('').describe('Document number'),
-  rowNumberInDocument: z.string().max(4).default('').describe('Row number in document'),
-  baseDocumentType: z.string().max(3).default('').describe('Base document type'),
-  baseDocumentNumber: z.string().max(20).default('').describe('Base document number'),
-  dealType: z.string().max(1).default('').describe('Deal type'),
-  internalKey: z.string().max(20).default('').describe('Internal key'),
-  soldGoodsOrServiceDescription: z
+  // Field 1251: Record number in file (9) - Required - Numeric
+  recordNumber: z.string().min(1).max(9).regex(/^\d+$/).describe('Sequential record number'),
+  // Field 1252: Tax ID (9) - Required - Numeric
+  vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('VAT identification number'),
+  // Field 1253: Document type (3) - Required - Numeric
+  documentType: z.string().min(1).max(3).regex(/^\d+$/).describe('Document type - see Appendix 1'),
+  // Field 1254: Document number (20) - Required - Alphanumeric
+  documentNumber: z.string().min(1).max(20).describe('Document number'),
+  // Field 1255: Line number in document (4) - Required - Numeric
+  lineNumber: z.string().min(1).max(4).regex(/^\d+$/).describe('Line number in document'),
+  // Field 1256: Base document type (3) - Conditional - Numeric
+  baseDocumentType: z
+    .string()
+    .max(3)
+    .regex(/^(\d{1,3}|)$/)
+    .default('')
+    .describe('Base document type - required if based on another document'),
+  // Field 1257: Base document number (20) - Conditional - Alphanumeric
+  baseDocumentNumber: z
+    .string()
+    .max(20)
+    .default('')
+    .describe('Base document number - required if based on another document'),
+  // Field 1258: Transaction type (1) - Optional - Numeric
+  transactionType: z
+    .string()
+    .max(1)
+    .regex(/^([123]|)$/)
+    .default('')
+    .describe('Transaction type: 1-Service; 2-Goods; 3-Service & Goods'),
+  // Field 1259: Internal catalog code (20) - Optional - Alphanumeric
+  internalCatalogCode: z.string().max(20).default('').describe('Internal catalog code'),
+  // Field 1260: Goods/Service description (30) - Required - Alphanumeric
+  goodsServiceDescription: z.string().min(1).max(30).describe('Goods or service description'),
+  // Field 1261: Manufacturer name (50) - Optional - Alphanumeric
+  manufacturerName: z
+    .string()
+    .max(50)
+    .default('')
+    .describe('Manufacturer name - relevant for goods listed in Appendix G'),
+  // Field 1262: Serial number (30) - Optional - Alphanumeric
+  serialNumber: z
     .string()
     .max(30)
     .default('')
-    .describe('Sold goods or provided service description'),
-  producerName: z.string().max(50).default('').describe('Producer name'),
-  producerPackagePrintedSerial: z
+    .describe('Serial number - relevant for goods listed in Appendix G'),
+  // Field 1263: Unit of measure description (20) - Optional - Alphanumeric
+  unitOfMeasureDescription: z
     .string()
-    .max(30)
+    .max(20)
     .default('')
-    .describe('Producer package-printed serial'),
-  unitOfMeasure: z.string().max(20).default('').describe('Unit of measure'),
-  quantity: z.string().max(17).default('').describe('Quantity'),
-  unitAmountExcludingVat: z.string().max(15).default('').describe('Unit amount excluding VAT'),
-  lineDiscountAmount: z.string().max(15).default('').describe('Line discount amount'),
-  totalLineAmount: z.string().max(15).default('').describe('Total line amount'),
-  lineVatAmount: z.string().max(4).default('').describe('Line VAT amount'),
-  reserved1: z.string().max(0).default('').describe('Reserved 1 [cancelled] (0 width field)'),
-  branchOrSectorId: z.string().max(7).default('').describe('Branch or sector ID'),
-  reserved2: z.string().max(0).default('').describe('Reserved 2 [cancelled] (0 width field)'),
-  documentDate: z.string().max(8).default('').describe('Document date YYYYMMDD'),
-  headerConnectingField: z.string().max(7).default('').describe('Header connecting field'),
-  baseDocumentBranchOrSectorId: z
+    .describe('Unit of measure description - use descriptive name or יחידה'),
+  // Field 1264: Quantity (17) - Required - Alphanumeric with decimal format X9(12)V9999
+  quantity: z.string().min(1).max(17).describe('Quantity'),
+  // Field 1265: Unit price excluding VAT (15) - Optional - Alphanumeric with decimal format X9(12)V99
+  unitPriceExcludingVat: z.string().max(15).default('').describe('Unit price excluding VAT in NIS'),
+  // Field 1266: Line discount (15) - Optional - Alphanumeric with decimal format X9(12)V99
+  lineDiscount: z.string().max(15).default('').describe('Line discount in NIS'),
+  // Field 1267: Line total (15) - Optional - Alphanumeric with decimal format X9(12)V99
+  lineTotal: z
+    .string()
+    .max(15)
+    .default('')
+    .describe('Line total: quantity * unit price - discount'),
+  // Field 1268: VAT rate percentage (4) - Optional - Numeric with decimal format 9(2)V99
+  vatRatePercent: z
+    .string()
+    .max(4)
+    .regex(/^(\d{1,4}|)$/)
+    .default('')
+    .describe('VAT rate percentage'),
+  // Field 1269: Reserved field (0) - Deprecated - Alphanumeric
+  reserved1: z.string().max(0).default('').describe('Reserved field - deprecated'),
+  // Field 1270: Branch ID (7) - Required - Alphanumeric
+  branchId: z.string().min(1).max(7).describe('Branch ID - required if field 1034 = 1'),
+  // Field 1271: Reserved field (0) - Deprecated - Alphanumeric
+  reserved2: z.string().max(0).default('').describe('Reserved field - deprecated'),
+  // Field 1272: Document date (8) - Required - Numeric YYYYMMDD format
+  documentDate: z
+    .string()
+    .min(1)
+    .max(8)
+    .regex(/^\d{8}$/)
+    .describe('Document date in YYYYMMDD format'),
+  // Field 1273: Header link field (7) - Optional - Numeric
+  headerLinkField: z
+    .string()
+    .max(7)
+    .regex(/^(\d{1,7}|)$/)
+    .default('')
+    .describe('Header link field - link to C100'),
+  // Field 1274: Base document branch ID (7) - Optional - Alphanumeric
+  baseDocumentBranchId: z
     .string()
     .max(7)
     .default('')
-    .describe('Base document branch or sector ID'),
-  reserved: z.string().max(21).default('').describe('Reserved field'),
+    .describe('Base document branch ID - if field 1034 = 1'),
+  // Field 1275: Reserved field (21) - Optional - Alphanumeric
+  reserved3: z.string().max(21).default('').describe('Reserved field'),
 });
 
 export type D110 = z.infer<typeof D110Schema>;
 
 /**
  * Encodes a D110 record to fixed-width string format
- * Total line width: 339 characters + CRLF (4+9+9+3+20+4+3+20+1+20+30+50+30+20+17+15+15+15+4+0+7+0+8+7+7+21)
+ * Total line width: 339 characters + CRLF
  */
 export function encodeD110(input: D110): string {
   const fields = [
-    formatField(input.code, 4, 'left'), // Field 1250: Record code (4)
-    formatField(input.recordNumber, 9, 'right'), // Field 1251: Record number (9)
-    formatField(input.vatId, 9, 'left'), // Field 1252: VAT ID (9)
-    formatField(input.documentType, 3, 'left'), // Field 1253: Document type (3)
-    formatField(input.documentNumber, 20, 'left'), // Field 1254: Document number (20)
-    formatField(input.rowNumberInDocument, 4, 'left'), // Field 1255: Row number in document (4)
-    formatField(input.baseDocumentType, 3, 'left'), // Field 1256: Base document type (3)
-    formatField(input.baseDocumentNumber, 20, 'left'), // Field 1257: Base document number (20)
-    formatField(input.dealType, 1, 'left'), // Field 1258: Deal type (1)
-    formatField(input.internalKey, 20, 'left'), // Field 1259: Internal key (20)
-    formatField(input.soldGoodsOrServiceDescription, 30, 'left'), // Field 1260: Description (30)
-    formatField(input.producerName, 50, 'left'), // Field 1261: Producer name (50)
-    formatField(input.producerPackagePrintedSerial, 30, 'left'), // Field 1262: Producer serial (30)
-    formatField(input.unitOfMeasure, 20, 'left'), // Field 1263: Unit of measure (20)
-    formatField(input.quantity, 17, 'right'), // Field 1264: Quantity (17)
-    formatField(input.unitAmountExcludingVat, 15, 'right'), // Field 1265: Unit amount excluding VAT (15)
-    formatField(input.lineDiscountAmount, 15, 'right'), // Field 1266: Line discount amount (15)
-    formatField(input.totalLineAmount, 15, 'right'), // Field 1267: Total line amount (15)
-    formatField(input.lineVatAmount, 4, 'right'), // Field 1268: Line VAT amount (4)
-    formatField(input.reserved1, 0, 'left'), // Field 1269: Reserved 1 [cancelled] (0)
-    formatField(input.branchOrSectorId, 7, 'left'), // Field 1270: Branch or sector ID (7)
-    formatField(input.reserved2, 0, 'left'), // Field 1271: Reserved 2 [cancelled] (0)
-    formatField(input.documentDate, 8, 'left'), // Field 1272: Document date (8)
-    formatField(input.headerConnectingField, 7, 'left'), // Field 1273: Header connecting field (7)
-    formatField(input.baseDocumentBranchOrSectorId, 7, 'left'), // Field 1274: Base document branch/sector ID (7)
-    formatField(input.reserved, 21, 'left'), // Field 1275: Reserved (21)
+    formatField(input.code, 4, 'left'), // Field 1250: Record code (4) - Alphanumeric
+    formatField(input.recordNumber, 9, 'left'), // Field 1251: Record number (9) - Numeric
+    formatField(input.vatId, 9, 'left'), // Field 1252: VAT ID (9) - Numeric
+    formatField(input.documentType, 3, 'right'), // Field 1253: Document type (3) - Numeric
+    formatField(input.documentNumber, 20, 'left'), // Field 1254: Document number (20) - Alphanumeric
+    formatField(input.lineNumber, 4, 'left'), // Field 1255: Line number (4) - Numeric
+    formatField(input.baseDocumentType, 3, 'right'), // Field 1256: Base document type (3) - Numeric
+    formatField(input.baseDocumentNumber, 20, 'left'), // Field 1257: Base document number (20) - Alphanumeric
+    formatField(input.transactionType, 1, 'right'), // Field 1258: Transaction type (1) - Numeric
+    formatField(input.internalCatalogCode, 20, 'left'), // Field 1259: Internal catalog code (20) - Alphanumeric
+    formatField(input.goodsServiceDescription, 30, 'left'), // Field 1260: Goods/Service description (30) - Alphanumeric
+    formatField(input.manufacturerName, 50, 'left'), // Field 1261: Manufacturer name (50) - Alphanumeric
+    formatField(input.serialNumber, 30, 'left'), // Field 1262: Serial number (30) - Alphanumeric
+    formatField(input.unitOfMeasureDescription, 20, 'left'), // Field 1263: Unit of measure description (20) - Alphanumeric
+    formatField(input.quantity, 17, 'left'), // Field 1264: Quantity (17) - Alphanumeric but monetary format
+    formatField(input.unitPriceExcludingVat, 15, 'left'), // Field 1265: Unit price excluding VAT (15) - Alphanumeric but monetary format
+    formatField(input.lineDiscount, 15, 'left'), // Field 1266: Line discount (15) - Alphanumeric but monetary format
+    formatField(input.lineTotal, 15, 'left'), // Field 1267: Line total (15) - Alphanumeric but monetary format
+    formatField(input.vatRatePercent, 4, 'left'), // Field 1268: VAT rate % (4) - Numeric with decimal
+    formatField(input.reserved1, 0, 'left'), // Field 1269: Reserved (0) - Deprecated
+    formatField(input.branchId, 7, 'left'), // Field 1270: Branch ID (7) - Alphanumeric
+    formatField(input.reserved2, 0, 'left'), // Field 1271: Reserved (0) - Deprecated
+    formatField(input.documentDate, 8, 'right'), // Field 1272: Document date (8) - Numeric YYYYMMDD
+    formatField(input.headerLinkField, 7, 'right'), // Field 1273: Header link field (7) - Numeric
+    formatField(input.baseDocumentBranchId, 7, 'left'), // Field 1274: Base document branch ID (7) - Alphanumeric
+    formatField(input.reserved3, 21, 'left'), // Field 1275: Reserved (21) - Alphanumeric
   ];
 
   return fields.join('') + CRLF;
@@ -120,47 +183,47 @@ export function parseD110(line: string): D110 {
   pos += 3;
   const documentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const rowNumberInDocument = cleanLine.slice(pos, pos + 4).trim();
+  const lineNumber = cleanLine.slice(pos, pos + 4).trim();
   pos += 4;
   const baseDocumentType = cleanLine.slice(pos, pos + 3).trim();
   pos += 3;
   const baseDocumentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const dealType = cleanLine.slice(pos, pos + 1).trim();
+  const transactionType = cleanLine.slice(pos, pos + 1).trim();
   pos += 1;
-  const internalKey = cleanLine.slice(pos, pos + 20).trim();
+  const internalCatalogCode = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const soldGoodsOrServiceDescription = cleanLine.slice(pos, pos + 30).trim();
+  const goodsServiceDescription = cleanLine.slice(pos, pos + 30).trim();
   pos += 30;
-  const producerName = cleanLine.slice(pos, pos + 50).trim();
+  const manufacturerName = cleanLine.slice(pos, pos + 50).trim();
   pos += 50;
-  const producerPackagePrintedSerial = cleanLine.slice(pos, pos + 30).trim();
+  const serialNumber = cleanLine.slice(pos, pos + 30).trim();
   pos += 30;
-  const unitOfMeasure = cleanLine.slice(pos, pos + 20).trim();
+  const unitOfMeasureDescription = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
   const quantity = cleanLine.slice(pos, pos + 17).trim();
   pos += 17;
-  const unitAmountExcludingVat = cleanLine.slice(pos, pos + 15).trim();
+  const unitPriceExcludingVat = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
-  const lineDiscountAmount = cleanLine.slice(pos, pos + 15).trim();
+  const lineDiscount = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
-  const totalLineAmount = cleanLine.slice(pos, pos + 15).trim();
+  const lineTotal = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
-  const lineVatAmount = cleanLine.slice(pos, pos + 4).trim();
+  const vatRatePercent = cleanLine.slice(pos, pos + 4).trim();
   pos += 4;
   const reserved1 = cleanLine.slice(pos, pos + 0).trim();
   pos += 0; // 0 width
-  const branchOrSectorId = cleanLine.slice(pos, pos + 7).trim();
+  const branchId = cleanLine.slice(pos, pos + 7).trim();
   pos += 7;
   const reserved2 = cleanLine.slice(pos, pos + 0).trim();
   pos += 0; // 0 width
   const documentDate = cleanLine.slice(pos, pos + 8).trim();
   pos += 8;
-  const headerConnectingField = cleanLine.slice(pos, pos + 7).trim();
+  const headerLinkField = cleanLine.slice(pos, pos + 7).trim();
   pos += 7;
-  const baseDocumentBranchOrSectorId = cleanLine.slice(pos, pos + 7).trim();
+  const baseDocumentBranchId = cleanLine.slice(pos, pos + 7).trim();
   pos += 7;
-  const reserved = cleanLine.slice(pos, pos + 21).trim(); // 21 width
+  const reserved3 = cleanLine.slice(pos, pos + 21).trim(); // 21 width
 
   // Validate the code field
   if (code !== 'D110') {
@@ -173,27 +236,27 @@ export function parseD110(line: string): D110 {
     vatId,
     documentType,
     documentNumber,
-    rowNumberInDocument,
+    lineNumber,
     baseDocumentType,
     baseDocumentNumber,
-    dealType,
-    internalKey,
-    soldGoodsOrServiceDescription,
-    producerName,
-    producerPackagePrintedSerial,
-    unitOfMeasure,
+    transactionType,
+    internalCatalogCode,
+    goodsServiceDescription,
+    manufacturerName,
+    serialNumber,
+    unitOfMeasureDescription,
     quantity,
-    unitAmountExcludingVat,
-    lineDiscountAmount,
-    totalLineAmount,
-    lineVatAmount,
+    unitPriceExcludingVat,
+    lineDiscount,
+    lineTotal,
+    vatRatePercent,
     reserved1,
-    branchOrSectorId,
+    branchId,
     reserved2,
     documentDate,
-    headerConnectingField,
-    baseDocumentBranchOrSectorId,
-    reserved,
+    headerLinkField,
+    baseDocumentBranchId,
+    reserved3,
   };
 
   // Validate against schema
