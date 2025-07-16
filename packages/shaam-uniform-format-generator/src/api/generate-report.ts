@@ -12,6 +12,9 @@ import {
   encodeD120,
   encodeM100,
   encodeZ900,
+  type A000Input,
+  type A100Input,
+  type Z900Input,
 } from '../generator/records/index.js';
 import type { GenerationOptions, ReportInput, ReportOutput } from '../types/index.js';
 import { ShaamFormatError } from '../validation/errors.js';
@@ -64,8 +67,7 @@ export function generateUniformFormatReport(
   };
 
   // Generate A000 record for INI.TXT
-  const fileHeaderRecord = {
-    code: 'A000' as const,
+  const fileHeaderRecord: A000Input = {
     recordNumber: iniRecordNumber.toString(),
     vatId: input.business.taxId,
     dataFileName: `${options.fileNameBase || 'report'}.BKMVDATA.TXT`,
@@ -76,11 +78,9 @@ export function generateUniformFormatReport(
   addIniRecord('A000', encodeA000(fileHeaderRecord));
 
   // 1. Business metadata - A100 record
-  const businessMetadata = {
-    code: 'A100' as const,
+  const businessMetadata: A100Input = {
     recordNumber: recordNumber.toString(),
     vatId: input.business.taxId,
-    primaryIdentifier: input.business.businessId,
     reserved: '',
   };
   addRecord('A100', encodeA100(businessMetadata));
@@ -280,11 +280,9 @@ export function generateUniformFormatReport(
   }
 
   // 7. Closing record: Z900
-  const closingRecord = {
-    code: 'Z900' as const,
+  const closingRecord: Z900Input = {
     recordNumber: recordNumber.toString(),
     vatId: input.business.taxId,
-    uniqueId: input.business.businessId,
     totalRecords: records.length.toString(), // Count of records before Z900 is added
     reserved: '',
   };

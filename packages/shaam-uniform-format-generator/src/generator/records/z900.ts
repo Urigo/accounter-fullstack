@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SHAAM_VERSION } from '../../constants.js';
 import { CRLF } from '../../format/index.js';
+import { defaultKeyGenerator } from '../../utils/key-generator.js';
 import { formatField, formatNumericField } from '../format/encoder.js';
 
 /**
@@ -20,21 +21,39 @@ export const Z900Schema = z.object({
   reserved: z.string().max(50).default('').describe('Reserved field for future use'),
 });
 
+/**
+ * Z900 Input Schema - for user input (excludes auto-generated fields)
+ * Field 1153 (uniqueId) is automatically generated to match field 1103
+ */
+export const Z900InputSchema = Z900Schema.omit({
+  uniqueId: true,
+  code: true,
+});
+
 export type Z900 = z.infer<typeof Z900Schema>;
+export type Z900Input = z.infer<typeof Z900InputSchema>;
 
 /**
  * Encodes a Z900 record to fixed-width string format
  * Total line width: 110 characters + CRLF
  */
-export function encodeZ900(input: Z900): string {
+export function encodeZ900(input: Z900Input): string {
+  const uniqueId = defaultKeyGenerator.getPrimaryIdentifier();
+
+  const fullRecord: Z900 = {
+    code: 'Z900',
+    uniqueId,
+    ...input,
+  };
+
   const fields = [
-    formatField(input.code, 4, 'left'), // Field 1150: Record code (4) - Alphanumeric
-    formatNumericField(input.recordNumber, 9), // Field 1151: Record number (9) - Numeric
-    formatNumericField(input.vatId, 9), // Field 1152: VAT ID (9) - Numeric
-    formatNumericField(input.uniqueId, 15), // Field 1153: Unique ID (15) - Numeric
+    formatField(fullRecord.code, 4, 'left'), // Field 1150: Record code (4) - Alphanumeric
+    formatNumericField(fullRecord.recordNumber, 9), // Field 1151: Record number (9) - Numeric
+    formatNumericField(fullRecord.vatId, 9), // Field 1152: VAT ID (9) - Numeric
+    formatNumericField(fullRecord.uniqueId, 15), // Field 1153: Unique ID (15) - Numeric
     formatField(SHAAM_VERSION, 8, 'left'), // Field 1154: SHAAM version (8) - Alphanumeric
-    formatNumericField(input.totalRecords, 15), // Field 1155: Total records (15) - Numeric
-    formatField(input.reserved, 50, 'left'), // Field 1156: Reserved (50) - Alphanumeric
+    formatNumericField(fullRecord.totalRecords, 15), // Field 1155: Total records (15) - Numeric
+    formatField(fullRecord.reserved, 50, 'left'), // Field 1156: Reserved (50) - Alphanumeric
   ];
 
   return fields.join('') + CRLF;

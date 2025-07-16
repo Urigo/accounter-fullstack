@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SHAAM_VERSION } from '../../constants.js';
 import { CRLF } from '../../format/index.js';
+import { defaultKeyGenerator } from '../../utils/key-generator.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -35,20 +36,40 @@ export const A100Schema = z.object({
   reserved: z.string().max(50).default('').describe('Reserved field for future use'),
 });
 
+/**
+ * A100 Input Schema - for user input (excludes auto-generated fields)
+ * Field 1103 (primaryIdentifier) is automatically generated
+ */
+export const A100InputSchema = A100Schema.omit({
+  primaryIdentifier: true,
+  code: true,
+  systemConstant: true,
+});
+
 export type A100 = z.infer<typeof A100Schema>;
+export type A100Input = z.infer<typeof A100InputSchema>;
 
 /**
  * Encodes an A100 record to fixed-width string format
  * Total line width: 95 characters + CRLF
  */
-export function encodeA100(input: A100): string {
+export function encodeA100(input: A100Input): string {
+  const primaryIdentifier = defaultKeyGenerator.getPrimaryIdentifier();
+
+  const fullRecord: A100 = {
+    code: 'A100',
+    primaryIdentifier,
+    systemConstant: SHAAM_VERSION,
+    ...input,
+  };
+
   const fields = [
-    formatField(input.code, 4, 'left'), // Field 1100: Record code (4) - Alphanumeric
-    formatNumericField(input.recordNumber, 9), // Field 1101: Record number (9) - Numeric, zero-padded
-    formatNumericField(input.vatId, 9), // Field 1102: VAT ID (9) - Numeric, zero-padded
-    formatNumericField(input.primaryIdentifier, 15), // Field 1103: Primary identifier (15) - Numeric, zero-padded
+    formatField(fullRecord.code, 4, 'left'), // Field 1100: Record code (4) - Alphanumeric
+    formatNumericField(fullRecord.recordNumber, 9), // Field 1101: Record number (9) - Numeric, zero-padded
+    formatNumericField(fullRecord.vatId, 9), // Field 1102: VAT ID (9) - Numeric, zero-padded
+    formatNumericField(fullRecord.primaryIdentifier, 15), // Field 1103: Primary identifier (15) - Numeric, zero-padded
     formatField(SHAAM_VERSION, 8, 'left'), // Field 1104: System constant (8) - Alphanumeric
-    formatField(input.reserved, 50, 'left'), // Field 1105: Reserved (50) - Alphanumeric
+    formatField(fullRecord.reserved, 50, 'left'), // Field 1105: Reserved (50) - Alphanumeric
   ];
 
   return fields.join('') + CRLF;

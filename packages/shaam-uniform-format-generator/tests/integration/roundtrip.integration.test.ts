@@ -169,7 +169,8 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     // Verify business metadata
     expect(parsedData.businessMetadata).toBeDefined();
     expect(parsedData.businessMetadata?.vatId).toBe(input.business.taxId);
-    expect(parsedData.businessMetadata?.primaryIdentifier).toBe(input.business.businessId);
+    // primaryIdentifier is now auto-generated, so just verify it's a valid 15-digit string
+    expect(parsedData.businessMetadata?.primaryIdentifier).toMatch(/^\d{15}$/);
 
     // Verify documents
     expect(parsedData.documents).toHaveLength(input.documents.length);
@@ -237,7 +238,9 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     // Verify closing record
     expect(parsedData.closingRecord).toBeDefined();
     expect(parsedData.closingRecord?.vatId).toBe(input.business.taxId);
-    expect(parsedData.closingRecord?.uniqueId).toBe(input.business.businessId);
+    // uniqueId is now auto-generated and should match the primaryIdentifier
+    expect(parsedData.closingRecord?.uniqueId).toMatch(/^\d{15}$/);
+    expect(parsedData.closingRecord?.uniqueId).toBe(parsedData.businessMetadata?.primaryIdentifier);
     expect(parseInt(parsedData.closingRecord?.totalRecords || '0')).toBeGreaterThan(0);
 
     // Verify summary record counts match parsed data
