@@ -50,7 +50,6 @@ export function generateUniformFormatReport(
   const iniRecords: string[] = [];
   const recordCounts: Record<string, number> = {};
   let recordNumber = 1;
-  let iniRecordNumber = 1;
 
   // Helper function to count and add data record
   const addRecord = (recordType: string, recordContent: string) => {
@@ -63,17 +62,43 @@ export function generateUniformFormatReport(
   const addIniRecord = (recordType: string, recordContent: string) => {
     iniRecords.push(recordContent);
     recordCounts[recordType] = (recordCounts[recordType] || 0) + 1;
-    iniRecordNumber++;
   };
 
   // Generate A000 record for INI.TXT
   const fileHeaderRecord: A000Input = {
-    recordNumber: iniRecordNumber.toString(),
+    reservedFuture: '',
+    totalRecords: '0', // Will be updated later with actual count
     vatId: input.business.taxId,
-    dataFileName: `${options.fileNameBase || 'report'}.BKMVDATA.TXT`,
-    reportPeriodStart: input.business.reportingPeriod.startDate.replace(/-/g, ''),
-    reportPeriodEnd: input.business.reportingPeriod.endDate.replace(/-/g, ''),
-    reserved: '',
+    softwareRegNumber: '12345678', // TODO: Use actual software registration number
+    softwareName: 'SHAAM Generator',
+    softwareVersion: '1.0.0',
+    vendorVatId: '123456789', // TODO: Use actual vendor VAT ID
+    vendorName: 'Accounter',
+    softwareType: '2', // Multi-year software
+    fileOutputPath: options.fileNameBase || 'report',
+    accountingType: '2', // Double-entry accounting
+    balanceRequired: '1',
+    companyRegId: '',
+    withholdingFileNum: '',
+    reserved1017: '',
+    businessName: input.business.name,
+    businessStreet: '',
+    businessHouseNum: '',
+    businessCity: '',
+    businessZip: '',
+    taxYear: '',
+    startDate: input.business.reportingPeriod.startDate.replace(/-/g, ''),
+    endDate: input.business.reportingPeriod.endDate.replace(/-/g, ''),
+    processStartDate: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+    processStartTime: new Date().toTimeString().slice(0, 5).replace(':', ''),
+    languageCode: '0', // Hebrew
+    characterEncoding: '1', // ISO-8859-8-i
+    compressionSoftware: '',
+    reserved1031: '',
+    baseCurrency: 'ILS',
+    reserved1033: '',
+    branchInfoFlag: '0', // No branches for now
+    reserved1035: '',
   };
   addIniRecord('A000', encodeA000(fileHeaderRecord));
 
