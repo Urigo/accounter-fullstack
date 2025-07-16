@@ -103,7 +103,7 @@ schemas + TS types [x] Implement `encodeXXX` and `parseXXX` [x] Write round-trip
 
 ### Inventory: M100
 
-[ ] Scaffold `src/records/M100.ts` [ ] Zod schema, TS type, encoder, parser, tests
+[x] Scaffold `src/records/M100.ts` [x] Zod schema, TS type, encoder, parser, tests
 
 ### Closing Record: Z900
 
@@ -165,18 +165,31 @@ etc.
 - [x] Full test coverage for validation scenarios
 - [x] All linting and type-checking issues resolved
 
-### Completed A100 Record Module ✅
+### Completed Record Modules Summary ✅
 
-- [x] Complete A100 record implementation with Zod schema and TypeScript types
-- [x] Fixed-width encoder and parser functions with proper field formatting
-- [x] Comprehensive test suite with 20 tests covering validation, encoding, parsing, and round-trip
-      scenarios
-- [x] Error handling for invalid record lengths and formats
-- [x] Field truncation and padding according to SHAAM specification
-- [x] Integration with core formatting utilities
-- [x] All tests passing and build successful
+- [x] A100 - Business opening record (20 tests)
+- [x] B100 - Journal entry line record (22 tests)
+- [x] B110 - Account record (21 tests)
+- [x] C100 - Document header record (18 tests)
+- [x] D110 - Document line record (8 tests)
+- [x] D120 - Payment/receipt record (13 tests)
+- [x] M100 - Item/Product record (25 tests)
+- [x] Z900 - Closing record (21 tests)
+
+**Total: 148 record-specific tests, all passing**
 
 ### Ready for Next Phase
 
-The project is now ready for Phase 5 (File Assembly) implementation. The A100 record module is
-complete and serves as a solid foundation for implementing the remaining record types.
+**Phase 6 Complete!** All individual record modules are now implemented and tested. The project has:
+
+- ✅ Complete record module implementations for all 8 SHAAM record types
+- ✅ 148 comprehensive tests covering all record functionality
+- ✅ Full validation, encoding, parsing, and round-trip testing
+- ✅ Proper handling of Hebrew text, Unicode, and special formatting requirements
+- ✅ All builds and tests passing
+
+**Next: Phase 7 - Full Integration & Data File Assembly**
+
+The project is ready to move to Phase 7, where all the individual record modules will be integrated
+into the main `generateUniformFormatReport` function to create complete SHAAM format files (INI.TXT
+and BKMVDATA.TXT).
