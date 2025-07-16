@@ -7,7 +7,7 @@ describe('Z900 Record', () => {
     code: 'Z900',
     recordNumber: '123',
     vatId: '987654321',
-    uniqueId: 'SYS001UNIQUE',
+    uniqueId: '123456789012345',
     totalRecords: '1000',
     reserved: '',
   };
@@ -75,11 +75,11 @@ describe('Z900 Record', () => {
 
       // Check field positions and padding
       expect(withoutCRLF.slice(0, 4)).toBe('Z900'); // code (4)
-      expect(withoutCRLF.slice(4, 13)).toBe('      123'); // recordNumber right-aligned (9)
-      expect(withoutCRLF.slice(13, 22)).toBe('987654321'); // vatId left-aligned (9)
-      expect(withoutCRLF.slice(22, 37)).toBe('SYS001UNIQUE   '); // uniqueId left-aligned (15)
+      expect(withoutCRLF.slice(4, 13)).toBe('000000123'); // recordNumber zero-padded (9)
+      expect(withoutCRLF.slice(13, 22)).toBe('987654321'); // vatId zero-padded (9)
+      expect(withoutCRLF.slice(22, 37)).toBe('123456789012345'); // uniqueId zero-padded (15)
       expect(withoutCRLF.slice(37, 45)).toBe(SHAAM_VERSION); // static SHAAM version (8)
-      expect(withoutCRLF.slice(45, 60)).toBe('           1000'); // totalRecords right-aligned (15)
+      expect(withoutCRLF.slice(45, 60)).toBe('000000000001000'); // totalRecords zero-padded (15)
       expect(withoutCRLF.slice(60, 110)).toBe(' '.repeat(50)); // reserved left-aligned (50)
     });
 
@@ -132,9 +132,9 @@ describe('Z900 Record', () => {
   describe('parseZ900', () => {
     it('should parse a valid Z900 record line', () => {
       const line =
-        'Z900      123987654321SYS001UNIQUE   ' +
+        'Z900000000123987654321123456789012345' +
         SHAAM_VERSION +
-        '           1000' +
+        '000000000001000' +
         ' '.repeat(50) +
         '\r\n';
       const parsed = parseZ900(line);
@@ -143,7 +143,7 @@ describe('Z900 Record', () => {
         code: 'Z900',
         recordNumber: '123',
         vatId: '987654321',
-        uniqueId: 'SYS001UNIQUE',
+        uniqueId: '123456789012345',
         totalRecords: '1000',
         reserved: '',
       });
@@ -151,9 +151,9 @@ describe('Z900 Record', () => {
 
     it('should parse line without CRLF', () => {
       const line =
-        'Z900      123987654321SYS001UNIQUE   ' +
+        'Z900000000123987654321123456789012345' +
         SHAAM_VERSION +
-        '           1000' +
+        '000000000001000' +
         ' '.repeat(50);
       const parsed = parseZ900(line);
 
@@ -182,21 +182,21 @@ describe('Z900 Record', () => {
 
     it('should throw error for invalid SHAAM version', () => {
       const invalidLine =
-        'Z900      123987654321SYS001UNIQUE   INVALID            1000' + ' '.repeat(50) + '\r\n';
+        'Z900000000123987654321123456789012345INVALID 000000000001000' + ' '.repeat(50) + '\r\n';
       expect(() => parseZ900(invalidLine)).toThrow('Invalid SHAAM version');
     });
 
     it('should handle fields with trailing spaces correctly', () => {
       const line =
-        'Z900      123VAT123   UNIQ123        ' +
+        'Z900000000123000123456000000000123456' +
         SHAAM_VERSION +
-        '           9999' +
+        '000000000009999' +
         ' '.repeat(50) +
         '\r\n';
       const parsed = parseZ900(line);
 
-      expect(parsed.vatId).toBe('VAT123');
-      expect(parsed.uniqueId).toBe('UNIQ123');
+      expect(parsed.vatId).toBe('123456');
+      expect(parsed.uniqueId).toBe('123456');
       expect(parsed.totalRecords).toBe('9999');
       expect(parsed.reserved).toBe('');
     });
@@ -232,7 +232,7 @@ describe('Z900 Record', () => {
         code: 'Z900',
         recordNumber: '1',
         vatId: '1',
-        uniqueId: 'A',
+        uniqueId: '1',
         totalRecords: '1',
         reserved: '',
       };
