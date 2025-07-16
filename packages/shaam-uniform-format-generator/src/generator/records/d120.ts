@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
+import { DocumentTypeEnum } from '../../types/index.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -19,12 +20,7 @@ export const D120Schema = z.object({
   // Field 1302: Tax ID (9) - Required - Numeric
   vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('VAT identification number'),
   // Field 1303: Document type (3) - Required - Numeric
-  documentType: z
-    .string()
-    .min(1)
-    .max(3)
-    .regex(/^\d+$/)
-    .describe('Document type - see Appendix 1, Note 1'),
+  documentType: DocumentTypeEnum.describe('Document type - see Appendix 1, Note 1'),
   // Field 1304: Document number (20) - Required - Alphanumeric
   documentNumber: z.string().min(1).max(20).describe('Document number'),
   // Field 1305: Line number in document (4) - Required - Numeric
@@ -190,11 +186,10 @@ export function parseD120(line: string): D120 {
       .trim()
       .replace(/^0+/, '') || '0'; // Strip leading zeros
   pos += 9;
-  const documentType =
-    cleanLine
-      .slice(pos, pos + 3)
-      .trim()
-      .replace(/^0+/, '') || '0'; // Strip leading zeros
+  const documentType = (cleanLine
+    .slice(pos, pos + 3)
+    .trim()
+    .replace(/^0+/, '') || '0') as z.infer<typeof DocumentTypeEnum>; // Strip leading zeros
   pos += 3;
   const documentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;

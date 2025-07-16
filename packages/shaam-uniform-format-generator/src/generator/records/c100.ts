@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
+import { DocumentTypeEnum } from '../../types/index.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -15,7 +16,7 @@ export const C100Schema = z.object({
   // Field 1202: VAT ID number without control digits (9) - positions 14-22
   vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('VAT identification number'),
   // Field 1203: Document type (3) - positions 23-25
-  documentType: z.string().min(1).max(3).regex(/^\d+$/).describe('Document type code'),
+  documentType: DocumentTypeEnum.describe('Document type code'),
   // Field 1204: Document ID/sequence number (20) - positions 26-45
   documentId: z.string().min(1).max(20).describe('Document identification number'),
   // Field 1205: Document issue date YYYYMMDD format (8) - positions 46-53
@@ -224,11 +225,10 @@ export function parseC100(line: string): C100 {
       .trim()
       .replace(/^0+/, '') || '0';
   pos += 9; // positions 14-22
-  const documentType =
-    cleanLine
-      .slice(pos, pos + 3)
-      .trim()
-      .replace(/^0+/, '') || '0';
+  const documentType = (cleanLine
+    .slice(pos, pos + 3)
+    .trim()
+    .replace(/^0+/, '') || '0') as z.infer<typeof DocumentTypeEnum>;
   pos += 3; // positions 23-25
   const documentId = cleanLine.slice(pos, pos + 20).trim();
   pos += 20; // positions 26-45

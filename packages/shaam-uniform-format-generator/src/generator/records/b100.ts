@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
+import { DocumentTypeEnum } from '../../types/index.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -49,6 +50,7 @@ export const B100Schema = z.object({
     .max(3)
     .regex(/^$|^\d+$/)
     .default('')
+    .transform(val => (val === '' ? val : (val as z.infer<typeof DocumentTypeEnum>)))
     .describe('Reference document type - see Appendix 1'),
   // Field 1359: Reference document 2 (20) - Optional - Alphanumeric
   referenceDocument2: z.string().max(20).default('').describe('Reference document 2'),
@@ -58,6 +60,7 @@ export const B100Schema = z.object({
     .max(3)
     .regex(/^$|^\d+$/)
     .default('')
+    .transform(val => (val === '' ? val : (val as z.infer<typeof DocumentTypeEnum>)))
     .describe('Reference document type 2 - see Appendix 1'),
   // Field 1361: Details (50) - Optional - Alphanumeric
   details: z.string().max(50).default('').describe('Details'),
@@ -228,19 +231,17 @@ export function parseB100(line: string): B100 {
   pos += 15;
   const referenceDocument = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const referenceDocumentType =
-    cleanLine
-      .slice(pos, pos + 3)
-      .trim()
-      .replace(/^0+/, '') || '';
+  const referenceDocumentType = (cleanLine
+    .slice(pos, pos + 3)
+    .trim()
+    .replace(/^0+/, '') || '') as '' | z.infer<typeof DocumentTypeEnum>;
   pos += 3;
   const referenceDocument2 = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const referenceDocumentType2 =
-    cleanLine
-      .slice(pos, pos + 3)
-      .trim()
-      .replace(/^0+/, '') || '';
+  const referenceDocumentType2 = (cleanLine
+    .slice(pos, pos + 3)
+    .trim()
+    .replace(/^0+/, '') || '') as '' | z.infer<typeof DocumentTypeEnum>;
   pos += 3;
   const details = cleanLine.slice(pos, pos + 50).trim();
   pos += 50;

@@ -6,8 +6,8 @@ describe('C100 Record', () => {
     code: 'C100',
     recordNumber: '1',
     vatId: '123456789',
-    documentType: '1', // Will be encoded as '001' then parsed back as '1'
-    documentId: 'DOC001',
+    documentType: '300', // Will be encoded as '300' then parsed back as '300'
+    documentId: 'DOC123456789',
     documentIssueDate: '20240315',
     documentIssueTime: '1430',
     customerName: 'Test Customer Ltd',
@@ -66,7 +66,7 @@ describe('C100 Record', () => {
         code: 'C100',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '01', // Required according to CSV
+        documentType: '100', // Required according to CSV
         documentId: 'DOC001', // Required according to CSV
         documentIssueDate: '20240315', // Required according to CSV
         documentIssueTime: '', // Optional
@@ -120,8 +120,8 @@ describe('C100 Record', () => {
       expect(withoutCrlf.slice(0, 4)).toBe('C100'); // Record code - left-aligned
       expect(withoutCrlf.slice(4, 13)).toBe('000000001'); // Record number - zero-padded (numeric)
       expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // VAT ID - zero-padded (numeric)
-      expect(withoutCrlf.slice(22, 25)).toBe('001'); // Document type - zero-padded (numeric)
-      expect(withoutCrlf.slice(25, 45)).toBe('DOC001              '); // Document ID - left-aligned (alphanumeric)
+      expect(withoutCrlf.slice(22, 25)).toBe('300'); // Document type - zero-padded (numeric)
+      expect(withoutCrlf.slice(25, 45)).toBe('DOC123456789        '); // Document ID - left-aligned (alphanumeric)
     });
 
     it('should handle long fields by truncating', () => {
@@ -176,8 +176,8 @@ describe('C100 Record', () => {
       expect(parsed.code).toBe('C100');
       expect(parsed.recordNumber).toBe('1');
       expect(parsed.vatId).toBe('123456789');
-      expect(parsed.documentType).toBe('1');
-      expect(parsed.documentId).toBe('DOC001');
+      expect(parsed.documentType).toBe('300');
+      expect(parsed.documentId).toBe('DOC123456789');
       expect(parsed.documentIssueDate).toBe('20240315');
       expect(parsed.documentIssueTime).toBe('1430');
       expect(parsed.customerName).toBe('Test Customer Ltd');
@@ -244,7 +244,7 @@ describe('C100 Record', () => {
         {
           ...validC100,
           recordNumber: '999999999',
-          documentType: '5', // Will be encoded as '005' then parsed back as '5'
+          documentType: '200', // Will be encoded as '200' then parsed back as '200'
           cancelledDocument: 'Y',
         },
         {
@@ -268,7 +268,7 @@ describe('C100 Record', () => {
         code: 'C100',
         recordNumber: '999999999', // 9 chars
         vatId: '123456789', // 9 chars
-        documentType: '999', // 3 chars
+        documentType: '710', // 3 chars
         documentId: 'x'.repeat(20), // 20 chars
         documentIssueDate: '20241231', // 8 chars
         documentIssueTime: '2359', // 4 chars

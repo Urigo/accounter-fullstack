@@ -4,6 +4,47 @@
 
 import { z } from 'zod';
 
+// Document Type Enum for SHAAM format
+export const DocumentTypeEnum = z.enum([
+  '100', // הזמנה
+  '200', // תעודת משלוח
+  '210', // תעודת החזרה
+  '300', // חשבונית / חשבונית עסקה
+  '305', // חשבונית מס
+  '320', // חשבונית מס קבלה
+  '325', // תעודת זיכוי
+  '330', // חשבונית מס זיכוי
+  '340', // קבלה
+  '400', // תעודת חיוב
+  '410', // תעודת זיכוי כללי
+  '420', // תעודת העברה
+  '430', // מסמך רכש
+  '500', // חשבון ספק
+  '600', // קבלה מרוכזת
+  '700', // חיוב/זיכוי כרטיס אשראי
+  '710', // קבלה - כרטיס אשראי
+]);
+
+export const DocumentTypeLabels: Record<z.infer<typeof DocumentTypeEnum>, string> = {
+  '100': 'הזמנה',
+  '200': 'תעודת משלוח',
+  '210': 'תעודת החזרה',
+  '300': 'חשבונית / חשבונית עסקה',
+  '305': 'חשבונית מס',
+  '320': 'חשבונית מס קבלה',
+  '325': 'תעודת זיכוי',
+  '330': 'חשבונית מס זיכוי',
+  '340': 'קבלה',
+  '400': 'תעודת חיוב',
+  '410': 'תעודת זיכוי כללי',
+  '420': 'תעודת העברה',
+  '430': 'מסמך רכש',
+  '500': 'חשבון ספק',
+  '600': 'קבלה מרוכזת',
+  '700': 'חיוב/זיכוי כרטיס אשראי',
+  '710': 'קבלה - כרטיס אשראי',
+};
+
 // Business metadata schema
 export const BusinessMetadataSchema = z.object({
   businessId: z.string().min(1, 'Business ID is required'),
@@ -18,7 +59,7 @@ export const BusinessMetadataSchema = z.object({
 // Document schema
 export const DocumentSchema = z.object({
   id: z.string().min(1, 'Document ID is required'),
-  type: z.string().min(1, 'Document type is required'),
+  type: DocumentTypeEnum.describe('Document type - must be valid SHAAM document type'),
   date: z.string().min(1, 'Document date is required'),
   amount: z.number(),
   description: z.string().optional(),
@@ -81,6 +122,7 @@ export const ReportOutputSchema = z.object({
 });
 
 // TypeScript types
+export type DocumentType = z.infer<typeof DocumentTypeEnum>;
 export type BusinessMetadata = z.infer<typeof BusinessMetadataSchema>;
 export type Document = z.infer<typeof DocumentSchema>;
 export type JournalEntry = z.infer<typeof JournalEntrySchema>;

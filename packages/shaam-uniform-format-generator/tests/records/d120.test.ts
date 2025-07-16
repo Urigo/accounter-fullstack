@@ -6,7 +6,7 @@ describe('D120 Record', () => {
     code: 'D120',
     recordNumber: '1',
     vatId: '123456789',
-    documentType: '123',
+    documentType: '300',
     documentNumber: 'DOC123',
     lineNumber: '1',
     paymentMethod: '1',
@@ -45,7 +45,7 @@ describe('D120 Record', () => {
         code: 'D120',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '123', // Required according to CSV spec
+        documentType: '300', // Required according to CSV spec
         documentNumber: 'DOC001', // Required according to CSV spec
         lineNumber: '1', // Required according to CSV spec
         paymentMethod: '1', // Required according to CSV spec
@@ -144,7 +144,7 @@ describe('D120 Record', () => {
         'D120' + // code (4)
         '000000042' + // recordNumber (9) - zero-padded numeric
         '000000123' + // vatId (9) - zero-padded numeric
-        '001' + // documentType (3) - zero-padded numeric
+        '100' + // documentType (3) - zero-padded numeric
         'DOC001              ' + // documentNumber (20) - left-aligned alphanumeric
         '0001' + // lineNumber (4) - zero-padded numeric
         '1' + // paymentMethod (1) - numeric
@@ -174,7 +174,7 @@ describe('D120 Record', () => {
       // Numeric fields should have leading zeros stripped when parsed
       expect(parsed.recordNumber).toBe('42');
       expect(parsed.vatId).toBe('123');
-      expect(parsed.documentType).toBe('1');
+      expect(parsed.documentType).toBe('100');
       expect(parsed.documentNumber).toBe('DOC001');
       expect(parsed.lineNumber).toBe('1');
       expect(parsed.paymentMethod).toBe('1');
@@ -207,7 +207,7 @@ describe('D120 Record', () => {
         code: 'D120',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '123', // Required according to CSV spec
+        documentType: '300', // Required according to CSV spec
         documentNumber: 'DOC001', // Required according to CSV spec
         lineNumber: '1', // Required according to CSV spec
         paymentMethod: '1', // Required according to CSV spec
@@ -242,7 +242,7 @@ describe('D120 Record', () => {
         code: 'D120',
         recordNumber: '999999',
         vatId: '999999999',
-        documentType: '999',
+        documentType: '710',
         documentNumber: 'A'.repeat(20),
         lineNumber: '9999',
         paymentMethod: '9',

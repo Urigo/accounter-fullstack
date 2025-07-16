@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
+import { DocumentTypeEnum } from '../../types/index.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -14,7 +15,7 @@ export const D110Schema = z.object({
   // Field 1252: Tax ID (9) - Required - Numeric
   vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('VAT identification number'),
   // Field 1253: Document type (3) - Required - Numeric
-  documentType: z.string().min(1).max(3).regex(/^\d+$/).describe('Document type - see Appendix 1'),
+  documentType: DocumentTypeEnum.describe('Document type - see Appendix 1'),
   // Field 1254: Document number (20) - Required - Alphanumeric
   documentNumber: z.string().min(1).max(20).describe('Document number'),
   // Field 1255: Line number in document (4) - Required - Numeric
@@ -25,6 +26,7 @@ export const D110Schema = z.object({
     .max(3)
     .regex(/^(\d{1,3}|)$/)
     .default('')
+    .transform(val => (val === '' ? val : (val as z.infer<typeof DocumentTypeEnum>)))
     .describe('Base document type - required if based on another document'),
   // Field 1257: Base document number (20) - Conditional - Alphanumeric
   baseDocumentNumber: z
@@ -177,11 +179,10 @@ export function parseD110(line: string): D110 {
       .trim()
       .replace(/^0+/, '') || '0';
   pos += 9;
-  const documentType =
-    cleanLine
-      .slice(pos, pos + 3)
-      .trim()
-      .replace(/^0+/, '') || '0';
+  const documentType = (cleanLine
+    .slice(pos, pos + 3)
+    .trim()
+    .replace(/^0+/, '') || '0') as z.infer<typeof DocumentTypeEnum>;
   pos += 3;
   const documentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
@@ -191,7 +192,9 @@ export function parseD110(line: string): D110 {
       .trim()
       .replace(/^0+/, '') || '0';
   pos += 4;
-  const baseDocumentType = cleanLine.slice(pos, pos + 3).trim();
+  const baseDocumentType = cleanLine.slice(pos, pos + 3).trim() as
+    | ''
+    | z.infer<typeof DocumentTypeEnum>;
   pos += 3;
   const baseDocumentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
