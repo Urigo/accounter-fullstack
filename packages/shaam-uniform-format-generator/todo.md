@@ -95,11 +95,11 @@ schemas + TS types [x] Implement `encodeXXX` and `parseXXX` [x] Write round-trip
 
 ### Journal Entries: B100
 
-[ ] Scaffold `src/records/B100.ts` [ ] Zod schema, TS type, encoder, parser, tests
+[x] Scaffold `src/records/B100.ts` [x] Zod schema, TS type, encoder, parser, tests
 
 ### Accounts: B110
 
-[ ] Scaffold `src/records/B110.ts` [ ] Zod schema, TS type, encoder, parser, tests
+[x] Scaffold `src/records/B110.ts` [x] Zod schema, TS type, encoder, parser, tests
 
 ### Inventory: M100
 
