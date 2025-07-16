@@ -66,10 +66,10 @@ describe('C100 Record', () => {
         code: 'C100',
         recordNumber: '1',
         vatId: '123456789',
-        documentType: '',
-        documentId: '',
-        documentIssueDate: '',
-        documentIssueTime: '',
+        documentType: '01', // Required according to CSV
+        documentId: 'DOC001', // Required according to CSV
+        documentIssueDate: '20240315', // Required according to CSV
+        documentIssueTime: '', // Optional
         customerName: '',
         customerStreet: '',
         customerHouseNumber: '',
@@ -117,11 +117,11 @@ describe('C100 Record', () => {
       expect(withoutCrlf).toHaveLength(445);
 
       // Check specific field positions
-      expect(withoutCrlf.slice(0, 4)).toBe('C100'); // Record code
-      expect(withoutCrlf.slice(4, 13)).toBe('        1'); // Right-aligned record number
-      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // Left-aligned VAT ID
-      expect(withoutCrlf.slice(22, 25)).toBe('01 '); // Document type
-      expect(withoutCrlf.slice(25, 45)).toBe('DOC001              '); // Document ID
+      expect(withoutCrlf.slice(0, 4)).toBe('C100'); // Record code - left-aligned
+      expect(withoutCrlf.slice(4, 13)).toBe('        1'); // Record number - right-aligned (numeric)
+      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // VAT ID - left-aligned - already 9 chars
+      expect(withoutCrlf.slice(22, 25)).toBe(' 01'); // Document type - right-aligned (numeric)
+      expect(withoutCrlf.slice(25, 45)).toBe('DOC001              '); // Document ID - left-aligned (alphanumeric)
     });
 
     it('should handle long fields by truncating', () => {
@@ -138,10 +138,10 @@ describe('C100 Record', () => {
       // Should still be exactly 445 characters
       expect(withoutCrlf).toHaveLength(445);
 
-      // VAT ID should be truncated to 9 chars
-      expect(withoutCrlf.slice(13, 22)).toBe('123456789');
+      // VAT ID should be truncated to 9 chars and left-aligned
+      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // Already 9 chars when truncated from 1234567890
 
-      // Document ID should be truncated to 20 chars
+      // Document ID should be truncated to 20 chars and left-aligned
       expect(withoutCrlf.slice(25, 45)).toBe('xxxxxxxxxxxxxxxxxxxx');
     });
 
@@ -157,13 +157,13 @@ describe('C100 Record', () => {
       const encoded = encodeC100(shortFields);
       const withoutCrlf = encoded.replace(/\r\n$/, '');
 
-      // Record number should be right-aligned with spaces
+      // Record number should be right-aligned with spaces (numeric field)
       expect(withoutCrlf.slice(4, 13)).toBe('       42');
 
-      // VAT ID should be left-aligned with spaces
+      // VAT ID should be left-aligned with spaces (left-aligned per requirement)
       expect(withoutCrlf.slice(13, 22)).toBe('123      ');
 
-      // Document ID should be left-aligned with spaces
+      // Document ID should be left-aligned with spaces (alphanumeric field)
       expect(withoutCrlf.slice(25, 45)).toBe('SHORT               ');
     });
   });
@@ -249,7 +249,7 @@ describe('C100 Record', () => {
         },
         {
           ...validC100,
-          documentId: '',
+          documentId: 'MINIMAL', // Required field cannot be empty
           customerName: '',
           customerStreet: '',
         },
@@ -280,22 +280,22 @@ describe('C100 Record', () => {
         customerCountry: 'F'.repeat(30), // 30 chars
         customerCountryCode: 'GG', // 2 chars
         customerPhone: 'H'.repeat(15), // 15 chars
-        customerVatId: 'I'.repeat(9), // 9 chars
+        customerVatId: '987654321', // 9 chars - numeric
         documentValueDate: '20230101', // 8 chars
-        foreignCurrencyAmount: 'J'.repeat(15), // 15 chars
+        foreignCurrencyAmount: '999999999999.99', // 15 chars
         currencyCode: 'KKK', // 3 chars
-        amountBeforeDiscount: 'L'.repeat(15), // 15 chars
-        documentDiscount: 'M'.repeat(15), // 15 chars
-        amountAfterDiscountExcludingVat: 'N'.repeat(15), // 15 chars
-        vatAmount: 'O'.repeat(15), // 15 chars
-        amountIncludingVat: 'P'.repeat(15), // 15 chars
-        withholdingTaxAmount: 'Q'.repeat(12), // 12 chars
+        amountBeforeDiscount: '999999999999.99', // 15 chars
+        documentDiscount: '999999999999.99', // 15 chars
+        amountAfterDiscountExcludingVat: '999999999999.99', // 15 chars
+        vatAmount: '999999999999.99', // 15 chars
+        amountIncludingVat: '999999999999.99', // 15 chars
+        withholdingTaxAmount: '999999999.99', // 12 chars (9 digits + .99)
         customerKey: 'R'.repeat(15), // 15 chars
         matchingField: 'S'.repeat(10), // 10 chars
         cancelledAttribute1: 'T'.repeat(8), // 8 chars
         cancelledDocument: 'U', // 1 char
         cancelledAttribute2: 'V'.repeat(8), // 8 chars
-        documentDate: 'W'.repeat(7), // 7 chars
+        documentDate: '2024031', // 7 chars - numeric
         branchKey: 'X'.repeat(8), // 8 chars
         cancelledAttribute3: 'Y', // 1 char
         actionExecutor: 'Z'.repeat(13), // 13 chars
