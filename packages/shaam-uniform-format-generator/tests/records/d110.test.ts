@@ -6,7 +6,7 @@ describe('D110 Record', () => {
     code: 'D110',
     recordNumber: '1',
     vatId: '123456789',
-    documentType: '001',
+    documentType: '1',
     documentNumber: 'DOC001',
     lineNumber: '1',
     baseDocumentType: '123',
