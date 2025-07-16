@@ -90,8 +90,8 @@ contains the `A100` line
 
 ### Documents: C100, D110, D120
 
-[ ] Scaffold `src/records/C100.ts`, `src/records/D110.ts`, `src/records/D120.ts` [ ] Define Zod
-schemas + TS types [ ] Implement `encodeXXX` and `parseXXX` [ ] Write round-trip tests
+[x] Scaffold `src/records/C100.ts`, `src/records/D110.ts`, `src/records/D120.ts` [x] Define Zod
+schemas + TS types [x] Implement `encodeXXX` and `parseXXX` [x] Write round-trip tests
 
 ### Journal Entries: B100
 
