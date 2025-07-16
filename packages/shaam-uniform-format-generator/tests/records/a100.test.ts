@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { SHAAM_VERSION } from '../../src/constants';
 import { A100Schema, encodeA100, parseA100, type A100 } from '../../src/generator/records/a100';
 
 describe('A100 Record', () => {
@@ -7,7 +6,8 @@ describe('A100 Record', () => {
     code: 'A100',
     recordNumber: '1',
     vatId: '123456789',
-    uniqueId: 'BUSINESS001',
+    primaryIdentifier: '12345678901234',
+    systemConstant: '&OF1.31&',
     reserved: '',
   };
 
@@ -30,8 +30,8 @@ describe('A100 Record', () => {
       expect(() => A100Schema.parse({ ...validA100, vatId: '' })).toThrow();
     });
 
-    it('should require non-empty uniqueId', () => {
-      expect(() => A100Schema.parse({ ...validA100, uniqueId: '' })).toThrow();
+    it('should require non-empty primaryIdentifier', () => {
+      expect(() => A100Schema.parse({ ...validA100, primaryIdentifier: '' })).toThrow();
     });
 
     it('should allow empty reserved field', () => {
@@ -42,7 +42,9 @@ describe('A100 Record', () => {
     it('should enforce maximum field lengths', () => {
       expect(() => A100Schema.parse({ ...validA100, recordNumber: '1234567890' })).toThrow();
       expect(() => A100Schema.parse({ ...validA100, vatId: '1234567890' })).toThrow();
-      expect(() => A100Schema.parse({ ...validA100, uniqueId: '1234567890123456' })).toThrow();
+      expect(() =>
+        A100Schema.parse({ ...validA100, primaryIdentifier: '1234567890123456' }),
+      ).toThrow();
       expect(() => A100Schema.parse({ ...validA100, reserved: 'x'.repeat(51) })).toThrow();
     });
   });
@@ -60,17 +62,17 @@ describe('A100 Record', () => {
 
       // Check specific field positions
       expect(withoutCrlf.slice(0, 4)).toBe('A100'); // Record code
-      expect(withoutCrlf.slice(4, 13)).toBe('        1'); // Right-aligned record number
-      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // Left-aligned VAT ID
-      expect(withoutCrlf.slice(22, 37)).toBe('BUSINESS001    '); // Left-aligned unique ID
-      expect(withoutCrlf.slice(37, 45)).toBe(SHAAM_VERSION); // Static SHAAM version
+      expect(withoutCrlf.slice(4, 13)).toBe('000000001'); // Zero-padded record number (numeric field)
+      expect(withoutCrlf.slice(13, 22)).toBe('123456789'); // Zero-padded VAT ID (already 9 digits)
+      expect(withoutCrlf.slice(22, 37)).toBe('012345678901234'); // Zero-padded primary identifier (numeric field)
+      expect(withoutCrlf.slice(37, 45)).toBe('&OF1.31&'); // System constant
     });
 
     it('should handle long fields by truncating', () => {
       const longFields: A100 = {
         ...validA100,
         vatId: '1234567890', // Too long for 9 chars
-        uniqueId: '1234567890123456', // Too long for 15 chars
+        primaryIdentifier: '1234567890123456', // Too long for 15 chars
       };
 
       const encoded = encodeA100(longFields);
@@ -79,14 +81,14 @@ describe('A100 Record', () => {
       // Should still be exactly 95 characters
       expect(withoutCrlf).toHaveLength(95);
 
-      // VAT ID should be truncated to 9 chars
+      // VAT ID should be truncated to 9 chars and zero-padded
       expect(withoutCrlf.slice(13, 22)).toBe('123456789');
 
-      // Unique ID should be truncated to 15 chars
+      // Primary identifier should be truncated to 15 chars and zero-padded
       expect(withoutCrlf.slice(22, 37)).toBe('123456789012345');
 
-      // SHAAM version should always be the constant
-      expect(withoutCrlf.slice(37, 45)).toBe(SHAAM_VERSION);
+      // System constant should always be the constant
+      expect(withoutCrlf.slice(37, 45)).toBe('&OF1.31&');
     });
 
     it('should pad short fields correctly', () => {
@@ -94,23 +96,23 @@ describe('A100 Record', () => {
         ...validA100,
         recordNumber: '42',
         vatId: '123',
-        uniqueId: 'SHORT',
+        primaryIdentifier: '456',
       };
 
       const encoded = encodeA100(shortFields);
       const withoutCrlf = encoded.replace(/\r\n$/, '');
 
-      // Record number should be right-aligned with spaces
-      expect(withoutCrlf.slice(4, 13)).toBe('       42');
+      // Record number should be zero-padded (numeric field)
+      expect(withoutCrlf.slice(4, 13)).toBe('000000042');
 
-      // VAT ID should be left-aligned with spaces
-      expect(withoutCrlf.slice(13, 22)).toBe('123      ');
+      // VAT ID should be zero-padded (numeric field)
+      expect(withoutCrlf.slice(13, 22)).toBe('000000123');
 
-      // Unique ID should be left-aligned with spaces
-      expect(withoutCrlf.slice(22, 37)).toBe('SHORT          ');
+      // Primary identifier should be zero-padded (numeric field)
+      expect(withoutCrlf.slice(22, 37)).toBe('000000000000456');
 
-      // SHAAM version should always be the constant
-      expect(withoutCrlf.slice(37, 45)).toBe(SHAAM_VERSION);
+      // System constant should always be the constant
+      expect(withoutCrlf.slice(37, 45)).toBe('&OF1.31&');
     });
   });
 
@@ -122,7 +124,8 @@ describe('A100 Record', () => {
       expect(parsed.code).toBe('A100');
       expect(parsed.recordNumber).toBe('1');
       expect(parsed.vatId).toBe('123456789');
-      expect(parsed.uniqueId).toBe('BUSINESS001');
+      expect(parsed.primaryIdentifier).toBe('12345678901234');
+      expect(parsed.systemConstant).toBe('&OF1.31&');
       expect(parsed.reserved).toBe('');
     });
 
@@ -144,32 +147,34 @@ describe('A100 Record', () => {
       expect(() => parseA100(invalidCode)).toThrow('Invalid A100 record code');
     });
 
-    it('should throw on invalid SHAAM version', () => {
+    it('should throw on invalid system constant', () => {
       const invalidVersion =
         'A100' + // code (4)
         '        1' + // recordNumber (9)
         '123456789' + // vatId (9)
-        'BUSINESS001    ' + // uniqueId (15)
-        'INVALID ' + // invalid systemCode (8)
+        '12345678901234 ' + // primaryIdentifier (15)
+        'INVALID ' + // invalid systemConstant (8)
         ' '.repeat(50); // reserved (50)
 
-      expect(() => parseA100(invalidVersion)).toThrow('Invalid SHAAM version');
+      expect(() => parseA100(invalidVersion)).toThrow('Invalid system constant');
     });
 
     it('should trim whitespace from parsed fields', () => {
       const paddedLine =
         'A100' + // code (4)
-        '       42' + // recordNumber (9)
-        '123      ' + // vatId (9)
-        'BUSINESS001    ' + // uniqueId (15)
-        SHAAM_VERSION + // systemCode (8)
+        '000000042' + // recordNumber (9) - zero-padded
+        '000000123' + // vatId (9) - zero-padded
+        '000000000000123' + // primaryIdentifier (15) - zero-padded
+        '&OF1.31&' + // systemConstant (8)
         ' '.repeat(50); // reserved (50)
+
+      expect(paddedLine.length).toBe(95); // Verify correct length
 
       const parsed = parseA100(paddedLine);
 
       expect(parsed.recordNumber).toBe('42');
       expect(parsed.vatId).toBe('123');
-      expect(parsed.uniqueId).toBe('BUSINESS001');
+      expect(parsed.primaryIdentifier).toBe('123');
       expect(parsed.reserved).toBe('');
     });
   });
@@ -189,14 +194,16 @@ describe('A100 Record', () => {
           code: 'A100',
           recordNumber: '999999999',
           vatId: '999888777',
-          uniqueId: 'MAX_LENGTH_ID12',
+          primaryIdentifier: '123456789012345',
+          systemConstant: '&OF1.31&',
           reserved: 'Some reserved content',
         },
         {
           code: 'A100',
           recordNumber: '1',
           vatId: '1',
-          uniqueId: '1',
+          primaryIdentifier: '1',
+          systemConstant: '&OF1.31&',
           reserved: '',
         },
       ];

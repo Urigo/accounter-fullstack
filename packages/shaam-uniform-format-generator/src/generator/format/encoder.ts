@@ -43,3 +43,10 @@ export function encodeFixedWidth(
   const str = String(value);
   return formatField(str, width, align, padChar);
 }
+
+/**
+ * Helper function to format numeric fields with zero padding
+ */
+export function formatNumericField(value: string, width: number): string {
+  return padLeft(value, width, '0');
+}
