@@ -27,8 +27,6 @@
     },
     "./package.json": "./package.json"
   },
-  "types": "dist/typings/index.d.ts",
-  },
   "typings": "dist/typings/index.d.ts",
   "keywords": [
     "shaam",
