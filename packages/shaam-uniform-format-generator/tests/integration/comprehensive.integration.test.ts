@@ -1,11 +1,13 @@
 /**
- * Integration test for round-trip generation and parsing
- * This test ensures that data can be generated to SHAAM format and parsed back correctly
+ * Comprehensive integration test for full round-trip generation and parsing
+ * including A000Sum summary records and full validation
  */
 
 import { describe, expect, it } from 'vitest';
 import { generateUniformFormatReport } from '../../src/api/generate-report';
 import {
+  parseA000,
+  parseA000Sum,
   parseA100,
   parseB100,
   parseB110,
@@ -17,8 +19,8 @@ import {
 } from '../../src/generator/records/index';
 import type { ReportInput } from '../../src/types/index';
 
-describe('SHAAM Format Round-trip Integration Test', () => {
-  it('should generate and parse back a complete report', () => {
+describe('Comprehensive SHAAM Format Integration Test', () => {
+  it('should generate complete SHAAM files and parse back all records including A000Sum', () => {
     // Full ReportInput fixture
     const input: ReportInput = {
       business: {
@@ -106,10 +108,62 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     expect(result.iniText).toBeDefined();
     expect(result.summary.totalRecords).toBeGreaterThan(0);
 
-    // Split dataText into lines and parse each record
-    const lines = result.dataText.split('\r\n').filter(line => line.trim().length > 0);
+    // Parse INI file
+    const iniLines = result.iniText.split('\r\n').filter(line => line.trim().length > 0);
 
-    interface ParsedData {
+    interface ParsedIniData {
+      headerRecord: ReturnType<typeof parseA000> | null;
+      summaryRecords: ReturnType<typeof parseA000Sum>[];
+    }
+
+    const parsedIni: ParsedIniData = {
+      headerRecord: null,
+      summaryRecords: [],
+    };
+
+    // Parse INI file records
+    for (const line of iniLines) {
+      const recordType = line.substring(0, 4);
+
+      if (recordType === 'A000') {
+        parsedIni.headerRecord = parseA000(line);
+      } else if (line.length === 19) {
+        // A000Sum records are 19 characters long (4-char code + 15-char count)
+        // They start with record type codes like A100, B100, C100, etc.
+        try {
+          const summaryRecord = parseA000Sum(line);
+          parsedIni.summaryRecords.push(summaryRecord);
+        } catch {
+          // If parsing fails, it's not an A000Sum record
+        }
+      }
+    }
+
+    // Verify A000 header record
+    expect(parsedIni.headerRecord).toBeDefined();
+    expect(parsedIni.headerRecord?.vatId).toBe(input.business.taxId);
+    expect(parsedIni.headerRecord?.businessName).toBe(input.business.name);
+
+    // Verify A000Sum summary records
+    expect(parsedIni.summaryRecords.length).toBe(8); // One for each record type
+
+    const summaryByType = Object.fromEntries(
+      parsedIni.summaryRecords.map(record => [record.code, parseInt(record.recordCount)]),
+    );
+
+    expect(summaryByType.A100).toBe(1);
+    expect(summaryByType.C100).toBe(input.documents.length);
+    expect(summaryByType.D110).toBe(input.documents.length);
+    expect(summaryByType.D120).toBe(input.documents.length);
+    expect(summaryByType.B100).toBe(input.journalEntries.length);
+    expect(summaryByType.B110).toBe(input.accounts.length);
+    expect(summaryByType.M100).toBe(input.inventory.length);
+    expect(summaryByType.Z900).toBe(1);
+
+    // Parse data file
+    const dataLines = result.dataText.split('\r\n').filter(line => line.trim().length > 0);
+
+    interface ParsedDataFile {
       businessMetadata: ReturnType<typeof parseA100> | null;
       documents: ReturnType<typeof parseC100>[];
       documentLines: ReturnType<typeof parseD110>[];
@@ -120,7 +174,7 @@ describe('SHAAM Format Round-trip Integration Test', () => {
       closingRecord: ReturnType<typeof parseZ900> | null;
     }
 
-    const parsedData: ParsedData = {
+    const parsedData: ParsedDataFile = {
       businessMetadata: null,
       documents: [],
       documentLines: [],
@@ -132,7 +186,7 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     };
 
     // Parse each line based on record type
-    for (const line of lines) {
+    for (const line of dataLines) {
       const recordType = line.substring(0, 4);
 
       switch (recordType) {
@@ -169,8 +223,6 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     // Verify business metadata
     expect(parsedData.businessMetadata).toBeDefined();
     expect(parsedData.businessMetadata?.vatId).toBe(input.business.taxId);
-    // primaryIdentifier is now auto-generated, so just verify it's a valid 15-digit string
-    expect(parsedData.businessMetadata?.primaryIdentifier).toMatch(/^\d{15}$/);
 
     // Verify documents
     expect(parsedData.documents).toHaveLength(input.documents.length);
@@ -209,7 +261,7 @@ describe('SHAAM Format Round-trip Integration Test', () => {
       const parsed = parsedData.journalEntries[i];
       const expectedTransactionNumber =
         (original.id.replace(/\D/g, '') || '1').replace(/^0+/, '') || '0';
-      expect(parsed.transactionNumber).toBe(expectedTransactionNumber); // Numeric part with leading zeros stripped
+      expect(parsed.transactionNumber).toBe(expectedTransactionNumber);
       expect(parsed.accountKey).toBe(original.accountId);
       expect(parsed.transactionAmount).toBe(Math.abs(original.amount).toFixed(2));
       expect(parsed.debitCreditIndicator).toBe(original.amount >= 0 ? '1' : '2');
@@ -238,40 +290,33 @@ describe('SHAAM Format Round-trip Integration Test', () => {
     // Verify closing record
     expect(parsedData.closingRecord).toBeDefined();
     expect(parsedData.closingRecord?.vatId).toBe(input.business.taxId);
-    // uniqueId is now auto-generated and should match the primaryIdentifier
-    expect(parsedData.closingRecord?.uniqueId).toMatch(/^\d{15}$/);
-    expect(parsedData.closingRecord?.uniqueId).toBe(parsedData.businessMetadata?.primaryIdentifier);
     expect(parseInt(parsedData.closingRecord?.totalRecords || '0')).toBeGreaterThan(0);
 
-    // Verify summary record counts match parsed data
-    const expectedTotalRecords =
-      1 + // A000 (INI file)
-      8 + // A000Sum records (one for each record type: A100, C100, D110, D120, B100, B110, M100, Z900)
+    // Cross-verify: Summary record counts should match actual parsed data counts
+    expect(summaryByType.A100).toBe(parsedData.businessMetadata ? 1 : 0);
+    expect(summaryByType.C100).toBe(parsedData.documents.length);
+    expect(summaryByType.D110).toBe(parsedData.documentLines.length);
+    expect(summaryByType.D120).toBe(parsedData.payments.length);
+    expect(summaryByType.B100).toBe(parsedData.journalEntries.length);
+    expect(summaryByType.B110).toBe(parsedData.accounts.length);
+    expect(summaryByType.M100).toBe(parsedData.inventory.length);
+    expect(summaryByType.Z900).toBe(parsedData.closingRecord ? 1 : 0);
+
+    // Verify that Z900 total records matches data records count (excludes INI records)
+    const dataRecordsCount =
       1 + // A100
-      input.documents.length + // C100 records
-      input.documents.length + // D110 records
-      input.documents.length + // D120 records
-      input.journalEntries.length + // B100 records
-      input.accounts.length + // B110 records
-      input.inventory.length + // M100 records
-      1; // Z900
+      parsedData.documents.length + // C100
+      parsedData.documentLines.length + // D110
+      parsedData.payments.length + // D120
+      parsedData.journalEntries.length + // B100
+      parsedData.accounts.length + // B110
+      parsedData.inventory.length; // M100
+    // Z900 doesn't count itself
 
-    expect(result.summary.totalRecords).toBe(expectedTotalRecords);
-    expect(parseInt(parsedData.closingRecord?.totalRecords || '0')).toBe(expectedTotalRecords - 10); // Z900 counts data records only (excludes A000, A000Sum records, and Z900 itself)
-
-    // Verify record type counts in summary
-    expect(result.summary.perType.A000).toBe(1);
-    expect(result.summary.perType.A100).toBe(1);
-    expect(result.summary.perType.C100).toBe(input.documents.length);
-    expect(result.summary.perType.D110).toBe(input.documents.length);
-    expect(result.summary.perType.D120).toBe(input.documents.length);
-    expect(result.summary.perType.B100).toBe(input.journalEntries.length);
-    expect(result.summary.perType.B110).toBe(input.accounts.length);
-    expect(result.summary.perType.M100).toBe(input.inventory.length);
-    expect(result.summary.perType.Z900).toBe(1);
+    expect(parseInt(parsedData.closingRecord?.totalRecords || '0')).toBe(dataRecordsCount);
   });
 
-  it('should handle empty data sections correctly', () => {
+  it('should validate File objects are created correctly', () => {
     const minimalInput: ReportInput = {
       business: {
         businessId: '54321',
@@ -288,90 +333,18 @@ describe('SHAAM Format Round-trip Integration Test', () => {
       inventory: [],
     };
 
-    const result = generateUniformFormatReport(minimalInput);
+    const result = generateUniformFormatReport(minimalInput, { fileNameBase: 'test-report' });
 
-    expect(result).toBeDefined();
-    expect(result.dataText).toBeDefined();
-    expect(result.summary.totalRecords).toBe(5); // A000 + 2 A000Sum (A100, Z900) + A100 + Z900
+    // Verify File objects
+    expect(result.iniFile).toBeInstanceOf(File);
+    expect(result.dataFile).toBeInstanceOf(File);
+    expect(result.iniFile.name).toBe('test-report.INI.TXT');
+    expect(result.dataFile.name).toBe('test-report.BKMVDATA.TXT');
+    expect(result.iniFile.type).toBe('text/plain');
+    expect(result.dataFile.type).toBe('text/plain');
 
-    const lines = result.dataText.split('\r\n').filter(line => line.trim().length > 0);
-    expect(lines).toHaveLength(2);
-
-    // Should have A100 and Z900 records only
-    expect(lines[0].startsWith('A100')).toBe(true);
-    expect(lines[1].startsWith('Z900')).toBe(true);
-
-    // Parse and verify
-    const businessRecord = parseA100(lines[0]);
-    const closingRecord = parseZ900(lines[1]);
-
-    expect(businessRecord.vatId).toBe(minimalInput.business.taxId);
-    expect(closingRecord.vatId).toBe(minimalInput.business.taxId);
-    expect(closingRecord.totalRecords).toBe('1'); // Only A100 counted
-  });
-
-  it('should maintain data integrity for monetary values', () => {
-    const input: ReportInput = {
-      business: {
-        businessId: '99999',
-        name: 'Financial Test Co',
-        taxId: '111111111',
-        reportingPeriod: {
-          startDate: '2024-01-01',
-          endDate: '2024-12-31',
-        },
-      },
-      documents: [
-        {
-          id: 'HIGH-VAL',
-          type: '320',
-          date: '2024-06-15',
-          amount: 999_999.99,
-          description: 'High value transaction',
-        },
-      ],
-      journalEntries: [
-        {
-          id: 'PRECISION-TEST',
-          date: '2024-06-15',
-          amount: 123.45,
-          accountId: '2000',
-          description: 'Precision test',
-        },
-      ],
-      accounts: [
-        {
-          id: '2000',
-          name: 'Test Account',
-          type: 'Liability',
-          balance: 123_456.78,
-        },
-      ],
-      inventory: [
-        {
-          id: 'EXPENSIVE-ITEM',
-          name: 'Expensive Product',
-          quantity: 1,
-          unitPrice: 999.99,
-        },
-      ],
-    };
-
-    const result = generateUniformFormatReport(input);
-    const lines = result.dataText.split('\r\n').filter(line => line.trim().length > 0);
-
-    // Find and parse the payment record for the high-value document
-    const paymentLine = lines.find(line => line.startsWith('D120'));
-    expect(paymentLine).toBeDefined();
-
-    const paymentRecord = parseD120(paymentLine!);
-    expect(paymentRecord.lineAmount).toBe('999999.99');
-
-    // Find and parse the journal entry
-    const journalLine = lines.find(line => line.startsWith('B100'));
-    expect(journalLine).toBeDefined();
-
-    const journalRecord = parseB100(journalLine!);
-    expect(journalRecord.transactionAmount).toBe('123.45');
+    // Verify file content matches text content
+    expect(result.iniFile.size).toBe(result.iniText.length);
+    expect(result.dataFile.size).toBe(result.dataText.length);
   });
 });

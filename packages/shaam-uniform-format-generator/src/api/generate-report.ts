@@ -4,6 +4,7 @@
 
 import {
   encodeA000,
+  encodeA000Sum,
   encodeA100,
   encodeB100,
   encodeB110,
@@ -13,6 +14,7 @@ import {
   encodeM100,
   encodeZ900,
   type A000Input,
+  type A000Sum as A000SumInput,
   type A100Input,
   type Z900Input,
 } from '../generator/records/index.js';
@@ -102,6 +104,30 @@ export function generateUniformFormatReport(
   };
   addIniRecord('A000', encodeA000(fileHeaderRecord));
 
+  // Add A000Sum records for each record type to INI.TXT
+  // Calculate expected counts based on input data
+  const expectedCounts = {
+    A100: 1,
+    C100: input.documents.length,
+    D110: input.documents.length,
+    D120: input.documents.length,
+    B100: input.journalEntries.length,
+    B110: input.accounts.length,
+    M100: input.inventory.length,
+    Z900: 1,
+  };
+
+  // Add summary records for each record type
+  for (const [recordType, count] of Object.entries(expectedCounts)) {
+    if (count > 0) {
+      const summaryRecord: A000SumInput = {
+        code: recordType,
+        recordCount: count.toString(),
+      };
+      addIniRecord('A000Sum', encodeA000Sum(summaryRecord));
+    }
+  }
+
   // 1. Business metadata - A100 record
   const businessMetadata: A100Input = {
     recordNumber: recordNumber.toString(),
@@ -163,7 +189,7 @@ export function generateUniformFormatReport(
       documentType: document.type,
       documentNumber: document.id,
       lineNumber: '1',
-      baseDocumentType: '',
+      baseDocumentType: '' as const,
       baseDocumentNumber: '',
       transactionType: '',
       internalCatalogCode: '',
@@ -228,9 +254,9 @@ export function generateUniformFormatReport(
       batchNumber: '',
       transactionType: '',
       referenceDocument: '',
-      referenceDocumentType: '',
+      referenceDocumentType: '' as const,
       referenceDocument2: '',
-      referenceDocumentType2: '',
+      referenceDocumentType2: '' as const,
       details: entry.description || '',
       date: entry.date.replace(/-/g, ''),
       valueDate: entry.date.replace(/-/g, ''), // Same as date for simplicity
