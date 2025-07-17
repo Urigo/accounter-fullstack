@@ -3,6 +3,7 @@
  */
 
 export * from './a000.js';
+export * from './a000-sum.js';
 export * from './a100.js';
 export * from './b100.js';
 export * from './b110.js';
