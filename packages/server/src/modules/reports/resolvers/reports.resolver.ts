@@ -1,11 +1,19 @@
+import { generateUniformFormatReport } from '@accounter/shaam-uniform-format-generator';
+import { AdminBusinessesProvider } from '@modules/financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   dateToTimelessDateString,
   formatFinancialAmount,
   formatFinancialIntAmount,
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
+import {
+  accountsFromFinancialEntities,
+  businessMetadataFromAdminBusiness,
+  journalEntriesFromLedgerRecords,
+} from '../helpers/uniform-format.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
 import {
@@ -28,6 +36,52 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
+    uniformFormat: async (_, { fromDate, toDate }, { injector, adminContext }) => {
+      // get all ledger records
+      const ledgerRecordsPromise = injector.get(LedgerProvider).getLedgerRecordsByDates({
+        ownerId: adminContext.defaultAdminBusinessId,
+        fromDate,
+        toDate,
+      });
+
+      // get all relevant businesses
+      const financialEntitiesPromise = injector
+        .get(FinancialEntitiesProvider)
+        .getAllFinancialEntities();
+
+      // get admin business info
+      const adminBusinessPromise = injector
+        .get(AdminBusinessesProvider)
+        .getAdminBusinessByIdLoader.load(adminContext.defaultAdminBusinessId);
+
+      const [ledgerRecords, financialEntities, adminBusiness] = await Promise.all([
+        ledgerRecordsPromise,
+        financialEntitiesPromise,
+        adminBusinessPromise,
+      ]);
+
+      if (!adminBusiness) {
+        throw new Error('Admin business not found');
+      }
+
+      // generate files
+      const report = generateUniformFormatReport(
+        {
+          journalEntries: journalEntriesFromLedgerRecords(ledgerRecords),
+          accounts: accountsFromFinancialEntities(financialEntities),
+          business: businessMetadataFromAdminBusiness(adminBusiness),
+          documents: [],
+          inventory: [],
+        },
+        { fileNameBase: '', validationMode: 'collect-all' },
+      );
+
+      // return files as a response
+      return {
+        ini: report.iniText,
+        bkmvdata: report.dataText,
+      };
+    },
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,

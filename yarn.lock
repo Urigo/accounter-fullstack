@@ -292,6 +292,7 @@ __metadata:
   dependencies:
     "@accounter/green-invoice-graphql": "workspace:^"
     "@accounter/pcn874-generator": "workspace:^"
+    "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
     "@ai-sdk/anthropic": "npm:1.2.12"
     "@envelop/generic-auth": "npm:10.0.0"
@@ -330,7 +331,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator":
+"@accounter/shaam-uniform-format-generator@workspace:^, @accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator":
   version: 0.0.0-use.local
   resolution: "@accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator"
   dependencies:
