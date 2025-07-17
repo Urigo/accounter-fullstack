@@ -130,15 +130,15 @@ etc.
 
 [x] Implement `src/utils/file-helpers.ts` [x] `createFile(text: string, name: string): File`
 
-[ ] Document public API usage in `README.md`
+[x] Document public API usage in `README.md`
 
-[ ] Configure CI (Vitest + lint) with GitHub Actions
+[x] Configure CI (Vitest + lint) with GitHub Actions
 
 ---
 
 ## Phase 9: Documentation & Release
 
-[ ] Finalize `README.md` with examples [ ] Bump version to `0.1.0` [ ] Publish to npm [ ] Tag
+[x] Finalize `README.md` with examples [x] Bump version to `0.1.0` [x] Publish to npm [ ] Tag
 `v0.1.0` in Git
 
 ---

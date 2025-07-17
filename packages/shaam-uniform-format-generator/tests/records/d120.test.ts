@@ -141,6 +141,7 @@ describe('D120 Record', () => {
     it('should trim field values correctly', () => {
       // Create a line with padded values according to CSV spec format
       const paddedLine =
+        // eslint-disable-next-line no-implicit-coercion
         'D120' + // code (4)
         '000000042' + // recordNumber (9) - zero-padded numeric
         '000000123' + // vatId (9) - zero-padded numeric

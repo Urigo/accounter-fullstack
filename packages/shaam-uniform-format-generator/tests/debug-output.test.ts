@@ -59,20 +59,20 @@ describe('Debug SHAAM Format Output', () => {
     console.log('INI Text:');
     console.log(result.iniText);
     console.log('\n=== INI LINES BREAKDOWN ===');
-    result.iniText.split('\r\n').forEach((line, i) => {
+    for (const [i, line] of result.iniText.split('\r\n').entries()) {
       if (line.trim()) {
         console.log(`Line ${i + 1}: ${line.substring(0, 4)} - ${line}`);
       }
-    });
+    }
 
     console.log('\nData Text:');
     console.log(result.dataText);
     console.log('\n=== DATA LINES BREAKDOWN ===');
-    result.dataText.split('\r\n').forEach((line, i) => {
+    for (const [i, line] of result.dataText.split('\r\n').entries()) {
       if (line.trim()) {
         console.log(`Line ${i + 1}: ${line.substring(0, 4)} - ${line}`);
       }
-    });
+    }
 
     console.log('\nSummary:', result.summary);
 
