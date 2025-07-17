@@ -10,6 +10,7 @@ export * from './generator/index.js';
 export * from './parser/index.js';
 export * from './validation/index.js';
 export * from './generator/records/index.js';
+export * from './utils/index.js';
 export * from './constants.js';
 
 // Main API

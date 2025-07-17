@@ -3,47 +3,11 @@
  */
 
 import { z } from 'zod';
+// Import DocumentTypeEnum from enums for backward compatibility
+import { DocumentTypeEnum } from './enums.js';
 
-// Document Type Enum for SHAAM format
-export const DocumentTypeEnum = z.enum([
-  '100', // הזמנה
-  '200', // תעודת משלוח
-  '210', // תעודת החזרה
-  '300', // חשבונית / חשבונית עסקה
-  '305', // חשבונית מס
-  '320', // חשבונית מס קבלה
-  '325', // תעודת זיכוי
-  '330', // חשבונית מס זיכוי
-  '340', // קבלה
-  '400', // תעודת חיוב
-  '410', // תעודת זיכוי כללי
-  '420', // תעודת העברה
-  '430', // מסמך רכש
-  '500', // חשבון ספק
-  '600', // קבלה מרוכזת
-  '700', // חיוב/זיכוי כרטיס אשראי
-  '710', // קבלה - כרטיס אשראי
-]);
-
-export const DocumentTypeLabels: Record<z.infer<typeof DocumentTypeEnum>, string> = {
-  '100': 'הזמנה',
-  '200': 'תעודת משלוח',
-  '210': 'תעודת החזרה',
-  '300': 'חשבונית / חשבונית עסקה',
-  '305': 'חשבונית מס',
-  '320': 'חשבונית מס קבלה',
-  '325': 'תעודת זיכוי',
-  '330': 'חשבונית מס זיכוי',
-  '340': 'קבלה',
-  '400': 'תעודת חיוב',
-  '410': 'תעודת זיכוי כללי',
-  '420': 'תעודת העברה',
-  '430': 'מסמך רכש',
-  '500': 'חשבון ספק',
-  '600': 'קבלה מרוכזת',
-  '700': 'חיוב/זיכוי כרטיס אשראי',
-  '710': 'קבלה - כרטיס אשראי',
-};
+// Re-export all enums and types from enums.ts
+export * from './enums.js';
 
 // Business metadata schema
 export const BusinessMetadataSchema = z.object({
