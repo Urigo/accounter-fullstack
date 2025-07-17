@@ -21,7 +21,7 @@ import { FragmentType, isFragmentReady } from '../../gql/index.js';
 import { BusinessTripSummarizedReport, RegenerateLedgerRecordsButton } from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
-import { LedgerTable } from '../ledger-table/index.js';
+import { LedgerTableContainer } from '../ledger-table/index.js';
 import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
@@ -401,7 +401,7 @@ export function ChargeExtendedInfo({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  {ledgerRecordsAreReady && <LedgerTable ledgerFragment={charge} />}
+                  {ledgerRecordsAreReady && <LedgerTableContainer ledgerFragment={charge} />}
                 </Accordion.Panel>
               </Accordion.Item>
             )}
