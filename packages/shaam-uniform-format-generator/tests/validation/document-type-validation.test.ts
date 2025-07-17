@@ -28,6 +28,8 @@ describe('Document Type Field Validation', () => {
     '710',
   ];
 
+  const invalidDocumentTypesRegexValues = ['abc', '99999', 'X01', '12X'];
+
   // Invalid document types for testing
   const invalidDocumentTypes = [
     '001',
@@ -219,10 +221,7 @@ describe('Document Type Field Validation', () => {
     });
 
     test('should reject invalid base document types', () => {
-      // Only test with values that would fail the regex first
-      const invalidValues = ['abc', '99999', 'X01', '12X'];
-
-      for (const docType of invalidValues) {
+      for (const docType of invalidDocumentTypesRegexValues) {
         const testRecord = { ...baseD110, baseDocumentType: docType };
         expect(
           () => D110Schema.parse(testRecord),
@@ -329,10 +328,7 @@ describe('Document Type Field Validation', () => {
     });
 
     test('should reject invalid reference document types', () => {
-      // Only test with values that would fail the regex first
-      const invalidValues = ['abc', '99999', 'X01', '12X'];
-
-      for (const docType of invalidValues) {
+      for (const docType of invalidDocumentTypesRegexValues) {
         const testRecord = { ...baseB100, referenceDocumentType: docType };
         expect(
           () => B100Schema.parse(testRecord),
@@ -389,10 +385,7 @@ describe('Document Type Field Validation', () => {
     });
 
     test('should reject invalid reference document types 2', () => {
-      // Only test with values that would fail the regex first
-      const invalidValues = ['abc', '99999', 'X01', '12X'];
-
-      for (const docType of invalidValues) {
+      for (const docType of invalidDocumentTypesRegexValues) {
         const testRecord = { ...baseB100, referenceDocumentType2: docType };
         expect(
           () => B100Schema.parse(testRecord),

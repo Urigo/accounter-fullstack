@@ -1,7 +1,7 @@
 # 📘 Project Specification: SHAAM Uniform Format Generator & Parser
 
-**Name (suggested):** `@your-org/shaam-ufgen` **Version:** 0.1.0 **Target environment:** Node.js +
-TypeScript **Tech stack:**
+**Name (suggested):** @accounter/shaam-uniform-format-generator` **Version:** 0.1.0 **Target
+environment:** Node.js + TypeScript **Tech stack:**
 
 - **TypeScript** (strict mode)
 - **Zod** for validation
