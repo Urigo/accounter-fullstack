@@ -1,0 +1,37 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1000,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,A000
+1001,לשימוש עתידי,Alphanumeric,Reserved for Future Use,5,X(5),Required,
+1002,סך רשומות בקובץ BKMVDATA,Numeric,Total Records in BKMVDATA,15,9(15),Required,"Must match field 1155 in Z900"
+1003,מספר עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1004,מזהה ראשי,Numeric,Primary Identifier,15,9(15),Required,"Fixed and unique per file, see Note 2"
+1005,קבוע מערכת,Alphanumeric,System Constant,8,X(8),Required,"Value: &OF1.31&"
+1006,מספר רישום התוכנה,Numeric,Software Registration Number,8,9(8),Required,
+1007,שם התוכנה,Alphanumeric,Software Name,20,X(20),Required,
+1008,מהדורת התוכנה,Alphanumeric,Software Version,20,X(20),Required,
+1009,מספר ע"מ של יצרן התוכנה,Numeric,Vendor Tax ID,9,9(9),Required,
+1010,שם יצרן התוכנה,Alphanumeric,Vendor Name,20,X(20),Required,
+1011,סוג התוכנה,Numeric,Software Type,1,9(1),Required,"1 = Single-year, 2 = Multi-year"
+1012,נתיב מיקום שמירת הקבצים,Alphanumeric,File Output Path,50,X(50),Required,
+1013,סוג הנה"ח של התוכנה,Numeric,Accounting Type,1,9(1),Required,"0 = N/A, 1 = Single-entry, 2 = Double-entry"
+1014,איזון חשבונאי נדרש,Numeric,Balance Required Flag,1,9(1),Required,"Conditional; required in double-entry"
+1015,מספר חברה ברשם החברות,Numeric,Company Registrar ID,9,9(9),Optional,
+1016,מספר תיק ניכויים,Numeric,Withholding File Number,9,9(9),Optional,
+1017,שטח נתונים עתידי,Alphanumeric,Reserved Field,10,X(10),Optional,
+1018,שם העסק,Alphanumeric,Business Name,50,X(50),Required,
+1019,מען העסק - רחוב,Alphanumeric,Business Address - Street,50,X(50),Optional,
+1020,מען העסק - מס בית,Alphanumeric,Business Address - House Number,10,X(10),Optional,
+1021,מען העסק - עיר,Alphanumeric,Business Address - City,30,X(30),Optional,
+1022,מען העסק - מיקוד,Alphanumeric,Business Address - ZIP,8,X(8),Optional,
+1023,שנת המס,Numeric,Tax Year,4,9(4),Conditional,"Required if software type is single-year"
+1024,טווח תאריך התחלה/חיתוך,Numeric,Start/Cutoff Date,8,9(8),Conditional,"Required if software type is multi-year (YYYYMMDD)"
+1025,טווח תאריך סיום/חיתוך,Numeric,End/Cutoff Date,8,9(8),Conditional,"Required if software type is multi-year (YYYYMMDD)"
+1026,תאריך תחילת התהליך,Numeric,Process Start Date,8,9(8),Required,"Format: YYYYMMDD"
+1027,שעת תחילת התהליך,Numeric,Process Start Time,4,9(4),Required,"Format: HHMM"
+1028,קוד שפה,Numeric,Language Code,1,9(1),Required,"0 = Hebrew, 1 = Arabic, 2 = Other"
+1029,סט תווים,Numeric,Character Encoding,1,9(1),Required,"1 = ISO-8859-8-i, 2 = CP-862"
+1030,שם תוכנת הכיווץ,Alphanumeric,Compression Software Name,20,X(20),Optional,
+1031,שטח נתונים עתידי,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1032,מטבע מוביל,Alphanumeric,Base Currency Code,3,X(3),Optional,"Default: ILS"
+1033,שטח נתונים עתידי,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1034,מידע על סניפים/ענפים,Numeric,Branch Info Flag,1,9(1),Required,"0 = No branches; 1 = Has branches; see Note 3"
+1035,שטח נתונים עתידי,Alphanumeric,Reserved Field,46,X(46),Optional,

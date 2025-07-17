@@ -1,0 +1,27 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1250,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,D110
+1251,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1252,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1253,סוג המסמך,Numeric,Document Type,3,9(3),Required,"See Appendix 1"
+1254,מספר המסמך,Alphanumeric,Document Number,20,X(20),Required,
+1255,מספר שורה במסמך,Numeric,Line Number,4,9(4),Required,
+1256,סוג מסמך בסיס,Numeric,Base Document Type,3,9(3),Conditional,"Required if based on another document; see Note 6"
+1257,מספר מסמך בסיס,Alphanumeric,Base Document Number,20,X(20),Conditional,"Required if based on another document; see Note 6"
+1258,סוג עסקה,Numeric,Transaction Type,1,9(1),Optional,"1-Service; 2-Goods; 3-Service & Goods"
+1259,מק"ט פנימי,Alphanumeric,Internal Catalog Code,20,X(20),Optional,
+1260,תיאור טובין/שירות,Alphanumeric,Goods/Service Description,30,X(30),Required,
+1261,שם היצרן,Alphanumeric,Manufacturer Name,50,X(50),Optional,"Relevant for goods listed in Appendix G"
+1262,מספר סידורי של המוצר,Alphanumeric,Serial Number,30,X(30),Optional,"Relevant for goods listed in Appendix G"
+1263,תיאור יחידת מידה,Alphanumeric,Unit of Measure Description,20,X(20),Optional,"Use descriptive name or write 'יחידה'"
+1264,כמות,Alphanumeric,Quantity,17,X9(12)V9999,Required,
+1265,מחיר ליחידה ללא מע"מ,Alphanumeric,Unit Price (excl. VAT),15,X9(12)V99,Optional,"In NIS"
+1266,הנחת שורה,Alphanumeric,Line Discount,15,X9(12)V99,Optional,"In NIS; see Note 5"
+1267,סך סכום לשורה,Alphanumeric,Line Total,15,X9(12)V99,Optional,"Quantity * unit price - discount"
+1268,שיעור המע"מ בשורה,Numeric,VAT Rate %,4,V99(2),Optional,
+1269,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1270,מזהה סניף/ענף,Alphanumeric,Branch ID,7,X(7),Required,"If field 1034 = 1, see Note 3"
+1271,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1272,תאריך המסמך,Numeric,Document Date,8,9(8),Required,"Format YYYYMMDD, see Note 12"
+1273,שדה מקשר לכותרת,Numeric,Header Link Field,7,9(7),Optional,"Link to C100; see Note 11"
+1274,מזהה סניף/ענף למסמך בסיס,Alphanumeric,Base Document Branch ID,7,X(7),Optional,"If field 1034 = 1; see Notes 3 & 6"
+1275,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,21,X(21),Optional,

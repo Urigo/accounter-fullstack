@@ -1,0 +1,76 @@
+{
+  "name": "@accounter/shaam-uniform-format-generator",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "Fully typed application that generates, parses, and validates SHAAM uniform format tax reports (INI.TXT and BKMVDATA.TXT).",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "directory": "packages/shaam-uniform-format-generator"
+  },
+  "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam-uniform-format-generator#readme",
+  "bugs": {
+    "url": "https://github.com/urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^20.0.0 || >= 22"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "dist/typings/index.d.ts",
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "shaam",
+    "uniform-format",
+    "accountancy",
+    "accountant",
+    "accounter",
+    "tax-reports",
+    "ini",
+    "bkmvdata"
+  ],
+  "scripts": {
+    "build": "yarn lint && bob build",
+    "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
+    "prepublish": "yarn build",
+    "start": "node ./dist/esm/index.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "iconv-lite": "0.6.3",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "bob-the-bundler": "7.0.1",
+    "eslint": "9.31.0",
+    "vitest": "3.2.4"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

@@ -1,0 +1,259 @@
+## 🏗️ Phase 0: Project Kick‑Off
+
+**Goal:** Establish repo, tooling, and baseline structure.
+
+1. **Initialize repository**
+2. **Configure TS, Zod, Vite + Vitest**
+3. **Define `ReportInput` & `ReportOutput` types**
+4. **Smoke‑test** a “hello world” generator stub
+
+---
+
+## 🚧 Phase 1: Core API & Orchestrator
+
+**Goal:** Wire up the top‑level function without real logic.
+
+1. **Create `index.ts`**
+2. **Export `generateUniformFormatReport(input, opts)`**
+3. **Return a hard‑coded dummy `ReportOutput`**
+4. **Add a Vitest test** that calls the function and asserts the shape
+
+---
+
+## 🛠️ Phase 2: Validation Pipeline
+
+**Goal:** Plug in Zod schemas for `ReportInput`.
+
+1. **Scaffold `types/input-schema.ts`** with empty Zod shapes
+2. **Implement basic Zod validation** in `validateInput.ts`
+3. **Hook validation into the orchestrator**
+4. **Write tests** for success and failure modes (`fail‑fast` / `collect‑all`)
+
+---
+
+## 📔 Phase 3: Record Modules & Encoding
+
+**Goal:** Build one record module (`A100`) end‑to‑end (schema, encoder, decoder, test).
+
+1. **Scaffold `records/A100.ts`**
+2. **Define Zod schema & TS type for `A100`**
+3. **Write `encodeA100()`** using fixed‑width helpers
+4. **Write `parseA100()`** to reverse it
+5. **Vitest round‑trip tests** (JSON → line → JSON)
+
+---
+
+## 📦 Phase 4: File Assembly
+
+**Goal:** Assemble encoded records into `iniText` + `dataText`, hook into orchestrator.
+
+1. **Create `format/encoder.ts` helpers** (pad, newline)
+2. **In orchestrator**, import and call `encodeA100`, gather into `iniText`
+3. **Write a test** that checks the stubbed `A100` appears in `iniText`
+4. **Repeat for `Z900` summary record**
+
+---
+
+## 🔄 Phase 5: Remaining Records
+
+**Goal:** Implement each remaining record (`C100`, `D110`, `D120`, `B100`, `B110`, `M100`), one at a time.
+
+For each record type:
+
+1. Scaffold `records/XXX.ts`
+2. Define schema + encoder + parser
+3. Add round‑trip tests
+
+Order suggestion:
+
+1. `C100` + `D110` (documents)
+2. `D120` (payments)
+3. `B100` (journal lines)
+4. `B110` (accounts)
+5. `M100` (inventory)
+
+---
+
+## ✅ Phase 6: End‑to‑End Integration
+
+1. **Wire all encoders** into `generateUniformFormatReport`
+2. **Build full `iniText` and `dataText`** from real sample input
+3. **Parse those texts back** via decoders, validate semantic equality
+4. **Write comprehensive integration tests**
+
+---
+
+## 🎯 Phase 7: DX & Polishing
+
+1. **Export enums** from `types/enums.ts`
+2. **Add `File`‑object creators** in `utils/fileHelpers.ts`
+3. **Document public API** with JSDoc / README snippets
+4. **Add CI** (Vitest + lint) guard
+
+---
+
+## 🪜 Micro‑Iterations
+
+Below each chunk is broken into bite‑sized steps:
+
+### Phase 1 → Chunk 1.1: Repo & Tooling
+
+1. `git init && npm init -y`
+2. Install deps: `typescript`, `zod`, `vite`, `vitest`
+3. Add `tsconfig.json` (strict)
+4. Add `vitest.config.ts`
+
+### Phase 1 → Chunk 1.2: Stub API
+
+1. Create `src/index.ts` with empty `generateUniformFormatReport`
+2. Export types in `src/types/` (empty interfaces)
+3. Add Vitest test in `tests/index.spec.ts` asserting the function returns a JS object
+4. Run `vitest --run` and confirm it fails/passes
+
+*(…and so on for each phase)*
+
+---
+
+## 🤖 LLM‑Prompt Series
+
+Use these as sequential prompts to your code LLM:
+
+---
+
+### Prompt 1: Repo & Tooling
+
+```text
+You are about to scaffold a new TypeScript library. 
+- Initialize a Git repo and npm package. 
+- Install and configure TypeScript (strict mode), Zod, Vite, and Vitest.
+- Provide the `package.json` dependencies/devDependencies,
+- Create `tsconfig.json` (strict), and
+- Create a minimal `vitest.config.ts`.
+Also include a README stub describing the project.
+```
+
+---
+
+### Prompt 2: Top‑Level API Stub
+
+````text
+In `src/index.ts`, implement a stubbed function:
+
+```ts
+export function generateUniformFormatReport(
+  input: ReportInput,
+  options?: { validationMode?: 'fail-fast' | 'collect-all' }
+): ReportOutput {
+  return {
+    iniText: '',
+    dataText: '',
+    iniFile: new File([], 'INI.TXT'),
+    dataFile: new File([], 'BKMVDATA.TXT'),
+    summary: { totalRecords: 0, perType: {} }
+  };
+}
+````
+
+Also define `ReportInput` and `ReportOutput` interfaces (empty bodies) in `src/types/input-schema.ts`.
+Write a Vitest test that imports and calls this function, then asserts that the returned object matches the `ReportOutput` shape.
+
+````
+
+---
+
+### Prompt 3: Input Validation
+
+```text
+Create a Zod schema for `ReportInput` in `src/types/input-schema.ts`:
+
+```ts
+import { z } from 'zod';
+
+export const BusinessMetadataSchema = z.object({ /* stub fields */ });
+export const ReportInputSchema = z.object({
+  business: BusinessMetadataSchema,
+  documents: z.array(z.any()),
+  journalEntries: z.array(z.any()),
+  accounts: z.array(z.any()),
+  inventory: z.array(z.any())
+});
+export type ReportInput = z.infer<typeof ReportInputSchema>;
+````
+
+Implement `validateInput(input, mode)` in `src/validation/validateInput.ts`, which either throws on first error or returns a list of errors.
+Hook this into `generateUniformFormatReport` before any further processing.
+Write Vitest tests for both `fail-fast` and `collect-all` modes with invalid sample input.
+
+````
+
+---
+
+### Prompt 4: Fixed‑Width Helpers
+
+```text
+In `src/format/padding.ts`, implement:
+
+- `padLeft(value: string, width: number, fill: string): string`
+- `padRight(value: string, width: number, fill: string): string`
+
+In `src/format/newline.ts`, export `CRLF = '\r\n'`.
+
+Also in `src/format/encoder.ts`, create a helper:
+
+```ts
+export function formatField(
+  value: string, width: number, align: 'left' | 'right', padChar: string
+): string { ... }
+````
+
+Add unit tests for each helper function (various widths and values).
+
+````
+
+---
+
+### Prompt 5: Record Module Example (A100)
+
+```text
+Scaffold `src/records/A100.ts`:
+
+1. Define a Zod schema `A100Schema` matching fields 1100–1105 (code, recordNumber, vatId, uniqueId, systemCode, reserved).
+2. Export `type A100 = z.infer<typeof A100Schema>`.
+3. Implement `encodeA100(input: A100): string` that:
+   - Uses `formatField` and `CRLF`
+   - Returns a full fixed‑width line.
+4. Implement `parseA100(line: string): A100` that:
+   - Slices the string at the correct offsets
+   - Parses and returns the object.
+5. Add Vitest tests:
+   - Round‑trip: `parseA100(encodeA100(obj))` deep‑equals `obj`
+   - Error: feeding an invalid line (wrong length) throws.
+````
+
+---
+
+*(Repeat analogous prompts for C100, D110, …)*
+
+---
+
+### Prompt N: Full Assembly & Integration
+
+```text
+In `src/index.ts`, after `validateInput`, import and call each `encodeXXX` in order:
+
+1. `encodeA100(businessMetadata)`
+2. Summaries…
+3. For each `document` in `input.documents`, call `encodeC100`, then for each line `encodeD110`, then payments `encodeD120`.
+4. Journal lines: for each `entry` and its `lines`, call `encodeB100`.
+5. Accounts: `encodeB110`.
+6. Inventory: `encodeM100`.
+7. Closing record: `encodeZ900`.
+
+Concatenate these with `CRLF` to build `iniText` and `dataText`.  
+Create `File` objects with the correct filenames.  
+Write a Vitest integration test that:
+- Starts from a full `ReportInput` fixture
+- Generates `iniText` + `dataText`
+- Parses them back with all `parseXXX` functions
+- Compares the parsed JSON to the original normalized semantic input.
+```

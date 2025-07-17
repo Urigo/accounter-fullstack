@@ -1,0 +1,26 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1300,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,D120
+1301,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1302,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1303,סוג מסמך,Numeric,Document Type,3,9(3),Required,"See Appendix 1, Note 1"
+1304,מספר מסמך,Alphanumeric,Document Number,20,X(20),Required,
+1305,מספר שורה במסמך,Numeric,Line Number,4,9(4),Required,
+1306,סוג אמצעי התשלום,Numeric,Payment Method,1,9(1),Required,"1-Cash, 2-Check, 3-Credit card, 4-Bank transfer, 5-Voucher, 6-Exchange slip, 7-Promissory note, 8-Standing order, 9-Other"
+1307,מספר הבנק,Numeric,Bank Number,10,9(10),Conditional,"Check only"
+1308,מספר הסניף,Numeric,Branch Number,10,9(10),Conditional,"Check only"
+1309,מספר חשבון,Numeric,Account Number,15,9(15),Conditional,"Check only"
+1310,מספר המחאה,Numeric,Check Number,10,9(10),Conditional,"Check only"
+1311,תאריך פירעון,Numeric,Payment Due Date,8,9(8),Optional,"Check or credit card only, format YYYYMMDD"
+1312,סכום השורה,Alphanumeric,Line Amount,15,X9(12)V99,Required,
+1313,קוד החברה הסולקת,Numeric,Acquirer Code,1,9(1),Optional,"1-Isracard, 2-Cal, 3-Diners, 4-Amex, 6-Leumi Card"
+1314,שם הכרטיס הנסלק,Alphanumeric,Card Brand,20,X(20),Optional,
+1315,סוג עסקת אשראי,Numeric,Credit Transaction Type,1,9(1),Optional,"1-Regular, 2-Installments, 3-Credit, 4-Deferred, 5-Other"
+1316,סכום התשלום הראשון,Alphanumeric,First Payment Amount,0,X(0),Deprecated,
+1317,מספר תשלומים,Alphanumeric,Installments Count,0,X(0),Deprecated,
+1318,סכום כל תשלום נוסף,Alphanumeric,Additional Payment Amount,0,X(0),Deprecated,
+1319,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1320,מזהה סניף/ענף,Alphanumeric,Branch ID,7,X(7),Required,"Required if field 1034 = 1, see Note 3"
+1321,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1322,תאריך המסמך,Numeric,Document Date,8,9(8),Required,"Format: YYYYMMDD, see Note 12"
+1323,שדה מקשר לכותרת,Numeric,Header Link Field,7,9(7),Optional,"For linking to C100, see Note 11"
+1324,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,60,X(60),Optional,

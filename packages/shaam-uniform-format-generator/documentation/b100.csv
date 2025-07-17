@@ -1,0 +1,29 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1350,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,B100
+1351,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1352,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1353,מספר תנועה,Numeric,Transaction Number,10,9(10),Required,"See Note 7"
+1354,מספר שורה בתנועה,Numeric,Transaction Line Number,5,9(5),Required,
+1355,מנה,Numeric,Batch Number,8,9(8),Optional,
+1356,סוג תנועה,Alphanumeric,Transaction Type,15,X(15),Optional,
+1357,אסמכתא,Alphanumeric,Reference Document,20,X(20),Optional,
+1358,סוג מסמך האסמכתא,Numeric,Reference Document Type,3,9(3),Optional,"See Appendix 1"
+1359,אסמכתא 2,Alphanumeric,Reference Document 2,20,X(20),Optional,
+1360,סוג מסמך האסמכתא 2,Numeric,Reference Document Type 2,3,9(3),Optional,"See Appendix 1"
+1361,פרטים,Alphanumeric,Details,50,X(50),Optional,
+1362,תאריך,Numeric,Date,8,9(8),Required,"Format: YYYYMMDD, see Note 12"
+1363,תאריך ערך,Numeric,Value Date,8,9(8),Required,"Format: YYYYMMDD, see Note 12"
+1364,חשבון בתנועה,Alphanumeric,Account Key,15,X(15),Required,"Must match B110"
+1365,חשבון נגדי,Alphanumeric,Counter Account Key,15,X(15),Optional,"Required in single-entry bookkeeping"
+1366,סימן פעולה,Numeric,Debit/Credit Indicator,1,9(1),Required,"1 = Debit, 2 = Credit"
+1367,קוד מטבע,Alphanumeric,Currency Code,3,X(3),Optional,"Refers to field 1369; see Appendix 2"
+1368,סכום הפעולה,Alphanumeric,Transaction Amount (Local Currency),15,X9(12)V99,Required,
+1369,סכום במט"ח,Alphanumeric,Transaction Amount (Foreign Currency),15,X9(12)V99,Optional,
+1370,שדה כמות,Alphanumeric,Quantity Field,12,X9(9)V99,Optional,"E.g. quantity or cost code"
+1371,שדה התאמה 1,Alphanumeric,Matching Field 1,10,X(10),Optional,"Used for internal row reconciliation"
+1372,שדה התאמה 2,Alphanumeric,Matching Field 2,10,X(10),Optional,"Used for inter-card or external reconciliation"
+1373,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1374,מזהה סניף/ענף,Alphanumeric,Branch ID,7,X(7),Conditional,"If field 1034 = 1; see Note 3"
+1375,תאריך הזנה,Numeric,Entry Date,8,9(8),Required,"Format: YYYYMMDD, see Note 12"
+1376,מבצע פעולה,Alphanumeric,Operator Username,9,X(9),Optional,
+1377,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,25,X(25),Optional,

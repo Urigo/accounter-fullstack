@@ -1,0 +1,15 @@
+node_modules/
+dist/
+/.bob
+.DS_Store
+*.log
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+coverage/
+.nyc_output/
+.vscode/
+.idea/
+*.tgz

@@ -1,0 +1,3 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1050,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,"Depends on the record type being summarized"
+1051,סך רשומות,Numeric,Record Count,15,9(15),Required,"Total number of records of the given type in BKMVDATA.TXT"

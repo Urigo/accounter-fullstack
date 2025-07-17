@@ -1,0 +1,8 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1150,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,Z900
+1151,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1152,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1153,מזהה ראשי,Numeric,Primary Identifier,15,9(15),Required,"Same as field 1004 in INI.TXT; see Note 2"
+1154,קבוע מערכת,Alphanumeric,System Constant,8,X(8),Required,"Value: &OF1.31&"
+1155,סך רשומות כולל בקובץ,Numeric,Total Records in File,15,9(15),Required,"Includes opening and closing records"
+1156,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,50,X(50),Optional,
