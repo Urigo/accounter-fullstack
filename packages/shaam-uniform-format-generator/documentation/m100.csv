@@ -1,0 +1,17 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1450,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,M100
+1451,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1452,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1453,מק"ט פריט אוניברסלי,Alphanumeric,Universal Item Code,20,X(20),Optional,
+1454,מק"ט ספק/יצרן,Alphanumeric,Supplier/Manufacturer Item Code,20,X(20),Optional,"Used in purchase documents"
+1455,מק"ט פנימי,Alphanumeric,Internal Item Code,20,X(20),Required,"Must be unique"
+1456,שם פריט,Alphanumeric,Item Name,50,X(50),Required,
+1457,קוד מיון,Alphanumeric,Classification Code,10,X(10),Optional,
+1458,תיאור קוד מיון,Alphanumeric,Classification Description,30,X(30),Optional,
+1459,תיאור יחידת מידה,Alphanumeric,Unit of Measure Description,20,X(20),Optional,"Use descriptive term (e.g. liter, gram) or 'יחידה'"
+1460,יתרת פתיחה,Alphanumeric,Opening Stock Quantity,12,X9(9)V99,Required,"Quantity at the beginning of the period (all warehouses)"
+1461,סה"כ כניסות,Alphanumeric,Total Stock In,12,X9(9)V99,Required,"Excluding opening balance"
+1462,סה"כ יציאות,Alphanumeric,Total Stock Out,12,X9(9)V99,Required,"Excluding opening balance"
+1463,מחיר עלות לסוף תקופה - מחוץ למחסני ערובה,Numeric,End-of-Period Cost (non-bonded),8,V99(8),Optional,"In NIS; see Note 9"
+1464,מחיר עלות לסוף תקופה - במחסני ערובה,Numeric,End-of-Period Cost (bonded),8,V99(8),Optional,"In NIS; see Note 10"
+1465,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,50,X(50),Optional,

@@ -1,0 +1,7 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1100,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,A100
+1101,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,"Sequential number in BKMVDATA file"
+1102,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1103,מזהה ראשי,Numeric,Primary Identifier,15,9(15),Required,"Fixed and unique; see Note 2"
+1104,קבוע מערכת,Alphanumeric,System Constant,8,X(8),Required,"Value: &OF1.31&"
+1105,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,50,X(50),Optional,

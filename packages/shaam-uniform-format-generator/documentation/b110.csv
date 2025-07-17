@@ -1,0 +1,26 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1400,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,B110
+1401,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1402,מס עוסק מורשה,Numeric,Tax ID,9,9(9),Required,
+1403,מפתח החשבון,Alphanumeric,Account Key,15,X(15),Required,"Must be unique"
+1404,שם החשבון,Alphanumeric,Account Name,50,X(50),Required,
+1405,קוד מאזן בוחן,Alphanumeric,Trial Balance Code,15,X(15),Required,
+1406,תיאור קוד מאזן בוחן,Alphanumeric,Trial Balance Code Description,30,X(30),Required,
+1407,מען לקוח/ספק - רחוב,Alphanumeric,Customer/Supplier Address - Street,50,X(50),Optional,"Only for customer/supplier accounts"
+1408,מען לקוח/ספק - מס' בית,Alphanumeric,Customer/Supplier Address - House Number,10,X(10),Optional,"Only for customer/supplier accounts"
+1409,מען לקוח/ספק - עיר,Alphanumeric,Customer/Supplier Address - City,30,X(30),Optional,"Only for customer/supplier accounts"
+1410,מען לקוח/ספק - מיקוד,Alphanumeric,Customer/Supplier Address - ZIP,8,X(8),Optional,"Only for customer/supplier accounts"
+1411,מען לקוח/ספק - מדינה,Alphanumeric,Customer/Supplier Address - Country,30,X(30),Optional,"Only for customer/supplier accounts"
+1412,קוד מדינה,Alphanumeric,Country Code,2,X(2),Optional,"Only for customer/supplier accounts, see Appendix 3"
+1413,חשבון מרכז,Alphanumeric,Parent Account Key,15,X(15),Optional,
+1414,יתרת החשבון בתחילת החתך,Alphanumeric,Account Opening Balance,15,X9(12)V99,Optional,"Positive = debit, Negative = credit"
+1415,סה"כ חובה,Alphanumeric,Total Debits,15,X9(12)V99,Optional,"Excludes opening balance"
+1416,סה"כ זכות,Alphanumeric,Total Credits,15,X9(12)V99,Optional,"Excludes opening balance"
+1417,קוד בסיווג החשבונאי,Numeric,Accounting Classification Code,4,9(4),Conditional,"Mandatory if 6111 report required"
+1418,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1419,מספר עוסק של ספק/לקוח,Numeric,Supplier/Customer Tax ID,9,9(9),Conditional,"Required if double-entry bookkeeping (code 2 in field 1013)"
+1420,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,0,X(0),Deprecated,
+1421,מזהה סניף/ענף,Alphanumeric,Branch ID,7,X(7),Conditional,"Required if field 1034 = 1, see Note 3"
+1422,יתרת חשבון בתחילת חתך במט"ח,Alphanumeric,Opening Balance in Foreign Currency,15,X9(12)V99,Optional,
+1423,קוד מטבע יתרת פתיחה במט"ח,Alphanumeric,Foreign Currency Code,3,X(3),Optional,"Refers to field 1422, see Appendix 2"
+1424,שטח לנתונים עתידיים,Alphanumeric,Reserved Field,16,X(16),Optional,

@@ -1,0 +1,37 @@
+Field Number,Field Name,Field Type,Description,Length,Technical Description,Requirement,Notes
+1200,קוד רשומה,Alphanumeric,Record Code,4,X(4),Required,C100
+1201,מס רשומה בקובץ,Numeric,Record Number in File,9,9(9),Required,
+1202,מס עוסק מורשה,Numeric,VAT ID,9,9(9),Required,
+1203,סוג המסמך,Numeric,Document Type,3,9(3),Required,"See Appendix 1"
+1204,מספר המסמך,Alphanumeric,Document Number,20,X(20),Required,
+1205,תאריך הוצאת המסמך,Numeric,Document Issue Date,8,9(8),Required,"Format YYYYMMDD"
+1206,שעת הוצאת המסמך,Numeric,Document Issue Time,4,9(4),Optional,"Format HHMM (24h)"
+1207,שם לקוח/ספק,Alphanumeric,Customer/Supplier Name,50,X(50),Optional,
+1208,רחוב לקוח/ספק,Alphanumeric,Customer/Supplier Street,50,X(50),Optional,
+1209,מספר בית לקוח/ספק,Alphanumeric,Customer/Supplier House Number,10,X(10),Optional,
+1210,עיר לקוח/ספק,Alphanumeric,Customer/Supplier City,30,X(30),Optional,
+1211,מיקוד לקוח/ספק,Alphanumeric,Customer/Supplier Post Code,8,X(8),Optional,
+1212,מדינה לקוח/ספק,Alphanumeric,Customer/Supplier Country,30,X(30),Optional,
+1213,קוד מדינה לקוח/ספק,Alphanumeric,Customer/Supplier Country Code,2,X(2),Optional,
+1214,טלפון לקוח/ספק,Alphanumeric,Customer/Supplier Phone,15,X(15),Optional,
+1215,מס עוסק לקוח/ספק,Numeric,Customer/Supplier VAT ID,9,9(9),Optional,
+1216,תאריך ערך המסמך,Numeric,Document Value Date,8,9(8),Optional,"Format YYYYMMDD"
+1217,סכום סופי במטבע זר,Alphanumeric,Foreign Currency Final Amount,15,X9(12)V99,Optional,
+1218,קוד מטבע,Alphanumeric,Currency Code,3,X(3),Optional,
+1219,סכום המסמך לפני הנחה,Alphanumeric,Amount Before Discount,15,X9(12)V99,Optional,
+1220,הנחת המסמך,Alphanumeric,Document Discount,15,X9(12)V99,Optional,
+1221,סכום המסמך אחרי הנחה ללא מעמ,Alphanumeric,Amount After Discount Excluding VAT,15,X9(12)V99,Optional,
+1222,סכום מעמ,Alphanumeric,VAT Amount,15,X9(12)V99,Optional,
+1223,סכום המסמך כולל מעמ,Alphanumeric,Amount Including VAT,15,X9(12)V99,Optional,
+1224,סכום מס במקור,Alphanumeric,Withholding Tax Amount,12,X9(9)V99,Optional,
+1225,מפתח לקוח אצל מוכר או מפתח ספק אצל קונה,Alphanumeric,Customer Key at Seller or Provider Key at Buyer,15,X(15),Optional,
+1226,שדה התאמה,Alphanumeric,Matching Field,10,X(10),Optional,
+1227,תכונה מבוטלת,Alphanumeric,Cancelled Attribute,8,X(8),Deprecated,
+1228,מסמך מבוטל,Alphanumeric,Cancelled Document,1,X(1),Optional,
+1229,תכונה מבוטלת,Alphanumeric,Cancelled Attribute,8,X(8),Deprecated,
+1230,תאריך המסמך,Numeric,Document Date,7,9(7),Optional,
+1231,מזהה סניף/ענף,Alphanumeric,Branch ID,8,X(8),Optional,
+1232,תכונה מבוטלת,Alphanumeric,Cancelled Attribute,1,X(1),Deprecated,
+1233,מבצע הפעולה,Alphanumeric,Action Executor,13,X(13),Optional,
+1234,שדה מקשר לשורה,Alphanumeric,Line Connecting Field,0,X(0),Optional,"Unused in C100"
+1235,שטח שמור,Alphanumeric,Reserved Field,0,X(0),Optional,"Unused in C100"

@@ -205,8 +205,11 @@ export const FileNaming = {
    * Extracts base filename from a SHAAM file
    */
   extractBaseName: (fileName: string): string => {
-    const match = fileName.match(/^(.+)\.(INI|BKMVDATA)\.TXT$/i);
-    return match ? match[1] : 'report';
+    if (!fileName || !FileNaming.isValidShaamFileName(fileName)) {
+      return 'report';
+    }
+    const name = fileName.replace(/\.(INI|BKMVDATA)\.TXT$/i, '');
+    return name || 'report';
   },
 
   /**
