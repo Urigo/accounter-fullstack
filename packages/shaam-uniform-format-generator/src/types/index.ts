@@ -14,6 +14,14 @@ export const BusinessMetadataSchema = z.object({
   businessId: z.string().min(1, 'Business ID is required'),
   name: z.string().min(1, 'Business name is required'),
   taxId: z.string().min(1, 'Tax ID is required'),
+  address: z
+    .object({
+      street: z.string().optional(),
+      houseNumber: z.string().optional(),
+      city: z.string().optional(),
+      zip: z.string().optional(),
+    })
+    .optional(),
   reportingPeriod: z.object({
     startDate: z.string().min(1, 'Start date is required'),
     endDate: z.string().min(1, 'End date is required'),
