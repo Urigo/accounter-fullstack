@@ -133,6 +133,7 @@ export default [
               'ReportCommentarySubRecord',
               'TransactionSuggestions',
               'UncategorizedTransaction',
+              'UniformFormat',
               'UpdateChargeSuccessfulResult',
               'UserContext',
               'VatReportResult',
