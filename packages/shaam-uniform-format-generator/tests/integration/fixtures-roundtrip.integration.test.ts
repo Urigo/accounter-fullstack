@@ -334,7 +334,7 @@ describe('Fixture Files Round-trip Integration Test', () => {
 
     for (const line of lines) {
       if (line.length < 4) continue;
-      
+
       const cleanLine = line.replace(/\r?\n?$/, '').replace(/\r$/, '');
 
       // Check line length to determine record type
@@ -371,7 +371,7 @@ describe('Fixture Files Round-trip Integration Test', () => {
 
     // Validate that we parsed summary records
     expect(a000SumRecords.length).toBeGreaterThan(0);
-    
+
     // Verify that we have summary records for different record types
     const summarizedRecordTypes = a000SumRecords.map(record => record.code);
     // Use actual record types found in the INI file instead of hardcoded expectations
@@ -397,8 +397,10 @@ describe('Fixture Files Round-trip Integration Test', () => {
       expect(generatedReport.iniText).toBeDefined();
 
       // Parse the generated INI content
-      const generatedIniLines = generatedReport.iniText.split('\r\n').filter(line => line.trim().length > 0);
-      
+      const generatedIniLines = generatedReport.iniText
+        .split('\r\n')
+        .filter(line => line.trim().length > 0);
+
       // Validate structure of generated INI
       expect(generatedIniLines.length).toBeGreaterThan(0);
       expect(generatedIniLines[0].startsWith('A000')).toBe(true);
@@ -406,18 +408,20 @@ describe('Fixture Files Round-trip Integration Test', () => {
       // Parse the generated A000 record
       const generatedA000Line = generatedIniLines.find(line => line.startsWith('A000'));
       expect(generatedA000Line).toBeDefined();
-      
+
       const generatedA000 = parseA000(generatedA000Line!);
       expect(generatedA000.vatId).toBe(parsedData.business.taxId);
-      
-      // The generated file may have fewer records than the original fixture 
+
+      // The generated file may have fewer records than the original fixture
       // since we're only using the parsed business data structure
       // Just validate that the structure is correct
       const generatedTotalRecords = parseInt(generatedA000.totalRecords);
       expect(generatedTotalRecords).toBeGreaterThanOrEqual(0);
 
       // Validate that generated INI has summary records (they are 19 chars, not matched by record code pattern)
-      const generatedSummaryLines = generatedIniLines.filter(line => line.replace(/\r?\n$/, '').length === 19);
+      const generatedSummaryLines = generatedIniLines.filter(
+        line => line.replace(/\r?\n$/, '').length === 19,
+      );
       expect(generatedSummaryLines.length).toBeGreaterThanOrEqual(0);
 
       // Parse generated summary records and validate they have counts > 0
