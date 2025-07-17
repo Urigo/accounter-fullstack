@@ -85,11 +85,11 @@ export function generateUniformFormatReport(
     withholdingFileNum: '',
     reserved1017: '',
     businessName: input.business.name,
-    businessStreet: '',
-    businessHouseNum: '',
-    businessCity: '',
-    businessZip: '',
-    taxYear: '',
+    businessStreet: input.business.address?.street ?? '',
+    businessHouseNum: input.business.address?.houseNumber ?? '',
+    businessCity: input.business.address?.city ?? '',
+    businessZip: input.business.address?.zip ?? '',
+    taxYear: input.business.reportingPeriod.endDate.slice(0, 4), // YYYY format
     startDate: input.business.reportingPeriod.startDate.replace(/-/g, ''),
     endDate: input.business.reportingPeriod.endDate.replace(/-/g, ''),
     processStartDate: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
@@ -252,9 +252,9 @@ export function generateUniformFormatReport(
       vatId: input.business.taxId,
       transactionNumber: entry.id.replace(/\D/g, '') || '1', // Extract only digits, default to '1'
       transactionLineNumber: '1',
-      batchNumber: '',
-      transactionType: '',
-      referenceDocument: '',
+      batchNumber: entry.batchNumber || '',
+      transactionType: entry.transactionType || '',
+      referenceDocument: entry.referenceDocument || '',
       referenceDocumentType: '' as const,
       referenceDocument2: '',
       referenceDocumentType2: '' as const,
@@ -264,9 +264,11 @@ export function generateUniformFormatReport(
       accountKey: entry.accountId,
       counterAccountKey: '',
       debitCreditIndicator: (entry.amount >= 0 ? '1' : '2') as '1' | '2',
-      currencyCode: '',
+      currencyCode: entry.currencyCode || '',
       transactionAmount: Math.abs(entry.amount).toFixed(2), // Format as decimal with 2 places
-      foreignCurrencyAmount: '',
+      foreignCurrencyAmount: entry.foreignCurrencyAmount
+        ? Math.abs(entry.foreignCurrencyAmount).toFixed(2)
+        : '',
       quantityField: '',
       matchingField1: '',
       matchingField2: '',
