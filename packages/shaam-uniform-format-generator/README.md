@@ -190,6 +190,15 @@ interface Account {
   name: string
   type: string // Account type code
   balance: number
+  // Extended fields for B110 records (all optional)
+  countryCode?: string // ISO country code
+  accountOpeningBalance?: number // Opening balance amount
+  totalDebits?: number // Total debit transactions
+  totalCredits?: number // Total credit transactions
+  accountingClassificationCode?: string // Classification code (max 4 digits)
+  branchId?: string // Branch identifier
+  openingBalanceForeignCurrency?: number // Opening balance in foreign currency
+  foreignCurrencyCode?: string // Foreign currency code (e.g., "USD", "EUR")
 }
 ```
 
@@ -318,13 +327,21 @@ const reportData: ReportInput = {
       id: '4000',
       name: 'Consulting Revenue',
       type: '4', // Revenue account
-      balance: 2000.0
+      balance: 2000.0,
+      accountOpeningBalance: 0.0,
+      totalDebits: 500.0,
+      totalCredits: 2500.0,
+      accountingClassificationCode: '0001'
     },
     {
       id: '1200',
       name: 'Accounts Receivable',
       type: '1', // Asset account
-      balance: 1500.0
+      balance: 1500.0,
+      countryCode: 'IL',
+      branchId: 'MAIN',
+      foreignCurrencyCode: 'USD',
+      openingBalanceForeignCurrency: 1250.0
     }
   ],
   inventory: [

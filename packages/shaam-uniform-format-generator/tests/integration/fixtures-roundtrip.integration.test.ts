@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generateUniformFormatReport } from '../../src/api/generate-report';
+import { formatMonetaryAmount, parseMonetaryAmount } from '../../src/generator/format/monetary';
 import {
   parseA000,
   parseA000Sum,
@@ -120,9 +121,14 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
           result.rawRecords.b110.push(b110);
           result.accounts.push({
             id: b110.accountKey,
-            name: b110.accountName,
-            type: b110.trialBalanceCode || 'Other',
-            balance: parseFloat(b110.accountOpeningBalance || '0'),
+            name: b110.accountName || '',
+            sortCode: {
+              key: b110.trialBalanceCode || 'Other',
+              name: b110.trialBalanceCodeDescription || 'Other',
+            },
+            balance: b110.accountOpeningBalance
+              ? parseMonetaryAmount(formatMonetaryAmount(b110.accountOpeningBalance))
+              : 0,
           });
           break;
         }
@@ -168,7 +174,10 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
           // Skip unknown record types
           break;
       }
-    } catch {
+    } catch (error) {
+      // For debugging, log the line that caused the parsing error.
+      // eslint-disable-next-line no-console
+      console.error(`Failed to parse line: ${cleanLine}`, error);
       // Skip parsing errors for invalid lines
     }
   }

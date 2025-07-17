@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
 import { formatField, formatNumericField } from '../format/encoder.js';
+import {
+  formatMonetaryAmount,
+  formatOptionalMonetaryAmount,
+  parseMonetaryAmount,
+} from '../format/monetary.js';
 
 /**
  * B110 Record Schema - Account record
@@ -21,65 +26,68 @@ export const B110Schema = z.object({
   // Field 1403: Account key (15) - Required - Alphanumeric
   accountKey: z.string().min(1).max(15).describe('Account key - must be unique'),
   // Field 1404: Account name (50) - Required - Alphanumeric
-  accountName: z.string().min(1).max(50).describe('Account name'),
+  accountName: z.string().max(50).optional().describe('Account name'),
   // Field 1405: Trial balance code (15) - Required - Alphanumeric
   trialBalanceCode: z.string().min(1).max(15).describe('Trial balance code'),
-  // Field 1406: Trial balance code description (30) - Required - Alphanumeric
-  trialBalanceCodeDescription: z.string().min(1).max(30).describe('Trial balance code description'),
+  // Field 1406: Trial balance code description (30) - Optional - Alphanumeric
+  trialBalanceCodeDescription: z
+    .string()
+    .max(30)
+    .optional()
+    .describe('Trial balance code description'),
   // Field 1407: Customer/Supplier address - street (50) - Optional - Alphanumeric
   customerSupplierAddressStreet: z
     .string()
     .max(50)
-    .default('')
+    .optional()
     .describe('Customer/Supplier address - street (only for customer/supplier accounts)'),
   // Field 1408: Customer/Supplier address - house number (10) - Optional - Alphanumeric
   customerSupplierAddressHouseNumber: z
     .string()
     .max(10)
-    .default('')
+    .optional()
     .describe('Customer/Supplier address - house number (only for customer/supplier accounts)'),
   // Field 1409: Customer/Supplier address - city (30) - Optional - Alphanumeric
   customerSupplierAddressCity: z
     .string()
     .max(30)
-    .default('')
+    .optional()
     .describe('Customer/Supplier address - city (only for customer/supplier accounts)'),
   // Field 1410: Customer/Supplier address - ZIP (8) - Optional - Alphanumeric
   customerSupplierAddressZip: z
     .string()
     .max(8)
-    .default('')
+    .optional()
     .describe('Customer/Supplier address - ZIP (only for customer/supplier accounts)'),
   // Field 1411: Customer/Supplier address - country (30) - Optional - Alphanumeric
   customerSupplierAddressCountry: z
     .string()
     .max(30)
-    .default('')
+    .optional()
     .describe('Customer/Supplier address - country (only for customer/supplier accounts)'),
   // Field 1412: Country code (2) - Optional - Alphanumeric
   countryCode: z
     .string()
     .max(2)
-    .default('')
+    .optional()
     .describe('Country code (only for customer/supplier accounts, see Appendix 3)'),
   // Field 1413: Parent account key (15) - Optional - Alphanumeric
-  parentAccountKey: z.string().max(15).default('').describe('Parent account key'),
-  // Field 1414: Account opening balance (15) - Optional - Alphanumeric - Format: X9(12)V99
+  parentAccountKey: z.string().max(15).optional().describe('Parent account key'),
+  // Field 1414: Account opening balance (15) - Optional - Numeric - Format: X9(12)V99
   accountOpeningBalance: z
-    .string()
-    .max(15)
-    .default('')
+    .number()
+    .optional()
     .describe('Account opening balance (positive = debit, negative = credit)'),
-  // Field 1415: Total debits (15) - Optional - Alphanumeric - Format: X9(12)V99
-  totalDebits: z.string().max(15).default('').describe('Total debits (excludes opening balance)'),
-  // Field 1416: Total credits (15) - Optional - Alphanumeric - Format: X9(12)V99
-  totalCredits: z.string().max(15).default('').describe('Total credits (excludes opening balance)'),
+  // Field 1415: Total debits (15) - Optional - Numeric - Format: X9(12)V99
+  totalDebits: z.number().optional().describe('Total debits (excludes opening balance)'),
+  // Field 1416: Total credits (15) - Optional - Numeric - Format: X9(12)V99
+  totalCredits: z.number().optional().describe('Total credits (excludes opening balance)'),
   // Field 1417: Accounting classification code (4) - Conditional - Numeric
   accountingClassificationCode: z
     .string()
     .max(4)
     .regex(/^$|^\d+$/)
-    .default('')
+    .optional()
     .describe('Accounting classification code (mandatory if 6111 report required)'),
   // Field 1418: Reserved field (0) - Deprecated - Alphanumeric - Skipped as it has 0 length
   // Field 1419: Supplier/Customer tax ID (9) - Conditional - Numeric
@@ -87,7 +95,7 @@ export const B110Schema = z.object({
     .string()
     .max(9)
     .regex(/^$|^\d+$/)
-    .default('')
+    .optional()
     .describe(
       'Supplier/Customer tax ID (required if double-entry bookkeeping, code 2 in field 1013)',
     ),
@@ -96,22 +104,21 @@ export const B110Schema = z.object({
   branchId: z
     .string()
     .max(7)
-    .default('')
+    .optional()
     .describe('Branch ID (required if field 1034 = 1, see Note 3)'),
-  // Field 1422: Opening balance in foreign currency (15) - Optional - Alphanumeric - Format: X9(12)V99
+  // Field 1422: Opening balance in foreign currency (15) - Optional - Numeric - Format: X9(12)V99
   openingBalanceForeignCurrency: z
-    .string()
-    .max(15)
-    .default('')
+    .number()
+    .optional()
     .describe('Opening balance in foreign currency'),
   // Field 1423: Foreign currency code (3) - Optional - Alphanumeric
   foreignCurrencyCode: z
     .string()
     .max(3)
-    .default('')
+    .optional()
     .describe('Foreign currency code (refers to field 1422, see Appendix 2)'),
   // Field 1424: Reserved field (16) - Optional - Alphanumeric
-  reserved: z.string().max(16).default('').describe('Reserved field for future use'),
+  reserved: z.string().max(16).optional().describe('Reserved field for future use'),
 });
 
 export type B110 = z.infer<typeof B110Schema>;
@@ -126,27 +133,27 @@ export function encodeB110(input: B110): string {
     formatNumericField(input.recordNumber, 9), // Field 1401: Record number (9)
     formatNumericField(input.vatId, 9), // Field 1402: VAT ID (9)
     formatField(input.accountKey, 15, 'left'), // Field 1403: Account key (15)
-    formatField(input.accountName, 50, 'left'), // Field 1404: Account name (50)
+    formatField(input.accountName ?? '', 50, 'left'), // Field 1404: Account name (50)
     formatField(input.trialBalanceCode, 15, 'left'), // Field 1405: Trial balance code (15)
-    formatField(input.trialBalanceCodeDescription, 30, 'left'), // Field 1406: Trial balance code description (30)
-    formatField(input.customerSupplierAddressStreet, 50, 'left'), // Field 1407: Customer/Supplier address - street (50)
-    formatField(input.customerSupplierAddressHouseNumber, 10, 'left'), // Field 1408: Customer/Supplier address - house number (10)
-    formatField(input.customerSupplierAddressCity, 30, 'left'), // Field 1409: Customer/Supplier address - city (30)
-    formatField(input.customerSupplierAddressZip, 8, 'left'), // Field 1410: Customer/Supplier address - ZIP (8)
-    formatField(input.customerSupplierAddressCountry, 30, 'left'), // Field 1411: Customer/Supplier address - country (30)
-    formatField(input.countryCode, 2, 'left'), // Field 1412: Country code (2)
-    formatField(input.parentAccountKey, 15, 'left'), // Field 1413: Parent account key (15)
-    formatField(input.accountOpeningBalance, 15, 'right'), // Field 1414: Account opening balance (15) - right-aligned for amount
-    formatField(input.totalDebits, 15, 'right'), // Field 1415: Total debits (15) - right-aligned for amount
-    formatField(input.totalCredits, 15, 'right'), // Field 1416: Total credits (15) - right-aligned for amount
-    formatNumericField(input.accountingClassificationCode, 4), // Field 1417: Accounting classification code (4)
+    formatField(input.trialBalanceCodeDescription ?? '', 30, 'left'), // Field 1406: Trial balance code description (30)
+    formatField(input.customerSupplierAddressStreet ?? '', 50, 'left'), // Field 1407: Customer/Supplier address - street (50)
+    formatField(input.customerSupplierAddressHouseNumber ?? '', 10, 'left'), // Field 1408: Customer/Supplier address - house number (10)
+    formatField(input.customerSupplierAddressCity ?? '', 30, 'left'), // Field 1409: Customer/Supplier address - city (30)
+    formatField(input.customerSupplierAddressZip ?? '', 8, 'left'), // Field 1410: Customer/Supplier address - ZIP (8)
+    formatField(input.customerSupplierAddressCountry ?? '', 30, 'left'), // Field 1411: Customer/Supplier address - country (30)
+    formatField(input.countryCode ?? '', 2, 'left'), // Field 1412: Country code (2)
+    formatField(input.parentAccountKey ?? '', 15, 'left'), // Field 1413: Parent account key (15)
+    formatOptionalMonetaryAmount(input.accountOpeningBalance) || formatMonetaryAmount(0), // Field 1414: Account opening balance (15)
+    formatOptionalMonetaryAmount(input.totalDebits) || formatMonetaryAmount(0), // Field 1415: Total debits (15)
+    formatOptionalMonetaryAmount(input.totalCredits) || formatMonetaryAmount(0), // Field 1416: Total credits (15)
+    formatNumericField(input.accountingClassificationCode ?? '9999', 4), // Field 1417: Accounting classification code (4)
     // Field 1418: Reserved field (0) - skipped as it has 0 length
-    formatNumericField(input.supplierCustomerTaxId, 9), // Field 1419: Supplier/Customer tax ID (9)
+    formatNumericField(input.supplierCustomerTaxId ?? '', 9), // Field 1419: Supplier/Customer tax ID (9)
     // Field 1420: Reserved field (0) - skipped as it has 0 length
-    formatField(input.branchId, 7, 'left'), // Field 1421: Branch ID (7)
-    formatField(input.openingBalanceForeignCurrency, 15, 'right'), // Field 1422: Opening balance in foreign currency (15) - right-aligned for amount
-    formatField(input.foreignCurrencyCode, 3, 'left'), // Field 1423: Foreign currency code (3)
-    formatField(input.reserved, 16, 'left'), // Field 1424: Reserved field (16)
+    formatField(input.branchId ?? '0', 7, 'left'), // Field 1421: Branch ID (7)
+    formatOptionalMonetaryAmount(input.openingBalanceForeignCurrency) || formatMonetaryAmount(0), // Field 1422: Opening balance in foreign currency (15)
+    formatField(input.foreignCurrencyCode ?? 'USD', 3, 'left'), // Field 1423: Foreign currency code (3)
+    formatField(input.reserved ?? '', 16, 'left'), // Field 1424: Reserved field (16)
   ];
 
   return fields.join('') + CRLF;
@@ -202,11 +209,11 @@ export function parseB110(line: string): B110 {
   pos += 2;
   const parentAccountKey = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
-  const accountOpeningBalance = cleanLine.slice(pos, pos + 15).trim();
+  const accountOpeningBalance = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const totalDebits = cleanLine.slice(pos, pos + 15).trim();
+  const totalDebits = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const totalCredits = cleanLine.slice(pos, pos + 15).trim();
+  const totalCredits = cleanLine.slice(pos, pos + 15);
   pos += 15;
   const accountingClassificationCode =
     cleanLine
@@ -224,7 +231,7 @@ export function parseB110(line: string): B110 {
   // Field 1420: Reserved field (0) - skipped as it has 0 length
   const branchId = cleanLine.slice(pos, pos + 7).trim();
   pos += 7;
-  const openingBalanceForeignCurrency = cleanLine.slice(pos, pos + 15).trim();
+  const openingBalanceForeignCurrency = cleanLine.slice(pos, pos + 15);
   pos += 15;
   const foreignCurrencyCode = cleanLine.slice(pos, pos + 3).trim();
   pos += 3;
@@ -251,13 +258,17 @@ export function parseB110(line: string): B110 {
     customerSupplierAddressCountry,
     countryCode,
     parentAccountKey,
-    accountOpeningBalance,
-    totalDebits,
-    totalCredits,
+    accountOpeningBalance: accountOpeningBalance.trim()
+      ? parseMonetaryAmount(accountOpeningBalance)
+      : undefined,
+    totalDebits: totalDebits.trim() ? parseMonetaryAmount(totalDebits) : undefined,
+    totalCredits: totalCredits.trim() ? parseMonetaryAmount(totalCredits) : undefined,
     accountingClassificationCode,
     supplierCustomerTaxId,
     branchId,
-    openingBalanceForeignCurrency,
+    openingBalanceForeignCurrency: openingBalanceForeignCurrency.trim()
+      ? parseMonetaryAmount(openingBalanceForeignCurrency)
+      : undefined,
     foreignCurrencyCode,
     reserved,
   };

@@ -42,8 +42,31 @@ export const JournalEntrySchema = z.object({
 export const AccountSchema = z.object({
   id: z.string().min(1, 'Account ID is required'),
   name: z.string().min(1, 'Account name is required'),
-  type: z.string().min(1, 'Account type is required'),
+  sortCode: z.object({
+    key: z.string().min(1, 'Account sort code key is required'),
+    name: z.string().min(1, 'Account sort code name is required'),
+  }),
+  address: z
+    .object({
+      street: z.string().optional(),
+      houseNumber: z.string().optional(),
+      city: z.string().optional(),
+      zip: z.string().optional(),
+      country: z.string().optional(),
+    })
+    .optional(),
+  countryCode: z.string().optional(),
+  parentAccountKey: z.string().optional(),
+  vatId: z.string().optional(),
   balance: z.number(),
+  // Extended fields for B110 records (all optional)
+  accountOpeningBalance: z.number().optional(),
+  totalDebits: z.number().optional(),
+  totalCredits: z.number().optional(),
+  accountingClassificationCode: z.string().optional(),
+  branchId: z.string().optional(),
+  openingBalanceForeignCurrency: z.number().optional(),
+  foreignCurrencyCode: z.string().optional(),
 });
 
 // Inventory item schema
