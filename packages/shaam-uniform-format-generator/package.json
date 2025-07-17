@@ -21,20 +21,13 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/typings/index.d.cts",
-        "default": "./dist/cjs/index.js"
-      },
-      "import": {
-        "types": "./dist/typings/index.d.ts",
-        "default": "./dist/esm/index.js"
-      },
-      "default": {
-        "types": "./dist/typings/index.d.ts",
-        "default": "./dist/esm/index.js"
-      }
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "types": "dist/typings/index.d.ts",
   },
   "typings": "dist/typings/index.d.ts",
   "keywords": [
