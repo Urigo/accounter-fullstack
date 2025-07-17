@@ -77,7 +77,7 @@ alignments
 
 ## Phase 5: File Assembly (INI.TXT)
 
-[ ] Implement CRLF join logic in `src/format/encoder.ts`
+[x] Implement CRLF join logic in `src/format/encoder.ts`
 
 [ ] In `src/index.ts`, build `iniText` [ ] Call `encodeA100` [ ] Append summary records placeholder
 

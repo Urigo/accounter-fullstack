@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { CRLF } from '../../format/index.js';
-import { formatField, formatNumericField } from '../format/encoder.js';
+import { formatField, formatNumericField, joinFields } from '../format/encoder.js';
 
 /**
  * A000Sum Record Schema - Record count summary for INI.TXT
@@ -40,7 +39,7 @@ export function encodeA000Sum(input: A000SumInput): string {
     formatNumericField(fullRecord.recordCount, 15), // Field 1051: Record count (15)
   ];
 
-  return fields.join('') + CRLF;
+  return joinFields(fields);
 }
 
 /**

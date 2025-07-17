@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { SHAAM_VERSION } from '../../constants.js';
-import { CRLF } from '../../format/index.js';
 import { defaultKeyGenerator } from '../../utils/key-generator.js';
-import { formatField, formatNumericField } from '../index.js';
+import { formatField, formatNumericField, joinFields } from '../index.js';
 
 /**
  * A100 Record Schema - Business opening record
@@ -72,7 +71,7 @@ export function encodeA100(input: A100Input): string {
     formatField(fullRecord.reserved, 50, 'left'), // Field 1105: Reserved (50) - Alphanumeric
   ];
 
-  return fields.join('') + CRLF;
+  return joinFields(fields);
 }
 
 /**

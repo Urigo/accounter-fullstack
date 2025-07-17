@@ -2,6 +2,7 @@
  * Main API for generating SHAAM uniform format reports
  */
 
+import { assembleFile } from '../generator/format/encoder.js';
 import {
   encodeA000,
   encodeA000Sum,
@@ -339,9 +340,9 @@ export function generateUniformFormatReport(
   };
   addRecord('Z900', encodeZ900(closingRecord));
 
-  // Build iniText and dataText
-  const iniText = iniRecords.join('');
-  const dataText = records.join('');
+  // Build iniText and dataText using the assembler
+  const iniText = assembleFile(iniRecords);
+  const dataText = assembleFile(records);
 
   // Create virtual File objects
   const iniFile = new File([iniText], `${options.fileNameBase || 'report'}.INI.TXT`, {

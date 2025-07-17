@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { SHAAM_VERSION } from '../../constants.js';
-import { CRLF } from '../../format/index.js';
 import { defaultKeyGenerator } from '../../utils/key-generator.js';
-import { formatField, formatNumericField } from '../format/encoder.js';
+import { formatField, formatNumericField, joinFields } from '../format/encoder.js';
 
 /**
  * A000 Record Schema - INI.TXT file header record
@@ -188,7 +187,7 @@ export function encodeA000(input: A000Input): string {
     formatField(fullRecord.reserved1035, 46, 'left'), // Field 1035: Reserved (46)
   ];
 
-  return fields.join('') + CRLF;
+  return joinFields(fields);
 }
 
 /**
