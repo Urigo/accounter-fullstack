@@ -68,19 +68,28 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
         {
           id: '1100',
           name: 'Cash',
-          type: 'Asset',
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
           balance: 5000.0,
         },
         {
           id: '1200',
           name: 'Accounts Receivable',
-          type: 'Asset',
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
           balance: 3000.0,
         },
         {
           id: '4000',
           name: 'Sales Revenue',
-          type: 'Revenue',
+          sortCode: {
+            key: 'Revenue',
+            name: 'Revenue',
+          },
           balance: 8000.0,
         },
       ],
@@ -274,7 +283,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
       const parsed = parsedData.accounts[i];
       expect(parsed.accountKey).toBe(original.id);
       expect(parsed.accountName).toBe(original.name);
-      expect(parsed.trialBalanceCode).toBe(original.type);
+      expect(parsed.trialBalanceCode).toBe(original.sortCode.key);
     }
 
     // Verify inventory

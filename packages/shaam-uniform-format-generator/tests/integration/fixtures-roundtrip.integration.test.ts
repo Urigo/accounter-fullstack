@@ -121,7 +121,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
           result.rawRecords.b110.push(b110);
           result.accounts.push({
             id: b110.accountKey,
-            name: b110.accountName || '',
+            name: b110.accountName?.trim() || `Account ${b110.accountKey}`,
             sortCode: {
               key: b110.trialBalanceCode || 'Other',
               name: b110.trialBalanceCodeDescription || 'Other',
