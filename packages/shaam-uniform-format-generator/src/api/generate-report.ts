@@ -248,11 +248,11 @@ export function generateUniformFormatReport(
   for (const entry of input.journalEntries) {
     const journalRecord = {
       code: 'B100' as const,
-      recordNumber: recordNumber.toString(),
+      recordNumber,
       vatId: input.business.taxId,
-      transactionNumber: entry.id.replace(/\D/g, '') || '1', // Extract only digits, default to '1'
-      transactionLineNumber: '1',
-      batchNumber: '',
+      transactionNumber: parseInt(entry.id.replace(/\D/g, '') || '1', 10), // Extract only digits, default to 1
+      transactionLineNumber: 1,
+      batchNumber: undefined as number | undefined,
       transactionType: '',
       referenceDocument: '',
       referenceDocumentType: '' as const,
@@ -265,9 +265,9 @@ export function generateUniformFormatReport(
       counterAccountKey: '',
       debitCreditIndicator: (entry.amount >= 0 ? '1' : '2') as '1' | '2',
       currencyCode: '',
-      transactionAmount: Math.abs(entry.amount).toFixed(2), // Format as decimal with 2 places
-      foreignCurrencyAmount: '',
-      quantityField: '',
+      transactionAmount: Math.abs(entry.amount), // Use as number
+      foreignCurrencyAmount: undefined, // Optional field
+      quantityField: undefined, // Optional field
       matchingField1: '',
       matchingField2: '',
       branchId: '',
@@ -284,8 +284,8 @@ export function generateUniformFormatReport(
       code: 'B110' as const,
       recordNumber: recordNumber.toString(),
       vatId: input.business.taxId,
-      accountKey: account.name,
-      accountName: account.id ?? '',
+      accountKey: account.id,
+      accountName: account.name,
       trialBalanceCode: account.sortCode.key,
       trialBalanceCodeDescription: account.sortCode.name,
       customerSupplierAddressStreet: account.address?.street,

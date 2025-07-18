@@ -284,16 +284,16 @@ describe('Document Type Field Validation', () => {
   describe('Field 1358: B100 Reference Document Type Validation', () => {
     const baseB100: B100 = {
       code: 'B100',
-      recordNumber: '1',
+      recordNumber: 1,
       vatId: '123456789',
-      transactionNumber: '1234567890',
-      transactionLineNumber: '1',
-      batchNumber: '12345678',
+      transactionNumber: 1_234_567_890,
+      transactionLineNumber: 1,
+      batchNumber: 12_345_678,
       transactionType: 'Sale',
       referenceDocument: 'REF123',
       referenceDocumentType: '100', // Will be replaced in tests
       referenceDocument2: '',
-      referenceDocumentType2: '',
+      referenceDocumentType2: undefined,
       details: 'Test transaction',
       date: '20240101',
       valueDate: '20240101',
@@ -301,9 +301,9 @@ describe('Document Type Field Validation', () => {
       counterAccountKey: 'ACC002',
       debitCreditIndicator: '1',
       currencyCode: 'ILS',
-      transactionAmount: '1000.00',
-      foreignCurrencyAmount: '1000.00',
-      quantityField: '1.00',
+      transactionAmount: 1000.0,
+      foreignCurrencyAmount: 1000.0,
+      quantityField: 1.0,
       matchingField1: 'MATCH001',
       matchingField2: 'MATCH002',
       branchId: 'BR001',
@@ -323,7 +323,7 @@ describe('Document Type Field Validation', () => {
     });
 
     test('should accept empty reference document type', () => {
-      const testRecord = { ...baseB100, referenceDocumentType: '' };
+      const testRecord = { ...baseB100, referenceDocumentType: undefined };
       expect(() => B100Schema.parse(testRecord)).not.toThrow();
     });
 
@@ -341,14 +341,14 @@ describe('Document Type Field Validation', () => {
   describe('Field 1360: B100 Reference Document Type 2 Validation', () => {
     const baseB100: B100 = {
       code: 'B100',
-      recordNumber: '1',
+      recordNumber: 1,
       vatId: '123456789',
-      transactionNumber: '1234567890',
-      transactionLineNumber: '1',
-      batchNumber: '12345678',
+      transactionNumber: 1_234_567_890,
+      transactionLineNumber: 1,
+      batchNumber: 12_345_678,
       transactionType: 'Sale',
       referenceDocument: 'REF123',
-      referenceDocumentType: '',
+      referenceDocumentType: undefined,
       referenceDocument2: 'REF456',
       referenceDocumentType2: '200', // Will be replaced in tests
       details: 'Test transaction',
@@ -358,9 +358,9 @@ describe('Document Type Field Validation', () => {
       counterAccountKey: 'ACC002',
       debitCreditIndicator: '1',
       currencyCode: 'ILS',
-      transactionAmount: '1000.00',
-      foreignCurrencyAmount: '1000.00',
-      quantityField: '1.00',
+      transactionAmount: 1000.0,
+      foreignCurrencyAmount: 1000.0,
+      quantityField: 1.0,
       matchingField1: 'MATCH001',
       matchingField2: 'MATCH002',
       branchId: 'BR001',
@@ -380,7 +380,7 @@ describe('Document Type Field Validation', () => {
     });
 
     test('should accept empty reference document type 2', () => {
-      const testRecord = { ...baseB100, referenceDocumentType2: '' };
+      const testRecord = { ...baseB100, referenceDocumentType2: undefined };
       expect(() => B100Schema.parse(testRecord)).not.toThrow();
     });
 
@@ -473,7 +473,7 @@ describe('Document Type Field Validation', () => {
       // Test B100
       const b100: Partial<B100> = {
         code: 'B100',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
         referenceDocumentType: testDocType,
         referenceDocumentType2: testDocType,

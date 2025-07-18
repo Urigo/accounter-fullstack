@@ -4,16 +4,16 @@ import { B100Schema, encodeB100, parseB100, type B100 } from '../../src/generato
 describe('B100 Record', () => {
   const validB100: B100 = {
     code: 'B100',
-    recordNumber: '1',
+    recordNumber: 1,
     vatId: '123456789',
-    transactionNumber: '1234567890',
-    transactionLineNumber: '1',
-    batchNumber: '12345678',
+    transactionNumber: 1_234_567_890,
+    transactionLineNumber: 1,
+    batchNumber: 12_345_678,
     transactionType: 'Sale',
     referenceDocument: 'INV-2023-001',
-    referenceDocumentType: '1',
+    referenceDocumentType: '320',
     referenceDocument2: 'REF-2023-001',
-    referenceDocumentType2: '2',
+    referenceDocumentType2: '300',
     details: 'Payment for services',
     date: '20231215',
     valueDate: '20231215',
@@ -21,9 +21,9 @@ describe('B100 Record', () => {
     counterAccountKey: 'ACC002',
     debitCreditIndicator: '1',
     currencyCode: 'ILS',
-    transactionAmount: '1000.00',
-    foreignCurrencyAmount: '300.00',
-    quantityField: '5.00',
+    transactionAmount: 1000.0,
+    foreignCurrencyAmount: 300.0,
+    quantityField: 5.0,
     matchingField1: 'MATCH001',
     matchingField2: 'MATCH002',
     branchId: 'BR001',
@@ -44,27 +44,30 @@ describe('B100 Record', () => {
     });
 
     it('should require non-empty required fields', () => {
-      expect(() => B100Schema.parse({ ...validB100, recordNumber: '' })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, recordNumber: 0 })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, vatId: '' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, transactionNumber: '' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, transactionLineNumber: '' })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, transactionNumber: 0 })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, transactionLineNumber: 0 })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, accountKey: '' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, transactionAmount: '' })).toThrow();
+      // Test with invalid transactionAmount type
+      expect(() =>
+        B100Schema.parse({ ...validB100, transactionAmount: 'invalid' as unknown as number }),
+      ).toThrow();
     });
 
     it('should allow empty optional fields', () => {
       const minimal: B100 = {
         code: 'B100',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
-        transactionNumber: '1234567890',
-        transactionLineNumber: '1',
-        batchNumber: '',
+        transactionNumber: 1_234_567_890,
+        transactionLineNumber: 1,
+        batchNumber: undefined,
         transactionType: '',
         referenceDocument: '',
-        referenceDocumentType: '',
+        referenceDocumentType: undefined,
         referenceDocument2: '',
-        referenceDocumentType2: '',
+        referenceDocumentType2: undefined,
         details: '',
         date: '20231215',
         valueDate: '20231215',
@@ -72,9 +75,9 @@ describe('B100 Record', () => {
         counterAccountKey: '',
         debitCreditIndicator: '1',
         currencyCode: '',
-        transactionAmount: '1000.00',
-        foreignCurrencyAmount: '',
-        quantityField: '',
+        transactionAmount: 1000.0,
+        foreignCurrencyAmount: undefined,
+        quantityField: undefined,
         matchingField1: '',
         matchingField2: '',
         branchId: '',
@@ -99,11 +102,11 @@ describe('B100 Record', () => {
     });
 
     it('should enforce maximum field lengths', () => {
-      expect(() => B100Schema.parse({ ...validB100, recordNumber: '1234567890' })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, recordNumber: 1_000_000_000 })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, vatId: '1234567890' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, transactionNumber: '12345678901' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, transactionLineNumber: '123456' })).toThrow();
-      expect(() => B100Schema.parse({ ...validB100, batchNumber: '123456789' })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, transactionNumber: 10_000_000_000 })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, transactionLineNumber: 100_000 })).toThrow();
+      expect(() => B100Schema.parse({ ...validB100, batchNumber: 100_000_000 })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, transactionType: 'x'.repeat(16) })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, referenceDocument: 'x'.repeat(21) })).toThrow();
       expect(() => B100Schema.parse({ ...validB100, details: 'x'.repeat(51) })).toThrow();
@@ -134,10 +137,10 @@ describe('B100 Record', () => {
     it('should handle numeric fields with zero padding', () => {
       const shortFields: B100 = {
         ...validB100,
-        recordNumber: '42',
-        transactionNumber: '123',
-        transactionLineNumber: '5',
-        batchNumber: '99',
+        recordNumber: 42,
+        transactionNumber: 123,
+        transactionLineNumber: 5,
+        batchNumber: 99,
       };
 
       const encoded = encodeB100(shortFields);
@@ -161,23 +164,23 @@ describe('B100 Record', () => {
       const transactionAmountPos =
         4 + 9 + 9 + 10 + 5 + 8 + 15 + 20 + 3 + 20 + 3 + 50 + 8 + 8 + 15 + 15 + 1 + 3;
       expect(withoutCrlf.slice(transactionAmountPos, transactionAmountPos + 15)).toBe(
-        '        1000.00',
-      ); // Right-aligned
+        '+00000000100000',
+      ); // Monetary field with + sign and no decimal point
     });
 
     it('should pad empty fields correctly', () => {
       const minimal: B100 = {
         code: 'B100',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
-        transactionNumber: '1',
-        transactionLineNumber: '1',
-        batchNumber: '',
+        transactionNumber: 1,
+        transactionLineNumber: 1,
+        batchNumber: undefined,
         transactionType: '',
         referenceDocument: '',
-        referenceDocumentType: '',
+        referenceDocumentType: undefined,
         referenceDocument2: '',
-        referenceDocumentType2: '',
+        referenceDocumentType2: undefined,
         details: '',
         date: '20231215',
         valueDate: '20231215',
@@ -185,9 +188,9 @@ describe('B100 Record', () => {
         counterAccountKey: '',
         debitCreditIndicator: '1',
         currencyCode: '',
-        transactionAmount: '1000.00',
-        foreignCurrencyAmount: '',
-        quantityField: '',
+        transactionAmount: 1000.0,
+        foreignCurrencyAmount: undefined,
+        quantityField: undefined,
         matchingField1: '',
         matchingField2: '',
         branchId: '',
@@ -213,14 +216,14 @@ describe('B100 Record', () => {
       const parsed = parseB100(encoded);
 
       expect(parsed.code).toBe('B100');
-      expect(parsed.recordNumber).toBe('1');
+      expect(parsed.recordNumber).toBe(1);
       expect(parsed.vatId).toBe('123456789');
-      expect(parsed.transactionNumber).toBe('1234567890');
-      expect(parsed.transactionLineNumber).toBe('1');
+      expect(parsed.transactionNumber).toBe(1_234_567_890);
+      expect(parsed.transactionLineNumber).toBe(1);
       expect(parsed.accountKey).toBe('ACC001');
       expect(parsed.debitCreditIndicator).toBe('1');
       expect(parsed.date).toBe('20231215');
-      expect(parsed.transactionAmount).toBe('1000.00');
+      expect(parsed.transactionAmount).toBe(1000.0);
     });
 
     it('should handle lines without CRLF', () => {
@@ -263,7 +266,7 @@ describe('B100 Record', () => {
         ' '.repeat(15) + // counterAccountKey (15)
         '1' + // debitCreditIndicator (1)
         '   ' + // currencyCode (3)
-        '        1000.00' + // transactionAmount (15)
+        '+00000000100000' + // transactionAmount (15) - monetary field
         ' '.repeat(15) + // foreignCurrencyAmount (15)
         ' '.repeat(12) + // quantityField (12)
         ' '.repeat(10) + // matchingField1 (10)
@@ -277,13 +280,13 @@ describe('B100 Record', () => {
 
       const parsed = parseB100(paddedLine);
 
-      expect(parsed.recordNumber).toBe('42');
+      expect(parsed.recordNumber).toBe(42);
       expect(parsed.vatId).toBe('123');
-      expect(parsed.transactionNumber).toBe('456');
-      expect(parsed.transactionLineNumber).toBe('5');
-      expect(parsed.batchNumber).toBe('99');
-      expect(parsed.referenceDocumentType).toBe('');
-      expect(parsed.referenceDocumentType2).toBe('');
+      expect(parsed.transactionNumber).toBe(456);
+      expect(parsed.transactionLineNumber).toBe(5);
+      expect(parsed.batchNumber).toBe(99);
+      expect(parsed.referenceDocumentType).toBe(undefined);
+      expect(parsed.referenceDocumentType2).toBe(undefined);
     });
 
     it('should trim whitespace from parsed fields', () => {
@@ -311,24 +314,24 @@ describe('B100 Record', () => {
       const testCases: B100[] = [
         {
           ...validB100,
-          recordNumber: '999999999',
-          transactionNumber: '9999999999',
-          transactionLineNumber: '99999',
+          recordNumber: 999_999_999,
+          transactionNumber: 9_999_999_999,
+          transactionLineNumber: 99_999,
           debitCreditIndicator: '2',
         },
         {
           ...validB100,
-          recordNumber: '1',
-          transactionNumber: '1',
-          transactionLineNumber: '1',
-          batchNumber: '',
+          recordNumber: 1,
+          transactionNumber: 1,
+          transactionLineNumber: 1,
+          batchNumber: undefined,
           transactionType: '',
           referenceDocument: '',
           details: '',
           counterAccountKey: '',
           currencyCode: '',
-          foreignCurrencyAmount: '',
-          quantityField: '',
+          foreignCurrencyAmount: undefined,
+          quantityField: undefined,
           matchingField1: '',
           matchingField2: '',
           branchId: '',
@@ -347,17 +350,17 @@ describe('B100 Record', () => {
     it('should preserve empty optional fields', () => {
       const withEmptyFields: B100 = {
         ...validB100,
-        batchNumber: '',
+        batchNumber: undefined,
         transactionType: '',
         referenceDocument: '',
-        referenceDocumentType: '',
+        referenceDocumentType: undefined,
         referenceDocument2: '',
-        referenceDocumentType2: '',
+        referenceDocumentType2: undefined,
         details: '',
         counterAccountKey: '',
         currencyCode: '',
-        foreignCurrencyAmount: '',
-        quantityField: '',
+        foreignCurrencyAmount: undefined,
+        quantityField: undefined,
         matchingField1: '',
         matchingField2: '',
         branchId: '',
@@ -368,7 +371,7 @@ describe('B100 Record', () => {
       const encoded = encodeB100(withEmptyFields);
       const parsed = parseB100(encoded);
 
-      expect(parsed.batchNumber).toBe('');
+      expect(parsed.batchNumber).toBe(undefined);
       expect(parsed.transactionType).toBe('');
       expect(parsed.reserved).toBe('');
       expect(parsed).toEqual(withEmptyFields);
