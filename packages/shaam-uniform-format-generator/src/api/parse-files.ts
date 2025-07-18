@@ -50,7 +50,7 @@ export function parseUniformFormatFiles(iniContent: string, dataContent: string)
   const iniLines = iniContent.split('\n').filter(line => line.trim().length > 0);
   for (const line of iniLines) {
     if (line.length < 4) continue;
-    
+
     const recordType = line.substring(0, 4);
     const cleanLine = line.replace(/\r?\n?$/, '').replace(/\r$/, '');
 
@@ -101,7 +101,8 @@ export function parseUniformFormatFiles(iniContent: string, dataContent: string)
           const journalEntry: JournalEntry = {
             id: `JE_${b100.transactionNumber}`,
             date: formatDateFromShaam(b100.date),
-            amount: parseFloat(b100.transactionAmount) * (b100.debitCreditIndicator === '1' ? 1 : -1),
+            amount:
+              parseFloat(b100.transactionAmount) * (b100.debitCreditIndicator === '1' ? 1 : -1),
             accountId: b100.accountKey,
             description: b100.details || 'Journal Entry',
           };
@@ -133,10 +134,12 @@ export function parseUniformFormatFiles(iniContent: string, dataContent: string)
           };
 
           // Add address if available
-          if (b110.customerSupplierAddressStreet || 
-              b110.customerSupplierAddressCity || 
-              b110.customerSupplierAddressZip || 
-              b110.customerSupplierAddressCountry) {
+          if (
+            b110.customerSupplierAddressStreet ||
+            b110.customerSupplierAddressCity ||
+            b110.customerSupplierAddressZip ||
+            b110.customerSupplierAddressCountry
+          ) {
             account.address = {
               street: b110.customerSupplierAddressStreet,
               houseNumber: b110.customerSupplierAddressHouseNumber,
@@ -214,10 +217,10 @@ function formatDateFromShaam(shaamDate: string): string {
   if (!shaamDate || shaamDate.length !== 8) {
     return '2024-01-01'; // Default fallback
   }
-  
+
   const year = shaamDate.substring(0, 4);
   const month = shaamDate.substring(4, 6);
   const day = shaamDate.substring(6, 8);
-  
+
   return `${year}-${month}-${day}`;
 }
