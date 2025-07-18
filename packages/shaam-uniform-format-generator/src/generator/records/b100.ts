@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
-import { DocumentTypeEnum } from '../../types/index.js';
+import { CurrencyCode, CurrencyCodeEnum, DocumentTypeEnum } from '../../types/index.js';
 import {
   formatMonetaryAmount,
   formatOptionalMonetaryAmount,
@@ -40,15 +40,11 @@ export const B100Schema = z.object({
   // Field 1357: Reference document (20) - Optional - Alphanumeric
   referenceDocument: z.string().max(20).default('').describe('Reference document'),
   // Field 1358: Reference document type (3) - Optional - Numeric
-  referenceDocumentType: DocumentTypeEnum.optional().describe(
-    'Reference document type - see Appendix 1',
-  ),
+  referenceDocumentType: DocumentTypeEnum.optional().describe('Reference document type'),
   // Field 1359: Reference document 2 (20) - Optional - Alphanumeric
   referenceDocument2: z.string().max(20).default('').describe('Reference document 2'),
   // Field 1360: Reference document type 2 (3) - Optional - Numeric
-  referenceDocumentType2: DocumentTypeEnum.optional().describe(
-    'Reference document type 2 - see Appendix 1',
-  ),
+  referenceDocumentType2: DocumentTypeEnum.optional().describe('Reference document type 2'),
   // Field 1361: Details (50) - Optional - Alphanumeric
   details: z.string().max(50).default('').describe('Details'),
   // Field 1362: Date (8) - Required - Numeric - Format: YYYYMMDD
@@ -76,11 +72,7 @@ export const B100Schema = z.object({
     .enum(['1', '2'])
     .describe('Debit/Credit indicator: 1 = Debit, 2 = Credit'),
   // Field 1367: Currency code (3) - Optional - Alphanumeric
-  currencyCode: z
-    .string()
-    .max(3)
-    .default('')
-    .describe('Currency code - refers to field 1369; see Appendix 2'),
+  currencyCode: CurrencyCodeEnum.optional().describe('Currency code - refers to field 1369'),
   // Field 1368: Transaction amount (15) - Required - Numeric - Format: X9(12)V99
   transactionAmount: z.number().describe('Transaction amount in local currency'),
   // Field 1369: Foreign currency amount (15) - Optional - Numeric - Format: X9(12)V99
@@ -144,7 +136,7 @@ export function encodeB100(input: B100): string {
     formatField(input.accountKey, 15, 'left'), // Field 1364: Account key (15)
     formatField(input.counterAccountKey, 15, 'left'), // Field 1365: Counter account key (15)
     formatField(input.debitCreditIndicator, 1, 'left'), // Field 1366: Debit/Credit indicator (1)
-    formatField(input.currencyCode, 3, 'left'), // Field 1367: Currency code (3)
+    formatField(input.currencyCode ?? '', 3, 'left'), // Field 1367: Currency code (3)
     formatMonetaryAmount(input.transactionAmount), // Field 1368: Transaction amount (15) - monetary field
     formatOptionalMonetaryAmount(input.foreignCurrencyAmount) || ' '.repeat(15), // Field 1369: Foreign currency amount (15) - optional monetary field
     formatField(input.quantityField?.toFixed(2) ?? '', 12, 'right'), // Field 1370: Quantity field (12) - optional numeric field
@@ -250,7 +242,8 @@ export function parseB100(line: string): B100 {
   pos += 15;
   const debitCreditIndicator = cleanLine.slice(pos, pos + 1).trim();
   pos += 1;
-  const currencyCode = cleanLine.slice(pos, pos + 3).trim();
+  const currencyCodeRaw = cleanLine.slice(pos, pos + 3).trim();
+  const currencyCode = (currencyCodeRaw || undefined) as CurrencyCode | undefined;
   pos += 3;
   const transactionAmount = cleanLine.slice(pos, pos + 15);
   pos += 15;
