@@ -76,7 +76,6 @@ export const B110Schema = z.object({
   // Field 1414: Account opening balance (15) - Optional - Numeric - Format: X9(12)V99
   accountOpeningBalance: z
     .number()
-    .optional()
     .describe('Account opening balance (positive = debit, negative = credit)'),
   // Field 1415: Total debits (15) - Optional - Numeric - Format: X9(12)V99
   totalDebits: z.number().optional().describe('Total debits (excludes opening balance)'),
@@ -258,9 +257,7 @@ export function parseB110(line: string): B110 {
     customerSupplierAddressCountry,
     countryCode,
     parentAccountKey,
-    accountOpeningBalance: accountOpeningBalance.trim()
-      ? parseMonetaryAmount(accountOpeningBalance)
-      : undefined,
+    accountOpeningBalance: parseMonetaryAmount(accountOpeningBalance),
     totalDebits: totalDebits.trim() ? parseMonetaryAmount(totalDebits) : undefined,
     totalCredits: totalCredits.trim() ? parseMonetaryAmount(totalCredits) : undefined,
     accountingClassificationCode,

@@ -62,7 +62,7 @@ describe('B110 Record', () => {
         customerSupplierAddressCountry: '',
         countryCode: '',
         parentAccountKey: '',
-        accountOpeningBalance: undefined,
+        accountOpeningBalance: -500,
         totalDebits: undefined,
         totalCredits: undefined,
         accountingClassificationCode: '',
@@ -291,7 +291,7 @@ describe('B110 Record', () => {
         ' '.repeat(30) + // customerSupplierAddressCountry (30)
         ' '.repeat(2) + // countryCode (2)
         ' '.repeat(15) + // parentAccountKey (15)
-        ' '.repeat(15) + // accountOpeningBalance (15)
+        '-00000000123400' + // accountOpeningBalance (15)
         ' '.repeat(15) + // totalDebits (15)
         ' '.repeat(15) + // totalCredits (15)
         '0099' + // accountingClassificationCode (4)

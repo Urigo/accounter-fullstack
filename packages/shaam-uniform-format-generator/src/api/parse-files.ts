@@ -354,12 +354,11 @@ function convertToStructuredData(
           key: b110.trialBalanceCode || 'Other',
           name: b110.trialBalanceCodeDescription || 'Other',
         },
-        balance: b110.accountOpeningBalance ?? 0,
+        accountOpeningBalance: b110.accountOpeningBalance,
         // Include extended fields if available
         countryCode: b110.countryCode,
         parentAccountKey: b110.parentAccountKey,
         vatId: b110.supplierCustomerTaxId,
-        accountOpeningBalance: b110.accountOpeningBalance,
         totalDebits: b110.totalDebits,
         totalCredits: b110.totalCredits,
         accountingClassificationCode: b110.accountingClassificationCode,
