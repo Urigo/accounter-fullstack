@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generateUniformFormatReport } from '../../src/api/generate-report';
+import { parseUniformFormatFiles } from '../../src/api/parse-files';
 import { formatMonetaryAmount, parseMonetaryAmount } from '../../src/generator/format/monetary';
 import {
   parseA000,
@@ -126,7 +127,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
               key: b110.trialBalanceCode || 'Other',
               name: b110.trialBalanceCodeDescription || 'Other',
             },
-            balance: b110.accountOpeningBalance
+            accountOpeningBalance: b110.accountOpeningBalance
               ? parseMonetaryAmount(formatMonetaryAmount(b110.accountOpeningBalance))
               : 0,
           });
@@ -273,42 +274,32 @@ describe('Fixture Files Round-trip Integration Test', () => {
     expect(generatedReport.dataText).toBeDefined();
     expect(generatedReport.iniText).toBeDefined();
 
-    // Parse the generated data back
-    const generatedLines = generatedReport.dataText
-      .split('\r\n')
-      .filter(line => line.trim().length > 0);
+    // Parse the generated data back using the new parsing function
+    const reparsedData = parseUniformFormatFiles(generatedReport.iniText, generatedReport.dataText);
 
-    // Validate that we have the expected record types
-    const recordTypes = generatedLines.map(line => line.substring(0, 4));
-    expect(recordTypes).toContain('A100');
-    expect(recordTypes).toContain('Z900');
+    // Validate basic structure
+    expect(reparsedData.data.business).toBeDefined();
+    expect(reparsedData.data.business.taxId).toBe(parsedData.business.taxId);
 
-    // If we had B100 records in the original, we should have them in the generated version
-    if (parsedData.rawRecords.b100.length > 0) {
-      expect(recordTypes.filter(type => type === 'B100')).toHaveLength(
-        parsedData.journalEntries.length,
-      );
+    // Validate that we preserved the data structure through round-trip
+    if (parsedData.journalEntries.length > 0) {
+      expect(reparsedData.data.journalEntries).toHaveLength(parsedData.journalEntries.length);
     }
 
-    // Parse the A100 record from generated data and compare key fields
-    const generatedA100Line = generatedLines.find(line => line.startsWith('A100'));
-    expect(generatedA100Line).toBeDefined();
+    if (parsedData.accounts.length > 0) {
+      expect(reparsedData.data.accounts).toHaveLength(parsedData.accounts.length);
+    }
 
-    const generatedA100 = parseA100(generatedA100Line!);
-    expect(generatedA100.vatId).toBe(parsedData.business.taxId);
-    // A100 doesn't have business name field, so we skip that comparison
+    if (parsedData.documents.length > 0) {
+      expect(reparsedData.data.documents).toHaveLength(parsedData.documents.length);
+    }
 
-    // Parse the Z900 record and validate totals
-    const generatedZ900Line = generatedLines.find(line => line.startsWith('Z900'));
-    expect(generatedZ900Line).toBeDefined();
-
-    const generatedZ900 = parseZ900(generatedZ900Line!);
-    expect(generatedZ900.vatId).toBe(parsedData.business.taxId);
-    expect(parseInt(generatedZ900.totalRecords)).toBeGreaterThan(0);
+    if (parsedData.inventory.length > 0) {
+      expect(reparsedData.data.inventory).toHaveLength(parsedData.inventory.length);
+    }
 
     // Validate round-trip completed successfully
     expect(generatedReport.summary.totalRecords).toBeGreaterThan(0);
-    expect(generatedZ900.vatId).toBe(parsedData.business.taxId);
   });
 
   it('should validate the ini.txt fixture file structure', async () => {

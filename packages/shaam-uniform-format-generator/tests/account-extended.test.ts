@@ -29,9 +29,8 @@ describe('Extended Account Schema', () => {
             key: '400',
             name: 'Revenue',
           },
-          balance: 2000.0,
+          accountOpeningBalance: 2000.0,
           countryCode: 'IL',
-          accountOpeningBalance: 0.0,
           totalDebits: 500.0,
           totalCredits: 2500.0,
           accountingClassificationCode: '0001',
@@ -46,7 +45,7 @@ describe('Extended Account Schema', () => {
             key: '120',
             name: 'Assets',
           },
-          balance: 1500.0,
+          accountOpeningBalance: 1500.0,
           // Optional fields can be omitted
         },
       ],
@@ -91,7 +90,7 @@ describe('Extended Account Schema', () => {
             key: '110',
             name: 'Cash Accounts',
           },
-          balance: 5000.0,
+          accountOpeningBalance: 5000.0,
         },
       ],
     };

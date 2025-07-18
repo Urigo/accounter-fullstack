@@ -90,7 +90,7 @@ describe('INI.TXT Generation', () => {
             key: 'Asset',
             name: 'Assets',
           },
-          balance: 0,
+          accountOpeningBalance: 0,
         },
       ],
       inventory: [

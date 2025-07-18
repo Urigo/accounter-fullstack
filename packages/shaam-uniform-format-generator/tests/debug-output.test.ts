@@ -44,7 +44,7 @@ describe('Debug SHAAM Format Output', () => {
             key: 'Asset',
             name: 'Assets',
           },
-          balance: 5000.0,
+          accountOpeningBalance: 5000.0,
         },
       ],
       inventory: [

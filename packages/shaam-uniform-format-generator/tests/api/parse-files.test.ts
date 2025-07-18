@@ -32,15 +32,17 @@ describe('parseUniformFormatFiles', () => {
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
     expect(result).toBeDefined();
-    expect(result.business).toBeDefined();
-    expect(result.business.name).toBe('Test Company Ltd');
-    expect(result.business.taxId).toBe('123456789');
-    expect(result.business.businessId).toBeDefined(); // Generator creates unique primary identifier
-    expect(result.business.businessId.length).toBeGreaterThan(0);
-    expect(result.documents).toEqual([]);
-    expect(result.journalEntries).toEqual([]);
-    expect(result.accounts).toEqual([]);
-    expect(result.inventory).toEqual([]);
+    expect(result.data).toBeDefined();
+    expect(result.summary).toBeDefined();
+    expect(result.data.business).toBeDefined();
+    expect(result.data.business.name).toBe('Test Company Ltd');
+    expect(result.data.business.taxId).toBe('123456789');
+    expect(result.data.business.businessId).toBeDefined(); // Generator creates unique primary identifier
+    expect(result.data.business.businessId.length).toBeGreaterThan(0);
+    expect(result.data.documents).toEqual([]);
+    expect(result.data.journalEntries).toEqual([]);
+    expect(result.data.accounts).toEqual([]);
+    expect(result.data.inventory).toEqual([]);
   });
 
   it('should parse journal entries from B100 records', () => {
@@ -71,11 +73,11 @@ describe('parseUniformFormatFiles', () => {
     const generated = generateUniformFormatReport(input);
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
-    expect(result.journalEntries).toHaveLength(1);
-    expect(result.journalEntries[0].date).toBe(input.journalEntries[0].date);
-    expect(result.journalEntries[0].amount).toBe(input.journalEntries[0].amount);
-    expect(result.journalEntries[0].accountId).toBe(input.journalEntries[0].accountId);
-    expect(result.journalEntries[0].description).toBe(input.journalEntries[0].description);
+    expect(result.data.journalEntries).toHaveLength(1);
+    expect(result.data.journalEntries[0].date).toBe(input.journalEntries[0].date);
+    expect(result.data.journalEntries[0].amount).toBe(input.journalEntries[0].amount);
+    expect(result.data.journalEntries[0].accountId).toBe(input.journalEntries[0].accountId);
+    expect(result.data.journalEntries[0].description).toBe(input.journalEntries[0].description);
   });
 
   it('should parse accounts from B110 records', () => {
@@ -99,7 +101,6 @@ describe('parseUniformFormatFiles', () => {
             key: 'Asset',
             name: 'Assets',
           },
-          balance: 5000,
           accountOpeningBalance: 5000,
           totalDebits: 0,
           totalCredits: 0,
@@ -113,12 +114,14 @@ describe('parseUniformFormatFiles', () => {
     const generated = generateUniformFormatReport(input);
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
-    expect(result.accounts).toHaveLength(1);
-    expect(result.accounts[0].id).toBe(input.accounts[0].id);
-    expect(result.accounts[0].name).toBe(input.accounts[0].name);
-    expect(result.accounts[0].sortCode.key).toBe(input.accounts[0].sortCode.key);
-    expect(result.accounts[0].sortCode.name).toBe(input.accounts[0].sortCode.name);
-    expect(result.accounts[0].balance).toBe(input.accounts[0].balance);
+    expect(result.data.accounts).toHaveLength(1);
+    expect(result.data.accounts[0].id).toBe(input.accounts[0].id);
+    expect(result.data.accounts[0].name).toBe(input.accounts[0].name);
+    expect(result.data.accounts[0].sortCode.key).toBe(input.accounts[0].sortCode.key);
+    expect(result.data.accounts[0].sortCode.name).toBe(input.accounts[0].sortCode.name);
+    expect(result.data.accounts[0].accountOpeningBalance).toBe(
+      input.accounts[0].accountOpeningBalance,
+    );
   });
 
   it('should parse documents from C100 records', () => {
@@ -149,11 +152,11 @@ describe('parseUniformFormatFiles', () => {
     const generated = generateUniformFormatReport(input);
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
-    expect(result.documents).toHaveLength(1);
-    expect(result.documents[0].id).toBe(input.documents[0].id);
-    expect(result.documents[0].type).toBe(input.documents[0].type);
-    expect(result.documents[0].date).toBe(input.documents[0].date);
-    expect(result.documents[0].amount).toBe(input.documents[0].amount);
+    expect(result.data.documents).toHaveLength(1);
+    expect(result.data.documents[0].id).toBe(input.documents[0].id);
+    expect(result.data.documents[0].type).toBe(input.documents[0].type);
+    expect(result.data.documents[0].date).toBe(input.documents[0].date);
+    expect(result.data.documents[0].amount).toBe(input.documents[0].amount);
   });
 
   it('should parse inventory items from M100 records', () => {
@@ -183,22 +186,23 @@ describe('parseUniformFormatFiles', () => {
     const generated = generateUniformFormatReport(input);
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
-    expect(result.inventory).toHaveLength(1);
-    expect(result.inventory[0].id).toBe(input.inventory[0].id);
-    expect(result.inventory[0].name).toBe(input.inventory[0].name);
-    expect(result.inventory[0].quantity).toBeGreaterThanOrEqual(0); // M100 doesn't directly store quantity
+    expect(result.data.inventory).toHaveLength(1);
+    expect(result.data.inventory[0].id).toBe(input.inventory[0].id);
+    expect(result.data.inventory[0].name).toBe(input.inventory[0].name);
+    expect(result.data.inventory[0].quantity).toBeGreaterThanOrEqual(0); // M100 doesn't directly store quantity
   });
 
   it('should handle empty input gracefully', () => {
     const result = parseUniformFormatFiles('', '');
 
     expect(result).toBeDefined();
-    expect(result.business).toBeDefined();
-    expect(result.business.name).toBe('Unknown Business');
-    expect(result.documents).toEqual([]);
-    expect(result.journalEntries).toEqual([]);
-    expect(result.accounts).toEqual([]);
-    expect(result.inventory).toEqual([]);
+    expect(result.data).toBeDefined();
+    expect(result.data.business).toBeDefined();
+    expect(result.data.business.name).toBe('Unknown Business');
+    expect(result.data.documents).toEqual([]);
+    expect(result.data.journalEntries).toEqual([]);
+    expect(result.data.accounts).toEqual([]);
+    expect(result.data.inventory).toEqual([]);
   });
 
   it('should handle malformed lines gracefully', () => {
@@ -227,7 +231,7 @@ describe('parseUniformFormatFiles', () => {
     const result = parseUniformFormatFiles(corruptedIni, corruptedData);
 
     expect(result).toBeDefined();
-    expect(result.business.name).toBe('Test Company Ltd');
+    expect(result.data.business.name).toBe('Test Company Ltd');
     // Should continue processing despite invalid lines\
 
     // TODO: rethink handling corrupted lines. maybe add errors attribute to parse result?
@@ -270,7 +274,7 @@ describe('parseUniformFormatFiles', () => {
             key: 'Asset',
             name: 'Assets',
           },
-          balance: 5000,
+          accountOpeningBalance: 5000,
         },
       ],
       inventory: [
@@ -287,13 +291,13 @@ describe('parseUniformFormatFiles', () => {
     const result = parseUniformFormatFiles(generated.iniText, generated.dataText);
 
     // Check business round-trip
-    expect(result.business.name).toBe(input.business.name);
-    expect(result.business.taxId).toBe(input.business.taxId);
+    expect(result.data.business.name).toBe(input.business.name);
+    expect(result.data.business.taxId).toBe(input.business.taxId);
 
     // Check we parsed at least some records
-    expect(result.documents).toHaveLength(1);
-    expect(result.journalEntries).toHaveLength(1);
-    expect(result.accounts).toHaveLength(1);
-    expect(result.inventory).toHaveLength(1);
+    expect(result.data.documents).toHaveLength(1);
+    expect(result.data.journalEntries).toHaveLength(1);
+    expect(result.data.accounts).toHaveLength(1);
+    expect(result.data.inventory).toHaveLength(1);
   });
 });

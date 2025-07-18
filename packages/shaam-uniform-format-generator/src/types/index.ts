@@ -58,9 +58,8 @@ export const AccountSchema = z.object({
   countryCode: z.string().optional(),
   parentAccountKey: z.string().optional(),
   vatId: z.string().optional(),
-  balance: z.number(),
+  accountOpeningBalance: z.number(),
   // Extended fields for B110 records (all optional)
-  accountOpeningBalance: z.number().optional(),
   totalDebits: z.number().optional(),
   totalCredits: z.number().optional(),
   accountingClassificationCode: z.string().optional(),
