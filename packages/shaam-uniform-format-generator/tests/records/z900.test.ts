@@ -5,10 +5,10 @@ import { encodeZ900, parseZ900, Z900Schema, type Z900 } from '../../src/generato
 describe('Z900 Record', () => {
   const validZ900: Z900 = {
     code: 'Z900',
-    recordNumber: '123',
+    recordNumber: 123,
     vatId: '987654321',
-    uniqueId: '123456789012345',
-    totalRecords: '1000',
+    uniqueId: 123_456_789_012_345,
+    totalRecords: 1000,
     reserved: '',
   };
 
@@ -23,9 +23,9 @@ describe('Z900 Record', () => {
     });
 
     it('should require recordNumber to be non-empty and max 9 characters', () => {
-      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: '' })).toThrow();
-      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: '1234567890' })).toThrow();
-      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: '123456789' })).not.toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: 0 })).toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: 1_000_000_000 })).toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, recordNumber: 123_456_789 })).not.toThrow();
     });
 
     it('should require vatId to be non-empty and max 9 characters', () => {
@@ -35,16 +35,18 @@ describe('Z900 Record', () => {
     });
 
     it('should require uniqueId to be non-empty and max 15 characters', () => {
-      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: '' })).toThrow();
-      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: '1234567890123456' })).toThrow();
-      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: '123456789012345' })).not.toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: 0 })).toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: 1_000_000_000_000_000 })).toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, uniqueId: 123_456_789_012_345 })).not.toThrow();
     });
 
     it('should require totalRecords to be non-empty and max 15 characters', () => {
-      expect(() => Z900Schema.parse({ ...validZ900, totalRecords: '' })).toThrow();
-      expect(() => Z900Schema.parse({ ...validZ900, totalRecords: '1234567890123456' })).toThrow();
+      expect(() => Z900Schema.parse({ ...validZ900, totalRecords: 0 })).toThrow();
       expect(() =>
-        Z900Schema.parse({ ...validZ900, totalRecords: '123456789012345' }),
+        Z900Schema.parse({ ...validZ900, totalRecords: 1_000_000_000_000_000 }),
+      ).toThrow();
+      expect(() =>
+        Z900Schema.parse({ ...validZ900, totalRecords: 123_456_789_012_345 }),
       ).not.toThrow();
     });
 
@@ -86,10 +88,10 @@ describe('Z900 Record', () => {
     it('should handle maximum length fields', () => {
       const maxLengthRecord: Z900 = {
         code: 'Z900',
-        recordNumber: '123456789', // 9 chars
+        recordNumber: 123_456_789, // 9 digits
         vatId: '123456789', // 9 chars
-        uniqueId: '123456789012345', // 15 chars
-        totalRecords: '123456789012345', // 15 chars
+        uniqueId: 123_456_789_012_345, // 15 digits
+        totalRecords: 123_456_789_012_345, // 15 digits
         reserved: 'A'.repeat(50), // 50 chars
       };
 
@@ -109,10 +111,10 @@ describe('Z900 Record', () => {
     it('should truncate fields that exceed maximum length', () => {
       const oversizedRecord: Z900 = {
         code: 'Z900',
-        recordNumber: '1234567890', // 10 chars (max 9)
+        recordNumber: 999_999_999, // max 9 digits
         vatId: '1234567890', // 10 chars (max 9)
-        uniqueId: '1234567890123456', // 16 chars (max 15)
-        totalRecords: '1234567890123456', // 16 chars (max 15)
+        uniqueId: 999_999_999_999_999, // max 15 digits
+        totalRecords: 999_999_999_999_999, // max 15 digits
         reserved: 'A'.repeat(60), // 60 chars (max 50)
       };
 
@@ -120,11 +122,11 @@ describe('Z900 Record', () => {
       const withoutCRLF = encoded.replace(/\r\n$/, '');
       expect(withoutCRLF).toHaveLength(110);
 
-      expect(withoutCRLF.slice(4, 13)).toBe('123456789'); // truncated from right
+      expect(withoutCRLF.slice(4, 13)).toBe('999999999'); // max 9 digits
       expect(withoutCRLF.slice(13, 22)).toBe('123456789'); // truncated
-      expect(withoutCRLF.slice(22, 37)).toBe('123456789012345'); // truncated
+      expect(withoutCRLF.slice(22, 37)).toBe('999999999999999'); // max 15 digits
       expect(withoutCRLF.slice(37, 45)).toBe(SHAAM_VERSION); // always the constant
-      expect(withoutCRLF.slice(45, 60)).toBe('123456789012345'); // truncated from right
+      expect(withoutCRLF.slice(45, 60)).toBe('999999999999999'); // max 15 digits
       expect(withoutCRLF.slice(60, 110)).toBe('A'.repeat(50)); // truncated
     });
   });
@@ -141,10 +143,10 @@ describe('Z900 Record', () => {
 
       expect(parsed).toEqual({
         code: 'Z900',
-        recordNumber: '123',
+        recordNumber: 123,
         vatId: '987654321',
-        uniqueId: '123456789012345',
-        totalRecords: '1000',
+        uniqueId: 123_456_789_012_345,
+        totalRecords: 1000,
         reserved: '',
       });
     });
@@ -158,7 +160,7 @@ describe('Z900 Record', () => {
       const parsed = parseZ900(line);
 
       expect(parsed.code).toBe('Z900');
-      expect(parsed.recordNumber).toBe('123');
+      expect(parsed.recordNumber).toBe(123);
     });
 
     it('should throw error for invalid line length', () => {
@@ -196,8 +198,8 @@ describe('Z900 Record', () => {
       const parsed = parseZ900(line);
 
       expect(parsed.vatId).toBe('123456');
-      expect(parsed.uniqueId).toBe('123456');
-      expect(parsed.totalRecords).toBe('9999');
+      expect(parsed.uniqueId).toBe(123_456);
+      expect(parsed.totalRecords).toBe(9999);
       expect(parsed.reserved).toBe('');
     });
   });
@@ -214,10 +216,10 @@ describe('Z900 Record', () => {
     it('should handle round-trip with maximum length fields', () => {
       const original: Z900 = {
         code: 'Z900',
-        recordNumber: '999999999',
+        recordNumber: 999_999_999,
         vatId: '999888777',
-        uniqueId: '999888777666555',
-        totalRecords: '999888777666555',
+        uniqueId: 999_888_777_666_555,
+        totalRecords: 999_888_777_666_555,
         reserved: 'A'.repeat(50),
       };
 
@@ -230,10 +232,10 @@ describe('Z900 Record', () => {
     it('should handle round-trip with minimal fields', () => {
       const original: Z900 = {
         code: 'Z900',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '1',
-        uniqueId: '1',
-        totalRecords: '1',
+        uniqueId: 1,
+        totalRecords: 1,
         reserved: '',
       };
 

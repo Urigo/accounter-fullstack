@@ -91,7 +91,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
           result.rawRecords.a100 = parseA100(cleanLine);
           if (result.rawRecords.a100) {
             result.business = {
-              businessId: result.rawRecords.a100.primaryIdentifier,
+              businessId: result.rawRecords.a100.primaryIdentifier.toString(), // Convert number to string
               name: 'Unknown Business', // A100 doesn't have business name field
               taxId: result.rawRecords.a100.vatId,
               reportingPeriod: {
@@ -109,8 +109,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
           result.journalEntries.push({
             id: `JE_${b100.transactionNumber}`,
             date: b100.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
-            amount:
-              parseFloat(b100.transactionAmount) * (b100.debitCreditIndicator === '1' ? 1 : -1),
+            amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1), // transactionAmount is now a number
             accountId: b100.accountKey,
             description: b100.details || 'Journal Entry',
           });
@@ -227,7 +226,7 @@ describe('Fixture Files Round-trip Integration Test', () => {
 
     // Validate some business logic
     if (parsedData.rawRecords.z900) {
-      const totalDataRecords = parseInt(parsedData.rawRecords.z900.totalRecords);
+      const totalDataRecords = parsedData.rawRecords.z900.totalRecords; // totalRecords is now a number
       const actualDataRecords =
         (parsedData.rawRecords.a100 ? 1 : 0) +
         parsedData.rawRecords.b100.length +
