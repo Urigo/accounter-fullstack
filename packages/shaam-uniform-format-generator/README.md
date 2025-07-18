@@ -179,6 +179,12 @@ interface JournalEntry {
   amount: number
   accountId: string
   description?: string
+  // Extended fields for B100 records (all optional)
+  batchNumber?: string
+  transactionType?: string
+  referenceDocument?: string
+  currencyCode?: string // Currency code (e.g., "USD", "EUR")
+  foreignCurrencyAmount?: number // Amount in foreign currency
 }
 ```
 
@@ -303,14 +309,19 @@ const reportData: ReportInput = {
       date: '2023-03-15',
       amount: 2340.0,
       accountId: '4000',
-      description: 'Consulting revenue'
+      description: 'Consulting revenue',
+      batchNumber: 'BATCH-Q1-2023',
+      transactionType: 'SALE',
+      referenceDocument: 'INV-2023-001'
     },
     {
       id: 'JE-2023-002',
       date: '2023-04-10',
       amount: -340.0,
       accountId: '4000',
-      description: 'Revenue adjustment'
+      description: 'Revenue adjustment',
+      currencyCode: 'USD',
+      foreignCurrencyAmount: -290.0
     }
   ],
   accounts: [
