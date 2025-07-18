@@ -1,5 +1,11 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
+import {
+  CountryCodeEnum,
+  CurrencyCodeEnum,
+  type CountryCode,
+  type CurrencyCode,
+} from '../../types/index.js';
 import { formatField, formatNumericField } from '../format/encoder.js';
 import {
   formatMonetaryAmount,
@@ -16,10 +22,10 @@ export const B110Schema = z.object({
   code: z.literal('B110').describe('Record type code - always "B110"'),
   // Field 1401: Record number in file (9) - Required - Numeric
   recordNumber: z
-    .string()
+    .number()
+    .int()
     .min(1)
-    .max(9)
-    .regex(/^\d+$/)
+    .max(999_999_999)
     .describe('Sequential record number in file'),
   // Field 1402: Tax ID (9) - Required - Numeric
   vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('Tax identification number'),
@@ -66,11 +72,9 @@ export const B110Schema = z.object({
     .optional()
     .describe('Customer/Supplier address - country (only for customer/supplier accounts)'),
   // Field 1412: Country code (2) - Optional - Alphanumeric
-  countryCode: z
-    .string()
-    .max(2)
-    .optional()
-    .describe('Country code (only for customer/supplier accounts, see Appendix 3)'),
+  countryCode: CountryCodeEnum.optional().describe(
+    'Country code (only for customer/supplier accounts)',
+  ),
   // Field 1413: Parent account key (15) - Optional - Alphanumeric
   parentAccountKey: z.string().max(15).optional().describe('Parent account key'),
   // Field 1414: Account opening balance (15) - Optional - Numeric - Format: X9(12)V99
@@ -83,9 +87,10 @@ export const B110Schema = z.object({
   totalCredits: z.number().optional().describe('Total credits (excludes opening balance)'),
   // Field 1417: Accounting classification code (4) - Conditional - Numeric
   accountingClassificationCode: z
-    .string()
-    .max(4)
-    .regex(/^$|^\d+$/)
+    .number()
+    .int()
+    .min(0)
+    .max(9999)
     .optional()
     .describe('Accounting classification code (mandatory if 6111 report required)'),
   // Field 1418: Reserved field (0) - Deprecated - Alphanumeric - Skipped as it has 0 length
@@ -111,11 +116,9 @@ export const B110Schema = z.object({
     .optional()
     .describe('Opening balance in foreign currency'),
   // Field 1423: Foreign currency code (3) - Optional - Alphanumeric
-  foreignCurrencyCode: z
-    .string()
-    .max(3)
-    .optional()
-    .describe('Foreign currency code (refers to field 1422, see Appendix 2)'),
+  foreignCurrencyCode: CurrencyCodeEnum.optional().describe(
+    'Foreign currency code (refers to field 1422)',
+  ),
   // Field 1424: Reserved field (16) - Optional - Alphanumeric
   reserved: z.string().max(16).optional().describe('Reserved field for future use'),
 });
@@ -129,7 +132,7 @@ export type B110 = z.infer<typeof B110Schema>;
 export function encodeB110(input: B110): string {
   const fields = [
     formatField(input.code, 4, 'left'), // Field 1400: Record code (4)
-    formatNumericField(input.recordNumber, 9), // Field 1401: Record number (9)
+    formatField(input.recordNumber.toString().padStart(9, '0'), 9, 'left'), // Field 1401: Record number (9)
     formatNumericField(input.vatId, 9), // Field 1402: VAT ID (9)
     formatField(input.accountKey, 15, 'left'), // Field 1403: Account key (15)
     formatField(input.accountName ?? '', 50, 'left'), // Field 1404: Account name (50)
@@ -145,13 +148,17 @@ export function encodeB110(input: B110): string {
     formatOptionalMonetaryAmount(input.accountOpeningBalance) || formatMonetaryAmount(0), // Field 1414: Account opening balance (15)
     formatOptionalMonetaryAmount(input.totalDebits) || formatMonetaryAmount(0), // Field 1415: Total debits (15)
     formatOptionalMonetaryAmount(input.totalCredits) || formatMonetaryAmount(0), // Field 1416: Total credits (15)
-    formatNumericField(input.accountingClassificationCode ?? '9999', 4), // Field 1417: Accounting classification code (4)
+    formatField(
+      input.accountingClassificationCode?.toString().padStart(4, '0') ?? '0000',
+      4,
+      'left',
+    ), // Field 1417: Accounting classification code (4)
     // Field 1418: Reserved field (0) - skipped as it has 0 length
     formatNumericField(input.supplierCustomerTaxId ?? '', 9), // Field 1419: Supplier/Customer tax ID (9)
     // Field 1420: Reserved field (0) - skipped as it has 0 length
     formatField(input.branchId ?? '0', 7, 'left'), // Field 1421: Branch ID (7)
     formatOptionalMonetaryAmount(input.openingBalanceForeignCurrency) || formatMonetaryAmount(0), // Field 1422: Opening balance in foreign currency (15)
-    formatField(input.foreignCurrencyCode ?? 'USD', 3, 'left'), // Field 1423: Foreign currency code (3)
+    formatField(input.foreignCurrencyCode ?? '', 3, 'left'), // Field 1423: Foreign currency code (3)
     formatField(input.reserved ?? '', 16, 'left'), // Field 1424: Reserved field (16)
   ];
 
@@ -174,11 +181,13 @@ export function parseB110(line: string): B110 {
   let pos = 0;
   const code = cleanLine.slice(pos, pos + 4).trim();
   pos += 4;
-  const recordNumber =
+  const recordNumber = parseInt(
     cleanLine
       .slice(pos, pos + 9)
       .trim()
-      .replace(/^0+/, '') || '0';
+      .replace(/^0+/, '') || '0',
+    10,
+  );
   pos += 9;
   const vatId =
     cleanLine
@@ -204,7 +213,8 @@ export function parseB110(line: string): B110 {
   pos += 8;
   const customerSupplierAddressCountry = cleanLine.slice(pos, pos + 30).trim();
   pos += 30;
-  const countryCode = cleanLine.slice(pos, pos + 2).trim();
+  const countryCodeRaw = cleanLine.slice(pos, pos + 2).trim();
+  const countryCode = (countryCodeRaw || undefined) as CountryCode | undefined;
   pos += 2;
   const parentAccountKey = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
@@ -214,11 +224,15 @@ export function parseB110(line: string): B110 {
   pos += 15;
   const totalCredits = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const accountingClassificationCode =
+  const accountingClassificationCodeStr =
     cleanLine
       .slice(pos, pos + 4)
       .trim()
       .replace(/^0+/, '') || '';
+  const accountingClassificationCode =
+    accountingClassificationCodeStr === ''
+      ? undefined
+      : parseInt(accountingClassificationCodeStr, 10);
   pos += 4;
   // Field 1418: Reserved field (0) - skipped as it has 0 length
   const supplierCustomerTaxId =
@@ -232,7 +246,8 @@ export function parseB110(line: string): B110 {
   pos += 7;
   const openingBalanceForeignCurrency = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const foreignCurrencyCode = cleanLine.slice(pos, pos + 3).trim();
+  const foreignCurrencyCodeRaw = cleanLine.slice(pos, pos + 3).trim();
+  const foreignCurrencyCode = (foreignCurrencyCodeRaw || undefined) as CurrencyCode | undefined;
   pos += 3;
   const reserved = cleanLine.slice(pos, pos + 16).trim();
   pos += 16;

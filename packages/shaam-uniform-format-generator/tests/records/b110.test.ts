@@ -3,8 +3,8 @@ import { B110Schema, encodeB110, parseB110, type B110 } from '../../src/generato
 
 describe('B110 Record', () => {
   const validB110: B110 = {
-    code: 'B110',
-    recordNumber: '1',
+    code: 'B110' as const,
+    recordNumber: 1,
     vatId: '123456789',
     accountKey: 'ACC001',
     accountName: 'Cash Account',
@@ -20,7 +20,7 @@ describe('B110 Record', () => {
     accountOpeningBalance: 10_000,
     totalDebits: 50_000,
     totalCredits: 40_000,
-    accountingClassificationCode: '1100',
+    accountingClassificationCode: 1100,
     supplierCustomerTaxId: '987654321',
     branchId: 'BR001',
     openingBalanceForeignCurrency: 3000,
@@ -40,7 +40,7 @@ describe('B110 Record', () => {
     });
 
     it('should require non-empty required fields', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: '' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: 0 })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: '' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountKey: '' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, trialBalanceCode: '' })).toThrow();
@@ -49,7 +49,7 @@ describe('B110 Record', () => {
     it('should allow empty optional fields', () => {
       const minimal: B110 = {
         code: 'B110',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
         accountKey: 'ACC001',
         accountName: 'Cash Account',
@@ -60,32 +60,30 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
         accountOpeningBalance: -500,
         totalDebits: undefined,
         totalCredits: undefined,
-        accountingClassificationCode: '',
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
         openingBalanceForeignCurrency: undefined,
-        foreignCurrencyCode: '',
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
       expect(() => B110Schema.parse(minimal)).not.toThrow();
     });
 
     it('should validate numeric fields', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: 'abc' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: NaN })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: 'abc' })).toThrow();
-      expect(() =>
-        B110Schema.parse({ ...validB110, accountingClassificationCode: 'abc' }),
-      ).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, accountingClassificationCode: NaN })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, supplierCustomerTaxId: 'abc' })).toThrow();
     });
 
     it('should enforce maximum field lengths', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: '1234567890' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: 1_000_000_000 })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: '1234567890' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountKey: 'x'.repeat(16) })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountName: 'x'.repeat(51) })).toThrow();
@@ -154,9 +152,9 @@ describe('B110 Record', () => {
     it('should handle numeric fields with zero padding', () => {
       const shortFields: B110 = {
         ...validB110,
-        recordNumber: '42',
+        recordNumber: 42,
         vatId: '12345',
-        accountingClassificationCode: '1',
+        accountingClassificationCode: 1,
         supplierCustomerTaxId: '99',
       };
 
@@ -196,7 +194,7 @@ describe('B110 Record', () => {
     it('should pad empty fields correctly', () => {
       const minimal: B110 = {
         code: 'B110',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
         accountKey: 'ACC001',
         accountName: 'Cash Account',
@@ -207,16 +205,16 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
-        accountOpeningBalance: undefined,
+        accountOpeningBalance: 0,
         totalDebits: undefined,
         totalCredits: undefined,
-        accountingClassificationCode: '',
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
         openingBalanceForeignCurrency: undefined,
-        foreignCurrencyCode: '',
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
 
@@ -243,7 +241,7 @@ describe('B110 Record', () => {
       const parsed = parseB110(encoded);
 
       expect(parsed.code).toBe('B110');
-      expect(parsed.recordNumber).toBe('1');
+      expect(parsed.recordNumber).toBe(1);
       expect(parsed.vatId).toBe('123456789');
       expect(parsed.accountKey).toBe('ACC001');
       expect(parsed.accountName).toBe('Cash Account');
@@ -305,9 +303,9 @@ describe('B110 Record', () => {
 
       const parsed = parseB110(paddedLine);
 
-      expect(parsed.recordNumber).toBe('42');
+      expect(parsed.recordNumber).toBe(42);
       expect(parsed.vatId).toBe('123');
-      expect(parsed.accountingClassificationCode).toBe('99');
+      expect(parsed.accountingClassificationCode).toBe(99);
       expect(parsed.supplierCustomerTaxId).toBe('456');
     });
 
@@ -337,30 +335,30 @@ describe('B110 Record', () => {
       const testCases: B110[] = [
         {
           ...validB110,
-          recordNumber: '999999999',
+          recordNumber: 999_999_999,
           vatId: '999999999',
-          accountingClassificationCode: '9999',
+          accountingClassificationCode: undefined,
           supplierCustomerTaxId: '999999999',
         },
         {
           ...validB110,
-          recordNumber: '1',
+          recordNumber: 1,
           vatId: '1',
           customerSupplierAddressStreet: '',
           customerSupplierAddressHouseNumber: '',
           customerSupplierAddressCity: '',
           customerSupplierAddressZip: '',
           customerSupplierAddressCountry: '',
-          countryCode: '',
+          countryCode: undefined,
           parentAccountKey: '',
           accountOpeningBalance: 0,
           totalDebits: 0,
           totalCredits: 0,
-          accountingClassificationCode: '',
+          accountingClassificationCode: undefined,
           supplierCustomerTaxId: '',
           branchId: '',
           openingBalanceForeignCurrency: 0,
-          foreignCurrencyCode: '',
+          foreignCurrencyCode: undefined,
           reserved: '',
         },
       ];
@@ -380,16 +378,16 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
         accountOpeningBalance: 0,
         totalDebits: 0,
         totalCredits: 0,
-        accountingClassificationCode: '',
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
         openingBalanceForeignCurrency: 0,
-        foreignCurrencyCode: '',
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
 
