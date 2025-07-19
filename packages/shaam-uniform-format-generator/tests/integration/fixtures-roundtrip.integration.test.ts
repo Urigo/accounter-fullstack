@@ -54,7 +54,7 @@ interface ParsedFixtureData {
 interface RecordParsingResult {
   success: boolean;
   recordType?: string;
-  parsedRecord?: 
+  parsedRecord?:
     | ReturnType<typeof parseA100>
     | ReturnType<typeof parseB100>
     | ReturnType<typeof parseB110>
