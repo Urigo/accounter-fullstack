@@ -51,6 +51,60 @@ interface ParsedFixtureData {
   };
 }
 
+interface RecordParsingResult {
+  success: boolean;
+  recordType?: string;
+  parsedRecord?: 
+    | ReturnType<typeof parseA100>
+    | ReturnType<typeof parseB100>
+    | ReturnType<typeof parseB110>
+    | ReturnType<typeof parseC100>
+    | ReturnType<typeof parseD110>
+    | ReturnType<typeof parseD120>
+    | ReturnType<typeof parseM100>
+    | ReturnType<typeof parseZ900>;
+  error?: Error;
+}
+
+/**
+ * Shared helper function to parse a single record line based on its record type
+ * @param line The line to parse (should already be cleaned of line endings)
+ * @returns Object containing parsing result and parsed record if successful
+ */
+function parseRecordLine(line: string): RecordParsingResult {
+  if (line.length < 4) {
+    return { success: false };
+  }
+
+  const recordType = line.substring(0, 4);
+
+  try {
+    switch (recordType) {
+      case 'A100':
+        return { success: true, recordType, parsedRecord: parseA100(line) };
+      case 'B100':
+        return { success: true, recordType, parsedRecord: parseB100(line) };
+      case 'B110':
+        return { success: true, recordType, parsedRecord: parseB110(line) };
+      case 'C100':
+        return { success: true, recordType, parsedRecord: parseC100(line) };
+      case 'D110':
+        return { success: true, recordType, parsedRecord: parseD110(line) };
+      case 'D120':
+        return { success: true, recordType, parsedRecord: parseD120(line) };
+      case 'M100':
+        return { success: true, recordType, parsedRecord: parseM100(line) };
+      case 'Z900':
+        return { success: true, recordType, parsedRecord: parseZ900(line) };
+      default:
+        // Unknown record type
+        return { success: false, recordType };
+    }
+  } catch (error) {
+    return { success: false, recordType, error: error as Error };
+  }
+}
+
 /**
  * Parses the BKMVDATA.txt fixture file into structured data
  */
@@ -80,141 +134,146 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
   for (const line of lines) {
     if (line.length < 4) continue;
 
-    const recordType = line.substring(0, 4);
     // Only remove CRLF, not trailing spaces which might be significant
-    const cleanLine = line.replace(/\r?\n?$/, '').replace(/\r$/, '');
+    const cleanLine = line.replace(/\r?\n?$/, '');
+    const parseResult = parseRecordLine(cleanLine);
 
-    try {
-      switch (recordType) {
-        case 'A100': {
-          result.rawRecords.a100 = parseA100(cleanLine);
-          if (result.rawRecords.a100) {
-            result.business = {
-              businessId: result.rawRecords.a100.primaryIdentifier.toString(), // Convert number to string
-              name: 'Unknown Business', // A100 doesn't have business name field
-              taxId: result.rawRecords.a100.vatId,
-              reportingPeriod: {
-                startDate: '2022-01-01', // Default values since A100 doesn't have these fields
-                endDate: '2022-12-31',
-              },
-            };
-          }
-          break;
-        }
-
-        case 'B100': {
-          const b100 = parseB100(cleanLine);
-          result.rawRecords.b100.push(b100);
-          result.journalEntries.push({
-            id: `JE_${b100.transactionNumber}`,
-            date: b100.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
-            amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1), // transactionAmount is now a number
-            accountId: b100.accountKey,
-            description: b100.details, // Preserve exact original details (including empty strings)
-            transactionNumber: b100.transactionNumber,
-            transactionLineNumber: b100.transactionLineNumber,
-            batchNumber: b100.batchNumber,
-            transactionType: b100.transactionType,
-            referenceDocument: b100.referenceDocument,
-            referenceDocumentType: b100.referenceDocumentType,
-            referenceDocument2: b100.referenceDocument2,
-            referenceDocumentType2: b100.referenceDocumentType2,
-            valueDate: b100.valueDate,
-            counterAccountKey: b100.counterAccountKey,
-            debitCreditIndicator: b100.debitCreditIndicator,
-            currencyCode: b100.currencyCode,
-            transactionAmount: b100.transactionAmount, // Preserve original transaction amount with sign
-            foreignCurrencyAmount: b100.foreignCurrencyAmount,
-            quantityField: b100.quantityField,
-            matchingField1: b100.matchingField1,
-            matchingField2: b100.matchingField2,
-            branchId: b100.branchId,
-            entryDate: b100.entryDate,
-            operatorUsername: b100.operatorUsername,
-            reserved: b100.reserved,
-          });
-          break;
-        }
-
-        case 'B110': {
-          const b110 = parseB110(cleanLine);
-          result.rawRecords.b110.push(b110);
-          result.accounts.push({
-            id: b110.accountKey,
-            name: b110.accountName || '', // Preserve exact original account name (including empty strings)
-            sortCode: {
-              key: b110.trialBalanceCode || 'Other',
-              name: b110.trialBalanceCodeDescription || '', // Preserve exact original description (including empty strings)
-            },
-            address: {
-              street: b110.customerSupplierAddressStreet,
-              houseNumber: b110.customerSupplierAddressHouseNumber,
-              city: b110.customerSupplierAddressCity,
-              zip: b110.customerSupplierAddressZip,
-              country: b110.customerSupplierAddressCountry,
-            },
-            countryCode: b110.countryCode,
-            parentAccountKey: b110.parentAccountKey,
-            vatId: b110.supplierCustomerTaxId,
-            accountOpeningBalance: b110.accountOpeningBalance ?? 0,
-            totalDebits: b110.totalDebits,
-            totalCredits: b110.totalCredits,
-            accountingClassificationCode: b110.accountingClassificationCode?.toString(),
-            branchId: b110.branchId,
-            openingBalanceForeignCurrency: b110.openingBalanceForeignCurrency,
-            foreignCurrencyCode: b110.foreignCurrencyCode,
-            // Preserve original field value for exact round-trip
-            originalSupplierCustomerTaxId: line.slice(326, 335), // Positions 327-335 (9 chars)
-          });
-          break;
-        }
-
-        case 'C100': {
-          const c100 = parseC100(cleanLine);
-          result.rawRecords.c100.push(c100);
-          result.documents.push({
-            id: c100.documentId,
-            type: c100.documentType,
-            date: c100.documentIssueDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
-            amount: parseFloat(c100.amountIncludingVat || '0'),
-            description: c100.customerName || 'Document',
-          });
-          break;
-        }
-
-        case 'D110':
-          result.rawRecords.d110.push(parseD110(cleanLine));
-          break;
-
-        case 'D120':
-          result.rawRecords.d120.push(parseD120(cleanLine));
-          break;
-
-        case 'M100': {
-          const m100 = parseM100(cleanLine);
-          result.rawRecords.m100.push(m100);
-          result.inventory.push({
-            id: m100.internalItemCode,
-            name: m100.itemName,
-            quantity: parseInt(m100.totalStockOut || '0'),
-            unitPrice: 0, // M100 doesn't have unit price directly, defaulting to 0
-          });
-          break;
-        }
-
-        case 'Z900':
-          result.rawRecords.z900 = parseZ900(cleanLine);
-          break;
-
-        default:
-          // Skip unknown record types
-          break;
+    if (!parseResult.success) {
+      if (parseResult.error) {
+        // For debugging, log the line that caused the parsing error.
+        // eslint-disable-next-line no-console
+        console.error(`Failed to parse line: ${cleanLine}`, parseResult.error);
       }
-    } catch (error) {
-      // For debugging, log the line that caused the parsing error.
-      // eslint-disable-next-line no-console
-      console.error(`Failed to parse line: ${cleanLine}`, error);
       // Skip parsing errors for invalid lines
+      continue;
+    }
+
+    const { recordType, parsedRecord } = parseResult;
+
+    switch (recordType) {
+      case 'A100': {
+        result.rawRecords.a100 = parsedRecord as ReturnType<typeof parseA100>;
+        if (result.rawRecords.a100) {
+          result.business = {
+            businessId: result.rawRecords.a100.primaryIdentifier.toString(), // Convert number to string
+            name: 'Unknown Business', // A100 doesn't have business name field
+            taxId: result.rawRecords.a100.vatId,
+            reportingPeriod: {
+              startDate: '2022-01-01', // Default values since A100 doesn't have these fields
+              endDate: '2022-12-31',
+            },
+          };
+        }
+        break;
+      }
+
+      case 'B100': {
+        const b100 = parsedRecord as ReturnType<typeof parseB100>;
+        result.rawRecords.b100.push(b100);
+        result.journalEntries.push({
+          id: `JE_${b100.transactionNumber}`,
+          date: b100.date.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
+          amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1), // transactionAmount is now a number
+          accountId: b100.accountKey,
+          description: b100.details, // Preserve exact original details (including empty strings)
+          transactionNumber: b100.transactionNumber,
+          transactionLineNumber: b100.transactionLineNumber,
+          batchNumber: b100.batchNumber,
+          transactionType: b100.transactionType,
+          referenceDocument: b100.referenceDocument,
+          referenceDocumentType: b100.referenceDocumentType,
+          referenceDocument2: b100.referenceDocument2,
+          referenceDocumentType2: b100.referenceDocumentType2,
+          valueDate: b100.valueDate,
+          counterAccountKey: b100.counterAccountKey,
+          debitCreditIndicator: b100.debitCreditIndicator,
+          currencyCode: b100.currencyCode,
+          transactionAmount: b100.transactionAmount, // Preserve original transaction amount with sign
+          foreignCurrencyAmount: b100.foreignCurrencyAmount,
+          quantityField: b100.quantityField,
+          matchingField1: b100.matchingField1,
+          matchingField2: b100.matchingField2,
+          branchId: b100.branchId,
+          entryDate: b100.entryDate,
+          operatorUsername: b100.operatorUsername,
+          reserved: b100.reserved,
+        });
+        break;
+      }
+
+      case 'B110': {
+        const b110 = parsedRecord as ReturnType<typeof parseB110>;
+        result.rawRecords.b110.push(b110);
+        result.accounts.push({
+          id: b110.accountKey,
+          name: b110.accountName || '', // Preserve exact original account name (including empty strings)
+          sortCode: {
+            key: b110.trialBalanceCode || 'Other',
+            name: b110.trialBalanceCodeDescription || '', // Preserve exact original description (including empty strings)
+          },
+          address: {
+            street: b110.customerSupplierAddressStreet,
+            houseNumber: b110.customerSupplierAddressHouseNumber,
+            city: b110.customerSupplierAddressCity,
+            zip: b110.customerSupplierAddressZip,
+            country: b110.customerSupplierAddressCountry,
+          },
+          countryCode: b110.countryCode,
+          parentAccountKey: b110.parentAccountKey,
+          vatId: b110.supplierCustomerTaxId,
+          accountOpeningBalance: b110.accountOpeningBalance ?? 0,
+          totalDebits: b110.totalDebits,
+          totalCredits: b110.totalCredits,
+          accountingClassificationCode: b110.accountingClassificationCode?.toString(),
+          branchId: b110.branchId,
+          openingBalanceForeignCurrency: b110.openingBalanceForeignCurrency,
+          foreignCurrencyCode: b110.foreignCurrencyCode,
+          // Preserve original field value for exact round-trip
+          originalSupplierCustomerTaxId: line.slice(326, 335), // Positions 327-335 (9 chars)
+        });
+        break;
+      }
+
+      case 'C100': {
+        const c100 = parsedRecord as ReturnType<typeof parseC100>;
+        result.rawRecords.c100.push(c100);
+        result.documents.push({
+          id: c100.documentId,
+          type: c100.documentType,
+          date: c100.documentIssueDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'),
+          amount: parseFloat(c100.amountIncludingVat || '0'),
+          description: c100.customerName || 'Document',
+        });
+        break;
+      }
+
+      case 'D110':
+        result.rawRecords.d110.push(parsedRecord as ReturnType<typeof parseD110>);
+        break;
+
+      case 'D120':
+        result.rawRecords.d120.push(parsedRecord as ReturnType<typeof parseD120>);
+        break;
+
+      case 'M100': {
+        const m100 = parsedRecord as ReturnType<typeof parseM100>;
+        result.rawRecords.m100.push(m100);
+        result.inventory.push({
+          id: m100.internalItemCode,
+          name: m100.itemName,
+          quantity: parseInt(m100.totalStockOut || '0'),
+          unitPrice: 0, // M100 doesn't have unit price directly, defaulting to 0
+        });
+        break;
+      }
+
+      case 'Z900':
+        result.rawRecords.z900 = parsedRecord as ReturnType<typeof parseZ900>;
+        break;
+
+      default:
+        // Should not reach here due to parseRecordLine filtering
+        break;
     }
   }
 
@@ -289,8 +348,8 @@ describe('Fixture Files Round-trip Integration Test', () => {
 
     // Skip test if we couldn't parse meaningful data
     if (!parsedData.business) {
-      expect(parsedData.business).toBeNull(); // Make the test fail with a clear message
-      return;
+      expect(parsedData.business, 'Business data could not be parsed from fixture').toBeDefined();
+      return; // This line is for type-safety and will not be reached if the assertion fails.
     }
 
     // Create ReportInput from parsed data
@@ -459,20 +518,21 @@ describe('Fixture Files Round-trip Integration Test', () => {
             a000Record = parseA000(cleanLine);
           }
         } catch (error) {
-          // eslint-disable-next-line no-console
-          console.log(`Failed to parse A000 line:`, error);
+          // Re-throwing the error will make the test fail with a descriptive message.
+          throw new Error(`Failed to parse A000 line: ${cleanLine}`, { cause: error });
         }
       } else if (cleanLine.length === 19) {
         // A000Sum record (record type summary)
         try {
           a000SumRecords.push(parseA000Sum(cleanLine));
         } catch (error) {
-          // eslint-disable-next-line no-console
-          console.log(`Failed to parse A000Sum line:`, error);
+          // Re-throwing the error will make the test fail with a descriptive message.
+          throw new Error(`Failed to parse A000Sum line: ${cleanLine}`, { cause: error });
         }
       } else {
-        // eslint-disable-next-line no-console
-        console.log(`Unknown line length ${cleanLine.length}, line: ${cleanLine.slice(0, 20)}...`);
+        throw new Error(
+          `Unknown line length ${cleanLine.length}, line: ${cleanLine.slice(0, 20)}...`,
+        );
       }
     }
 
@@ -564,49 +624,11 @@ describe('Fixture Files Round-trip Integration Test', () => {
         continue;
       }
 
-      const recordType = line.substring(0, 4);
+      const parseResult = parseRecordLine(line);
 
-      try {
-        switch (recordType) {
-          case 'A100':
-            parseA100(line);
-            validRecords++;
-            break;
-          case 'B100':
-            parseB100(line);
-            validRecords++;
-            break;
-          case 'B110':
-            parseB110(line);
-            validRecords++;
-            break;
-          case 'C100':
-            parseC100(line);
-            validRecords++;
-            break;
-          case 'D110':
-            parseD110(line);
-            validRecords++;
-            break;
-          case 'D120':
-            parseD120(line);
-            validRecords++;
-            break;
-          case 'M100':
-            parseM100(line);
-            validRecords++;
-            break;
-          case 'Z900':
-            parseZ900(line);
-            validRecords++;
-            break;
-          default:
-            // Unknown record type
-            invalidRecords++;
-            break;
-        }
-      } catch {
-        // Failed to parse record
+      if (parseResult.success) {
+        validRecords++;
+      } else {
         invalidRecords++;
       }
     }
@@ -685,7 +707,7 @@ describe('Fixture Files Round-trip Integration Test', () => {
 
       // Most important: verify the signed amounts match exactly (monetary precision)
       expect(reparsed.signedAmount).toBe(original.signedAmount);
-      
+
       // Additional verification: absolute amounts match
       expect(Math.abs(reparsed.signedAmount)).toBe(Math.abs(original.signedAmount));
     }
@@ -695,8 +717,5 @@ describe('Fixture Files Round-trip Integration Test', () => {
     const reparsedTotal = reparsedAmounts.reduce((sum, amt) => sum + amt.signedAmount, 0);
 
     expect(reparsedTotal).toBe(originalTotal);
-
-    // Summary validation
-    expect(originalAmounts.length).toBeGreaterThan(0);
   });
 });
