@@ -313,6 +313,16 @@ function convertToStructuredData(
         endDate: a000.endDate ? formatDateFromShaam(a000.endDate) : '2024-12-31',
       },
     };
+
+    // Add business address if available
+    if (a000.businessStreet || a000.businessHouseNum || a000.businessCity || a000.businessZip) {
+      result.business.address = {
+        street: a000.businessStreet || undefined,
+        houseNumber: a000.businessHouseNum || undefined,
+        city: a000.businessCity || undefined,
+        zip: a000.businessZip || undefined,
+      };
+    }
   } else if (parsedData.dataRecords.a100) {
     const a100 = parsedData.dataRecords.a100;
     result.business = {
@@ -331,6 +341,28 @@ function convertToStructuredData(
         amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1),
         accountId: b100.accountKey,
         description: b100.details || 'Journal Entry',
+        // Include extended B100 fields
+        transactionNumber: b100.transactionNumber,
+        transactionLineNumber: b100.transactionLineNumber,
+        batchNumber: b100.batchNumber,
+        transactionType: b100.transactionType,
+        referenceDocument: b100.referenceDocument,
+        referenceDocumentType: b100.referenceDocumentType,
+        referenceDocument2: b100.referenceDocument2,
+        referenceDocumentType2: b100.referenceDocumentType2,
+        valueDate: b100.valueDate ? formatDateFromShaam(b100.valueDate) : undefined,
+        counterAccountKey: b100.counterAccountKey,
+        debitCreditIndicator: b100.debitCreditIndicator,
+        currencyCode: b100.currencyCode,
+        transactionAmount: b100.transactionAmount,
+        foreignCurrencyAmount: b100.foreignCurrencyAmount,
+        quantityField: b100.quantityField,
+        matchingField1: b100.matchingField1,
+        matchingField2: b100.matchingField2,
+        branchId: b100.branchId,
+        entryDate: b100.entryDate ? formatDateFromShaam(b100.entryDate) : undefined,
+        operatorUsername: b100.operatorUsername,
+        reserved: b100.reserved,
       };
       result.journalEntries.push(journalEntry);
     } catch (error) {
@@ -365,6 +397,7 @@ function convertToStructuredData(
         branchId: b110.branchId,
         openingBalanceForeignCurrency: b110.openingBalanceForeignCurrency,
         foreignCurrencyCode: b110.foreignCurrencyCode,
+        originalSupplierCustomerTaxId: b110.supplierCustomerTaxId, // Preserve original tax ID with spaces
       };
 
       // Add address if available
