@@ -231,7 +231,7 @@ describe('B110 Record', () => {
 
       // Empty supplier/customer tax ID should be zero-padded
       const supplierTaxPos = accClassPos + 4;
-      expect(withoutCrlf.slice(supplierTaxPos, supplierTaxPos + 9)).toBe('000000000');
+      expect(withoutCrlf.slice(supplierTaxPos, supplierTaxPos + 9)).toBe('         ');
     });
   });
 

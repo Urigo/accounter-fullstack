@@ -317,7 +317,7 @@ function convertToStructuredData(
     const a100 = parsedData.dataRecords.a100;
     result.business = {
       ...result.business,
-      businessId: a100.primaryIdentifier,
+      businessId: a100.primaryIdentifier.toString(),
       taxId: a100.vatId,
     };
   }
@@ -326,9 +326,9 @@ function convertToStructuredData(
   for (const b100 of parsedData.dataRecords.b100) {
     try {
       const journalEntry: JournalEntry = {
-        id: `JE_${b100.transactionNumber}`,
+        id: `JE_${b100.transactionNumber.toString()}`,
         date: formatDateFromShaam(b100.date),
-        amount: parseFloat(b100.transactionAmount) * (b100.debitCreditIndicator === '1' ? 1 : -1),
+        amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1),
         accountId: b100.accountKey,
         description: b100.details || 'Journal Entry',
       };
@@ -361,7 +361,7 @@ function convertToStructuredData(
         vatId: b110.supplierCustomerTaxId,
         totalDebits: b110.totalDebits,
         totalCredits: b110.totalCredits,
-        accountingClassificationCode: b110.accountingClassificationCode,
+        accountingClassificationCode: b110.accountingClassificationCode?.toString(),
         branchId: b110.branchId,
         openingBalanceForeignCurrency: b110.openingBalanceForeignCurrency,
         foreignCurrencyCode: b110.foreignCurrencyCode,
@@ -615,7 +615,7 @@ function performCrossValidation(
 
   // Validate Z900 total records count
   if (parsedData.dataRecords.z900) {
-    const z900TotalRecords = parseInt(parsedData.dataRecords.z900.totalRecords);
+    const z900TotalRecords = parsedData.dataRecords.z900.totalRecords;
     const actualDataRecords =
       (parsedData.dataRecords.a100 ? 1 : 0) +
       parsedData.dataRecords.b100.length +

@@ -4,7 +4,9 @@ import { CurrencyCode, CurrencyCodeEnum, DocumentTypeEnum } from '../../types/in
 import {
   formatMonetaryAmount,
   formatOptionalMonetaryAmount,
+  formatOptionalQuantityAmount,
   parseMonetaryAmount,
+  parseQuantityAmount,
 } from '../format/monetary.js';
 import { formatField, formatNumericField } from '../index.js';
 
@@ -139,7 +141,7 @@ export function encodeB100(input: B100): string {
     formatField(input.currencyCode ?? '', 3, 'left'), // Field 1367: Currency code (3)
     formatMonetaryAmount(input.transactionAmount), // Field 1368: Transaction amount (15) - monetary field
     formatOptionalMonetaryAmount(input.foreignCurrencyAmount) || ' '.repeat(15), // Field 1369: Foreign currency amount (15) - optional monetary field
-    formatField(input.quantityField?.toFixed(2) ?? '', 12, 'right'), // Field 1370: Quantity field (12) - optional numeric field
+    formatOptionalQuantityAmount(input.quantityField), // Field 1370: Quantity field (12) - optional quantity field
     formatField(input.matchingField1, 10, 'left'), // Field 1371: Matching field 1 (10)
     formatField(input.matchingField2, 10, 'left'), // Field 1372: Matching field 2 (10)
     // Field 1373: Reserved field (0) - skipped as it has 0 length
@@ -293,7 +295,7 @@ export function parseB100(line: string): B100 {
     foreignCurrencyAmount: foreignCurrencyAmount.trim()
       ? parseMonetaryAmount(foreignCurrencyAmount)
       : undefined,
-    quantityField: quantityField.trim() ? parseFloat(quantityField.trim()) : undefined,
+    quantityField: quantityField.trim() ? parseQuantityAmount(quantityField) : undefined,
     matchingField1,
     matchingField2,
     branchId,

@@ -6,7 +6,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateUniformFormatReport } from '../../src/api/generate-report';
 import { parseUniformFormatFiles } from '../../src/api/parse-files';
-import { parseA000, parseA000Sum } from '../../src/generator/records/index';
 import type { ReportInput } from '../../src/types/index';
 
 describe('Comprehensive SHAAM Format Integration Test', () => {
@@ -107,65 +106,23 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
     expect(result.iniText).toBeDefined();
     expect(result.summary.totalRecords).toBeGreaterThan(0);
 
-    // Parse INI file for A000 and A000Sum records
-    const iniLines = result.iniText.split('\r\n').filter(line => line.trim().length > 0);
-
-    interface ParsedIniData {
-      headerRecord: ReturnType<typeof parseA000> | null;
-      summaryRecords: ReturnType<typeof parseA000Sum>[];
-    }
-
-    const parsedIni: ParsedIniData = {
-      headerRecord: null,
-      summaryRecords: [],
-    };
-
-    // Parse INI file records
-    for (const line of iniLines) {
-      const recordType = line.substring(0, 4);
-
-      if (recordType === 'A000') {
-        parsedIni.headerRecord = parseA000(line);
-      } else if (line.length === 19) {
-        // A000Sum records are 19 characters long (4-char code + 15-char count)
-        // They start with record type codes like A100, B100, C100, etc.
-        try {
-          const summaryRecord = parseA000Sum(line);
-          parsedIni.summaryRecords.push(summaryRecord);
-        } catch {
-          // If parsing fails, it's not an A000Sum record
-        }
-      }
-    }
-
-    // Verify A000 header record
-    expect(parsedIni.headerRecord).toBeDefined();
-    expect(parsedIni.headerRecord?.vatId).toBe(input.business.taxId);
-    expect(parsedIni.headerRecord?.businessName).toBe(input.business.name);
-
-    // Verify A000Sum summary records
-    expect(parsedIni.summaryRecords.length).toBe(8); // One for each record type
-
-    const summaryByType = Object.fromEntries(
-      parsedIni.summaryRecords.map(record => [record.code, parseInt(record.recordCount)]),
-    );
-
-    expect(summaryByType.A100).toBe(1);
-    expect(summaryByType.C100).toBe(input.documents.length);
-    expect(summaryByType.D110).toBe(input.documents.length);
-    expect(summaryByType.D120).toBe(input.documents.length);
-    expect(summaryByType.B100).toBe(input.journalEntries.length);
-    expect(summaryByType.B110).toBe(input.accounts.length);
-    expect(summaryByType.M100).toBe(input.inventory.length);
-    expect(summaryByType.Z900).toBe(1);
-
-    // Parse the generated files back using the new parsing function
+    // Parse the generated files back using parseUniformFormatFiles
     const parsedData = parseUniformFormatFiles(result.iniText, result.dataText);
 
     // Verify business metadata
     expect(parsedData.data.business).toBeDefined();
     expect(parsedData.data.business.name).toBe(input.business.name);
     expect(parsedData.data.business.taxId).toBe(input.business.taxId);
+
+    // Verify A000Sum summary records from parsed summary (no need for manual parsing)
+    expect(parsedData.summary.perType.A100).toBe(1);
+    expect(parsedData.summary.perType.C100).toBe(input.documents.length);
+    expect(parsedData.summary.perType.D110).toBe(input.documents.length);
+    expect(parsedData.summary.perType.D120).toBe(input.documents.length);
+    expect(parsedData.summary.perType.B100).toBe(input.journalEntries.length);
+    expect(parsedData.summary.perType.B110).toBe(input.accounts.length);
+    expect(parsedData.summary.perType.M100).toBe(input.inventory.length);
+    expect(parsedData.summary.perType.Z900).toBe(1);
 
     // Verify documents
     expect(parsedData.data.documents).toHaveLength(input.documents.length);
@@ -212,14 +169,14 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
     }
 
     // Cross-verify: Summary record counts should match actual parsed data counts
-    expect(summaryByType.A100).toBe(1); // Always 1 A100 record
-    expect(summaryByType.C100).toBe(parsedData.data.documents.length);
-    expect(summaryByType.D110).toBe(parsedData.data.documents.length); // D110 records don't directly appear in parsed data
-    expect(summaryByType.D120).toBe(parsedData.data.documents.length); // D120 records don't directly appear in parsed data
-    expect(summaryByType.B100).toBe(parsedData.data.journalEntries.length);
-    expect(summaryByType.B110).toBe(parsedData.data.accounts.length);
-    expect(summaryByType.M100).toBe(parsedData.data.inventory.length);
-    expect(summaryByType.Z900).toBe(1); // Always 1 Z900 record
+    expect(parsedData.summary.perType.A100).toBe(1); // Always 1 A100 record
+    expect(parsedData.summary.perType.C100).toBe(parsedData.data.documents.length);
+    expect(parsedData.summary.perType.D110).toBe(parsedData.data.documents.length); // D110 records don't directly appear in parsed data
+    expect(parsedData.summary.perType.D120).toBe(parsedData.data.documents.length); // D120 records don't directly appear in parsed data
+    expect(parsedData.summary.perType.B100).toBe(parsedData.data.journalEntries.length);
+    expect(parsedData.summary.perType.B110).toBe(parsedData.data.accounts.length);
+    expect(parsedData.summary.perType.M100).toBe(parsedData.data.inventory.length);
+    expect(parsedData.summary.perType.Z900).toBe(1); // Always 1 Z900 record
 
     // Verify overall record counts
     const expectedTotalRecords =

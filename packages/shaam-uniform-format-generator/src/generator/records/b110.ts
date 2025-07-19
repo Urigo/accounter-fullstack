@@ -154,7 +154,12 @@ export function encodeB110(input: B110): string {
       'left',
     ), // Field 1417: Accounting classification code (4)
     // Field 1418: Reserved field (0) - skipped as it has 0 length
-    formatNumericField(input.supplierCustomerTaxId ?? '', 9), // Field 1419: Supplier/Customer tax ID (9)
+    // Use original value if available and looks like raw field data, otherwise format
+    input.supplierCustomerTaxId
+      ? input.supplierCustomerTaxId.length === 9
+        ? input.supplierCustomerTaxId // Preserve original raw field data if exactly 9 chars
+        : formatNumericField(input.supplierCustomerTaxId, 9) // Format processed values
+      : formatField('', 9, 'left'), // Field 1419: Supplier/Customer tax ID (9) - use spaces if empty
     // Field 1420: Reserved field (0) - skipped as it has 0 length
     formatField(input.branchId ?? '0', 7, 'left'), // Field 1421: Branch ID (7)
     formatOptionalMonetaryAmount(input.openingBalanceForeignCurrency) || formatMonetaryAmount(0), // Field 1422: Opening balance in foreign currency (15)

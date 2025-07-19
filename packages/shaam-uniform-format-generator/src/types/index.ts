@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 // Import DocumentTypeEnum from enums for backward compatibility
-import { DocumentTypeEnum } from './enums.js';
+import { CurrencyCodeEnum, DocumentTypeEnum } from './enums.js';
 
 // Re-export all enums and types from enums.ts
 export * from './enums.js';
@@ -36,15 +36,37 @@ export const JournalEntrySchema = z.object({
   amount: z.number(),
   accountId: z.string().min(1, 'Account ID is required'),
   description: z.string().optional(),
+  // Additional B100 fields to preserve round-trip fidelity
+  transactionNumber: z.number().optional(),
+  transactionLineNumber: z.number().optional(),
+  batchNumber: z.number().optional(),
+  transactionType: z.string().optional(),
+  referenceDocument: z.string().optional(),
+  referenceDocumentType: DocumentTypeEnum.optional(),
+  referenceDocument2: z.string().optional(),
+  referenceDocumentType2: DocumentTypeEnum.optional(),
+  valueDate: z.string().optional(),
+  counterAccountKey: z.string().optional(),
+  debitCreditIndicator: z.enum(['1', '2']).optional(),
+  currencyCode: CurrencyCodeEnum.optional(),
+  transactionAmount: z.number().optional(), // Preserve original B100 transaction amount with sign
+  foreignCurrencyAmount: z.number().optional(),
+  quantityField: z.number().optional(),
+  matchingField1: z.string().optional(),
+  matchingField2: z.string().optional(),
+  branchId: z.string().optional(),
+  entryDate: z.string().optional(),
+  operatorUsername: z.string().optional(),
+  reserved: z.string().optional(),
 });
 
 // Account schema
 export const AccountSchema = z.object({
   id: z.string().min(1, 'Account ID is required'),
-  name: z.string().min(1, 'Account name is required'),
+  name: z.string().optional().describe('Account name - optional for round-trip compatibility'),
   sortCode: z.object({
     key: z.string().min(1, 'Account sort code key is required'),
-    name: z.string().min(1, 'Account sort code name is required'),
+    name: z.string().optional(), // Allow optional for round-trip compatibility with empty descriptions
   }),
   address: z
     .object({
@@ -66,6 +88,8 @@ export const AccountSchema = z.object({
   branchId: z.string().optional(),
   openingBalanceForeignCurrency: z.number().optional(),
   foreignCurrencyCode: z.string().optional(),
+  // Original field values for round-trip fidelity
+  originalSupplierCustomerTaxId: z.string().optional(), // Preserve exact original value with spaces
 });
 
 // Inventory item schema
