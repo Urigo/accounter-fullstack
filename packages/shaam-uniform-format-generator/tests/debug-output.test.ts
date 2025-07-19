@@ -40,8 +40,11 @@ describe('Debug SHAAM Format Output', () => {
         {
           id: '1100',
           name: 'Cash',
-          type: 'Asset',
-          balance: 5000.0,
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
+          accountOpeningBalance: 5000.0,
         },
       ],
       inventory: [

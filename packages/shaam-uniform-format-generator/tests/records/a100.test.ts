@@ -4,9 +4,9 @@ import { A100Schema, encodeA100, parseA100, type A100 } from '../../src/generato
 describe('A100 Record', () => {
   const validA100: A100 = {
     code: 'A100',
-    recordNumber: '1',
+    recordNumber: 1,
     vatId: '123456789',
-    primaryIdentifier: '12345678901234',
+    primaryIdentifier: Number('12345678901234'), // This is a safe integer in JS
     systemConstant: '&OF1.31&',
     reserved: '',
   };
@@ -72,7 +72,7 @@ describe('A100 Record', () => {
       const longFields: A100 = {
         ...validA100,
         vatId: '1234567890', // Too long for 9 chars
-        primaryIdentifier: '1234567890123456', // Too long for 15 chars
+        primaryIdentifier: Number('123456789012345'), // 15 digits - max for this field
       };
 
       const encoded = encodeA100(longFields);
@@ -94,9 +94,9 @@ describe('A100 Record', () => {
     it('should pad short fields correctly', () => {
       const shortFields: A100 = {
         ...validA100,
-        recordNumber: '42',
+        recordNumber: 42,
         vatId: '123',
-        primaryIdentifier: '456',
+        primaryIdentifier: 456,
       };
 
       const encoded = encodeA100(shortFields);
@@ -122,9 +122,9 @@ describe('A100 Record', () => {
       const parsed = parseA100(encoded);
 
       expect(parsed.code).toBe('A100');
-      expect(parsed.recordNumber).toBe('1');
+      expect(parsed.recordNumber).toBe(1);
       expect(parsed.vatId).toBe('123456789');
-      expect(parsed.primaryIdentifier).toBe('12345678901234');
+      expect(parsed.primaryIdentifier).toBe(Number('12345678901234')); // This is a safe integer in JS
       expect(parsed.systemConstant).toBe('&OF1.31&');
       expect(parsed.reserved).toBe('');
     });
@@ -172,9 +172,9 @@ describe('A100 Record', () => {
 
       const parsed = parseA100(paddedLine);
 
-      expect(parsed.recordNumber).toBe('42');
+      expect(parsed.recordNumber).toBe(42);
       expect(parsed.vatId).toBe('123');
-      expect(parsed.primaryIdentifier).toBe('123');
+      expect(parsed.primaryIdentifier).toBe(123);
       expect(parsed.reserved).toBe('');
     });
   });
@@ -192,17 +192,17 @@ describe('A100 Record', () => {
       const testCases: A100[] = [
         {
           code: 'A100',
-          recordNumber: '999999999',
+          recordNumber: Number('999999999'),
           vatId: '999888777',
-          primaryIdentifier: '123456789012345',
+          primaryIdentifier: Number('123456789012345'),
           systemConstant: '&OF1.31&',
           reserved: 'Some reserved content',
         },
         {
           code: 'A100',
-          recordNumber: '1',
+          recordNumber: 1,
           vatId: '1',
-          primaryIdentifier: '1',
+          primaryIdentifier: 1,
           systemConstant: '&OF1.31&',
           reserved: '',
         },

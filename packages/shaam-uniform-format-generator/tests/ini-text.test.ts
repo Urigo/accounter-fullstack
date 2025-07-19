@@ -86,8 +86,11 @@ describe('INI.TXT Generation', () => {
         {
           id: 'ACC001',
           name: 'Test Account',
-          type: 'Asset',
-          balance: 0,
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
+          accountOpeningBalance: 0,
         },
       ],
       inventory: [
