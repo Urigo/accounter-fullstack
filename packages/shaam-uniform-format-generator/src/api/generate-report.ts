@@ -19,7 +19,13 @@ import {
   type A100Input,
   type Z900Input,
 } from '../generator/records/index.js';
-import type { GenerationOptions, ReportInput, ReportOutput } from '../types/index.js';
+import type {
+  CountryCode,
+  CurrencyCode,
+  GenerationOptions,
+  ReportInput,
+  ReportOutput,
+} from '../types/index.js';
 import { ShaamFormatError } from '../validation/errors.js';
 import { validateInput } from '../validation/validate-input.js';
 
@@ -29,7 +35,7 @@ import { validateInput } from '../validation/validate-input.js';
  *
  * @param input - The report input data
  * @param options - Generation options
- * @returns Report output with generated file content
+ * @returns Generated SHAAM format files and metadata
  */
 export function generateUniformFormatReport(
   input: ReportInput,
@@ -131,7 +137,7 @@ export function generateUniformFormatReport(
 
   // 1. Business metadata - A100 record
   const businessMetadata: A100Input = {
-    recordNumber: recordNumber.toString(),
+    recordNumber,
     vatId: input.business.taxId,
     reserved: '',
   };
@@ -248,32 +254,34 @@ export function generateUniformFormatReport(
   for (const entry of input.journalEntries) {
     const journalRecord = {
       code: 'B100' as const,
-      recordNumber: recordNumber.toString(),
+      recordNumber,
       vatId: input.business.taxId,
-      transactionNumber: entry.id.replace(/\D/g, '') || '1', // Extract only digits, default to '1'
-      transactionLineNumber: '1',
-      batchNumber: '',
-      transactionType: '',
-      referenceDocument: '',
-      referenceDocumentType: '' as const,
-      referenceDocument2: '',
-      referenceDocumentType2: '' as const,
+      transactionNumber:
+        entry.transactionNumber ?? parseInt(entry.id.replace(/\D/g, '') || '1', 10), // Use preserved value or extract from ID
+      transactionLineNumber: entry.transactionLineNumber ?? 1,
+      batchNumber: entry.batchNumber, // Use preserved batch number
+      transactionType: entry.transactionType ?? '',
+      referenceDocument: entry.referenceDocument ?? '',
+      referenceDocumentType: entry.referenceDocumentType,
+      referenceDocument2: entry.referenceDocument2 ?? '',
+      referenceDocumentType2: entry.referenceDocumentType2,
       details: entry.description || '',
       date: entry.date.replace(/-/g, ''),
-      valueDate: entry.date.replace(/-/g, ''), // Same as date for simplicity
+      valueDate: entry.valueDate ? entry.valueDate.replace(/-/g, '') : entry.date.replace(/-/g, ''), // Use preserved or fallback to date
       accountKey: entry.accountId,
-      counterAccountKey: '',
-      debitCreditIndicator: (entry.amount >= 0 ? '1' : '2') as '1' | '2',
-      currencyCode: '',
-      transactionAmount: Math.abs(entry.amount).toFixed(2), // Format as decimal with 2 places
-      foreignCurrencyAmount: '',
-      quantityField: '',
-      matchingField1: '',
-      matchingField2: '',
-      branchId: '',
-      entryDate: entry.date.replace(/-/g, ''),
-      operatorUsername: '',
-      reserved: '',
+      counterAccountKey: entry.counterAccountKey ?? '',
+      debitCreditIndicator:
+        entry.debitCreditIndicator ?? ((entry.amount >= 0 ? '1' : '2') as '1' | '2'),
+      currencyCode: entry.currencyCode,
+      transactionAmount: entry.transactionAmount ?? Math.abs(entry.amount), // Use preserved transaction amount or fallback to absolute value
+      foreignCurrencyAmount: entry.foreignCurrencyAmount, // Use preserved value
+      quantityField: entry.quantityField, // Use preserved value
+      matchingField1: entry.matchingField1 ?? '',
+      matchingField2: entry.matchingField2 ?? '',
+      branchId: entry.branchId ?? '',
+      entryDate: entry.entryDate ? entry.entryDate.replace(/-/g, '') : entry.date.replace(/-/g, ''), // Use preserved or fallback to date
+      operatorUsername: entry.operatorUsername ?? '',
+      reserved: entry.reserved ?? '',
     };
     addRecord('B100', encodeB100(journalRecord));
   }
@@ -282,28 +290,30 @@ export function generateUniformFormatReport(
   for (const account of input.accounts) {
     const accountRecord = {
       code: 'B110' as const,
-      recordNumber: recordNumber.toString(),
+      recordNumber,
       vatId: input.business.taxId,
       accountKey: account.id,
       accountName: account.name,
-      trialBalanceCode: account.type,
-      trialBalanceCodeDescription: account.type,
-      customerSupplierAddressStreet: '',
-      customerSupplierAddressHouseNumber: '',
-      customerSupplierAddressCity: '',
-      customerSupplierAddressZip: '',
-      customerSupplierAddressCountry: '',
-      countryCode: '',
-      parentAccountKey: '',
-      accountOpeningBalance: '0',
-      totalDebits: '0',
-      totalCredits: '0',
-      accountingClassificationCode: '',
-      supplierCustomerTaxId: '',
-      branchId: '',
-      openingBalanceForeignCurrency: '',
-      foreignCurrencyCode: '',
-      reserved: '',
+      trialBalanceCode: account.sortCode.key,
+      trialBalanceCodeDescription: account.sortCode.name,
+      customerSupplierAddressStreet: account.address?.street,
+      customerSupplierAddressHouseNumber: account.address?.houseNumber,
+      customerSupplierAddressCity: account.address?.city,
+      customerSupplierAddressZip: account.address?.zip,
+      customerSupplierAddressCountry: account.address?.country,
+      countryCode: account.countryCode as CountryCode, // Cast to CountryCodeEnum type
+      parentAccountKey: account.parentAccountKey,
+      accountOpeningBalance: account.accountOpeningBalance,
+      totalDebits: account.totalDebits,
+      totalCredits: account.totalCredits,
+      accountingClassificationCode: account.accountingClassificationCode
+        ? parseInt(account.accountingClassificationCode, 10)
+        : undefined,
+      supplierCustomerTaxId: account.originalSupplierCustomerTaxId,
+      branchId: account.branchId,
+      openingBalanceForeignCurrency: account.openingBalanceForeignCurrency,
+      foreignCurrencyCode: account.foreignCurrencyCode as CurrencyCode,
+      reserved: undefined,
     };
     addRecord('B110', encodeB110(accountRecord));
   }
@@ -333,9 +343,9 @@ export function generateUniformFormatReport(
 
   // 7. Closing record: Z900
   const closingRecord: Z900Input = {
-    recordNumber: recordNumber.toString(),
+    recordNumber,
     vatId: input.business.taxId,
-    totalRecords: records.length.toString(), // Count of records before Z900 is added
+    totalRecords: records.length + 1, // Count of records before Z900 is added
     reserved: '',
   };
   addRecord('Z900', encodeZ900(closingRecord));

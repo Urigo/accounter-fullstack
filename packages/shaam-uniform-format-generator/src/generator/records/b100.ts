@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { CRLF } from '../../format/index.js';
-import { DocumentTypeEnum } from '../../types/index.js';
+import { CurrencyCode, CurrencyCodeEnum, DocumentTypeEnum } from '../../types/index.js';
+import {
+  formatMonetaryAmount,
+  formatOptionalMonetaryAmount,
+  formatOptionalQuantityAmount,
+  parseMonetaryAmount,
+  parseQuantityAmount,
+} from '../format/monetary.js';
 import { formatField, formatNumericField } from '../index.js';
 
 /**
@@ -12,56 +19,34 @@ export const B100Schema = z.object({
   code: z.literal('B100').describe('Record type code - always "B100"'),
   // Field 1351: Record number in file (9) - Required - Numeric
   recordNumber: z
-    .string()
+    .number()
+    .int()
     .min(1)
-    .max(9)
-    .regex(/^\d+$/)
+    .max(999_999_999)
     .describe('Sequential record number in file'),
   // Field 1352: Tax ID (9) - Required - Numeric
   vatId: z.string().min(1).max(9).regex(/^\d+$/).describe('Tax identification number'),
   // Field 1353: Transaction number (10) - Required - Numeric
   transactionNumber: z
-    .string()
+    .number()
+    .int()
     .min(1)
-    .max(10)
-    .regex(/^\d+$/)
+    .max(9_999_999_999)
     .describe('Transaction number - see Note 7'),
   // Field 1354: Transaction line number (5) - Required - Numeric
-  transactionLineNumber: z
-    .string()
-    .min(1)
-    .max(5)
-    .regex(/^\d+$/)
-    .describe('Transaction line number'),
+  transactionLineNumber: z.number().int().min(1).max(99_999).describe('Transaction line number'),
   // Field 1355: Batch number (8) - Optional - Numeric
-  batchNumber: z
-    .string()
-    .max(8)
-    .regex(/^$|^\d+$/)
-    .default('')
-    .describe('Batch number'),
+  batchNumber: z.number().int().min(0).max(99_999_999).optional().describe('Batch number'),
   // Field 1356: Transaction type (15) - Optional - Alphanumeric
   transactionType: z.string().max(15).default('').describe('Transaction type'),
   // Field 1357: Reference document (20) - Optional - Alphanumeric
   referenceDocument: z.string().max(20).default('').describe('Reference document'),
   // Field 1358: Reference document type (3) - Optional - Numeric
-  referenceDocumentType: z
-    .string()
-    .max(3)
-    .regex(/^$|^\d+$/)
-    .default('')
-    .transform(val => (val === '' ? val : (val as z.infer<typeof DocumentTypeEnum>)))
-    .describe('Reference document type - see Appendix 1'),
+  referenceDocumentType: DocumentTypeEnum.optional().describe('Reference document type'),
   // Field 1359: Reference document 2 (20) - Optional - Alphanumeric
   referenceDocument2: z.string().max(20).default('').describe('Reference document 2'),
   // Field 1360: Reference document type 2 (3) - Optional - Numeric
-  referenceDocumentType2: z
-    .string()
-    .max(3)
-    .regex(/^$|^\d+$/)
-    .default('')
-    .transform(val => (val === '' ? val : (val as z.infer<typeof DocumentTypeEnum>)))
-    .describe('Reference document type 2 - see Appendix 1'),
+  referenceDocumentType2: DocumentTypeEnum.optional().describe('Reference document type 2'),
   // Field 1361: Details (50) - Optional - Alphanumeric
   details: z.string().max(50).default('').describe('Details'),
   // Field 1362: Date (8) - Required - Numeric - Format: YYYYMMDD
@@ -89,25 +74,13 @@ export const B100Schema = z.object({
     .enum(['1', '2'])
     .describe('Debit/Credit indicator: 1 = Debit, 2 = Credit'),
   // Field 1367: Currency code (3) - Optional - Alphanumeric
-  currencyCode: z
-    .string()
-    .max(3)
-    .default('')
-    .describe('Currency code - refers to field 1369; see Appendix 2'),
-  // Field 1368: Transaction amount (15) - Required - Alphanumeric - Format: X9(12)V99
-  transactionAmount: z.string().min(1).max(15).describe('Transaction amount in local currency'),
-  // Field 1369: Foreign currency amount (15) - Optional - Alphanumeric - Format: X9(12)V99
-  foreignCurrencyAmount: z
-    .string()
-    .max(15)
-    .default('')
-    .describe('Transaction amount in foreign currency'),
-  // Field 1370: Quantity field (12) - Optional - Alphanumeric - Format: X9(9)V99
-  quantityField: z
-    .string()
-    .max(12)
-    .default('')
-    .describe('Quantity field, e.g. quantity or cost code'),
+  currencyCode: CurrencyCodeEnum.optional().describe('Currency code - refers to field 1369'),
+  // Field 1368: Transaction amount (15) - Required - Numeric - Format: X9(12)V99
+  transactionAmount: z.number().describe('Transaction amount in local currency'),
+  // Field 1369: Foreign currency amount (15) - Optional - Numeric - Format: X9(12)V99
+  foreignCurrencyAmount: z.number().optional().describe('Transaction amount in foreign currency'),
+  // Field 1370: Quantity field (12) - Optional - Numeric - Format: X9(9)V99
+  quantityField: z.number().optional().describe('Quantity field, e.g. quantity or cost code'),
   // Field 1371: Matching field 1 (10) - Optional - Alphanumeric
   matchingField1: z
     .string()
@@ -149,26 +122,26 @@ export type B100 = z.infer<typeof B100Schema>;
 export function encodeB100(input: B100): string {
   const fields = [
     formatField(input.code, 4, 'left'), // Field 1350: Record code (4)
-    formatNumericField(input.recordNumber, 9), // Field 1351: Record number (9)
+    formatField(input.recordNumber.toString().padStart(9, '0'), 9, 'left'), // Field 1351: Record number (9)
     formatNumericField(input.vatId, 9), // Field 1352: VAT ID (9)
-    formatNumericField(input.transactionNumber, 10), // Field 1353: Transaction number (10)
-    formatNumericField(input.transactionLineNumber, 5), // Field 1354: Transaction line number (5)
-    formatNumericField(input.batchNumber, 8), // Field 1355: Batch number (8)
+    formatField(input.transactionNumber.toString().padStart(10, '0'), 10, 'left'), // Field 1353: Transaction number (10)
+    formatField(input.transactionLineNumber.toString().padStart(5, '0'), 5, 'left'), // Field 1354: Transaction line number (5)
+    formatField(input.batchNumber?.toString().padStart(8, '0') ?? '00000000', 8, 'left'), // Field 1355: Batch number (8)
     formatField(input.transactionType, 15, 'left'), // Field 1356: Transaction type (15)
     formatField(input.referenceDocument, 20, 'left'), // Field 1357: Reference document (20)
-    formatNumericField(input.referenceDocumentType, 3), // Field 1358: Reference document type (3)
+    formatNumericField(input.referenceDocumentType ?? '', 3), // Field 1358: Reference document type (3)
     formatField(input.referenceDocument2, 20, 'left'), // Field 1359: Reference document 2 (20)
-    formatNumericField(input.referenceDocumentType2, 3), // Field 1360: Reference document type 2 (3)
+    formatNumericField(input.referenceDocumentType2 ?? '', 3), // Field 1360: Reference document type 2 (3)
     formatField(input.details, 50, 'left'), // Field 1361: Details (50)
     formatField(input.date, 8, 'left'), // Field 1362: Date (8)
     formatField(input.valueDate, 8, 'left'), // Field 1363: Value date (8)
     formatField(input.accountKey, 15, 'left'), // Field 1364: Account key (15)
     formatField(input.counterAccountKey, 15, 'left'), // Field 1365: Counter account key (15)
     formatField(input.debitCreditIndicator, 1, 'left'), // Field 1366: Debit/Credit indicator (1)
-    formatField(input.currencyCode, 3, 'left'), // Field 1367: Currency code (3)
-    formatField(input.transactionAmount, 15, 'right'), // Field 1368: Transaction amount (15) - right-aligned for amount
-    formatField(input.foreignCurrencyAmount, 15, 'right'), // Field 1369: Foreign currency amount (15) - right-aligned for amount
-    formatField(input.quantityField, 12, 'right'), // Field 1370: Quantity field (12) - right-aligned for numeric
+    formatField(input.currencyCode ?? '', 3, 'left'), // Field 1367: Currency code (3)
+    formatMonetaryAmount(input.transactionAmount), // Field 1368: Transaction amount (15) - monetary field
+    formatOptionalMonetaryAmount(input.foreignCurrencyAmount) || ' '.repeat(15), // Field 1369: Foreign currency amount (15) - optional monetary field
+    formatOptionalQuantityAmount(input.quantityField), // Field 1370: Quantity field (12) - optional quantity field
     formatField(input.matchingField1, 10, 'left'), // Field 1371: Matching field 1 (10)
     formatField(input.matchingField2, 10, 'left'), // Field 1372: Matching field 2 (10)
     // Field 1373: Reserved field (0) - skipped as it has 0 length
@@ -197,11 +170,13 @@ export function parseB100(line: string): B100 {
   let pos = 0;
   const code = cleanLine.slice(pos, pos + 4).trim();
   pos += 4;
-  const recordNumber =
+  const recordNumber = parseInt(
     cleanLine
       .slice(pos, pos + 9)
       .trim()
-      .replace(/^0+/, '') || '0';
+      .replace(/^0+/, '') || '0',
+    10,
+  );
   pos += 9;
   const vatId =
     cleanLine
@@ -209,39 +184,53 @@ export function parseB100(line: string): B100 {
       .trim()
       .replace(/^0+/, '') || '0';
   pos += 9;
-  const transactionNumber =
+  const transactionNumber = parseInt(
     cleanLine
       .slice(pos, pos + 10)
       .trim()
-      .replace(/^0+/, '') || '0';
+      .replace(/^0+/, '') || '0',
+    10,
+  );
   pos += 10;
-  const transactionLineNumber =
+  const transactionLineNumber = parseInt(
     cleanLine
       .slice(pos, pos + 5)
       .trim()
-      .replace(/^0+/, '') || '0';
+      .replace(/^0+/, '') || '0',
+    10,
+  );
   pos += 5;
+  const batchNumberStr = cleanLine.slice(pos, pos + 8).trim();
   const batchNumber =
-    cleanLine
-      .slice(pos, pos + 8)
-      .trim()
-      .replace(/^0+/, '') || '';
+    batchNumberStr === '00000000' || batchNumberStr === ''
+      ? undefined
+      : parseInt(batchNumberStr.replace(/^0+/, '') || '0', 10);
   pos += 8;
   const transactionType = cleanLine.slice(pos, pos + 15).trim();
   pos += 15;
   const referenceDocument = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const referenceDocumentType = (cleanLine
-    .slice(pos, pos + 3)
-    .trim()
-    .replace(/^0+/, '') || '') as '' | z.infer<typeof DocumentTypeEnum>;
+  const referenceDocumentTypeRaw =
+    cleanLine
+      .slice(pos, pos + 3)
+      .trim()
+      .replace(/^0+/, '') || '';
+  const referenceDocumentType =
+    referenceDocumentTypeRaw === ''
+      ? undefined
+      : (referenceDocumentTypeRaw as z.infer<typeof DocumentTypeEnum>);
   pos += 3;
   const referenceDocument2 = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;
-  const referenceDocumentType2 = (cleanLine
-    .slice(pos, pos + 3)
-    .trim()
-    .replace(/^0+/, '') || '') as '' | z.infer<typeof DocumentTypeEnum>;
+  const referenceDocumentType2Raw =
+    cleanLine
+      .slice(pos, pos + 3)
+      .trim()
+      .replace(/^0+/, '') || '';
+  const referenceDocumentType2 =
+    referenceDocumentType2Raw === ''
+      ? undefined
+      : (referenceDocumentType2Raw as z.infer<typeof DocumentTypeEnum>);
   pos += 3;
   const details = cleanLine.slice(pos, pos + 50).trim();
   pos += 50;
@@ -255,13 +244,14 @@ export function parseB100(line: string): B100 {
   pos += 15;
   const debitCreditIndicator = cleanLine.slice(pos, pos + 1).trim();
   pos += 1;
-  const currencyCode = cleanLine.slice(pos, pos + 3).trim();
+  const currencyCodeRaw = cleanLine.slice(pos, pos + 3).trim();
+  const currencyCode = (currencyCodeRaw || undefined) as CurrencyCode | undefined;
   pos += 3;
-  const transactionAmount = cleanLine.slice(pos, pos + 15).trim();
+  const transactionAmount = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const foreignCurrencyAmount = cleanLine.slice(pos, pos + 15).trim();
+  const foreignCurrencyAmount = cleanLine.slice(pos, pos + 15);
   pos += 15;
-  const quantityField = cleanLine.slice(pos, pos + 12).trim();
+  const quantityField = cleanLine.slice(pos, pos + 12);
   pos += 12;
   const matchingField1 = cleanLine.slice(pos, pos + 10).trim();
   pos += 10;
@@ -301,9 +291,11 @@ export function parseB100(line: string): B100 {
     counterAccountKey,
     debitCreditIndicator: debitCreditIndicator as '1' | '2',
     currencyCode,
-    transactionAmount,
-    foreignCurrencyAmount,
-    quantityField,
+    transactionAmount: parseMonetaryAmount(transactionAmount),
+    foreignCurrencyAmount: foreignCurrencyAmount.trim()
+      ? parseMonetaryAmount(foreignCurrencyAmount)
+      : undefined,
+    quantityField: quantityField.trim() ? parseQuantityAmount(quantityField) : undefined,
     matchingField1,
     matchingField2,
     branchId,

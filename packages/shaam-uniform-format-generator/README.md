@@ -1,7 +1,7 @@
 # @accounter/shaam-uniform-format-generator
 
-A fully typed TypeScript library for generating, parsing, and validating SHAAM uniform format tax
-reports (`INI.TXT` and `BKMVDATA.TXT` files).
+Fully typed application that generates, parses, and validates SHAAM uniform format tax reports
+(INI.TXT and BKMVDATA.TXT).
 
 ## 🧩 Overview
 
@@ -9,18 +9,21 @@ This package provides a comprehensive solution for working with SHAAM (Israeli t
 uniform format files. It allows you to:
 
 1. **Generate** `INI.TXT` and `BKMVDATA.TXT` files from a high-level JSON object
-2. **Parse** those files back into structured, validated JSON
-3. **Validate** data against SHAAM 1.31 specifications
+2. **Parse** those files back into structured, validated JSON with comprehensive validation
+3. **Validate** data against SHAAM 1.31 specifications with multiple validation modes
 4. **Format** output with spec-compliant field widths, padding, and CRLF line endings
+5. **Round-trip** data preservation ensuring high-fidelity parsing and re-generation
 
 ## 🚀 Features
 
 - **Type Safety**: Full TypeScript support with strict typing
-- **Validation**: Built-in Zod schemas for data validation
+- **Validation**: Built-in Zod schemas for data validation with multiple modes
 - **Format Compliance**: Generates files that meet SHAAM 1.31 specifications
 - **Developer Experience**: Excellent autocompletion and helpful error messages
 - **File System Agnostic**: Returns content in memory without writing to disk
-- **Comprehensive Testing**: Full test coverage with Vitest
+- **Comprehensive Testing**: Full test coverage with Vitest including integration tests
+- **Dual Module Support**: Ships with both CommonJS and ESM builds
+- **Round-trip Fidelity**: Preserves original data through parse-generate cycles
 
 ## 📁 Supported Record Types
 
@@ -118,16 +121,24 @@ console.log(result.dataText) // BKMVDATA.TXT content
 console.log(result.summary) // Generation summary
 ```
 
-#### `parseUniformFormatFiles(iniContent, dataContent)`
+#### `parseUniformFormatFiles(iniContent, dataContent, options?)`
 
-Parses SHAAM uniform format files back into structured JSON.
+Parses SHAAM uniform format files back into structured JSON with comprehensive validation.
 
 ```typescript
 import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator'
 
-const parsedData = parseUniformFormatFiles(iniFileContent, dataFileContent)
-console.log(parsedData.business) // Parsed business metadata
-console.log(parsedData.documents) // Parsed documents
+const parseResult = parseUniformFormatFiles(iniFileContent, dataFileContent, {
+  validationMode: 'lenient', // 'strict' | 'lenient' | 'none'
+  skipUnknownRecords: true,
+  allowPartialData: true
+})
+
+console.log(parseResult.data.business) // Parsed business metadata
+console.log(parseResult.data.documents) // Parsed documents
+console.log(parseResult.summary.totalRecords) // Parse summary
+console.log(parseResult.summary.errors) // Validation errors
+console.log(parseResult.summary.crossValidationPassed) // Cross-validation result
 ```
 
 ### Types and Interfaces
@@ -179,6 +190,27 @@ interface JournalEntry {
   amount: number
   accountId: string
   description?: string
+  transactionNumber?: number
+  transactionLineNumber?: number
+  batchNumber?: number
+  transactionType?: string
+  referenceDocument?: string
+  referenceDocumentType?: DocumentType
+  referenceDocument2?: string
+  referenceDocumentType2?: DocumentType
+  valueDate?: string
+  counterAccountKey?: string
+  debitCreditIndicator?: '1' | '2' // 1=Debit, 2=Credit
+  currencyCode?: CurrencyCode
+  transactionAmount?: number // Preserve original B100 transaction amount
+  foreignCurrencyAmount?: number
+  quantityField?: number
+  matchingField1?: string
+  matchingField2?: string
+  branchId?: string
+  entryDate?: string
+  operatorUsername?: string
+  reserved?: string
 }
 ```
 
@@ -187,9 +219,29 @@ interface JournalEntry {
 ```typescript
 interface Account {
   id: string
-  name: string
-  type: string // Account type code
-  balance: number
+  name?: string // Optional for round-trip compatibility
+  sortCode: {
+    key: string // Required - Account sort code key
+    name?: string // Optional - Sort code description
+  }
+  address?: {
+    street?: string
+    houseNumber?: string
+    city?: string
+    zip?: string
+    country?: string
+  }
+  countryCode?: string // ISO country code
+  parentAccountKey?: string // Parent account identifier
+  vatId?: string // Supplier/Customer VAT ID
+  accountOpeningBalance: number // Required - Opening balance amount
+  totalDebits?: number // Total debit transactions
+  totalCredits?: number // Total credit transactions
+  accountingClassificationCode?: string // Classification code (max 4 digits)
+  branchId?: string // Branch identifier
+  openingBalanceForeignCurrency?: number // Opening balance in foreign currency
+  foreignCurrencyCode?: string // Foreign currency code (e.g., "USD", "EUR")
+  originalSupplierCustomerTaxId?: string // Preserve exact original value with spaces
 }
 ```
 
@@ -204,6 +256,20 @@ interface InventoryItem {
 }
 ```
 
+#### `ValidationError`
+
+```typescript
+interface ValidationError {
+  recordType: string
+  recordIndex: number
+  field: string
+  message: string
+  severity?: 'error' | 'warning' // Only in parse results
+}
+```
+
+````
+
 #### `ReportOutput`
 
 ```typescript
@@ -215,7 +281,21 @@ interface ReportOutput {
   summary: {
     totalRecords: number
     perType: Record<string, number>
-    errors?: ValidationError[]
+    errors?: ValidationError[] // Only present if validation fails in collect-all mode
+  }
+}
+````
+
+#### `ParseResult`
+
+```typescript
+interface ParseResult {
+  data: ReportInput // Parsed structured data
+  summary: {
+    totalRecords: number
+    perType: Record<string, number>
+    errors: ValidationError[]
+    crossValidationPassed: boolean
   }
 }
 ```
@@ -244,13 +324,16 @@ The package exports comprehensive enums for SHAAM code tables:
 import {
   CountryCodeEnum,
   CurrencyCodeEnum,
+  DebitCreditIndicatorEnum,
   DocumentTypeEnum,
-  PaymentMethodEnum
+  PaymentMethodEnum,
+  RecordTypeEnum
+  // ... and many more
 } from '@accounter/shaam-uniform-format-generator'
 
 // Document types
 const invoiceType = DocumentTypeEnum.enum['320'] // Invoice
-const creditNoteType = DocumentTypeEnum.enum['330'] // Credit note
+const creditNoteType = DocumentTypeEnum.enum['330'] // Credit Tax Invoice
 
 // Currency codes
 const ils = CurrencyCodeEnum.enum.ILS // Israeli Shekel
@@ -259,6 +342,14 @@ const usd = CurrencyCodeEnum.enum.USD // US Dollar
 // Payment methods
 const cash = PaymentMethodEnum.enum['1'] // Cash
 const check = PaymentMethodEnum.enum['2'] // Check
+
+// Debit/Credit indicators
+const debit = DebitCreditIndicatorEnum.enum['1'] // Debit
+const credit = DebitCreditIndicatorEnum.enum['2'] // Credit
+
+// Record types
+const b110 = RecordTypeEnum.enum.B110 // Account record
+const c100 = RecordTypeEnum.enum.C100 // Document header record
 ```
 
 ## 🎯 Complete Example
@@ -317,14 +408,27 @@ const reportData: ReportInput = {
     {
       id: '4000',
       name: 'Consulting Revenue',
-      type: '4', // Revenue account
-      balance: 2000.0
+      sortCode: {
+        key: 'Revenue',
+        name: 'Revenue Accounts'
+      },
+      accountOpeningBalance: 0.0,
+      totalDebits: 500.0,
+      totalCredits: 2500.0,
+      accountingClassificationCode: '0001'
     },
     {
       id: '1200',
       name: 'Accounts Receivable',
-      type: '1', // Asset account
-      balance: 1500.0
+      sortCode: {
+        key: 'Asset',
+        name: 'Asset Accounts'
+      },
+      accountOpeningBalance: 1500.0,
+      countryCode: 'IL',
+      branchId: 'MAIN',
+      foreignCurrencyCode: 'USD',
+      openingBalanceForeignCurrency: 1250.0
     }
   ],
   inventory: [
@@ -385,20 +489,79 @@ if (!validationResult.success) {
 }
 ```
 
+### Parse with Different Validation Modes
+
+```typescript
+import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator'
+
+// Strict validation - throws on any error
+try {
+  const strictResult = parseUniformFormatFiles(iniContent, dataContent, {
+    validationMode: 'strict',
+    allowPartialData: false
+  })
+  console.log('Strict parsing succeeded:', strictResult.data)
+} catch (error) {
+  console.error('Strict parsing failed:', error.message)
+}
+
+// Lenient validation - reports issues but continues
+const lenientResult = parseUniformFormatFiles(iniContent, dataContent, {
+  validationMode: 'lenient'
+})
+console.log('Parsed data:', lenientResult.data)
+console.log('Validation issues:', lenientResult.summary.errors)
+
+// No validation - fastest parsing
+const fastResult = parseUniformFormatFiles(iniContent, dataContent, {
+  validationMode: 'none'
+})
+console.log('Fast parsing result:', fastResult.data)
+```
+
 ### Working with Individual Records
 
 ```typescript
-import { encodeC100, parseC100, type C100Input } from '@accounter/shaam-uniform-format-generator'
+import { encodeC100, parseC100, type C100 } from '@accounter/shaam-uniform-format-generator'
 
 // Encode a single document record
-const documentRecord: C100Input = {
+const documentRecord: C100 = {
   code: 'C100',
-  recordNumber: '1',
+  recordNumber: 1,
   vatId: '123456789',
   documentType: '320',
   documentId: 'INV001',
-  documentIssueDate: '20230315'
-  // ... other fields
+  documentIssueDate: '20230315',
+  documentIssueTime: '',
+  customerName: '',
+  customerStreet: '',
+  customerHouseNumber: '',
+  customerCity: '',
+  customerPostCode: '',
+  customerCountry: '',
+  customerCountryCode: '',
+  customerPhone: '',
+  customerVatId: '',
+  documentValueDate: '',
+  foreignCurrencyAmount: '',
+  currencyCode: '',
+  amountBeforeDiscount: '',
+  documentDiscount: '',
+  amountAfterDiscountExcludingVat: '',
+  vatAmount: '',
+  amountIncludingVat: '1000.00',
+  withholdingTaxAmount: '',
+  customerKey: '',
+  matchingField: '',
+  cancelledAttribute1: '',
+  cancelledDocument: '',
+  cancelledAttribute2: '',
+  documentDate: '',
+  branchKey: '',
+  cancelledAttribute3: '',
+  actionExecutor: '',
+  lineConnectingField: '',
+  reserved: ''
 }
 
 const encodedLine = encodeC100(documentRecord)
@@ -414,9 +577,10 @@ console.log(parsedRecord) // Structured object
 This project uses:
 
 - **TypeScript** in strict mode for type safety
-- **Zod** for runtime validation
-- **Vitest** for testing
-- **Bob the Bundler** for building
+- **Zod** for runtime validation and schema definitions
+- **Vitest** for testing with comprehensive integration tests
+- **Bob the Bundler** for building dual CJS/ESM packages
+- **ESLint** for code linting and formatting
 
 ### Commands
 
@@ -440,7 +604,7 @@ yarn lint
 - Node.js ^20.0.0 || >= 22
 - TypeScript support
 
-## � Error Handling
+## 🚨 Error Handling
 
 The library provides detailed error information:
 
@@ -454,6 +618,25 @@ try {
     console.error('SHAAM format error:', error.message)
     console.error('Validation errors:', error.errors)
   }
+}
+
+// Parse errors include context and severity
+try {
+  const parseResult = parseUniformFormatFiles(iniContent, dataContent, {
+    validationMode: 'strict'
+  })
+} catch (error) {
+  console.error('Parse failed:', error.message)
+}
+
+// Access detailed validation information
+const parseResult = parseUniformFormatFiles(iniContent, dataContent, {
+  validationMode: 'lenient'
+})
+
+for (const error of parseResult.summary.errors) {
+  console.log(`${error.severity}: ${error.message}`)
+  console.log(`Record: ${error.recordType}[${error.recordIndex}], Field: ${error.field}`)
 }
 ```
 

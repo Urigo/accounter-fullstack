@@ -49,7 +49,9 @@ export const A000Schema = z.object({
     .enum(['0', '1', '2'])
     .describe('Accounting type: 0=N/A, 1=Single-entry, 2=Double-entry'),
   // Field 1014: Balance Required Flag (1) - Required - Numeric
-  balanceRequired: z.enum(['0', '1']).describe('Balance required flag'),
+  balanceRequired: z
+    .enum(['0', '1', '2'])
+    .describe('Balance required flag: 0=Not required, 1=Required, 2=Other'),
   // Field 1015: Company Registrar ID (9) - Optional - Numeric
   companyRegId: z.string().max(9).regex(/^\d*$/).default('').describe('Company registrar ID'),
   // Field 1016: Withholding File Number (9) - Optional - Numeric
@@ -344,7 +346,7 @@ export function parseA000(line: string): A000 {
     softwareType: softwareType as '1' | '2',
     fileOutputPath,
     accountingType: accountingType as '0' | '1' | '2',
-    balanceRequired: balanceRequired as '0' | '1',
+    balanceRequired: balanceRequired as '0' | '1' | '2',
     companyRegId,
     withholdingFileNum,
     reserved1017,

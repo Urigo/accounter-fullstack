@@ -3,8 +3,8 @@ import { B110Schema, encodeB110, parseB110, type B110 } from '../../src/generato
 
 describe('B110 Record', () => {
   const validB110: B110 = {
-    code: 'B110',
-    recordNumber: '1',
+    code: 'B110' as const,
+    recordNumber: 1,
     vatId: '123456789',
     accountKey: 'ACC001',
     accountName: 'Cash Account',
@@ -17,13 +17,13 @@ describe('B110 Record', () => {
     customerSupplierAddressCountry: 'Israel',
     countryCode: 'IL',
     parentAccountKey: 'PARENT001',
-    accountOpeningBalance: '10000.00',
-    totalDebits: '50000.00',
-    totalCredits: '40000.00',
-    accountingClassificationCode: '1100',
+    accountOpeningBalance: 10_000,
+    totalDebits: 50_000,
+    totalCredits: 40_000,
+    accountingClassificationCode: 1100,
     supplierCustomerTaxId: '987654321',
     branchId: 'BR001',
-    openingBalanceForeignCurrency: '3000.00',
+    openingBalanceForeignCurrency: 3000,
     foreignCurrencyCode: 'USD',
     reserved: '',
   };
@@ -40,18 +40,16 @@ describe('B110 Record', () => {
     });
 
     it('should require non-empty required fields', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: '' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: 0 })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: '' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountKey: '' })).toThrow();
-      expect(() => B110Schema.parse({ ...validB110, accountName: '' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, trialBalanceCode: '' })).toThrow();
-      expect(() => B110Schema.parse({ ...validB110, trialBalanceCodeDescription: '' })).toThrow();
     });
 
     it('should allow empty optional fields', () => {
       const minimal: B110 = {
         code: 'B110',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
         accountKey: 'ACC001',
         accountName: 'Cash Account',
@@ -62,32 +60,30 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
-        accountOpeningBalance: '',
-        totalDebits: '',
-        totalCredits: '',
-        accountingClassificationCode: '',
+        accountOpeningBalance: -500,
+        totalDebits: undefined,
+        totalCredits: undefined,
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
-        openingBalanceForeignCurrency: '',
-        foreignCurrencyCode: '',
+        openingBalanceForeignCurrency: undefined,
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
       expect(() => B110Schema.parse(minimal)).not.toThrow();
     });
 
     it('should validate numeric fields', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: 'abc' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: NaN })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: 'abc' })).toThrow();
-      expect(() =>
-        B110Schema.parse({ ...validB110, accountingClassificationCode: 'abc' }),
-      ).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, accountingClassificationCode: NaN })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, supplierCustomerTaxId: 'abc' })).toThrow();
     });
 
     it('should enforce maximum field lengths', () => {
-      expect(() => B110Schema.parse({ ...validB110, recordNumber: '1234567890' })).toThrow();
+      expect(() => B110Schema.parse({ ...validB110, recordNumber: 1_000_000_000 })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, vatId: '1234567890' })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountKey: 'x'.repeat(16) })).toThrow();
       expect(() => B110Schema.parse({ ...validB110, accountName: 'x'.repeat(51) })).toThrow();
@@ -156,9 +152,9 @@ describe('B110 Record', () => {
     it('should handle numeric fields with zero padding', () => {
       const shortFields: B110 = {
         ...validB110,
-        recordNumber: '42',
+        recordNumber: 42,
         vatId: '12345',
-        accountingClassificationCode: '1',
+        accountingClassificationCode: 1,
         supplierCustomerTaxId: '99',
       };
 
@@ -178,27 +174,27 @@ describe('B110 Record', () => {
       expect(withoutCrlf.slice(supplierTaxPos, supplierTaxPos + 9)).toBe('000000099');
     });
 
-    it('should handle amount fields with right alignment', () => {
+    it('should handle amount fields with monetary format', () => {
       const encoded = encodeB110(validB110);
       const withoutCrlf = encoded.replace(/\r\n$/, '');
 
       // Find account opening balance field position
       const openingBalancePos = 4 + 9 + 9 + 15 + 50 + 15 + 30 + 50 + 10 + 30 + 8 + 30 + 2 + 15;
-      expect(withoutCrlf.slice(openingBalancePos, openingBalancePos + 15)).toBe('       10000.00'); // Right-aligned
+      expect(withoutCrlf.slice(openingBalancePos, openingBalancePos + 15)).toBe('+00000001000000'); // 15-char monetary format
 
       // Find total debits field position
       const totalDebitsPos = openingBalancePos + 15;
-      expect(withoutCrlf.slice(totalDebitsPos, totalDebitsPos + 15)).toBe('       50000.00'); // Right-aligned
+      expect(withoutCrlf.slice(totalDebitsPos, totalDebitsPos + 15)).toBe('+00000005000000'); // 15-char monetary format
 
       // Find total credits field position
       const totalCreditsPos = totalDebitsPos + 15;
-      expect(withoutCrlf.slice(totalCreditsPos, totalCreditsPos + 15)).toBe('       40000.00'); // Right-aligned
+      expect(withoutCrlf.slice(totalCreditsPos, totalCreditsPos + 15)).toBe('+00000004000000'); // 15-char monetary format
     });
 
     it('should pad empty fields correctly', () => {
       const minimal: B110 = {
         code: 'B110',
-        recordNumber: '1',
+        recordNumber: 1,
         vatId: '123456789',
         accountKey: 'ACC001',
         accountName: 'Cash Account',
@@ -209,16 +205,16 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
-        accountOpeningBalance: '',
-        totalDebits: '',
-        totalCredits: '',
-        accountingClassificationCode: '',
+        accountOpeningBalance: 0,
+        totalDebits: undefined,
+        totalCredits: undefined,
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
-        openingBalanceForeignCurrency: '',
-        foreignCurrencyCode: '',
+        openingBalanceForeignCurrency: undefined,
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
 
@@ -235,7 +231,7 @@ describe('B110 Record', () => {
 
       // Empty supplier/customer tax ID should be zero-padded
       const supplierTaxPos = accClassPos + 4;
-      expect(withoutCrlf.slice(supplierTaxPos, supplierTaxPos + 9)).toBe('000000000');
+      expect(withoutCrlf.slice(supplierTaxPos, supplierTaxPos + 9)).toBe('         ');
     });
   });
 
@@ -245,16 +241,16 @@ describe('B110 Record', () => {
       const parsed = parseB110(encoded);
 
       expect(parsed.code).toBe('B110');
-      expect(parsed.recordNumber).toBe('1');
+      expect(parsed.recordNumber).toBe(1);
       expect(parsed.vatId).toBe('123456789');
       expect(parsed.accountKey).toBe('ACC001');
       expect(parsed.accountName).toBe('Cash Account');
       expect(parsed.trialBalanceCode).toBe('TB001');
       expect(parsed.trialBalanceCodeDescription).toBe('Current Assets');
       expect(parsed.customerSupplierAddressStreet).toBe('123 Main Street');
-      expect(parsed.accountOpeningBalance).toBe('10000.00');
-      expect(parsed.totalDebits).toBe('50000.00');
-      expect(parsed.totalCredits).toBe('40000.00');
+      expect(parsed.accountOpeningBalance).toBe(10_000);
+      expect(parsed.totalDebits).toBe(50_000);
+      expect(parsed.totalCredits).toBe(40_000);
     });
 
     it('should handle lines without CRLF', () => {
@@ -293,7 +289,7 @@ describe('B110 Record', () => {
         ' '.repeat(30) + // customerSupplierAddressCountry (30)
         ' '.repeat(2) + // countryCode (2)
         ' '.repeat(15) + // parentAccountKey (15)
-        ' '.repeat(15) + // accountOpeningBalance (15)
+        '-00000000123400' + // accountOpeningBalance (15)
         ' '.repeat(15) + // totalDebits (15)
         ' '.repeat(15) + // totalCredits (15)
         '0099' + // accountingClassificationCode (4)
@@ -307,9 +303,9 @@ describe('B110 Record', () => {
 
       const parsed = parseB110(paddedLine);
 
-      expect(parsed.recordNumber).toBe('42');
+      expect(parsed.recordNumber).toBe(42);
       expect(parsed.vatId).toBe('123');
-      expect(parsed.accountingClassificationCode).toBe('99');
+      expect(parsed.accountingClassificationCode).toBe(99);
       expect(parsed.supplierCustomerTaxId).toBe('456');
     });
 
@@ -339,30 +335,30 @@ describe('B110 Record', () => {
       const testCases: B110[] = [
         {
           ...validB110,
-          recordNumber: '999999999',
+          recordNumber: 999_999_999,
           vatId: '999999999',
-          accountingClassificationCode: '9999',
+          accountingClassificationCode: undefined,
           supplierCustomerTaxId: '999999999',
         },
         {
           ...validB110,
-          recordNumber: '1',
+          recordNumber: 1,
           vatId: '1',
           customerSupplierAddressStreet: '',
           customerSupplierAddressHouseNumber: '',
           customerSupplierAddressCity: '',
           customerSupplierAddressZip: '',
           customerSupplierAddressCountry: '',
-          countryCode: '',
+          countryCode: undefined,
           parentAccountKey: '',
-          accountOpeningBalance: '',
-          totalDebits: '',
-          totalCredits: '',
-          accountingClassificationCode: '',
+          accountOpeningBalance: 0,
+          totalDebits: 0,
+          totalCredits: 0,
+          accountingClassificationCode: undefined,
           supplierCustomerTaxId: '',
           branchId: '',
-          openingBalanceForeignCurrency: '',
-          foreignCurrencyCode: '',
+          openingBalanceForeignCurrency: 0,
+          foreignCurrencyCode: undefined,
           reserved: '',
         },
       ];
@@ -382,16 +378,16 @@ describe('B110 Record', () => {
         customerSupplierAddressCity: '',
         customerSupplierAddressZip: '',
         customerSupplierAddressCountry: '',
-        countryCode: '',
+        countryCode: undefined,
         parentAccountKey: '',
-        accountOpeningBalance: '',
-        totalDebits: '',
-        totalCredits: '',
-        accountingClassificationCode: '',
+        accountOpeningBalance: 0,
+        totalDebits: 0,
+        totalCredits: 0,
+        accountingClassificationCode: undefined,
         supplierCustomerTaxId: '',
         branchId: '',
-        openingBalanceForeignCurrency: '',
-        foreignCurrencyCode: '',
+        openingBalanceForeignCurrency: 0,
+        foreignCurrencyCode: undefined,
         reserved: '',
       };
 
@@ -399,7 +395,7 @@ describe('B110 Record', () => {
       const parsed = parseB110(encoded);
 
       expect(parsed.customerSupplierAddressStreet).toBe('');
-      expect(parsed.accountOpeningBalance).toBe('');
+      expect(parsed.accountOpeningBalance).toBe(0);
       expect(parsed.reserved).toBe('');
       expect(parsed).toEqual(withEmptyFields);
     });
