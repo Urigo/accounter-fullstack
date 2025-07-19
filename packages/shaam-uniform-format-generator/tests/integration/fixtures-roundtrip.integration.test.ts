@@ -221,7 +221,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
   return result;
 }
 
-describe.skip('Fixture Files Round-trip Integration Test', () => {
+describe('Fixture Files Round-trip Integration Test', () => {
   it('should parse and validate the BKMVDATA.txt fixture file', async () => {
     const bkmvDataPath = join(FIXTURES_DIR, 'BKMVDATA.txt');
     const content = await readFile(bkmvDataPath, 'utf-8');
@@ -630,10 +630,19 @@ describe.skip('Fixture Files Round-trip Integration Test', () => {
       return;
     }
 
+    // Skip test if we don't have business data required for report generation
+    if (!parsedData.business) {
+      expect(parsedData.business, 'Business data could not be parsed from fixture').toBeDefined();
+      return;
+    }
+
     // Get original monetary values from B100 records
-    const originalAmounts = parsedData.rawRecords.b100.map(record => ({
+    const originalAmounts = parsedData.rawRecords.b100.map((record, index) => ({
       amount: record.transactionAmount,
       debit: record.debitCreditIndicator,
+      // Convert to signed amount for proper comparison (debit = positive, credit = negative)
+      signedAmount: record.transactionAmount * (record.debitCreditIndicator === '1' ? 1 : -1),
+      index,
     }));
 
     // Validate that we can parse monetary values correctly from the fixture
@@ -641,7 +650,53 @@ describe.skip('Fixture Files Round-trip Integration Test', () => {
     expect(originalAmounts[0].amount).toBeTruthy();
     expect(['1', '2']).toContain(originalAmounts[0].debit);
 
-    // Validate monetary precision test completed
+    // COMPLETE THE ROUND-TRIP: Generate new report from parsed data
+    const reportInput: ReportInput = {
+      business: parsedData.business,
+      documents: parsedData.documents,
+      journalEntries: parsedData.journalEntries,
+      accounts: parsedData.accounts,
+      inventory: parsedData.inventory,
+    };
+
+    const generatedReport = generateUniformFormatReport(reportInput);
+    expect(generatedReport).toBeDefined();
+    expect(generatedReport.dataText).toBeDefined();
+
+    // Parse the generated data back to extract monetary values
+    const reparsedData = parseUniformFormatFiles(generatedReport.iniText, generatedReport.dataText);
+    expect(reparsedData.data.journalEntries).toBeDefined();
+
+    // Get monetary values from the re-parsed data
+    const reparsedAmounts = reparsedData.data.journalEntries.map((entry, index) => ({
+      amount: Math.abs(entry.amount),
+      debit: entry.amount >= 0 ? '1' : '2',
+      signedAmount: entry.amount,
+      index,
+    }));
+
+    // PRECISION VALIDATION: Compare original vs reparsed monetary values
+    expect(reparsedAmounts.length).toBe(originalAmounts.length);
+
+    // Test monetary precision preservation - the core test
+    for (let i = 0; i < originalAmounts.length; i++) {
+      const original = originalAmounts[i];
+      const reparsed = reparsedAmounts[i];
+
+      // Most important: verify the signed amounts match exactly (monetary precision)
+      expect(reparsed.signedAmount).toBe(original.signedAmount);
+      
+      // Additional verification: absolute amounts match
+      expect(Math.abs(reparsed.signedAmount)).toBe(Math.abs(original.signedAmount));
+    }
+
+    // Additional validation: ensure total amounts are preserved
+    const originalTotal = originalAmounts.reduce((sum, amt) => sum + amt.signedAmount, 0);
+    const reparsedTotal = reparsedAmounts.reduce((sum, amt) => sum + amt.signedAmount, 0);
+
+    expect(reparsedTotal).toBe(originalTotal);
+
+    // Summary validation
     expect(originalAmounts.length).toBeGreaterThan(0);
   });
 });
