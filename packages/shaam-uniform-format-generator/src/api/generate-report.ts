@@ -89,7 +89,7 @@ export function generateUniformFormatReport(
     softwareRegNumber: '12345678', // TODO: Use actual software registration number
     softwareName: 'SHAAM Generator',
     softwareVersion: '1.0.0',
-    vendorVatId: '123456789', // TODO: Use actual vendor VAT ID
+    vendorVatId: '123456782', // TODO: Use actual vendor VAT ID
     vendorName: 'Accounter',
     softwareType: '2', // Multi-year software
     fileOutputPath: options.fileNameBase || `C:\\OPENFRMT\\${input.business.taxId}.`,
@@ -109,7 +109,7 @@ export function generateUniformFormatReport(
     processStartTime: new Date().toTimeString().slice(0, 5).replace(':', ''),
     languageCode: '0', // Hebrew
     characterEncoding: '1', // ISO-8859-8-i
-    compressionSoftware: '',
+    compressionSoftware: 'zip', // TODO:replace with a real compression software
     baseCurrency: 'ILS',
     branchInfoFlag: '0', // No branches for now
   };
