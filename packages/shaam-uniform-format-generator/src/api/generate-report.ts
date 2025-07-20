@@ -73,10 +73,18 @@ export function generateUniformFormatReport(
     recordCounts[recordType] = (recordCounts[recordType] || 0) + 1;
   };
 
+  // Calculate expected BKMVDATA record counts based on input data
+  const expectedDataRecordCount =
+    1 + // A100 record
+    input.documents.length * 3 + // C100, D110, D120 for each document
+    input.journalEntries.length + // B100 for each journal entry
+    input.accounts.length + // B110 for each account
+    input.inventory.length + // M100 for each inventory item
+    1; // Z900 record
+
   // Generate A000 record for INI.TXT
   const fileHeaderRecord: A000Input = {
-    reservedFuture: '',
-    totalRecords: '0', // Will be updated later with actual count
+    totalRecords: expectedDataRecordCount.toString(), // Actual count of BKMVDATA records
     vatId: input.business.taxId,
     softwareRegNumber: '12345678', // TODO: Use actual software registration number
     softwareName: 'SHAAM Generator',
@@ -84,18 +92,17 @@ export function generateUniformFormatReport(
     vendorVatId: '123456789', // TODO: Use actual vendor VAT ID
     vendorName: 'Accounter',
     softwareType: '2', // Multi-year software
-    fileOutputPath: options.fileNameBase || 'report',
+    fileOutputPath: options.fileNameBase || `C:\\OPENFRMT\\${input.business.taxId}.`,
     accountingType: '2', // Double-entry accounting
-    balanceRequired: '1',
+    balanceRequired: '2',
     companyRegId: '',
     withholdingFileNum: '',
-    reserved1017: '',
     businessName: input.business.name,
     businessStreet: input.business.address?.street ?? '',
     businessHouseNum: input.business.address?.houseNumber ?? '',
     businessCity: input.business.address?.city ?? '',
     businessZip: input.business.address?.zip ?? '',
-    taxYear: input.business.reportingPeriod.endDate.slice(0, 4), // YYYY format
+    taxYear: '    ', // YYYY format. not required for now
     startDate: input.business.reportingPeriod.startDate.replace(/-/g, ''),
     endDate: input.business.reportingPeriod.endDate.replace(/-/g, ''),
     processStartDate: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
@@ -103,11 +110,8 @@ export function generateUniformFormatReport(
     languageCode: '0', // Hebrew
     characterEncoding: '1', // ISO-8859-8-i
     compressionSoftware: '',
-    reserved1031: '',
     baseCurrency: 'ILS',
-    reserved1033: '',
     branchInfoFlag: '0', // No branches for now
-    reserved1035: '',
   };
   addIniRecord('A000', encodeA000(fileHeaderRecord));
 

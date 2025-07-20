@@ -289,7 +289,7 @@ function convertToStructuredData(
     business: {
       businessId: 'unknown',
       name: 'Unknown Business',
-      taxId: '000000000',
+      taxId: '0',
       reportingPeriod: {
         startDate: '2024-01-01',
         endDate: '2024-12-31',
@@ -340,7 +340,7 @@ function convertToStructuredData(
         date: formatDateFromShaam(b100.date),
         amount: b100.transactionAmount, // Use transactionAmount as-is (it already contains the correct sign)
         accountId: b100.accountKey,
-        description: b100.details || 'Journal Entry',
+        description: b100.details,
         // Include extended B100 fields
         transactionNumber: b100.transactionNumber,
         transactionLineNumber: b100.transactionLineNumber,
@@ -381,10 +381,10 @@ function convertToStructuredData(
     try {
       const account: Account = {
         id: b110.accountKey,
-        name: b110.accountName?.trim() || `Account ${b110.accountKey}`,
+        name: b110.accountName?.trim(),
         sortCode: {
-          key: b110.trialBalanceCode || 'Other',
-          name: b110.trialBalanceCodeDescription || 'Other',
+          key: b110.trialBalanceCode,
+          name: b110.trialBalanceCodeDescription,
         },
         accountOpeningBalance: b110.accountOpeningBalance,
         // Include extended fields if available
