@@ -241,7 +241,6 @@ interface Account {
   branchId?: string // Branch identifier
   openingBalanceForeignCurrency?: number // Opening balance in foreign currency
   foreignCurrencyCode?: string // Foreign currency code (e.g., "USD", "EUR")
-  originalSupplierCustomerTaxId?: string // Preserve exact original value with spaces
 }
 ```
 

@@ -338,7 +338,7 @@ function convertToStructuredData(
       const journalEntry: JournalEntry = {
         id: `JE_${b100.transactionNumber.toString()}`,
         date: formatDateFromShaam(b100.date),
-        amount: b100.transactionAmount * (b100.debitCreditIndicator === '1' ? 1 : -1),
+        amount: b100.transactionAmount, // Use transactionAmount as-is (it already contains the correct sign)
         accountId: b100.accountKey,
         description: b100.details || 'Journal Entry',
         // Include extended B100 fields
@@ -354,7 +354,7 @@ function convertToStructuredData(
         counterAccountKey: b100.counterAccountKey,
         debitCreditIndicator: b100.debitCreditIndicator,
         currencyCode: b100.currencyCode,
-        transactionAmount: b100.transactionAmount,
+        transactionAmount: b100.transactionAmount, // Preserve original signed amount
         foreignCurrencyAmount: b100.foreignCurrencyAmount,
         quantityField: b100.quantityField,
         matchingField1: b100.matchingField1,
@@ -397,7 +397,6 @@ function convertToStructuredData(
         branchId: b110.branchId,
         openingBalanceForeignCurrency: b110.openingBalanceForeignCurrency,
         foreignCurrencyCode: b110.foreignCurrencyCode,
-        originalSupplierCustomerTaxId: b110.supplierCustomerTaxId, // Preserve original tax ID with spaces
       };
 
       // Add address if available
@@ -431,12 +430,17 @@ function convertToStructuredData(
   // Convert documents
   for (const c100 of parsedData.dataRecords.c100) {
     try {
+      // Find the corresponding D110 record for this document
+      const d110 = parsedData.dataRecords.d110.find(
+        d => d.documentType === c100.documentType && d.documentNumber === c100.documentId,
+      );
+
       const document: Document = {
         id: c100.documentId,
         type: c100.documentType,
         date: formatDateFromShaam(c100.documentIssueDate),
         amount: parseFloat(c100.amountIncludingVat || '0'),
-        description: c100.customerName || 'Document',
+        description: d110?.goodsServiceDescription || c100.customerName || 'Document',
       };
       result.documents.push(document);
     } catch (error) {
@@ -457,7 +461,6 @@ function convertToStructuredData(
         id: m100.internalItemCode,
         name: m100.itemName,
         quantity: parseInt(m100.totalStockOut || '0', 10),
-        unitPrice: 0, // M100 doesn't have unit price directly, defaulting to 0
       };
       result.inventory.push(inventoryItem);
     } catch (error) {

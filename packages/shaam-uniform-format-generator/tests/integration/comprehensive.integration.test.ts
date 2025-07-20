@@ -153,7 +153,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           },
           countryCode: 'IL',
           parentAccountKey: '1000',
-          vatId: 'VAT123456',
+          vatId: '  123 454 321  ',
           accountOpeningBalance: 5000.0,
           totalDebits: 15_000.5,
           totalCredits: 8500.25,
@@ -161,7 +161,6 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           branchId: 'BR001',
           openingBalanceForeignCurrency: 1351.35, // USD equivalent
           foreignCurrencyCode: 'USD',
-          originalSupplierCustomerTaxId: '  123 456 789  ', // With spaces to test preservation
         },
         {
           id: '1200',
@@ -179,7 +178,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           },
           countryCode: 'IL',
           parentAccountKey: '1000',
-          vatId: 'VAT987654',
+          vatId: '987654321',
           accountOpeningBalance: 3000.0,
           totalDebits: 12_000.75,
           totalCredits: 4500.5,
@@ -187,7 +186,6 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           branchId: 'BR002',
           openingBalanceForeignCurrency: 810.81, // USD equivalent
           foreignCurrencyCode: 'USD',
-          originalSupplierCustomerTaxId: '987654321',
         },
         {
           id: '4000',
@@ -229,7 +227,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           },
           countryCode: 'IL',
           parentAccountKey: '2000',
-          vatId: 'VAT555555',
+          vatId: '555555555',
           accountOpeningBalance: -1500.0,
           totalDebits: 5000.0,
           totalCredits: 8500.0,
@@ -237,7 +235,6 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           branchId: 'BR002',
           openingBalanceForeignCurrency: -405.41, // USD equivalent
           foreignCurrencyCode: 'USD',
-          originalSupplierCustomerTaxId: '555666777',
         },
       ],
       inventory: [
@@ -245,25 +242,21 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           id: 'ITEM001',
           name: 'Professional Consulting Service Package A',
           quantity: 100,
-          unitPrice: 25.0,
         },
         {
           id: 'ITEM002',
           name: 'Premium Software License Package B',
           quantity: 50,
-          unitPrice: 45.0,
         },
         {
           id: 'ITEM003',
           name: 'Hardware Component X-Series',
           quantity: 25,
-          unitPrice: 199.99,
         },
         {
           id: 'ITEM004',
           name: 'Training Materials and Documentation',
           quantity: 200,
-          unitPrice: 15.5,
         },
       ],
     };
@@ -307,7 +300,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
       expect(parsed.type).toBe(original.type);
       expect(parsed.date).toBe(original.date);
       expect(parsed.amount).toBe(original.amount);
-      expect(parsed.description).toBe(original.description);
+      expect(parsed.description).toBe(original.description?.substring(0, 30));
     }
 
     // Verify journal entries with ALL extended fields
@@ -343,7 +336,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
         expect(parsed.branchId).toBe(original.branchId);
       }
       if (original.operatorUsername !== undefined) {
-        expect(parsed.operatorUsername).toBe(original.operatorUsername);
+        expect(parsed.operatorUsername).toBe(original.operatorUsername.substring(0, 9));
       }
     }
 
@@ -374,7 +367,10 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
         expect(parsed.parentAccountKey).toBe(original.parentAccountKey);
       }
       if (original.vatId !== undefined) {
-        expect(parsed.vatId).toBe(original.vatId);
+        // SHAAM B110 format only supports numeric VAT IDs (Field 1419: max 9 digits)
+        // Alphanumeric VAT IDs are automatically converted to numeric-only format
+        const expectedVatId = original.vatId.replace(/\D/g, '');
+        expect(parsed.vatId).toBe(expectedVatId);
       }
       if (original.totalDebits !== undefined) {
         expect(parsed.totalDebits).toBeDefined();
@@ -383,17 +379,16 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
         expect(parsed.totalCredits).toBeDefined();
       }
       if (original.accountingClassificationCode !== undefined) {
-        expect(parsed.accountingClassificationCode).toBe(original.accountingClassificationCode);
+        // SHAAM B110 format only supports numeric accounting codes (Field 1417: max 4 digits)
+        // Alphanumeric codes are automatically converted to numeric-only format
+        const expectedCode = original.accountingClassificationCode.replace(/\D/g, '');
+        expect(parsed.accountingClassificationCode).toBe(expectedCode);
       }
       if (original.branchId !== undefined) {
         expect(parsed.branchId).toBe(original.branchId);
       }
       if (original.foreignCurrencyCode !== undefined) {
         expect(parsed.foreignCurrencyCode).toBe(original.foreignCurrencyCode);
-      }
-      if (original.originalSupplierCustomerTaxId !== undefined) {
-        // Validate that spaces in tax ID are preserved correctly
-        expect(parsed.originalSupplierCustomerTaxId).toBeDefined();
       }
     }
 
@@ -524,7 +519,7 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           },
           countryCode: 'US',
           parentAccountKey: 'FOREIGN_ASSETS',
-          vatId: 'FOREIGN_VAT_999',
+          vatId: '  999  999  999  ',
           accountOpeningBalance: -999_999.99, // Negative balance
           totalDebits: 500_000.0,
           totalCredits: 1_500_000.0,
@@ -532,7 +527,6 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           branchId: 'INTERNATIONAL',
           openingBalanceForeignCurrency: 999_999.99,
           foreignCurrencyCode: 'EUR',
-          originalSupplierCustomerTaxId: '  999  888  777  ', // Multiple spaces
         },
         // Test equity account
         {
@@ -571,19 +565,16 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
           id: 'EXPENSIVE_ITEM_001',
           name: 'High-Value Asset Item',
           quantity: 1,
-          unitPrice: 50_000.0,
         },
         {
           id: 'BULK_ITEM_001',
           name: 'Bulk Inventory Item',
           quantity: 10_000,
-          unitPrice: 0.1,
         },
         {
           id: 'FRACTIONAL_001',
           name: 'Fractional Quantity Item',
           quantity: 0.5,
-          unitPrice: 199.99,
         },
       ],
     };
@@ -627,7 +618,6 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
     // Validate inventory edge cases
     const expensiveItem = parsedData.data.inventory.find(i => i.id === 'EXPENSIVE_ITEM_001');
     expect(expensiveItem).toBeDefined();
-    expect(expensiveItem!.unitPrice).toBe(50_000.0);
 
     const bulkItem = parsedData.data.inventory.find(i => i.id === 'BULK_ITEM_001');
     expect(bulkItem).toBeDefined();

@@ -89,15 +89,12 @@ export const AccountSchema = z.object({
   parentAccountKey: z.string().optional(),
   vatId: z.string().optional(),
   accountOpeningBalance: z.number(),
-  // Extended fields for B110 records (all optional)
   totalDebits: z.number().optional(),
   totalCredits: z.number().optional(),
   accountingClassificationCode: z.string().optional(),
   branchId: z.string().optional(),
   openingBalanceForeignCurrency: z.number().optional(),
   foreignCurrencyCode: z.string().optional(),
-  // Original field values for round-trip fidelity
-  originalSupplierCustomerTaxId: z.string().optional(), // Preserve exact original value with spaces
 });
 
 // Inventory item schema
@@ -105,7 +102,6 @@ export const InventoryItemSchema = z.object({
   id: z.string().min(1, 'Inventory item ID is required'),
   name: z.string().min(1, 'Inventory item name is required'),
   quantity: z.number(),
-  unitPrice: z.number(),
 });
 
 // Main input schema

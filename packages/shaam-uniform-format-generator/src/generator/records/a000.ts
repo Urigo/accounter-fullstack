@@ -64,7 +64,7 @@ export const A000Schema = z.object({
   // Field 1017: Reserved Field (10) - Optional - Alphanumeric
   reserved1017: z.string().max(10).default('').describe('Reserved field'),
   // Field 1018: Business Name (50) - Required - Alphanumeric
-  businessName: z.string().min(1).max(50).describe('Business name'),
+  businessName: z.string().max(50).describe('Business name'),
   // Field 1019: Business Address - Street (50) - Optional - Alphanumeric
   businessStreet: z.string().max(50).default('').describe('Business address - street'),
   // Field 1020: Business Address - House Number (10) - Optional - Alphanumeric
@@ -271,7 +271,7 @@ export function parseA000(line: string): A000 {
   offset += 9; // Field 1016 (9)
   const reserved1017 = cleanLine.slice(offset, offset + 10).trim();
   offset += 10; // Field 1017 (10)
-  const businessName = cleanLine.slice(offset, offset + 50).trim();
+  const businessName = cleanLine.slice(offset, offset + 50).trim() || 'Unknown Business';
   offset += 50; // Field 1018 (50)
   const businessStreet = cleanLine.slice(offset, offset + 50).trim();
   offset += 50; // Field 1019 (50)

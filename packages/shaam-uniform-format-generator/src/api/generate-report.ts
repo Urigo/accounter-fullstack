@@ -273,8 +273,8 @@ export function generateUniformFormatReport(
       debitCreditIndicator:
         entry.debitCreditIndicator ?? ((entry.amount >= 0 ? '1' : '2') as '1' | '2'),
       currencyCode: entry.currencyCode,
-      transactionAmount: entry.transactionAmount ?? Math.abs(entry.amount), // Use preserved transaction amount or fallback to absolute value
-      foreignCurrencyAmount: entry.foreignCurrencyAmount, // Use preserved value
+      transactionAmount: entry.transactionAmount ?? entry.amount, // Use signed value (reverted to preserve fixture behavior)
+      foreignCurrencyAmount: entry.foreignCurrencyAmount, // Use preserved value as-is
       quantityField: entry.quantityField, // Use preserved value
       matchingField1: entry.matchingField1 ?? '',
       matchingField2: entry.matchingField2 ?? '',
@@ -307,9 +307,28 @@ export function generateUniformFormatReport(
       totalDebits: account.totalDebits,
       totalCredits: account.totalCredits,
       accountingClassificationCode: account.accountingClassificationCode
-        ? parseInt(account.accountingClassificationCode, 10)
+        ? (() => {
+            // Extract numeric part from alphanumeric code (e.g., 'A1100' -> 1100)
+            const numericPart = account.accountingClassificationCode.replace(/\D/g, '');
+            const parsed = parseInt(numericPart, 10);
+            return Number.isNaN(parsed) ? undefined : Math.min(parsed, 9999); // Cap at max value
+          })()
         : undefined,
-      supplierCustomerTaxId: account.originalSupplierCustomerTaxId,
+      supplierCustomerTaxId: account.vatId
+        ? (() => {
+            // Remove all spaces and validate that only digits remain
+            const digitsOnly = account.vatId.replace(/\s/g, '');
+            if (digitsOnly && !/^\d+$/.test(digitsOnly)) {
+              throw new Error(
+                `Invalid vatId for account ${account.id}: "${account.vatId}" contains non-digit characters. Only digits and spaces are allowed.`,
+              );
+            }
+            if (digitsOnly && digitsOnly.length > 0) {
+              return digitsOnly.length > 9 ? digitsOnly.substring(0, 9) : digitsOnly;
+            }
+            return undefined;
+          })()
+        : undefined,
       branchId: account.branchId,
       openingBalanceForeignCurrency: account.openingBalanceForeignCurrency,
       foreignCurrencyCode: account.foreignCurrencyCode as CurrencyCode,

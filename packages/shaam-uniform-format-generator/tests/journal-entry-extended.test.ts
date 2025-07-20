@@ -29,8 +29,11 @@ describe('Extended Journal Entry Schema', () => {
         {
           id: '1100',
           name: 'Cash',
-          type: 'Asset',
-          balance: 5000.0,
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
+          accountOpeningBalance: 5000.0,
         },
       ],
       inventory: [],
@@ -41,7 +44,7 @@ describe('Extended Journal Entry Schema', () => {
           amount: 1000.5,
           accountId: '1100',
           description: 'Sales revenue',
-          batchNumber: 'BATCH001',
+          batchNumber: 202_403,
           transactionType: 'SALE',
           referenceDocument: 'INV-001',
           currencyCode: 'USD',
@@ -65,11 +68,11 @@ describe('Extended Journal Entry Schema', () => {
     expect(result.summary.perType.B100).toBe(2);
 
     // Check that the extended fields are properly encoded in the output
-    expect(result.dataText).toContain('BATCH001');
+    expect(result.dataText).toContain('00202403'); // batch number encoded
     expect(result.dataText).toContain('SALE');
     expect(result.dataText).toContain('INV-001');
     expect(result.dataText).toContain('USD');
-    expect(result.dataText).toContain('850.25');
+    expect(result.dataText).toContain('+00000000085025'); // foreign currency amount encoded
   });
 
   it('should work with journal entries using only required fields', () => {
@@ -88,8 +91,11 @@ describe('Extended Journal Entry Schema', () => {
         {
           id: '1100',
           name: 'Cash',
-          type: 'Asset',
-          balance: 5000.0,
+          sortCode: {
+            key: 'Asset',
+            name: 'Assets',
+          },
+          accountOpeningBalance: 5000.0,
         },
       ],
       inventory: [],
