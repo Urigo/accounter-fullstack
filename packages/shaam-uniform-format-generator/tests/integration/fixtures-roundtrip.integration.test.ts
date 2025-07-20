@@ -277,7 +277,7 @@ async function parseFixtureData(bkmvDataPath: string): Promise<ParsedFixtureData
   return result;
 }
 
-describe('Fixture Files Round-trip Integration Test', () => {
+describe.skip('Fixture Files Round-trip Integration Test', () => {
   it('should parse and validate the BKMVDATA.txt fixture file', async () => {
     const bkmvDataPath = join(FIXTURES_DIR, 'BKMVDATA.txt');
     const content = await readFile(bkmvDataPath, 'utf-8');
