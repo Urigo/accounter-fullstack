@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { endOfYear, format, setYear, startOfYear } from 'date-fns';
+import { endOfYear, format, startOfYear, subYears } from 'date-fns';
 import iconv from 'iconv-lite';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { TimelessDateString } from 'packages/client/src/helpers/dates.js';
@@ -48,14 +48,9 @@ export function UniformFormatFilesDownloadModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const defaultFromDate = format(
-    startOfYear(setYear(new Date(), -1)),
-    'yyyy-MM-dd',
-  ) as TimelessDateString;
-  const defaultToDate = format(
-    endOfYear(setYear(new Date(), -1)),
-    'yyyy-MM-dd',
-  ) as TimelessDateString;
+  const lastYear = subYears(new Date(), 1);
+  const defaultFromDate = format(startOfYear(lastYear), 'yyyy-MM-dd') as TimelessDateString;
+  const defaultToDate = format(endOfYear(lastYear), 'yyyy-MM-dd') as TimelessDateString;
 
   const [fromDate, setFromDate] = useState<TimelessDateString>(defaultFromDate);
   const [toDate, setToDate] = useState<TimelessDateString>(defaultToDate);
