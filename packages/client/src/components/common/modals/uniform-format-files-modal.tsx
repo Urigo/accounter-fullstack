@@ -3,6 +3,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { endOfYear, format, setYear, startOfYear } from 'date-fns';
+import iconv from 'iconv-lite';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { TimelessDateString } from 'packages/client/src/helpers/dates.js';
 import { useQuery } from 'urql';
@@ -15,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '../../ui/dialog.js';
 import { Input } from '../../ui/input.js';
 import { Label } from '../../ui/label.js';
@@ -41,7 +41,13 @@ function downloadFile(file: File) {
   URL.revokeObjectURL(url);
 }
 
-export default function FileDownloadModal() {
+export function UniformFormatFilesDownloadModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const defaultFromDate = format(
     startOfYear(setYear(new Date(), -1)),
     'yyyy-MM-dd',
@@ -51,7 +57,6 @@ export default function FileDownloadModal() {
     'yyyy-MM-dd',
   ) as TimelessDateString;
 
-  const [open, setOpen] = useState(false);
   const [fromDate, setFromDate] = useState<TimelessDateString>(defaultFromDate);
   const [toDate, setToDate] = useState<TimelessDateString>(defaultToDate);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,26 +91,36 @@ export default function FileDownloadModal() {
         }
 
         // Create files from the response data
-        const bkmvdataFile = new File([bkmvdata], `bkmvdata_${fromDate}_to_${toDate}.txt`, {
+        const bkmvdataFile = new File([iconv.encode(bkmvdata, 'ISO-8859-8')], 'bkmvdata.txt', {
           type: 'text/plain',
         });
-        const iniFile = new File([ini], `ini_${fromDate}_to_${toDate}.txt`, { type: 'text/plain' });
+        const iniFile = new File([iconv.encode(ini, 'ISO-8859-8')], 'ini.txt', {
+          type: 'text/plain',
+        });
 
         // Download both files
         downloadFile(iniFile);
         setTimeout(() => downloadFile(bkmvdataFile), 100); // Small delay to avoid browser blocking
 
         // Close modal and reset form
-        setOpen(false);
+        onOpenChange(false);
         setFromDate(defaultFromDate);
         setToDate(defaultToDate);
         setIsLoading(false);
-      } else if (!uniformFormatResult.data?.uniformFormat) {
+      } else if (uniformFormatResult.stale && !uniformFormatResult.data?.uniformFormat) {
         setFormError('No data returned from the server. Please try again.');
         setIsLoading(false);
       }
     }
-  }, [uniformFormatResult, isLoading, fromDate, toDate, defaultFromDate, defaultToDate]);
+  }, [
+    uniformFormatResult,
+    isLoading,
+    fromDate,
+    toDate,
+    defaultFromDate,
+    defaultToDate,
+    onOpenChange,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,7 +158,7 @@ export default function FileDownloadModal() {
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!isLoading) {
-      setOpen(newOpen);
+      onOpenChange(newOpen);
       if (!newOpen) {
         // Reset form when closing
         setFromDate(defaultFromDate);
@@ -155,12 +170,6 @@ export default function FileDownloadModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 bg-transparent">
-          <Download className="h-4 w-4" />
-          Generate Files
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

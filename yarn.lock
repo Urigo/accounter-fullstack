@@ -124,6 +124,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.11.0"
+    iconv-lite: "npm:0.6.3"
     lucide-react: "npm:0.525.0"
     next-themes: "npm:0.4.6"
     react: "npm:19.1.0"
