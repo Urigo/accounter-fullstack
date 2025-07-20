@@ -6,6 +6,7 @@ import type {
   CurrencyCode,
   JournalEntry,
 } from '@accounter/shaam-uniform-format-generator';
+import { isCryptoCurrency } from '@modules/exchange-rates/helpers/exchange.helper.js';
 import { AdminBusinessesProvider } from '@modules/financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -13,6 +14,7 @@ import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-ent
 import { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
+import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 
@@ -63,14 +65,10 @@ export async function journalEntriesForUniformFormat(
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ ownerId, fromDate, toDate });
 
-  // get all relevant businesses
-  const financialEntities = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
-  const financialEntitiesMap = new Map(financialEntities.map(entity => [entity.id, entity]));
-
   const entries: JournalEntry[] = [];
 
   for (const record of ledgerRecords) {
-    const isCrypto = ['ETH', 'USDC', 'GRT'].includes(record.currency);
+    const isCrypto = isCryptoCurrency(record.currency.toUpperCase() as Currency);
     const commonEntry: Omit<
       JournalEntry,
       | 'accountId'
@@ -83,7 +81,7 @@ export async function journalEntriesForUniformFormat(
       id: record.id,
       date: dateToTimelessDateString(record.invoice_date),
       description: record.description ?? '',
-      transactionNumber: Number(record.id.replace(/\D/g, '')),
+      transactionNumber: Number(record.id.replace(/\D/g, '').slice(-10)),
       batchNumber: 1,
       // "transactionType": '',
       referenceDocument: record.reference1 ?? undefined,
@@ -108,19 +106,12 @@ export async function journalEntriesForUniformFormat(
 
     // for credit1
     if (record.credit_entity1 && Math.abs(Number(record.credit_local_amount1)) > 0) {
-      const financialEntity = financialEntitiesMap.get(record.credit_entity1);
-      if (!financialEntity) {
-        throw new Error(`Financial entity not found for ID: ${record.credit_entity1}`);
-      }
-
       entries.push({
         ...commonEntry,
         id: `c1-${commonEntry.id}`,
-        accountId: financialEntity.name,
+        accountId: record.credit_entity1,
         amount: Math.abs(Number(record.credit_local_amount1)),
-        counterAccountKey: record.debit_entity1
-          ? financialEntitiesMap.get(record.debit_entity1)?.name
-          : undefined,
+        counterAccountKey: record.debit_entity1 ?? undefined,
         debitCreditIndicator: '2', // 2 for credit
         foreignCurrencyAmount:
           record.credit_foreign_amount1 && !isCrypto
@@ -134,19 +125,12 @@ export async function journalEntriesForUniformFormat(
 
     // for credit2
     if (record.credit_entity2 && Math.abs(Number(record.credit_local_amount1)) > 0) {
-      const financialEntity = financialEntitiesMap.get(record.credit_entity2);
-      if (!financialEntity) {
-        throw new Error(`Financial entity not found for ID: ${record.credit_entity2}`);
-      }
-
       entries.push({
         ...commonEntry,
         id: `c2-${commonEntry.id}`,
-        accountId: financialEntity.name,
+        accountId: record.credit_entity2,
         amount: Math.abs(Number(record.credit_local_amount2)),
-        counterAccountKey: record.debit_entity1
-          ? financialEntitiesMap.get(record.debit_entity1)?.name
-          : undefined,
+        counterAccountKey: record.debit_entity1 ?? undefined,
         debitCreditIndicator: '2', // 2 for credit
         foreignCurrencyAmount:
           record.credit_foreign_amount2 && !isCrypto
@@ -160,19 +144,12 @@ export async function journalEntriesForUniformFormat(
 
     // for debit1
     if (record.debit_entity1 && Math.abs(Number(record.debit_local_amount1)) > 0) {
-      const financialEntity = financialEntitiesMap.get(record.debit_entity1);
-      if (!financialEntity) {
-        throw new Error(`Financial entity not found for ID: ${record.debit_entity1}`);
-      }
-
       entries.push({
         ...commonEntry,
         id: `d1-${commonEntry.id}`,
-        accountId: financialEntity.name,
+        accountId: record.debit_entity1,
         amount: Math.abs(Number(record.debit_local_amount1)),
-        counterAccountKey: record.credit_entity1
-          ? financialEntitiesMap.get(record.credit_entity1)?.name
-          : undefined,
+        counterAccountKey: record.credit_entity1 ?? undefined,
         debitCreditIndicator: '1', // 1 for debit
         foreignCurrencyAmount:
           record.debit_foreign_amount1 && !isCrypto
@@ -186,19 +163,12 @@ export async function journalEntriesForUniformFormat(
 
     // for debit2
     if (record.debit_entity2 && Math.abs(Number(record.debit_local_amount2)) > 0) {
-      const financialEntity = financialEntitiesMap.get(record.debit_entity2);
-      if (!financialEntity) {
-        throw new Error(`Financial entity not found for ID: ${record.debit_entity2}`);
-      }
-
       entries.push({
         ...commonEntry,
         id: `d2-${commonEntry.id}`,
-        accountId: financialEntity.name,
+        accountId: record.debit_entity2,
         amount: Math.abs(Number(record.debit_local_amount2)),
-        counterAccountKey: record.credit_entity1
-          ? financialEntitiesMap.get(record.credit_entity1)?.name
-          : undefined,
+        counterAccountKey: record.credit_entity1 ?? undefined,
         debitCreditIndicator: '1', // 1 for debit
         foreignCurrencyAmount:
           record.debit_foreign_amount2 && !isCrypto
@@ -279,11 +249,13 @@ export async function accountsForUniformFormat(
         const businessSum = await businessSumPromise;
         for (const [code, amounts] of Object.entries(businessSum)) {
           if (
-            code !== 'ILS' &&
-            code !== 'businessId' &&
-            typeof amounts !== 'string' &&
-            amounts.total !== 0
+            isCryptoCurrency(code.toUpperCase() as Currency) ||
+            code === 'ILS' ||
+            code === 'businessId'
           ) {
+            continue;
+          }
+          if (typeof amounts !== 'string' && amounts.total !== 0) {
             businessesBalance.set(businessSum.businessId, {
               ILS: {
                 opening: businessSum.ILS.total,
@@ -331,20 +303,18 @@ export async function accountsForUniformFormat(
     await Promise.all(
       totalDebitCredit.businessTransactionsSum.map(async businessSumPromise => {
         const businessSum = await businessSumPromise;
-        if (businessSum.ILS.debit !== 0 || businessSum.ILS.credit !== 0) {
-          const existing = businessesBalance.get(businessSum.businessId);
-          if (existing) {
-            existing.ILS.credit += businessSum.ILS.credit;
-            existing.ILS.debit += businessSum.ILS.debit;
-          } else {
-            businessesBalance.set(businessSum.businessId, {
-              ILS: {
-                opening: 0,
-                credit: businessSum.ILS.credit,
-                debit: businessSum.ILS.debit,
-              },
-            });
-          }
+        const existing = businessesBalance.get(businessSum.businessId);
+        if (existing) {
+          existing.ILS.credit += businessSum.ILS.credit;
+          existing.ILS.debit += businessSum.ILS.debit;
+        } else {
+          businessesBalance.set(businessSum.businessId, {
+            ILS: {
+              opening: 0,
+              credit: businessSum.ILS.credit,
+              debit: businessSum.ILS.debit,
+            },
+          });
         }
       }),
     );
