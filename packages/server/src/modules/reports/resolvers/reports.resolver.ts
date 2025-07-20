@@ -1,8 +1,6 @@
 import { generateUniformFormatReport } from '@accounter/shaam-uniform-format-generator';
-import { AdminBusinessesProvider } from '@modules/financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   dateToTimelessDateString,
   formatFinancialAmount,
@@ -10,9 +8,9 @@ import {
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
 import {
-  accountsFromFinancialEntities,
-  businessMetadataFromAdminBusiness,
-  journalEntriesFromLedgerRecords,
+  accountsForUniformFormat,
+  businessForUniformFormat,
+  journalEntriesForUniformFormat,
 } from '../helpers/uniform-format.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
@@ -36,45 +34,45 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
-    uniformFormat: async (_, { fromDate, toDate }, { injector, adminContext }) => {
-      // get all ledger records
-      const ledgerRecordsPromise = injector.get(LedgerProvider).getLedgerRecordsByDates({
-        ownerId: adminContext.defaultAdminBusinessId,
-        fromDate,
-        toDate,
+    uniformFormat: async (_, { fromDate, toDate }, context, info) => {
+      const accountsPromise = accountsForUniformFormat(context, info, fromDate, toDate).catch(
+        err => {
+          throw new Error(`Failed to fetch accounts for uniform format: ${err.message}`);
+        },
+      );
+      const businessPromise = businessForUniformFormat(context, fromDate, toDate).catch(err => {
+        throw new Error(`Failed to fetch main business info for uniform format: ${err.message}`);
       });
-
-      // get all relevant businesses
-      const financialEntitiesPromise = injector
-        .get(FinancialEntitiesProvider)
-        .getAllFinancialEntities();
-
-      // get admin business info
-      const adminBusinessPromise = injector
-        .get(AdminBusinessesProvider)
-        .getAdminBusinessByIdLoader.load(adminContext.defaultAdminBusinessId);
-
-      const [ledgerRecords, financialEntities, adminBusiness] = await Promise.all([
-        ledgerRecordsPromise,
-        financialEntitiesPromise,
-        adminBusinessPromise,
+      const journalEntriesPromise = journalEntriesForUniformFormat(context, fromDate, toDate).catch(
+        err => {
+          throw new Error(`Failed to fetch journal entries: ${err.message}`);
+        },
+      );
+      const [accounts, business, journalEntries] = await Promise.all([
+        accountsPromise,
+        businessPromise,
+        journalEntriesPromise,
       ]);
-
-      if (!adminBusiness) {
-        throw new Error('Admin business not found');
-      }
 
       // generate files
       const report = generateUniformFormatReport(
         {
-          journalEntries: journalEntriesFromLedgerRecords(ledgerRecords),
-          accounts: accountsFromFinancialEntities(financialEntities),
-          business: businessMetadataFromAdminBusiness(adminBusiness),
+          journalEntries,
+          accounts,
+          business,
           documents: [],
           inventory: [],
         },
         { fileNameBase: '', validationMode: 'collect-all' },
       );
+
+      if (report.summary.errors && report.summary.errors.length > 0) {
+        throw new Error(
+          `Uniform format report generation failed with validation errors: ${report.summary.errors
+            .map(err => `${err.recordType}[${err.recordIndex}].${err.field}: ${err.message}`)
+            .join(', ')}`,
+        );
+      }
 
       // return files as a response
       return {
