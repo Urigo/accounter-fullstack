@@ -114,12 +114,7 @@ export function parseUniformFormatFiles(
   performIndividualValidation(structuredData, errors, validationMode);
 
   // Perform cross-validation
-  const crossValidationPassed = performCrossValidation(
-    parsedData,
-    structuredData,
-    errors,
-    validationMode,
-  );
+  const crossValidationPassed = performCrossValidation(parsedData, errors, validationMode);
 
   // Handle validation errors based on mode
   if (
@@ -586,7 +581,6 @@ function performIndividualValidation(
  */
 function performCrossValidation(
   parsedData: ParsedFileData,
-  structuredData: ReportInput,
   errors: ValidationError[],
   validationMode: ValidationMode,
 ): boolean {
