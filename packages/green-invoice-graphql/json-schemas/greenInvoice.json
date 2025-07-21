@@ -28,7 +28,7 @@
       ]
     },
     "previewDocumentRequest": {
-      "$ref": "#/definitions/DocumentInput"
+      "$ref": "#/definitions/PreviewDocumentInput"
     },
     "previewDocumentResponse": {
       "oneOf": [
@@ -918,29 +918,33 @@
       ]
     },
     "Client": {
-      "allof": [{ "$ref": "#/definitions/ClientCore" }],
-      "additionalProperties": false,
-      "properties": {
-        "country": {
-          "$ref": "#/definitions/Country"
-        },
-        "emails": {
-          "$ref": "#/definitions/ClientEmails"
-        },
-        "id": {
-          "$ref": "#/definitions/ClientId"
-        },
-        "name": {
-          "$ref": "#/definitions/ClientName"
-        },
-        "phone": {
-          "$ref": "#/definitions/ClientPhone"
-        },
-        "self": {
-          "$ref": "#/definitions/ClientSelf"
+      "allof": [
+        { "$ref": "#/definitions/ClientCore" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "country": {
+              "$ref": "#/definitions/Country"
+            },
+            "emails": {
+              "$ref": "#/definitions/ClientEmails"
+            },
+            "id": {
+              "$ref": "#/definitions/ClientId"
+            },
+            "name": {
+              "$ref": "#/definitions/ClientName"
+            },
+            "phone": {
+              "$ref": "#/definitions/ClientPhone"
+            },
+            "self": {
+              "$ref": "#/definitions/ClientSelf"
+            }
+          },
+          "required": ["country", "emails", "id", "name", "phone", "self"]
         }
-      },
-      "required": ["country", "emails", "id", "name", "phone", "self"]
+      ]
     },
     "ClientCore": {
       "type": "object",
@@ -1519,12 +1523,7 @@
           "type": "object"
         },
         "client": {
-          "$ref": "#/definitions/ClientCore",
-          "properties": {
-            "id": {
-              "$ref": "#/definitions/ClientId"
-            }
-          },
+          "allOf": [{ "$ref": "#/definitions/ClientCore" }],
           "required": ["id"]
         },
         "income": {
@@ -1974,17 +1973,112 @@
       "required": ["description", "quantity", "price", "currency", "vatType"]
     },
     "Payment": {
+      "allOf": [
+        { "$ref": "#/definitions/PaymentCore" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "type": "number"
+            },
+            "cancellable": {
+              "type": "boolean",
+              "description": "Is this document a cancellable document",
+              "examples": [false]
+            },
+            "description": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "examples": ["העברה בנקאית"]
+            },
+            "ref": {
+              "type": "array",
+              "description": "The referred documents types",
+              "items": {
+                "$ref": "#/definitions/DocumentType"
+              }
+            }
+          },
+          "required": ["type", "price"]
+        }
+      ]
+    },
+    "PaymentDocument": {
+      "allOf": [
+        { "$ref": "#/definitions/PaymentCore" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bankName": {
+              "type": "string",
+              "description": "Bank name (required when using Cheques)",
+              "examples": ["My Bank"]
+            },
+            "bankBranch": {
+              "type": "string",
+              "description": "Bank branch number (required when using Cheques)",
+              "examples": ["212345"]
+            },
+            "bankAccount": {
+              "type": "string",
+              "description": "Bank account number (required when using Cheques)",
+              "examples": ["212345"]
+            },
+            "chequeNum": {
+              "type": "string",
+              "description": "Cheque number (required when using Cheques)",
+              "examples": ["10002"]
+            },
+            "accountId": {
+              "type": "string",
+              "description": "Payer account (PayPal / Payment App / Other)",
+              "examples": ["TFGFFGSYYE"]
+            },
+            "transactionId": {
+              "type": "string",
+              "description": "Transaction ID (PayPal / Payment App / Other)",
+              "examples": ["TGBBBXNLKS75SKJS"]
+            },
+            "appType": {
+              "type": "integer",
+              "description": "Payment app type (required when using 'payment app' as a Payment type)",
+              "enum": [1, 2, 3, 4, 5, 6]
+            },
+            "cardType": {
+              "type": "integer",
+              "description": "Credit card type",
+              "enum": [1, 2, 3, 4, 5]
+            },
+            "cardNum": {
+              "type": "string",
+              "description": "Credit card's last 4 digits",
+              "examples": ["8765"]
+            },
+            "dealType": {
+              "type": "integer",
+              "description": "Credit card deal type",
+              "enum": [1, 2, 3, 4, 5, 6]
+            },
+            "numPayments": {
+              "type": "integer",
+              "description": "Credit card's payments count (1-36)",
+              "examples": [1]
+            },
+            "firstPayment": {
+              "type": "number",
+              "description": "Credit card's first payment",
+              "examples": [10]
+            }
+          },
+          "required": ["type", "price", "currency"]
+        }
+      ]
+    },
+    "PaymentCore": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
-        "amount": {
-          "type": "number"
-        },
-        "cancellable": {
-          "type": "boolean",
-          "description": "Is this document a cancellable document",
-          "examples": [false]
-        },
         "currency": {
           "$ref": "#/definitions/Currency"
         },
@@ -1995,37 +2089,22 @@
           "type": "string",
           "format": "date"
         },
-        "description": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string",
-          "examples": ["העברה בנקאית"]
-        },
         "price": {
           "type": "number",
           "description": "Sum paid",
           "examples": [300]
         },
-        "ref": {
-          "type": "array",
-          "description": "The referred documents types",
-          "items": {
-            "$ref": "#/definitions/DocumentType"
-          }
-        },
         "type": {
           "type": "number",
           "description": "Payment method",
-          "enum": [-1, 0, 1, 2, 3, 4, 5, 10, 11]
+          "enum": [-1, 0, 1, 2, 3, 4, 5, 9, 10, 11]
         },
         "subType": {
           "type": "number",
-          "description": "Other payment sub type",
-          "enum": [1, 2, 3, 4]
+          "description": "Other payment sub type (required when using 'other' as a Payment type)",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8]
         }
-      },
-      "required": ["type", "price"]
+      }
     },
     "Supplier": {
       "type": "object",
@@ -2205,7 +2284,7 @@
     "DocumentPayment": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Payment"
+        "$ref": "#/definitions/PaymentDocument"
       }
     },
     "DocumentRef": {
@@ -2221,6 +2300,23 @@
     "DocumentDate": {
       "description": "Document reference date",
       "type": "string"
+    },
+    "DocumentDiscount": {
+      "description": "Discount information",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "type": "number",
+          "examples": [10]
+        },
+        "type": {
+          "type": "string",
+          "description": "Discount amount type",
+          "enum": ["sum", "percentage"]
+        }
+      },
+      "required": ["type", "amount"]
     },
     "DocumentRounding": {
       "description": "Round the amounts",
@@ -2278,6 +2374,111 @@
       "description": "Document type",
       "enum": [20, 305, 320, 330, 400, 405]
     },
+    "PreviewDocumentInput": {
+      "description": "Previews a document before the actual generation",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "$ref": "#/definitions/DocumentDescription"
+        },
+        "remarks": {
+          "$ref": "#/definitions/DocumentRemarks"
+        },
+        "footer": {
+          "description": "Texts appearing in footer",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/DocumentType"
+        },
+        "date": {
+          "description": "Document date in the format YYYY-MM-DD",
+          "type": "string"
+        },
+        "dueDate": {
+          "description": "Document payment due date in the format YYYY-MM-DD",
+          "type": "string"
+        },
+        "lang": {
+          "$ref": "#/definitions/DocumentLang"
+        },
+        "currency": { "$ref": "#/definitions/Currency" },
+        "vatType": {
+          "$ref": "#/definitions/VatType"
+        },
+        "discount": {
+          "$ref": "#/definitions/DocumentDiscount"
+        },
+        "rounding": {
+          "$ref": "#/definitions/DocumentRounding"
+        },
+        "signed": {
+          "$ref": "#/definitions/DocumentSigned"
+        },
+        "maxPayments": {
+          "description": "Max payments allowed (valid only on supported accounts)",
+          "type": "integer"
+        },
+        "client": {
+          "allOf": [
+            { "$ref": "#/definitions/ClientCore" },
+            {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string",
+                  "description": "Client address"
+                },
+                "city": {
+                  "type": "string",
+                  "description": "Client city"
+                },
+                "zip": {
+                  "type": "string",
+                  "description": "Client zip code"
+                },
+                "fax": {
+                  "type": "string",
+                  "description": "Client fax"
+                },
+                "mobile": {
+                  "type": "string",
+                  "description": "The client mobile number"
+                },
+                "add": {
+                  "type": "boolean",
+                  "description": "Add a temporary client to the clients' list"
+                }
+              }
+            },
+            { "required": ["id"] }
+          ]
+        },
+        "income": {
+          "$ref": "#/definitions/DocumentIncome"
+        },
+        "payment": {
+          "$ref": "#/definitions/DocumentPayment"
+        },
+        "linkedDocumentIds": {
+          "description": "Linked document IDs. allows you to state the related / relevant documents, e.g.: when creating a receipt, attach your original invoice document ID as one of the ids in the linkedDocumentIds - this in turn will automatically close the original invoice if needed.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "linkedPaymentId": {
+          "description": "Linked payment ID (valid for document type 305 only). allows you to define the paymentId that the document is going to be relevant to, this can be attached only to invoice documents (type 305).",
+          "type": "string"
+        },
+        "linkType": {
+          "description": "Reference type (applicable only when using linkedDocumentIds)",
+          "type": "string",
+          "enum": ["link", "cancel"]
+        }
+      },
+      "required": ["type", "lang", "currency", "vatType"]
+    },
     "Vat": {
       "description": "VAT amount",
       "type": "number",
@@ -2286,6 +2487,7 @@
     "VatType": {
       "description": "VAT type",
       "type": "number",
+      "enum": [0, 1, 2],
       "examples": [0]
     },
     "VatRate": {
