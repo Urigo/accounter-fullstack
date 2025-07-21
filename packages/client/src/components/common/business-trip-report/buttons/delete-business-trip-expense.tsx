@@ -1,5 +1,5 @@
 import { ReactElement, useCallback } from 'react';
-import { Trash } from 'tabler-icons-react';
+import { Trash } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDeleteBusinessTripExpense } from '../../../../hooks/use-delete-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';

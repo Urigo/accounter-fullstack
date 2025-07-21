@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Plus } from 'tabler-icons-react';
 import { Loader, Modal, NumberInput, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';

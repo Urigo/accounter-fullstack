@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactElement } from 'react';
-import { RefreshDot } from 'tabler-icons-react';
+import { RefreshCcwDot } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
 import { cn } from '../../../lib/utils.js';
@@ -36,7 +36,7 @@ export function RegenerateLedgerRecordsButton({
           {...buttonProps}
           className={cn('size-7.5', buttonProps.className)}
         >
-          <RefreshDot className="size-5" />
+          <RefreshCcwDot className="size-5" />
         </Button>
       </Tooltip>
     </ConfirmationModal>

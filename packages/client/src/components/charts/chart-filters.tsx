@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
+import { Filter } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
 import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilter } from '../../gql/graphql.js';
 import { TimelessDateString } from '../../helpers/dates.js';

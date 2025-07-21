@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { PlaylistAdd } from 'tabler-icons-react';
+import { ListPlus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
 import { MiscExpenseTransactionFieldsDocument } from '../../../gql/graphql.js';
@@ -65,7 +65,7 @@ export const InsertMiscExpenseModal = ({
       <DialogTrigger asChild>
         <Tooltip label="Insert Related Misc Expense">
           <Button variant="ghost" size="icon" className="size-7.5" disabled={fetchingTransaction}>
-            <PlaylistAdd className="size-5" />
+            <ListPlus className="size-5" />
           </Button>
         </Tooltip>
       </DialogTrigger>

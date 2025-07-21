@@ -1,8 +1,7 @@
 import { ReactElement, useState } from 'react';
-import { Edit } from 'lucide-react';
+import { Edit, Loader2 } from 'lucide-react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Loader2 } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import {
   AddSortCodeMutationVariables,

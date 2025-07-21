@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Edit } from 'tabler-icons-react';
+import { Edit } from 'lucide-react';
 import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { EditTagFieldsFragmentDoc } from '../../../gql/graphql.js';

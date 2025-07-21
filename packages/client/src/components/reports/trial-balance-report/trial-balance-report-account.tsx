@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Text, Tooltip } from '@mantine/core';
 import { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
@@ -50,9 +50,9 @@ export const TrialBalanceReportBusiness = ({
               onClick={(): void => setIsExtended(i => !i)}
             >
               {isExtended || isAllOpened ? (
-                <LayoutNavbarCollapse className="size-5" />
+                <PanelTopClose className="size-5" />
               ) : (
-                <LayoutNavbarExpand className="size-5" />
+                <PanelTopOpen className="size-5" />
               )}
             </Button>
           </Tooltip>

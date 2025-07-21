@@ -1,6 +1,5 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Plus } from 'tabler-icons-react';
+import { Loader2, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Tooltip } from '@mantine/core';
 import {

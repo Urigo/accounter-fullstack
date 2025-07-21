@@ -1,6 +1,6 @@
 import { ReactElement, useCallback, useState } from 'react';
+import { CheckSquare, XSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import { SquareCheck, SquareX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import {
@@ -328,9 +328,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       style={selectedProperty?.id === charge.id ? { background: '#228be633' } : {}}
                     >
                       {charge.property ? (
-                        <SquareCheck size={20} color="green" />
+                        <CheckSquare size={20} color="green" />
                       ) : (
-                        <SquareX size={20} color="red" />
+                        <XSquare size={20} color="red" />
                       )}
                     </div>
                   </button>
@@ -360,9 +360,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.conversion ? (
-                        <SquareCheck size={20} color="green" />
+                        <CheckSquare size={20} color="green" />
                       ) : (
-                        <SquareX size={20} color="red" />
+                        <XSquare size={20} color="red" />
                       )}
                     </div>
                   </button>
@@ -393,9 +393,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.optionalVAT ? (
-                        <SquareCheck size={20} color="green" />
+                        <CheckSquare size={20} color="green" />
                       ) : (
-                        <SquareX size={20} color="red" />
+                        <XSquare size={20} color="red" />
                       )}
                     </div>
                   </button>
@@ -428,9 +428,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.optionalDocuments ? (
-                        <SquareCheck size={20} color="green" />
+                        <CheckSquare size={20} color="green" />
                       ) : (
-                        <SquareX size={20} color="red" />
+                        <XSquare size={20} color="red" />
                       )}
                     </div>
                   </button>
@@ -461,9 +461,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.isInvoicePaymentDifferentCurrency ? (
-                        <SquareCheck size={20} color="green" />
+                        <CheckSquare size={20} color="green" />
                       ) : (
-                        <SquareX size={20} color="red" />
+                        <XSquare size={20} color="red" />
                       )}
                     </div>
                   </button>

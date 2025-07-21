@@ -1,6 +1,5 @@
 import { JSX, useState } from 'react';
-import { User2Icon } from 'lucide-react';
-import { ArrowBigRightLines, FileDownload } from 'tabler-icons-react';
+import { CircleCheckBig, FileDown, User2Icon } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
@@ -49,7 +48,7 @@ export function UserNav(): JSX.Element {
           <DropdownMenuItem>
             <Tooltip label="Pull Green Invoice Documents">
               <Button variant="ghost" size="icon" className="size-7.5" onClick={openPullDocuments}>
-                <FileDownload className="size-5" />
+                <FileDown className="size-5" />
               </Button>
             </Tooltip>
           </DropdownMenuItem>
@@ -60,7 +59,7 @@ export function UserNav(): JSX.Element {
             >
               <Tooltip label="Execute corn jobs">
                 <Button variant="ghost" size="icon" className="size-7.5">
-                  <ArrowBigRightLines className="size-5" />
+                  <CircleCheckBig className="size-5" />
                 </Button>
               </Tooltip>
             </ConfirmationModal>

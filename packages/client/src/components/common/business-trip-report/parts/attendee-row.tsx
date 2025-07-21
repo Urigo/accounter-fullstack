@@ -1,7 +1,7 @@
 import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
+import { Check, Edit } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Check, Edit } from 'tabler-icons-react';
 import { Card, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {

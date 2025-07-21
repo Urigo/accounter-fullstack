@@ -1,6 +1,5 @@
 import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
@@ -73,11 +72,7 @@ export const TrialBalanceReport = (): ReactElement => {
             className="size-7.5"
             onClick={(): void => setIsAllOpened(i => !i)}
           >
-            {isAllOpened ? (
-              <LayoutNavbarCollapse className="size-5" />
-            ) : (
-              <LayoutNavbarExpand className="size-5" />
-            )}
+            {isAllOpened ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
           </Button>
         </Tooltip>
         <TrialBalanceReportFilters filter={filter} setFilter={setFilter} />

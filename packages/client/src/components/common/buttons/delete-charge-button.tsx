@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Trash } from 'tabler-icons-react';
+import { Trash } from 'lucide-react';
 import { useDeleteCharge } from '../../../hooks/use-delete-charge.js';
 import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';

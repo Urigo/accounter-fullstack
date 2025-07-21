@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Table } from '@mantine/core';
 import { VatReportIncomeFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../../gql/index.js';
@@ -42,11 +42,7 @@ export const IncomeTable = ({
           className="size-7.5"
           onClick={(): void => setIsOpened(i => !i)}
         >
-          {isOpened ? (
-            <LayoutNavbarCollapse className="size-5" />
-          ) : (
-            <LayoutNavbarExpand className="size-5" />
-          )}
+          {isOpened ? <PanelTopClose className="size-5" /> : <PanelTopOpen className="size-5" />}
         </Button>
         Income
       </span>

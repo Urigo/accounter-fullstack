@@ -1,6 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Check, LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
 import { ChargeFilter, ChargesLedgerValidationDocument } from '../gql/graphql.js';
@@ -130,9 +129,9 @@ export const ChargesLedgerValidation = (): ReactElement => {
             onClick={(): void => setIsAllOpened(i => !i)}
           >
             {isAllOpened ? (
-              <LayoutNavbarCollapse className="size-5" />
+              <PanelTopClose className="size-5" />
             ) : (
-              <LayoutNavbarExpand className="size-5" />
+              <PanelTopOpen className="size-5" />
             )}
           </Button>
         </Tooltip>

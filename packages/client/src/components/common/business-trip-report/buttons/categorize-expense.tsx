@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
+import { Edit } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Edit } from 'tabler-icons-react';
 import { Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {

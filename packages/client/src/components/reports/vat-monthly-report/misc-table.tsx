@@ -1,5 +1,5 @@
 import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../../gql/index.js';
 import { ChargesTable } from '../../charges/charges-table.js';
@@ -48,11 +48,7 @@ export const MiscTable = ({
           className="size-7.5"
           onClick={(): void => setIsOpened(i => !i)}
         >
-          {isOpened ? (
-            <LayoutNavbarCollapse className="size-5" />
-          ) : (
-            <LayoutNavbarExpand className="size-5" />
-          )}
+          {isOpened ? <PanelTopClose className="size-5" /> : <PanelTopOpen className="size-5" />}
         </Button>
         Misc Charges (which are not on the above tables)
       </span>

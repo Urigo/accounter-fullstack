@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { WorldUpload } from 'tabler-icons-react';
+import { MapPlus } from 'lucide-react';
 import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Button } from '../../ui/button.js';
@@ -20,7 +20,7 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
     <>
       <Tooltip label="Add New Business Trip">
         <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
-          <WorldUpload className="size-5" />
+          <MapPlus className="size-5" />
         </Button>
       </Tooltip>
       <Modal centered opened={opened} onClose={close} title="Add Business Trip">

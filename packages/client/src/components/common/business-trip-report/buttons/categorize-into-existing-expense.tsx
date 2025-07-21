@@ -1,7 +1,7 @@
 import { forwardRef, ReactElement, useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { LayoutGridAdd } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Grid, Loader, Modal, NumberInput, Overlay, Select, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -58,7 +58,7 @@ export function CategorizeIntoExistingExpense(props: {
             open();
           }}
         >
-          <LayoutGridAdd className="size-5" />
+          <Plus className="size-5" />
         </Button>
       </Tooltip>
       {opened && (

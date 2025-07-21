@@ -1,16 +1,16 @@
 import { ReactElement } from 'react';
 import {
-  Coin,
+  ArrowRightLeft,
+  Coins,
   CreditCard,
   Gift,
-  PigMoney,
+  Globe,
+  PiggyBank,
   Plane,
-  ReceiptTax,
+  Receipt,
   Scale,
-  TransferIn,
-  Transform,
   Wallet,
-} from 'tabler-icons-react';
+} from 'lucide-react';
 
 type ChargeType =
   | 'CommonCharge'
@@ -40,16 +40,16 @@ const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
 export const getChargeTypeName = (type: ChargeType): string => CHARGE_TYPE_NAME[type] ?? 'Unknown';
 
 const ICON_MAP: Record<ChargeType, ReactElement> = {
-  CommonCharge: <Coin />,
+  CommonCharge: <Coins />,
   BusinessTripCharge: <Plane />,
   DividendCharge: <Gift />,
-  ConversionCharge: <Transform />,
+  ConversionCharge: <Globe />,
   SalaryCharge: <Wallet />,
-  InternalTransferCharge: <TransferIn />,
-  MonthlyVatCharge: <ReceiptTax />,
-  BankDepositCharge: <PigMoney />,
+  InternalTransferCharge: <ArrowRightLeft />,
+  MonthlyVatCharge: <Receipt />,
+  BankDepositCharge: <PiggyBank />,
   CreditcardBankCharge: <CreditCard />,
   FinancialCharge: <Scale />,
 };
 
-export const getChargeTypeIcon = (type: ChargeType): ReactElement => ICON_MAP[type] ?? <Coin />;
+export const getChargeTypeIcon = (type: ChargeType): ReactElement => ICON_MAP[type] ?? <Coins />;

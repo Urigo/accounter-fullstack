@@ -1,9 +1,9 @@
 import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
 import { format, startOfYear } from 'date-fns';
 import equal from 'deep-equal';
+import { Filter } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Filter } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { MultiSelect } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';

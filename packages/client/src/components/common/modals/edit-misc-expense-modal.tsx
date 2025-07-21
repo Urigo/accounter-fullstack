@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { Edit } from 'tabler-icons-react';
+import { Edit } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { EditMiscExpenseFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { FragmentType } from '../../../gql/index.js';

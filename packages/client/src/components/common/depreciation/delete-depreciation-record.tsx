@@ -1,5 +1,5 @@
 import { ReactElement, useCallback } from 'react';
-import { Trash } from 'tabler-icons-react';
+import { Trash } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDeleteDepreciationRecord } from '../../../hooks/use-delete-depreciation-record.js';
 import { Button } from '../../ui/button.js';

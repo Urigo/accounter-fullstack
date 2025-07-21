@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { Button } from '../../ui/button.js';
 
@@ -25,11 +25,7 @@ export function ToggleExpansionButton(props: {
         }}
         className="size-7.5"
       >
-        {isExpanded ? (
-          <LayoutNavbarCollapse className="size-5" />
-        ) : (
-          <LayoutNavbarExpand className="size-5" />
-        )}
+        {isExpanded ? <PanelTopClose className="size-5" /> : <PanelTopOpen className="size-5" />}
       </Button>
     </Tooltip>
   );

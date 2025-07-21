@@ -1,6 +1,11 @@
 import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { ChevronsLeftRightEllipsis, ChevronsRightLeft, Loader2 } from 'lucide-react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import {
+  ChevronsLeftRightEllipsis,
+  ChevronsRightLeft,
+  Loader2,
+  PanelTopClose,
+  PanelTopOpen,
+} from 'lucide-react';
 import { useQuery } from 'urql';
 import { Mark, Table, Text, Tooltip } from '@mantine/core';
 import {
@@ -119,9 +124,9 @@ export const BusinessTransactionsSummery = (): ReactElement => {
             onClick={(): void => setIsAllOpened(i => !i)}
           >
             {isAllOpened ? (
-              <LayoutNavbarCollapse className="size-5" />
+              <PanelTopClose className="size-5" />
             ) : (
-              <LayoutNavbarExpand className="size-5" />
+              <PanelTopOpen className="size-5" />
             )}
           </Button>
         </Tooltip>

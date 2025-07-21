@@ -1,7 +1,6 @@
 import { ReactElement, useState } from 'react';
-import { Car, Fuel } from 'lucide-react';
+import { Car, Check, Edit, Fuel } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Check, Edit } from 'tabler-icons-react';
 import { NumberInput, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,

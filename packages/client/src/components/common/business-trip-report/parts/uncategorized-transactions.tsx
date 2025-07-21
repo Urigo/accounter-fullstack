@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { AlertCircle } from 'tabler-icons-react';
+import { AlertCircle } from 'lucide-react';
 import { NavLink, Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {

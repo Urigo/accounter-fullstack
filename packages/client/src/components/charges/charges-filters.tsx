@@ -9,8 +9,8 @@ import {
 } from 'react';
 import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
+import { Filter } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
 import { Indicator, MultiSelect, Pagination, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilter, ChargeFilterType, ChargeSortByField } from '../../gql/graphql.js';
