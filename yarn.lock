@@ -252,7 +252,7 @@ __metadata:
     ajv-formats: "npm:3.0.1"
     concurrently: "npm:9.2.0"
     date-fns: "npm:4.1.0"
-    inquirer: "npm:12.7.0"
+    inquirer: "npm:12.8.0"
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.10"
@@ -4004,7 +4004,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/core@npm:^10.1.14, @inquirer/core@npm:^10.1.15":
+"@inquirer/core@npm:^10.1.15":
   version: 10.1.15
   resolution: "@inquirer/core@npm:10.1.15"
   dependencies:
@@ -4130,7 +4130,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/prompts@npm:^7.6.0":
+"@inquirer/prompts@npm:^7.7.0":
   version: 7.7.0
   resolution: "@inquirer/prompts@npm:7.7.0"
   dependencies:
@@ -4235,7 +4235,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/type@npm:^3.0.7, @inquirer/type@npm:^3.0.8":
+"@inquirer/type@npm:^3.0.8":
   version: 3.0.8
   resolution: "@inquirer/type@npm:3.0.8"
   peerDependencies:
@@ -13559,13 +13559,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inquirer@npm:12.7.0":
-  version: 12.7.0
-  resolution: "inquirer@npm:12.7.0"
+"inquirer@npm:12.8.0":
+  version: 12.8.0
+  resolution: "inquirer@npm:12.8.0"
   dependencies:
-    "@inquirer/core": "npm:^10.1.14"
-    "@inquirer/prompts": "npm:^7.6.0"
-    "@inquirer/type": "npm:^3.0.7"
+    "@inquirer/core": "npm:^10.1.15"
+    "@inquirer/prompts": "npm:^7.7.0"
+    "@inquirer/type": "npm:^3.0.8"
     ansi-escapes: "npm:^4.3.2"
     mute-stream: "npm:^2.0.0"
     run-async: "npm:^4.0.4"
@@ -13575,7 +13575,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/node":
       optional: true
-  checksum: 10c0/0e666c104b10dcc87806d80c7a7ee2f604557dd2ede660544b1b6795926dc76ec385c7165a99cf53bdc881e53a4183f6df033351df7d7f5682963a67cccc734f
+  checksum: 10c0/e6004a0f0355c61235041c675b15728a191366e511f10c5832630f9e5366c78c3da66098e04eb88a1841d30b36aa1e18bacc053773d6382846d5b966fe1b3ffd
   languageName: node
   linkType: hard
 
