@@ -1,7 +1,7 @@
 import { ReactElement, useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { Plus } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';

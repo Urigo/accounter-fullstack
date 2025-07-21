@@ -1,6 +1,5 @@
 import { ReactElement, useCallback, useContext, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
+import { ListPlus, Loader2, Trash2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { sortTags } from '../../helpers/index.js';
@@ -77,7 +76,7 @@ export const TagsManager = (): ReactElement => {
                 className="size-7.5"
                 onClick={(): void => onDeleteTag(tag.id, tag.name)}
               >
-                <TrashX className="size-5" />
+                <Trash2 className="size-5" />
               </Button>
             </div>
           ))}
@@ -96,7 +95,7 @@ export const TagsManager = (): ReactElement => {
               disabled={newTag.length < 2}
               onClick={(): void => onAddTag(newTag)}
             >
-              <PlaylistAdd className="size-5" />
+              <ListPlus className="size-5" />
             </Button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { File, Photo } from 'tabler-icons-react';
+import { File, Image } from 'lucide-react';
 import { Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
 import { ImageMagnifier } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
@@ -26,7 +26,7 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
                   disabled={!image}
                   onClick={(): void => setOpenImage(!!image)}
                 >
-                  <Photo className="size-5" />
+                  <Image className="size-5" />
                 </Button>
               </Indicator>
             </Tooltip>

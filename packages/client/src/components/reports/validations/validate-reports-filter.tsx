@@ -1,8 +1,8 @@
 import { ReactElement, useContext, useEffect, useState } from 'react';
 import { format, subYears } from 'date-fns';
 import equal from 'deep-equal';
+import { Filter } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
 import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';

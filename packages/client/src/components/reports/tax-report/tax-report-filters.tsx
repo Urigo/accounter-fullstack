@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { Filter } from 'tabler-icons-react';
+import { Filter } from 'lucide-react';
 import { YearPickerInput } from '@mantine/dates';
 import { PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';

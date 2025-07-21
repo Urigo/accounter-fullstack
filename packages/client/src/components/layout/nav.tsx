@@ -1,6 +1,6 @@
 import { type JSX } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ChevronDown } from 'tabler-icons-react';
 import { cn } from '../../lib/utils.js';
 import { Button, buttonVariants } from '../ui/button.js';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible.js';

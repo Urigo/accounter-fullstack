@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactElement } from 'react';
-import { RowInsertTop } from 'tabler-icons-react';
+import { Plus } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { Button } from '../../ui/button.js';
 
@@ -9,7 +9,7 @@ export function InsertMiniButton(
   return (
     <Tooltip disabled={!props.tooltip} label={props.tooltip}>
       <Button variant="ghost" size="icon" className="size-7.5" {...props}>
-        <RowInsertTop className="size-5" />
+        <Plus className="size-5" />
       </Button>
     </Tooltip>
   );

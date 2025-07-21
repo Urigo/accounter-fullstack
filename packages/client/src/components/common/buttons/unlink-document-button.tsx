@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { PlugConnectedX } from 'tabler-icons-react';
+import { Unlink } from 'lucide-react';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { Button } from '../../ui/button.js';
@@ -25,7 +25,7 @@ export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
       title="Are you sure you want to unlink this document from the charge?"
     >
       <Button variant="ghost" size="icon" className="size-7.5">
-        <PlugConnectedX className="size-5" />
+        <Unlink className="size-5" />
       </Button>
     </ConfirmationModal>
   );

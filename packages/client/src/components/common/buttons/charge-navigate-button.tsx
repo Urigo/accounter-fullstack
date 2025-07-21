@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactElement } from 'react';
-import { ExternalLink } from 'tabler-icons-react';
+import { ExternalLink } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
 import { getChargeHref } from '../../screens/charges/charge.js';

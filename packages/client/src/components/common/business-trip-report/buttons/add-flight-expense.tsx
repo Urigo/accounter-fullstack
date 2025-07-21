@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Plus } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';

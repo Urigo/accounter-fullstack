@@ -1,8 +1,8 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
+import { Filter } from 'lucide-react';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';

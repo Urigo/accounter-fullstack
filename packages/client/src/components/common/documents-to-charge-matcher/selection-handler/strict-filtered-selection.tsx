@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
 import { format } from 'date-fns';
-import { Barcode, Bookmark, CalendarEvent, Coin, FileUnknown } from 'tabler-icons-react';
+import { Barcode, Bookmark, Calendar, Coins, FileQuestion } from 'lucide-react';
 import {
   ChargeToMatchDocumentsFieldsFragment,
   DocumentsToMatchFieldsFragment,
@@ -45,7 +45,7 @@ export function StrictFilteredSelection({
           <ul className="pt-6 mt-6 space-y-6 border-t">
             <li className="flex">
               <div className="inline-flex items-center w-6 h-6 bg-blue-600 rounded-xl p-0.5">
-                <FileUnknown color="white" />
+                <FileQuestion color="white" />
               </div>
               <span className="ml-3 text-neutral-600">Charge</span>
             </li>
@@ -57,7 +57,7 @@ export function StrictFilteredSelection({
             </li>
             <li className="flex">
               <div className="inline-flex items-center w-6 h-6 bg-blue-600 rounded-xl p-0.5">
-                <CalendarEvent color="white" />
+                <Calendar color="white" />
               </div>
               <span className="ml-3 text-neutral-600">
                 {format(new Date(charge.transactions[0].eventDate), 'yyyy-MM-dd')}
@@ -65,7 +65,7 @@ export function StrictFilteredSelection({
             </li>
             <li className="flex">
               <div className="inline-flex items-center w-6 h-6 bg-blue-600 rounded-xl p-0.5">
-                <Coin color="white" />
+                <Coins color="white" />
               </div>
               <span className="ml-3 text-neutral-600">{charge.totalAmount?.formatted}</span>
             </li>
@@ -119,7 +119,7 @@ export function StrictFilteredSelection({
             <ul className="pt-6 mt-6 space-y-6 border-t">
               <li className="flex">
                 <div className="inline-flex items-center w-6 h-6 bg-white rounded-xl p-0.5">
-                  <FileUnknown color="blue" />
+                  <FileQuestion color="blue" />
                 </div>
                 <span className="ml-3 text-white">{document.documentType}</span>
               </li>
@@ -131,13 +131,13 @@ export function StrictFilteredSelection({
               </li>
               <li className="flex">
                 <div className="inline-flex items-center w-6 h-6 bg-white rounded-xl p-0.5">
-                  <CalendarEvent color="blue" />
+                  <Calendar color="blue" />
                 </div>
                 <span className="ml-3 text-white">{document.date}</span>
               </li>
               <li className="flex">
                 <div className="inline-flex items-center w-6 h-6 bg-white rounded-xl p-0.5">
-                  <Coin color="blue" />
+                  <Coins color="blue" />
                 </div>
                 <span className="ml-3 text-white">{document.amount?.formatted}</span>
               </li>

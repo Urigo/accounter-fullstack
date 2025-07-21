@@ -1,5 +1,5 @@
 import { ReactElement, useEffect, useState } from 'react';
-import { ArrowsJoin2 } from 'tabler-icons-react';
+import { Combine } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
@@ -25,7 +25,7 @@ export function ToggleMergeSelected(props: {
         variant={variant}
         className={cn('size-7.5', mergeSelected ? 'bg-blue-500 hover:bg-blue-500/90' : '')}
       >
-        <ArrowsJoin2 className="size-5" />
+        <Combine className="size-5" />
       </Button>
     </Tooltip>
   );

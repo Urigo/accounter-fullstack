@@ -1,6 +1,6 @@
 import { ReactElement, useEffect } from 'react';
+import { FileDigit } from 'lucide-react';
 import { toast } from 'sonner';
-import { Report } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
@@ -68,7 +68,7 @@ export const PCNGenerator = ({
         className="size-7.5"
         onClick={executeQuery}
       >
-        <Report className="size-5" />
+        <FileDigit className="size-5" />
       </Button>
     </Tooltip>
   );

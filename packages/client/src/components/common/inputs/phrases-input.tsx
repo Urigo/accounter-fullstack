@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { ListPlus, Trash2 } from 'lucide-react';
 import {
   ArrayPath,
   FieldArray,
@@ -7,7 +8,6 @@ import {
   useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { Button } from '../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form';
 import { Input } from '../../ui/input';
@@ -65,7 +65,7 @@ export function PhrasesInput<T extends FieldValues>({
               />
             </div>
             <Button variant="ghost" size="icon" className="size-7.5" onClick={() => remove(index)}>
-              <TrashX className="size-5" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         ))}
@@ -75,7 +75,7 @@ export function PhrasesInput<T extends FieldValues>({
           className="size-7.5"
           onClick={() => append(undefined as FieldArray<T>)}
         >
-          <PlaylistAdd className="size-5" />
+          <ListPlus className="size-5" />
         </Button>
       </div>
     </div>

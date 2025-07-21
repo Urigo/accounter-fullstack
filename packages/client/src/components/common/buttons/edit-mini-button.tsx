@@ -1,5 +1,5 @@
 import type { ComponentProps, MouseEvent, ReactElement } from 'react';
-import { Edit } from 'tabler-icons-react';
+import { Edit } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { Button } from '../../ui/button.js';
 

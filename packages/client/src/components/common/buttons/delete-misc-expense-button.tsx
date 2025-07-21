@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
+import { Trash } from 'lucide-react';
 import { toast } from 'sonner';
-import { Trash } from 'tabler-icons-react';
 import { useDeleteMiscExpense } from '../../../hooks/use-delete-misc-expense.js';
 import { Button } from '../../ui/button.js';
 import { ConfirmationModal } from '../index.js';

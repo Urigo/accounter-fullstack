@@ -1,6 +1,6 @@
 import { ReactElement, useState } from 'react';
+import { Check, Edit } from 'lucide-react';
 import { Control, SubmitHandler, useForm } from 'react-hook-form';
-import { Check, Edit } from 'tabler-icons-react';
 import { List, Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,

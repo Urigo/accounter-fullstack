@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
-import { Photo, Plus } from 'tabler-icons-react';
+import { Image, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Accordion, Box, Collapse, Loader, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -323,7 +323,7 @@ export function ChargeExtendedInfo({
                           size="icon"
                           className="size-7.5 text-gray-500"
                         >
-                          <Photo className="size-5" />
+                          <Image className="size-5" />
                         </Button>
                       </Tooltip>
                     )}

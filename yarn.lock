@@ -139,7 +139,6 @@ __metadata:
     react-to-pdf: "npm:2.0.1"
     recharts: "npm:2.15.4"
     sonner: "npm:2.0.6"
-    tabler-icons-react: "npm:1.56.0"
     tailwind-merge: "npm:3.3.1"
     tailwindcss: "npm:4.1.11"
     tailwindcss-animate: "npm:1.0.7"
@@ -20146,15 +20145,6 @@ __metadata:
   version: 6.2.0
   resolution: "tabbable@npm:6.2.0"
   checksum: 10c0/ced8b38f05f2de62cd46836d77c2646c42b8c9713f5bd265daf0e78ff5ac73d3ba48a7ca45f348bafeef29b23da7187c72250742d37627883ef89cbd7fa76898
-  languageName: node
-  linkType: hard
-
-"tabler-icons-react@npm:1.56.0":
-  version: 1.56.0
-  resolution: "tabler-icons-react@npm:1.56.0"
-  peerDependencies:
-    react: ">= 16.8.0"
-  checksum: 10c0/65706011940ead0c6e39771fddce31aae11966e31a1da5bbddeaaa2b4d00b589fbdb8722bbd90af2a537ea2a69ff78b254c6f59bca04b02dca3deac38e1d2615
   languageName: node
   linkType: hard
 

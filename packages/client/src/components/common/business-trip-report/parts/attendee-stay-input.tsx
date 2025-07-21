@@ -1,4 +1,5 @@
 import { ReactElement, useEffect, useState } from 'react';
+import { ListPlus, Trash2 } from 'lucide-react';
 import {
   ArrayPath,
   Controller,
@@ -8,7 +9,6 @@ import {
   useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { AttendeesByBusinessTripDocument } from '../../../../gql/graphql.js';
@@ -160,7 +160,7 @@ export function AttendeesStayInput<T extends FieldValues>({
                 trigger(attendeesStayPath as Path<T>);
               }}
             >
-              <TrashX className="size-5" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         ))}
@@ -173,7 +173,7 @@ export function AttendeesStayInput<T extends FieldValues>({
             trigger(attendeesStayPath as Path<T>);
           }}
         >
-          <PlaylistAdd className="size-5" />
+          <ListPlus className="size-5" />
         </Button>
       </div>
     </div>

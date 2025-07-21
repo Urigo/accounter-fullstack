@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { Copy, Link } from 'tabler-icons-react';
+import { Copy, Link } from 'lucide-react';
 import { writeToClipboard } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
 

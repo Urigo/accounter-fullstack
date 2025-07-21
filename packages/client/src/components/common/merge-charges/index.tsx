@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
-import { ArrowsJoin2 } from 'tabler-icons-react';
+import { Merge } from 'lucide-react';
 import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { cn } from '../../../lib/utils.js';
@@ -39,7 +39,7 @@ export function MergeChargesButton(props: {
         className={cn('size-7.5', isMergeable ? ' bg-blue-500 hover:bg-blue-500/90' : '')}
         size="icon"
       >
-        <ArrowsJoin2 className="size-5" />
+        <Merge className="size-5" />
       </Button>
       <Modal opened={opened} onClose={close} size="auto" centered>
         <MergeChargesSelectionForm

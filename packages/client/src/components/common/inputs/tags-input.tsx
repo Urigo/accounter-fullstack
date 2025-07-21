@@ -1,4 +1,5 @@
 import { ReactElement, useEffect } from 'react';
+import { ListPlus, Trash2 } from 'lucide-react';
 import {
   ArrayPath,
   Controller,
@@ -8,7 +9,6 @@ import {
   useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { Select } from '@mantine/core';
 import { useGetTags } from '../../../hooks/use-get-tags.js';
 import { Button } from '../../ui/button.js';
@@ -81,7 +81,7 @@ export function TagsInput<T extends FieldValues>({
               className="size-7.5"
               onClick={(): void => remove(index)}
             >
-              <TrashX className="size-5" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         ))}
@@ -91,7 +91,7 @@ export function TagsInput<T extends FieldValues>({
           className="size-7.5"
           onClick={(): void => append({} as FieldArray<T, ArrayPath<T>>)}
         >
-          <PlaylistAdd className="size-5" />
+          <ListPlus className="size-5" />
         </Button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { ReactElement, useState } from 'react';
-import { ZoomIn, ZoomInArea, ZoomOut, ZoomOutArea } from 'tabler-icons-react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { Button } from '../ui/button.js';
 
@@ -120,7 +120,7 @@ export function ImageMagnifier({
               setMagnifierSize(size => ({ width: size.width * 1.2, height: size.height * 1.2 }))
             }
           >
-            <ZoomInArea className="size-5" />
+            <ZoomIn className="size-5" />
           </Button>
         </Tooltip>
         <Tooltip label="Reduce zoom area">
@@ -132,7 +132,7 @@ export function ImageMagnifier({
               setMagnifierSize(size => ({ width: size.width / 1.2, height: size.height / 1.2 }))
             }
           >
-            <ZoomOutArea className="size-5" />
+            <ZoomOut className="size-5" />
           </Button>
         </Tooltip>
       </div>

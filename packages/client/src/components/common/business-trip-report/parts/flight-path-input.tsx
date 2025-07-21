@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { ListPlus, Trash2 } from 'lucide-react';
 import {
   ArrayPath,
   FieldArray,
@@ -7,7 +8,6 @@ import {
   useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
 import { Input } from '../../../ui/input';
@@ -78,7 +78,7 @@ export function FlightPathInput<T extends FieldValues>({
                 trigger(flightPathPath);
               }}
             >
-              <TrashX className="size-5" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         ))}
@@ -91,7 +91,7 @@ export function FlightPathInput<T extends FieldValues>({
             trigger(flightPathPath);
           }}
         >
-          <PlaylistAdd className="size-5" />
+          <ListPlus className="size-5" />
         </Button>
       </div>
     </div>

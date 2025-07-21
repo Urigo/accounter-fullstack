@@ -1,6 +1,5 @@
 import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { LayoutNavbarCollapse, LayoutNavbarExpand } from 'tabler-icons-react';
+import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
 import { AllChargesDocument, ChargeFilter } from '../../../gql/graphql.js';
@@ -130,9 +129,9 @@ export const AllCharges = (): ReactElement => {
             onClick={(): void => setIsAllOpened(i => !i)}
           >
             {isAllOpened ? (
-              <LayoutNavbarCollapse className="size-5" />
+              <PanelTopClose className="size-5" />
             ) : (
-              <LayoutNavbarExpand className="size-5" />
+              <PanelTopOpen className="size-5" />
             )}
           </Button>
         </Tooltip>

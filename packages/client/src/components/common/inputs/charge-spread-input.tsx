@@ -1,5 +1,6 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
+import { ListPlus, Trash2 } from 'lucide-react';
 import {
   ArrayPath,
   Controller,
@@ -9,7 +10,6 @@ import {
   useFieldArray,
   UseFormReturn,
 } from 'react-hook-form';
-import { PlaylistAdd, TrashX } from 'tabler-icons-react';
 import { NumberInput } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';
 import { Button } from '../../ui/button.js';
@@ -106,7 +106,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
                 trigger(chargeSpreadPath as Path<T>);
               }}
             >
-              <TrashX className="size-5" />
+              <Trash2 className="size-5" />
             </Button>
           </div>
         ))}
@@ -119,7 +119,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
             trigger(chargeSpreadPath as Path<T>);
           }}
         >
-          <PlaylistAdd className="size-5" />
+          <ListPlus className="size-5" />
         </Button>
       </div>
     </div>

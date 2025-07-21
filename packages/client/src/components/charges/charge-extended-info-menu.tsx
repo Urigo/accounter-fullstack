@@ -1,5 +1,4 @@
 import { ReactElement, useState } from 'react';
-import 'tabler-icons-react';
 import { ArrowDownWideNarrow, FilePlus2, ListPlus, Search, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
