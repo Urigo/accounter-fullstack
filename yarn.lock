@@ -145,7 +145,7 @@ __metadata:
     typescript: "npm:5.8.3"
     urql: "npm:4.2.2"
     vaul: "npm:1.1.2"
-    vite: "npm:7.0.4"
+    vite: "npm:7.0.5"
     vite-plugin-node-polyfills: "npm:0.24.0"
     zod: "npm:3.25.76"
     zustand: "npm:5.0.6"
@@ -156,7 +156,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etana-scrapper@workspace:packages/etana-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.8"
+    "@whatwg-node/fetch": "npm:0.10.9"
     csv-parse: "npm:6.1.0"
     diary: "npm:0.4.5"
     dotenv: "npm:16.6.1"
@@ -169,7 +169,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etherscan-scrapper@workspace:packages/etherscan-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.8"
+    "@whatwg-node/fetch": "npm:0.10.9"
     diary: "npm:0.4.5"
     dotenv: "npm:16.6.1"
     pg-promise: "npm:11.15.0"
@@ -231,7 +231,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/kraken-scrapper@workspace:packages/kraken-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.8"
+    "@whatwg-node/fetch": "npm:0.10.9"
     diary: "npm:0.4.5"
     dotenv: "npm:16.6.1"
     node-kraken-api: "npm:2.2.2"
@@ -306,7 +306,7 @@ __metadata:
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.4"
-    "@whatwg-node/fetch": "npm:0.10.8"
+    "@whatwg-node/fetch": "npm:0.10.9"
     ai: "npm:4.3.19"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
@@ -7468,12 +7468,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.16.4":
-  version: 22.16.4
-  resolution: "@types/node@npm:22.16.4"
+"@types/node@npm:22.16.5, @types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
+  version: 22.16.5
+  resolution: "@types/node@npm:22.16.5"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/a6e3f345c2d9656451ceac349e59c4cafa2b03f793acf3ab4f318fd90cee47d76c4fa79a7a08b8772978958a42fb03c8c71caa50c064b4e88613085dea287c2d
+  checksum: 10c0/93a245e96a01f4a6aa38475000070292a9299e17b95bc1fc8180c652fb3a62f9b3b9ec0b78f9fc6a78b9274d3dfce456e80c7bb68b5357c8f7dbf581df4408c1
   languageName: node
   linkType: hard
 
@@ -7481,15 +7481,6 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: 10c0/3b190bb0410047d489c49bbaab592d2e6630de6a50f00ba3d7d513d59401d279972a8f5a598b5bb8ddc1702f8a2f4ec57a65d93852f9c329639738e7053637d1
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
-  version: 22.16.5
-  resolution: "@types/node@npm:22.16.5"
-  dependencies:
-    undici-types: "npm:~6.21.0"
-  checksum: 10c0/93a245e96a01f4a6aa38475000070292a9299e17b95bc1fc8180c652fb3a62f9b3b9ec0b78f9fc6a78b9274d3dfce456e80c7bb68b5357c8f7dbf581df4408c1
   languageName: node
   linkType: hard
 
@@ -8012,17 +8003,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/fetch@npm:0.10.8":
-  version: 0.10.8
-  resolution: "@whatwg-node/fetch@npm:0.10.8"
-  dependencies:
-    "@whatwg-node/node-fetch": "npm:^0.7.21"
-    urlpattern-polyfill: "npm:^10.0.0"
-  checksum: 10c0/7dc3cad446ede6fe9df8d01b4484ace9a6bd2a22fcae90fdf970012f12c11dba21af92f071e2f4bfa1dd81b554e196b6ee6669dfb0fd5e2d1bd82db3f10968ca
-  languageName: node
-  linkType: hard
-
-"@whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.8":
+"@whatwg-node/fetch@npm:0.10.9, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.8":
   version: 0.10.9
   resolution: "@whatwg-node/fetch@npm:0.10.9"
   dependencies:
@@ -8054,7 +8035,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/node-fetch@npm:^0.7.21, @whatwg-node/node-fetch@npm:^0.7.22":
+"@whatwg-node/node-fetch@npm:^0.7.22":
   version: 0.7.22
   resolution: "@whatwg-node/node-fetch@npm:0.7.22"
   dependencies:
@@ -8143,7 +8124,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:22.16.4"
+    "@types/node": "npm:22.16.5"
     "@types/pg": "npm:8.15.4"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.0"
@@ -21431,62 +21412,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:7.0.4":
-  version: 7.0.4
-  resolution: "vite@npm:7.0.4"
-  dependencies:
-    esbuild: "npm:^0.25.0"
-    fdir: "npm:^6.4.6"
-    fsevents: "npm:~2.3.3"
-    picomatch: "npm:^4.0.2"
-    postcss: "npm:^8.5.6"
-    rollup: "npm:^4.40.0"
-    tinyglobby: "npm:^0.2.14"
-  peerDependencies:
-    "@types/node": ^20.19.0 || >=22.12.0
-    jiti: ">=1.21.0"
-    less: ^4.0.0
-    lightningcss: ^1.21.0
-    sass: ^1.70.0
-    sass-embedded: ^1.70.0
-    stylus: ">=0.54.8"
-    sugarss: ^5.0.0
-    terser: ^5.16.0
-    tsx: ^4.8.1
-    yaml: ^2.4.2
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  peerDependenciesMeta:
-    "@types/node":
-      optional: true
-    jiti:
-      optional: true
-    less:
-      optional: true
-    lightningcss:
-      optional: true
-    sass:
-      optional: true
-    sass-embedded:
-      optional: true
-    stylus:
-      optional: true
-    sugarss:
-      optional: true
-    terser:
-      optional: true
-    tsx:
-      optional: true
-    yaml:
-      optional: true
-  bin:
-    vite: bin/vite.js
-  checksum: 10c0/2eb3572d60e8e6f0e291905e30989a52042350439c03002603d27a396652bf0484e13d5e8b15e0d7bd9988a8dc03ee712d45eb83e9dcf8aab4e8ecb28b0419b6
-  languageName: node
-  linkType: hard
-
-"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0":
+"vite@npm:7.0.5, vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0":
   version: 7.0.5
   resolution: "vite@npm:7.0.5"
   dependencies:
