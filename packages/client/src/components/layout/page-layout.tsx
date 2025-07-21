@@ -1,4 +1,4 @@
-import type { JSX } from 'react';
+import { type JSX } from 'react';
 import { Heading } from '../ui/heading.js';
 import { Separator } from '../ui/separator.js';
 
@@ -16,7 +16,7 @@ export function PageLayout({
   headerActions,
 }: PageLayoutProps): JSX.Element {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" id="main-page">
       <div className="flex justify-between items-center">
         <Heading title={title} description={description} />
         {headerActions}
