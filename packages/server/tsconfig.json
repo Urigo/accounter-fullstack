@@ -18,7 +18,7 @@
       "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"],
       "@accounter/shaam6111-generator": ["../../shaam6111-generator/src/index.js"],
       "@accounter/shaam-uniform-format-generator": [
-        "../../shaam6111-shaam-uniform-format-generator/src/index.js"
+        "../../shaam-uniform-format-generator/src/index.js"
       ]
     }
   },
@@ -27,7 +27,7 @@
     "../green-invoice-graphql/src",
     "../pcn874-generator/src",
     "../shaam6111-generator/src",
-    "../shaam6111-shaam-uniform-format-generator/src"
+    "../shaam-uniform-format-generator/src"
   ],
   "exclude": ["**/__generated__", "**/dist/**"]
 }
