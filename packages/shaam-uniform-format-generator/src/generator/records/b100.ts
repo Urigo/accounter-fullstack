@@ -139,7 +139,7 @@ export function encodeB100(input: B100): string {
     formatField(input.counterAccountKey, 15, 'left'), // Field 1365: Counter account key (15)
     formatField(input.debitCreditIndicator, 1, 'left'), // Field 1366: Debit/Credit indicator (1)
     formatField(input.currencyCode ?? '', 3, 'left'), // Field 1367: Currency code (3)
-    formatMonetaryAmount(input.transactionAmount), // Field 1368: Transaction amount (15) - monetary field
+    formatMonetaryAmount(input.transactionAmount), // Field 1368: Transaction amount (15) - monetary field with sign
     formatOptionalMonetaryAmount(input.foreignCurrencyAmount) || ' '.repeat(15), // Field 1369: Foreign currency amount (15) - optional monetary field
     formatOptionalQuantityAmount(input.quantityField), // Field 1370: Quantity field (12) - optional quantity field
     formatField(input.matchingField1, 10, 'left'), // Field 1371: Matching field 1 (10)
@@ -291,7 +291,7 @@ export function parseB100(line: string): B100 {
     counterAccountKey,
     debitCreditIndicator: debitCreditIndicator as '1' | '2',
     currencyCode,
-    transactionAmount: parseMonetaryAmount(transactionAmount),
+    transactionAmount: parseMonetaryAmount(transactionAmount), // Preserve sign
     foreignCurrencyAmount: foreignCurrencyAmount.trim()
       ? parseMonetaryAmount(foreignCurrencyAmount)
       : undefined,

@@ -6,6 +6,7 @@ import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
 import shaam6111Report from './typeDefs/shaam6111-report.graphql.js';
 import taxReport from './typeDefs/tax-report.graphql.js';
+import uniformFormat from './typeDefs/uniform-format.graphql.js';
 import vatReport from './typeDefs/vat-report.graphql.js';
 import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 import { createModule } from 'graphql-modules';
@@ -35,6 +36,7 @@ export const reportsModule = createModule({
     balanceReport,
     depreciationReport,
     shaam6111Report,
+    uniformFormat,
   ],
   resolvers: [
     reportsResolvers,

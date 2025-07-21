@@ -10,6 +10,7 @@ import {
   ChartColumnDecreasing,
   ChartNoAxesCombined,
   CheckCheck,
+  Download,
   Factory,
   FilePen,
   Files,
@@ -29,8 +30,9 @@ import {
 export interface NavLink {
   title: string;
   label?: string;
-  href: string;
+  href?: string;
   icon: JSX.Element;
+  action?: () => void;
 }
 
 export interface SideLink extends NavLink {
@@ -141,6 +143,11 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: '/reports/validate-reports',
         icon: <CheckCheck size={18} />,
+      },
+      {
+        title: 'Generate Uniform Files',
+        label: '',
+        icon: <Download size={18} />,
       },
     ],
   },

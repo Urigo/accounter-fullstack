@@ -158,7 +158,7 @@ export function encodeB110(input: B110): string {
     input.supplierCustomerTaxId
       ? input.supplierCustomerTaxId.length === 9
         ? input.supplierCustomerTaxId // Preserve original raw field data if exactly 9 chars
-        : formatNumericField(input.supplierCustomerTaxId, 9) // Format processed values
+        : formatField(input.supplierCustomerTaxId, 9, 'left') // Right-pad with spaces for processed values
       : formatField('', 9, 'left'), // Field 1419: Supplier/Customer tax ID (9) - use spaces if empty
     // Field 1420: Reserved field (0) - skipped as it has 0 length
     formatField(input.branchId ?? '0', 7, 'left'), // Field 1421: Branch ID (7)

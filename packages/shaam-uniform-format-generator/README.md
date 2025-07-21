@@ -241,7 +241,6 @@ interface Account {
   branchId?: string // Branch identifier
   openingBalanceForeignCurrency?: number // Opening balance in foreign currency
   foreignCurrencyCode?: string // Foreign currency code (e.g., "USD", "EUR")
-  originalSupplierCustomerTaxId?: string // Preserve exact original value with spaces
 }
 ```
 
@@ -394,14 +393,19 @@ const reportData: ReportInput = {
       date: '2023-03-15',
       amount: 2340.0,
       accountId: '4000',
-      description: 'Consulting revenue'
+      description: 'Consulting revenue',
+      batchNumber: 'BATCH-Q1-2023',
+      transactionType: 'SALE',
+      referenceDocument: 'INV-2023-001'
     },
     {
       id: 'JE-2023-002',
       date: '2023-04-10',
       amount: -340.0,
       accountId: '4000',
-      description: 'Revenue adjustment'
+      description: 'Revenue adjustment',
+      currencyCode: 'USD',
+      foreignCurrencyAmount: -290.0
     }
   ],
   accounts: [

@@ -53,12 +53,42 @@ function NavLink({
   icon,
   label,
   href,
+  action,
   closeNav,
   subLink = false,
 }: NavLinkProps): JSX.Element {
+  // If there's an action callback, use a button instead of a link
+  if (action) {
+    return (
+      <button
+        onClick={() => {
+          action();
+          closeNav();
+        }}
+        className={cn(
+          buttonVariants({
+            variant: 'ghost',
+            size: 'sm',
+          }),
+          'h-12 font-semibold tracking-tight justify-start text-wrap rounded-none px-6 w-full',
+          subLink && 'h-10 w-full border-l border-l-slate-500 px-2',
+        )}
+      >
+        <div className="mr-2">{icon}</div>
+        {title}
+        {label && (
+          <div className="ml-2 rounded-lg bg-primary px-1 text-[0.625rem] text-primary-foreground">
+            {label}
+          </div>
+        )}
+      </button>
+    );
+  }
+
+  // Default behavior - navigation link
   return (
     <Link
-      to={href}
+      to={href!}
       onClick={closeNav}
       className={cn(
         buttonVariants({
@@ -118,23 +148,30 @@ function NavLinkDropdown({ title, icon, label, sub, closeNav }: NavLinkProps): J
   );
 }
 
-function NavLinkIcon({ title, icon, label, href }: NavLinkProps): JSX.Element {
+function NavLinkIcon({ title, icon, label, href, action }: NavLinkProps): JSX.Element {
   return (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <Link
-          to={href}
-          className={cn(
-            buttonVariants({
-              variant: 'ghost',
-              size: 'icon',
-            }),
-            'h-12 w-12',
-          )}
-        >
-          {icon}
-          <span className="sr-only">{title}</span>
-        </Link>
+        {action ? (
+          <Button variant="ghost" size="icon" className="h-12 w-12" onClick={action}>
+            {icon}
+            <span className="sr-only">{title}</span>
+          </Button>
+        ) : (
+          <Link
+            to={href!}
+            className={cn(
+              buttonVariants({
+                variant: 'ghost',
+                size: 'icon',
+              }),
+              'h-12 w-12',
+            )}
+          >
+            {icon}
+            <span className="sr-only">{title}</span>
+          </Link>
+        )}
       </TooltipTrigger>
       <TooltipContent side="right" className="flex font-semibold tracking-tight items-center gap-4">
         {title}
@@ -176,22 +213,43 @@ function NavLinkIconDropdown({ title, icon, label, sub }: NavLinkProps): JSX.Ele
           {title} {label ? `(${label})` : ''}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {sub!.map(({ title, icon, label, href }) => (
-          <DropdownMenuItem key={`${title}-${href}`} asChild>
-            <Link
-              to={href}
-              className={cn(
-                buttonVariants({
-                  variant: 'ghost',
-                  size: 'sm',
-                }),
-                'flex h-12 cursor-pointer justify-start text-wrap rounded-none px-6',
-              )}
-            >
-              {icon}{' '}
-              <span className="ml-2 max-w-52 text-wrap font-semibold tracking-tight">{title}</span>
-              {label && <span className="ml-auto text-xs">{label}</span>}
-            </Link>
+        {sub!.map(({ title, icon, label, href, action }) => (
+          <DropdownMenuItem key={`${title}-${href || title}`} asChild={!action}>
+            {action ? (
+              <button
+                onClick={action}
+                className={cn(
+                  buttonVariants({
+                    variant: 'ghost',
+                    size: 'sm',
+                  }),
+                  'flex h-12 cursor-pointer justify-start text-wrap rounded-none px-6 w-full',
+                )}
+              >
+                {icon}{' '}
+                <span className="ml-2 max-w-52 text-wrap font-semibold tracking-tight">
+                  {title}
+                </span>
+                {label && <span className="ml-auto text-xs">{label}</span>}
+              </button>
+            ) : (
+              <Link
+                to={href!}
+                className={cn(
+                  buttonVariants({
+                    variant: 'ghost',
+                    size: 'sm',
+                  }),
+                  'flex h-12 cursor-pointer justify-start text-wrap rounded-none px-6',
+                )}
+              >
+                {icon}{' '}
+                <span className="ml-2 max-w-52 text-wrap font-semibold tracking-tight">
+                  {title}
+                </span>
+                {label && <span className="ml-auto text-xs">{label}</span>}
+              </Link>
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

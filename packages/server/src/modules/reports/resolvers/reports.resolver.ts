@@ -1,3 +1,4 @@
+import { generateUniformFormatReport } from '@accounter/shaam-uniform-format-generator';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
@@ -6,6 +7,11 @@ import {
   formatFinancialIntAmount,
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
+import {
+  accountsForUniformFormat,
+  businessForUniformFormat,
+  journalEntriesForUniformFormat,
+} from '../helpers/uniform-format.helper.js';
 import type { ReportsModule } from '../types.js';
 import { getVatRecords } from './get-vat-records.resolver.js';
 import {
@@ -28,6 +34,52 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
+    uniformFormat: async (_, { fromDate, toDate }, context, info) => {
+      const accountsPromise = accountsForUniformFormat(context, info, fromDate, toDate).catch(
+        err => {
+          throw new Error(`Failed to fetch accounts for uniform format: ${err.message}`);
+        },
+      );
+      const businessPromise = businessForUniformFormat(context, fromDate, toDate).catch(err => {
+        throw new Error(`Failed to fetch main business info for uniform format: ${err.message}`);
+      });
+      const journalEntriesPromise = journalEntriesForUniformFormat(context, fromDate, toDate).catch(
+        err => {
+          throw new Error(`Failed to fetch journal entries: ${err.message}`);
+        },
+      );
+      const [accounts, business, journalEntries] = await Promise.all([
+        accountsPromise,
+        businessPromise,
+        journalEntriesPromise,
+      ]);
+
+      // generate files
+      const report = generateUniformFormatReport(
+        {
+          journalEntries,
+          accounts,
+          business,
+          documents: [],
+          inventory: [],
+        },
+        { fileNameBase: '', validationMode: 'collect-all' },
+      );
+
+      if (report.summary.errors && report.summary.errors.length > 0) {
+        throw new Error(
+          `Uniform format report generation failed with validation errors: ${report.summary.errors
+            .map(err => `${err.recordType}[${err.recordIndex}].${err.field}: ${err.message}`)
+            .join(', ')}`,
+        );
+      }
+
+      // return files as a response
+      return {
+        ini: report.iniText,
+        bkmvdata: report.dataText,
+      };
+    },
   },
   VatReportRecord: {
     documentId: raw => raw.documentId,

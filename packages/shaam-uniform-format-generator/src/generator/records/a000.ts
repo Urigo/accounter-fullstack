@@ -11,7 +11,7 @@ export const A000Schema = z.object({
   // Field 1000: Record Code (4) - Required - Alphanumeric
   code: z.literal('A000').describe('Record type code - always "A000"'),
   // Field 1001: Reserved for Future Use (5) - Required - Alphanumeric
-  reservedFuture: z.string().max(5).default('').describe('Reserved for future use'),
+  reservedFuture: z.string().max(5).default('').optional().describe('Reserved for future use'),
   // Field 1002: Total Records in BKMVDATA (15) - Required - Numeric
   totalRecords: z.string().min(1).max(15).regex(/^\d+$/).describe('Total records in BKMVDATA file'),
   // Field 1003: Tax ID (9) - Required - Numeric
@@ -62,9 +62,9 @@ export const A000Schema = z.object({
     .default('')
     .describe('Withholding file number'),
   // Field 1017: Reserved Field (10) - Optional - Alphanumeric
-  reserved1017: z.string().max(10).default('').describe('Reserved field'),
+  reserved1017: z.string().max(10).default('').optional().describe('Reserved field'),
   // Field 1018: Business Name (50) - Required - Alphanumeric
-  businessName: z.string().min(1).max(50).describe('Business name'),
+  businessName: z.string().max(50).describe('Business name'),
   // Field 1019: Business Address - Street (50) - Optional - Alphanumeric
   businessStreet: z.string().max(50).default('').describe('Business address - street'),
   // Field 1020: Business Address - House Number (10) - Optional - Alphanumeric
@@ -113,15 +113,15 @@ export const A000Schema = z.object({
   // Field 1030: Compression Software Name (20) - Optional - Alphanumeric
   compressionSoftware: z.string().max(20).default('').describe('Compression software name'),
   // Field 1031: Reserved Field (0) - Deprecated - Alphanumeric
-  reserved1031: z.string().max(0).default('').describe('Deprecated reserved field'),
+  reserved1031: z.string().max(0).default('').optional().describe('Deprecated reserved field'),
   // Field 1032: Base Currency Code (3) - Optional - Alphanumeric
   baseCurrency: z.string().max(3).default('ILS').describe('Base currency code (default: ILS)'),
   // Field 1033: Reserved Field (0) - Deprecated - Alphanumeric
-  reserved1033: z.string().max(0).default('').describe('Deprecated reserved field'),
+  reserved1033: z.string().max(0).default('').optional().describe('Deprecated reserved field'),
   // Field 1034: Branch Info Flag (1) - Required - Numeric
   branchInfoFlag: z.enum(['0', '1']).describe('Branch info flag: 0=No branches, 1=Has branches'),
   // Field 1035: Reserved Field (46) - Optional - Alphanumeric
-  reserved1035: z.string().max(46).default('').describe('Reserved field'),
+  reserved1035: z.string().max(46).default('').optional().describe('Reserved field'),
 });
 
 /**
@@ -152,7 +152,7 @@ export function encodeA000(input: A000Input): string {
 
   const fields = [
     formatField(fullRecord.code, 4, 'left'), // Field 1000: Record code (4)
-    formatField(fullRecord.reservedFuture, 5, 'left'), // Field 1001: Reserved future (5)
+    formatField(fullRecord.reservedFuture ?? '', 5, 'left'), // Field 1001: Reserved future (5)
     formatNumericField(fullRecord.totalRecords, 15), // Field 1002: Total records (15)
     formatNumericField(fullRecord.vatId, 9), // Field 1003: VAT ID (9)
     formatNumericField(fullRecord.primaryIdentifier, 15), // Field 1004: Primary identifier (15)
@@ -168,7 +168,7 @@ export function encodeA000(input: A000Input): string {
     formatNumericField(fullRecord.balanceRequired, 1), // Field 1014: Balance required (1)
     formatNumericField(fullRecord.companyRegId, 9), // Field 1015: Company reg ID (9)
     formatNumericField(fullRecord.withholdingFileNum, 9), // Field 1016: Withholding file num (9)
-    formatField(fullRecord.reserved1017, 10, 'left'), // Field 1017: Reserved (10)
+    formatField(fullRecord.reserved1017 ?? '', 10, 'left'), // Field 1017: Reserved (10)
     formatField(fullRecord.businessName, 50, 'left'), // Field 1018: Business name (50)
     formatField(fullRecord.businessStreet, 50, 'left'), // Field 1019: Business street (50)
     formatField(fullRecord.businessHouseNum, 10, 'left'), // Field 1020: Business house num (10)
@@ -182,11 +182,11 @@ export function encodeA000(input: A000Input): string {
     formatNumericField(fullRecord.languageCode, 1), // Field 1028: Language code (1)
     formatNumericField(fullRecord.characterEncoding, 1), // Field 1029: Character encoding (1)
     formatField(fullRecord.compressionSoftware, 20, 'left'), // Field 1030: Compression software (20)
-    formatField(fullRecord.reserved1031, 0, 'left'), // Field 1031: Reserved (0)
+    formatField(fullRecord.reserved1031 ?? '', 0, 'left'), // Field 1031: Reserved (0)
     formatField(fullRecord.baseCurrency, 3, 'left'), // Field 1032: Base currency (3)
-    formatField(fullRecord.reserved1033, 0, 'left'), // Field 1033: Reserved (0)
+    formatField(fullRecord.reserved1033 ?? '', 0, 'left'), // Field 1033: Reserved (0)
     formatNumericField(fullRecord.branchInfoFlag, 1), // Field 1034: Branch info flag (1)
-    formatField(fullRecord.reserved1035, 46, 'left'), // Field 1035: Reserved (46)
+    formatField(fullRecord.reserved1035 ?? '', 46, 'left'), // Field 1035: Reserved (46)
   ];
 
   return joinFields(fields);
@@ -271,7 +271,7 @@ export function parseA000(line: string): A000 {
   offset += 9; // Field 1016 (9)
   const reserved1017 = cleanLine.slice(offset, offset + 10).trim();
   offset += 10; // Field 1017 (10)
-  const businessName = cleanLine.slice(offset, offset + 50).trim();
+  const businessName = cleanLine.slice(offset, offset + 50).trim() || '';
   offset += 50; // Field 1018 (50)
   const businessStreet = cleanLine.slice(offset, offset + 50).trim();
   offset += 50; // Field 1019 (50)

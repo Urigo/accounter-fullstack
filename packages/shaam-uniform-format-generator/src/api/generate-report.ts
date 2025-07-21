@@ -73,41 +73,45 @@ export function generateUniformFormatReport(
     recordCounts[recordType] = (recordCounts[recordType] || 0) + 1;
   };
 
+  // Calculate expected BKMVDATA record counts based on input data
+  const expectedDataRecordCount =
+    1 + // A100 record
+    input.documents.length * 3 + // C100, D110, D120 for each document
+    input.journalEntries.length + // B100 for each journal entry
+    input.accounts.length + // B110 for each account
+    input.inventory.length + // M100 for each inventory item
+    1; // Z900 record
+
   // Generate A000 record for INI.TXT
   const fileHeaderRecord: A000Input = {
-    reservedFuture: '',
-    totalRecords: '0', // Will be updated later with actual count
+    totalRecords: expectedDataRecordCount.toString(), // Actual count of BKMVDATA records
     vatId: input.business.taxId,
     softwareRegNumber: '12345678', // TODO: Use actual software registration number
     softwareName: 'SHAAM Generator',
     softwareVersion: '1.0.0',
-    vendorVatId: '123456789', // TODO: Use actual vendor VAT ID
+    vendorVatId: '123456782', // TODO: Use actual vendor VAT ID
     vendorName: 'Accounter',
     softwareType: '2', // Multi-year software
-    fileOutputPath: options.fileNameBase || 'report',
+    fileOutputPath: options.fileNameBase || `C:\\OPENFRMT\\${input.business.taxId}.`,
     accountingType: '2', // Double-entry accounting
-    balanceRequired: '1',
+    balanceRequired: '2',
     companyRegId: '',
     withholdingFileNum: '',
-    reserved1017: '',
     businessName: input.business.name,
-    businessStreet: '',
-    businessHouseNum: '',
-    businessCity: '',
-    businessZip: '',
-    taxYear: '',
+    businessStreet: input.business.address?.street ?? '',
+    businessHouseNum: input.business.address?.houseNumber ?? '',
+    businessCity: input.business.address?.city ?? '',
+    businessZip: input.business.address?.zip ?? '',
+    taxYear: '    ', // YYYY format. not required for now
     startDate: input.business.reportingPeriod.startDate.replace(/-/g, ''),
     endDate: input.business.reportingPeriod.endDate.replace(/-/g, ''),
     processStartDate: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
     processStartTime: new Date().toTimeString().slice(0, 5).replace(':', ''),
     languageCode: '0', // Hebrew
     characterEncoding: '1', // ISO-8859-8-i
-    compressionSoftware: '',
-    reserved1031: '',
+    compressionSoftware: 'zip', // TODO:replace with a real compression software
     baseCurrency: 'ILS',
-    reserved1033: '',
     branchInfoFlag: '0', // No branches for now
-    reserved1035: '',
   };
   addIniRecord('A000', encodeA000(fileHeaderRecord));
 
@@ -273,8 +277,8 @@ export function generateUniformFormatReport(
       debitCreditIndicator:
         entry.debitCreditIndicator ?? ((entry.amount >= 0 ? '1' : '2') as '1' | '2'),
       currencyCode: entry.currencyCode,
-      transactionAmount: entry.transactionAmount ?? Math.abs(entry.amount), // Use preserved transaction amount or fallback to absolute value
-      foreignCurrencyAmount: entry.foreignCurrencyAmount, // Use preserved value
+      transactionAmount: entry.transactionAmount ?? entry.amount, // Use signed value (reverted to preserve fixture behavior)
+      foreignCurrencyAmount: entry.foreignCurrencyAmount, // Use preserved value as-is
       quantityField: entry.quantityField, // Use preserved value
       matchingField1: entry.matchingField1 ?? '',
       matchingField2: entry.matchingField2 ?? '',
@@ -307,9 +311,28 @@ export function generateUniformFormatReport(
       totalDebits: account.totalDebits,
       totalCredits: account.totalCredits,
       accountingClassificationCode: account.accountingClassificationCode
-        ? parseInt(account.accountingClassificationCode, 10)
+        ? (() => {
+            // Extract numeric part from alphanumeric code (e.g., 'A1100' -> 1100)
+            const numericPart = account.accountingClassificationCode.replace(/\D/g, '');
+            const parsed = parseInt(numericPart, 10);
+            return Number.isNaN(parsed) ? undefined : Math.min(parsed, 9999); // Cap at max value
+          })()
         : undefined,
-      supplierCustomerTaxId: account.originalSupplierCustomerTaxId,
+      supplierCustomerTaxId: account.vatId
+        ? (() => {
+            // Remove all spaces and validate that only digits remain
+            const digitsOnly = account.vatId.replace(/\s/g, '');
+            if (digitsOnly && !/^\d+$/.test(digitsOnly)) {
+              throw new Error(
+                `Invalid vatId for account ${account.id}: "${account.vatId}" contains non-digit characters. Only digits and spaces are allowed.`,
+              );
+            }
+            if (digitsOnly && digitsOnly.length > 0) {
+              return digitsOnly.length > 9 ? digitsOnly.substring(0, 9) : digitsOnly;
+            }
+            return undefined;
+          })()
+        : undefined,
       branchId: account.branchId,
       openingBalanceForeignCurrency: account.openingBalanceForeignCurrency,
       foreignCurrencyCode: account.foreignCurrencyCode as CurrencyCode,
