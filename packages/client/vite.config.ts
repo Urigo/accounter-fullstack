@@ -28,6 +28,11 @@ export default defineConfig({
       protocolImports: true,
     }),
   ],
+  resolve: {
+    alias: {
+      html2canvas: 'html2canvas-pro',
+    },
+  },
   server: {
     port: 3001,
   },

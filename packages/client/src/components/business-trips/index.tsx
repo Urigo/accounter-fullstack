@@ -10,7 +10,7 @@ import {
 } from '../../gql/graphql.js';
 import { FragmentType } from '../../gql/index.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { InsertBusinessTripModal } from '../common/index.js';
+import { InsertBusinessTripModal, PrintToPdfButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Switch } from '../ui/switch.js';
 import { BusinessTripsRow } from './business-trips-row.js';
@@ -72,6 +72,7 @@ export const BusinessTrips = (): ReactElement => {
             <span className="text-sm text-gray-500">Validate</span>
           </div>
         </Tooltip>
+        <PrintToPdfButton filename="business_trips" />
       </div>,
     );
   }, [data, fetching, setFiltersContext, shouldValidate]);

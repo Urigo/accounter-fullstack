@@ -10,6 +10,7 @@ export * from './edit-mini-button.js';
 export * from './info-mini-button.js';
 export * from './insert-mini-button.js';
 export * from './logout-button.js';
+export * from './print-to-pdf-button.js';
 export * from './regenerate-ledger-records-button.js';
 export * from './toggle-expansion-button.js';
 export * from './toggle-merge-selected.js';
