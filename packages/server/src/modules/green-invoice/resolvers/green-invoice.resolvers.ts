@@ -1,6 +1,6 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { DocumentInput_Input } from '@accounter/green-invoice-graphql';
+import { DocumentInput_Input, PreviewDocumentInput_Input } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -9,7 +9,15 @@ import type { IInsertDocumentsParams, IInsertDocumentsResult } from '@modules/do
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   convertCurrencyToGreenInvoice,
+  getGreenInvoiceDocumentDiscountType,
+  getGreenInvoiceDocumentLanguage,
+  getGreenInvoiceDocumentLinkType,
+  getGreenInvoiceDocumentPaymentAppType,
+  getGreenInvoiceDocumentPaymentCardType,
+  getGreenInvoiceDocumentPaymentDealType,
+  getGreenInvoiceDocumentPaymentSubType,
   getGreenInvoiceDocumentType,
+  getGreenInvoiceDocumentVatType,
   normalizeDocumentType,
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { DocumentType } from '@shared/enums';
@@ -218,7 +226,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             dueDate: monthEnd,
             lang: 'en',
             currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
-            vatType: 1,
+            vatType: '_1',
             rounding: false,
             signed: true,
             attachment: true,
@@ -232,7 +240,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
                 quantity: 1,
                 price: docInfo.amount.raw,
                 currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
-                vatType: 1,
+                vatType: '_1',
               },
             ],
           };
@@ -261,6 +269,67 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         success: true,
         errors,
       };
+    },
+    previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
+      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
+      const input: PreviewDocumentInput_Input = {
+        ...initialInput,
+        type: getGreenInvoiceDocumentType(initialInput.type),
+        lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
+        vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
+        discount: initialInput.discount
+          ? {
+              ...initialInput.discount,
+              type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
+            }
+          : undefined,
+        client: initialInput.client
+          ? {
+              ...initialInput.client,
+              emails: initialInput.client.emails?.length
+                ? [...initialInput.client.emails]
+                : undefined,
+            }
+          : undefined,
+        income:
+          initialInput.income?.map(income => ({
+            ...income,
+            vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
+          })) ?? [],
+        payment: initialInput.payment?.map(payment => ({
+          ...payment,
+          subType: payment.subType
+            ? getGreenInvoiceDocumentPaymentSubType(payment.subType)
+            : undefined,
+          appType: payment.appType
+            ? getGreenInvoiceDocumentPaymentAppType(payment.appType)
+            : undefined,
+          cardType: payment.cardType
+            ? getGreenInvoiceDocumentPaymentCardType(payment.cardType)
+            : undefined,
+          dealType: payment.dealType
+            ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
+            : undefined,
+        })),
+        linkedDocumentIds: initialInput.linkedDocumentIds?.length
+          ? [...initialInput.linkedDocumentIds]
+          : undefined,
+        linkType: initialInput.linkType
+          ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
+          : undefined,
+      };
+      const document = await greenInvoiceClient.previewDocuments({ input });
+
+      if (!document) {
+        throw new GraphQLError('Failed to generate document preview');
+      }
+
+      if ('file' in document && document.file) {
+        return document.file;
+      }
+
+      console.error('Document preview does not contain a file', document);
+      throw new GraphQLError('Document preview does not contain a file');
     },
   },
   GreenInvoiceBusiness: {
