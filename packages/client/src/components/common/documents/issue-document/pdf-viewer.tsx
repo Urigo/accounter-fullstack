@@ -68,6 +68,7 @@ export function PdfViewer(props: PdfProps) {
             return renderTask.current.promise;
           } catch (error) {
             console.error('Error rendering page:', error);
+            return;
           }
         })
         .catch(error => console.log(error));
