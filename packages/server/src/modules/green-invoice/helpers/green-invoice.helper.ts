@@ -3,12 +3,12 @@ import type {
   ExpenseDocumentType,
   Currency as GreenInvoiceCurrency,
   DocumentType as GreenInvoiceDocumentType,
+  mutationInput_addDocument_input_allOf_0_discount_type,
+  mutationInput_addDocument_input_allOf_0_linkType,
   mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType,
   mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_appType,
   mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_cardType,
   mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_dealType,
-  queryInput_previewDocument_input_discount_type,
-  queryInput_previewDocument_input_linkType,
   VatType,
 } from '@accounter/green-invoice-graphql';
 import {
@@ -109,7 +109,7 @@ export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): Va
 
 export function getGreenInvoiceDocumentDiscountType(
   discountType: GreenInvoiceDiscountType,
-): queryInput_previewDocument_input_discount_type {
+): mutationInput_addDocument_input_allOf_0_discount_type {
   switch (discountType) {
     case 'PERCENTAGE':
       return 'percentage';
@@ -210,7 +210,7 @@ export function getGreenInvoiceDocumentPaymentDealType(
 
 export function getGreenInvoiceDocumentLinkType(
   linkType: GreenInvoiceLinkType,
-): queryInput_previewDocument_input_linkType {
+): mutationInput_addDocument_input_allOf_0_linkType {
   switch (linkType) {
     case 'CANCEL':
       return 'cancel';
