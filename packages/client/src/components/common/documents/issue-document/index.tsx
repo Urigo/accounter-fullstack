@@ -10,6 +10,7 @@ import {
   GreenInvoiceVatType,
 } from '../../../../gql/graphql.js';
 import { useGetGreenInvoiceClients } from '../../../../hooks/use-get-green-invoice-clients.js';
+import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { Button } from '../../../ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
@@ -26,6 +27,7 @@ import {
 import { Textarea } from '../../../ui/textarea.jsx';
 import { ClientForm } from './client-form.jsx';
 import { IncomeForm } from './income-form.jsx';
+import { IssueDocumentModal } from './issue-document-modal.js';
 import { PaymentForm } from './payment-form.jsx';
 import { PdfViewer } from './pdf-viewer.js';
 import type { Client, Discount, Income, Payment, PreviewDocumentInput } from './types/document.js';
@@ -75,6 +77,8 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
   const [isPreviewCurrent, setIsPreviewCurrent] = useState(false);
   const [hasFormChanged, setHasFormChanged] = useState(false);
   const { previewDocument, fetching: previewFetching } = usePreviewDocument();
+  const { issueDocument } = useIssueDocument();
+  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
 
   // Track form changes
   useEffect(() => {
@@ -137,7 +141,6 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
         throw new Error('No preview data returned');
       }
 
-      // TODO: set the fileText as preview content
       setPreviewContent(fileText);
       setIsPreviewCurrent(true);
       setHasFormChanged(false);
@@ -146,9 +149,17 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     }
   };
 
-  const handleIssue = async () => {
-    console.log('Issuing document with data:', formData);
-    // TODO: trigger document issue API call
+  const handleIssueClick = () => {
+    setIsIssueModalOpen(true);
+  };
+
+  const handleIssue = async (issueData: { emailContent: string; attachment: boolean }) => {
+    console.log('Issuing document with data:', formData, issueData);
+
+    await issueDocument({
+      input: formData,
+      ...issueData,
+    });
   };
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;
@@ -460,7 +471,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     )}
                   </Button>
 
-                  <Button onClick={handleIssue} disabled={isIssueDisabled} className="flex-1">
+                  <Button onClick={handleIssueClick} disabled={isIssueDisabled} className="flex-1">
                     <Send className="w-4 h-4 mr-2" />
                     Issue Document
                   </Button>
@@ -526,6 +537,15 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             </CardContent>
           </Card>
         </div>
+        {/* Issue Document Modal */}
+        <IssueDocumentModal
+          isOpen={isIssueModalOpen}
+          onClose={() => setIsIssueModalOpen(false)}
+          onIssue={handleIssue}
+          clientName={formData.client?.name}
+          clientEmails={formData.client?.emails}
+          documentType={documentTypes.find(t => t.value === formData.type)?.label}
+        />
       </div>
     </div>
   );
