@@ -11,7 +11,12 @@ export default gql`
       issueMonth: TimelessDate
       generateDocumentsInfo: [GenerateDocumentInfo!]!
     ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
-    previewGreenInvoiceDocument(input: PreviewDocumentInput!): FileScalar! @auth(role: ACCOUNTANT)
+    previewGreenInvoiceDocument(input: NewDocumentInput!): FileScalar! @auth(role: ACCOUNTANT)
+    issueGreenInvoiceDocument(
+      input: NewDocumentInput!
+      emailContent: String
+      attachment: Boolean
+    ): FileScalar! @auth(role: ACCOUNTANT)
   }
 
   " business extended with green invoice data "
@@ -37,7 +42,7 @@ export default gql`
   }
 
   " input for previewing document "
-  input PreviewDocumentInput {
+  input NewDocumentInput {
     description: String
     remarks: String
     footer: String
