@@ -1,10 +1,10 @@
 import { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { TimelessDateString } from 'packages/client/src/helpers/dates.js';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { DatePickerInput, DateTimePicker } from '@mantine/dates';
 import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
+import { TimelessDateString } from '../../../helpers/dates.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
