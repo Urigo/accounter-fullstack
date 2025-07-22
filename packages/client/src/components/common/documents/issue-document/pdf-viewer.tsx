@@ -32,8 +32,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 }
 
 export function PdfViewer(props: PdfProps) {
-  PDFJS.GlobalWorkerOptions.workerSrc =
-    'https://unpkg.com/pdfjs-dist@5.3.93/build/pdf.worker.min.mjs';
+  PDFJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS.version}/build/pdf.worker.min.mjs`;
 
   const { src } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -42,7 +41,7 @@ export function PdfViewer(props: PdfProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy>();
   const [currentPage, setCurrentPage] = useState(1);
-  let renderTask: PDFJS.RenderTask;
+  const renderTask = useRef<PDFJS.RenderTask | null>(null);
 
   const renderPage = useCallback(
     (canvasRef: RefObject<HTMLCanvasElement | null>, pageNum: number, pdf = pdfDoc, scale = 1) => {
@@ -62,11 +61,11 @@ export function PdfViewer(props: PdfProps) {
             viewport,
           };
           try {
-            if (renderTask) {
-              renderTask.cancel();
+            if (renderTask.current) {
+              renderTask.current.cancel();
             }
-            renderTask = page.render(renderContext);
-            return renderTask.promise;
+            renderTask.current = page.render(renderContext);
+            return renderTask.current.promise;
           } catch (error) {
             console.error('Error rendering page:', error);
           }

@@ -41,9 +41,9 @@ export const useGetGreenInvoiceClients = (): UseGetGreenInvoiceClients => {
 
   const greenInvoiceClients = useMemo(() => {
     return (
-      data?.greenInvoiceBusinesses?.sort((a, b) =>
-        a.originalBusiness.name > b.originalBusiness.name ? 1 : -1,
-      ) ?? []
+      data?.greenInvoiceBusinesses
+        ?.slice()
+        .sort((a, b) => (a.originalBusiness.name > b.originalBusiness.name ? 1 : -1)) ?? []
     );
   }, [data]);
 
