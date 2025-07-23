@@ -25,6 +25,8 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
     currencySymbol = '¥';
   } else if (currency_code === 'AUD') {
     currencySymbol = 'A$';
+  } else if (currency_code === 'SEK') {
+    currencySymbol = 'kr';
   } else if (currency_code === 'GRT') {
     currencySymbol = 'GRT';
   } else if (currency_code === 'USDC') {

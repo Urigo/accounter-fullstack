@@ -39,6 +39,7 @@ import { StatsCard } from './stats-card.js';
             eur
             gbp
             jpy
+            sek
             usd
             date
           }
@@ -48,6 +49,7 @@ import { StatsCard } from './stats-card.js';
             eur
             gbp
             jpy
+            sek
             usd
             date
           }
@@ -107,6 +109,7 @@ export const ChartPage = (): ReactElement => {
             Currency.Cad,
             Currency.Jpy,
             Currency.Aud,
+            Currency.Sek,
           ].includes(transaction.amount?.currency)
         ) {
           transactions.push(transaction);
@@ -129,7 +132,7 @@ export const ChartPage = (): ReactElement => {
         {} as Record<string, Array<Transaction>>,
       ) ?? {};
 
-    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad, Jpy, Aud or GBP, convert to USD. If its USD, do nothing
+    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad, Jpy, Aud, Sek or GBP, convert to USD. If its USD, do nothing
     const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];
     Object.entries(transactionsByMonth).map(([key, value]) => {
       let converted: Array<Transaction | null> = value.map(item => {
@@ -226,6 +229,24 @@ export const ChartPage = (): ReactElement => {
         }
         if (item.amount.currency === Currency.Aud) {
           const rateToILS = item.debitExchangeRates?.aud || item.eventExchangeRates?.aud;
+          const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
+          if (!rateToILS || !rateToUSD) {
+            return null;
+          }
+          const rate = rateToUSD / rateToILS;
+          const amount = numberToDecimalJS(item.amount.raw * rate);
+          return {
+            ...item,
+            amount: {
+              ...item.amount,
+              raw: amount,
+              currency: Currency.Usd,
+              formatted: `$${amount} `,
+            },
+          };
+        }
+        if (item.amount.currency === Currency.Sek) {
+          const rateToILS = item.debitExchangeRates?.sek || item.eventExchangeRates?.sek;
           const rateToUSD = item.debitExchangeRates?.usd || item.eventExchangeRates?.usd;
           if (!rateToILS || !rateToUSD) {
             return null;
