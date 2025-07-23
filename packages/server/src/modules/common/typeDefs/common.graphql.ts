@@ -87,6 +87,7 @@ export default gql`
     GBP
     ILS
     JPY
+    SEK
     USD
     " Crypto currencies "
     ETH

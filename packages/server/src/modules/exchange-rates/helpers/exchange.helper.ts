@@ -1,8 +1,10 @@
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { NoOptionalField } from '@shared/types';
+import { NoOptionalField, TimelessDateString } from '@shared/types';
+import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';
 import type { IGetExchangeRatesByDatesResult } from '../types.js';
 
 type ValidatedTransaction = NoOptionalField<IGetTransactionsByIdsResult, 'debit_date'>;
@@ -60,11 +62,24 @@ export function getRateForCurrency(
   }
   if (
     currencyCode &&
-    [Currency.Usd, Currency.Eur, Currency.Gbp, Currency.Cad, Currency.Jpy, Currency.Aud].includes(
-      currencyCode,
-    )
+    [
+      Currency.Usd,
+      Currency.Eur,
+      Currency.Gbp,
+      Currency.Cad,
+      Currency.Jpy,
+      Currency.Aud,
+      Currency.Sek,
+    ].includes(currencyCode)
   ) {
-    const currencyKey = currencyCode.toLowerCase() as 'usd' | 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud';
+    const currencyKey = currencyCode.toLowerCase() as
+      | 'usd'
+      | 'eur'
+      | 'gbp'
+      | 'cad'
+      | 'jpy'
+      | 'aud'
+      | 'sek';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {
       throw new Error(
@@ -87,16 +102,30 @@ export function getClosestRateForDate(
 
   const stringifiedDate = dateToTimelessDateString(new Date(date));
 
-  const exchageRate = sortedRates.find(
+  const exchangeRate = sortedRates.find(
     rate => dateToTimelessDateString(rate.exchange_date!) <= stringifiedDate,
   );
 
-  if (!exchageRate) {
+  if (!exchangeRate) {
     throw new Error(`No exchange rate for date ${stringifiedDate}`);
   }
-  return exchageRate;
+  return exchangeRate;
 }
 
 export function isCryptoCurrency(currency: Currency) {
   return currency === Currency.Grt || currency === Currency.Usdc || currency === Currency.Eth;
+}
+
+export async function getFiatExchangeRate(
+  injector: Injector,
+  timelessDate: TimelessDateString,
+  currency: keyof Omit<IGetExchangeRatesByDatesResult, 'exchange_date'>,
+) {
+  const exchangeRates = await injector
+    .get(FiatExchangeProvider)
+    .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+  if (!exchangeRates?.[currency]) {
+    return null;
+  }
+  return parseFloat(exchangeRates[currency]);
 }

@@ -205,6 +205,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     ...getCurrencyCells(Currency.Cad),
     ...getCurrencyCells(Currency.Jpy),
     ...getCurrencyCells(Currency.Aud),
+    ...getCurrencyCells(Currency.Sek),
     ...getExtendedCurrencies(isExpandedCurrencies),
   ];
 
@@ -294,6 +295,7 @@ function getExtendedCurrencies(isExpandedCurrencies: boolean): CellInfo[] {
         Currency.Cad,
         Currency.Jpy,
         Currency.Aud,
+        Currency.Sek,
       ].includes(currency),
   );
 

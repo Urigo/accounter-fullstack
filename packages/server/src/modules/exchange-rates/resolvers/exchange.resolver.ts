@@ -3,9 +3,8 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { Currency } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { defineConversionBaseAndQuote } from '../helpers/exchange.helper.js';
+import { defineConversionBaseAndQuote, getFiatExchangeRate } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
-import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
@@ -19,60 +18,20 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
   },
   ExchangeRates: {
-    usd: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.usd) {
-        return null;
-      }
-      return parseFloat(exchangeRates.usd);
-    },
-    gbp: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.gbp) {
-        return null;
-      }
-      return parseFloat(exchangeRates.gbp);
-    },
-    eur: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.eur) {
-        return null;
-      }
-      return parseFloat(exchangeRates.eur);
-    },
-    cad: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.cad) {
-        return null;
-      }
-      return parseFloat(exchangeRates.cad);
-    },
-    jpy: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.jpy) {
-        return null;
-      }
-      return parseFloat(exchangeRates.jpy);
-    },
-    aud: async (timelessDate, _, { injector }) => {
-      const exchangeRates = await injector
-        .get(FiatExchangeProvider)
-        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
-      if (!exchangeRates?.aud) {
-        return null;
-      }
-      return parseFloat(exchangeRates.aud);
-    },
+    usd: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'usd'),
+    gbp: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'gbp'),
+    eur: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'eur'),
+    cad: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'cad'),
+    jpy: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'jpy'),
+    aud: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'aud'),
+    sek: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'sek'),
     ils: () => {
       return 1;
     },

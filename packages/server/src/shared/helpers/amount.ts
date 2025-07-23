@@ -60,6 +60,8 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Jpy;
     case 'AUD':
       return Currency.Aud;
+    case 'SEK':
+      return Currency.Sek;
     case 'ILS':
       return Currency.Ils;
     case 'GRT':
@@ -76,8 +78,7 @@ export function formatCurrency<T extends boolean = false>(
       if (nullable) {
         return null as T extends true ? null : never;
       }
-      console.warn(`Unknown currency: "${raw}". Using "ILS" instead.`);
-      return Currency.Ils;
+      throw new Error(`Unknown currency: "${raw}"`);
   }
 }
 
@@ -95,6 +96,8 @@ export function getCurrencySymbol(currency: Currency) {
       return '¥';
     case Currency.Aud:
       return 'A$';
+    case Currency.Sek:
+      return 'kr';
     case Currency.Ils:
       return '₪';
     case Currency.Grt:
