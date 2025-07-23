@@ -13,26 +13,47 @@ export function getCurrencyFormatter(
 
 export function currencyCodeToSymbol(currency_code: Currency): string {
   let currencySymbol = '₪';
-  if (currency_code === 'USD') {
-    currencySymbol = '$';
-  } else if (currency_code === 'EUR') {
-    currencySymbol = '€';
-  } else if (currency_code === 'GBP') {
-    currencySymbol = '£';
-  } else if (currency_code === 'CAD') {
-    currencySymbol = 'C$';
-  } else if (currency_code === 'JPY') {
-    currencySymbol = '¥';
-  } else if (currency_code === 'AUD') {
-    currencySymbol = 'A$';
-  } else if (currency_code === 'SEK') {
-    currencySymbol = 'kr';
-  } else if (currency_code === 'GRT') {
-    currencySymbol = 'GRT';
-  } else if (currency_code === 'USDC') {
-    currencySymbol = 'USDC';
-  } else if (currency_code === 'ETH') {
-    currencySymbol = 'ETH';
+  switch (currency_code) {
+    case 'USD': {
+      currencySymbol = '$';
+      break;
+    }
+    case 'EUR': {
+      currencySymbol = '€';
+      break;
+    }
+    case 'GBP': {
+      currencySymbol = '£';
+      break;
+    }
+    case 'CAD': {
+      currencySymbol = 'C$';
+      break;
+    }
+    case 'JPY': {
+      currencySymbol = '¥';
+      break;
+    }
+    case 'AUD': {
+      currencySymbol = 'A$';
+      break;
+    }
+    case 'SEK': {
+      currencySymbol = 'kr';
+      break;
+    }
+    case 'GRT': {
+      currencySymbol = 'GRT';
+      break;
+    }
+    case 'USDC': {
+      currencySymbol = 'USDC';
+      break;
+    }
+    case 'ETH': {
+      currencySymbol = 'ETH';
+      break;
+    }
   }
   return currencySymbol;
 }
