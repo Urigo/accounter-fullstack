@@ -73,6 +73,15 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
       return parseFloat(exchangeRates.aud);
     },
+    sek: async (timelessDate, _, { injector }) => {
+      const exchangeRates = await injector
+        .get(FiatExchangeProvider)
+        .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+      if (!exchangeRates?.sek) {
+        return null;
+      }
+      return parseFloat(exchangeRates.sek);
+    },
     ils: () => {
       return 1;
     },

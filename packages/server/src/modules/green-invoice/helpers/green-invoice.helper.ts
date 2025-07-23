@@ -78,6 +78,8 @@ export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceC
       return 'ILS';
     case Currency.Jpy:
       return 'JPY';
+    case Currency.Sek:
+      return 'SEK';
     case Currency.Usd:
       return 'USD';
     case Currency.Eth:
