@@ -8,8 +8,6 @@ import {
   CreditorCellProps,
   DateCellProps,
   DebtorCellProps,
-  DocumentsTableRowType,
-  DocumentType,
   DocumentValidation,
   FilesCellProps,
   SerialCellProps,
@@ -29,9 +27,7 @@ const ErrorIndicator: React.FC<{ hasError: boolean; children: React.ReactNode }>
 }) => (
   <div className="relative">
     {hasError && (
-      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-        <AlertCircle className="w-2 h-2 text-white" />
-      </div>
+      <div className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full border border-white shadow-sm"></div>
     )}
     {children}
   </div>
