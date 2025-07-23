@@ -20,6 +20,7 @@
   "include": [
     ".storybook/**/*",
     "stories/**/*",
+    "src/**/*",
     "../client/src/**/*"
   ],
   "exclude": [
