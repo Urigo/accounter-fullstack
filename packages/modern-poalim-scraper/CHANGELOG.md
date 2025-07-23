@@ -1,5 +1,75 @@
 # @accounter/modern-poalim-scraper
 
+## 0.10.0
+
+### Minor Changes
+
+- [#2288](https://github.com/Urigo/accounter-fullstack/pull/2288)
+  [`ed672ff`](https://github.com/Urigo/accounter-fullstack/commit/ed672ffb1d94ebda17534161d1c9fca69f359dc4)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Replace Poalim Swift JSON schemas with
+  updated, stricter Zod schemas
+
+### Patch Changes
+
+- [#2262](https://github.com/Urigo/accounter-fullstack/pull/2262)
+  [`85837b6`](https://github.com/Urigo/accounter-fullstack/commit/85837b61315e64bc46e23f0f1fafaa7ab5bd4225)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.11.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.11.2)
+    (from `24.11.1`, in `dependencies`)
+
+- [#2265](https://github.com/Urigo/accounter-fullstack/pull/2265)
+  [`4c651e4`](https://github.com/Urigo/accounter-fullstack/commit/4c651e43a1e59e2ce9414ca45bbcdbfa0f699a92)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@12.7.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.7.0)
+    (from `12.6.3`, in `dependencies`)
+
+- [#2282](https://github.com/Urigo/accounter-fullstack/pull/2282)
+  [`4cb0e51`](https://github.com/Urigo/accounter-fullstack/commit/4cb0e5157c86afa4f0463678497aac95a2d745e3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.12.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.12.0)
+    (from `24.11.2`, in `dependencies`)
+
+- [#2289](https://github.com/Urigo/accounter-fullstack/pull/2289)
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.12.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.12.1)
+    (from `24.12.0`, in `dependencies`)
+
+- [#2293](https://github.com/Urigo/accounter-fullstack/pull/2293)
+  [`3a511ca`](https://github.com/Urigo/accounter-fullstack/commit/3a511ca20d9cf7f62f0d5f6c1f8283d103160de4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.12.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.12.1)
+    (from `24.12.0`, in `dependencies`)
+
+- [#2316](https://github.com/Urigo/accounter-fullstack/pull/2316)
+  [`d4a89ca`](https://github.com/Urigo/accounter-fullstack/commit/d4a89cab625acc4508c5c24406d854b81e0dca17)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.14.0)
+    (from `24.12.1`, in `dependencies`)
+
+- [#2325](https://github.com/Urigo/accounter-fullstack/pull/2325)
+  [`407a763`](https://github.com/Urigo/accounter-fullstack/commit/407a7632092ee4571fb27781f7da9f9251240f34)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@12.8.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.0)
+    (from `12.7.0`, in `dependencies`)
+
+- [#2331](https://github.com/Urigo/accounter-fullstack/pull/2331)
+  [`dd85a17`](https://github.com/Urigo/accounter-fullstack/commit/dd85a1724bd8a262d0e072e93b53015662d7f987)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@12.8.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.1)
+    (from `12.8.0`, in `dependencies`)
+
+- [#2335](https://github.com/Urigo/accounter-fullstack/pull/2335)
+  [`a51a0d9`](https://github.com/Urigo/accounter-fullstack/commit/a51a0d95a5cf6e4346ac131ec90ee172fe9b02ef)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@12.8.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.2)
+    (from `12.8.1`, in `dependencies`)
+
+- [#2261](https://github.com/Urigo/accounter-fullstack/pull/2261)
+  [`1815661`](https://github.com/Urigo/accounter-fullstack/commit/1815661ea012daa4e5a1d84b4fee795459421042)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Adjust the scraper to multiple users
+  scraping: remove user role code validation (as it could be owner OR viewer), update API schema
+
 ## 0.9.16
 
 ### Patch Changes
