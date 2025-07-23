@@ -347,6 +347,8 @@ __metadata:
   resolution: "@accounter/storybook@workspace:packages/storybook"
   dependencies:
     "@accounter/client": "workspace:*"
+    "@radix-ui/react-slot": "npm:1.2.3"
+    "@storybook/addon-actions": "npm:^8.4.7"
     "@storybook/addon-essentials": "npm:^8.4.7"
     "@storybook/addon-interactions": "npm:^8.4.7"
     "@storybook/addon-links": "npm:^8.4.7"
@@ -354,9 +356,15 @@ __metadata:
     "@storybook/react": "npm:^8.4.7"
     "@storybook/react-vite": "npm:^8.4.7"
     "@storybook/test": "npm:^8.4.7"
-    "@tabler/icons-react": "npm:^3.34.0"
+    "@tabler/icons-react": "npm:3.34.0"
+    "@tailwindcss/vite": "npm:4.1.11"
+    "@tanstack/react-table": "npm:8.21.3"
+    class-variance-authority: "npm:0.7.1"
+    date-fns: "npm:4.1.0"
     lucide-react: "npm:0.525.0"
     storybook: "npm:^8.4.7"
+    tailwindcss: "npm:4.1.11"
+    tailwindcss-animate: "npm:1.0.7"
     typescript: "npm:5.8.3"
     vite: "npm:7.0.4"
   languageName: unknown
@@ -6820,7 +6828,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-actions@npm:8.6.14":
+"@storybook/addon-actions@npm:8.6.14, @storybook/addon-actions@npm:^8.4.7":
   version: 8.6.14
   resolution: "@storybook/addon-actions@npm:8.6.14"
   dependencies:
@@ -7205,7 +7213,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tabler/icons-react@npm:^3.34.0":
+"@tabler/icons-react@npm:3.34.0":
   version: 3.34.0
   resolution: "@tabler/icons-react@npm:3.34.0"
   dependencies:

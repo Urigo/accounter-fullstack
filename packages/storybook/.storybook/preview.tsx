@@ -3,10 +3,28 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { BrowserRouter } from 'react-router-dom';
 import { createClient, fetchExchange, Provider as UrqlProvider } from 'urql';
 import { MantineProvider } from '@mantine/core';
+import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
+import { red } from '@mui/material/colors';
+import { createTheme } from '@mui/material/styles';
 import type { Preview } from '@storybook/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Import the client's main CSS file to inherit all styles
 import '../../client/src/index.css';
+
+// Create the same MUI theme as your app
+const muiTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#556cd6',
+    },
+    secondary: {
+      main: '#19857b',
+    },
+    error: {
+      main: red.A400,
+    },
+  },
+});
 
 // Create a mock GraphQL client for Storybook
 const mockUrqlClient = createClient({
@@ -53,14 +71,23 @@ const preview: Preview = {
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
         <BrowserRouter>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <MantineProvider>
-              <QueryClientProvider client={queryClient}>
-                <UrqlProvider value={mockUrqlClient}>
-                  <div className="min-h-screen bg-background text-foreground">
-                    <Story />
-                  </div>
-                </UrqlProvider>
-              </QueryClientProvider>
+            <MantineProvider
+              withGlobalStyles
+              theme={{
+                fontFamily: 'Roboto, sans-serif',
+                fontSizes: { md: '14' },
+              }}
+            >
+              <MuiThemeProvider theme={muiTheme}>
+                <CssBaseline />
+                <QueryClientProvider client={queryClient}>
+                  <UrqlProvider value={mockUrqlClient}>
+                    <div className="min-h-screen bg-background text-foreground">
+                      <Story />
+                    </div>
+                  </UrqlProvider>
+                </QueryClientProvider>
+              </MuiThemeProvider>
             </MantineProvider>
           </ThemeProvider>
         </BrowserRouter>
