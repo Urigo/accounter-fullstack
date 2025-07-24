@@ -61,8 +61,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
               doc.total_amount === item.amount &&
               doc.serial_number === item.number &&
               optionalDateToTimelessDateString(doc.date) === item.documentDate,
-          ) &&
-          item.type !== '_300',
+          ),
       );
       const addedDocs: IInsertDocumentsResult[] = [];
 
