@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { endOfYear, format, startOfYear, subYears } from 'date-fns';
 import iconv from 'iconv-lite';
 import { Calendar, Download, Loader2 } from 'lucide-react';
-import { TimelessDateString } from 'packages/client/src/helpers/dates.js';
 import { useQuery } from 'urql';
 import { UniformFormatDocument } from '../../../gql/graphql.js';
+import { downloadFile, TimelessDateString } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -29,17 +29,6 @@ import { Label } from '../../ui/label.js';
     }
   }
 `;
-
-function downloadFile(file: File) {
-  const url = URL.createObjectURL(file);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 export function UniformFormatFilesDownloadModal({
   open,
