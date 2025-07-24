@@ -1,9 +1,28 @@
 import type {
+  DocumentLang,
   ExpenseDocumentType,
   Currency as GreenInvoiceCurrency,
   DocumentType as GreenInvoiceDocumentType,
+  mutationInput_addDocument_input_allOf_0_discount_type,
+  mutationInput_addDocument_input_allOf_0_linkType,
+  mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType,
+  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_appType,
+  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_cardType,
+  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_dealType,
+  VatType,
 } from '@accounter/green-invoice-graphql';
-import { Currency, DocumentType } from '@shared/gql-types';
+import {
+  Currency,
+  DocumentType,
+  GreenInvoiceDiscountType,
+  GreenInvoiceDocumentLang,
+  GreenInvoiceLinkType,
+  GreenInvoicePaymentAppType,
+  GreenInvoicePaymentCardType,
+  GreenInvoicePaymentDealType,
+  GreenInvoicePaymentSubType,
+  GreenInvoiceVatType,
+} from '@shared/gql-types';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
@@ -61,6 +80,144 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
       return '_400';
     default:
       throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentLanguage(lang: GreenInvoiceDocumentLang): DocumentLang {
+  switch (lang) {
+    case 'HEBREW':
+      return 'he';
+    case 'ENGLISH':
+      return 'en';
+    default:
+      throw new Error(`Unsupported document language: ${lang}`);
+  }
+}
+
+export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): VatType {
+  switch (vatType) {
+    case 'DEFAULT':
+      return '_0';
+    case 'EXEMPT':
+      return '_1';
+    case 'MIXED':
+      return '_2';
+    default:
+      throw new Error(`Unsupported VAT type: ${vatType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentDiscountType(
+  discountType: GreenInvoiceDiscountType,
+): mutationInput_addDocument_input_allOf_0_discount_type {
+  switch (discountType) {
+    case 'PERCENTAGE':
+      return 'percentage';
+    case 'SUM':
+      return 'sum';
+    default:
+      throw new Error(`Unsupported discount type: ${discountType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentPaymentSubType(
+  subType: GreenInvoicePaymentSubType,
+): mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType {
+  switch (subType) {
+    case 'BITCOIN':
+      return '_1';
+    case 'BUYME_VOUCHER':
+      return '_7';
+    case 'ETHEREUM':
+      return '_6';
+    case 'GIFT_CARD':
+      return '_4';
+    case 'MONEY_EQUAL':
+      return '_2';
+    case 'NII_EMPLOYEE_DEDUCTION':
+      return '_5';
+    case 'PAYONEER':
+      return '_8';
+    case 'V_CHECK':
+      return '_3';
+    default:
+      throw new Error(`Unsupported payment sub-type: ${subType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentPaymentAppType(
+  appType: GreenInvoicePaymentAppType,
+): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_appType {
+  switch (appType) {
+    case 'APPLE_PAY':
+      return '_6';
+    case 'BIT':
+      return '_1';
+    case 'CULO':
+      return '_4';
+    case 'GOOGLE_PAY':
+      return '_5';
+    case 'PAYBOX':
+      return '_3';
+    case 'PAY_BY_PEPPER':
+      return '_2';
+    default:
+      throw new Error(`Unsupported payment app type: ${appType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentPaymentCardType(
+  cardType: GreenInvoicePaymentCardType,
+): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_cardType {
+  switch (cardType) {
+    case 'AMERICAN_EXPRESS':
+      return '_4';
+    case 'DINERS':
+      return '_5';
+    case 'ISRACARD':
+      return '_1';
+    case 'MASTERCARD':
+      return '_3';
+    // case 'UNKNOWN':
+    //   return '_0'; // TODO: why is this not supported?
+    case 'VISA':
+      return '_2';
+    default:
+      throw new Error(`Unsupported payment card type: ${cardType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentPaymentDealType(
+  dealType: GreenInvoicePaymentDealType,
+): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_dealType {
+  switch (dealType) {
+    case 'CREDIT':
+      return '_3';
+    case 'DEFERRED':
+      return '_4';
+    case 'OTHER':
+      return '_5';
+    case 'PAYMENTS':
+      return '_2';
+    case 'RECURRING':
+      return '_6';
+    case 'STANDARD':
+      return '_1';
+    default:
+      throw new Error(`Unsupported payment deal type: ${dealType}`);
+  }
+}
+
+export function getGreenInvoiceDocumentLinkType(
+  linkType: GreenInvoiceLinkType,
+): mutationInput_addDocument_input_allOf_0_linkType {
+  switch (linkType) {
+    case 'CANCEL':
+      return 'cancel';
+    case 'LINK':
+      return 'link';
+    default:
+      throw new Error(`Unsupported link type: ${linkType}`);
   }
 }
 
