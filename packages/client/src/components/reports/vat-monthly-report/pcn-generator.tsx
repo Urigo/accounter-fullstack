@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
-import { dedupeFragments } from '../../../helpers/index.js';
+import { dedupeFragments, downloadFile } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -49,13 +49,8 @@ export const PCNGenerator = ({
 
   useEffect(() => {
     if (data) {
-      const blob = new Blob([data.pcnFile.reportContent], { type: 'text/plain' });
-      const fileURL = window.URL.createObjectURL(blob);
-      // Setting various property values
-      const alink = document.createElement('a');
-      alink.href = fileURL;
-      alink.download = data.pcnFile.fileName;
-      alink.click();
+      const blob = new File([data.pcnFile.reportContent], 'pcn874.txt', { type: 'text/plain' });
+      downloadFile(blob);
     }
   }, [data]);
 
