@@ -12,7 +12,7 @@
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@hookform/resolvers": "5.1.1",
+    "@hookform/resolvers": "5.2.0",
     "@mantine/carousel": "6.0.22",
     "@mantine/core": "6.0.22",
     "@mantine/dates": "6.0.22",
