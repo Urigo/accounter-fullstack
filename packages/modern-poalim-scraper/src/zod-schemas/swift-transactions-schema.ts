@@ -21,7 +21,7 @@ const SwiftItemSchema = z
   .object({
     startDate: z.number().int(),
     formattedStartDate: z.string().datetime(),
-    swiftStatusCode: z.enum(['0Y', '0W']),
+    swiftStatusCode: z.enum(['0Y', '0W', '0B']),
     swiftStatusDesc: z.string(),
     amount: z.number(),
     currencyCodeCatenatedKey: z.string(),
