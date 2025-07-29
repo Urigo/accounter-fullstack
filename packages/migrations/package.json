@@ -12,7 +12,7 @@
     "migration:run": "yarn db:migrator up"
   },
   "devDependencies": {
-    "@types/pg": "8.15.4",
+    "@types/pg": "8.15.5",
     "got": "14.4.7",
     "pg-promise": "11.15.0",
     "slonik": "38.0.0",
