@@ -2,7 +2,7 @@ version: '1.0'
 name: 'accounter-dev'
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     networks:
       - 'stack'
     healthcheck:
