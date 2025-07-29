@@ -26,7 +26,7 @@ __metadata:
     pg-promise: "npm:11.15.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
   languageName: unknown
   linkType: soft
 
@@ -148,7 +148,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:7.1.2"
     vite-plugin-node-polyfills: "npm:0.24.0"
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
     zustand: "npm:5.0.7"
   languageName: unknown
   linkType: soft
@@ -287,7 +287,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
   languageName: unknown
   linkType: soft
 
@@ -332,7 +332,7 @@ __metadata:
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.8.3"
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
   languageName: unknown
   linkType: soft
 
@@ -344,7 +344,7 @@ __metadata:
     eslint: "npm:9.33.0"
     iconv-lite: "npm:0.6.3"
     vitest: "npm:3.2.4"
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
   languageName: unknown
   linkType: soft
 
@@ -356,7 +356,7 @@ __metadata:
     eslint: "npm:9.33.0"
     iconv-lite: "npm:0.6.3"
     vitest: "npm:3.2.4"
-    zod: "npm:3.25.76"
+    zod: "npm:4.0.13"
   languageName: unknown
   linkType: soft
 
@@ -7619,7 +7619,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.17.1, @types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
+"@types/node@npm:22.17.1":
   version: 22.17.1
   resolution: "@types/node@npm:22.17.1"
   dependencies:
@@ -7632,6 +7632,15 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: 10c0/3b190bb0410047d489c49bbaab592d2e6630de6a50f00ba3d7d513d59401d279972a8f5a598b5bb8ddc1702f8a2f4ec57a65d93852f9c329639738e7053637d1
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
+  version: 22.16.5
+  resolution: "@types/node@npm:22.16.5"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10c0/93a245e96a01f4a6aa38475000070292a9299e17b95bc1fc8180c652fb3a62f9b3b9ec0b78f9fc6a78b9274d3dfce456e80c7bb68b5357c8f7dbf581df4408c1
   languageName: node
   linkType: hard
 
@@ -8154,13 +8163,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/fetch@npm:0.10.10, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.10, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6":
+"@whatwg-node/fetch@npm:0.10.10, @whatwg-node/fetch@npm:^0.10.10":
   version: 0.10.10
   resolution: "@whatwg-node/fetch@npm:0.10.10"
   dependencies:
     "@whatwg-node/node-fetch": "npm:^0.7.25"
     urlpattern-polyfill: "npm:^10.0.0"
   checksum: 10c0/f8d94d58402176279c99517ab516a3c51f64c3eecc825b09ea46a4088c9928a713041f688a635be1b4ee351f0819360f7d936161420cce0d43307630c1bc4821
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6":
+  version: 0.10.9
+  resolution: "@whatwg-node/fetch@npm:0.10.9"
+  dependencies:
+    "@whatwg-node/node-fetch": "npm:^0.7.22"
+    urlpattern-polyfill: "npm:^10.0.0"
+  checksum: 10c0/0765e8d4faf2caa4452a09ffbbad319a65c33034f6ddc95a9b751a925f767b9a2cc55d1182b3aadfd48b9d1bb796069f8e544fa2c12a7f01c0827d7451035c43
   languageName: node
   linkType: hard
 
@@ -8183,6 +8202,18 @@ __metadata:
     fast-querystring: "npm:^1.1.1"
     tslib: "npm:^2.6.3"
   checksum: 10c0/3ec3405e581abd811823f7c5f7dcb2e4c291d01a7a714c34b6b368eefff8b72f92b4d749322433d754b76725c814b03714cc6e929083021568e1ebd8240a04a8
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/node-fetch@npm:^0.7.22":
+  version: 0.7.22
+  resolution: "@whatwg-node/node-fetch@npm:0.7.22"
+  dependencies:
+    "@fastify/busboy": "npm:^3.1.1"
+    "@whatwg-node/disposablestack": "npm:^0.0.6"
+    "@whatwg-node/promise-helpers": "npm:^1.3.2"
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/270e0f3c290cfe813f8715a5c0997a591e89fa2f4334841e21171ab1ac4afc4f799c55b6a3f405156581f8f35acd23f92e5808f5d336baded0053d122d5ddecc
   languageName: node
   linkType: hard
 
@@ -10901,6 +10932,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"devtools-protocol@npm:0.0.1464554":
+  version: 0.0.1464554
+  resolution: "devtools-protocol@npm:0.0.1464554"
+  checksum: 10c0/c3db644b00a2172c93fb4627c4aa5ddbcc10f90aead3838bdf334b1d36da3a37e70599a8af8f90011486c4abeb54e32fbd8a736e2a8ddcefa7c56292251830c1
+  languageName: node
+  linkType: hard
+
 "devtools-protocol@npm:0.0.1475386":
   version: 0.0.1475386
   resolution: "devtools-protocol@npm:0.0.1475386"
@@ -11054,7 +11092,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:17.2.1, dotenv@npm:^17.1.0":
+"dotenv@npm:17.2.1":
   version: 17.2.1
   resolution: "dotenv@npm:17.2.1"
   checksum: 10c0/918dd2f9d8b8f86b0afabad9534793d51de3718c437f9e7b6525628cf68c1d4ae768cc37a5afff38c066f58a8ecf549f4ac6cd5617485bd328e826112cc2650a
@@ -11065,6 +11103,13 @@ __metadata:
   version: 16.6.1
   resolution: "dotenv@npm:16.6.1"
   checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^17.1.0":
+  version: 17.2.0
+  resolution: "dotenv@npm:17.2.0"
+  checksum: 10c0/d4cb5c2a09c288c921ef47a78f51c765a763266e23e84465cde6a87b28b9f7fc5a9d1fe349ed3c880b4c7297f82dd736dba5b08fe95ce53833ce4a7258d0fc43
   languageName: node
   linkType: hard
 
@@ -17990,17 +18035,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:24.16.0":
-  version: 24.16.0
-  resolution: "puppeteer-core@npm:24.16.0"
+"puppeteer-core@npm:24.15.0":
+  version: 24.15.0
+  resolution: "puppeteer-core@npm:24.15.0"
   dependencies:
     "@puppeteer/browsers": "npm:2.10.6"
     chromium-bidi: "npm:7.2.0"
     debug: "npm:^4.4.1"
-    devtools-protocol: "npm:0.0.1475386"
+    devtools-protocol: "npm:0.0.1464554"
     typed-query-selector: "npm:^2.12.0"
     ws: "npm:^8.18.3"
-  checksum: 10c0/98fa1edf0f1346318bff326a13c40a82e82702a98eecc2f3968060bf3b8064881df0014639c03270dd2417819ea473e29ca9798aefb491a4175a85498d1cf12f
+  checksum: 10c0/fbbb28ffa70874aaa1cf41acab4eb5a1a54276111ee71bcbfa48364be8c436fdf68aa7e282cbe28b7c08f51a767a37df0c99ad2c45ce28ecca9084bca81d1ecc
   languageName: node
   linkType: hard
 
@@ -18019,18 +18064,18 @@ __metadata:
   linkType: hard
 
 "puppeteer@npm:*":
-  version: 24.16.0
-  resolution: "puppeteer@npm:24.16.0"
+  version: 24.15.0
+  resolution: "puppeteer@npm:24.15.0"
   dependencies:
     "@puppeteer/browsers": "npm:2.10.6"
     chromium-bidi: "npm:7.2.0"
     cosmiconfig: "npm:^9.0.0"
-    devtools-protocol: "npm:0.0.1475386"
-    puppeteer-core: "npm:24.16.0"
+    devtools-protocol: "npm:0.0.1464554"
+    puppeteer-core: "npm:24.15.0"
     typed-query-selector: "npm:^2.12.0"
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
-  checksum: 10c0/0b052bd44b8c2514691ff1274a1414970f1d518dee6d6733f39b77fee384e0c571123e134072b6737b4629a7d7efc836da84ac7f37a3f891271359e8e885ef66
+  checksum: 10c0/29a2518b68ce5894810037a54e73b184bfed40ef1241f64ff8c87817a4c807d3a67c7550d6f5d4e33068a54ffd41df4ae6ef650750bc6b3bbf6cd1a7666c2e6f
   languageName: node
   linkType: hard
 
@@ -22283,7 +22328,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:3.25.76, zod@npm:^3.20.2, zod@npm:^3.24.1, zod@npm:^3.25.46":
+"zod@npm:4.0.13":
+  version: 4.0.13
+  resolution: "zod@npm:4.0.13"
+  checksum: 10c0/e0e3dd3680bcf21fd550ee9777b39ef3c2e06376aab73e713afe82938f5f00c319ca1df20c66480789168bfce4251dc9f7e6aa80021de42857cc6384042b7413
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.20.2, zod@npm:^3.24.1, zod@npm:^3.25.46":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
