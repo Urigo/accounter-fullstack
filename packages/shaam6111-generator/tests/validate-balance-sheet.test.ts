@@ -38,7 +38,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Invalid balance sheet code: 99999');
+      expect(result.error.issues[0].message).toBe('Invalid balance sheet code: 99999');
     }
   });
 
@@ -47,7 +47,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(duplicateRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('Duplicate code');
+      expect(result.error.issues[0].message).toContain('Duplicate code');
     }
   });
 
@@ -61,7 +61,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('does not allow negative amounts');
+      expect(result.error.issues[0].message).toContain('does not allow negative amounts');
     }
   });
 
@@ -96,7 +96,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(invalidTotalsRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain(
+      expect(result.error.issues[0].message).toContain(
         'Total assets (8888) must equal total liabilities + equity (9999)',
       );
     }
@@ -109,7 +109,7 @@ describe('balanceSheetArraySchema', () => {
     const result = balanceSheetArraySchema.safeParse(missingSummaryRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('Missing required summary code');
+      expect(result.error.issues[0].message).toContain('Missing required summary code');
     }
   });
 });
