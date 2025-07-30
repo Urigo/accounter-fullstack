@@ -35,7 +35,7 @@
     "scrape": "yarn --cwd packages/scraper-local-app start",
     "seed": "tsx scripts/seed.ts",
     "server:build": "yarn --cwd packages/server build",
-    "setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn db:init && yarn generate",
+    "setup": "yarn db:init && yarn generate",
     "test": "vitest"
   },
   "devDependencies": {

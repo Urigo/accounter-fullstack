@@ -1,9 +1,4 @@
-import {
-  CommonQueryMethods,
-  sql,
-  type DatabasePool,
-  type DatabaseTransactionConnection,
-} from 'slonik';
+import { sql, type DatabasePool, type DatabaseTransactionConnection } from 'slonik';
 
 export type MigrationExecutor = {
   name: string;
@@ -11,16 +6,10 @@ export type MigrationExecutor = {
    * You can either return a SQL query to run or instead use the connection within the function to run custom logic.
    * You can also return an array of named steps so you can see the progress in the logs.
    */
-  run: (args: { connection: CommonQueryMethods; sql: typeof sql.unsafe }) =>
-    | Promise<void>
-    | ReturnType<typeof sql.unsafe>
-    | Array<{
-        name: string;
-        query: ReturnType<typeof sql.unsafe>;
-      }>;
+  run: (args: { sql: typeof sql.unsafe }) => ReturnType<typeof sql.unsafe>;
 };
 
-const seedMigrationsIfNotExists = async (args: { connection: DatabaseTransactionConnection }) => {
+const seedMigrationsIfNotExists = async (args: { connection: DatabasePool }) => {
   await args.connection.query(sql.unsafe`
     CREATE SCHEMA IF NOT EXISTS accounter_schema;
   `);
@@ -34,7 +23,10 @@ const seedMigrationsIfNotExists = async (args: { connection: DatabaseTransaction
   `);
 };
 
-async function runMigration(connection: CommonQueryMethods, migration: MigrationExecutor) {
+async function runMigration(
+  connection: DatabaseTransactionConnection,
+  migration: MigrationExecutor,
+) {
   const exists = await connection.maybeOneFirst(sql.unsafe`
     SELECT true
     FROM
@@ -50,17 +42,8 @@ async function runMigration(connection: CommonQueryMethods, migration: Migration
   const startTime = Date.now();
   console.log(`Running migration: ${migration.name}`);
 
-  const result = await migration.run({ connection, sql: sql.unsafe });
-  if (Array.isArray(result)) {
-    for (const item of result) {
-      console.log(`  Starting step ${item.name}`);
-      const startTime = Date.now();
-      await connection.query(item.query);
-      const finishTime = Date.now();
-      const delta = finishTime - startTime;
-      console.log(`  Finished in ${convertMsToTime(delta)}`);
-    }
-  } else if (result) {
+  const result = await migration.run({ sql: sql.unsafe });
+  if (result) {
     await connection.query(result);
   }
 
