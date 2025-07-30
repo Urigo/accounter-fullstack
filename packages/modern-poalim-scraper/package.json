@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@types/inquirer": "9.0.8",
-    "@types/node-fetch": "2.6.12",
+    "@types/node-fetch": "2.6.13",
     "@types/uuid": "10.0.0",
     "concurrently": "9.2.0",
     "json-schema-to-typescript": "15.0.4",
