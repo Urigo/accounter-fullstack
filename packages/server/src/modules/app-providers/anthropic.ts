@@ -85,7 +85,7 @@ export class AnthropicProvider {
 
       const fileData = await this.fileToBase64(fileOrBlob);
 
-      const { object, usage } = await generateObject({
+      const { object, usage } = await generateObject<DocumentData>({
         model: anthropic('claude-4-sonnet-20250514'),
         schema: documentDataSchema,
         messages: [
