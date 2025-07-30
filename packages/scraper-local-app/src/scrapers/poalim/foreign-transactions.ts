@@ -162,15 +162,15 @@ const insertPoalimForeignTransactions = sql<IInsertPoalimForeignTransactionsQuer
   RETURNING id, account_number, activity_description, event_activity_type_code, event_amount, executing_date;`;
 
 const PoalimForeignTransactionSchema = z.object({
-  metadataAttributesOriginalEventKey: z.record(z.any()).nullable(),
-  metadataAttributesContraBranchNumber: z.record(z.any()).nullable(),
-  metadataAttributesContraAccountNumber: z.record(z.any()).nullable(),
-  metadataAttributesContraBankNumber: z.record(z.any()).nullable(),
-  metadataAttributesContraAccountFieldNameLable: z.record(z.any()).nullable(),
-  metadataAttributesDataGroupCode: z.record(z.any()).nullable(),
-  metadataAttributesCurrencyRate: z.record(z.any()).nullable(),
-  metadataAttributesContraCurrencyCode: z.record(z.any()).nullable(),
-  metadataAttributesRateFixingCode: z.record(z.any()).nullable(),
+  metadataAttributesOriginalEventKey: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesContraBranchNumber: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesContraAccountNumber: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesContraBankNumber: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesContraAccountFieldNameLable: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesDataGroupCode: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesCurrencyRate: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesContraCurrencyCode: z.record(z.any(), z.any()).nullable(),
+  metadataAttributesRateFixingCode: z.record(z.any(), z.any()).nullable(),
 
   executingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // ISO date format
   formattedExecutingDate: z.string().max(24),
