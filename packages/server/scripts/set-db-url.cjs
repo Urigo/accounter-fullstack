@@ -6,7 +6,7 @@ const {
   POSTGRES_PASSWORD = 'postgres',
   POSTGRES_HOST = 'localhost',
   POSTGRES_PORT = 5432,
-  POSTGRES_DB = 'postgres',
+  POSTGRES_DB = 'accounter',
   POSTGRES_SSL = null,
 } = process.env;
 
