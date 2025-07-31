@@ -23,6 +23,7 @@ import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
+import { IssueDocumentScreen } from './components/screens/documents/issue-document.js';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
@@ -56,8 +57,11 @@ export function App(): ReactElement {
             <Route path="" element={<ChartPage />} />
             <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
           </Route>
-          <Route path="documents" element={<DocumentsReport />} />
-          <Route path="issue-documents" element={<IssueDocuments />} />
+          <Route path="documents">
+            <Route path="" element={<DocumentsReport />} />
+            <Route path="issue-documents" element={<IssueDocuments />} />
+            <Route path="issue-document" element={<IssueDocumentScreen />} />
+          </Route>
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />

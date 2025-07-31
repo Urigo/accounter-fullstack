@@ -109,6 +109,7 @@ import migration_2025_07_10T14_13_43_swift_table_extension from './actions/2025-
 import migration_2025_07_14T14_35_02_swift_multiple_currencies_handle from './actions/2025-07-14T14-35-02.swift-multiple-currencies-handle.js';
 import migration_2025_07_23T11_00_24_support_sek_currency from './actions/2025-07-23T11-00-24.support-sek-currency.js';
 import migration_2025_07_24T11_27_13_enhance_charges_doc_dates_calc from './actions/2025-07-24T11-27-13.enhance-charges-doc-dates-calc.js';
+import migration_2025_07_25T11_55_52_self_issued_documents_table from './actions/2025-07-25T11-55-52.self-issued-documents-table.js';
 import migration_2025_07_30T19_01_04_jpy_rate_fix from './actions/2025-07-30T19-01-04.jpy-rate-fix.js';
 import { runMigrations } from './pg-migrator.js';
 
@@ -227,5 +228,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_07_23T11_00_24_support_sek_currency,
       migration_2025_07_24T11_27_13_enhance_charges_doc_dates_calc,
       migration_2025_07_30T19_01_04_jpy_rate_fix,
+      migration_2025_07_25T11_55_52_self_issued_documents_table,
     ],
   });

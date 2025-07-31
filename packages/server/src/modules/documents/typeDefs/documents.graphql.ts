@@ -34,6 +34,7 @@ export default gql`
       isSensitive: Boolean
       chargeId: UUID
     ): [UploadDocumentResult!]! @auth(role: ACCOUNTANT)
+    closeDocument(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " All possible document types "

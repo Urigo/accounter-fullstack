@@ -1,23 +1,25 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { DocumentInput_Input } from '@accounter/green-invoice-graphql';
-import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import type { addDocumentRequest_Input, Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import type { IInsertDocumentsParams, IInsertDocumentsResult } from '@modules/documents/types.js';
+import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
+import type {
+  IInsertDocumentsResult,
+  IUpdateIssuedDocumentParams,
+} from '@modules/documents/types.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   convertCurrencyToGreenInvoice,
+  convertDocumentInputIntoGreenInvoiceInput,
+  getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
-  normalizeDocumentType,
+  getLinkedDocuments,
+  greenInvoiceToDocumentStatus,
+  insertNewDocumentFromGreenInvoice,
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { DocumentType } from '@shared/enums';
-import {
-  dateToTimelessDateString,
-  formatCurrency,
-  optionalDateToTimelessDateString,
-} from '@shared/helpers';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import type { GreenInvoiceModule } from '../types.js';
 
@@ -38,137 +40,89 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
   Mutation: {
     fetchIncomeDocuments: async (
       _,
-      { ownerId },
+      { ownerId: inputOwnerId, singlePageLimit = true },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
-      const data = await injector.get(GreenInvoiceClientProvider).searchDocuments({
-        input: { pageSize: 100, sort: 'creationDate' },
-      });
-      if (!data?.items) {
-        throw new GraphQLError('Failed to fetch documents');
-      }
-      if (data.items.length === 0) {
-        return [];
-      }
+      const ownerId = inputOwnerId ?? defaultAdminBusinessId;
+      const greenInvoiceDocuments = await getGreenInvoiceDocuments(injector, !singlePageLimit);
 
-      const documents = await injector.get(DocumentsProvider).getAllDocuments();
-      const newDocuments = data.items.filter(
-        item =>
-          item &&
-          !documents.some(
-            doc =>
-              doc.vat_amount === item.vat &&
-              doc.total_amount === item.amount &&
-              doc.serial_number === item.number &&
-              optionalDateToTimelessDateString(doc.date) === item.documentDate,
-          ),
-      );
-      const addedDocs: IInsertDocumentsResult[] = [];
+      const issuedDocuments = await injector.get(IssuedDocumentsProvider).getAllIssuedDocuments();
 
+      // check for new or updated documents
+      const newDocuments: Document[] = [];
+      const documentsToUpdate: IUpdateIssuedDocumentParams[] = [];
       await Promise.all(
-        newDocuments.map(async greenInvoiceDoc => {
-          if (!greenInvoiceDoc) {
+        greenInvoiceDocuments.map(async item => {
+          const existingDocs = issuedDocuments.filter(doc => doc.external_id === item.id);
+
+          // Throw an error if more than one document found with the same external ID
+          if (existingDocs.length > 1) {
+            throw new GraphQLError(
+              `Found multiple issued documents with the same external ID: ${item.id}`,
+            );
+          }
+
+          // If no existing document found, add it to the new documents list
+          if (existingDocs.length === 0) {
+            newDocuments.push(item);
             return;
           }
 
-          const documentType = normalizeDocumentType(greenInvoiceDoc.type);
-          const isOwnerCreditor =
-            greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
+          // For existing document => check for updates
+          const existingDoc = existingDocs[0];
 
-          try {
-            // generate preview image via cloudinary
-            const imagePromise = injector
-              .get(CloudinaryProvider)
-              .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
-
-            // Generate parent charge
-            const chargePromise = injector.get(ChargesProvider).generateCharge({
-              ownerId,
-              userDescription:
-                greenInvoiceDoc.description && greenInvoiceDoc.description !== ''
-                  ? greenInvoiceDoc.description
-                  : 'Green Invoice generated charge',
+          const docToUpdate: Partial<IUpdateIssuedDocumentParams> = {};
+          // check if the document status has changed
+          const latestStatus = greenInvoiceToDocumentStatus(item.status);
+          if (latestStatus !== existingDoc.status) {
+            docToUpdate.status = latestStatus;
+          }
+          // check if the document amount has changed
+          const linkedDocuments = await getLinkedDocuments(injector, item.id);
+          if (
+            linkedDocuments?.length &&
+            (!existingDoc.linked_document_ids ||
+              existingDoc.linked_document_ids.length !== linkedDocuments.length ||
+              existingDoc.linked_document_ids?.some(id => !linkedDocuments.includes(id)))
+          ) {
+            docToUpdate.linkedDocumentIds = linkedDocuments;
+          }
+          // if has attributes to update, add to the update list
+          if (Object.keys(docToUpdate).length > 0) {
+            documentsToUpdate.push({
+              documentId: existingDoc.id,
+              ...docToUpdate,
             });
-
-            // Get matching business
-            const businessPromise = injector
-              .get(GreenInvoiceProvider)
-              .getBusinessMatchByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
-
-            const [{ imageUrl }, [charge], business] = await Promise.all([
-              imagePromise,
-              chargePromise,
-              businessPromise,
-            ]);
-
-            if (!charge) {
-              throw new Error('Failed to generate charge');
-            }
-
-            const counterpartyId = business?.business_id ?? null;
-
-            // insert document
-            const rawDocument: IInsertDocumentsParams['document']['0'] = {
-              image: imageUrl,
-              file: greenInvoiceDoc.url.origin,
-              documentType,
-              serialNumber: greenInvoiceDoc.number,
-              date: greenInvoiceDoc.documentDate,
-              amount: greenInvoiceDoc.amount,
-              currencyCode: formatCurrency(greenInvoiceDoc.currency),
-              vat: greenInvoiceDoc.vat,
-              chargeId: charge.id,
-              vatReportDateOverride: null,
-              noVatAmount: null,
-              creditorId: isOwnerCreditor ? defaultAdminBusinessId : counterpartyId,
-              debtorId: isOwnerCreditor ? counterpartyId : defaultAdminBusinessId,
-              allocationNumber: null, // TODO: add allocation number from GreenInvoice API
-              exchangeRateOverride: null,
-            };
-
-            const newDocumentPromise = injector
-              .get(DocumentsProvider)
-              .insertDocuments({ document: [rawDocument] });
-
-            const chargeDescriptionUpdate = new Promise(resolve => {
-              const income = greenInvoiceDoc.income;
-              if (
-                !income ||
-                income.length === 0 ||
-                !income[0]?.description ||
-                income[0].description === ''
-              ) {
-                resolve(undefined);
-              }
-
-              const userDescription = income
-                .filter(item => item?.description)
-                .map(item => item!.description)
-                .join(', ');
-
-              injector
-                .get(ChargesProvider)
-                .updateCharge({
-                  chargeId: charge.id,
-                  userDescription,
-                })
-                .then(() => resolve(undefined));
-            });
-
-            const [newDocument] = await Promise.all([newDocumentPromise, chargeDescriptionUpdate]);
-
-            addedDocs.push(newDocument[0]);
-          } catch (e) {
-            throw new GraphQLError(
-              `Error adding Green Invoice document: ${e}\n\n${JSON.stringify(
-                greenInvoiceDoc,
-                null,
-                2,
-              )}`,
-            );
           }
         }),
       );
+
+      const addedDocs: IInsertDocumentsResult[] = [];
+
+      // run insertions and updates in parallel
+      const newDocumentsPromises = newDocuments.map(async greenInvoiceDoc => {
+        const newDocument = await insertNewDocumentFromGreenInvoice(
+          injector,
+          greenInvoiceDoc,
+          ownerId,
+        );
+
+        if (newDocument) {
+          addedDocs.push(newDocument);
+        }
+      });
+      const documentsToUpdatePromises = documentsToUpdate.map(async docToUpdate => {
+        await injector
+          .get(IssuedDocumentsProvider)
+          .updateIssuedDocument(docToUpdate)
+          .catch(e => {
+            console.error('Failed to update issued document linked documents', e);
+            throw new GraphQLError(
+              `Failed to update issued document linked documents for Green Invoice ID: ${docToUpdate.documentId}`,
+            );
+          });
+      });
+      await Promise.all([...newDocumentsPromises, ...documentsToUpdatePromises]);
 
       return addedDocs;
     },
@@ -208,7 +162,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
           const month = format(subMonths(today, 1), 'MMMM');
 
-          const documentInput: DocumentInput_Input & { businessName: string } = {
+          const documentInput: addDocumentRequest_Input & { businessName: string } = {
             businessName: business.name,
             type: getGreenInvoiceDocumentType(
               businessGreenInvoiceMatch.document_type as DocumentType,
@@ -218,7 +172,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             dueDate: monthEnd,
             lang: 'en',
             currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
-            vatType: 1,
+            vatType: '_1',
             rounding: false,
             signed: true,
             attachment: true,
@@ -232,7 +186,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
                 quantity: 1,
                 price: docInfo.amount.raw,
                 currency: convertCurrencyToGreenInvoice(docInfo.amount.currency),
-                vatType: 1,
+                vatType: '_1',
               },
             ],
           };
@@ -261,6 +215,65 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         success: true,
         errors,
       };
+    },
+    previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
+      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
+      const input = convertDocumentInputIntoGreenInvoiceInput(initialInput);
+      const document = await greenInvoiceClient.previewDocuments({ input });
+
+      if (!document) {
+        throw new GraphQLError('Failed to generate document preview');
+      }
+
+      if ('file' in document && document.file) {
+        return document.file;
+      }
+
+      console.error('Document preview does not contain a file', document);
+      throw new GraphQLError('Document preview does not contain a file');
+    },
+    issueGreenInvoiceDocument: async (
+      _,
+      { input: initialInput, emailContent, attachment, chargeId },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
+      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
+      const input = {
+        ...convertDocumentInputIntoGreenInvoiceInput(initialInput),
+        emailContent,
+        attachment,
+      };
+      const document = await greenInvoiceClient.addDocuments({ input });
+
+      if (!document) {
+        throw new GraphQLError('Failed to issue new document');
+      }
+
+      if ('id' in document && document.id) {
+        const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
+          id: document.id,
+        });
+        if (!greenInvoiceDocument) {
+          console.error('Failed to fetch issued document from Green Invoice', document);
+          throw new GraphQLError('Failed to issue new document');
+        }
+        const newDocument = await insertNewDocumentFromGreenInvoice(
+          injector,
+          greenInvoiceDocument,
+          defaultAdminBusinessId,
+          chargeId,
+        );
+
+        if (!newDocument.charge_id) {
+          console.error('New document does not have a charge ID', newDocument);
+          throw new GraphQLError('Failed to issue new document');
+        }
+
+        return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
+      }
+
+      console.error('Document issue failed', document);
+      throw new GraphQLError('Document issue failed');
     },
   },
   GreenInvoiceBusiness: {

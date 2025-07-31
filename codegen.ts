@@ -103,6 +103,7 @@ const config: CodegenConfig = {
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',
           InvoiceReceipt: '@modules/documents/types.js#IGetAllDocumentsResult',
+          IssuedDocumentInfo: '@modules/documents/types.js#IssuedDocumentInfoProto',
           LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto',
           LedgerRecord: '@modules/ledger/types.js#IGetLedgerRecordsByChargesIdsResult',
           Ledger: '@shared/types#LedgerRecordsProto',
