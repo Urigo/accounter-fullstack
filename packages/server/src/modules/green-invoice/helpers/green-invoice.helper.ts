@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type {
   Document,
+  DocumentInputNew_Input,
   DocumentLang,
   DocumentLinkedDocument,
   ExpenseDocumentType,
@@ -24,6 +25,7 @@ import type { document_status, IInsertDocumentsParams } from '@modules/documents
 import {
   Currency,
   DocumentType,
+  NewDocumentInput,
   type GreenInvoiceDiscountType,
   type GreenInvoiceDocumentLang,
   type GreenInvoiceLinkType,
@@ -319,11 +321,8 @@ export async function insertNewDocumentFromGreenInvoice(
   injector: Injector,
   greenInvoiceDoc: Document,
   ownerId: string,
+  preDictatedChargeId?: string | null,
 ) {
-  if (!greenInvoiceDoc) {
-    return;
-  }
-
   const documentType = normalizeDocumentType(greenInvoiceDoc.type);
   const isOwnerCreditor = greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
 
@@ -338,7 +337,7 @@ export async function insertNewDocumentFromGreenInvoice(
       .get(GreenInvoiceProvider)
       .getBusinessMatchByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
 
-    const linkedDocumentsPromise = await getLinkedDocuments(injector, greenInvoiceDoc.id);
+    const linkedDocumentsPromise = getLinkedDocuments(injector, greenInvoiceDoc.id);
 
     const [{ imageUrl }, business, linkedDocumentIds] = await Promise.all([
       imagePromise,
@@ -346,9 +345,9 @@ export async function insertNewDocumentFromGreenInvoice(
       linkedDocumentsPromise,
     ]);
 
-    let chargeId: string | null = null;
+    let chargeId: string | null = preDictatedChargeId || null;
     // if linked documents exist, use the first one to get the charge ID
-    if (linkedDocumentIds?.length) {
+    if (!chargeId && linkedDocumentIds?.length) {
       const linkedDocId = linkedDocumentIds[0];
       const document = await injector
         .get(DocumentsProvider)
@@ -468,4 +467,49 @@ export async function getGreenInvoiceDocuments(injector: Injector, recursive: bo
   await getDocuments();
 
   return documents;
+}
+
+export function convertDocumentInputIntoGreenInvoiceInput(
+  initialInput: NewDocumentInput,
+): DocumentInputNew_Input {
+  return {
+    ...initialInput,
+    type: getGreenInvoiceDocumentType(initialInput.type),
+    lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
+    vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
+    discount: initialInput.discount
+      ? {
+          ...initialInput.discount,
+          type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
+        }
+      : undefined,
+    client: initialInput.client
+      ? {
+          ...initialInput.client,
+          emails: initialInput.client.emails?.length ? [...initialInput.client.emails] : undefined,
+        }
+      : undefined,
+    income:
+      initialInput.income?.map(income => ({
+        ...income,
+        vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
+      })) ?? [],
+    payment: initialInput.payment?.map(payment => ({
+      ...payment,
+      subType: payment.subType ? getGreenInvoiceDocumentPaymentSubType(payment.subType) : undefined,
+      appType: payment.appType ? getGreenInvoiceDocumentPaymentAppType(payment.appType) : undefined,
+      cardType: payment.cardType
+        ? getGreenInvoiceDocumentPaymentCardType(payment.cardType)
+        : undefined,
+      dealType: payment.dealType
+        ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
+        : undefined,
+    })),
+    linkedDocumentIds: initialInput.linkedDocumentIds?.length
+      ? [...initialInput.linkedDocumentIds]
+      : undefined,
+    linkType: initialInput.linkType
+      ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
+      : undefined,
+  };
 }

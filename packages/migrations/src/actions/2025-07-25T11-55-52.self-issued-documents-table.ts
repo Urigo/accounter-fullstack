@@ -11,14 +11,14 @@ create table if not exists accounter_schema.documents_issued
         constraint documents_issued_pk
             primary key
         constraint documents_issued_documents_id_fk
-            references accounter_schema.documents,
+            references accounter_schema.documents on delete cascade,
     external_id         text                  not null,
     status accounter_schema.document_status default 'OPEN' not null,
     linked_document_ids uuid[]
 );
 
 alter table accounter_schema.documents_issued
-    add constraint documents_issued_pk_2
+    add constraint documents_issued_external_id_uk
         unique (external_id);
 `,
 } satisfies MigrationExecutor;

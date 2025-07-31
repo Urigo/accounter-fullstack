@@ -1,11 +1,8 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import {
-  addDocumentRequest_Input,
-  Document,
-  DocumentInputNew_Input,
-} from '@accounter/green-invoice-graphql';
+import type { addDocumentRequest_Input, Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type {
   IInsertDocumentsResult,
@@ -14,16 +11,9 @@ import type {
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   convertCurrencyToGreenInvoice,
-  getGreenInvoiceDocumentDiscountType,
-  getGreenInvoiceDocumentLanguage,
-  getGreenInvoiceDocumentLinkType,
-  getGreenInvoiceDocumentPaymentAppType,
-  getGreenInvoiceDocumentPaymentCardType,
-  getGreenInvoiceDocumentPaymentDealType,
-  getGreenInvoiceDocumentPaymentSubType,
+  convertDocumentInputIntoGreenInvoiceInput,
   getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
-  getGreenInvoiceDocumentVatType,
   getLinkedDocuments,
   greenInvoiceToDocumentStatus,
   insertNewDocumentFromGreenInvoice,
@@ -228,52 +218,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
       const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
-      const input: DocumentInputNew_Input = {
-        ...initialInput,
-        type: getGreenInvoiceDocumentType(initialInput.type),
-        lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
-        vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
-        discount: initialInput.discount
-          ? {
-              ...initialInput.discount,
-              type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
-            }
-          : undefined,
-        client: initialInput.client
-          ? {
-              ...initialInput.client,
-              emails: initialInput.client.emails?.length
-                ? [...initialInput.client.emails]
-                : undefined,
-            }
-          : undefined,
-        income:
-          initialInput.income?.map(income => ({
-            ...income,
-            vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
-          })) ?? [],
-        payment: initialInput.payment?.map(payment => ({
-          ...payment,
-          subType: payment.subType
-            ? getGreenInvoiceDocumentPaymentSubType(payment.subType)
-            : undefined,
-          appType: payment.appType
-            ? getGreenInvoiceDocumentPaymentAppType(payment.appType)
-            : undefined,
-          cardType: payment.cardType
-            ? getGreenInvoiceDocumentPaymentCardType(payment.cardType)
-            : undefined,
-          dealType: payment.dealType
-            ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
-            : undefined,
-        })),
-        linkedDocumentIds: initialInput.linkedDocumentIds?.length
-          ? [...initialInput.linkedDocumentIds]
-          : undefined,
-        linkType: initialInput.linkType
-          ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
-          : undefined,
-      };
+      const input = convertDocumentInputIntoGreenInvoiceInput(initialInput);
       const document = await greenInvoiceClient.previewDocuments({ input });
 
       if (!document) {
@@ -289,55 +234,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     issueGreenInvoiceDocument: async (
       _,
-      { input: initialInput, emailContent, attachment },
-      { injector },
+      { input: initialInput, emailContent, attachment, chargeId },
+      { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
-      const input: addDocumentRequest_Input = {
-        ...initialInput,
-        type: getGreenInvoiceDocumentType(initialInput.type),
-        lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
-        vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
-        discount: initialInput.discount
-          ? {
-              ...initialInput.discount,
-              type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
-            }
-          : undefined,
-        client: initialInput.client
-          ? {
-              ...initialInput.client,
-              emails: initialInput.client.emails?.length
-                ? [...initialInput.client.emails]
-                : undefined,
-            }
-          : undefined,
-        income:
-          initialInput.income?.map(income => ({
-            ...income,
-            vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
-          })) ?? [],
-        payment: initialInput.payment?.map(payment => ({
-          ...payment,
-          subType: payment.subType
-            ? getGreenInvoiceDocumentPaymentSubType(payment.subType)
-            : undefined,
-          appType: payment.appType
-            ? getGreenInvoiceDocumentPaymentAppType(payment.appType)
-            : undefined,
-          cardType: payment.cardType
-            ? getGreenInvoiceDocumentPaymentCardType(payment.cardType)
-            : undefined,
-          dealType: payment.dealType
-            ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
-            : undefined,
-        })),
-        linkedDocumentIds: initialInput.linkedDocumentIds?.length
-          ? [...initialInput.linkedDocumentIds]
-          : undefined,
-        linkType: initialInput.linkType
-          ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
-          : undefined,
+      const input = {
+        ...convertDocumentInputIntoGreenInvoiceInput(initialInput),
         emailContent,
         attachment,
       };
@@ -348,13 +250,26 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       }
 
       if ('id' in document && document.id) {
-        // TODO:
-        // - fetch new document
-        // - add chargeId to variables
-        // - if no chargeId, create a new charge
-        // - follow the steps of fetchIncomeDocuments to add new doc to the DB
-        // - return chargeId
-        return document.id;
+        const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
+          id: document.id,
+        });
+        if (!greenInvoiceDocument) {
+          console.error('Failed to fetch issued document from Green Invoice', document);
+          throw new GraphQLError('Failed to issue new document');
+        }
+        const newDocument = await insertNewDocumentFromGreenInvoice(
+          injector,
+          greenInvoiceDocument,
+          defaultAdminBusinessId,
+          chargeId,
+        );
+
+        if (!newDocument.charge_id) {
+          console.error('New document does not have a charge ID', newDocument);
+          throw new GraphQLError('Failed to issue new document');
+        }
+
+        return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
       }
 
       console.error('Document issue failed', document);

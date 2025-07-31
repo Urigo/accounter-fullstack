@@ -16,7 +16,8 @@ export default gql`
       input: NewDocumentInput!
       emailContent: String
       attachment: Boolean
-    ): FileScalar! @auth(role: ACCOUNTANT)
+      chargeId: UUID
+    ): Charge! @auth(role: ACCOUNTANT)
   }
 
   " business extended with green invoice data "

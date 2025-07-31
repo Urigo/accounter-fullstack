@@ -366,7 +366,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
         throw new GraphQLError(`Failed to close document ID="${id}"`);
       } catch (e) {
-        throw new GraphQLError(`Failed to close document ID="${id}": ${e}`);
+        console.error(`Failed to close document ID="${id}":`, e);
+        throw new GraphQLError(`Failed to close document ID="${id}"`);
       }
     },
   },

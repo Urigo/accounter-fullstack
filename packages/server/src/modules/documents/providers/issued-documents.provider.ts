@@ -160,6 +160,7 @@ export class IssuedDocumentsProvider {
   }
 
   public async insertIssuedDocuments(params: IInsertIssuedDocumentsParams) {
+    this.cache.delete('all-issued-documents');
     return insertIssuedDocuments.run(params, this.dbProvider);
   }
 
