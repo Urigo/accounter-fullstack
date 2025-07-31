@@ -13,6 +13,7 @@
     "slonik-fix": "node --experimental-specifier-resolution=node --import ../../scripts/register-esm.js tools/slonik-fix.ts"
   },
   "devDependencies": {
+    "@slonik/pg-driver": "48.4.1",
     "@types/pg": "8.15.5",
     "got": "14.4.7",
     "pg-promise": "11.15.0",
