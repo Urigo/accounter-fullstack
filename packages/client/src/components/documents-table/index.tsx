@@ -11,7 +11,10 @@ import {
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
-import { EditDocumentModal, IssueDocumentModal } from '../common/index.js';
+import {
+  EditDocumentModal,
+  //  IssueDocumentModal
+} from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, DocumentsTableRowType } from './columns.js';
 
@@ -40,8 +43,8 @@ type Props = {
 export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElement => {
   const {
     additionalDocuments: documents,
-    metadata,
-    totalAmount,
+    // metadata,
+    // totalAmount,
   } = getFragmentData(TableDocumentsFieldsFragmentDoc, documentsProps);
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -67,9 +70,9 @@ export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElemen
     },
   });
 
-  const missingReceipt = useMemo(() => {
-    return (metadata?.receiptsCount ?? 0) === 0 && (totalAmount?.raw ?? 0) > 0;
-  }, [metadata, totalAmount]);
+  // const missingReceipt = useMemo(() => {
+  //   return (metadata?.receiptsCount ?? 0) === 0 && (totalAmount?.raw ?? 0) > 0;
+  // }, [metadata, totalAmount]);
 
   return (
     <>
