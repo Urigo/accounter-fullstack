@@ -154,7 +154,12 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
             logger.log(
               `Difference in ${currency} rate for ${exchangeDate}: currently empty, updating value to ${rates[currency]}`,
             );
-            ratesValues[getCurrencyKey(currency)] = rates[currency];
+            let rateMultiplier = 1;
+            if (currency === 'JPY') {
+              rateMultiplier = 0.01; // JPY rate from source is for 100 units, convert to rate for 1 unit
+            }
+            const newRate = rates[currency] == null ? null : rates[currency] * rateMultiplier;
+            ratesValues[getCurrencyKey(currency)] = newRate;
           } else {
             throw new Error(
               `Value of ${currency} rate on ${exchangeDate} has changed! formerly ${dailyRates[currency]}, now recorded as ${rates[currency]}. please address this manually.`,
@@ -187,7 +192,7 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
         eur: rates.EUR,
         gbp: rates.GBP,
         cad: rates.CAD,
-        jpy: rates.JPY,
+        jpy: rates.JPY == null ? undefined : rates.JPY * 0.01, // JPY rate from source is for 100 units, convert to rate for 1 unit
         aud: rates.AUD,
         sek: rates.SEK,
       });
