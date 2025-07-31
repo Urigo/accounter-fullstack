@@ -154,11 +154,11 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
             logger.log(
               `Difference in ${currency} rate for ${exchangeDate}: currently empty, updating value to ${rates[currency]}`,
             );
-            let rate = 1;
+            let rateMultiplier = 1;
             if (currency === 'JPY') {
-              rate = 0.01; // JPY rate is in Agorot, convert to ILS
+              rateMultiplier = 0.01; // JPY rate from source is for 100 units, convert to rate for 1 unit
             }
-            const newRate = rates[currency] ? rates[currency] * rate : null;
+            const newRate = rates[currency] == null ? null : rates[currency] * rateMultiplier;
             ratesValues[getCurrencyKey(currency)] = newRate;
           } else {
             throw new Error(
@@ -192,7 +192,7 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
         eur: rates.EUR,
         gbp: rates.GBP,
         cad: rates.CAD,
-        jpy: rates.JPY ? rates.JPY * 0.01 : undefined, // JPY rate is in Agorot, convert to ILS
+        jpy: rates.JPY == null ? undefined : rates.JPY * 0.01, // JPY rate from source is for 100 units, convert to rate for 1 unit
         aud: rates.AUD,
         sek: rates.SEK,
       });
