@@ -21,6 +21,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
+    "@slonik/pg-driver": "npm:48.4.1"
     "@types/pg": "npm:8.15.5"
     got: "npm:14.4.7"
     pg-promise: "npm:11.15.0"
@@ -6885,7 +6886,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:^48.4.1":
+"@slonik/pg-driver@npm:48.4.1, @slonik/pg-driver@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/pg-driver@npm:48.4.1"
   dependencies:
