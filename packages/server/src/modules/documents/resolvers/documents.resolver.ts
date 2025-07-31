@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
+import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -7,6 +8,7 @@ import { DocumentType } from '@shared/enums';
 import { Resolvers } from '@shared/gql-types';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
 import type {
   DocumentsModule,
   IGetAllDocumentsResult,
@@ -22,7 +24,11 @@ import {
 export const documentsResolvers: DocumentsModule.Resolvers &
   Pick<
     Resolvers,
-    'UpdateDocumentResult' | 'InsertDocumentResult' | 'UploadDocumentResult' | 'Document'
+    | 'UpdateDocumentResult'
+    | 'InsertDocumentResult'
+    | 'UploadDocumentResult'
+    | 'Document'
+    | 'FinancialDocument'
   > = {
   Query: {
     documents: async (_, __, { injector }) => {
@@ -341,6 +347,28 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
+    closeDocument: async (_, { id }, { injector }) => {
+      try {
+        const issuedDocument = await injector
+          .get(IssuedDocumentsProvider)
+          .getIssuedDocumentsByIdLoader.load(id);
+        if (!issuedDocument) {
+          throw new GraphQLError(`Issued document ID="${id}" not found. Are you sure it exists?`);
+        }
+        if (!issuedDocument.external_id) {
+          throw new GraphQLError(`Issued document ID="${id}" has no external ID. Cannot close it.`);
+        }
+        const res = await injector
+          .get(GreenInvoiceClientProvider)
+          .closeDocument({ id: issuedDocument.external_id });
+        if (res) {
+          return true;
+        }
+        throw new GraphQLError(`Failed to close document ID="${id}"`);
+      } catch (e) {
+        throw new GraphQLError(`Failed to close document ID="${id}": ${e}`);
+      }
+    },
   },
   Document: {
     __resolveType: (documentRoot, _context, _info) => {
@@ -363,6 +391,31 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
         default: {
           return 'Unprocessed';
+        }
+      }
+    },
+  },
+  FinancialDocument: {
+    __resolveType: (documentRoot, _context, _info) => {
+      switch (documentRoot?.type) {
+        case DocumentType.Invoice: {
+          return 'Invoice';
+        }
+        case DocumentType.Receipt: {
+          return 'Receipt';
+        }
+        case DocumentType.InvoiceReceipt: {
+          return 'InvoiceReceipt';
+        }
+        case DocumentType.CreditInvoice: {
+          return 'CreditInvoice';
+        }
+
+        case DocumentType.Proforma: {
+          return 'Proforma';
+        }
+        default: {
+          throw new GraphQLError(`FinancialDocument type "${documentRoot?.type}" is not supported`);
         }
       }
     },
