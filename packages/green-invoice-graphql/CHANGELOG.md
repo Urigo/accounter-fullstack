@@ -1,5 +1,13 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.8.0
+
+### Minor Changes
+
+- [#2365](https://github.com/Urigo/accounter-fullstack/pull/2365)
+  [`1be8c87`](https://github.com/Urigo/accounter-fullstack/commit/1be8c87be477204ddfc57c38d1ab8cfc66cea1a9)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Extend and update the JSON schema
+
 ## 0.7.4
 
 ### Patch Changes
