@@ -1,5 +1,252 @@
 # @accounter/server
 
+## 0.0.6
+
+### Patch Changes
+
+- [#2252](https://github.com/Urigo/accounter-fullstack/pull/2252)
+  [`f783100`](https://github.com/Urigo/accounter-fullstack/commit/f783100e05aa0aeb4bd5587760d098613cb2e24f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.1) (from
+    `16.6.1`, in `dependencies`)
+
+- [#2263](https://github.com/Urigo/accounter-fullstack/pull/2263)
+  [`6003953`](https://github.com/Urigo/accounter-fullstack/commit/6003953e6fd21be6601ec7f7d9b5a077453ab094)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.14.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.14.0)
+    (from `3.13.5`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.14.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.14.0) (from `5.13.5`,
+    in `dependencies`)
+
+- [#2268](https://github.com/Urigo/accounter-fullstack/pull/2268)
+  [`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.71` ↗︎](https://www.npmjs.com/package/zod/v/3.25.71) (from
+    `3.25.67`, in `dependencies`)
+
+- [#2273](https://github.com/Urigo/accounter-fullstack/pull/2273)
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.74` ↗︎](https://www.npmjs.com/package/zod/v/3.25.74) (from
+    `3.25.71`, in `dependencies`)
+
+- [#2278](https://github.com/Urigo/accounter-fullstack/pull/2278)
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`zod@3.25.74` ↗︎](https://www.npmjs.com/package/zod/v/3.25.74) (from
+    `3.25.71`, in `dependencies`)
+
+- [#2281](https://github.com/Urigo/accounter-fullstack/pull/2281)
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.75` ↗︎](https://www.npmjs.com/package/zod/v/3.25.75) (from
+    `3.25.74`, in `dependencies`)
+
+- [#2285](https://github.com/Urigo/accounter-fullstack/pull/2285)
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`zod@3.25.75` ↗︎](https://www.npmjs.com/package/zod/v/3.25.75) (from
+    `3.25.74`, in `dependencies`)
+
+- [#2286](https://github.com/Urigo/accounter-fullstack/pull/2286)
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2289](https://github.com/Urigo/accounter-fullstack/pull/2289)
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-hive/yoga@0.42.2` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.42.2)
+    (from `0.42.1`, in `dependencies`)
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2292](https://github.com/Urigo/accounter-fullstack/pull/2292)
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2293](https://github.com/Urigo/accounter-fullstack/pull/2293)
+  [`3a511ca`](https://github.com/Urigo/accounter-fullstack/commit/3a511ca20d9cf7f62f0d5f6c1f8283d103160de4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-hive/yoga@0.42.2` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.42.2)
+    (from `0.42.1`, in `dependencies`)
+
+- [#2298](https://github.com/Urigo/accounter-fullstack/pull/2298)
+  [`814c130`](https://github.com/Urigo/accounter-fullstack/commit/814c13063fbf41bd7a737005eb618efd20876d0f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.0)
+    (from `3.14.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.0) (from `5.14.0`,
+    in `dependencies`)
+
+- [#2306](https://github.com/Urigo/accounter-fullstack/pull/2306)
+  [`a491206`](https://github.com/Urigo/accounter-fullstack/commit/a491206eeedf25ddab8e308a409357d841673062)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.0)
+    (from `3.14.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.0) (from `5.14.0`,
+    in `dependencies`)
+
+- [#2307](https://github.com/Urigo/accounter-fullstack/pull/2307)
+  [`70e1f9e`](https://github.com/Urigo/accounter-fullstack/commit/70e1f9e5b1139aaecf3be58b616ccb361256b917)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.1` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.1)
+    (from `3.15.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.1` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.1) (from `5.15.0`,
+    in `dependencies`)
+
+- [#2310](https://github.com/Urigo/accounter-fullstack/pull/2310)
+  [`95da5aa`](https://github.com/Urigo/accounter-fullstack/commit/95da5aa4e2666e78fc42c3c8f231b43a3f23a506)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.18` ↗︎](https://www.npmjs.com/package/ai/v/4.3.18) (from `4.3.17`,
+    in `dependencies`)
+
+- [#2315](https://github.com/Urigo/accounter-fullstack/pull/2315)
+  [`4b8b51f`](https://github.com/Urigo/accounter-fullstack/commit/4b8b51f3b33577283137caa8232f4457c20aa9cf)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.19` ↗︎](https://www.npmjs.com/package/ai/v/4.3.19) (from `4.3.18`,
+    in `dependencies`)
+
+- [#2320](https://github.com/Urigo/accounter-fullstack/pull/2320)
+  [`fcf060c`](https://github.com/Urigo/accounter-fullstack/commit/fcf060c93a42fceb401cab55f62104dba14ddc36)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.9` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.9)
+    (from `0.10.8`, in `dependencies`)
+
+- [#2322](https://github.com/Urigo/accounter-fullstack/pull/2322)
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@accounter/shaam-uniform-format-generator@workspace:^` ↗︎](https://www.npmjs.com/package/@accounter/shaam-uniform-format-generator/v/workspace:^)
+    (to `dependencies`)
+
+- [#2336](https://github.com/Urigo/accounter-fullstack/pull/2336)
+  [`5dea1b7`](https://github.com/Urigo/accounter-fullstack/commit/5dea1b7c849d901ce7d161e24169c24b4d5bea61)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv-cli@9.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/9.0.0)
+    (from `8.0.0`, in `dependencies`)
+
+- [#2357](https://github.com/Urigo/accounter-fullstack/pull/2357)
+  [`eac0da7`](https://github.com/Urigo/accounter-fullstack/commit/eac0da793a164a332aa0fdee86b257945ec8ec6a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv-cli@10.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/10.0.0)
+    (from `9.0.0`, in `dependencies`)
+
+- [#2300](https://github.com/Urigo/accounter-fullstack/pull/2300)
+  [`aa95d61`](https://github.com/Urigo/accounter-fullstack/commit/aa95d61169177165cbe513c8a9ccb7766518e824)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Features**
+  - Added modal to display similar charges by business, accessible from business card.
+  - The modal appears after updating business information if suggestion tags or descriptions are
+    present.
+  - **Improvements**
+    - Enhanced filtering of similar charges to exclude charges with identical tags or descriptions.
+    - Improved suggestion merging logic to better retain existing tags and phrases.
+  - **Bug Fixes**
+    - Fixed modal behavior to ensure correct display and filtering based on user actions.
+
+- [#2338](https://github.com/Urigo/accounter-fullstack/pull/2338)
+  [`585d74c`](https://github.com/Urigo/accounter-fullstack/commit/585d74cb2867c933e745468e496d951b6488c155)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Support SEK currency across all layers of
+  the project.
+
+- [#2322](https://github.com/Urigo/accounter-fullstack/pull/2322)
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Client-Side Feature**: I've added
+  a new modal component (`FileDownloadModal`) to the client application, allowing users to select a
+  date range and trigger the generation and download of uniform format files (bkmvdata and ini)
+  directly from the UI.
+  - **Data Model Extension**: The `JournalEntry` and `BusinessMetadata` schemas have been extended
+    to support additional optional fields, such as `batchNumber`, `transactionType`,
+    `referenceDocument`, `currencyCode`, `foreignCurrencyAmount` for journal entries, and `address`
+    details for business metadata. This enriches the data available for reporting.
+  - **Uniform Format Generator Enhancement**: The `generateUniformFormatReport` function in the
+    generator package has been updated to consume and incorporate these new extended fields from the
+    `JournalEntry` and `BusinessMetadata` into the generated uniform format files, ensuring more
+    comprehensive reports.
+  - **Testing**: New unit tests have been added to verify that the uniform format generator
+    correctly handles journal entries with the newly introduced extended fields, ensuring data
+    integrity and proper report generation.
+
+- [#2367](https://github.com/Urigo/accounter-fullstack/pull/2367)
+  [`33b7fd7`](https://github.com/Urigo/accounter-fullstack/commit/33b7fd7f476bd59aad37442ad1d0b7497e31d3d4)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Database Schema for Issued
+  Documents**: I've introduced a new `documents_issued` table in the database. This table stores
+  crucial metadata for documents generated by our system (e.g., via Green Invoice), including their
+  external ID, current status, and any linked documents. A new `document_status` enum has also been
+  added to track the lifecycle of these documents.
+  - **Enhanced Green Invoice Integration**: The Green Invoice client and GraphQL API have been
+    significantly extended. New capabilities allow us to preview, issue, and close documents
+    directly through the Green Invoice API via new GraphQL mutations. This provides more
+    comprehensive control over self-issued financial documents.
+  - **Improved Document Synchronization Logic**: The `fetchIncomeDocuments` mutation has been
+    refactored to not only ingest new documents from Green Invoice but also to intelligently
+    identify and update the status and linked documents of existing self-issued records in our
+    database. This ensures better data consistency with the external system.
+  - **GraphQL API Expansion for Document Management**: I've exposed new GraphQL types
+    (`IssuedDocumentInfo`) and mutations (`closeDocument`, `previewGreenInvoiceDocument`,
+    `issueGreenInvoiceDocument`) to provide a richer API for managing self-issued documents and
+    their associated information, including their status and links to other documents.
+
+- [#2272](https://github.com/Urigo/accounter-fullstack/pull/2272)
+  [`a6f9e78`](https://github.com/Urigo/accounter-fullstack/commit/a6f9e78705414e772d6b92dcab8319f529e886e6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Introduce Admin Businesses module,to
+  defrenciate from common businesses and add unique relevant information
+
+- [#2257](https://github.com/Urigo/accounter-fullstack/pull/2257)
+  [`29895c4`](https://github.com/Urigo/accounter-fullstack/commit/29895c4af2e34455a438743a37c43fc1d67531b7)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Extend Deel API response schema
+
+- [#2285](https://github.com/Urigo/accounter-fullstack/pull/2285)
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Enable batch approval for charge
+  tags/description suggestions.
+
+- Updated dependencies
+  [[`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691),
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46),
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee),
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61),
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232),
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23),
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6),
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a),
+  [`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691),
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46),
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee),
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61),
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232),
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23),
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6),
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a),
+  [`88207b1`](https://github.com/Urigo/accounter-fullstack/commit/88207b1f3fbafbd67b67fe8edca6a576d42e25bd),
+  [`1be8c87`](https://github.com/Urigo/accounter-fullstack/commit/1be8c87be477204ddfc57c38d1ab8cfc66cea1a9),
+  [`9915dd2`](https://github.com/Urigo/accounter-fullstack/commit/9915dd2c0f7f78103320bc99dabd2de2384bbfbc),
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)]:
+  - @accounter/pcn874-generator@0.6.1
+  - @accounter/shaam6111-generator@0.1.2
+  - @accounter/shaam-uniform-format-generator@0.2.0
+  - @accounter/green-invoice-graphql@0.8.0
+
 ## 0.0.5
 
 ### Patch Changes
