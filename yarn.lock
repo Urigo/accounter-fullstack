@@ -126,7 +126,7 @@ __metadata:
     graphql: "npm:16.11.0"
     html2canvas-pro: "npm:1.5.11"
     iconv-lite: "npm:0.6.3"
-    lucide-react: "npm:0.534.0"
+    lucide-react: "npm:0.535.0"
     next-themes: "npm:0.4.6"
     react: "npm:19.1.1"
     react-day-picker: "npm:9.8.1"
@@ -15228,12 +15228,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:0.534.0":
-  version: 0.534.0
-  resolution: "lucide-react@npm:0.534.0"
+"lucide-react@npm:0.535.0":
+  version: 0.535.0
+  resolution: "lucide-react@npm:0.535.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/83abbdf3e0661bffe2472577dbbea51afd83660870dbc02ed8a4d28269301c72f3ef8743373ddfcd6fcb736842d33d0851df45a55957b6ba1bae5cd84c77cac4
+  checksum: 10c0/688439e202b36866ee40479b9f1093a144cc249690c2710b463cdd6c5b00006b439d763840d8d1f4cfe91d51e036c30024ccff5290cd7842dd20ebe5c9e4a8b2
   languageName: node
   linkType: hard
 
