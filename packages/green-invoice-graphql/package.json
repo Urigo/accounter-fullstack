@@ -69,7 +69,9 @@
   "devDependencies": {
     "@graphql-mesh/cli": "0.100.7",
     "@types/mime-types": "3.0.1",
-    "mime-types": "3.0.1"
+    "bob-the-bundler": "7.0.1",
+    "mime-types": "3.0.1",
+    "rimraf": "6.0.1"
   },
   "publishConfig": {
     "directory": "dist",

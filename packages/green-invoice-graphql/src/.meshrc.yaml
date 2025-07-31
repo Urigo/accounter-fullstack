@@ -89,6 +89,38 @@ sources:
               404:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
+          - type: Query
+            field: getDocument
+            path: /documents/{args.id}
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getDocumentResponse
+
+          - type: Query
+            field: getLinkedDocuments
+            path: /documents/{args.id}/linked
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getLinkedDocumentsResponse
+
+          - type: Mutation
+            field: closeDocument
+            path: /documents/{args.id}/close
+            method: POST
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/closeDocumentResponse
+
   - name: GreenInvoiceNew
     handler:
       jsonSchema:
