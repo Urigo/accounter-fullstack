@@ -191,9 +191,11 @@ __metadata:
     "@graphql-mesh/types": "npm:0.104.6"
     "@graphql-mesh/utils": "npm:0.104.6"
     "@types/mime-types": "npm:3.0.1"
+    bob-the-bundler: "npm:7.0.1"
     graphql: "npm:16.11.0"
     mime-types: "npm:3.0.1"
     path: "npm:0.12.7"
+    rimraf: "npm:6.0.1"
   languageName: unknown
   linkType: soft
 
