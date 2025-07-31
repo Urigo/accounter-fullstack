@@ -30,12 +30,19 @@ if (!fs.existsSync(target)) {
 const content = fs.readFileSync(target, 'utf8');
 
 const tr = `throw new InvalidInputError('Must not use multiple statements in a single query.');`;
-if (content.includes(tr)) {
-  const newContent = content.replace(
-    tr,
-    `// was throwing new InvalidInputError('Must not use multiple statements in a single query.');
+const tr2 = `throw new errors_1.InvalidInputError('Must not use multiple statements in a single query.');`;
+if (content.includes(tr) || content.includes(tr2)) {
+  const newContent = content
+    .replace(
+      tr,
+      `// was throwing new InvalidInputError('Must not use multiple statements in a single query.');
       result = result[result.length - 1];`,
-  );
+    )
+    .replace(
+      tr2,
+      `// was throwing new errors_1.InvalidInputError('Must not use multiple statements in a single query.');
+      result = result[result.length - 1];`,
+    );
   fs.writeFileSync(target, newContent);
   console.log('👍 Patched @slonik/pg-driver');
 } else {
