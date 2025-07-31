@@ -183,8 +183,8 @@ export class GreenInvoiceClientProvider {
     return sdk.getDocument_query(...params).then(res => res.getDocument);
   }
 
-  public async closeDocument(...params: Parameters<Sdk['closedDocument_mutation']>) {
+  public async closeDocument(...params: Parameters<Sdk['closeDocument_mutation']>) {
     const sdk = await this.getSDK();
-    return sdk.closedDocument_mutation(...params).then(res => res.closedDocument);
+    return sdk.closeDocument_mutation(...params).then(res => res.closeDocument);
   }
 }
