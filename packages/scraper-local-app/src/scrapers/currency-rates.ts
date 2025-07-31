@@ -149,20 +149,21 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
       // case date rates exist in DB check for changes
       const ratesValues: Omit<IUpdateExchangeRateParams, 'exchangeDate'> = {};
       for (const currency of currencies) {
-        if (rates[currency] !== dailyRates[currency]) {
+        let rateMultiplier = 1;
+        if (currency === 'JPY') {
+          rateMultiplier = 0.01; // JPY rate from source is for 100 units, convert to rate for 1 unit
+        }
+        const newRate =
+          rates[currency] == null ? null : Number((rates[currency] * rateMultiplier).toFixed(6));
+        if (newRate !== dailyRates[currency]) {
           if (dailyRates[currency] === null) {
             logger.log(
-              `Difference in ${currency} rate for ${exchangeDate}: currently empty, updating value to ${rates[currency]}`,
+              `Difference in ${currency} rate for ${exchangeDate}: currently empty, updating value to ${newRate}`,
             );
-            let rateMultiplier = 1;
-            if (currency === 'JPY') {
-              rateMultiplier = 0.01; // JPY rate from source is for 100 units, convert to rate for 1 unit
-            }
-            const newRate = rates[currency] == null ? null : rates[currency] * rateMultiplier;
             ratesValues[getCurrencyKey(currency)] = newRate;
           } else {
             throw new Error(
-              `Value of ${currency} rate on ${exchangeDate} has changed! formerly ${dailyRates[currency]}, now recorded as ${rates[currency]}. please address this manually.`,
+              `Value of ${currency} rate on ${exchangeDate} has changed! formerly ${dailyRates[currency]}, now recorded as ${newRate}. please address this manually.`,
             );
           }
         }
