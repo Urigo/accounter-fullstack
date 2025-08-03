@@ -102,7 +102,7 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.9"
     "@radix-ui/react-tooltip": "npm:1.2.7"
     "@tailwindcss/vite": "npm:4.1.11"
-    "@tanstack/react-query": "npm:5.84.0"
+    "@tanstack/react-query": "npm:5.84.1"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -138,7 +138,7 @@ __metadata:
     react-router-dom: "npm:7.7.1"
     react-to-pdf: "npm:2.0.1"
     recharts: "npm:2.15.4"
-    sonner: "npm:2.0.6"
+    sonner: "npm:2.0.7"
     tailwind-merge: "npm:3.3.1"
     tailwindcss: "npm:4.1.11"
     tailwindcss-animate: "npm:1.0.7"
@@ -156,7 +156,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etana-scrapper@workspace:packages/etana-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.9"
+    "@whatwg-node/fetch": "npm:0.10.10"
     csv-parse: "npm:6.1.0"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.1"
@@ -169,7 +169,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etherscan-scrapper@workspace:packages/etherscan-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.9"
+    "@whatwg-node/fetch": "npm:0.10.10"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.1"
     pg-promise: "npm:11.15.0"
@@ -233,7 +233,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/kraken-scrapper@workspace:packages/kraken-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.9"
+    "@whatwg-node/fetch": "npm:0.10.10"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.1"
     node-kraken-api: "npm:2.2.2"
@@ -308,7 +308,7 @@ __metadata:
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
-    "@whatwg-node/fetch": "npm:0.10.9"
+    "@whatwg-node/fetch": "npm:0.10.10"
     ai: "npm:4.3.19"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
@@ -7020,14 +7020,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.84.0":
-  version: 5.84.0
-  resolution: "@tanstack/react-query@npm:5.84.0"
+"@tanstack/react-query@npm:5.84.1":
+  version: 5.84.1
+  resolution: "@tanstack/react-query@npm:5.84.1"
   dependencies:
     "@tanstack/query-core": "npm:5.83.1"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/70e4e0067b8dae55dcc689017d7b130e6f18dbc61ef64cf5ae7f245f5a104435c3466692bb1ba362e82115212ca544bd2d30cd83c9ccfcac6bd98bcb07624f8f
+  checksum: 10c0/a57fed2e6f3c7a42309383e03056f1ff1506ad5fdc8d20a1a6a945006442e71871dfd5eac6e90fb8a506036b2e8a2a5463fa0f5bed826de170aa5926a4728f99
   languageName: node
   linkType: hard
 
@@ -8054,7 +8054,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/fetch@npm:0.10.9, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.8":
+"@whatwg-node/fetch@npm:0.10.10":
+  version: 0.10.10
+  resolution: "@whatwg-node/fetch@npm:0.10.10"
+  dependencies:
+    "@whatwg-node/node-fetch": "npm:^0.7.25"
+    urlpattern-polyfill: "npm:^10.0.0"
+  checksum: 10c0/f8d94d58402176279c99517ab516a3c51f64c3eecc825b09ea46a4088c9928a713041f688a635be1b4ee351f0819360f7d936161420cce0d43307630c1bc4821
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6, @whatwg-node/fetch@npm:^0.10.8":
   version: 0.10.9
   resolution: "@whatwg-node/fetch@npm:0.10.9"
   dependencies:
@@ -8095,6 +8105,18 @@ __metadata:
     "@whatwg-node/promise-helpers": "npm:^1.3.2"
     tslib: "npm:^2.6.3"
   checksum: 10c0/270e0f3c290cfe813f8715a5c0997a591e89fa2f4334841e21171ab1ac4afc4f799c55b6a3f405156581f8f35acd23f92e5808f5d336baded0053d122d5ddecc
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/node-fetch@npm:^0.7.25":
+  version: 0.7.25
+  resolution: "@whatwg-node/node-fetch@npm:0.7.25"
+  dependencies:
+    "@fastify/busboy": "npm:^3.1.1"
+    "@whatwg-node/disposablestack": "npm:^0.0.6"
+    "@whatwg-node/promise-helpers": "npm:^1.3.2"
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/8799a00977ce6ca1b2da903dc9174d82eca77529a13f0e795f2caa87a97bbff65a5e23d51b42cc848358776d58b9a6377809063abe7297b7f31c32ca2e4856b7
   languageName: node
   linkType: hard
 
@@ -19486,13 +19508,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sonner@npm:2.0.6":
-  version: 2.0.6
-  resolution: "sonner@npm:2.0.6"
+"sonner@npm:2.0.7":
+  version: 2.0.7
+  resolution: "sonner@npm:2.0.7"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
     react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
-  checksum: 10c0/df6ab28ebc53d612ea9caa3b9ac2d12b7b15b619750c5bcf6c4e064a720cb24b383fd5ce074f5fe5183115c69d7f505226649cf157e25e954447ec4ed8749291
+  checksum: 10c0/6966ab5e892ed6aab579a175e4a24f3b48747f0fc21cb68c3e33cb41caa7a0eebeb098c210545395e47a18d585eb8734ae7dd12d2bd18c8a3294a1ee73f997d9
   languageName: node
   linkType: hard
 
