@@ -262,7 +262,6 @@ export async function fetchAndFilterInvoices(injector: Injector) {
     const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: enable setting up period
 
     const filteredInvoices: Invoice[] = [];
-    const knownReceiptIds = new Set<string>();
 
     await Promise.all(
       invoices.data.map(async invoice => {
@@ -273,15 +272,13 @@ export async function fetchAndFilterInvoices(injector: Injector) {
             console.error(e);
             throw new Error('Error fetching invoice');
           });
-        if (dbInvoice) {
-          knownReceiptIds.add(invoice.id);
-        } else {
+        if (!dbInvoice) {
           filteredInvoices.push(invoice);
         }
       }),
     );
 
-    return { invoices: filteredInvoices, knownReceiptIds };
+    return { invoices: filteredInvoices };
   } catch (error) {
     console.error(error);
     throw new Error('Error fetching Deel invoices');
@@ -315,22 +312,8 @@ export async function getChargeMatchesForPayments(
   injector: Injector,
   ownerId: string,
   receipts: PaymentReceipts[],
-  knownReceiptIds: Set<string>,
 ) {
-  const receiptChargeMap = new Map<string, string>();
-
-  await Promise.all(
-    Array.from(knownReceiptIds).map(async id =>
-      injector
-        .get(DeelInvoicesProvider)
-        .getChargeIdByPaymentIdLoader.load(id)
-        .then(chargeId => {
-          if (chargeId) {
-            receiptChargeMap.set(id, chargeId);
-          }
-        }),
-    ),
-  );
+  const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
 
   for (const receipt of receipts) {
     if (receiptChargeMap.has(receipt.id)) {
