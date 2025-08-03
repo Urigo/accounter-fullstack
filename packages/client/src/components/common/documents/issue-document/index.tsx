@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Eye, FileText, Loader2, Send, Settings } from 'lucide-react';
 import {
+  Currency,
   DocumentType,
-  GreenInvoiceCurrency,
   GreenInvoiceDiscountType,
   GreenInvoiceDocumentLang,
   GreenInvoiceVatType,
@@ -54,7 +54,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     type: DocumentType.Invoice,
     lang: GreenInvoiceDocumentLang.English,
-    currency: GreenInvoiceCurrency.Usd,
+    currency: Currency.Usd,
     vatType: GreenInvoiceVatType.Default,
     date: new Date().toISOString().split('T')[0],
     rounding: true,
@@ -107,6 +107,12 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
       },
     }));
   };
+
+  useEffect(() => {
+    if (initialFormData.client?.id) {
+      setSelectedClientId(initialFormData.client.id);
+    }
+  }, [initialFormData.client?.id]);
 
   const handleClientSelection = (clientId: string) => {
     setSelectedClientId(clientId);
@@ -239,9 +245,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     <Label htmlFor="currency">Currency</Label>
                     <Select
                       value={formData.currency}
-                      onValueChange={(value: GreenInvoiceCurrency) =>
-                        updateFormData('currency', value)
-                      }
+                      onValueChange={(value: Currency) => updateFormData('currency', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />

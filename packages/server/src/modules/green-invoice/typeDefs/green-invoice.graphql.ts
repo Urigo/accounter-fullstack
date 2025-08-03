@@ -51,7 +51,7 @@ export default gql`
     date: String
     dueDate: String
     lang: GreenInvoiceDocumentLang!
-    currency: GreenInvoiceCurrency!
+    currency: Currency!
     vatType: GreenInvoiceVatType!
     discount: GreenInvoiceDiscountInput
     rounding: Boolean
@@ -93,7 +93,7 @@ export default gql`
     amount: Float
     amountTotal: Float
     catalogNum: String
-    currency: GreenInvoiceCurrency!
+    currency: Currency!
     currencyRate: Float
     description: String!
     itemId: String
@@ -106,7 +106,7 @@ export default gql`
 
   " payment input "
   input GreenInvoicePaymentInput {
-    currency: GreenInvoiceCurrency!
+    currency: Currency!
     currencyRate: Float
     date: String
     price: Float!
@@ -130,37 +130,6 @@ export default gql`
   enum GreenInvoiceDocumentLang {
     ENGLISH
     HEBREW
-  }
-
-  " currency enum "
-  enum GreenInvoiceCurrency {
-    ILS
-    USD
-    EUR
-    GBP
-    JPY
-    CHF
-    CNY
-    AUD
-    CAD
-    RUB
-    BRL
-    HKD
-    SGD
-    THB
-    MXN
-    TRY
-    NZD
-    SEK
-    NOK
-    DKK
-    KRW
-    INR
-    IDR
-    PLN
-    RON
-    ZAR
-    HRK
   }
 
   " VAT type enum "

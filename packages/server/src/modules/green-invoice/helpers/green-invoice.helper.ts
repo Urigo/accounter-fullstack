@@ -8,6 +8,7 @@ import type {
   ExpenseDocumentType,
   Currency as GreenInvoiceCurrency,
   DocumentType as GreenInvoiceDocumentType,
+  mutationInput_addDocument_input_allOf_0_client_Input,
   mutationInput_addDocument_input_allOf_0_discount_type,
   mutationInput_addDocument_input_allOf_0_linkType,
   mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType,
@@ -469,11 +470,26 @@ export async function getGreenInvoiceDocuments(injector: Injector, recursive: bo
   return documents;
 }
 
-export function convertDocumentInputIntoGreenInvoiceInput(
+export async function convertDocumentInputIntoGreenInvoiceInput(
   initialInput: NewDocumentInput,
-): DocumentInputNew_Input {
+  injector: Injector,
+): Promise<DocumentInputNew_Input> {
+  let client: mutationInput_addDocument_input_allOf_0_client_Input | undefined = undefined;
+  if (initialInput.client) {
+    const clientInfo = await injector
+      .get(GreenInvoiceProvider)
+      .getBusinessMatchByIdLoader.load(initialInput.client.id);
+    if (!clientInfo) {
+      throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
+    }
+    client = {
+      id: clientInfo.green_invoice_id,
+      emails: initialInput.client.emails?.length ? [...initialInput.client.emails] : undefined,
+    };
+  }
   return {
     ...initialInput,
+    currency: convertCurrencyToGreenInvoice(initialInput.currency),
     type: getGreenInvoiceDocumentType(initialInput.type),
     lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
     vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
@@ -483,15 +499,11 @@ export function convertDocumentInputIntoGreenInvoiceInput(
           type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
         }
       : undefined,
-    client: initialInput.client
-      ? {
-          ...initialInput.client,
-          emails: initialInput.client.emails?.length ? [...initialInput.client.emails] : undefined,
-        }
-      : undefined,
+    client,
     income:
       initialInput.income?.map(income => ({
         ...income,
+        currency: convertCurrencyToGreenInvoice(income.currency),
         vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
       })) ?? [],
     payment: initialInput.payment?.map(payment => ({

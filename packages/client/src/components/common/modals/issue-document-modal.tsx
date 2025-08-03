@@ -40,7 +40,7 @@ export function IssueDocumentModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="w-[400px] max-w-screen-md">
+      <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Issue New Document</DialogTitle>
         </DialogHeader>

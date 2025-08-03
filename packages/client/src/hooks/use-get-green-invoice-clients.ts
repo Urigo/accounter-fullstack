@@ -49,7 +49,7 @@ export const useGetGreenInvoiceClients = (): UseGetGreenInvoiceClients => {
 
   const selectableGreenInvoiceClients = useMemo(() => {
     return greenInvoiceClients.map(entity => ({
-      value: entity.id,
+      value: entity.originalBusiness.id,
       label: entity.originalBusiness.name,
     }));
   }, [greenInvoiceClients]);

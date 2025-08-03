@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Receipt, Trash2 } from 'lucide-react';
-import { GreenInvoiceCurrency, GreenInvoiceVatType } from '../../../../gql/graphql.js';
+import { Currency, GreenInvoiceVatType } from '../../../../gql/graphql.js';
 import { Button } from '../../../ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
 import { Input } from '../../../ui/input.jsx';
@@ -19,7 +19,7 @@ import { getVatTypeOptions } from './utils/enum-helpers.js';
 
 interface IncomeFormProps {
   income: Income[];
-  currency: GreenInvoiceCurrency;
+  currency: Currency;
   onChange: (income: Income[]) => void;
 }
 

@@ -1,7 +1,7 @@
 import {
+  Currency,
   DocumentType,
   GreenInvoiceCountry,
-  GreenInvoiceCurrency,
   GreenInvoiceDiscountType,
   GreenInvoiceDocumentLang,
   GreenInvoiceLinkType,
@@ -38,7 +38,7 @@ type Income = {
   amount?: number;
   amountTotal?: number;
   catalogNum?: string;
-  currency: GreenInvoiceCurrency;
+  currency: Currency;
   currencyRate?: number;
   description: string;
   itemId?: string;
@@ -50,7 +50,7 @@ type Income = {
 };
 
 type Payment = {
-  currency: GreenInvoiceCurrency;
+  currency: Currency;
   currencyRate?: number;
   date?: string;
   price: number;
@@ -78,7 +78,7 @@ export type PreviewDocumentInput = {
   date?: string;
   dueDate?: string;
   lang: GreenInvoiceDocumentLang;
-  currency: GreenInvoiceCurrency;
+  currency: Currency;
   vatType: GreenInvoiceVatType;
   discount?: Discount;
   rounding?: boolean;

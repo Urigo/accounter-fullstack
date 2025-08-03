@@ -218,7 +218,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
       const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
-      const input = convertDocumentInputIntoGreenInvoiceInput(initialInput);
+      const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const document = await greenInvoiceClient.previewDocuments({ input });
 
       if (!document) {
@@ -238,8 +238,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
+      const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const input = {
-        ...convertDocumentInputIntoGreenInvoiceInput(initialInput),
+        ...coreInput,
         emailContent,
         attachment,
       };

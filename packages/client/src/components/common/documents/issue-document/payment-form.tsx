@@ -2,7 +2,7 @@
 
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
 import {
-  GreenInvoiceCurrency,
+  Currency,
   GreenInvoicePaymentAppType,
   GreenInvoicePaymentCardType,
   GreenInvoicePaymentDealType,
@@ -32,7 +32,7 @@ import {
 
 interface PaymentFormProps {
   payments: Payment[];
-  currency: GreenInvoiceCurrency;
+  currency: Currency;
   onChange: (payments: Payment[]) => void;
 }
 
@@ -147,9 +147,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                 <Label>Currency</Label>
                 <Select
                   value={payment.currency}
-                  onValueChange={(value: GreenInvoiceCurrency) =>
-                    updatePayment(index, 'currency', value)
-                  }
+                  onValueChange={(value: Currency) => updatePayment(index, 'currency', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -203,7 +201,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                     <SelectValue placeholder="Select sub type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="NONE">None</SelectItem>
                     {subTypes.map(subType => (
                       <SelectItem key={subType.value} value={subType.value}>
                         {subType.label}
