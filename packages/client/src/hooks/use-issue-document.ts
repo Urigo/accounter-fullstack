@@ -15,7 +15,9 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
     $emailContent: String
     $attachment: Boolean
   ) {
-    issueGreenInvoiceDocument(input: $input, emailContent: $emailContent, attachment: $attachment)
+    issueGreenInvoiceDocument(input: $input, emailContent: $emailContent, attachment: $attachment) {
+      id
+    }
   }
 `;
 
