@@ -352,6 +352,7 @@ export default gql`
     receiptsCount: Int!
     documentsCount: Int!
     invalidDocuments: Boolean!
+    openDocuments: Boolean!
     transactionsCount: Int!
     invalidTransactions: Boolean!
     optionalBusinesses: [String!]!

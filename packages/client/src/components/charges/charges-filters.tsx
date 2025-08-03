@@ -357,6 +357,24 @@ function ChargesFiltersForm({
 
               <FormField
                 control={form.control}
+                name="withOpenDocuments"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel>With Open Documents</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        defaultChecked={filter.withOpenDocuments ?? false}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="withoutTransactions"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between">
