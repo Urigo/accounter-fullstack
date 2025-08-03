@@ -11,7 +11,7 @@ import {
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
-import { EditDocumentModal, IssueDocumentModal } from '../common/index.js';
+import { EditDocumentModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, DocumentsTableRowType } from './columns.js';
 
@@ -19,15 +19,9 @@ import { columns, DocumentsTableRowType } from './columns.js';
 /* GraphQL */ `
   fragment TableDocumentsFields on Charge {
     id
-    totalAmount {
-      raw
-    }
     additionalDocuments {
       id
       ...TableDocumentsRowFields
-    }
-    metadata {
-      receiptsCount
     }
   }
 `;
@@ -38,11 +32,10 @@ type Props = {
 };
 
 export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElement => {
-  const {
-    additionalDocuments: documents,
-    metadata,
-    totalAmount,
-  } = getFragmentData(TableDocumentsFieldsFragmentDoc, documentsProps);
+  const { additionalDocuments: documents } = getFragmentData(
+    TableDocumentsFieldsFragmentDoc,
+    documentsProps,
+  );
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -66,10 +59,6 @@ export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElemen
       sorting,
     },
   });
-
-  const missingReceipt = useMemo(() => {
-    return (metadata?.receiptsCount ?? 0) === 0 && (totalAmount?.raw ?? 0) > 0;
-  }, [metadata, totalAmount]);
 
   return (
     <>
