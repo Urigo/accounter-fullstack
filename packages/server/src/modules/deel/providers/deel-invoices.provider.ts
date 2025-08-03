@@ -196,15 +196,14 @@ export class DeelInvoicesProvider {
 
   public async getReceiptToCharge() {
     try {
-      return getReceiptToCharge.run(undefined, this.dbProvider).then(records => {
-        const receiptChargeMap = new Map<string, string>();
-        for (const record of records) {
-          if (record.charge_id) {
-            receiptChargeMap.set(record.payment_id, record.charge_id);
-          }
+      const records = await getReceiptToCharge.run(undefined, this.dbProvider);
+      const receiptChargeMap = new Map<string, string>();
+      for (const record of records) {
+        if (record.charge_id) {
+          receiptChargeMap.set(record.payment_id, record.charge_id);
         }
-        return receiptChargeMap;
-      });
+      }
+      return receiptChargeMap;
     } catch (e) {
       const message = `Error getting receipt to charge mapping`;
       console.error(message, e);
