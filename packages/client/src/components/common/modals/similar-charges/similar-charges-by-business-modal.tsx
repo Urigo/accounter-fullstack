@@ -52,10 +52,10 @@ export function SimilarChargesByBusinessModal({
   });
 
   useEffect(() => {
-    if (open && (tagIds || description)) {
+    if (open && (tagIds || description) && !data) {
       fetchSimilarCharges();
     }
-  }, [open, tagIds, description, fetchSimilarCharges]);
+  }, [open, tagIds, description, fetchSimilarCharges, data]);
 
   const onDialogChange = useCallback(
     (openState: boolean) => {
