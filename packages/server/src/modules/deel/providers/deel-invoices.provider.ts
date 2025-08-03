@@ -7,6 +7,7 @@ import type {
   IGetChargeIdsByPaymentIdsQuery,
   IGetInvoicesByIdsQuery,
   IGetInvoicesByIssueDatesQuery,
+  IGetReceiptToChargeQuery,
   IInsertDeelInvoiceRecordsParams,
   IInsertDeelInvoiceRecordsQuery,
 } from '../types.js';
@@ -28,6 +29,17 @@ const getChargeIdsByPaymentIds = sql<IGetChargeIdsByPaymentIdsQuery>`
   LEFT JOIN accounter_schema.documents d
     ON i.document_id = d.id AND d.charge_id IS NOT NULL
   WHERE i.payment_id in $$paymentIds;`;
+
+const getReceiptToCharge = sql<IGetReceiptToChargeQuery>`
+SELECT DISTINCT ON (di.payment_id)
+    di.payment_id,
+    d.charge_id
+FROM
+    accounter_schema.deel_invoices di
+LEFT JOIN accounter_schema.documents d
+    ON d.id = di.document_id
+ORDER BY
+    di.payment_id, di.created_at ASC;`;
 
 const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       INSERT INTO accounter_schema.deel_invoices (
@@ -181,6 +193,24 @@ export class DeelInvoicesProvider {
       cacheMap: this.cache,
     },
   );
+
+  public async getReceiptToCharge() {
+    try {
+      return getReceiptToCharge.run(undefined, this.dbProvider).then(records => {
+        const receiptChargeMap = new Map<string, string>();
+        for (const record of records) {
+          if (record.charge_id) {
+            receiptChargeMap.set(record.payment_id, record.charge_id);
+          }
+        }
+        return receiptChargeMap;
+      });
+    } catch (e) {
+      const message = `Error getting receipt to charge mapping`;
+      console.error(message, e);
+      throw new Error(message);
+    }
+  }
 
   public async insertDeelInvoiceRecords(params: IInsertDeelInvoiceRecordsParams) {
     try {

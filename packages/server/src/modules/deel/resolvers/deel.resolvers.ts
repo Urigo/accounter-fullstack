@@ -36,7 +36,7 @@ export const deelResolvers: DeelModule.Resolvers = {
     },
     fetchDeelDocuments: async (_, __, { injector, adminContext }) => {
       try {
-        const { invoices, knownReceiptIds } = await fetchAndFilterInvoices(injector);
+        const { invoices } = await fetchAndFilterInvoices(injector);
 
         const receipts = await fetchReceipts(injector);
 
@@ -46,7 +46,6 @@ export const deelResolvers: DeelModule.Resolvers = {
           injector,
           adminContext.defaultAdminBusinessId,
           receipts,
-          knownReceiptIds,
         );
 
         const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
