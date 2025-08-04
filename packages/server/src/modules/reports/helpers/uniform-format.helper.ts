@@ -217,7 +217,7 @@ export async function accountsForUniformFormat(
     {
       filters: {
         ownerIds: [ownerId],
-        toDate: format(subDays(new Date(fromDate), 1), 'yyyy-MM-dd') as TimelessDateString,
+        toDate: dateToTimelessDateString(subDays(new Date(fromDate), 1)),
         includeRevaluation: true,
       },
     },

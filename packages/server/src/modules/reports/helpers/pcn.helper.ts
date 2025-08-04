@@ -2,7 +2,7 @@ import { format, startOfMonth } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { Pcn874RecordType } from '@shared/gql-types';
-import { idValidator, yearMonthValidator } from '@shared/helpers';
+import { dateToTimelessDateString, idValidator, yearMonthValidator } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { getVatRecords } from '../resolvers/get-vat-records.resolver.js';
 import type { RawVatReportRecord } from './vat-report.helper.js';
@@ -217,10 +217,7 @@ export async function getPcn874String(
   businessId: string,
   rawMonthDate: TimelessDateString,
 ) {
-  const monthDate = format(
-    startOfMonth(new Date(rawMonthDate)),
-    'yyyy-MM-dd',
-  ) as TimelessDateString;
+  const monthDate = dateToTimelessDateString(startOfMonth(new Date(rawMonthDate)));
   const financialEntity = await context.injector
     .get(BusinessesProvider)
     .getBusinessByIdLoader.load(businessId);
