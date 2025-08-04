@@ -121,6 +121,16 @@ sources:
               200:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/closeDocumentResponse
 
+          - type: Query
+            field: getClient
+            path: /clients/{args.id}
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getClientResponse
+
   - name: GreenInvoiceNew
     handler:
       jsonSchema:
