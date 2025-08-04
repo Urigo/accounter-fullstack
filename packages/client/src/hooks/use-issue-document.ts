@@ -40,10 +40,10 @@ export const useIssueDocument = (): UseIssueDocument => {
 
   const issueDocument = useCallback(
     async (variables: IssueGreenInvoiceDocumentMutationVariables) => {
-      const message = 'Error generating document issue';
+      const message = 'Error issuing document';
       const notificationId = NOTIFICATION_ID;
 
-      toast.loading('Generating document issue...', {
+      toast.loading('Issuing document...', {
         id: notificationId,
       });
 
@@ -54,7 +54,7 @@ export const useIssueDocument = (): UseIssueDocument => {
         if (data) {
           toast.success('Success', {
             id: notificationId,
-            description: 'Document issue generated',
+            description: 'Document issued successfully',
             duration: 3000,
           });
           return data.issueGreenInvoiceDocument;

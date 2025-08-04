@@ -25,6 +25,7 @@ import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form.js';
 import { Label } from '../ui/label.js';
 import { Switch } from '../ui/switch.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
 
 export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
   return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
@@ -364,10 +365,17 @@ function ChargesFiltersForm({
                       <FormLabel>With Open Documents</FormLabel>
                     </div>
                     <FormControl>
-                      <Switch
-                        defaultChecked={filter.withOpenDocuments ?? false}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Switch
+                            defaultChecked={filter.withOpenDocuments ?? false}
+                            onCheckedChange={field.onChange}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Show only charges with documents that are currently open</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </FormControl>
                   </FormItem>
                 )}

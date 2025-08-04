@@ -140,13 +140,13 @@ export function IssueDocumentModal({
         client: data.newDocumentInfoDraft.client || undefined,
         income: data.newDocumentInfoDraft.income?.map(income => ({
           ...income,
-          amount: income.amount || undefined,
-          amountTotal: income.amountTotal || undefined,
+          amount: income.amount ?? undefined,
+          amountTotal: income.amountTotal ?? undefined,
           catalogNum: income.catalogNum || undefined,
-          currencyRate: income.currencyRate || undefined,
+          currencyRate: income.currencyRate ?? undefined,
           itemId: income.itemId || undefined,
-          vat: income.vat || undefined,
-          vatRate: income.vatRate || undefined,
+          vat: income.vat ?? undefined,
+          vatRate: income.vatRate ?? undefined,
         })),
         payment: data.newDocumentInfoDraft.payment?.map(payment => ({
           ...payment,

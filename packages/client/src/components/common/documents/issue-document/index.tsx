@@ -95,9 +95,10 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     setFormData(prev => ({
       ...prev,
       discount: {
-        ...prev.discount,
-        amount: prev.discount?.amount || 0,
-        type: prev.discount?.type || GreenInvoiceDiscountType.Percentage,
+        amount: 0,
+        type: GreenInvoiceDiscountType.Percentage,
+        // eslint-disable-next-line unicorn/no-useless-fallback-in-spread
+        ...(prev.discount ?? {}),
         [field]: value,
       },
     }));
@@ -115,7 +116,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     if (clientId === 'new') {
       // New client selected - reset client data
       updateFormData('client', {
-        id: crypto.randomUUID(),
+        id: `temp-${crypto.randomUUID()}`,
         name: '',
       });
     } else if (clientId) {
@@ -133,7 +134,6 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
   const handlePreview = async () => {
     try {
       // Simulate API call to generate document preview
-      console.log('Generating preview with data:', formData);
       const fileText = await previewDocument({
         input: formData,
       });
@@ -431,7 +431,9 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             {/* Client Form - Only show when "New Client" is selected */}
             {selectedClientId === 'new' && (
               <ClientForm
-                client={formData.client || { id: crypto.randomUUID(), name: '', emails: [] }}
+                client={
+                  formData.client || { id: `temp-${crypto.randomUUID()}`, name: '', emails: [] }
+                }
                 onChange={(client: Client) => updateFormData('client', client)}
               />
             )}
