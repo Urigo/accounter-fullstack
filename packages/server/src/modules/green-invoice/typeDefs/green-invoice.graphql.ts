@@ -4,7 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     greenInvoiceBusinesses: [GreenInvoiceBusiness!]! @auth(role: ACCOUNTANT)
-    newDocumentInfoDraft(chargeId: UUID!): NewDocumentInfo!
+    newDocumentInfoDraft(chargeId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
   }
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]! @auth(role: ADMIN)

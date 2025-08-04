@@ -14,6 +14,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import {
   convertCurrencyToGreenInvoice,
   convertDocumentInputIntoGreenInvoiceInput,
+  getGreenInvoiceDocumentNameFromType,
   getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
   getLinkedDocuments,
@@ -22,6 +23,7 @@ import {
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
+import { GreenInvoiceLinkType } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
   getIncomeFromDocuments,
@@ -117,10 +119,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         })),
       );
       const linkedDocumentIds = openIssuedDocuments.map(doc => doc.external_id);
-      const linkType = linkedDocumentIds.length ? 'LINK' : undefined;
-      const remarks = greenInvoiceDocuments.length
-        ? greenInvoiceDocuments.map(doc => doc.remarks).join(', ')
-        : charge.user_description;
+      const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
+        ? 'LINK'
+        : undefined;
 
       let type: DocumentType = DocumentType.Proforma;
 
@@ -128,6 +129,16 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         type = DocumentType.InvoiceReceipt;
       } else if (openIssuedDocuments.length && transactions.length) {
         type = DocumentType.Receipt;
+      }
+
+      let remarks = charge.user_description;
+      if (greenInvoiceDocuments.length) {
+        remarks = greenInvoiceDocuments.map(doc => doc.remarks).join(', ');
+        switch (type) {
+          case DocumentType.Receipt:
+            remarks = `Receipt for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
+            break;
+        }
       }
 
       return {
@@ -339,9 +350,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       };
     },
     previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
-      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
       const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
-      const document = await greenInvoiceClient.previewDocuments({ input });
+      const document = await injector.get(GreenInvoiceClientProvider).previewDocuments({ input });
 
       if (!document) {
         throw new GraphQLError('Failed to generate document preview');
@@ -359,14 +369,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       { input: initialInput, emailContent, attachment, chargeId },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
-      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
       const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const input = {
         ...coreInput,
         emailContent,
         attachment,
       };
-      const document = await greenInvoiceClient.addDocuments({ input });
+      const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
 
       if (!document) {
         throw new GraphQLError('Failed to issue new document');

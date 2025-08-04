@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Eye, FileText, Loader2, Send, Settings } from 'lucide-react';
 import {
   Currency,
@@ -41,7 +42,6 @@ import {
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
-  clients?: Array<{ id: string; name: string; email?: string }>; // Add clients prop
 }
 
 const currencies = getCurrencyOptions();
@@ -56,14 +56,9 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     lang: GreenInvoiceDocumentLang.English,
     currency: Currency.Usd,
     vatType: GreenInvoiceVatType.Default,
-    date: new Date().toISOString().split('T')[0],
-    rounding: true,
-    signed: false,
-    client: {
-      id: crypto.randomUUID(),
-      name: '',
-      emails: [],
-    },
+    date: format(new Date(), 'yyyy-MM-dd'),
+    rounding: false,
+    signed: true,
     income: [],
     payment: [],
     ...initialFormData,

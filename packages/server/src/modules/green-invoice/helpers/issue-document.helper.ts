@@ -4,7 +4,7 @@ import {
   IGetDocumentsByChargeIdResult,
   IGetIssuedDocumentsByIdsResult,
 } from '@modules/documents/types';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider';
+import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
   Currency,
@@ -13,7 +13,10 @@ import {
   GreenInvoicePaymentType,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { getVatTypeFromGreenInvoiceDocument } from './green-invoice.helper';
+import {
+  getGreenInvoiceDocumentNameFromType,
+  getVatTypeFromGreenInvoiceDocument,
+} from './green-invoice.helper.js';
 
 export async function getPaymentsFromTransactions(
   injector: Injector,
@@ -118,7 +121,11 @@ export function getIncomeFromDocuments(
       catalogNum: greenInvoiceDocument.number,
       currency: greenInvoiceDocument.currency as Currency,
       currencyRate: greenInvoiceDocument.currencyRate,
-      description: greenInvoiceDocument.description,
+      description:
+        greenInvoiceDocument.description && greenInvoiceDocument.description !== ''
+          ? greenInvoiceDocument.description
+          : (greenInvoiceDocument.remarks ??
+            `${getGreenInvoiceDocumentNameFromType(greenInvoiceDocument.type)} ${greenInvoiceDocument.number}`),
       itemId: greenInvoiceDocument.id,
       price: greenInvoiceDocument.amount,
       quantity: 1,
