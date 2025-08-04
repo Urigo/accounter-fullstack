@@ -33,8 +33,8 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query FetchCharge($chargeIDs: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIDs) {
+  query FetchCharge($chargeId: UUID!) {
+    charge(chargeId: $chargeId) {
       __typename
       id
       metadata {
@@ -82,13 +82,11 @@ export function ChargeExtendedInfo({
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, { toggle }] = useDisclosure(false);
-  const [charge, setCharge] = useState<FetchChargeQuery['chargesByIDs'][number] | undefined>(
-    undefined,
-  );
+  const [charge, setCharge] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
   const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
-      chargeIDs: [chargeId],
+      chargeId,
     },
   });
 
@@ -98,8 +96,8 @@ export function ChargeExtendedInfo({
   }, [refetchExtensionInfo, onChange]);
 
   useEffect(() => {
-    if (data?.chargesByIDs?.[0]) {
-      setCharge(data?.chargesByIDs?.[0]);
+    if (data?.charge) {
+      setCharge(data.charge);
     }
   }, [data]);
 

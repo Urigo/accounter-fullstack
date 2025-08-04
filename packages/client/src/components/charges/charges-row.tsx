@@ -58,8 +58,8 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ChargeForRow($chargeIDs: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIDs) {
+  query ChargeForRow($chargeId: UUID!) {
+    charge(chargeId: $chargeId) {
       id
       ...ChargesTableRowFields
     }
@@ -94,14 +94,14 @@ export const ChargesTableRow = ({
     query: ChargeForRowDocument,
     pause: true,
     variables: {
-      chargeIDs: [data.id],
+      chargeId: data.id,
     },
   });
 
   const onChange = fetchCharge;
 
   useEffect(() => {
-    const updatedCharge = newData?.chargesByIDs?.[0];
+    const updatedCharge = newData?.charge;
     if (updatedCharge) {
       setCharge(getFragmentData(ChargesTableRowFieldsFragmentDoc, updatedCharge));
     }

@@ -38,6 +38,13 @@ import {
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
+    charge: async (_, { chargeId }, { injector }) => {
+      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+      }
+      return charge;
+    },
     chargesByIDs: async (_, { chargeIDs }, { injector }) => {
       if (chargeIDs.length === 0) {
         return [];

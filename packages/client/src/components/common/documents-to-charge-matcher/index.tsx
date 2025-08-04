@@ -6,12 +6,12 @@ import { SelectionHandler } from './selection-handler/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query DocumentsToChargeMatcher($chargeIds: [UUID!]!, $filters: DocumentsFilters!) {
+  query DocumentsToChargeMatcher($chargeId: UUID!, $filters: DocumentsFilters!) {
     documentsByFilters(filters: $filters) {
       id
       ...DocumentsToMatchFields
     }
-    chargesByIDs(chargeIDs: $chargeIds) {
+    charge(chargeId: $chargeId) {
       id
       transactions {
         id
@@ -35,16 +35,16 @@ export function DocumentsToChargeMatcher({ chargeId, ownerId, onDone }: Props): 
   const [{ data, fetching }] = useQuery({
     query: DocumentsToChargeMatcherDocument,
     variables: {
-      chargeIds: [chargeId],
+      chargeId,
       filters: { unmatched: true, ownerIDs: ownerId ? [ownerId] : undefined },
     },
   });
 
   const errorMessage =
     (data?.documentsByFilters.length === 0 && 'No Document Found') ||
-    ((!data?.chargesByIDs || data.chargesByIDs.length === 0) && 'Charge was not found') ||
-    (data?.chargesByIDs[0].totalAmount?.raw == null && 'Charge is missing amount') ||
-    (!data?.chargesByIDs[0].transactions[0]?.eventDate && 'Charge is missing date') ||
+    (!data?.charge && 'Charge was not found') ||
+    (data?.charge.totalAmount?.raw == null && 'Charge is missing amount') ||
+    (!data?.charge.transactions[0]?.eventDate && 'Charge is missing date') ||
     undefined;
 
   return (
@@ -67,11 +67,7 @@ export function DocumentsToChargeMatcher({ chargeId, ownerId, onDone }: Props): 
         )}
         {!errorMessage && (
           <div className="flex flex-col gap-3">
-            <SelectionHandler
-              chargeProps={data!.chargesByIDs[0]}
-              documentsProps={data}
-              onDone={onDone}
-            />
+            <SelectionHandler chargeProps={data!.charge} documentsProps={data} onDone={onDone} />
           </div>
         )}
       </div>
