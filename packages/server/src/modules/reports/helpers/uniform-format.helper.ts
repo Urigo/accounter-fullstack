@@ -1,4 +1,4 @@
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 import { GraphQLResolveInfo } from 'graphql';
 import type {
   Account,
