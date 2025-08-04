@@ -122,6 +122,19 @@ export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): Va
   }
 }
 
+export function getVatTypeFromGreenInvoiceDocument(vatType: VatType): GreenInvoiceVatType {
+  switch (vatType) {
+    case '_0':
+      return 'DEFAULT';
+    case '_1':
+      return 'EXEMPT';
+    case '_2':
+      return 'MIXED';
+    default:
+      throw new Error(`Unsupported VAT type: ${vatType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentDiscountType(
   discountType: GreenInvoiceDiscountType,
 ): mutationInput_addDocument_input_allOf_0_discount_type {

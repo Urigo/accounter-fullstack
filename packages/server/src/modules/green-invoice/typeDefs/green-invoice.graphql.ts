@@ -4,6 +4,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     greenInvoiceBusinesses: [GreenInvoiceBusiness!]! @auth(role: ACCOUNTANT)
+    newDocumentInfoDraft(chargeId: UUID!): NewDocumentInfo!
   }
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]! @auth(role: ADMIN)
@@ -40,6 +41,90 @@ export default gql`
   type GenerateMonthlyClientDocumentsResult {
     success: Boolean!
     errors: [String!]
+  }
+
+  " for previewing/issuing document "
+  type NewDocumentInfo {
+    description: String
+    remarks: String
+    footer: String
+    type: DocumentType!
+    date: String
+    dueDate: String
+    lang: GreenInvoiceDocumentLang!
+    currency: Currency!
+    vatType: GreenInvoiceVatType!
+    discount: GreenInvoiceDiscount
+    rounding: Boolean
+    signed: Boolean
+    maxPayments: Int
+    client: GreenInvoiceClient
+    income: [GreenInvoiceIncome!]
+    payment: [GreenInvoicePayment!]
+    linkedDocumentIds: [String!]
+    linkedPaymentId: String
+    linkType: GreenInvoiceLinkType
+  }
+
+  " discount info "
+  type GreenInvoiceDiscount {
+    amount: Float!
+    type: GreenInvoiceDiscountType!
+  }
+
+  " client info "
+  type GreenInvoiceClient {
+    country: GreenInvoiceCountry
+    emails: [String!]
+    id: ID!
+    name: String
+    phone: String
+    taxId: String
+    self: Boolean
+    address: String
+    city: String
+    zip: String
+    fax: String
+    mobile: String
+    add: Boolean
+  }
+
+  " income info "
+  type GreenInvoiceIncome {
+    amount: Float
+    amountTotal: Float
+    catalogNum: String
+    currency: Currency!
+    currencyRate: Float
+    description: String!
+    itemId: String
+    price: Float!
+    quantity: Float!
+    vat: Float
+    vatRate: Float
+    vatType: GreenInvoiceVatType!
+  }
+
+  " payment info "
+  type GreenInvoicePayment {
+    currency: Currency!
+    currencyRate: Float
+    date: String
+    price: Float!
+    type: GreenInvoicePaymentType!
+    subType: GreenInvoicePaymentSubType
+    bankName: String
+    bankBranch: String
+    bankAccount: String
+    chequeNum: String
+    accountId: String
+    transactionId: String
+    appType: GreenInvoicePaymentAppType
+    cardType: GreenInvoicePaymentCardType
+    cardNum: String
+    dealType: GreenInvoicePaymentDealType
+    numPayments: Int
+    firstPayment: Float
   }
 
   " input for previewing document "
