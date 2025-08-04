@@ -120,7 +120,7 @@ export function getIncomeFromDocuments(
     const income: GreenInvoiceIncome = {
       catalogNum: greenInvoiceDocument.number,
       currency: greenInvoiceDocument.currency as Currency,
-      currencyRate: greenInvoiceDocument.currencyRate,
+      // currencyRate: greenInvoiceDocument.currencyRate,
       description:
         greenInvoiceDocument.description && greenInvoiceDocument.description !== ''
           ? greenInvoiceDocument.description

@@ -235,7 +235,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="currency">Currency</Label>
                     <Select
@@ -274,6 +274,29 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="clientSelect">Select Client</Label>
+                    <Select value={selectedClientId} onValueChange={handleClientSelection}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose existing client or create new" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {/* NOTE: GreenInvoice API supports adding new clients,
+                          but we are not using it here. to enable,
+                          uncomment the next line */}
+                        {/* <SelectItem value="new">+ New Client</SelectItem> */}
+                        {selectableGreenInvoiceClients.map(client => (
+                          <SelectItem key={client.value} value={client.value}>
+                            {client.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="maxPayments">Max Payments</Label>
                     <Input
@@ -288,26 +311,6 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       placeholder="1"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="clientSelect">Select Client</Label>
-                  <Select value={selectedClientId} onValueChange={handleClientSelection}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose existing client or create new" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* NOTE: GreenInvoice API supports adding new clients,
-                          but we are not using it here. to enable,
-                          uncomment the next line */}
-                      {/* <SelectItem value="new">+ New Client</SelectItem> */}
-                      {selectableGreenInvoiceClients.map(client => (
-                        <SelectItem key={client.value} value={client.value}>
-                          {client.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
