@@ -278,7 +278,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           greenInvoiceDocument,
         },
       ]);
-      const linkedDocumentIds = [openIssuedDocument.id];
+      const linkedDocumentIds = [openIssuedDocument.external_id];
       const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
         ? 'LINK'
         : undefined;
