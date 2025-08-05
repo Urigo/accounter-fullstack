@@ -59,6 +59,7 @@ export function PdfViewer(props: PdfProps) {
           const renderContext: RenderParameters = {
             canvasContext: canvas.getContext('2d')!,
             viewport,
+            canvas,
           };
           try {
             if (renderTask.current) {
