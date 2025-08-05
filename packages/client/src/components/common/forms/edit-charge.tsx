@@ -29,7 +29,7 @@ import {
 } from '../index.js';
 
 type Props = {
-  charge: EditChargeQuery['chargesByIDs'][number];
+  charge: EditChargeQuery['charge'];
   close: () => void;
   onChange: () => void;
 };
