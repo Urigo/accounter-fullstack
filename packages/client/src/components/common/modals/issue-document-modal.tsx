@@ -1,7 +1,14 @@
 import { ComponentProps, ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
-import { NewDocumentDraftDocument } from '../../../gql/graphql.js';
+import { getFragmentData } from '../../../gql/fragment-masking.js';
+import {
+  NewDocumentDraftByChargeDocument,
+  NewDocumentDraftByDocumentDocument,
+  NewDocumentInfoFragment,
+  NewDocumentInfoFragmentDoc,
+} from '../../../gql/graphql.js';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
@@ -9,84 +16,103 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
 import { PreviewDocumentInput } from '../documents/issue-document/types/document.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query NewDocumentDraft($chargeId: UUID!) {
-    newDocumentInfoDraft(chargeId: $chargeId) {
-      description
-      remarks
-      footer
-      type
-      date
-      dueDate
-      lang
-      currency
-      vatType
-      discount {
-        amount
-        type
-      }
-      rounding
-      signed
-      maxPayments
-      client {
-        id
-      }
-      income {
-        amount
-        amountTotal
-        catalogNum
-        currency
-        currencyRate
-        description
-        itemId
-        price
-        quantity
-        vat
-        vatRate
-        vatType
-      }
-      payment {
-        currency
-        currencyRate
-        date
-        price
-        type
-        subType
-        bankName
-        bankBranch
-        bankAccount
-        chequeNum
-        accountId
-        transactionId
-        appType
-        cardType
-        cardNum
-        dealType
-        numPayments
-        firstPayment
-      }
-      linkedDocumentIds
-      linkedPaymentId
+  query NewDocumentDraftByCharge($chargeId: UUID!) {
+    newDocumentInfoDraftByCharge(chargeId: $chargeId) {
+      ...NewDocumentInfo
     }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query NewDocumentDraftByDocument($documentId: UUID!) {
+    newDocumentInfoDraftByDocument(documentId: $documentId) {
+      ...NewDocumentInfo
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment NewDocumentInfo on NewDocumentInfo {
+    description
+    remarks
+    footer
+    type
+    date
+    dueDate
+    lang
+    currency
+    vatType
+    discount {
+      amount
+      type
+    }
+    rounding
+    signed
+    maxPayments
+    client {
+      id
+    }
+    income {
+      amount
+      amountTotal
+      catalogNum
+      currency
+      currencyRate
+      description
+      itemId
+      price
+      quantity
+      vat
+      vatRate
+      vatType
+    }
+    payment {
+      currency
+      currencyRate
+      date
+      price
+      type
+      subType
+      bankName
+      bankBranch
+      bankAccount
+      chequeNum
+      accountId
+      transactionId
+      appType
+      cardType
+      cardNum
+      dealType
+      numPayments
+      firstPayment
+    }
+    linkedDocumentIds
+    linkedPaymentId
   }
 `;
 
 type Props = {
   open?: boolean;
   setOpen?: (open: boolean) => void;
-  trigger?: ReactElement | null;
+  tooltip?: string;
   chargeId?: string;
+  documentId?: string;
 } & ComponentProps<typeof GenerateDocument>;
 
 export function IssueDocumentModal({
   open: externalOpen = false,
   setOpen: setExternalOpen,
-  trigger = null,
+  tooltip,
   chargeId,
+  documentId,
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -110,35 +136,72 @@ export function IssueDocumentModal({
     [setExternalOpen],
   );
 
-  const [{ data, fetching, error }, fetchCharge] = useQuery({
-    query: NewDocumentDraftDocument,
-    pause: !chargeId,
+  const [{ data: dataByCharge, fetching: fetchingByCharge, error: errorByCharge }, fetchByCharge] =
+    useQuery({
+      query: NewDocumentDraftByChargeDocument,
+      pause: !chargeId,
+      variables: {
+        chargeId: chargeId || '',
+      },
+    });
+
+  const [
+    { data: dataByDocument, fetching: fetchingByDocument, error: errorByDocument },
+    fetchByDocument,
+  ] = useQuery({
+    query: NewDocumentDraftByDocumentDocument,
+    pause: !documentId,
     variables: {
-      chargeId: chargeId || '',
+      documentId: documentId || '',
     },
   });
 
   useEffect(() => {
-    if (chargeId && !data && !fetching && !error) {
-      fetchCharge();
+    if (chargeId && !dataByCharge && !fetchingByCharge && !errorByCharge) {
+      fetchByCharge();
+    } else if (documentId && !dataByDocument && !fetchingByDocument && !errorByDocument) {
+      fetchByDocument();
     }
-  }, [chargeId, data, fetching, error, fetchCharge]);
+  }, [
+    chargeId,
+    dataByCharge,
+    fetchingByCharge,
+    errorByCharge,
+    fetchByCharge,
+    documentId,
+    dataByDocument,
+    fetchingByDocument,
+    errorByDocument,
+    fetchByDocument,
+  ]);
 
   useEffect(() => {
-    if (data?.newDocumentInfoDraft) {
+    let newDocumentInfoDraft: NewDocumentInfoFragment | undefined = undefined;
+    if (dataByCharge?.newDocumentInfoDraftByCharge) {
+      newDocumentInfoDraft = getFragmentData(
+        NewDocumentInfoFragmentDoc,
+        dataByCharge.newDocumentInfoDraftByCharge,
+      );
+    } else if (dataByDocument?.newDocumentInfoDraftByDocument) {
+      newDocumentInfoDraft = getFragmentData(
+        NewDocumentInfoFragmentDoc,
+        dataByDocument.newDocumentInfoDraftByDocument,
+      );
+    }
+    if (newDocumentInfoDraft) {
       const draft: PreviewDocumentInput = {
-        ...data.newDocumentInfoDraft,
-        description: data.newDocumentInfoDraft.description || undefined,
-        remarks: data.newDocumentInfoDraft.remarks || undefined,
-        footer: data.newDocumentInfoDraft.footer || undefined,
-        date: data.newDocumentInfoDraft.date || undefined,
-        dueDate: data.newDocumentInfoDraft.dueDate || undefined,
-        discount: data.newDocumentInfoDraft.discount || undefined,
-        rounding: data.newDocumentInfoDraft.rounding || undefined,
-        signed: data.newDocumentInfoDraft.signed || undefined,
-        maxPayments: data.newDocumentInfoDraft.maxPayments || undefined,
-        client: data.newDocumentInfoDraft.client || undefined,
-        income: data.newDocumentInfoDraft.income?.map(income => ({
+        ...newDocumentInfoDraft,
+        description: newDocumentInfoDraft.description || undefined,
+        remarks: newDocumentInfoDraft.remarks || undefined,
+        footer: newDocumentInfoDraft.footer || undefined,
+        date: newDocumentInfoDraft.date || undefined,
+        dueDate: newDocumentInfoDraft.dueDate || undefined,
+        discount: newDocumentInfoDraft.discount || undefined,
+        rounding: newDocumentInfoDraft.rounding || undefined,
+        signed: newDocumentInfoDraft.signed || undefined,
+        maxPayments: newDocumentInfoDraft.maxPayments || undefined,
+        client: newDocumentInfoDraft.client || undefined,
+        income: newDocumentInfoDraft.income?.map(income => ({
           ...income,
           amount: income.amount ?? undefined,
           amountTotal: income.amountTotal ?? undefined,
@@ -148,7 +211,7 @@ export function IssueDocumentModal({
           vat: income.vat ?? undefined,
           vatRate: income.vatRate ?? undefined,
         })),
-        payment: data.newDocumentInfoDraft.payment?.map(payment => ({
+        payment: newDocumentInfoDraft.payment?.map(payment => ({
           ...payment,
           currencyRate: payment.currencyRate || undefined,
           date: payment.date || undefined,
@@ -166,21 +229,32 @@ export function IssueDocumentModal({
           numPayments: payment.numPayments || undefined,
           firstPayment: payment.firstPayment || undefined,
         })),
-        linkedDocumentIds: data.newDocumentInfoDraft.linkedDocumentIds || undefined,
-        linkedPaymentId: data.newDocumentInfoDraft.linkedPaymentId || undefined,
+        linkedDocumentIds: newDocumentInfoDraft.linkedDocumentIds || undefined,
+        linkedPaymentId: newDocumentInfoDraft.linkedPaymentId || undefined,
       };
       setInitialFormData(draft);
     }
-  }, [data]);
+  }, [dataByCharge, dataByDocument]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogTrigger>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button className="size-7.5" variant="ghost">
+              <Receipt className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltip || 'Issue new document'}</p>
+          </TooltipContent>
+        </Tooltip>
+      </DialogTrigger>
       <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Issue New Document</DialogTitle>
         </DialogHeader>
-        {fetching ? (
+        {fetchingByCharge || fetchingByDocument ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
           <GenerateDocument initialFormData={initialFormData} />

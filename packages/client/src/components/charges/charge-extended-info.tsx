@@ -18,7 +18,11 @@ import {
   TableSalariesFieldsFragmentDoc,
 } from '../../gql/graphql.js';
 import { FragmentType, isFragmentReady } from '../../gql/index.js';
-import { BusinessTripSummarizedReport, RegenerateLedgerRecordsButton } from '../common/index.js';
+import {
+  BusinessTripSummarizedReport,
+  IssueDocumentModal,
+  RegenerateLedgerRecordsButton,
+} from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
@@ -42,6 +46,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         documentsCount
         ledgerCount
         isLedgerLocked
+        openDocuments
       }
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
@@ -121,6 +126,7 @@ export function ChargeExtendedInfo({
   const hasDocs = !!charge?.metadata?.documentsCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
+  const hasOpenDocuments = charge?.metadata?.openDocuments;
 
   useEffect(() => {
     const tabs = [];
@@ -308,24 +314,27 @@ export function ChargeExtendedInfo({
                   disabled={!hasDocs}
                   onClick={() => toggleAccordionItem('documents')}
                 >
-                  <div className="flex flex-row items-center gap-2 justify-start w-full">
-                    {hasDocs && (
-                      <Tooltip label="Documents Gallery">
-                        <Button
-                          onClick={event => {
-                            event.stopPropagation();
-                            toggle();
-                          }}
-                          variant="outline"
-                          disabled={!galleryIsReady}
-                          size="icon"
-                          className="size-7.5 text-gray-500"
-                        >
-                          <Image className="size-5" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    Documents
+                  <div className="flex flex-row items-center gap-2 justify-between w-full">
+                    <div className="flex flex-row items-center gap-2 justify-start">
+                      {hasDocs && (
+                        <Tooltip label="Documents Gallery">
+                          <Button
+                            onClick={event => {
+                              event.stopPropagation();
+                              toggle();
+                            }}
+                            variant="outline"
+                            disabled={!galleryIsReady}
+                            size="icon"
+                            className="size-7.5 text-gray-500"
+                          >
+                            <Image className="size-5" />
+                          </Button>
+                        </Tooltip>
+                      )}
+                      Documents
+                    </div>
+                    {hasOpenDocuments && <IssueDocumentModal chargeId={charge.id} />}
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>

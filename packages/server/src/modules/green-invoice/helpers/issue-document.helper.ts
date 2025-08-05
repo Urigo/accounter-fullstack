@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { Document } from '@accounter/green-invoice-graphql';
 import {
@@ -6,6 +7,7 @@ import {
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
+import { DocumentType } from '@shared/enums';
 import {
   Currency,
   GreenInvoiceIncome,
@@ -14,8 +16,8 @@ import {
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
-  getGreenInvoiceDocumentNameFromType,
   getVatTypeFromGreenInvoiceDocument,
+  normalizeDocumentType,
 } from './green-invoice.helper.js';
 
 export async function getPaymentsFromTransactions(
@@ -116,24 +118,81 @@ export function getIncomeFromDocuments(
     greenInvoiceDocument: Document;
   }[],
 ): GreenInvoiceIncome[] {
-  const incomes = documents.map(({ greenInvoiceDocument }) => {
-    const income: GreenInvoiceIncome = {
-      catalogNum: greenInvoiceDocument.number,
-      currency: greenInvoiceDocument.currency as Currency,
-      // currencyRate: greenInvoiceDocument.currencyRate,
-      description:
-        greenInvoiceDocument.description && greenInvoiceDocument.description !== ''
-          ? greenInvoiceDocument.description
-          : (greenInvoiceDocument.remarks ??
-            `${getGreenInvoiceDocumentNameFromType(greenInvoiceDocument.type)} ${greenInvoiceDocument.number}`),
-      itemId: greenInvoiceDocument.id,
-      price: greenInvoiceDocument.amount,
-      quantity: 1,
-      vat: greenInvoiceDocument.vat,
-      vatRate: greenInvoiceDocument.vatRate,
-      vatType: getVatTypeFromGreenInvoiceDocument(greenInvoiceDocument.vatType),
-    };
-    return income;
-  });
+  const incomes = documents
+    .map(({ greenInvoiceDocument }) => {
+      return greenInvoiceDocument.income.filter(Boolean).map(originIncome => {
+        if (!originIncome?.currency) {
+          throw new Error('Income currency is missing');
+        }
+        const income: GreenInvoiceIncome = {
+          ...originIncome,
+          currency: originIncome.currency as Currency,
+          vatType: getVatTypeFromGreenInvoiceDocument(greenInvoiceDocument.vatType),
+        };
+        return income;
+      });
+    })
+    .flat();
   return incomes;
+}
+
+export function getTypeFromDocumentsAndTransactions(
+  greenInvoiceDocuments: Document[],
+  transactions: IGetTransactionsByChargeIdsResult[],
+): DocumentType {
+  if (!greenInvoiceDocuments.length) {
+    if (transactions.length) {
+      return DocumentType.InvoiceReceipt;
+    }
+    return DocumentType.Proforma;
+  }
+
+  const documentsTypes = new Set<DocumentType>(
+    greenInvoiceDocuments.map(doc => normalizeDocumentType(doc.type)),
+  );
+
+  if (documentsTypes.size === 1) {
+    switch (Array.from(documentsTypes)[0]) {
+      case DocumentType.Invoice:
+        return DocumentType.Receipt;
+      case DocumentType.Proforma:
+        return DocumentType.InvoiceReceipt;
+    }
+  }
+
+  return DocumentType.Proforma;
+}
+
+export function filterAndHandleSwiftTransactions(
+  originTransactions: IGetTransactionsByChargeIdsResult[],
+  swiftBusinessId: string | null,
+): IGetTransactionsByChargeIdsResult[] {
+  const swiftTransactions: IGetTransactionsByChargeIdsResult[] = [];
+  const incomeTransactions: IGetTransactionsByChargeIdsResult[] = [];
+
+  for (const transaction of originTransactions) {
+    if (swiftBusinessId && transaction.business_id === swiftBusinessId) {
+      swiftTransactions.push(transaction);
+    } else if (Number(transaction.amount) > 0) {
+      incomeTransactions.push(transaction);
+    }
+  }
+
+  if (swiftTransactions.length === 0) {
+    return incomeTransactions;
+  }
+
+  if (swiftTransactions.length === 1 && incomeTransactions.length === 1) {
+    const incomeTransaction = incomeTransactions[0];
+    return [
+      {
+        ...incomeTransaction,
+        amount: (Number(incomeTransaction.amount) - Number(swiftTransactions[0].amount)).toFixed(2),
+      },
+    ];
+  }
+
+  throw new GraphQLError(
+    "Unable to process transactions. Couldn't match swift fees to transactions",
+  );
 }

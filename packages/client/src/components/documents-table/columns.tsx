@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Receipt } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { CloseDocumentButton, EditMiniButton, IssueDocumentModal } from '../common/index.js';
@@ -260,12 +260,8 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
               <>
                 <CloseDocumentButton documentId={row.original.id} />
                 <IssueDocumentModal
-                  chargeId={row.original.charge?.id}
-                  trigger={
-                    <Button className="size-7.5" variant="ghost">
-                      <Receipt className="size-5" />
-                    </Button>
-                  }
+                  documentId={row.original.id}
+                  tooltip="Issue Document out of This Document"
                 />
               </>
             )}

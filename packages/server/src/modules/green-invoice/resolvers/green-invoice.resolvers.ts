@@ -26,8 +26,10 @@ import { Currency, DocumentType } from '@shared/enums';
 import { GreenInvoiceLinkType } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
+  filterAndHandleSwiftTransactions,
   getIncomeFromDocuments,
   getPaymentsFromTransactions,
+  getTypeFromDocumentsAndTransactions,
 } from '../helpers/issue-document.helper.js';
 import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import type { GreenInvoiceModule } from '../types.js';
@@ -45,7 +47,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    newDocumentInfoDraft: async (
+    newDocumentInfoDraftByCharge: async (
       _,
       { chargeId },
       {
@@ -60,22 +62,30 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError('Charge ID is required to fetch document draft');
       }
 
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const chargePromise = injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      const documentsPromise = injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const transactionsPromise = injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId)
+        .then(res => filterAndHandleSwiftTransactions(res, swiftBusinessId));
+
+      const [charge, documents, transactions] = await Promise.all([
+        chargePromise,
+        documentsPromise,
+        transactionsPromise,
+      ]);
+
       if (!charge) {
         throw new GraphQLError(`Charge with ID "${chargeId}" not found`);
       }
 
-      const documents = await injector
-        .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(chargeId);
-      const transactions = await injector
-        .get(TransactionsProvider)
-        .transactionsByChargeIDLoader.load(chargeId)
-        .then(res => res.filter(t => Number(t.amount) > 0 || t.business_id === swiftBusinessId));
-      const business = await (charge.business_id
+      const businessPromise = charge.business_id
         ? injector.get(GreenInvoiceProvider).getBusinessMatchByIdLoader.load(charge.business_id)
-        : null);
-      const openIssuedDocuments = await injector
+        : Promise.resolve(undefined);
+
+      const openIssuedDocumentsPromise = injector
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.loadMany(documents.map(d => d.id))
         .then(
@@ -95,6 +105,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
               return true;
             }) as IGetIssuedDocumentsByIdsResult[],
         );
+
+      const [business, openIssuedDocuments] = await Promise.all([
+        businessPromise,
+        openIssuedDocumentsPromise,
+      ]);
+
       const greenInvoiceDocuments = await Promise.all(
         openIssuedDocuments.map(doc =>
           injector
@@ -123,21 +139,159 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         ? 'LINK'
         : undefined;
 
-      let type: DocumentType = DocumentType.Proforma;
-
-      if (!openIssuedDocuments.length && transactions.length) {
-        type = DocumentType.InvoiceReceipt;
-      } else if (openIssuedDocuments.length && transactions.length) {
-        type = DocumentType.Receipt;
-      }
+      const type = getTypeFromDocumentsAndTransactions(greenInvoiceDocuments, transactions);
 
       let remarks = charge.user_description;
       if (greenInvoiceDocuments.length) {
         remarks = greenInvoiceDocuments.map(doc => doc.remarks).join(', ');
         switch (type) {
           case DocumentType.Receipt:
-            remarks = `Receipt for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
+          case DocumentType.InvoiceReceipt:
+            remarks = `${getGreenInvoiceDocumentNameFromType(type)} for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
             break;
+        }
+      } else if (business?.business_id) {
+        const greenInvoiceBusinessMatch = await injector
+          .get(GreenInvoiceProvider)
+          .getBusinessMatchByIdLoader.load(business.business_id);
+        if (greenInvoiceBusinessMatch?.remark) {
+          remarks = greenInvoiceBusinessMatch.remark;
+        }
+      }
+
+      return {
+        remarks,
+        // description: ____,
+        // footer: ____,
+        type,
+        date: dateToTimelessDateString(new Date()),
+        dueDate: dateToTimelessDateString(endOfMonth(new Date())),
+        lang: 'ENGLISH',
+        currency: (charge.transactions_currency ||
+          charge.documents_currency ||
+          defaultCryptoConversionFiatCurrency) as Currency,
+        vatType: 'DEFAULT',
+        rounding: false,
+        signed: true,
+        client: business?.business_id
+          ? {
+              id: business.business_id,
+            }
+          : undefined,
+        income,
+        payment,
+        // linkedPaymentId: ____,
+        // maxPayments: _____,
+        // discount: _____,
+        linkedDocumentIds,
+        linkType,
+      };
+    },
+    newDocumentInfoDraftByDocument: async (
+      _,
+      { documentId },
+      {
+        injector,
+        adminContext: {
+          defaultCryptoConversionFiatCurrency,
+          financialAccounts: { swiftBusinessId },
+        },
+      },
+    ) => {
+      if (!documentId) {
+        throw new GraphQLError('Document ID is required to fetch document draft');
+      }
+
+      const document = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByIdLoader.load(documentId);
+
+      if (!document) {
+        throw new GraphQLError(`Document with ID "${documentId}" not found`);
+      }
+
+      const chargePromise = document.charge_id
+        ? injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id)
+        : Promise.resolve(undefined);
+      const transactionsPromise = document.charge_id
+        ? injector
+            .get(TransactionsProvider)
+            .transactionsByChargeIDLoader.load(document.charge_id)
+            .then(res => filterAndHandleSwiftTransactions(res, swiftBusinessId))
+        : Promise.resolve(undefined);
+
+      const [charge, transactions] = await Promise.all([chargePromise, transactionsPromise]);
+
+      if (!charge) {
+        throw new GraphQLError(`Charge with ID "${document.charge_id}" not found`);
+      }
+
+      const businessPromise = charge.business_id
+        ? injector.get(GreenInvoiceProvider).getBusinessMatchByIdLoader.load(charge.business_id)
+        : Promise.resolve(undefined);
+
+      const openIssuedDocumentPromise = injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByIdLoader.load(document.id);
+      const [business, openIssuedDocument] = await Promise.all([
+        businessPromise,
+        openIssuedDocumentPromise,
+      ]);
+
+      if (!openIssuedDocument) {
+        throw new GraphQLError(
+          `Document with ID "${document.id}" doesn't seem like a document we issued`,
+        );
+      }
+
+      if (openIssuedDocument.status !== 'OPEN') {
+        throw new GraphQLError(`Document with ID "${document.id}" is closed`);
+      }
+
+      const greenInvoiceDocument: Document | null = await injector
+        .get(GreenInvoiceClientProvider)
+        .getDocument({ id: openIssuedDocument.external_id })
+        .then(res => {
+          if (!res) {
+            console.error(
+              'Failed to fetch document from Green Invoice',
+              openIssuedDocument.external_id,
+            );
+            return null;
+          }
+          return res;
+        });
+
+      if (!greenInvoiceDocument) {
+        throw new GraphQLError(
+          `Document with ID "${document.id}" doesn't have a Green Invoice matching document`,
+        );
+      }
+
+      const payment = await (transactions
+        ? getPaymentsFromTransactions(injector, transactions)
+        : Promise.resolve([]));
+      const income = getIncomeFromDocuments([
+        {
+          document,
+          issuedDocument: openIssuedDocument,
+          greenInvoiceDocument,
+        },
+      ]);
+      const linkedDocumentIds = [openIssuedDocument.external_id];
+      const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
+        ? 'LINK'
+        : undefined;
+
+      const type = getTypeFromDocumentsAndTransactions([greenInvoiceDocument], transactions ?? []);
+
+      let remarks = greenInvoiceDocument.remarks;
+      if (!remarks && business?.business_id) {
+        const greenInvoiceBusinessMatch = await injector
+          .get(GreenInvoiceProvider)
+          .getBusinessMatchByIdLoader.load(business.business_id);
+        if (greenInvoiceBusinessMatch?.remark) {
+          remarks = greenInvoiceBusinessMatch.remark;
         }
       }
 
@@ -366,12 +520,18 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     issueGreenInvoiceDocument: async (
       _,
-      { input: initialInput, emailContent, attachment, chargeId },
+      { input: initialInput, emailContent, attachment, chargeId, sendEmail = false },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const input = {
         ...coreInput,
+        client: coreInput.client
+          ? {
+              ...coreInput.client,
+              emails: sendEmail ? coreInput.client?.emails : [],
+            }
+          : undefined,
         emailContent,
         attachment,
       };
@@ -389,6 +549,19 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           console.error('Failed to fetch issued document from Green Invoice', document);
           throw new GraphQLError('Failed to issue new document');
         }
+
+        // Close linked documents
+        if (coreInput.linkedDocumentIds?.length) {
+          await Promise.all(
+            coreInput.linkedDocumentIds.map(async id => {
+              if (id) {
+                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+              }
+            }),
+          );
+        }
+
+        // Insert new issued document to DB
         const newDocument = await insertNewDocumentFromGreenInvoice(
           injector,
           greenInvoiceDocument,
