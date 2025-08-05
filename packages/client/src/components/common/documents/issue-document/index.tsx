@@ -28,7 +28,7 @@ import {
 import { Textarea } from '../../../ui/textarea.jsx';
 import { ClientForm } from './client-form.jsx';
 import { IncomeForm } from './income-form.jsx';
-import { IssueDocumentModal } from './issue-document-modal.js';
+import { IssueDocumentData, IssueDocumentModal } from './issue-document-modal.js';
 import { PaymentForm } from './payment-form.jsx';
 import { PdfViewer } from './pdf-viewer.js';
 import type { Client, Discount, Income, Payment, PreviewDocumentInput } from './types/document.js';
@@ -154,11 +154,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     setIsIssueModalOpen(true);
   };
 
-  const handleIssue = async (issueData: {
-    emailContent: string;
-    attachment: boolean;
-    sendEmail: boolean;
-  }) => {
+  const handleIssue = async (issueData: IssueDocumentData) => {
     console.log('Issuing document with data:', formData, issueData);
 
     await issueDocument({

@@ -16,7 +16,7 @@ import {
 import { Label } from '../../../ui/label.js';
 import { Textarea } from '../../../ui/textarea.js';
 
-interface IssueDocumentData {
+export interface IssueDocumentData {
   emailContent: string;
   attachment: boolean;
   sendEmail: boolean;
@@ -116,7 +116,7 @@ export function IssueDocumentModal({
               disabled={isSubmitting}
             />
             <Label htmlFor="sendEmail" className="text-sm font-medium">
-              Should Send Email
+              Send email to client
             </Label>
           </div>
           <div className="text-xs text-gray-500 ml-6">
