@@ -18,6 +18,7 @@ export default gql`
       emailContent: String
       attachment: Boolean
       chargeId: UUID
+      sendEmail: Boolean
     ): Charge! @auth(role: ACCOUNTANT)
   }
 

@@ -154,7 +154,11 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     setIsIssueModalOpen(true);
   };
 
-  const handleIssue = async (issueData: { emailContent: string; attachment: boolean }) => {
+  const handleIssue = async (issueData: {
+    emailContent: string;
+    attachment: boolean;
+    sendEmail: boolean;
+  }) => {
     console.log('Issuing document with data:', formData, issueData);
 
     await issueDocument({

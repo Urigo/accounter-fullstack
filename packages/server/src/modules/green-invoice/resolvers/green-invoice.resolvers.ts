@@ -373,12 +373,18 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     issueGreenInvoiceDocument: async (
       _,
-      { input: initialInput, emailContent, attachment, chargeId },
+      { input: initialInput, emailContent, attachment, chargeId, sendEmail = false },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const input = {
         ...coreInput,
+        client: coreInput.client
+          ? {
+              ...coreInput.client,
+              emails: sendEmail ? coreInput.client?.emails : [],
+            }
+          : undefined,
         emailContent,
         attachment,
       };
@@ -396,6 +402,19 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           console.error('Failed to fetch issued document from Green Invoice', document);
           throw new GraphQLError('Failed to issue new document');
         }
+
+        // Close linked documents
+        if (coreInput.linkedDocumentIds?.length) {
+          await Promise.all(
+            coreInput.linkedDocumentIds.map(async id => {
+              if (id) {
+                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+              }
+            }),
+          );
+        }
+
+        // Insert new issued document to DB
         const newDocument = await insertNewDocumentFromGreenInvoice(
           injector,
           greenInvoiceDocument,

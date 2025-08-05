@@ -19,6 +19,7 @@ import { Textarea } from '../../../ui/textarea.js';
 interface IssueDocumentData {
   emailContent: string;
   attachment: boolean;
+  sendEmail: boolean;
 }
 
 interface IssueDocumentModalProps {
@@ -41,6 +42,7 @@ export function IssueDocumentModal({
   const [issueData, setIssueData] = useState<IssueDocumentData>({
     emailContent: '',
     attachment: true,
+    sendEmail: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +67,7 @@ export function IssueDocumentModal({
       setIssueData({
         emailContent: '',
         attachment: true,
+        sendEmail: false,
       });
     } catch (error) {
       console.error('Failed to issue document:', error);
@@ -104,6 +107,22 @@ export function IssueDocumentModal({
             </div>
           )}
 
+          {/* Send Email Switch */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="sendEmail"
+              checked={issueData.sendEmail}
+              onCheckedChange={checked => updateIssueData('sendEmail', checked === true)}
+              disabled={isSubmitting}
+            />
+            <Label htmlFor="sendEmail" className="text-sm font-medium">
+              Should Send Email
+            </Label>
+          </div>
+          <div className="text-xs text-gray-500 ml-6">
+            When disabled, email will not be sent to the client.
+          </div>
+
           {/* Email Content */}
           <div className="space-y-2">
             <Label htmlFor="emailContent">Email Message</Label>
@@ -113,7 +132,7 @@ export function IssueDocumentModal({
               onChange={e => updateIssueData('emailContent', e.target.value)}
               placeholder="Add a custom message to include in the email (optional)"
               className="min-h-[100px]"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !issueData.sendEmail}
             />
             <div className="text-xs text-gray-500">
               This message will be included in the email sent to the client along with the document.
@@ -126,7 +145,7 @@ export function IssueDocumentModal({
               id="attachment"
               checked={issueData.attachment}
               onCheckedChange={checked => updateIssueData('attachment', checked === true)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !issueData.sendEmail}
             />
             <Label htmlFor="attachment" className="text-sm font-medium">
               Attach document to email
