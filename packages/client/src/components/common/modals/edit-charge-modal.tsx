@@ -7,8 +7,8 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query EditCharge($chargeIDs: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIDs) {
+  query EditCharge($chargeId: UUID!) {
+    charge(chargeId: $chargeId) {
       id
       counterparty {
         id
@@ -72,11 +72,11 @@ export const EditChargeModalContent = ({
   const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,
     variables: {
-      chargeIDs: [chargeId],
+      chargeId,
     },
   });
 
-  const charge = chargeData?.chargesByIDs?.[0];
+  const charge = chargeData?.charge;
 
   return (
     <PopUpDrawer

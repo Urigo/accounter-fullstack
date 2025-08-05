@@ -38,6 +38,13 @@ import {
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
+    charge: async (_, { chargeId }, { injector }) => {
+      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+      }
+      return charge;
+    },
     chargesByIDs: async (_, { chargeIDs }, { injector }) => {
       if (chargeIDs.length === 0) {
         return [];
@@ -89,6 +96,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           withoutInvoice: filters?.withoutInvoice,
           withoutReceipt: filters?.withoutReceipt,
           withoutDocuments: filters?.withoutDocuments,
+          withOpenDocuments: filters?.withOpenDocuments,
           withoutTransactions: filters?.withoutTransactions,
           withoutLedger: filters?.withoutLedger,
           tags: filters?.byTags,
@@ -615,6 +623,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
     documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
     invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
+    openDocuments: DbCharge => DbCharge.open_docs_flag ?? false,
     transactionsCount: DbCharge => {
       return DbCharge.transactions_count ? Number(DbCharge.transactions_count) : 0;
     },

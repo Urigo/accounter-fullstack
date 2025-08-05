@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument } from '../../../gql/graphql.js';
@@ -12,8 +12,8 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ChargeScreen($chargeIds: [UUID!]!) {
-    chargesByIDs(chargeIDs: $chargeIds) {
+  query ChargeScreen($chargeId: UUID!) {
+    charge(chargeId: $chargeId) {
       id
       ...ChargesTableFields
     }
@@ -43,12 +43,19 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
     undefined,
   );
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, fetchCharge] = useQuery({
     query: ChargeScreenDocument,
+    pause: !id,
     variables: {
-      chargeIds: id ? [id] : [],
+      chargeId: id ?? '',
     },
   });
+
+  useEffect(() => {
+    if (id) {
+      fetchCharge();
+    }
+  }, [id, fetchCharge]);
 
   if (!id) {
     return <div>Charge not found</div>;
@@ -63,7 +70,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
-          data={data?.chargesByIDs}
+          data={data?.charge ? [data.charge] : []}
           isAllOpened
         />
       )}

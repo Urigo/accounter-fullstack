@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
+    charge(chargeId: UUID!): Charge! @auth(role: ACCOUNTANT)
     chargesByIDs(chargeIDs: [UUID!]!): [Charge!]! @auth(role: ACCOUNTANT)
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
       @auth(role: ACCOUNTANT)
@@ -352,6 +353,7 @@ export default gql`
     receiptsCount: Int!
     documentsCount: Int!
     invalidDocuments: Boolean!
+    openDocuments: Boolean!
     transactionsCount: Int!
     invalidTransactions: Boolean!
     optionalBusinesses: [String!]!

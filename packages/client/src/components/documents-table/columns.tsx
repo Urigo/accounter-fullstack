@@ -1,7 +1,7 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Receipt } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
-import { EditMiniButton } from '../common/index.js';
+import { CloseDocumentButton, EditMiniButton, IssueDocumentModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells/index.js';
 
@@ -12,6 +12,9 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
     documentType
     image
     file
+    charge {
+      id
+    }
     ... on FinancialDocument {
       amount {
         raw
@@ -49,6 +52,10 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
       debtor {
         id
         name
+      }
+      issuedDocumentInfo {
+        id
+        status
       }
     }
   }
@@ -245,7 +252,25 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     accessorKey: 'id',
     header: 'Edit',
     cell: ({ row }) => {
-      return <EditMiniButton onClick={row.original.editDocument} tooltip="Edit Document" />;
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <EditMiniButton onClick={row.original.editDocument} tooltip="Edit Document" />
+          {'issuedDocumentInfo' in row.original &&
+            row.original.issuedDocumentInfo?.status === 'OPEN' && (
+              <>
+                <CloseDocumentButton documentId={row.original.id} />
+                <IssueDocumentModal
+                  chargeId={row.original.charge?.id}
+                  trigger={
+                    <Button className="size-7.5" variant="ghost">
+                      <Receipt className="size-5" />
+                    </Button>
+                  }
+                />
+              </>
+            )}
+        </div>
+      );
     },
   },
 ];

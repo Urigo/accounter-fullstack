@@ -220,6 +220,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($withoutReceipt = FALSE OR (COALESCE(ec.receipts_count, 0) = 0 AND (ec.no_invoices_required IS FALSE)))
   AND ($withoutDocuments = FALSE OR COALESCE(ec.documents_count, 0) = 0)
   AND ($withoutTransactions = FALSE OR COALESCE(ec.transactions_count, 0) = 0)
+  AND ($withOpenDocuments = FALSE OR ec.open_docs_flag IS TRUE)
   AND ($withoutLedger = FALSE OR COALESCE(ec.ledger_count, 0) = 0)
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
@@ -437,6 +438,7 @@ export class ChargesProvider {
       withoutInvoice: params.withoutInvoice ?? false,
       withoutReceipt: params.withoutReceipt ?? false,
       withoutDocuments: params.withoutDocuments ?? false,
+      withOpenDocuments: params.withOpenDocuments ?? false,
       withoutTransactions: params.withoutTransactions ?? false,
       withoutLedger: params.withoutLedger ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,

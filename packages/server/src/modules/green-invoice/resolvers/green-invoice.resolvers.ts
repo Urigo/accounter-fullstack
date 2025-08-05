@@ -3,8 +3,10 @@ import { GraphQLError } from 'graphql';
 import type { addDocumentRequest_Input, Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type {
+  IGetIssuedDocumentsByIdsResult,
   IInsertDocumentsResult,
   IUpdateIssuedDocumentParams,
 } from '@modules/documents/types.js';
@@ -12,14 +14,21 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import {
   convertCurrencyToGreenInvoice,
   convertDocumentInputIntoGreenInvoiceInput,
+  getGreenInvoiceDocumentNameFromType,
   getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
   getLinkedDocuments,
   greenInvoiceToDocumentStatus,
   insertNewDocumentFromGreenInvoice,
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
-import { DocumentType } from '@shared/enums';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { Currency, DocumentType } from '@shared/enums';
+import { GreenInvoiceLinkType } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
+import {
+  getIncomeFromDocuments,
+  getPaymentsFromTransactions,
+} from '../helpers/issue-document.helper.js';
 import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import type { GreenInvoiceModule } from '../types.js';
 
@@ -35,6 +44,130 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         console.error(message, error);
         throw new GraphQLError(message);
       }
+    },
+    newDocumentInfoDraft: async (
+      _,
+      { chargeId },
+      {
+        injector,
+        adminContext: {
+          defaultCryptoConversionFiatCurrency,
+          financialAccounts: { swiftBusinessId },
+        },
+      },
+    ) => {
+      if (!chargeId) {
+        throw new GraphQLError('Charge ID is required to fetch document draft');
+      }
+
+      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new GraphQLError(`Charge with ID "${chargeId}" not found`);
+      }
+
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId)
+        .then(res => res.filter(t => Number(t.amount) > 0 || t.business_id === swiftBusinessId));
+      const business = await (charge.business_id
+        ? injector.get(GreenInvoiceProvider).getBusinessMatchByIdLoader.load(charge.business_id)
+        : null);
+      const openIssuedDocuments = await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByIdLoader.loadMany(documents.map(d => d.id))
+        .then(
+          res =>
+            res.filter(r => {
+              if (!r) return false;
+
+              if (r instanceof Error) {
+                console.error('Failed to fetch issued document', r);
+                return false;
+              }
+
+              if (r.status !== 'OPEN') {
+                return false;
+              }
+
+              return true;
+            }) as IGetIssuedDocumentsByIdsResult[],
+        );
+      const greenInvoiceDocuments = await Promise.all(
+        openIssuedDocuments.map(doc =>
+          injector
+            .get(GreenInvoiceClientProvider)
+            .getDocument({ id: doc.external_id })
+            .then(res => {
+              if (!res) {
+                console.error('Failed to fetch document from Green Invoice', doc.external_id);
+                return null;
+              }
+              return res;
+            }),
+        ),
+      ).then(res => res.filter(Boolean) as Document[]);
+
+      const payment = await getPaymentsFromTransactions(injector, transactions);
+      const income = getIncomeFromDocuments(
+        openIssuedDocuments.map(doc => ({
+          document: documents.find(d => d.id === doc.id)!,
+          issuedDocument: doc,
+          greenInvoiceDocument: greenInvoiceDocuments.find(gd => gd.id === doc.external_id)!,
+        })),
+      );
+      const linkedDocumentIds = openIssuedDocuments.map(doc => doc.external_id);
+      const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
+        ? 'LINK'
+        : undefined;
+
+      let type: DocumentType = DocumentType.Proforma;
+
+      if (!openIssuedDocuments.length && transactions.length) {
+        type = DocumentType.InvoiceReceipt;
+      } else if (openIssuedDocuments.length && transactions.length) {
+        type = DocumentType.Receipt;
+      }
+
+      let remarks = charge.user_description;
+      if (greenInvoiceDocuments.length) {
+        remarks = greenInvoiceDocuments.map(doc => doc.remarks).join(', ');
+        switch (type) {
+          case DocumentType.Receipt:
+            remarks = `Receipt for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
+            break;
+        }
+      }
+
+      return {
+        remarks,
+        // description: ____,
+        // footer: ____,
+        type,
+        date: dateToTimelessDateString(new Date()),
+        dueDate: dateToTimelessDateString(endOfMonth(new Date())),
+        lang: 'ENGLISH',
+        currency: (charge.transactions_currency ||
+          charge.documents_currency ||
+          defaultCryptoConversionFiatCurrency) as Currency,
+        vatType: 'DEFAULT',
+        rounding: false,
+        signed: true,
+        client: business?.business_id
+          ? {
+              id: business.business_id,
+            }
+          : undefined,
+        income,
+        payment,
+        // linkedPaymentId: ____,
+        // maxPayments: _____,
+        // discount: _____,
+        linkedDocumentIds,
+        linkType,
+      };
     },
   },
   Mutation: {
@@ -217,9 +350,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       };
     },
     previewGreenInvoiceDocument: async (_, { input: initialInput }, { injector }) => {
-      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
-      const input = convertDocumentInputIntoGreenInvoiceInput(initialInput);
-      const document = await greenInvoiceClient.previewDocuments({ input });
+      const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
+      const document = await injector.get(GreenInvoiceClientProvider).previewDocuments({ input });
 
       if (!document) {
         throw new GraphQLError('Failed to generate document preview');
@@ -237,13 +369,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       { input: initialInput, emailContent, attachment, chargeId },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
-      const greenInvoiceClient = injector.get(GreenInvoiceClientProvider);
+      const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
       const input = {
-        ...convertDocumentInputIntoGreenInvoiceInput(initialInput),
+        ...coreInput,
         emailContent,
         attachment,
       };
-      const document = await greenInvoiceClient.addDocuments({ input });
+      const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
 
       if (!document) {
         throw new GraphQLError('Failed to issue new document');

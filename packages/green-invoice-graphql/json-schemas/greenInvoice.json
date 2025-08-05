@@ -97,6 +97,128 @@
         }
       }
     },
+    "getClientResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/ClientId"
+        },
+        "name": {
+          "$ref": "#/definitions/ClientName"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the client currently active or not"
+        },
+        "taxId": {
+          "type": "string",
+          "description": "The client tax ID",
+          "examples": ["0123456789"]
+        },
+        "paymentTerms": {
+          "type": "integer",
+          "description": "The client payment term, default is 0",
+          "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+        },
+        "bankName": {
+          "type": "string",
+          "description": "The client bank name"
+        },
+        "bankBranch": {
+          "type": "string",
+          "description": "The client bank branch"
+        },
+        "bankAccount": {
+          "type": "string",
+          "description": "The supplier bank account number"
+        },
+        "country": {
+          "$ref": "#/definitions/Country"
+        },
+        "phone": {
+          "$ref": "#/definitions/ClientPhone"
+        },
+
+        "mobile": {
+          "type": "string",
+          "description": "The supplier mobile number"
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "The supplier contact person name"
+        },
+        "emails": {
+          "$ref": "#/definitions/ClientEmails"
+        },
+        "labels": {
+          "type": "array",
+          "additionalItems": false,
+          "items": {
+            "type": "string"
+          }
+        },
+        "creationDate": {
+          "$ref": "#/definitions/CreationDate"
+        },
+        "lastUpdateDate": {
+          "type": "integer",
+          "description": "The last update date of the supplier, in UNIX timestamp format"
+        },
+        "send": {
+          "type": "boolean",
+          "description": "Whether to send emails to the user automatically when assigning him to an invoice or not"
+        },
+        "department": {
+          "type": "string",
+          "description": "The supplier department"
+        },
+        "accountingKey": {
+          "type": "string",
+          "description": "The supplier accounting key"
+        },
+        "address": {
+          "type": "string",
+          "description": "The supplier address"
+        },
+        "city": {
+          "type": "string",
+          "description": "The supplier city"
+        },
+        "zip": {
+          "type": "string",
+          "description": "The supplier zip code"
+        },
+        "category": {
+          "type": "integer",
+          "description": "The category this client is related to"
+        },
+        "subCategory": {
+          "type": "integer",
+          "description": "The sub category this client is related to"
+        },
+        "fax": {
+          "type": "string",
+          "description": "Client fax"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Client remarks for self use",
+          "example": "Customer approved 2016 sales"
+        },
+        "incomeAmount": {
+          "type": "number",
+          "description": "The amount of incomes from the customer"
+        },
+        "paymentAmount": {
+          "type": "number"
+        },
+        "balanceAmount": {
+          "type": "number",
+          "description": "The balance amount of the client"
+        }
+      }
+    },
     "getExpenseRequest": {
       "type": "object",
       "additionalProperties": false,
@@ -1619,7 +1741,7 @@
         "linkType": {
           "description": "Reference type (applicable only when using linkedDocumentIds)",
           "type": "string",
-          "enum": ["link", "cancel"]
+          "enum": ["LINK", "CANCEL"]
         }
       },
       "required": ["type", "lang", "currency", "vatType"]
@@ -2105,75 +2227,95 @@
       ]
     },
     "PaymentDocument": {
-      "allOf": [
-        { "$ref": "#/definitions/PaymentCore" },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "bankName": {
-              "type": "string",
-              "description": "Bank name (required when using Cheques)",
-              "examples": ["My Bank"]
-            },
-            "bankBranch": {
-              "type": "string",
-              "description": "Bank branch number (required when using Cheques)",
-              "examples": ["212345"]
-            },
-            "bankAccount": {
-              "type": "string",
-              "description": "Bank account number (required when using Cheques)",
-              "examples": ["212345"]
-            },
-            "chequeNum": {
-              "type": "string",
-              "description": "Cheque number (required when using Cheques)",
-              "examples": ["10002"]
-            },
-            "accountId": {
-              "type": "string",
-              "description": "Payer account (PayPal / Payment App / Other)",
-              "examples": ["TFGFFGSYYE"]
-            },
-            "transactionId": {
-              "type": "string",
-              "description": "Transaction ID (PayPal / Payment App / Other)",
-              "examples": ["TGBBBXNLKS75SKJS"]
-            },
-            "appType": {
-              "type": "integer",
-              "description": "Payment app type (required when using 'payment app' as a Payment type)",
-              "enum": [1, 2, 3, 4, 5, 6]
-            },
-            "cardType": {
-              "type": "integer",
-              "description": "Credit card type",
-              "enum": [1, 2, 3, 4, 5]
-            },
-            "cardNum": {
-              "type": "string",
-              "description": "Credit card's last 4 digits",
-              "examples": ["8765"]
-            },
-            "dealType": {
-              "type": "integer",
-              "description": "Credit card deal type",
-              "enum": [1, 2, 3, 4, 5, 6]
-            },
-            "numPayments": {
-              "type": "integer",
-              "description": "Credit card's payments count (1-36)",
-              "examples": [1]
-            },
-            "firstPayment": {
-              "type": "number",
-              "description": "Credit card's first payment",
-              "examples": [10]
-            }
-          },
-          "required": ["type", "price", "currency"]
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "$ref": "#/definitions/Currency"
+        },
+        "currencyRate": {
+          "$ref": "#/definitions/CurrencyRate"
+        },
+        "date": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "description": "Sum paid",
+          "examples": [300]
+        },
+        "type": {
+          "type": "number",
+          "description": "Payment method",
+          "enum": [-1, 0, 1, 2, 3, 4, 5, 9, 10, 11]
+        },
+        "subType": {
+          "type": "number",
+          "description": "Other payment sub type (required when using 'other' as a Payment type)",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8]
+        },
+        "bankName": {
+          "type": "string",
+          "description": "Bank name (required when using Cheques)",
+          "examples": ["My Bank"]
+        },
+        "bankBranch": {
+          "type": "string",
+          "description": "Bank branch number (required when using Cheques)",
+          "examples": ["212345"]
+        },
+        "bankAccount": {
+          "type": "string",
+          "description": "Bank account number (required when using Cheques)",
+          "examples": ["212345"]
+        },
+        "chequeNum": {
+          "type": "string",
+          "description": "Cheque number (required when using Cheques)",
+          "examples": ["10002"]
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Payer account (PayPal / Payment App / Other)",
+          "examples": ["TFGFFGSYYE"]
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Transaction ID (PayPal / Payment App / Other)",
+          "examples": ["TGBBBXNLKS75SKJS"]
+        },
+        "appType": {
+          "type": "integer",
+          "description": "Payment app type (required when using 'payment app' as a Payment type)",
+          "enum": [1, 2, 3, 4, 5, 6]
+        },
+        "cardType": {
+          "type": "integer",
+          "description": "Credit card type",
+          "enum": [1, 2, 3, 4, 5]
+        },
+        "cardNum": {
+          "type": "string",
+          "description": "Credit card's last 4 digits",
+          "examples": ["8765"]
+        },
+        "dealType": {
+          "type": "integer",
+          "description": "Credit card deal type",
+          "enum": [1, 2, 3, 4, 5, 6]
+        },
+        "numPayments": {
+          "type": "integer",
+          "description": "Credit card's payments count (1-36)",
+          "examples": [1]
+        },
+        "firstPayment": {
+          "type": "number",
+          "description": "Credit card's first payment",
+          "examples": [10]
         }
-      ]
+      },
+      "required": ["type", "price", "currency"]
     },
     "PaymentCore": {
       "type": "object",
@@ -2185,8 +2327,7 @@
           "$ref": "#/definitions/CurrencyRate"
         },
         "date": {
-          "type": "string",
-          "format": "date"
+          "type": "string"
         },
         "price": {
           "type": "number",

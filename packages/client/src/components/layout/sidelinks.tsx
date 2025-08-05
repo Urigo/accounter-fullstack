@@ -198,7 +198,13 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Issue Documents',
         label: '',
-        href: '/issue-documents',
+        href: '/documents/issue-documents',
+        icon: <FilePen size={18} />,
+      },
+      {
+        title: 'Issue Document',
+        label: '',
+        href: '/documents/issue-document',
         icon: <FilePen size={18} />,
       },
     ],

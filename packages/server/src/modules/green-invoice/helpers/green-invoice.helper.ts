@@ -8,12 +8,14 @@ import type {
   ExpenseDocumentType,
   Currency as GreenInvoiceCurrency,
   DocumentType as GreenInvoiceDocumentType,
+  mutationInput_addDocument_input_allOf_0_client_Input,
   mutationInput_addDocument_input_allOf_0_discount_type,
   mutationInput_addDocument_input_allOf_0_linkType,
-  mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType,
-  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_appType,
-  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_cardType,
-  mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_dealType,
+  mutationInput_addDocument_input_allOf_0_payment_items_appType,
+  mutationInput_addDocument_input_allOf_0_payment_items_cardType,
+  mutationInput_addDocument_input_allOf_0_payment_items_dealType,
+  mutationInput_addDocument_input_allOf_0_payment_items_subType,
+  mutationInput_addDocument_input_allOf_0_payment_items_type,
   VatType,
 } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
@@ -25,6 +27,7 @@ import type { document_status, IInsertDocumentsParams } from '@modules/documents
 import {
   Currency,
   DocumentType,
+  GreenInvoicePaymentType,
   NewDocumentInput,
   type GreenInvoiceDiscountType,
   type GreenInvoiceDocumentLang,
@@ -97,6 +100,30 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
   }
 }
 
+export function getGreenInvoiceDocumentNameFromType(
+  documentType: DocumentType | GreenInvoiceDocumentType,
+): string {
+  switch (documentType) {
+    case DocumentType.Invoice:
+    case '_305':
+      return 'Invoice';
+    case DocumentType.Proforma:
+    case '_300':
+      return 'Proforma';
+    case DocumentType.InvoiceReceipt:
+    case '_320':
+      return 'InvoiceReceipt';
+    case DocumentType.CreditInvoice:
+    case '_330':
+      return 'CreditInvoice';
+    case DocumentType.Receipt:
+    case '_400':
+      return 'Receipt';
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentLanguage(lang: GreenInvoiceDocumentLang): DocumentLang {
   switch (lang) {
     case 'HEBREW':
@@ -121,6 +148,19 @@ export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): Va
   }
 }
 
+export function getVatTypeFromGreenInvoiceDocument(vatType: VatType): GreenInvoiceVatType {
+  switch (vatType) {
+    case '_0':
+      return 'DEFAULT';
+    case '_1':
+      return 'EXEMPT';
+    case '_2':
+      return 'MIXED';
+    default:
+      throw new Error(`Unsupported VAT type: ${vatType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentDiscountType(
   discountType: GreenInvoiceDiscountType,
 ): mutationInput_addDocument_input_allOf_0_discount_type {
@@ -134,9 +174,36 @@ export function getGreenInvoiceDocumentDiscountType(
   }
 }
 
+export function getGreenInvoiceDocumentPaymentType(
+  type: GreenInvoicePaymentType,
+): mutationInput_addDocument_input_allOf_0_payment_items_type {
+  switch (type) {
+    case 'TAX_DEDUCTION':
+      return 'NEGATIVE_1';
+    case 'CASH':
+      return '_1';
+    case 'CHEQUE':
+      return '_2';
+    case 'CREDIT_CARD':
+      return '_3';
+    case 'WIRE_TRANSFER':
+      return '_4';
+    case 'PAYPAL':
+      return '_5';
+    case 'OTHER_DEDUCTION':
+      return '_9';
+    case 'PAYMENT_APP':
+      return '_10';
+    case 'OTHER':
+      return '_11';
+    default:
+      throw new Error(`Unsupported payment type: ${type}`);
+  }
+}
+
 export function getGreenInvoiceDocumentPaymentSubType(
   subType: GreenInvoicePaymentSubType,
-): mutationInput_addDocument_input_allOf_0_payment_items_allOf_0_subType {
+): mutationInput_addDocument_input_allOf_0_payment_items_subType {
   switch (subType) {
     case 'BITCOIN':
       return '_1';
@@ -161,7 +228,7 @@ export function getGreenInvoiceDocumentPaymentSubType(
 
 export function getGreenInvoiceDocumentPaymentAppType(
   appType: GreenInvoicePaymentAppType,
-): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_appType {
+): mutationInput_addDocument_input_allOf_0_payment_items_appType {
   switch (appType) {
     case 'APPLE_PAY':
       return '_6';
@@ -182,7 +249,7 @@ export function getGreenInvoiceDocumentPaymentAppType(
 
 export function getGreenInvoiceDocumentPaymentCardType(
   cardType: GreenInvoicePaymentCardType,
-): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_cardType {
+): mutationInput_addDocument_input_allOf_0_payment_items_cardType {
   switch (cardType) {
     case 'AMERICAN_EXPRESS':
       return '_4';
@@ -203,7 +270,7 @@ export function getGreenInvoiceDocumentPaymentCardType(
 
 export function getGreenInvoiceDocumentPaymentDealType(
   dealType: GreenInvoicePaymentDealType,
-): mutationInput_addDocument_input_allOf_0_payment_items_allOf_1_dealType {
+): mutationInput_addDocument_input_allOf_0_payment_items_dealType {
   switch (dealType) {
     case 'CREDIT':
       return '_3';
@@ -227,9 +294,9 @@ export function getGreenInvoiceDocumentLinkType(
 ): mutationInput_addDocument_input_allOf_0_linkType {
   switch (linkType) {
     case 'CANCEL':
-      return 'cancel';
+      return 'CANCEL';
     case 'LINK':
-      return 'link';
+      return 'LINK';
     default:
       throw new Error(`Unsupported link type: ${linkType}`);
   }
@@ -469,11 +536,44 @@ export async function getGreenInvoiceDocuments(injector: Injector, recursive: bo
   return documents;
 }
 
-export function convertDocumentInputIntoGreenInvoiceInput(
+export async function convertDocumentInputIntoGreenInvoiceInput(
   initialInput: NewDocumentInput,
-): DocumentInputNew_Input {
+  injector: Injector,
+): Promise<DocumentInputNew_Input> {
+  let client: mutationInput_addDocument_input_allOf_0_client_Input | undefined = undefined;
+  if (initialInput.client) {
+    const clientInfo = await injector
+      .get(GreenInvoiceProvider)
+      .getBusinessMatchByIdLoader.load(initialInput.client.id);
+    if (!clientInfo) {
+      throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
+    }
+    const greenInvoiceClient = await injector
+      .get(GreenInvoiceClientProvider)
+      .getClient({ id: clientInfo.green_invoice_id });
+    if (!greenInvoiceClient) {
+      throw new GraphQLError(
+        `Green Invoice client with ID ${clientInfo.green_invoice_id} not found`,
+      );
+    }
+    client = {
+      id: clientInfo.green_invoice_id,
+      country: greenInvoiceClient.country,
+      name: greenInvoiceClient.name,
+      phone: greenInvoiceClient.phone,
+      taxId: greenInvoiceClient.taxId,
+      self: false,
+      address: greenInvoiceClient.address,
+      city: greenInvoiceClient.city,
+      zip: greenInvoiceClient.zip,
+      fax: greenInvoiceClient.fax,
+      mobile: greenInvoiceClient.mobile,
+      emails: [...(greenInvoiceClient.emails ?? []), 'ap@the-guild.dev'],
+    };
+  }
   return {
     ...initialInput,
+    currency: convertCurrencyToGreenInvoice(initialInput.currency),
     type: getGreenInvoiceDocumentType(initialInput.type),
     lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
     vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
@@ -483,19 +583,16 @@ export function convertDocumentInputIntoGreenInvoiceInput(
           type: getGreenInvoiceDocumentDiscountType(initialInput.discount.type),
         }
       : undefined,
-    client: initialInput.client
-      ? {
-          ...initialInput.client,
-          emails: initialInput.client.emails?.length ? [...initialInput.client.emails] : undefined,
-        }
-      : undefined,
+    client,
     income:
       initialInput.income?.map(income => ({
         ...income,
+        currency: convertCurrencyToGreenInvoice(income.currency),
         vatType: getGreenInvoiceDocumentVatType(income.vatType ?? 'DEFAULT'),
       })) ?? [],
     payment: initialInput.payment?.map(payment => ({
       ...payment,
+      type: getGreenInvoiceDocumentPaymentType(payment.type),
       subType: payment.subType ? getGreenInvoiceDocumentPaymentSubType(payment.subType) : undefined,
       appType: payment.appType ? getGreenInvoiceDocumentPaymentAppType(payment.appType) : undefined,
       cardType: payment.cardType
@@ -504,6 +601,7 @@ export function convertDocumentInputIntoGreenInvoiceInput(
       dealType: payment.dealType
         ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
         : undefined,
+      currency: convertCurrencyToGreenInvoice(payment.currency),
     })),
     linkedDocumentIds: initialInput.linkedDocumentIds?.length
       ? [...initialInput.linkedDocumentIds]

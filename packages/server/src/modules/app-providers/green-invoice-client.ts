@@ -187,4 +187,9 @@ export class GreenInvoiceClientProvider {
     const sdk = await this.getSDK();
     return sdk.closeDocument_mutation(...params).then(res => res.closeDocument);
   }
+
+  public async getClient(...params: Parameters<Sdk['getClient_query']>) {
+    const sdk = await this.getSDK();
+    return sdk.getClient_query(...params).then(res => res.getClient);
+  }
 }
