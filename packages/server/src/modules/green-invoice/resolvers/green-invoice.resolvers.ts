@@ -139,6 +139,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             remarks = `Receipt for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
             break;
         }
+      } else if (business?.business_id) {
+        const greenInvoiceBusinessMatch = await injector
+          .get(GreenInvoiceProvider)
+          .getBusinessMatchByIdLoader.load(business.business_id);
+        if (greenInvoiceBusinessMatch?.remark) {
+          remarks = greenInvoiceBusinessMatch.remark;
+        }
       }
 
       return {
