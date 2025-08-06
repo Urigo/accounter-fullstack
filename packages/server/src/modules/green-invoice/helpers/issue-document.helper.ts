@@ -7,6 +7,7 @@ import {
   IGetIssuedDocumentsByIdsResult,
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
 import {
@@ -15,6 +16,7 @@ import {
   GreenInvoiceIncome,
   GreenInvoicePayment,
   GreenInvoicePaymentType,
+  GreenInvoiceVatType,
   NewDocumentInfo,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
@@ -269,4 +271,21 @@ export async function getClientFromGreenInvoiceClient(
     fax: greenInvoiceClient.fax,
     mobile: greenInvoiceClient.mobile,
   };
+}
+
+export async function deduceVatTypeFromBusiness(
+  injector: Injector,
+  businessId?: string | null,
+): Promise<GreenInvoiceVatType> {
+  if (!businessId) return 'DEFAULT';
+
+  const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(businessId);
+  if (!business) return 'DEFAULT';
+
+  // Deduce VAT type based on business information
+  if (business.country === 'Israel') {
+    return 'MIXED';
+  }
+
+  return 'EXEMPT';
 }

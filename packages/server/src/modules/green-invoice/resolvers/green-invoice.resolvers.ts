@@ -25,6 +25,7 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { Currency, DocumentType } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
+  deduceVatTypeFromBusiness,
   filterAndHandleSwiftTransactions,
   getClientFromGreenInvoiceClient,
   getDocumentDateOutOfTransactions,
@@ -100,7 +101,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(`Charge with ID "${chargeId}" not found`);
       }
 
-      const businessPromise = charge.business_id
+      const businessMatchPromise = charge.business_id
         ? injector.get(GreenInvoiceProvider).getBusinessMatchByIdLoader.load(charge.business_id)
         : Promise.resolve(undefined);
 
@@ -129,10 +130,16 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         ? getClientFromGreenInvoiceClient(injector, charge.business_id)
         : Promise.resolve(undefined);
 
-      const [business, openIssuedDocuments, client] = await Promise.all([
-        businessPromise,
+      const paymentPromise = getPaymentsFromTransactions(injector, transactions);
+
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, charge.business_id);
+
+      const [businessMatch, openIssuedDocuments, client, payment, vatType] = await Promise.all([
+        businessMatchPromise,
         openIssuedDocumentsPromise,
         clientPromise,
+        paymentPromise,
+        vatTypePromise,
       ]);
 
       const greenInvoiceDocuments = await Promise.all(
@@ -150,7 +157,6 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         ),
       ).then(res => res.filter(Boolean) as Document[]);
 
-      const payment = await getPaymentsFromTransactions(injector, transactions);
       const income = getIncomeFromDocuments(
         openIssuedDocuments.map(doc => ({
           document: documents.find(d => d.id === doc.id)!,
@@ -172,13 +178,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             remarks = `${getGreenInvoiceDocumentNameFromType(type)} for ${greenInvoiceDocuments.map(doc => `${getGreenInvoiceDocumentNameFromType(doc.type)} ${doc.number}`).join(', ')}`;
             break;
         }
-      } else if (business?.business_id) {
-        const greenInvoiceBusinessMatch = await injector
-          .get(GreenInvoiceProvider)
-          .getBusinessMatchByIdLoader.load(business.business_id);
-        if (greenInvoiceBusinessMatch?.remark) {
-          remarks = greenInvoiceBusinessMatch.remark;
-        }
+      } else if (businessMatch?.remark) {
+        remarks = businessMatch.remark;
       }
 
       const documentDate = getDocumentDateOutOfTransactions(transactions);
@@ -194,7 +195,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         currency: (charge.transactions_currency ||
           charge.documents_currency ||
           defaultCryptoConversionFiatCurrency) as Currency,
-        vatType: 'DEFAULT',
+        vatType,
         rounding: false,
         signed: true,
         client,
@@ -253,9 +254,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
-      const [businessMatch, openIssuedDocument] = await Promise.all([
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, charge.business_id);
+
+      const [businessMatch, openIssuedDocument, vatType] = await Promise.all([
         businessMatchPromise,
         openIssuedDocumentPromise,
+        vatTypePromise,
       ]);
 
       if (!openIssuedDocument) {
@@ -337,7 +341,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         currency: (charge.transactions_currency ||
           charge.documents_currency ||
           defaultCryptoConversionFiatCurrency) as Currency,
-        vatType: 'DEFAULT',
+        vatType,
         rounding: false,
         signed: true,
         client,
