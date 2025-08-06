@@ -225,8 +225,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.transactions_min_event_date, ec.documents_min_date), ec.id)  END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN (COALESCE(ec.documents_min_date, ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.transactions_min_event_date, ec.documents_min_date), ec.id)  END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id)  END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date'  THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id)  END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN (ec.event_amount, ec.id) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN (ec.event_amount, ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
