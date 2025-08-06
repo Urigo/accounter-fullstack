@@ -334,7 +334,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
@@ -343,7 +343,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     placeholder="Document description"
                     className="min-h-[60px]"
                   />
-                </div>
+                </div> */}
 
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks</Label>
@@ -356,7 +356,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   />
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="footer">Footer Text</Label>
                   <Textarea
                     id="footer"
@@ -365,10 +365,10 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     placeholder="Footer text"
                     className="min-h-[60px]"
                   />
-                </div>
+                </div> */}
 
                 {/* Discount Section */}
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <Label>Discount</Label>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -405,9 +405,9 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       </Select>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
-                <div className="flex items-center space-x-4">
+                {/* <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="rounding"
@@ -424,7 +424,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     />
                     <Label htmlFor="signed">Digital signature</Label>
                   </div>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
 

@@ -88,38 +88,7 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Catalog Number</Label>
-                <Input
-                  value={item.catalogNum || ''}
-                  onChange={e => updateIncomeItem(index, 'catalogNum', e.target.value)}
-                  placeholder="SKU/Catalog #"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>VAT Type</Label>
-                <Select
-                  value={item.vatType}
-                  onValueChange={(value: GreenInvoiceVatType) =>
-                    updateIncomeItem(index, 'vatType', value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vatTypes.map(vat => (
-                      <SelectItem key={vat.value} value={vat.value}>
-                        {vat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Price</Label>
                 <Input
@@ -162,6 +131,37 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                   placeholder="1"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* <div className="space-y-2">
+                <Label>Catalog Number</Label>
+                <Input
+                  value={item.catalogNum || ''}
+                  onChange={e => updateIncomeItem(index, 'catalogNum', e.target.value)}
+                  placeholder="SKU/Catalog #"
+                />
+              </div> */}
+              <div className="space-y-2">
+                <Label>VAT Type</Label>
+                <Select
+                  value={item.vatType}
+                  onValueChange={(value: GreenInvoiceVatType) =>
+                    updateIncomeItem(index, 'vatType', value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vatTypes.map(vat => (
+                      <SelectItem key={vat.value} value={vat.value}>
+                        {vat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label>VAT Rate (%)</Label>
                 <Input
@@ -174,6 +174,9 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                   placeholder="0.00"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Total</Label>
                 <div className="px-3 py-2 bg-gray-50 rounded-md text-sm font-medium">
