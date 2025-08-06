@@ -1,20 +1,27 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { Document } from '@accounter/green-invoice-graphql';
+import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import {
   IGetDocumentsByChargeIdResult,
   IGetIssuedDocumentsByIdsResult,
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
 import {
   Currency,
+  GreenInvoiceClient,
   GreenInvoiceIncome,
   GreenInvoicePayment,
   GreenInvoicePaymentType,
+  GreenInvoiceVatType,
+  NewDocumentInfo,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
+import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import {
   getVatTypeFromGreenInvoiceDocument,
   normalizeDocumentType,
@@ -97,8 +104,8 @@ export async function getPaymentsFromTransactions(
 
       const payment: GreenInvoicePayment = {
         currency: transaction.currency as Currency,
-        currencyRate: Number(transaction.currency_rate),
-        date: dateToTimelessDateString(transaction.event_date),
+        currencyRate: undefined,
+        date: dateToTimelessDateString(transaction.debit_date ?? transaction.event_date),
         price: Number(transaction.amount),
         type,
         transactionId: transaction.id,
@@ -125,8 +132,13 @@ export function getIncomeFromDocuments(
           throw new Error('Income currency is missing');
         }
         const income: GreenInvoiceIncome = {
-          ...originIncome,
+          description: originIncome.description,
+          quantity: originIncome.quantity,
+          price: originIncome.price,
           currency: originIncome.currency as Currency,
+          currencyRate: undefined,
+          vatRate: originIncome.vatRate,
+          itemId: originIncome.itemId,
           vatType: getVatTypeFromGreenInvoiceDocument(greenInvoiceDocument.vatType),
         };
         return income;
@@ -195,4 +207,85 @@ export function filterAndHandleSwiftTransactions(
   throw new GraphQLError(
     "Unable to process transactions. Couldn't match swift fees to transactions",
   );
+}
+
+export function getLinkedDocumentsAttributes(
+  issuedDocuments: IGetIssuedDocumentsByIdsResult[],
+): Pick<NewDocumentInfo, 'linkedDocumentIds' | 'linkType'> {
+  const linkedDocumentIds = issuedDocuments.map(doc => doc.external_id);
+  return {
+    linkedDocumentIds,
+    linkType: linkedDocumentIds.length ? 'LINK' : undefined,
+  };
+}
+
+export function getDocumentDateOutOfTransactions(
+  transactions: IGetTransactionsByChargeIdsResult[],
+): TimelessDateString | undefined {
+  const debitDates = transactions.map(tx => tx.debit_date).filter(Boolean) as Date[];
+
+  // if no debit dates, use current date
+  if (!debitDates.length) return dateToTimelessDateString(new Date());
+
+  // Sort dates and take the first one
+  const sortedDates = [...debitDates].sort((a, b) => b.getTime() - a.getTime());
+  const firstDate = sortedDates[0];
+
+  // Return the date in the required format
+  return dateToTimelessDateString(firstDate);
+}
+
+export async function getClientFromGreenInvoiceClient(
+  injector: Injector,
+  businessId: string,
+  useGreenInvoiceId = false,
+): Promise<GreenInvoiceClient | undefined> {
+  const greenInvoiceBusinessMatch = await injector
+    .get(GreenInvoiceProvider)
+    .getBusinessMatchByIdLoader.load(businessId);
+  if (!greenInvoiceBusinessMatch) {
+    return useGreenInvoiceId ? undefined : { id: businessId };
+  }
+
+  const greenInvoiceClient = await injector
+    .get(GreenInvoiceClientProvider)
+    .getClient({ id: greenInvoiceBusinessMatch.green_invoice_id });
+
+  if (!greenInvoiceClient) {
+    return useGreenInvoiceId ? undefined : { id: businessId };
+  }
+
+  return {
+    id: useGreenInvoiceId && greenInvoiceClient.id ? greenInvoiceClient.id : businessId,
+    country: greenInvoiceClient.country,
+    emails: [
+      ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
+      'ap@the-guild.dev',
+    ],
+    name: greenInvoiceClient.name,
+    phone: greenInvoiceClient.phone,
+    taxId: greenInvoiceClient.taxId,
+    address: greenInvoiceClient.address,
+    city: greenInvoiceClient.city,
+    zip: greenInvoiceClient.zip,
+    fax: greenInvoiceClient.fax,
+    mobile: greenInvoiceClient.mobile,
+  };
+}
+
+export async function deduceVatTypeFromBusiness(
+  injector: Injector,
+  businessId?: string | null,
+): Promise<GreenInvoiceVatType> {
+  if (!businessId) return 'DEFAULT';
+
+  const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(businessId);
+  if (!business) return 'DEFAULT';
+
+  // Deduce VAT type based on business information
+  if (business.country === 'Israel') {
+    return 'MIXED';
+  }
+
+  return 'EXEMPT';
 }

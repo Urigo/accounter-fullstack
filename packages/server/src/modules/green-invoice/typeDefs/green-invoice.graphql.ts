@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
+    greenInvoiceBusiness(businessId: UUID!): GreenInvoiceBusiness! @auth(role: ACCOUNTANT)
     greenInvoiceBusinesses: [GreenInvoiceBusiness!]! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByCharge(chargeId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByDocument(documentId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
@@ -31,6 +32,7 @@ export default gql`
     remark: String
     emails: [String!]!
     generatedDocumentType: DocumentType!
+    clientInfo: GreenInvoiceClient!
   }
 
   " input for generating monthly client document "
@@ -93,16 +95,12 @@ export default gql`
 
   " income info "
   type GreenInvoiceIncome {
-    amount: Float
-    amountTotal: Float
-    catalogNum: String
     currency: Currency!
     currencyRate: Float
     description: String!
     itemId: String
     price: Float!
     quantity: Float!
-    vat: Float
     vatRate: Float
     vatType: GreenInvoiceVatType!
   }

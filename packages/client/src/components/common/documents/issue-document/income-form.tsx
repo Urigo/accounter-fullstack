@@ -15,7 +15,7 @@ import {
 } from '../../../ui/select.jsx';
 import { Textarea } from '../../../ui/textarea.jsx';
 import type { Income } from './types/document.js';
-import { getVatTypeOptions } from './utils/enum-helpers.js';
+import { getCurrencyOptions, getVatTypeOptions } from './utils/enum-helpers.js';
 
 interface IncomeFormProps {
   income: Income[];
@@ -24,6 +24,7 @@ interface IncomeFormProps {
 }
 
 const vatTypes = getVatTypeOptions();
+const currencies = getCurrencyOptions();
 
 export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
   const addIncomeItem = () => {
@@ -37,7 +38,11 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
     onChange([...income, newItem]);
   };
 
-  const updateIncomeItem = <T extends keyof Income>(index: number, field: T, value: Income[T]) => {
+  const updateIncomeItem = <T extends keyof Income>(
+    index: number,
+    field: T,
+    value: Income[T],
+  ): void => {
     const updatedIncome = [...income];
     updatedIncome[index] = { ...updatedIncome[index], [field]: value };
     onChange(updatedIncome);
@@ -87,15 +92,60 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
+                <Label>Price</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={item.price}
+                  onChange={e =>
+                    updateIncomeItem(index, 'price', Number.parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select
+                  value={item.currency}
+                  onValueChange={(value: Currency) => updateIncomeItem(index, 'currency', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map(curr => (
+                      <SelectItem key={curr.value} value={curr.value}>
+                        {curr.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Quantity</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  value={item.quantity}
+                  onChange={e =>
+                    updateIncomeItem(index, 'quantity', Number.parseInt(e.target.value) || 1)
+                  }
+                  placeholder="1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* <div className="space-y-2">
                 <Label>Catalog Number</Label>
                 <Input
                   value={item.catalogNum || ''}
                   onChange={e => updateIncomeItem(index, 'catalogNum', e.target.value)}
                   placeholder="SKU/Catalog #"
                 />
-              </div>
+              </div> */}
               <div className="space-y-2">
                 <Label>VAT Type</Label>
                 <Select
@@ -116,33 +166,6 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label>Price</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={item.price}
-                  onChange={e =>
-                    updateIncomeItem(index, 'price', Number.parseFloat(e.target.value) || 0)
-                  }
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  step="1"
-                  value={item.quantity}
-                  onChange={e =>
-                    updateIncomeItem(index, 'quantity', Number.parseInt(e.target.value) || 1)
-                  }
-                  placeholder="1"
-                />
-              </div>
               <div className="space-y-2">
                 <Label>VAT Rate (%)</Label>
                 <Input
@@ -155,6 +178,9 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                   placeholder="0.00"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Total</Label>
                 <div className="px-3 py-2 bg-gray-50 rounded-md text-sm font-medium">

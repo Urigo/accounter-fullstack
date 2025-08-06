@@ -1,21 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Eye, FileText, Loader2, Send, Settings } from 'lucide-react';
+import { useQuery } from 'urql';
 import {
+  ClientInfoForDocumentIssuingDocument,
   Currency,
   DocumentType,
-  GreenInvoiceDiscountType,
   GreenInvoiceDocumentLang,
   GreenInvoiceVatType,
+  IssueDocumentClientFieldsFragment,
+  IssueDocumentClientFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
+import { getFragmentData } from '../../../../gql/index.js';
 import { useGetGreenInvoiceClients } from '../../../../hooks/use-get-green-invoice-clients.js';
 import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { Button } from '../../../ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
-import { Checkbox } from '../../../ui/checkbox.jsx';
 import { Input } from '../../../ui/input.jsx';
 import { Label } from '../../../ui/label.jsx';
 import {
@@ -26,19 +29,31 @@ import {
   SelectValue,
 } from '../../../ui/select.jsx';
 import { Textarea } from '../../../ui/textarea.jsx';
-import { ClientForm } from './client-form.jsx';
+import { ClientForm, normalizeClientInfo } from './client-form.jsx';
 import { IncomeForm } from './income-form.jsx';
 import { IssueDocumentData, IssueDocumentModal } from './issue-document-modal.js';
 import { PaymentForm } from './payment-form.jsx';
 import { PdfViewer } from './pdf-viewer.js';
-import type { Client, Discount, Income, Payment, PreviewDocumentInput } from './types/document.js';
+import type { Income, Payment, PreviewDocumentInput } from './types/document.js';
 import {
   getCurrencyOptions,
-  getDiscountTypeOptions,
   getDocumentLangOptions,
   getDocumentTypeOptions,
   getVatTypeOptions,
 } from './utils/enum-helpers.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query ClientInfoForDocumentIssuing($businessId: UUID!) {
+    greenInvoiceBusiness(businessId: $businessId) {
+      id
+      clientInfo {
+        id
+        ...IssueDocumentClientFields
+      }
+    }
+  }
+`;
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
@@ -48,7 +63,7 @@ const currencies = getCurrencyOptions();
 const documentTypes = getDocumentTypeOptions();
 const documentLangs = getDocumentLangOptions();
 const vatTypes = getVatTypeOptions();
-const discountTypes = getDiscountTypeOptions();
+// const discountTypes = getDiscountTypeOptions();
 
 export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
@@ -74,6 +89,54 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
   const { previewDocument, fetching: previewFetching } = usePreviewDocument();
   const { issueDocument } = useIssueDocument();
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [clientInfo, setClientInfo] = useState<IssueDocumentClientFieldsFragment | null>(
+    formData.client ?? null,
+  );
+
+  const [{ data: clientInfoData, fetching: clientFetching }, fetchNewClient] = useQuery({
+    pause: true,
+    query: ClientInfoForDocumentIssuingDocument,
+    variables: {
+      businessId: selectedClientId,
+    },
+  });
+
+  // on client change, trigger fetch
+  useEffect(() => {
+    if (selectedClientId) {
+      fetchNewClient();
+    }
+  }, [selectedClientId, fetchNewClient]);
+
+  const updateFormData = useCallback(
+    <T extends keyof PreviewDocumentInput>(field: T, value: PreviewDocumentInput[T]) => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    [],
+  );
+
+  const updateClient = useCallback(
+    (clientInfo: IssueDocumentClientFieldsFragment) => {
+      const client = normalizeClientInfo(clientInfo);
+      setClientInfo(client);
+      updateFormData('client', client);
+    },
+    [updateFormData],
+  );
+
+  // on client info data change, update form client
+  useEffect(() => {
+    if (clientInfoData?.greenInvoiceBusiness?.clientInfo) {
+      const clientInfo = getFragmentData(
+        IssueDocumentClientFieldsFragmentDoc,
+        clientInfoData.greenInvoiceBusiness.clientInfo,
+      );
+      updateClient(clientInfo);
+    }
+  }, [clientInfoData?.greenInvoiceBusiness?.clientInfo, updateClient]);
 
   // Track form changes
   useEffect(() => {
@@ -81,28 +144,18 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
     setIsPreviewCurrent(false);
   }, [formData]);
 
-  const updateFormData = <T extends keyof PreviewDocumentInput>(
-    field: T,
-    value: PreviewDocumentInput[T],
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const updateDiscount = <T extends keyof Discount>(field: T, value: Discount[T]) => {
-    setFormData(prev => ({
-      ...prev,
-      discount: {
-        amount: 0,
-        type: GreenInvoiceDiscountType.Percentage,
-        // eslint-disable-next-line unicorn/no-useless-fallback-in-spread
-        ...(prev.discount ?? {}),
-        [field]: value,
-      },
-    }));
-  };
+  // const updateDiscount = <T extends keyof Discount>(field: T, value: Discount[T]) => {
+  //   setFormData(prev => ({
+  //     ...prev,
+  //     discount: {
+  //       amount: 0,
+  //       type: GreenInvoiceDiscountType.Percentage,
+  //       // eslint-disable-next-line unicorn/no-useless-fallback-in-spread
+  //       ...(prev.discount ?? {}),
+  //       [field]: value,
+  //     },
+  //   }));
+  // };
 
   useEffect(() => {
     if (initialFormData.client?.id) {
@@ -334,7 +387,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
@@ -343,7 +396,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     placeholder="Document description"
                     className="min-h-[60px]"
                   />
-                </div>
+                </div> */}
 
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks</Label>
@@ -356,7 +409,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   />
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="footer">Footer Text</Label>
                   <Textarea
                     id="footer"
@@ -365,10 +418,10 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     placeholder="Footer text"
                     className="min-h-[60px]"
                   />
-                </div>
+                </div> */}
 
                 {/* Discount Section */}
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <Label>Discount</Label>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -405,9 +458,9 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       </Select>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
-                <div className="flex items-center space-x-4">
+                {/* <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="rounding"
@@ -424,17 +477,17 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                     />
                     <Label htmlFor="signed">Digital signature</Label>
                   </div>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
 
             {/* Client Form - Only show when "New Client" is selected */}
-            {selectedClientId === 'new' && (
+
+            {clientInfo && (
               <ClientForm
-                client={
-                  formData.client || { id: `temp-${crypto.randomUUID()}`, name: '', emails: [] }
-                }
-                onChange={(client: Client) => updateFormData('client', client)}
+                client={clientInfo}
+                fetching={clientFetching}
+                onChange={(client: IssueDocumentClientFieldsFragment) => updateClient(client)}
               />
             )}
 

@@ -3,6 +3,7 @@ import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
 import {
+  IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
   NewDocumentInfoFragment,
@@ -17,6 +18,7 @@ import {
   DialogTrigger,
 } from '../../ui/dialog.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
+import { normalizeClientInfo } from '../documents/issue-document/client-form.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
 import { PreviewDocumentInput } from '../documents/issue-document/types/document.js';
 
@@ -59,18 +61,15 @@ import { PreviewDocumentInput } from '../documents/issue-document/types/document
     maxPayments
     client {
       id
+      ...IssueDocumentClientFields
     }
     income {
-      amount
-      amountTotal
-      catalogNum
       currency
       currencyRate
       description
       itemId
       price
       quantity
-      vat
       vatRate
       vatType
     }
@@ -200,15 +199,15 @@ export function IssueDocumentModal({
         rounding: newDocumentInfoDraft.rounding || undefined,
         signed: newDocumentInfoDraft.signed || undefined,
         maxPayments: newDocumentInfoDraft.maxPayments || undefined,
-        client: newDocumentInfoDraft.client || undefined,
+        client: newDocumentInfoDraft.client
+          ? normalizeClientInfo(
+              getFragmentData(IssueDocumentClientFieldsFragmentDoc, newDocumentInfoDraft.client),
+            )
+          : undefined,
         income: newDocumentInfoDraft.income?.map(income => ({
           ...income,
-          amount: income.amount ?? undefined,
-          amountTotal: income.amountTotal ?? undefined,
-          catalogNum: income.catalogNum || undefined,
           currencyRate: income.currencyRate ?? undefined,
           itemId: income.itemId || undefined,
-          vat: income.vat ?? undefined,
           vatRate: income.vatRate ?? undefined,
         })),
         payment: newDocumentInfoDraft.payment?.map(payment => ({
