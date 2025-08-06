@@ -28,6 +28,7 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import {
   filterAndHandleSwiftTransactions,
   getIncomeFromDocuments,
+  getLinkedDocumentsAttributes,
   getPaymentsFromTransactions,
   getTypeFromDocumentsAndTransactions,
 } from '../helpers/issue-document.helper.js';
@@ -134,10 +135,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           greenInvoiceDocument: greenInvoiceDocuments.find(gd => gd.id === doc.external_id)!,
         })),
       );
-      const linkedDocumentIds = openIssuedDocuments.map(doc => doc.external_id);
-      const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
-        ? 'LINK'
-        : undefined;
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes(openIssuedDocuments);
 
       const type = getTypeFromDocumentsAndTransactions(greenInvoiceDocuments, transactions);
 
@@ -183,8 +182,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         // linkedPaymentId: ____,
         // maxPayments: _____,
         // discount: _____,
-        linkedDocumentIds,
-        linkType,
+        ...linkedDocsAttributes,
       };
     },
     newDocumentInfoDraftByDocument: async (
@@ -233,6 +231,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const openIssuedDocumentPromise = injector
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
+
       const [business, openIssuedDocument] = await Promise.all([
         businessPromise,
         openIssuedDocumentPromise,
@@ -268,9 +267,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         );
       }
 
-      const payment = await (transactions
-        ? getPaymentsFromTransactions(injector, transactions)
-        : Promise.resolve([]));
+      const payment = await getPaymentsFromTransactions(injector, transactions ?? []);
       const income = getIncomeFromDocuments([
         {
           document,
@@ -278,10 +275,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           greenInvoiceDocument,
         },
       ]);
-      const linkedDocumentIds = [openIssuedDocument.external_id];
-      const linkType: GreenInvoiceLinkType | undefined = linkedDocumentIds.length
-        ? 'LINK'
-        : undefined;
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes([openIssuedDocument]);
 
       const type = getTypeFromDocumentsAndTransactions([greenInvoiceDocument], transactions ?? []);
 
@@ -326,8 +321,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         // linkedPaymentId: ____,
         // maxPayments: _____,
         // discount: _____,
-        linkedDocumentIds,
-        linkType,
+        ...linkedDocsAttributes,
       };
     },
   },

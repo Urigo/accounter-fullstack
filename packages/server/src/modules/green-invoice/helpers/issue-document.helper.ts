@@ -13,6 +13,7 @@ import {
   GreenInvoiceIncome,
   GreenInvoicePayment,
   GreenInvoicePaymentType,
+  NewDocumentInfo,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
@@ -195,4 +196,14 @@ export function filterAndHandleSwiftTransactions(
   throw new GraphQLError(
     "Unable to process transactions. Couldn't match swift fees to transactions",
   );
+}
+
+export function getLinkedDocumentsAttributes(
+  issuedDocuments: IGetIssuedDocumentsByIdsResult[],
+): Pick<NewDocumentInfo, 'linkedDocumentIds' | 'linkType'> {
+  const linkedDocumentIds = issuedDocuments.map(doc => doc.external_id);
+  return {
+    linkedDocumentIds,
+    linkType: linkedDocumentIds.length ? 'LINK' : undefined,
+  };
 }
