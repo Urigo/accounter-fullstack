@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
 import {
   Currency,
@@ -69,6 +70,10 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
   };
 
   const shouldShowBankFields = (type: GreenInvoicePaymentType) => {
+    return type === GreenInvoicePaymentType.WireTransfer;
+  };
+
+  const shouldShowChequesFields = (type: GreenInvoicePaymentType) => {
     return type === GreenInvoicePaymentType.Cheque;
   };
 
@@ -83,6 +88,34 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
   const shouldShowAppFields = (type: GreenInvoicePaymentType) => {
     return type === GreenInvoicePaymentType.PaymentApp;
   };
+
+  const shouldShowOtherFields = (type: GreenInvoicePaymentType) => {
+    return type === GreenInvoicePaymentType.Other;
+  };
+
+  const AccountAndTransaction = useCallback(
+    (payment: Payment, index: number) => (
+      <>
+        <div className="space-y-2">
+          <Label>Account ID</Label>
+          <Input
+            value={payment.accountId || ''}
+            onChange={e => updatePayment(index, 'accountId', e.target.value)}
+            placeholder="PayPal account ID"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Transaction ID</Label>
+          <Input
+            value={payment.transactionId || ''}
+            onChange={e => updatePayment(index, 'transactionId', e.target.value)}
+            placeholder="Transaction ID"
+          />
+        </div>
+      </>
+    ),
+    [updatePayment],
+  );
 
   return (
     <Card>
@@ -110,7 +143,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
             </div>
 
             {/* Basic Payment Info */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Payment Type</Label>
                 <Select
@@ -161,6 +194,10 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Currency and  Rate */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Input
@@ -169,10 +206,6 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   onChange={e => updatePayment(index, 'date', e.target.value)}
                 />
               </div>
-            </div>
-
-            {/* Currency Rate and Sub Type */}
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Currency Rate (relative to ILS)</Label>
                 <Input
@@ -189,36 +222,13 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   placeholder="1.0000"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Sub Type</Label>
-                <Select
-                  value={payment.subType || ''}
-                  onValueChange={(value: GreenInvoicePaymentSubType) =>
-                    updatePayment(index, 'subType', value || undefined)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sub type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">None</SelectItem>
-                    {subTypes.map(subType => (
-                      <SelectItem key={subType.value} value={subType.value}>
-                        {subType.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             {/* Bank Fields for Cheques */}
             {shouldShowBankFields(payment.type) && (
               <div className="space-y-4">
-                <h5 className="font-medium text-sm text-gray-700">
-                  Bank Details (Required for Cheques)
-                </h5>
-                <div className="grid grid-cols-2 gap-4">
+                <h5 className="font-medium text-sm text-gray-700">Bank Details</h5>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Bank Name</Label>
                     <Input
@@ -235,8 +245,6 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                       placeholder="Branch number"
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Bank Account</Label>
                     <Input
@@ -245,6 +253,15 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                       placeholder="Account number"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Cheques Fields */}
+            {shouldShowChequesFields(payment.type) && (
+              <div className="space-y-4">
+                <h5 className="font-medium text-sm text-gray-700">Cheques Details</h5>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Cheque Number</Label>
                     <Input
@@ -355,22 +372,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
               <div className="space-y-4">
                 <h5 className="font-medium text-sm text-gray-700">PayPal Details</h5>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Account ID</Label>
-                    <Input
-                      value={payment.accountId || ''}
-                      onChange={e => updatePayment(index, 'accountId', e.target.value)}
-                      placeholder="PayPal account ID"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Transaction ID</Label>
-                    <Input
-                      value={payment.transactionId || ''}
-                      onChange={e => updatePayment(index, 'transactionId', e.target.value)}
-                      placeholder="Transaction ID"
-                    />
-                  </div>
+                  {AccountAndTransaction(payment, index)}
                 </div>
               </div>
             )}
@@ -400,22 +402,38 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                       </SelectContent>
                     </Select>
                   </div>
+                  {AccountAndTransaction(payment, index)}
+                </div>
+              </div>
+            )}
+
+            {/* Other Fields */}
+            {shouldShowOtherFields(payment.type) && (
+              <div className="space-y-4">
+                <h5 className="font-medium text-sm text-gray-700">Other Payment Details</h5>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Account ID</Label>
-                    <Input
-                      value={payment.accountId || ''}
-                      onChange={e => updatePayment(index, 'accountId', e.target.value)}
-                      placeholder="App account ID"
-                    />
+                    <Label>Sub Type</Label>
+                    <Select
+                      value={payment.subType || ''}
+                      onValueChange={(value: GreenInvoicePaymentSubType) =>
+                        updatePayment(index, 'subType', value || undefined)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select sub type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">None</SelectItem>
+                        {subTypes.map(subType => (
+                          <SelectItem key={subType.value} value={subType.value}>
+                            {subType.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Transaction ID</Label>
-                    <Input
-                      value={payment.transactionId || ''}
-                      onChange={e => updatePayment(index, 'transactionId', e.target.value)}
-                      placeholder="Transaction ID"
-                    />
-                  </div>
+                  {AccountAndTransaction(payment, index)}
                 </div>
               </div>
             )}
