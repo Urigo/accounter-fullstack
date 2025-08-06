@@ -15,7 +15,7 @@ import {
 } from '../../../ui/select.jsx';
 import { Textarea } from '../../../ui/textarea.jsx';
 import type { Income } from './types/document.js';
-import { getVatTypeOptions } from './utils/enum-helpers.js';
+import { getCurrencyOptions, getVatTypeOptions } from './utils/enum-helpers.js';
 
 interface IncomeFormProps {
   income: Income[];
@@ -24,6 +24,7 @@ interface IncomeFormProps {
 }
 
 const vatTypes = getVatTypeOptions();
+const currencies = getCurrencyOptions();
 
 export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
   const addIncomeItem = () => {
@@ -130,6 +131,24 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                   }
                   placeholder="0.00"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select
+                  value={item.currency}
+                  onValueChange={(value: Currency) => updateIncomeItem(index, 'currency', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map(curr => (
+                      <SelectItem key={curr.value} value={curr.value}>
+                        {curr.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Quantity</Label>
