@@ -228,7 +228,7 @@ export function getDocumentDateOutOfTransactions(
   if (!debitDates.length) return dateToTimelessDateString(new Date());
 
   // Sort dates and take the first one
-  const sortedDates = debitDates.sort((a, b) => b.getTime() - a.getTime());
+  const sortedDates = [...debitDates].sort((a, b) => b.getTime() - a.getTime());
   const firstDate = sortedDates[0];
 
   // Return the date in the required format

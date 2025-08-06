@@ -55,11 +55,14 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
     onChange([...payments, newPayment]);
   };
 
-  const updatePayment = <T extends keyof Payment>(index: number, field: T, value: Payment[T]) => {
-    const updatedPayments = [...payments];
-    updatedPayments[index] = { ...updatedPayments[index], [field]: value };
-    onChange(updatedPayments);
-  };
+  const updatePayment = useCallback(
+    <T extends keyof Payment>(index: number, field: T, value: Payment[T]) => {
+      const updatedPayments = [...payments];
+      updatedPayments[index] = { ...updatedPayments[index], [field]: value };
+      onChange(updatedPayments);
+    },
+    [payments, onChange],
+  );
 
   const removePayment = (index: number) => {
     onChange(payments.filter((_, i) => i !== index));
