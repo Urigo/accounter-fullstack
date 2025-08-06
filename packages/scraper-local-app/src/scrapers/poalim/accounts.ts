@@ -112,9 +112,9 @@ export async function getPoalimAccounts(bankKey: string) {
             if (dbAccount.account_deal_date !== account.accountDealDate) {
               diffs.push('accountDealDate');
             }
-            if (dbAccount.account_update_date !== account.accountUpdateDate) {
-              diffs.push('accountUpdateDate');
-            }
+            // if (dbAccount.account_update_date !== account.accountUpdateDate) {
+            //   diffs.push(`accountUpdateDate DB:${dbAccount.account_update_date} bank:${account.accountUpdateDate}`);
+            // }
             if (dbAccount.bank_number !== account.bankNumber) {
               diffs.push('bankNumber');
             }
