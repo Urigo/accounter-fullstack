@@ -247,7 +247,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper"
   dependencies:
-    "@types/inquirer": "npm:9.0.8"
+    "@types/inquirer": "npm:9.0.9"
     "@types/node-fetch": "npm:2.6.13"
     "@types/uuid": "npm:10.0.0"
     ajv: "npm:8.17.1"
@@ -7548,13 +7548,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/inquirer@npm:9.0.8":
-  version: 9.0.8
-  resolution: "@types/inquirer@npm:9.0.8"
+"@types/inquirer@npm:9.0.9":
+  version: 9.0.9
+  resolution: "@types/inquirer@npm:9.0.9"
   dependencies:
     "@types/through": "npm:*"
     rxjs: "npm:^7.2.0"
-  checksum: 10c0/6b49b12ab1122b3e18d4d0f3be99dd21d67f4d03e0d61c211f1affbc2885b0094569d3e4fd977888fd42b3321842453f52ee6dcae9cc7bb706e77513538c4e09
+  checksum: 10c0/235a02a3afa5b238ca9093ef7064e17d763ba134b1afd5a263ffc363ccdb6d1f7d64aa3866ca93e7ad52be4ff21324368a983d20d35caf21c16475cfb32db8c8
   languageName: node
   linkType: hard
 
