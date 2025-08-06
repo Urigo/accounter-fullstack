@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { Document } from '@accounter/green-invoice-graphql';
+import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import {
   IGetDocumentsByChargeIdResult,
   IGetIssuedDocumentsByIdsResult,
@@ -10,6 +11,7 @@ import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
 import {
   Currency,
+  GreenInvoiceClient,
   GreenInvoiceIncome,
   GreenInvoicePayment,
   GreenInvoicePaymentType,
@@ -17,6 +19,7 @@ import {
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
+import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import {
   getVatTypeFromGreenInvoiceDocument,
   normalizeDocumentType,
@@ -228,4 +231,42 @@ export function getDocumentDateOutOfTransactions(
 
   // Return the date in the required format
   return dateToTimelessDateString(firstDate);
+}
+
+export async function getClientFromGreenInvoiceClient(
+  injector: Injector,
+  businessId: string,
+  useGreenInvoiceId = false,
+): Promise<GreenInvoiceClient | undefined> {
+  const greenInvoiceBusinessMatch = await injector
+    .get(GreenInvoiceProvider)
+    .getBusinessMatchByIdLoader.load(businessId);
+  if (!greenInvoiceBusinessMatch) {
+    return useGreenInvoiceId ? undefined : { id: businessId };
+  }
+
+  const greenInvoiceClient = await injector
+    .get(GreenInvoiceClientProvider)
+    .getClient({ id: greenInvoiceBusinessMatch.green_invoice_id });
+
+  if (!greenInvoiceClient) {
+    return useGreenInvoiceId ? undefined : { id: businessId };
+  }
+
+  return {
+    id: useGreenInvoiceId && greenInvoiceClient.id ? greenInvoiceClient.id : businessId,
+    country: greenInvoiceClient.country,
+    emails: [
+      ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
+      'ap@the-guild.dev',
+    ],
+    name: greenInvoiceClient.name,
+    phone: greenInvoiceClient.phone,
+    taxId: greenInvoiceClient.taxId,
+    address: greenInvoiceClient.address,
+    city: greenInvoiceClient.city,
+    zip: greenInvoiceClient.zip,
+    fax: greenInvoiceClient.fax,
+    mobile: greenInvoiceClient.mobile,
+  };
 }

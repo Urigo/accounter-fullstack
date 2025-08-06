@@ -38,7 +38,11 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
     onChange([...income, newItem]);
   };
 
-  const updateIncomeItem = <T extends keyof Income>(index: number, field: T, value: Income[T]) => {
+  const updateIncomeItem = <T extends keyof Income>(
+    index: number,
+    field: T,
+    value: Income[T],
+  ): void => {
     const updatedIncome = [...income];
     updatedIncome[index] = { ...updatedIncome[index], [field]: value };
     onChange(updatedIncome);

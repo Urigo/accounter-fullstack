@@ -3,6 +3,7 @@ import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
 import {
+  IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
   NewDocumentInfoFragment,
@@ -17,6 +18,7 @@ import {
   DialogTrigger,
 } from '../../ui/dialog.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
+import { normalizeClientInfo } from '../documents/issue-document/client-form.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
 import { PreviewDocumentInput } from '../documents/issue-document/types/document.js';
 
@@ -59,6 +61,7 @@ import { PreviewDocumentInput } from '../documents/issue-document/types/document
     maxPayments
     client {
       id
+      ...IssueDocumentClientFields
     }
     income {
       currency
@@ -196,7 +199,11 @@ export function IssueDocumentModal({
         rounding: newDocumentInfoDraft.rounding || undefined,
         signed: newDocumentInfoDraft.signed || undefined,
         maxPayments: newDocumentInfoDraft.maxPayments || undefined,
-        client: newDocumentInfoDraft.client || undefined,
+        client: newDocumentInfoDraft.client
+          ? normalizeClientInfo(
+              getFragmentData(IssueDocumentClientFieldsFragmentDoc, newDocumentInfoDraft.client),
+            )
+          : undefined,
         income: newDocumentInfoDraft.income?.map(income => ({
           ...income,
           currencyRate: income.currencyRate ?? undefined,

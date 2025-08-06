@@ -26,6 +26,7 @@ import { Currency, DocumentType } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
   filterAndHandleSwiftTransactions,
+  getClientFromGreenInvoiceClient,
   getDocumentDateOutOfTransactions,
   getIncomeFromDocuments,
   getLinkedDocumentsAttributes,
@@ -37,6 +38,23 @@ import type { GreenInvoiceModule } from '../types.js';
 
 export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
   Query: {
+    greenInvoiceBusiness: async (_, { businessId }, { injector }) => {
+      try {
+        const match = await injector
+          .get(GreenInvoiceProvider)
+          .getBusinessMatchByIdLoader.load(businessId);
+
+        if (!match) {
+          throw new GraphQLError(`Green Invoice business match with ID "${businessId}" not found`);
+        }
+
+        return match;
+      } catch (error) {
+        const message = 'Failed to fetch green invoice business';
+        console.error(message, error);
+        throw new GraphQLError(message);
+      }
+    },
     greenInvoiceBusinesses: async (_, __, { injector }) => {
       try {
         const matches = await injector.get(GreenInvoiceProvider).getAllBusinessMatches();
@@ -107,9 +125,14 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             }) as IGetIssuedDocumentsByIdsResult[],
         );
 
-      const [business, openIssuedDocuments] = await Promise.all([
+      const clientPromise = charge.business_id
+        ? getClientFromGreenInvoiceClient(injector, charge.business_id)
+        : Promise.resolve(undefined);
+
+      const [business, openIssuedDocuments, client] = await Promise.all([
         businessPromise,
         openIssuedDocumentsPromise,
+        clientPromise,
       ]);
 
       const greenInvoiceDocuments = await Promise.all(
@@ -174,11 +197,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType: 'DEFAULT',
         rounding: false,
         signed: true,
-        client: business?.business_id
-          ? {
-              id: business.business_id,
-            }
-          : undefined,
+        client,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -226,7 +245,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(`Charge with ID "${document.charge_id}" not found`);
       }
 
-      const businessPromise = charge.business_id
+      const businessMatchPromise = charge.business_id
         ? injector.get(GreenInvoiceProvider).getBusinessMatchByIdLoader.load(charge.business_id)
         : Promise.resolve(undefined);
 
@@ -234,8 +253,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
-      const [business, openIssuedDocument] = await Promise.all([
-        businessPromise,
+      const [businessMatch, openIssuedDocument] = await Promise.all([
+        businessMatchPromise,
         openIssuedDocumentPromise,
       ]);
 
@@ -249,7 +268,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(`Document with ID "${document.id}" is closed`);
       }
 
-      const greenInvoiceDocument: Document | null = await injector
+      const greenInvoiceDocumentPromise: Promise<Document | null> = injector
         .get(GreenInvoiceClientProvider)
         .getDocument({ id: openIssuedDocument.external_id })
         .then(res => {
@@ -263,13 +282,24 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           return res;
         });
 
+      const paymentPromise = getPaymentsFromTransactions(injector, transactions ?? []);
+
+      const clientPromise = charge.business_id
+        ? getClientFromGreenInvoiceClient(injector, charge.business_id)
+        : Promise.resolve(undefined);
+
+      const [greenInvoiceDocument, payment, client] = await Promise.all([
+        greenInvoiceDocumentPromise,
+        paymentPromise,
+        clientPromise,
+      ]);
+
       if (!greenInvoiceDocument) {
         throw new GraphQLError(
           `Document with ID "${document.id}" doesn't have a Green Invoice matching document`,
         );
       }
 
-      const payment = await getPaymentsFromTransactions(injector, transactions ?? []);
       const income = getIncomeFromDocuments([
         {
           document,
@@ -290,13 +320,8 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           break;
       }
 
-      if (!remarks && business?.business_id) {
-        const greenInvoiceBusinessMatch = await injector
-          .get(GreenInvoiceProvider)
-          .getBusinessMatchByIdLoader.load(business.business_id);
-        if (greenInvoiceBusinessMatch?.remark) {
-          remarks = greenInvoiceBusinessMatch.remark;
-        }
+      if (!remarks && businessMatch?.remark) {
+        remarks = businessMatch.remark;
       }
 
       const documentDate = getDocumentDateOutOfTransactions(transactions ?? []);
@@ -315,11 +340,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType: 'DEFAULT',
         rounding: false,
         signed: true,
-        client: business?.business_id
-          ? {
-              id: business.business_id,
-            }
-          : undefined,
+        client,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -603,5 +624,21 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     remark: business => business.remark,
     emails: business => business.emails ?? [],
     generatedDocumentType: business => business.document_type as DocumentType,
+    clientInfo: async (business, _, { injector }) => {
+      const client = await injector
+        .get(GreenInvoiceClientProvider)
+        .getClient({ id: business.green_invoice_id });
+      if (!client) {
+        throw new GraphQLError(
+          `Green Invoice client with ID "${business.green_invoice_id}" not found`,
+        );
+      }
+      const emails = client.emails ? (client.emails.filter(Boolean) as string[]) : [];
+      return {
+        ...client,
+        emails,
+        id: business.green_invoice_id,
+      };
+    },
   },
 };
