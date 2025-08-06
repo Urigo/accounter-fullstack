@@ -70,7 +70,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
   };
 
   const shouldShowBankFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.WireTransfer;
+    return type === GreenInvoicePaymentType.WireTransfer || type === GreenInvoicePaymentType.Cheque;
   };
 
   const shouldShowChequesFields = (type: GreenInvoicePaymentType) => {
@@ -260,7 +260,6 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
             {/* Cheques Fields */}
             {shouldShowChequesFields(payment.type) && (
               <div className="space-y-4">
-                <h5 className="font-medium text-sm text-gray-700">Cheques Details</h5>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Cheque Number</Label>
