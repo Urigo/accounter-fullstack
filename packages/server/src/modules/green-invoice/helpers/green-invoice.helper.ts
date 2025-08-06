@@ -109,13 +109,13 @@ export function getGreenInvoiceDocumentNameFromType(
       return 'Invoice';
     case DocumentType.Proforma:
     case '_300':
-      return 'Proforma';
+      return 'Proforma Invoice';
     case DocumentType.InvoiceReceipt:
     case '_320':
-      return 'Invoice Receipt';
+      return 'Invoice / Receipt';
     case DocumentType.CreditInvoice:
     case '_330':
-      return 'Credit Invoice';
+      return 'Credit Note';
     case DocumentType.Receipt:
     case '_400':
       return 'Receipt';

@@ -286,6 +286,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const type = getTypeFromDocumentsAndTransactions([greenInvoiceDocument], transactions ?? []);
 
       let remarks = greenInvoiceDocument.remarks;
+      switch (type) {
+        case DocumentType.Receipt:
+        case DocumentType.InvoiceReceipt:
+          remarks = `${getGreenInvoiceDocumentNameFromType(type)} for ${getGreenInvoiceDocumentNameFromType(greenInvoiceDocument.type)} ${greenInvoiceDocument.number}`;
+          break;
+      }
+
       if (!remarks && business?.business_id) {
         const greenInvoiceBusinessMatch = await injector
           .get(GreenInvoiceProvider)
