@@ -127,8 +127,13 @@ export function getIncomeFromDocuments(
           throw new Error('Income currency is missing');
         }
         const income: GreenInvoiceIncome = {
-          ...originIncome,
+          description: originIncome.description,
+          quantity: originIncome.quantity,
+          price: originIncome.price,
           currency: originIncome.currency as Currency,
+          currencyRate: undefined,
+          vatRate: originIncome.vatRate,
+          itemId: originIncome.itemId,
           vatType: getVatTypeFromGreenInvoiceDocument(greenInvoiceDocument.vatType),
         };
         return income;

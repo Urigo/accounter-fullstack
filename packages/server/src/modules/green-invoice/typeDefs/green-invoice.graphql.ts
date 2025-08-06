@@ -93,16 +93,12 @@ export default gql`
 
   " income info "
   type GreenInvoiceIncome {
-    amount: Float
-    amountTotal: Float
-    catalogNum: String
     currency: Currency!
     currencyRate: Float
     description: String!
     itemId: String
     price: Float!
     quantity: Float!
-    vat: Float
     vatRate: Float
     vatType: GreenInvoiceVatType!
   }

@@ -61,16 +61,12 @@ import { PreviewDocumentInput } from '../documents/issue-document/types/document
       id
     }
     income {
-      amount
-      amountTotal
-      catalogNum
       currency
       currencyRate
       description
       itemId
       price
       quantity
-      vat
       vatRate
       vatType
     }
@@ -203,12 +199,8 @@ export function IssueDocumentModal({
         client: newDocumentInfoDraft.client || undefined,
         income: newDocumentInfoDraft.income?.map(income => ({
           ...income,
-          amount: income.amount ?? undefined,
-          amountTotal: income.amountTotal ?? undefined,
-          catalogNum: income.catalogNum || undefined,
           currencyRate: income.currencyRate ?? undefined,
           itemId: income.itemId || undefined,
-          vat: income.vat ?? undefined,
           vatRate: income.vatRate ?? undefined,
         })),
         payment: newDocumentInfoDraft.payment?.map(payment => ({
