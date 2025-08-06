@@ -23,10 +23,10 @@ import {
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
-import { GreenInvoiceLinkType } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
   filterAndHandleSwiftTransactions,
+  getDocumentDateOutOfTransactions,
   getIncomeFromDocuments,
   getLinkedDocumentsAttributes,
   getPaymentsFromTransactions,
@@ -158,12 +158,14 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         }
       }
 
+      const documentDate = getDocumentDateOutOfTransactions(transactions);
+
       return {
         remarks,
         // description: ____,
         // footer: ____,
         type,
-        date: dateToTimelessDateString(new Date()),
+        date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
         currency: (charge.transactions_currency ||
@@ -297,12 +299,14 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         }
       }
 
+      const documentDate = getDocumentDateOutOfTransactions(transactions ?? []);
+
       return {
         remarks,
         // description: ____,
         // footer: ____,
         type,
-        date: dateToTimelessDateString(new Date()),
+        date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
         currency: (charge.transactions_currency ||

@@ -16,6 +16,7 @@ import {
   NewDocumentInfo,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
 import {
   getVatTypeFromGreenInvoiceDocument,
   normalizeDocumentType,
@@ -98,8 +99,8 @@ export async function getPaymentsFromTransactions(
 
       const payment: GreenInvoicePayment = {
         currency: transaction.currency as Currency,
-        currencyRate: Number(transaction.currency_rate),
-        date: dateToTimelessDateString(transaction.event_date),
+        currencyRate: undefined,
+        date: dateToTimelessDateString(transaction.debit_date ?? transaction.event_date),
         price: Number(transaction.amount),
         type,
         transactionId: transaction.id,
@@ -206,4 +207,20 @@ export function getLinkedDocumentsAttributes(
     linkedDocumentIds,
     linkType: linkedDocumentIds.length ? 'LINK' : undefined,
   };
+}
+
+export function getDocumentDateOutOfTransactions(
+  transactions: IGetTransactionsByChargeIdsResult[],
+): TimelessDateString | undefined {
+  const debitDates = transactions.map(tx => tx.debit_date).filter(Boolean) as Date[];
+
+  // if no debit dates, use current date
+  if (!debitDates.length) return dateToTimelessDateString(new Date());
+
+  // Sort dates and take the first one
+  const sortedDates = debitDates.sort((a, b) => b.getTime() - a.getTime());
+  const firstDate = sortedDates[0];
+
+  // Return the date in the required format
+  return dateToTimelessDateString(firstDate);
 }
