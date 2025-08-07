@@ -50,8 +50,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (!clientDocs?.length) {
         return [];
       }
-      const sortedDocs = clientDocs.sort((a, b) =>
-        (a.date ?? a.created_at).getTime() - (b.date ?? b.created_at).getTime() ? 1 : -1,
+      const sortedDocs = [...clientDocs].sort(
+        (a, b) =>
+          (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
       );
       return sortedDocs.slice(0, limit ?? 5);
     },
