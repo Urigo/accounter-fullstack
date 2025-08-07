@@ -15,23 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
   }
 `;
 
-// export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragment): Client {
-//   const client: Client = {
-//     ...clientInfo,
-//     country: clientInfo.country || undefined,
-//     emails: clientInfo.emails || undefined,
-//     name: clientInfo.name || undefined,
-//     phone: clientInfo.phone || undefined,
-//     taxId: clientInfo.taxId || undefined,
-//     address: clientInfo.address || undefined,
-//     city: clientInfo.city || undefined,
-//     zip: clientInfo.zip || undefined,
-//     fax: clientInfo.fax || undefined,
-//     mobile: clientInfo.mobile || undefined,
-//   };
-//   return client;
-// }
-
 interface RecentDocsOfSameTypeProps {
   documentType: DocumentType;
 }
