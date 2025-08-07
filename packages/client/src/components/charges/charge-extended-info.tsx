@@ -141,7 +141,7 @@ export function ChargeExtendedInfo({
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
-  const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
+  const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasDocs;
 
   useEffect(() => {
     const tabs = [];
@@ -293,7 +293,7 @@ export function ChargeExtendedInfo({
                 >
                   <div className="flex flex-row items-center gap-2 justify-between w-full">
                     Transactions
-                    {isIncomeCharge && <IssueDocumentModal chargeId={charge!.id} />}
+                    {isIncomeNoDocsCharge && <IssueDocumentModal chargeId={charge!.id} />}
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
