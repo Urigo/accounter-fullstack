@@ -588,11 +588,17 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         }
 
         // Close linked documents
-        if (coreInput.linkedDocumentIds?.length) {
+        if (
+          coreInput.linkedDocumentIds?.length &&
+          coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
+        ) {
           await Promise.all(
             coreInput.linkedDocumentIds.map(async id => {
               if (id) {
                 await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+                await injector
+                  .get(IssuedDocumentsProvider)
+                  .updateIssuedDocumentByExternalId({ externalId: id });
               }
             }),
           );
