@@ -541,6 +541,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError('Failed to generate document preview');
       }
 
+      if ('errorMessage' in document) {
+        console.error('Failed to generate document preview', document);
+        throw new GraphQLError(
+          `Failed to generate document preview, Green Invoice returned: ${document.errorMessage}`,
+        );
+      }
+
       if ('file' in document && document.file) {
         return document.file;
       }
