@@ -227,6 +227,15 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
       return total + subtotal + vatAmount;
     }, 0) || 0;
 
+  const isPaymentRequest =
+    formData.type === DocumentType.Proforma || formData.type === DocumentType.Invoice;
+  const shouldShowIncome =
+    isPaymentRequest ||
+    formData.type === DocumentType.InvoiceReceipt ||
+    formData.type === DocumentType.CreditInvoice;
+  const shouldShowPayment =
+    formData.type === DocumentType.Receipt || formData.type === DocumentType.InvoiceReceipt;
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -353,23 +362,6 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="maxPayments">Max Payments</Label>
-                    <Input
-                      id="maxPayments"
-                      type="number"
-                      min="1"
-                      max="36"
-                      value={formData.maxPayments || ''}
-                      onChange={e =>
-                        updateFormData('maxPayments', Number.parseInt(e.target.value) || undefined)
-                      }
-                      placeholder="1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
                     <Label htmlFor="date">Document Date</Label>
                     <Input
                       id="date"
@@ -378,16 +370,38 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       onChange={e => updateFormData('date', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={formData.dueDate || ''}
-                      onChange={e => updateFormData('dueDate', e.target.value)}
-                    />
-                  </div>
                 </div>
+
+                {isPaymentRequest && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="maxPayments">Max Payments</Label>
+                      <Input
+                        id="maxPayments"
+                        type="number"
+                        min="1"
+                        max="36"
+                        value={formData.maxPayments || ''}
+                        onChange={e =>
+                          updateFormData(
+                            'maxPayments',
+                            Number.parseInt(e.target.value) || undefined,
+                          )
+                        }
+                        placeholder="1"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dueDate">Due Date</Label>
+                      <Input
+                        id="dueDate"
+                        type="date"
+                        value={formData.dueDate || ''}
+                        onChange={e => updateFormData('dueDate', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
@@ -494,18 +508,22 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             )}
 
             {/* Income Form */}
-            <IncomeForm
-              income={formData.income || []}
-              currency={formData.currency}
-              onChange={(income: Income[]) => updateFormData('income', income)}
-            />
+            {shouldShowIncome && (
+              <IncomeForm
+                income={formData.income || []}
+                currency={formData.currency}
+                onChange={(income: Income[]) => updateFormData('income', income)}
+              />
+            )}
 
             {/* Payment Form */}
-            <PaymentForm
-              payments={formData.payment || []}
-              currency={formData.currency}
-              onChange={(payment: Payment[]) => updateFormData('payment', payment)}
-            />
+            {shouldShowPayment && (
+              <PaymentForm
+                payments={formData.payment || []}
+                currency={formData.currency}
+                onChange={(payment: Payment[]) => updateFormData('payment', payment)}
+              />
+            )}
 
             {/* Action Buttons */}
             <Card>
