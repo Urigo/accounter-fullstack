@@ -17,7 +17,7 @@ import {
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
 } from '../../gql/graphql.js';
-import { FragmentType, isFragmentReady } from '../../gql/index.js';
+import { FragmentType, getFragmentData, isFragmentReady } from '../../gql/index.js';
 import {
   BusinessTripSummarizedReport,
   IssueDocumentModal,
@@ -69,6 +69,17 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
       }
       ...TableMiscExpensesFields @defer
       ...ExchangeRatesInfo @defer
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment TableDocumentsFields on Charge {
+    id
+    additionalDocuments {
+      id
+      ...TableDocumentsRowFields
     }
   }
 `;
@@ -339,7 +350,13 @@ export function ChargeExtendedInfo({
                 </Accordion.Control>
                 <Accordion.Panel>
                   {docsAreReady && (
-                    <DocumentsTable documentsProps={charge} onChange={onExtendedChange} />
+                    <DocumentsTable
+                      documentsProps={
+                        getFragmentData(TableDocumentsFieldsFragmentDoc, charge)
+                          ?.additionalDocuments
+                      }
+                      onChange={onExtendedChange}
+                    />
                   )}
                 </Accordion.Panel>
               </Accordion.Item>

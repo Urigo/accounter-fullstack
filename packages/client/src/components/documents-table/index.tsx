@@ -5,58 +5,54 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
+  VisibilityState,
 } from '@tanstack/react-table';
-import {
-  TableDocumentsFieldsFragmentDoc,
-  TableDocumentsRowFieldsFragmentDoc,
-} from '../../gql/graphql.js';
+import { TableDocumentsRowFieldsFragmentDoc } from '../../gql/graphql.js';
 import { FragmentType, getFragmentData } from '../../gql/index.js';
 import { EditDocumentModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, DocumentsTableRowType } from './columns.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment TableDocumentsFields on Charge {
-    id
-    additionalDocuments {
-      id
-      ...TableDocumentsRowFields
-    }
-  }
-`;
-
 type Props = {
-  documentsProps: FragmentType<typeof TableDocumentsFieldsFragmentDoc>;
+  documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];
   onChange: () => void;
+  limited?: boolean;
 };
 
-export const DocumentsTable = ({ documentsProps, onChange }: Props): ReactElement => {
-  const { additionalDocuments: documents } = getFragmentData(
-    TableDocumentsFieldsFragmentDoc,
-    documentsProps,
-  );
+export const DocumentsTable = ({
+  documentsProps,
+  onChange,
+  limited = false,
+}: Props): ReactElement => {
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const data: DocumentsTableRowType[] = useMemo(
     () =>
-      documents?.map(document => ({
-        ...getFragmentData(TableDocumentsRowFieldsFragmentDoc, document),
-        editDocument: (): void => setEditDocumentId(document.id),
-        onUpdate: onChange,
-      })),
-    [documents, onChange],
+      documentsProps?.map(rawDocument => {
+        const document = getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument);
+        return {
+          ...document,
+          editDocument: (): void => setEditDocumentId(document.id),
+          onUpdate: onChange,
+        };
+      }),
+    [documentsProps, onChange],
   );
-
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'file'];
   const table = useReactTable({
     data,
-    columns,
+    columns: limited
+      ? columns.filter(column => column.id && limitedColumns.includes(column.id))
+      : columns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
+      columnVisibility,
     },
   });
 

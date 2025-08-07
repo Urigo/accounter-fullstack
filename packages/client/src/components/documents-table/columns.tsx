@@ -68,6 +68,7 @@ export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
 
 export const columns: ColumnDef<DocumentsTableRowType>[] = [
   {
+    id: 'date',
     accessorKey: 'date',
     sortingFn: row => {
       return 'date' in row.original && row.original.date
@@ -95,6 +96,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'amount',
     accessorKey: 'amount.raw',
     header: ({ column }) => {
       return (
@@ -117,6 +119,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'vat',
     accessorKey: 'vat.raw',
     header: ({ column }) => {
       return (
@@ -139,6 +142,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'type',
     accessorKey: 'documentType',
     header: ({ column }) => {
       return (
@@ -161,6 +165,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'serial',
     accessorKey: 'serialNumber',
     header: ({ column }) => {
       return (
@@ -183,6 +188,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'creditor',
     accessorKey: 'creditor.name',
     header: ({ column }) => {
       return (
@@ -205,6 +211,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'debtor',
     accessorKey: 'debtor.name',
     header: ({ column }) => {
       return (
@@ -227,6 +234,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'file',
     accessorKey: 'file',
     header: ({ column }) => {
       return (
@@ -249,6 +257,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
   },
   {
+    id: 'edit',
     accessorKey: 'id',
     header: 'Edit',
     cell: ({ row }) => {
