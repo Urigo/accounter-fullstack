@@ -48,6 +48,9 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         isLedgerLocked
         openDocuments
       }
+      totalAmount {
+        raw
+      }
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
       ...TableLedgerRecordsFields @defer
@@ -130,7 +133,7 @@ export function ChargeExtendedInfo({
     }
   }, [chargeID, chargeId, refetchExtensionInfo]);
 
-  const chargeType = useMemo(() => charge?.__typename, [charge]);
+  const chargeType = charge?.__typename;
 
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
@@ -138,6 +141,7 @@ export function ChargeExtendedInfo({
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
+  const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
 
   useEffect(() => {
     const tabs = [];
@@ -287,7 +291,10 @@ export function ChargeExtendedInfo({
                   disabled={!hasTransactions}
                   onClick={() => toggleAccordionItem('transactions')}
                 >
-                  Transactions
+                  <div className="flex flex-row items-center gap-2 justify-between w-full">
+                    Transactions
+                    {isIncomeCharge && <IssueDocumentModal chargeId={charge!.id} />}
+                  </div>
                 </Accordion.Control>
                 <Accordion.Panel>
                   {transactionsAreReady && (
