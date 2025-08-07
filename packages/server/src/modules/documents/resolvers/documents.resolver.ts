@@ -51,8 +51,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         return [];
       }
       const sortedDocs = [...clientDocs].sort(
-        (a, b) =>
-          (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
+        (a, b) => (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
       );
       return sortedDocs.slice(0, limit ?? 5);
     },
