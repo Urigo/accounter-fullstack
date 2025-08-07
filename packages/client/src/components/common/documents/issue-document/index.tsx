@@ -34,6 +34,8 @@ import { IncomeForm } from './income-form.jsx';
 import { IssueDocumentData, IssueDocumentModal } from './issue-document-modal.js';
 import { PaymentForm } from './payment-form.jsx';
 import { PdfViewer } from './pdf-viewer.js';
+import { RecentClientDocs } from './recent-client-docs.js';
+import { RecentDocsOfSameType } from './recent-docs-of-same-type.js';
 import type { Income, Payment, PreviewDocumentInput } from './types/document.js';
 import {
   getCurrencyOptions,
@@ -134,9 +136,9 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
         IssueDocumentClientFieldsFragmentDoc,
         clientInfoData.greenInvoiceBusiness.clientInfo,
       );
-      updateClient(clientInfo);
+      updateClient({ ...clientInfo, id: selectedClientId });
     }
-  }, [clientInfoData?.greenInvoiceBusiness?.clientInfo, updateClient]);
+  }, [clientInfoData?.greenInvoiceBusiness?.clientInfo, updateClient, selectedClientId]);
 
   // Track form changes
   useEffect(() => {
@@ -554,45 +556,54 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             </Card>
           </div>
 
-          {/* Preview Section */}
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle>Document Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg min-h-[600px] flex items-center justify-center bg-gray-50">
-                {previewFetching ? (
-                  <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-500">Generating document preview...</p>
-                  </div>
-                ) : previewContent ? (
-                  <div className="w-full">
-                    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-                      <div className="aspect-[8.5/11] bg-white border">
-                        <div className="h-full flex items-center justify-center">
-                          <div className="text-center p-6">
-                            <PdfViewer src={previewContent} />
-                            {!isPreviewCurrent && (
-                              <p className="text-xs text-amber-600 mt-3 bg-amber-50 px-2 py-1 rounded">
-                                Preview may be outdated
-                              </p>
-                            )}
+          {/* Preview and previous documents section */}
+          <div className="space-y-6">
+            {/* Preview Section */}
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle>Document Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border-2 border-dashed border-gray-200 rounded-lg min-h-[600px] flex items-center justify-center bg-gray-50">
+                  {previewFetching ? (
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-500">Generating document preview...</p>
+                    </div>
+                  ) : previewContent ? (
+                    <div className="w-full">
+                      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                        <div className="aspect-[8.5/11] bg-white border">
+                          <div className="h-full flex items-center justify-center">
+                            <div className="text-center p-6">
+                              <PdfViewer src={previewContent} />
+                              {!isPreviewCurrent && (
+                                <p className="text-xs text-amber-600 mt-3 bg-amber-50 px-2 py-1 rounded">
+                                  Preview may be outdated
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 mb-2">No preview available</p>
-                    <p className="text-sm text-gray-400">Click Preview to generate document</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  ) : (
+                    <div className="text-center">
+                      <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 mb-2">No preview available</p>
+                      <p className="text-sm text-gray-400">Click Preview to generate document</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Previous client documents */}
+            <RecentClientDocs clientId={selectedClientId} />
+
+            {/* Previous similar-types documents */}
+            <RecentDocsOfSameType documentType={formData.type} />
+          </div>
         </div>
         {/* Issue Document Modal */}
         <IssueDocumentModal

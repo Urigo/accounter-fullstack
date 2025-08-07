@@ -9,8 +9,11 @@ import type {
   IGetAllIssuedDocumentsParams,
   IGetAllIssuedDocumentsQuery,
   IGetAllIssuedDocumentsResult,
+  IGetIssuedDocumentsByClientIdsQuery,
   IGetIssuedDocumentsByExternalIdsQuery,
   IGetIssuedDocumentsByIdsQuery,
+  IGetIssuedDocumentsByTypeParams,
+  IGetIssuedDocumentsByTypeQuery,
   IInsertIssuedDocumentsParams,
   IInsertIssuedDocumentsQuery,
   IUpdateIssuedDocumentParams,
@@ -32,6 +35,24 @@ const getIssuedDocumentsByExternalIds = sql<IGetIssuedDocumentsByExternalIdsQuer
   SELECT *
   FROM accounter_schema.documents_issued
   WHERE external_id IN $$externalIds;
+`;
+
+const getIssuedDocumentsByClientIds = sql<IGetIssuedDocumentsByClientIdsQuery>`
+  SELECT d.*, di.external_id, di.status, di.linked_document_ids
+  FROM accounter_schema.documents_issued di
+  LEFT JOIN accounter_schema.documents d
+    ON di.id = d.id
+  WHERE d.debtor_id IN $$clientIds OR d.creditor_id IN $$clientIds;
+`;
+
+const getIssuedDocumentsByType = sql<IGetIssuedDocumentsByTypeQuery>`
+  SELECT d.*, di.external_id, di.status, di.linked_document_ids
+  FROM accounter_schema.documents_issued di
+  LEFT JOIN accounter_schema.documents d
+    ON di.id = d.id
+  WHERE d.type = $type
+  ORDER BY d.serial_number DESC
+  LIMIT $limit;
 `;
 
 const updateIssuedDocument = sql<IUpdateIssuedDocumentQuery>`
@@ -145,6 +166,47 @@ export class IssuedDocumentsProvider {
     },
   );
 
+  private async batchIssuedDocumentsByClientIds(clientIds: readonly string[]) {
+    const uniqueClientIDs = [...new Set(clientIds)];
+    try {
+      const docs = await getIssuedDocumentsByClientIds.run(
+        { clientIds: uniqueClientIDs },
+        this.dbProvider,
+      );
+
+      return clientIds.map(id =>
+        docs.filter(doc => {
+          this.cache.set(`issued-document-${doc.id}`, doc);
+          return doc.creditor_id === id || doc.debtor_id === id;
+        }),
+      );
+    } catch (e) {
+      const message = 'Error fetching issued documents by client IDs';
+      console.error(message, e);
+      throw new Error(message);
+    }
+  }
+
+  public getIssuedDocumentsByClientIdLoader = new DataLoader(
+    (clientIds: readonly string[]) => this.batchIssuedDocumentsByClientIds(clientIds),
+    {
+      cache: false,
+      cacheKeyFn: id => `issued-documents-client-${id}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  public async getIssuedDocumentsByType(params: IGetIssuedDocumentsByTypeParams) {
+    return getIssuedDocumentsByType.run(params, this.dbProvider).then(res => {
+      if (res) {
+        res.map(doc => {
+          this.cache.set(`issued-document-${doc.id}`, doc);
+        });
+      }
+      return res;
+    });
+  }
+
   public async updateIssuedDocument(params: IUpdateIssuedDocumentParams) {
     if (params.documentId) {
       this.invalidateById(params.documentId);
@@ -165,8 +227,7 @@ export class IssuedDocumentsProvider {
   }
 
   public async invalidateById(id: string) {
-    this.cache.delete(`issued-document-${id}`);
-    this.cache.delete('all-issued-documents');
+    this.cache.delete([`issued-document-${id}`, 'all-issued-documents']);
   }
 
   public clearCache() {
