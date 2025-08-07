@@ -43,6 +43,24 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
       return doc ?? null;
     },
+    recentDocumentsByClient: async (_, { clientId, limit }, { injector }) => {
+      const clientDocs = await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByClientIdLoader.load(clientId);
+      if (!clientDocs?.length) {
+        return [];
+      }
+      const sortedDocs = clientDocs.sort((a, b) =>
+        (a.date ?? a.created_at).getTime() - (b.date ?? b.created_at).getTime() ? 1 : -1,
+      );
+      return sortedDocs.slice(0, limit ?? 5);
+    },
+    recentIssuedDocumentsByType: async (_, { documentType, limit = 3 }, { injector }) => {
+      const docs = await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByType({ type: documentType, limit });
+      return docs;
+    },
   },
   Mutation: {
     uploadDocument: async (_, { file, chargeId }, context) => {
