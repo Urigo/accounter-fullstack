@@ -161,7 +161,15 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
       );
     },
     cell: ({ row }) => {
-      return <TypeCell document={row.original} />;
+      return (
+        <TypeCell
+          document={row.original}
+          isOpen={
+            'issuedDocumentInfo' in row.original &&
+            row.original.issuedDocumentInfo?.status === 'OPEN'
+          }
+        />
+      );
     },
   },
   {

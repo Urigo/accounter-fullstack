@@ -617,7 +617,10 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             </Card>
 
             {/* Previous client documents */}
-            <RecentClientDocs clientId={selectedClientId} />
+            <RecentClientDocs
+              clientId={selectedClientId}
+              linkedDocumentIds={formData.linkedDocumentIds ?? []}
+            />
 
             {/* Previous similar-types documents */}
             <RecentDocsOfSameType documentType={formData.type} />
