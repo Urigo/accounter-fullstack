@@ -133,7 +133,7 @@ export function ChargeExtendedInfo({
     }
   }, [chargeID, chargeId, refetchExtensionInfo]);
 
-  const chargeType = useMemo(() => charge?.__typename, [charge]);
+  const chargeType = charge?.__typename;
 
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
@@ -141,10 +141,7 @@ export function ChargeExtendedInfo({
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
-  const isIncomeCharge = useMemo(
-    () => (charge?.totalAmount?.raw ?? 0) > 0,
-    [charge?.totalAmount?.raw],
-  );
+  const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
 
   useEffect(() => {
     const tabs = [];
