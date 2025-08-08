@@ -126,7 +126,7 @@ export function getGreenInvoiceDocumentNameFromType(
   switch (documentType) {
     case DocumentType.Invoice:
     case '_305':
-      return 'Invoice';
+      return 'Tax Invoice';
     case DocumentType.Proforma:
     case '_300':
       return 'Proforma Invoice';

@@ -102,7 +102,8 @@ export function RecentClientDocs({ clientId, linkedDocumentIds }: RecentClientDo
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
                     className={
-                      linkedDocumentIds.includes(row.original.issuedDocumentInfo?.externalId ?? '')
+                      row.original.issuedDocumentInfo?.externalId &&
+                      linkedDocumentIds.includes(row.original.issuedDocumentInfo.externalId)
                         ? 'bg-blue-100'
                         : ''
                     }

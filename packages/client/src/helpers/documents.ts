@@ -30,7 +30,7 @@ export function isDocumentProforma(doc: unknown): doc is Partial<Proforma> {
 export function getDocumentNameFromType(documentType: DocumentType): string {
   switch (documentType) {
     case DocumentType.Invoice:
-      return 'Invoice';
+      return 'Tax Invoice';
     case DocumentType.Proforma:
       return 'Proforma Invoice';
     case DocumentType.InvoiceReceipt:
@@ -39,6 +39,10 @@ export function getDocumentNameFromType(documentType: DocumentType): string {
       return 'Credit Note';
     case DocumentType.Receipt:
       return 'Receipt';
+    case DocumentType.Other:
+      return 'Other Document';
+    case DocumentType.Unprocessed:
+      return 'Unprocessed';
     default:
       throw new Error(`Unsupported document type: ${documentType}`);
   }
