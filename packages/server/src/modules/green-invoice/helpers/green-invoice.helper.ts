@@ -28,6 +28,7 @@ import {
   Currency,
   DocumentType,
   GreenInvoicePaymentType,
+  NewDocumentInfo,
   NewDocumentInput,
   type GreenInvoiceDiscountType,
   type GreenInvoiceDocumentLang,
@@ -100,6 +101,25 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
   }
 }
 
+export function getTypeFromGreenInvoiceDocument(
+  documentType: GreenInvoiceDocumentType,
+): DocumentType {
+  switch (documentType) {
+    case '_305':
+      return DocumentType.Invoice;
+    case '_300':
+      return DocumentType.Proforma;
+    case '_320':
+      return DocumentType.InvoiceReceipt;
+    case '_330':
+      return DocumentType.CreditInvoice;
+    case '_400':
+      return DocumentType.Receipt;
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentNameFromType(
   documentType: DocumentType | GreenInvoiceDocumentType,
 ): string {
@@ -130,6 +150,17 @@ export function getGreenInvoiceDocumentLanguage(lang: GreenInvoiceDocumentLang):
       return 'he';
     case 'ENGLISH':
       return 'en';
+    default:
+      throw new Error(`Unsupported document language: ${lang}`);
+  }
+}
+
+export function getLanguageFromGreenInvoiceDocument(lang: DocumentLang): GreenInvoiceDocumentLang {
+  switch (lang) {
+    case 'he':
+      return 'HEBREW';
+    case 'en':
+      return 'ENGLISH';
     default:
       throw new Error(`Unsupported document language: ${lang}`);
   }
@@ -201,6 +232,33 @@ export function getGreenInvoiceDocumentPaymentType(
   }
 }
 
+export function getTypeFromGreenInvoiceDocumentPayment(
+  type: mutationInput_addDocument_input_allOf_0_payment_items_type,
+): GreenInvoicePaymentType {
+  switch (type) {
+    case 'NEGATIVE_1':
+      return 'TAX_DEDUCTION';
+    case '_1':
+      return 'CASH';
+    case '_2':
+      return 'CHEQUE';
+    case '_3':
+      return 'CREDIT_CARD';
+    case '_4':
+      return 'WIRE_TRANSFER';
+    case '_5':
+      return 'PAYPAL';
+    case '_9':
+      return 'OTHER_DEDUCTION';
+    case '_10':
+      return 'PAYMENT_APP';
+    case '_11':
+      return 'OTHER';
+    default:
+      throw new Error(`Unsupported payment type: ${type}`);
+  }
+}
+
 export function getGreenInvoiceDocumentPaymentSubType(
   subType: GreenInvoicePaymentSubType,
 ): mutationInput_addDocument_input_allOf_0_payment_items_subType {
@@ -221,6 +279,31 @@ export function getGreenInvoiceDocumentPaymentSubType(
       return '_8';
     case 'V_CHECK':
       return '_3';
+    default:
+      throw new Error(`Unsupported payment sub-type: ${subType}`);
+  }
+}
+
+export function getSubTypeFromGreenInvoiceDocumentPayment(
+  subType: mutationInput_addDocument_input_allOf_0_payment_items_subType,
+): GreenInvoicePaymentSubType {
+  switch (subType) {
+    case '_1':
+      return 'BITCOIN';
+    case '_7':
+      return 'BUYME_VOUCHER';
+    case '_6':
+      return 'ETHEREUM';
+    case '_4':
+      return 'GIFT_CARD';
+    case '_2':
+      return 'MONEY_EQUAL';
+    case '_5':
+      return 'NII_EMPLOYEE_DEDUCTION';
+    case '_8':
+      return 'PAYONEER';
+    case '_3':
+      return 'V_CHECK';
     default:
       throw new Error(`Unsupported payment sub-type: ${subType}`);
   }
@@ -247,6 +330,27 @@ export function getGreenInvoiceDocumentPaymentAppType(
   }
 }
 
+export function getPaymentAppTypeFromGreenInvoiceDocument(
+  appType: mutationInput_addDocument_input_allOf_0_payment_items_appType,
+): GreenInvoicePaymentAppType {
+  switch (appType) {
+    case '_6':
+      return 'APPLE_PAY';
+    case '_1':
+      return 'BIT';
+    case '_4':
+      return 'CULO';
+    case '_5':
+      return 'GOOGLE_PAY';
+    case '_3':
+      return 'PAYBOX';
+    case '_2':
+      return 'PAY_BY_PEPPER';
+    default:
+      throw new Error(`Unsupported payment app type: ${appType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentPaymentCardType(
   cardType: GreenInvoicePaymentCardType,
 ): mutationInput_addDocument_input_allOf_0_payment_items_cardType {
@@ -268,6 +372,27 @@ export function getGreenInvoiceDocumentPaymentCardType(
   }
 }
 
+export function getCardTypeFromGreenInvoiceDocumentPayment(
+  cardType: mutationInput_addDocument_input_allOf_0_payment_items_cardType,
+): GreenInvoicePaymentCardType {
+  switch (cardType) {
+    case '_4':
+      return 'AMERICAN_EXPRESS';
+    case '_5':
+      return 'DINERS';
+    case '_1':
+      return 'ISRACARD';
+    case '_3':
+      return 'MASTERCARD';
+    // case '_0': // TODO: why is this not supported?
+    //   return 'UNKNOWN';
+    case '_2':
+      return 'VISA';
+    default:
+      throw new Error(`Unsupported payment card type: ${cardType}`);
+  }
+}
+
 export function getGreenInvoiceDocumentPaymentDealType(
   dealType: GreenInvoicePaymentDealType,
 ): mutationInput_addDocument_input_allOf_0_payment_items_dealType {
@@ -284,6 +409,27 @@ export function getGreenInvoiceDocumentPaymentDealType(
       return '_6';
     case 'STANDARD':
       return '_1';
+    default:
+      throw new Error(`Unsupported payment deal type: ${dealType}`);
+  }
+}
+
+export function getDealTypeFromGreenInvoiceDocumentPayment(
+  dealType: mutationInput_addDocument_input_allOf_0_payment_items_dealType,
+): GreenInvoicePaymentDealType {
+  switch (dealType) {
+    case '_3':
+      return 'CREDIT';
+    case '_4':
+      return 'DEFERRED';
+    case '_5':
+      return 'OTHER';
+    case '_2':
+      return 'PAYMENTS';
+    case '_6':
+      return 'RECURRING';
+    case '_1':
+      return 'STANDARD';
     default:
       throw new Error(`Unsupported payment deal type: ${dealType}`);
   }
@@ -609,5 +755,47 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     linkType: initialInput.linkType
       ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
       : undefined,
+  };
+}
+
+export function convertGreenInvoiceDocumentToLocalDocumentInfo(
+  greenInvoiceDocument: Document,
+): NewDocumentInfo {
+  return {
+    ...greenInvoiceDocument,
+    client: greenInvoiceDocument.client
+      ? {
+          ...greenInvoiceDocument.client,
+          emails: greenInvoiceDocument.client.emails
+            ? (greenInvoiceDocument.client.emails.filter(Boolean) as string[])
+            : [],
+        }
+      : undefined,
+    currency: greenInvoiceDocument.currency as Currency,
+    income: greenInvoiceDocument.income?.filter(Boolean).map(income => ({
+      ...income!,
+      currency: income!.currency as Currency,
+      vatType: getVatTypeFromGreenInvoiceDocument(income!.vatType),
+    })),
+    lang: getLanguageFromGreenInvoiceDocument(greenInvoiceDocument.lang),
+    payment: greenInvoiceDocument.payment?.filter(Boolean).map(payment => ({
+      ...payment!,
+      appType: payment?.appType
+        ? getPaymentAppTypeFromGreenInvoiceDocument(payment.appType)
+        : undefined,
+      cardType: payment?.cardType
+        ? getCardTypeFromGreenInvoiceDocumentPayment(payment.cardType)
+        : undefined,
+      currency: payment!.currency as Currency,
+      dealType: payment?.dealType
+        ? getDealTypeFromGreenInvoiceDocumentPayment(payment.dealType)
+        : undefined,
+      subType: payment?.subType
+        ? getSubTypeFromGreenInvoiceDocumentPayment(payment.subType)
+        : undefined,
+      type: getTypeFromGreenInvoiceDocumentPayment(payment!.type),
+    })),
+    type: getTypeFromGreenInvoiceDocument(greenInvoiceDocument.type),
+    vatType: getVatTypeFromGreenInvoiceDocument(greenInvoiceDocument.vatType),
   };
 }

@@ -3,7 +3,17 @@ import { ColumnDef } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { CloseDocumentButton, EditMiniButton, IssueDocumentModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
-import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from './cells/index.js';
+import {
+  Amount,
+  Creditor,
+  DateCell,
+  Debtor,
+  Description,
+  Files,
+  Serial,
+  TypeCell,
+  Vat,
+} from './cells/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -56,6 +66,11 @@ import { Amount, Creditor, DateCell, Debtor, Files, Serial, TypeCell, Vat } from
       issuedDocumentInfo {
         id
         status
+        originalDocument {
+          income {
+            description
+          }
+        }
       }
     }
   }
@@ -193,6 +208,14 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
     },
     cell: ({ row }) => {
       return <Serial document={row.original} />;
+    },
+  },
+  {
+    id: 'description',
+    accessorKey: 'issuedDocumentInfo.originalDocument.income',
+    header: 'Description',
+    cell: ({ row }) => {
+      return <Description document={row.original} />;
     },
   },
   {

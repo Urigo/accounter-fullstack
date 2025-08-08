@@ -14,6 +14,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import {
   convertCurrencyToGreenInvoice,
   convertDocumentInputIntoGreenInvoiceInput,
+  convertGreenInvoiceDocumentToLocalDocumentInfo,
   getGreenInvoiceDocumentNameFromType,
   getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
@@ -656,6 +657,25 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         emails,
         id: business.green_invoice_id,
       };
+    },
+  },
+  IssuedDocumentInfo: {
+    originalDocument: async (info, _, { injector }) => {
+      if (!info?.externalId) {
+        throw new GraphQLError('External ID is required to fetch original document');
+      }
+      try {
+        const document = await injector.get(GreenInvoiceClientProvider).getDocument({
+          id: info.externalId,
+        });
+        if (!document) {
+          throw new GraphQLError('Original document not found');
+        }
+        return convertGreenInvoiceDocumentToLocalDocumentInfo(document);
+      } catch (error) {
+        console.error('Error fetching original document:', error);
+        throw new GraphQLError('Error fetching original document');
+      }
     },
   },
 };
