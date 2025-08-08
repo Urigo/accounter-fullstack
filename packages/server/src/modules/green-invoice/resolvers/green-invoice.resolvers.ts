@@ -14,6 +14,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import {
   convertCurrencyToGreenInvoice,
   convertDocumentInputIntoGreenInvoiceInput,
+  convertGreenInvoiceDocumentToLocalDocumentInfo,
   getGreenInvoiceDocumentNameFromType,
   getGreenInvoiceDocuments,
   getGreenInvoiceDocumentType,
@@ -587,17 +588,6 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           throw new GraphQLError('Failed to issue new document');
         }
 
-        // Close linked documents
-        if (coreInput.linkedDocumentIds?.length) {
-          await Promise.all(
-            coreInput.linkedDocumentIds.map(async id => {
-              if (id) {
-                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
-              }
-            }),
-          );
-        }
-
         // Insert new issued document to DB
         const newDocument = await insertNewDocumentFromGreenInvoice(
           injector,
@@ -609,6 +599,23 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         if (!newDocument.charge_id) {
           console.error('New document does not have a charge ID', newDocument);
           throw new GraphQLError('Failed to issue new document');
+        }
+
+        // Close linked documents
+        if (
+          coreInput.linkedDocumentIds?.length &&
+          coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
+        ) {
+          await Promise.all(
+            coreInput.linkedDocumentIds.map(async id => {
+              if (id) {
+                await injector
+                  .get(IssuedDocumentsProvider)
+                  .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' });
+                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+              }
+            }),
+          );
         }
 
         return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
@@ -650,6 +657,25 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         emails,
         id: business.green_invoice_id,
       };
+    },
+  },
+  IssuedDocumentInfo: {
+    originalDocument: async (info, _, { injector }) => {
+      if (!info?.externalId) {
+        throw new GraphQLError('External ID is required to fetch original document');
+      }
+      try {
+        const document = await injector.get(GreenInvoiceClientProvider).getDocument({
+          id: info.externalId,
+        });
+        if (!document) {
+          throw new GraphQLError('Original document not found');
+        }
+        return convertGreenInvoiceDocumentToLocalDocumentInfo(document);
+      } catch (error) {
+        console.error('Error fetching original document:', error);
+        throw new GraphQLError('Error fetching original document');
+      }
     },
   },
 };

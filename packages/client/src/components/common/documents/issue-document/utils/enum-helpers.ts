@@ -64,8 +64,8 @@ export const getDocumentTypeOptions = () => [
   { value: DocumentType.Invoice, label: 'Tax Invoice' },
   { value: DocumentType.InvoiceReceipt, label: 'Tax Invoice/Receipt' },
   { value: DocumentType.Receipt, label: 'Receipt' },
+  { value: DocumentType.Proforma, label: 'Proforma Invoice' },
   // Other = 'OTHER',
-  // Proforma = 'PROFORMA',
   // Unprocessed = 'UNPROCESSED'
   // { value: DocumentType.PriceQuote, label: 'Price Quote' },
   // { value: DocumentType.Order, label: 'Order' },

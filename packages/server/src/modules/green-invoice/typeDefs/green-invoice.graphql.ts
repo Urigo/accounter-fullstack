@@ -23,6 +23,9 @@ export default gql`
       sendEmail: Boolean
     ): Charge! @auth(role: ACCOUNTANT)
   }
+  extend type IssuedDocumentInfo {
+    originalDocument: NewDocumentInfo
+  }
 
   " business extended with green invoice data "
   type GreenInvoiceBusiness {
