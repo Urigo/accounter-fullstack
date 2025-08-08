@@ -588,23 +588,6 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           throw new GraphQLError('Failed to issue new document');
         }
 
-        // Close linked documents
-        if (
-          coreInput.linkedDocumentIds?.length &&
-          coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
-        ) {
-          await Promise.all(
-            coreInput.linkedDocumentIds.map(async id => {
-              if (id) {
-                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
-                await injector
-                  .get(IssuedDocumentsProvider)
-                  .updateIssuedDocumentByExternalId({ externalId: id });
-              }
-            }),
-          );
-        }
-
         // Insert new issued document to DB
         const newDocument = await insertNewDocumentFromGreenInvoice(
           injector,
@@ -616,6 +599,23 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         if (!newDocument.charge_id) {
           console.error('New document does not have a charge ID', newDocument);
           throw new GraphQLError('Failed to issue new document');
+        }
+
+        // Close linked documents
+        if (
+          coreInput.linkedDocumentIds?.length &&
+          coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
+        ) {
+          await Promise.all(
+            coreInput.linkedDocumentIds.map(async id => {
+              if (id) {
+                await injector
+                  .get(IssuedDocumentsProvider)
+                  .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' });
+                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+              }
+            }),
+          );
         }
 
         return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
