@@ -297,11 +297,17 @@ async function normalizeForeignTransactionsForAccount(
         case 19:
           accountCurrency = 'USD';
           break;
-        case 100:
-          accountCurrency = 'EUR';
-          break;
         case 27:
           accountCurrency = 'GBP';
+          break;
+        case 36:
+          accountCurrency = 'AUD';
+          break;
+        case 51:
+          accountCurrency = 'SEK';
+          break;
+        case 100:
+          accountCurrency = 'EUR';
           break;
         case 140:
           accountCurrency = 'CAD';
@@ -309,12 +315,6 @@ async function normalizeForeignTransactionsForAccount(
         case 248:
           accountCurrency = 'JPY';
           break;
-        case 36: // TODO: validate this currency key
-          accountCurrency = 'AUD';
-          break;
-        // case __: // TODO: get currency key and uncomment
-        //   accountCurrency = 'SEK';
-        //   break;
         default:
           throw new Error(`New Poalim account currency - ${foreignAccountsArray.currencyCode}`);
       }

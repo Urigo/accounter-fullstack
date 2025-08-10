@@ -80,16 +80,16 @@
             "type": "number"
           },
           "currencyLongDescription": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "currencyShortedDescription": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "currencySwiftCode": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "currencySwiftDescription": {
-            "type": "string"
+            "type": ["string", "null"]
           },
           "currentAccountLimitsAmount": {
             "type": "number",
@@ -257,7 +257,7 @@
                 },
                 "contraCurrencyCode": {
                   "type": "integer",
-                  "enum": [0, 1, 19, 27, 78, 100, 140, 248]
+                  "enum": [0, 1, 19, 27, 36, 51, 78, 100, 140, 248]
                 },
                 "currencyLongDescription": {
                   "type": "string"
@@ -550,14 +550,14 @@
             "properties": {
               "messageCode": {
                 "type": "number",
-                "enum": [11040, 330, 11039, 11038]
+                "enum": [330, 11024, 11038, 11039, 11040]
               },
               "messageDescription": {
                 "type": "string"
               },
               "severity": {
                 "type": "string",
-                "enum": ["I"]
+                "enum": ["I", "E"]
               }
             }
           }
