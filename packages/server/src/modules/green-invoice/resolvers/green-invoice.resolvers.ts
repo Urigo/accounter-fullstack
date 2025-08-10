@@ -6,6 +6,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type {
+  IGetAllIssuedDocumentsResult,
   IGetIssuedDocumentsByIdsResult,
   IInsertDocumentsResult,
   IUpdateIssuedDocumentParams,
@@ -368,7 +369,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       // check for new or updated documents
       const newDocuments: Document[] = [];
-      const documentsToUpdate: IUpdateIssuedDocumentParams[] = [];
+      const documentToUpdate: {
+        localDoc: IGetAllIssuedDocumentsResult;
+        externalDoc: Document;
+      }[] = [];
       await Promise.all(
         greenInvoiceDocuments.map(async item => {
           const existingDocs = issuedDocuments.filter(doc => doc.external_id === item.id);
@@ -389,58 +393,66 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           // For existing document => check for updates
           const existingDoc = existingDocs[0];
 
-          const docToUpdate: Partial<IUpdateIssuedDocumentParams> = {};
-          // check if the document status has changed
-          const latestStatus = greenInvoiceToDocumentStatus(item.status);
-          if (latestStatus !== existingDoc.status) {
-            docToUpdate.status = latestStatus;
-          }
-          // check if the document amount has changed
-          const linkedDocuments = await getLinkedDocuments(injector, item.id);
-          if (
-            linkedDocuments?.length &&
-            (!existingDoc.linked_document_ids ||
-              existingDoc.linked_document_ids.length !== linkedDocuments.length ||
-              existingDoc.linked_document_ids?.some(id => !linkedDocuments.includes(id)))
-          ) {
-            docToUpdate.linkedDocumentIds = linkedDocuments;
-          }
-          // if has attributes to update, add to the update list
-          if (Object.keys(docToUpdate).length > 0) {
-            documentsToUpdate.push({
-              documentId: existingDoc.id,
-              ...docToUpdate,
-            });
-          }
+          documentToUpdate.push({
+            localDoc: existingDoc,
+            externalDoc: item,
+          });
         }),
       );
 
       const addedDocs: IInsertDocumentsResult[] = [];
 
-      // run insertions and updates in parallel
-      const newDocumentsPromises = newDocuments.map(async greenInvoiceDoc => {
-        const newDocument = await insertNewDocumentFromGreenInvoice(
-          injector,
-          greenInvoiceDoc,
-          ownerId,
-        );
+      // run insertions first, to avoid broken linked documents
+      await Promise.all(
+        newDocuments.map(async greenInvoiceDoc => {
+          const newDocument = await insertNewDocumentFromGreenInvoice(
+            injector,
+            greenInvoiceDoc,
+            ownerId,
+          );
 
-        if (newDocument) {
-          addedDocs.push(newDocument);
-        }
-      });
-      const documentsToUpdatePromises = documentsToUpdate.map(async docToUpdate => {
-        await injector
-          .get(IssuedDocumentsProvider)
-          .updateIssuedDocument(docToUpdate)
-          .catch(e => {
-            console.error('Failed to update issued document linked documents', e);
-            throw new GraphQLError(
-              `Failed to update issued document linked documents for Green Invoice ID: ${docToUpdate.documentId}`,
-            );
-          });
-      });
-      await Promise.all([...newDocumentsPromises, ...documentsToUpdatePromises]);
+          if (newDocument) {
+            addedDocs.push(newDocument);
+          }
+        }),
+      );
+
+      // Check for updates
+      await Promise.all(
+        documentToUpdate.map(async ({ localDoc, externalDoc }) => {
+          const docToUpdate: Partial<IUpdateIssuedDocumentParams> = {};
+          // check if the document status has changed
+          const latestStatus = greenInvoiceToDocumentStatus(externalDoc.status);
+          if (latestStatus !== localDoc.status) {
+            docToUpdate.status = latestStatus;
+          }
+          // check if the document amount has changed
+          const linkedDocuments = await getLinkedDocuments(injector, externalDoc.id);
+          if (
+            linkedDocuments?.length &&
+            (!localDoc.linked_document_ids ||
+              localDoc.linked_document_ids.length !== linkedDocuments.length ||
+              localDoc.linked_document_ids?.some(id => !linkedDocuments.includes(id)))
+          ) {
+            docToUpdate.linkedDocumentIds = linkedDocuments;
+          }
+          // if has attributes to update, add to the update list
+          if (Object.keys(docToUpdate).length > 0) {
+            await injector
+              .get(IssuedDocumentsProvider)
+              .updateIssuedDocument({
+                documentId: localDoc.id,
+                ...docToUpdate,
+              })
+              .catch(e => {
+                console.error('Failed to update issued document linked documents', e);
+                throw new GraphQLError(
+                  `Failed to update issued document linked documents for Green Invoice ID: ${docToUpdate.documentId}`,
+                );
+              });
+          }
+        }),
+      );
 
       return addedDocs;
     },
@@ -561,68 +573,73 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       { input: initialInput, emailContent, attachment, chargeId, sendEmail = false },
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
-      const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
-      const input = {
-        ...coreInput,
-        client: coreInput.client
-          ? {
-              ...coreInput.client,
-              emails: sendEmail ? coreInput.client?.emails : [],
-            }
-          : undefined,
-        emailContent,
-        attachment,
-      };
-      const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
-
-      if (!document) {
-        throw new GraphQLError('Failed to issue new document');
-      }
-
-      if ('id' in document && document.id) {
-        const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
-          id: document.id,
-        });
-        if (!greenInvoiceDocument) {
-          console.error('Failed to fetch issued document from Green Invoice', document);
-          throw new GraphQLError('Failed to issue new document');
-        }
-
-        // Insert new issued document to DB
-        const newDocument = await insertNewDocumentFromGreenInvoice(
-          injector,
-          greenInvoiceDocument,
-          defaultAdminBusinessId,
-          chargeId,
-        );
-
-        if (!newDocument.charge_id) {
-          console.error('New document does not have a charge ID', newDocument);
-          throw new GraphQLError('Failed to issue new document');
-        }
-
-        // Close linked documents
-        if (
-          coreInput.linkedDocumentIds?.length &&
-          coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
-        ) {
-          await Promise.all(
-            coreInput.linkedDocumentIds.map(async id => {
-              if (id) {
-                await injector
-                  .get(IssuedDocumentsProvider)
-                  .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' });
-                await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+      try {
+        const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
+        const input = {
+          ...coreInput,
+          client: coreInput.client
+            ? {
+                ...coreInput.client,
+                emails: sendEmail ? coreInput.client?.emails : [],
               }
-            }),
-          );
+            : undefined,
+          emailContent,
+          attachment,
+        };
+        const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
+
+        if (!document) {
+          throw new GraphQLError('Failed to issue new document');
         }
 
-        return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
-      }
+        if ('id' in document && document.id) {
+          const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
+            id: document.id,
+          });
+          if (!greenInvoiceDocument) {
+            console.error('Failed to fetch issued document from Green Invoice', document);
+            throw new GraphQLError('Failed to issue new document');
+          }
 
-      console.error('Document issue failed', document);
-      throw new GraphQLError('Document issue failed');
+          // Insert new issued document to DB
+          const newDocument = await insertNewDocumentFromGreenInvoice(
+            injector,
+            greenInvoiceDocument,
+            defaultAdminBusinessId,
+            chargeId,
+          );
+
+          if (!newDocument.charge_id) {
+            console.error('New document does not have a charge ID', newDocument);
+            throw new GraphQLError('Failed to issue new document');
+          }
+
+          // Close linked documents
+          if (
+            coreInput.linkedDocumentIds?.length &&
+            coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
+          ) {
+            await Promise.all(
+              coreInput.linkedDocumentIds.map(async id => {
+                if (id) {
+                  await injector
+                    .get(IssuedDocumentsProvider)
+                    .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' });
+                  await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+                }
+              }),
+            );
+          }
+
+          return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
+        }
+
+        console.error('Document issue failed', document);
+        throw new GraphQLError('Document issue failed');
+      } catch (error) {
+        console.error('Error issuing document:', error);
+        throw new GraphQLError('Error issuing document');
+      }
     },
   },
   GreenInvoiceBusiness: {
