@@ -56,7 +56,7 @@ export function CloseDocumentButton(
             <Button
               onClick={() => {
                 setOpen(false);
-                closeDocument({ documentId: props.documentId });
+                onFinallyClose();
               }}
               variant="secondary"
             >
