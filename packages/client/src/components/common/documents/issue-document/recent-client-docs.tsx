@@ -117,7 +117,7 @@ export function RecentClientDocs({ clientId, linkedDocumentIds }: RecentClientDo
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <TableCell colSpan={table.options.columns.length} className="h-24 text-center">
                     No results.
                   </TableCell>
                 </TableRow>
