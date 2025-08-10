@@ -106,7 +106,7 @@ type Props = {
   documentId?: string;
 } & ComponentProps<typeof GenerateDocument>;
 
-export function IssueDocumentModal({
+export function PreviewDocumentModal({
   open: externalOpen = false,
   setOpen: setExternalOpen,
   tooltip,
@@ -237,18 +237,20 @@ export function IssueDocumentModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button className="size-7.5" variant="ghost">
-              <Receipt className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip || 'Issue new document'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </DialogTrigger>
+      {!setExternalOpen && (
+        <DialogTrigger>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button className="size-7.5" variant="ghost">
+                <Receipt className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltip || 'Issue new document'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </DialogTrigger>
+      )}
       <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Issue New Document</DialogTitle>

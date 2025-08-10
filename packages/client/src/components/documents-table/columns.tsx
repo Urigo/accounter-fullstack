@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
-import { CloseDocumentButton, EditMiniButton, IssueDocumentModal } from '../common/index.js';
+import { CloseDocumentButton, EditMiniButton, PreviewDocumentModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   Amount,
@@ -299,7 +299,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
             row.original.issuedDocumentInfo?.status === 'OPEN' && (
               <>
                 <CloseDocumentButton documentId={row.original.id} />
-                <IssueDocumentModal
+                <PreviewDocumentModal
                   documentId={row.original.id}
                   tooltip="Issue Document out of This Document"
                 />
