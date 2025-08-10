@@ -3,6 +3,8 @@
 import type React from 'react';
 import { useState } from 'react';
 import { Loader2, Mail, Send } from 'lucide-react';
+import { DocumentType } from '../../../../gql/graphql.js';
+import { getDocumentNameFromType } from '../../../../helpers/index.js';
 import { Button } from '../../../ui/button.js';
 import { Checkbox } from '../../../ui/checkbox.js';
 import {
@@ -28,7 +30,7 @@ interface IssueDocumentModalProps {
   onIssue: (issueData: IssueDocumentData) => Promise<void>;
   clientName?: string;
   clientEmails?: string[];
-  documentType?: string;
+  documentType?: DocumentType;
 }
 
 export function IssueDocumentModal({
@@ -37,7 +39,7 @@ export function IssueDocumentModal({
   onIssue,
   clientName,
   clientEmails = [],
-  documentType = 'Document',
+  documentType = DocumentType.Unprocessed,
 }: IssueDocumentModalProps) {
   const [issueData, setIssueData] = useState<IssueDocumentData>({
     emailContent: '',
@@ -91,22 +93,12 @@ export function IssueDocumentModal({
             Issue Document
           </DialogTitle>
           <DialogDescription>
-            Configure email settings before sending the {documentType.toLowerCase()} to the client.
+            Configure email settings before sending the {getDocumentNameFromType(documentType)} to
+            the client.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Client Information Display */}
-          {clientName && (
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm font-medium text-gray-700">Sending to:</div>
-              <div className="text-sm text-gray-900">{clientName}</div>
-              {clientEmails.length > 0 && (
-                <div className="text-xs text-gray-600 mt-1">{clientEmails.join(', ')}</div>
-              )}
-            </div>
-          )}
-
           {/* Send Email Switch */}
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -122,6 +114,17 @@ export function IssueDocumentModal({
           <div className="text-xs text-gray-500 ml-6">
             When disabled, email will not be sent to the client.
           </div>
+
+          {/* Client Information Display */}
+          {clientName && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="text-sm font-medium text-gray-700">Sending to:</div>
+              <div className="text-sm text-gray-900">{clientName}</div>
+              {clientEmails.length > 0 && (
+                <div className="text-xs text-gray-600 mt-1">{clientEmails.join(', ')}</div>
+              )}
+            </div>
+          )}
 
           {/* Email Content */}
           <div className="space-y-2">

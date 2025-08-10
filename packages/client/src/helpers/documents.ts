@@ -42,7 +42,7 @@ export function getDocumentNameFromType(documentType: DocumentType): string {
     case DocumentType.Other:
       return 'Other Document';
     case DocumentType.Unprocessed:
-      return 'Unprocessed';
+      return 'Unprocessed Document';
     default:
       throw new Error(`Unsupported document type: ${documentType}`);
   }

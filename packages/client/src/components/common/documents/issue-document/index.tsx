@@ -636,7 +636,7 @@ export function GenerateDocument({ initialFormData = {}, onDone }: GenerateDocum
           onIssue={handleIssue}
           clientName={formData.client?.name}
           clientEmails={formData.client?.emails}
-          documentType={documentTypes.find(t => t.value === formData.type)}
+          documentType={documentTypes.find(t => t.value === formData.type)?.value}
         />
       </div>
     </div>
