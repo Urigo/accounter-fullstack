@@ -624,8 +624,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
                 if (id) {
                   await injector
                     .get(IssuedDocumentsProvider)
-                    .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' });
-                  await injector.get(GreenInvoiceClientProvider).closeDocument({ id });
+                    .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' })
+                    .catch(e => {
+                      throw new Error(
+                        `Failed to close linked document with ID ${id}: ${e.message}`,
+                      );
+                    });
                 }
               }),
             );
