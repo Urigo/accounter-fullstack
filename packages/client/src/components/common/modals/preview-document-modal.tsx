@@ -3,6 +3,7 @@ import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
 import {
+  DocumentType,
   IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
@@ -104,14 +105,18 @@ type Props = {
   tooltip?: string;
   chargeId?: string;
   documentId?: string;
+  documentType?: DocumentType;
+  onDone?: () => void;
 } & ComponentProps<typeof GenerateDocument>;
 
-export function IssueDocumentModal({
+export function PreviewDocumentModal({
   open: externalOpen = false,
   setOpen: setExternalOpen,
   tooltip,
   chargeId,
   documentId,
+  documentType,
+  onDone,
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -230,25 +235,28 @@ export function IssueDocumentModal({
         })),
         linkedDocumentIds: newDocumentInfoDraft.linkedDocumentIds || undefined,
         linkedPaymentId: newDocumentInfoDraft.linkedPaymentId || undefined,
+        type: documentType || newDocumentInfoDraft.type,
       };
       setInitialFormData(draft);
     }
-  }, [dataByCharge, dataByDocument]);
+  }, [dataByCharge, dataByDocument, documentType]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button className="size-7.5" variant="ghost">
-              <Receipt className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip || 'Issue new document'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </DialogTrigger>
+      {!setExternalOpen && (
+        <DialogTrigger>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button className="size-7.5" variant="ghost">
+                <Receipt className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltip || 'Issue new document'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </DialogTrigger>
+      )}
       <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Issue New Document</DialogTitle>
@@ -256,7 +264,7 @@ export function IssueDocumentModal({
         {fetchingByCharge || fetchingByDocument ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
-          <GenerateDocument initialFormData={initialFormData} />
+          <GenerateDocument initialFormData={initialFormData} onDone={onDone} />
         )}
       </DialogContent>
     </Dialog>

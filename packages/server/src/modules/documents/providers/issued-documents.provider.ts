@@ -16,6 +16,8 @@ import type {
   IGetIssuedDocumentsByTypeQuery,
   IInsertIssuedDocumentsParams,
   IInsertIssuedDocumentsQuery,
+  IUpdateIssuedDocumentByExternalIdParams,
+  IUpdateIssuedDocumentByExternalIdQuery,
   IUpdateIssuedDocumentParams,
   IUpdateIssuedDocumentQuery,
 } from '../types.js';
@@ -72,6 +74,26 @@ const updateIssuedDocument = sql<IUpdateIssuedDocumentQuery>`
   )
   WHERE
     id = $documentId
+  RETURNING *;
+`;
+
+const updateIssuedDocumentByExternalId = sql<IUpdateIssuedDocumentByExternalIdQuery>`
+  UPDATE accounter_schema.documents_issued
+  SET
+  id = COALESCE(
+    $documentId,
+    id
+  ),
+  status = COALESCE(
+    $status,
+    status
+  ),
+  linked_document_ids = COALESCE(
+    $linkedDocumentIds,
+    linked_document_ids
+  )
+  WHERE
+    external_id = $externalId
   RETURNING *;
 `;
 
@@ -212,6 +234,15 @@ export class IssuedDocumentsProvider {
       this.invalidateById(params.documentId);
     }
     return updateIssuedDocument.run(params, this.dbProvider);
+  }
+
+  public async updateIssuedDocumentByExternalId(params: IUpdateIssuedDocumentByExternalIdParams) {
+    return updateIssuedDocumentByExternalId.run(params, this.dbProvider).then(res => {
+      if (res[0]?.id) {
+        this.invalidateById(res[0].id);
+      }
+      return res;
+    });
   }
 
   public async deleteIssuedDocument(params: IDeleteIssuedDocumentParams) {

@@ -11,6 +11,7 @@ import {
   GreenInvoicePaymentType,
   GreenInvoiceVatType,
 } from '../../../../../gql/graphql.js';
+import { getDocumentNameFromType } from '../../../../../helpers/index.js';
 
 // Helper functions to get enum options with labels
 export const getDocumentLangOptions = () => [
@@ -59,24 +60,30 @@ export const getDiscountTypeOptions = () => [
   { value: GreenInvoiceDiscountType.Sum, label: 'Fixed Amount' },
 ];
 
-export const getDocumentTypeOptions = () => [
-  { value: DocumentType.CreditInvoice, label: 'Credit Note' },
-  { value: DocumentType.Invoice, label: 'Tax Invoice' },
-  { value: DocumentType.InvoiceReceipt, label: 'Tax Invoice/Receipt' },
-  { value: DocumentType.Receipt, label: 'Receipt' },
-  // Other = 'OTHER',
-  // Proforma = 'PROFORMA',
-  // Unprocessed = 'UNPROCESSED'
-  // { value: DocumentType.PriceQuote, label: 'Price Quote' },
-  // { value: DocumentType.Order, label: 'Order' },
-  // { value: DocumentType.DeliveryNote, label: 'Delivery Note' },
-  // { value: DocumentType.ReturnNote, label: 'Return Note' },
-  // { value: DocumentType.TransactionInvoice, label: 'Transaction Invoice' },
-  // { value: DocumentType.DonationReceipt, label: 'Donation Receipt' },
-  // { value: DocumentType.PurchaseOrder, label: 'Purchase Order' },
-  // { value: DocumentType.DepositReceipt, label: 'Deposit Receipt' },
-  // { value: DocumentType.DepositWithdrawal, label: 'Deposit Withdrawal' },
-];
+export const getDocumentTypeOptions = () =>
+  [
+    DocumentType.CreditInvoice,
+    DocumentType.Invoice,
+    DocumentType.InvoiceReceipt,
+    DocumentType.Receipt,
+    DocumentType.Proforma,
+  ].map(type => ({
+    value: type,
+    label: getDocumentNameFromType(type),
+  }));
+// [
+//   { value: DocumentType.Other, label: 'OTHER' },
+//   { value: DocumentType.Unprocessed, labl: 'UNPROCESSED' },
+//   { value: DocumentType.PriceQuote, label: 'Price Quote' },
+//   { value: DocumentType.Order, label: 'Order' },
+//   { value: DocumentType.DeliveryNote, label: 'Delivery Note' },
+//   { value: DocumentType.ReturnNote, label: 'Return Note' },
+//   { value: DocumentType.TransactionInvoice, label: 'Transaction Invoice' },
+//   { value: DocumentType.DonationReceipt, label: 'Donation Receipt' },
+//   { value: DocumentType.PurchaseOrder, label: 'Purchase Order' },
+//   { value: DocumentType.DepositReceipt, label: 'Deposit Receipt' },
+//   { value: DocumentType.DepositWithdrawal, label: 'Deposit Withdrawal' },
+// ];
 
 export const getCountryOptions = () => [
   // Popular countries first

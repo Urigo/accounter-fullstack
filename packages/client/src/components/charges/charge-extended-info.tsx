@@ -20,7 +20,7 @@ import {
 import { FragmentType, getFragmentData, isFragmentReady } from '../../gql/index.js';
 import {
   BusinessTripSummarizedReport,
-  IssueDocumentModal,
+  PreviewDocumentModal,
   RegenerateLedgerRecordsButton,
 } from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
@@ -293,7 +293,7 @@ export function ChargeExtendedInfo({
                 >
                   <div className="flex flex-row items-center gap-2 justify-between w-full">
                     Transactions
-                    {isIncomeNoDocsCharge && <IssueDocumentModal chargeId={charge!.id} />}
+                    {isIncomeNoDocsCharge && <PreviewDocumentModal chargeId={charge!.id} />}
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
@@ -352,7 +352,7 @@ export function ChargeExtendedInfo({
                       )}
                       Documents
                     </div>
-                    {hasOpenDocuments && <IssueDocumentModal chargeId={charge.id} />}
+                    {hasOpenDocuments && <PreviewDocumentModal chargeId={charge.id} />}
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>

@@ -1,4 +1,11 @@
-import type { CreditInvoice, Invoice, InvoiceReceipt, Proforma, Receipt } from '../gql/graphql.js';
+import {
+  DocumentType,
+  type CreditInvoice,
+  type Invoice,
+  type InvoiceReceipt,
+  type Proforma,
+  type Receipt,
+} from '../gql/graphql.js';
 
 export function isDocumentInvoice(doc: unknown): doc is Partial<Invoice> {
   return (doc as Invoice)?.__typename === 'Invoice';
@@ -18,4 +25,25 @@ export function isDocumentCreditInvoice(doc: unknown): doc is Partial<CreditInvo
 
 export function isDocumentProforma(doc: unknown): doc is Partial<Proforma> {
   return (doc as Proforma)?.__typename === 'Proforma';
+}
+
+export function getDocumentNameFromType(documentType: DocumentType): string {
+  switch (documentType) {
+    case DocumentType.Invoice:
+      return 'Tax Invoice';
+    case DocumentType.Proforma:
+      return 'Proforma Invoice';
+    case DocumentType.InvoiceReceipt:
+      return 'Invoice / Receipt';
+    case DocumentType.CreditInvoice:
+      return 'Credit Note';
+    case DocumentType.Receipt:
+      return 'Receipt';
+    case DocumentType.Other:
+      return 'Other Document';
+    case DocumentType.Unprocessed:
+      return 'Unprocessed Document';
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
+  }
 }

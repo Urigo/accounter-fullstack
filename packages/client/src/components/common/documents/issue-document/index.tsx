@@ -59,6 +59,7 @@ import {
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
+  onDone?: () => void;
 }
 
 const currencies = getCurrencyOptions();
@@ -67,7 +68,7 @@ const documentLangs = getDocumentLangOptions();
 const vatTypes = getVatTypeOptions();
 // const discountTypes = getDiscountTypeOptions();
 
-export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps) {
+export function GenerateDocument({ initialFormData = {}, onDone }: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     type: DocumentType.Invoice,
     lang: GreenInvoiceDocumentLang.English,
@@ -216,6 +217,8 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
       input: formData,
       ...issueData,
     });
+
+    onDone?.();
   };
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;
@@ -226,6 +229,15 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
       const vatAmount = subtotal * ((item.vatRate || 0) / 100);
       return total + subtotal + vatAmount;
     }, 0) || 0;
+
+  const isPaymentRequest =
+    formData.type === DocumentType.Proforma || formData.type === DocumentType.Invoice;
+  const shouldShowIncome =
+    isPaymentRequest ||
+    formData.type === DocumentType.InvoiceReceipt ||
+    formData.type === DocumentType.CreditInvoice;
+  const shouldShowPayment =
+    formData.type === DocumentType.Receipt || formData.type === DocumentType.InvoiceReceipt;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -353,23 +365,6 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="maxPayments">Max Payments</Label>
-                    <Input
-                      id="maxPayments"
-                      type="number"
-                      min="1"
-                      max="36"
-                      value={formData.maxPayments || ''}
-                      onChange={e =>
-                        updateFormData('maxPayments', Number.parseInt(e.target.value) || undefined)
-                      }
-                      placeholder="1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
                     <Label htmlFor="date">Document Date</Label>
                     <Input
                       id="date"
@@ -378,16 +373,38 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
                       onChange={e => updateFormData('date', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={formData.dueDate || ''}
-                      onChange={e => updateFormData('dueDate', e.target.value)}
-                    />
-                  </div>
                 </div>
+
+                {isPaymentRequest && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="maxPayments">Max Payments</Label>
+                      <Input
+                        id="maxPayments"
+                        type="number"
+                        min="1"
+                        max="36"
+                        value={formData.maxPayments || ''}
+                        onChange={e =>
+                          updateFormData(
+                            'maxPayments',
+                            Number.parseInt(e.target.value) || undefined,
+                          )
+                        }
+                        placeholder="1"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dueDate">Due Date</Label>
+                      <Input
+                        id="dueDate"
+                        type="date"
+                        value={formData.dueDate || ''}
+                        onChange={e => updateFormData('dueDate', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
@@ -494,18 +511,22 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             )}
 
             {/* Income Form */}
-            <IncomeForm
-              income={formData.income || []}
-              currency={formData.currency}
-              onChange={(income: Income[]) => updateFormData('income', income)}
-            />
+            {shouldShowIncome && (
+              <IncomeForm
+                income={formData.income || []}
+                currency={formData.currency}
+                onChange={(income: Income[]) => updateFormData('income', income)}
+              />
+            )}
 
             {/* Payment Form */}
-            <PaymentForm
-              payments={formData.payment || []}
-              currency={formData.currency}
-              onChange={(payment: Payment[]) => updateFormData('payment', payment)}
-            />
+            {shouldShowPayment && (
+              <PaymentForm
+                payments={formData.payment || []}
+                currency={formData.currency}
+                onChange={(payment: Payment[]) => updateFormData('payment', payment)}
+              />
+            )}
 
             {/* Action Buttons */}
             <Card>
@@ -599,7 +620,10 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
             </Card>
 
             {/* Previous client documents */}
-            <RecentClientDocs clientId={selectedClientId} />
+            <RecentClientDocs
+              clientId={selectedClientId}
+              linkedDocumentIds={formData.linkedDocumentIds ?? []}
+            />
 
             {/* Previous similar-types documents */}
             <RecentDocsOfSameType documentType={formData.type} />
@@ -612,7 +636,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
           onIssue={handleIssue}
           clientName={formData.client?.name}
           clientEmails={formData.client?.emails}
-          documentType={documentTypes.find(t => t.value === formData.type)?.label}
+          documentType={documentTypes.find(t => t.value === formData.type)?.value}
         />
       </div>
     </div>
