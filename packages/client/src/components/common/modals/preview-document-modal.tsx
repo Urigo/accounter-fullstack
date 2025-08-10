@@ -3,6 +3,7 @@ import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
 import {
+  DocumentType,
   IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
@@ -104,6 +105,8 @@ type Props = {
   tooltip?: string;
   chargeId?: string;
   documentId?: string;
+  documentType?: DocumentType;
+  onDone?: () => void;
 } & ComponentProps<typeof GenerateDocument>;
 
 export function PreviewDocumentModal({
@@ -112,6 +115,8 @@ export function PreviewDocumentModal({
   tooltip,
   chargeId,
   documentId,
+  documentType,
+  onDone,
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -230,10 +235,11 @@ export function PreviewDocumentModal({
         })),
         linkedDocumentIds: newDocumentInfoDraft.linkedDocumentIds || undefined,
         linkedPaymentId: newDocumentInfoDraft.linkedPaymentId || undefined,
+        type: documentType || newDocumentInfoDraft.type,
       };
       setInitialFormData(draft);
     }
-  }, [dataByCharge, dataByDocument]);
+  }, [dataByCharge, dataByDocument, documentType]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -258,7 +264,7 @@ export function PreviewDocumentModal({
         {fetchingByCharge || fetchingByDocument ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
-          <GenerateDocument initialFormData={initialFormData} />
+          <GenerateDocument initialFormData={initialFormData} onDone={onDone} />
         )}
       </DialogContent>
     </Dialog>

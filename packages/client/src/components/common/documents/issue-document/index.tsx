@@ -59,6 +59,7 @@ import {
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
+  onDone?: () => void;
 }
 
 const currencies = getCurrencyOptions();
@@ -67,7 +68,7 @@ const documentLangs = getDocumentLangOptions();
 const vatTypes = getVatTypeOptions();
 // const discountTypes = getDiscountTypeOptions();
 
-export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps) {
+export function GenerateDocument({ initialFormData = {}, onDone }: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     type: DocumentType.Invoice,
     lang: GreenInvoiceDocumentLang.English,
@@ -216,6 +217,8 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
       input: formData,
       ...issueData,
     });
+
+    onDone?.();
   };
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;
@@ -633,7 +636,7 @@ export function GenerateDocument({ initialFormData = {} }: GenerateDocumentProps
           onIssue={handleIssue}
           clientName={formData.client?.name}
           clientEmails={formData.client?.emails}
-          documentType={documentTypes.find(t => t.value === formData.type)?.label}
+          documentType={documentTypes.find(t => t.value === formData.type)}
         />
       </div>
     </div>
