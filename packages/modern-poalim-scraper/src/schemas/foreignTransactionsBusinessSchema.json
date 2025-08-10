@@ -550,7 +550,7 @@
             "properties": {
               "messageCode": {
                 "type": "number",
-                "enum": [11040, 330, 11039, 11038, 11024]
+                "enum": [330, 11024, 11038, 11039, 11040]
               },
               "messageDescription": {
                 "type": "string"

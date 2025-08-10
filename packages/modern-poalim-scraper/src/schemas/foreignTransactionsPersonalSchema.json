@@ -201,7 +201,7 @@
                 },
                 "contraCurrencyCode": {
                   "type": "integer",
-                  "enum": [0, 1, 19, 27, 78, 100, 140, 248]
+                  "enum": [0, 1, 19, 27, 36, 51, 78, 100, 140, 248]
                 },
                 "currencyLongDescription": {
                   "type": "string"
@@ -468,7 +468,7 @@
             "properties": {
               "messageCode": {
                 "type": "number",
-                "enum": [11040, 330, 11003, 11039, 11038]
+                "enum": [330, 11003, 11038, 11039, 11040]
               },
               "messageDescription": {
                 "type": "string"
