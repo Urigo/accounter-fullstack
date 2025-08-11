@@ -615,10 +615,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           }
 
           // Close linked documents
-          if (
-            coreInput.linkedDocumentIds?.length &&
-            coreInput.type !== getGreenInvoiceDocumentType(DocumentType.Receipt)
-          ) {
+          if (coreInput.linkedDocumentIds?.length) {
             await Promise.all(
               coreInput.linkedDocumentIds.map(async id => {
                 if (id) {
