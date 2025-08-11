@@ -1,12 +1,14 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useQuery } from 'urql';
 import { MonthPickerInput } from '@mantine/dates';
 import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
 import {
   BillingCycle,
   IssueMonthlyDocumentsMutationVariables,
+  MonthlyDocumentsDraftsDocument,
   NewDocumentInfoFragment,
   NewDocumentInfoFragmentDoc,
   NewDocumentInput,
@@ -40,20 +42,46 @@ type IssueDocumentsTableProps = {
 };
 
 export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): ReactElement => {
-  const documentDrafts = drafts.map(draft =>
-    getFragmentData(NewDocumentInfoFragmentDoc, draft),
-  ) as (Omit<NewDocumentInfoFragment, 'client'> & {
-    client: NewDocumentInfoFragment['client'] & { id: string };
-  })[];
+  const [documentDrafts, setDocumentDrafts] = useState(
+    drafts.map(draft => getFragmentData(NewDocumentInfoFragmentDoc, draft)) as (Omit<
+      NewDocumentInfoFragment,
+      'client'
+    > & {
+      client: NewDocumentInfoFragment['client'] & { id: string };
+    })[],
+  );
 
   const defaultIssueMonth = format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString;
+
+  const [issueMonth, setIssueMonth] = useState<TimelessDateString>(defaultIssueMonth);
+
+  const [{ data }, fetchNewDrafts] = useQuery({
+    query: MonthlyDocumentsDraftsDocument,
+    variables: {
+      issueMonth,
+    },
+    pause: true,
+  });
+
+  useEffect(() => {
+    if (data?.clientMonthlyChargesDrafts) {
+      setDocumentDrafts(
+        data.clientMonthlyChargesDrafts.map(draft =>
+          getFragmentData(NewDocumentInfoFragmentDoc, draft),
+        ) as (Omit<NewDocumentInfoFragment, 'client'> & {
+          client: NewDocumentInfoFragment['client'] & { id: string };
+        })[],
+      );
+    }
+  }, [data, setDocumentDrafts]);
+
+  useEffect(() => {
+    fetchNewDrafts();
+  }, [issueMonth, fetchNewDrafts]);
 
   const form = useForm<IssueDocumentsVariables>({
     values: {
       generateDocumentsInfo: documentDrafts,
-    },
-    defaultValues: {
-      issueMonth: defaultIssueMonth,
     },
   });
   const { issueDocuments } = useIssueMonthlyDocuments();
@@ -104,29 +132,13 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
           {/* date input for issueMonth */}
           <div className="flex gap-2 items-center mb-4">
             <Label>Issue Month:</Label>
-            <FormField
-              control={form.control}
-              name="issueMonth"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormControl>
-                    <MonthPickerInput
-                      {...field}
-                      value={field.value ? new Date(field.value) : new Date()}
-                      onChange={(date: Date) => {
-                        const month = new Date(date.getFullYear(), date.getMonth(), 15);
-                        form.setValue(
-                          'issueMonth',
-                          format(month, 'yyyy-MM-dd') as TimelessDateString,
-                        );
-                      }}
-                      error={fieldState.error?.message}
-                      popoverProps={{ withinPortal: true }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <MonthPickerInput
+              value={new Date(issueMonth)}
+              onChange={(date: Date) => {
+                const month = new Date(date.getFullYear(), date.getMonth(), 15);
+                setIssueMonth(format(month, 'yyyy-MM-dd') as TimelessDateString);
+              }}
+              popoverProps={{ withinPortal: true }}
             />
           </div>
           <Table>
@@ -239,7 +251,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
             <AddDocumentToIssue
               contracts={unusedContracts}
               onAdd={append}
-              issueMonth={form.getValues('issueMonth') ?? defaultIssueMonth}
+              issueMonth={issueMonth}
             />
             <ConfirmationModal
               onConfirm={form.handleSubmit(onSubmit)}
