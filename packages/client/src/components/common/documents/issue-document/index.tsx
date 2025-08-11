@@ -14,7 +14,7 @@ import {
   IssueDocumentClientFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
-import { useGetGreenInvoiceClients } from '../../../../hooks/use-get-green-invoice-clients.js';
+import { useGetAllClients } from '../../../../hooks/use-get-all-clients.js';
 import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { Button } from '../../../ui/button.jsx';
@@ -47,9 +47,9 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query ClientInfoForDocumentIssuing($businessId: UUID!) {
-    greenInvoiceBusiness(businessId: $businessId) {
+    client(businessId: $businessId) {
       id
-      clientInfo {
+      greenInvoiceInfo {
         id
         ...IssueDocumentClientFields
       }
@@ -89,7 +89,7 @@ export function GenerateDocument({
 
   // Add state for selected client
   const [selectedClientId, setSelectedClientId] = useState<string>('');
-  const { selectableGreenInvoiceClients } = useGetGreenInvoiceClients();
+  const { selectableClients } = useGetAllClients();
 
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [isPreviewCurrent, setIsPreviewCurrent] = useState(false);
@@ -137,14 +137,14 @@ export function GenerateDocument({
 
   // on client info data change, update form client
   useEffect(() => {
-    if (clientInfoData?.greenInvoiceBusiness?.clientInfo) {
+    if (clientInfoData?.client?.greenInvoiceInfo) {
       const clientInfo = getFragmentData(
         IssueDocumentClientFieldsFragmentDoc,
-        clientInfoData.greenInvoiceBusiness.clientInfo,
+        clientInfoData.client.greenInvoiceInfo,
       );
       updateClient({ ...clientInfo, id: selectedClientId });
     }
-  }, [clientInfoData?.greenInvoiceBusiness?.clientInfo, updateClient, selectedClientId]);
+  }, [clientInfoData?.client?.greenInvoiceInfo, updateClient, selectedClientId]);
 
   // Track form changes
   useEffect(() => {
@@ -182,7 +182,7 @@ export function GenerateDocument({
       });
     } else if (clientId) {
       // Existing client selected - populate with client data
-      const selectedClient = selectableGreenInvoiceClients.find(c => c.value === clientId);
+      const selectedClient = selectableClients.find(c => c.value === clientId);
       if (selectedClient) {
         updateFormData('client', {
           id: selectedClient.value,
@@ -361,7 +361,7 @@ export function GenerateDocument({
                           but we are not using it here. to enable,
                           uncomment the next line */}
                         {/* <SelectItem value="new">+ New Client</SelectItem> */}
-                        {selectableGreenInvoiceClients.map(client => (
+                        {selectableClients.map(client => (
                           <SelectItem key={client.value} value={client.value}>
                             {client.label}
                           </SelectItem>

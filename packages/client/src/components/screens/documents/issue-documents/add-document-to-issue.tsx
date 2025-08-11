@@ -1,7 +1,7 @@
 import { ReactElement, useContext, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { UseFieldArrayAppend } from 'react-hook-form';
-import { AllGreenInvoiceBusinessesQuery, Currency } from '../../../../gql/graphql.js';
+import { AllClientsQuery, Currency } from '../../../../gql/graphql.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { Button } from '../../../ui/button';
 import {
@@ -21,10 +21,10 @@ import {
 import { IssueDocumentsVariables } from './issue-documents-table.js';
 
 export function AddDocumentToIssue({
-  greenInvoiceBusinesses,
+  clients,
   onAdd,
 }: {
-  greenInvoiceBusinesses: AllGreenInvoiceBusinessesQuery['greenInvoiceBusinesses'];
+  clients: AllClientsQuery['allClients'];
   onAdd: UseFieldArrayAppend<IssueDocumentsVariables, 'generateDocumentsInfo'>;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -43,7 +43,7 @@ export function AddDocumentToIssue({
         </DialogHeader>
         <Select
           onValueChange={value => {
-            const business = greenInvoiceBusinesses.find(b => b.originalBusiness.id === value);
+            const business = clients.find(b => b.originalBusiness.id === value);
             if (business) {
               onAdd({
                 businessId: business.originalBusiness.id,
@@ -60,9 +60,9 @@ export function AddDocumentToIssue({
             <SelectValue placeholder="Recipient" />
           </SelectTrigger>
           <SelectContent>
-            {greenInvoiceBusinesses.map(business => (
-              <SelectItem key={business.id} value={business.originalBusiness.id}>
-                {business.originalBusiness.name}
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.originalBusiness.id}>
+                {client.originalBusiness.name}
               </SelectItem>
             ))}
           </SelectContent>

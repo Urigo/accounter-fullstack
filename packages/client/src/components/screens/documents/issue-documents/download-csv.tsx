@@ -1,12 +1,12 @@
 import { ReactElement, useCallback } from 'react';
 import { format } from 'date-fns';
 import { UseFormReturn } from 'react-hook-form';
-import { AllGreenInvoiceBusinessesQuery } from '../../../../gql/graphql.js';
+import { AllClientsQuery } from '../../../../gql/graphql.js';
 import { DownloadCSVButton } from '../../../common/index.js';
 import { IssueDocumentsVariables } from './issue-documents-table.js';
 
 type Props = {
-  businessesData: AllGreenInvoiceBusinessesQuery['greenInvoiceBusinesses'];
+  businessesData: AllClientsQuery['allClients'];
   form: UseFormReturn<IssueDocumentsVariables, unknown, IssueDocumentsVariables>;
 };
 

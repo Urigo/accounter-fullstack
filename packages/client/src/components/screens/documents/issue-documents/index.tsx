@@ -1,42 +1,18 @@
 import { ReactElement, useContext, useEffect } from 'react';
-import { useQuery } from 'urql';
-import { AllGreenInvoiceBusinessesDocument } from '../../../../gql/graphql.js';
+import { useGetAllClients } from '../../../../hooks/use-get-all-clients.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AllGreenInvoiceBusinesses {
-    greenInvoiceBusinesses {
-      id
-      greenInvoiceId
-      remark
-      emails
-      generatedDocumentType
-      originalBusiness {
-        id
-        name
-      }
-    }
-  }
-`;
-
 export const IssueDocuments = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [{ data, fetching }] = useQuery({
-    query: AllGreenInvoiceBusinessesDocument,
-  });
+  const { clients, fetching } = useGetAllClients();
 
   useEffect(() => {
-    if (!data) {
+    if (!clients) {
       setFiltersContext(null);
     }
-  }, [data, setFiltersContext]);
+  }, [clients, setFiltersContext]);
 
-  return fetching ? (
-    <AccounterLoader />
-  ) : (
-    <IssueDocumentsTable businessesData={data?.greenInvoiceBusinesses ?? []} />
-  );
+  return fetching ? <AccounterLoader /> : <IssueDocumentsTable clientsData={clients ?? []} />;
 };
