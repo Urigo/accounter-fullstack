@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Accordion, Box, Collapse, Loader, Tooltip } from '@mantine/core';
@@ -11,13 +11,13 @@ import {
   DocumentsGalleryFieldsFragmentDoc,
   ExchangeRatesInfoFragmentDoc,
   FetchChargeDocument,
-  FetchChargeQuery,
   TableDocumentsFieldsFragmentDoc,
   TableLedgerRecordsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
+  type FetchChargeQuery,
 } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData, isFragmentReady } from '../../gql/index.js';
+import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import {
   BusinessTripSummarizedReport,
   PreviewDocumentModal,

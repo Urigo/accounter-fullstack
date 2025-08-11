@@ -1,9 +1,9 @@
-import { ReactElement, useEffect, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useEffect, useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Drawer, Image, Loader } from '@mantine/core';
-import { EditDocumentDocument, UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers/form.js';
+import { EditDocumentDocument, type UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
+import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { Form } from '../../ui/form.js';
 import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '../index.js';

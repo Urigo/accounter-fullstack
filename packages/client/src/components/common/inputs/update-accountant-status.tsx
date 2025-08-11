@@ -1,4 +1,4 @@
-import { forwardRef, ReactElement, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState, type ReactElement } from 'react';
 import { Select, Text } from '@mantine/core';
 import { AccountantStatus } from '../../../gql/graphql.js';
 

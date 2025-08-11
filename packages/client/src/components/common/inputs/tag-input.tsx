@@ -1,5 +1,5 @@
-import { forwardRef, ReactElement, useEffect } from 'react';
-import { Controller, FieldValues, Path, UseFormReturn } from 'react-hook-form';
+import { forwardRef, useEffect, type ReactElement } from 'react';
+import { Controller, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import { Group, Select, Text } from '@mantine/core';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useGetTags } from '../../../hooks/use-get-tags.js';

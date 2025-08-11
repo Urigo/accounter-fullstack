@@ -1,4 +1,11 @@
-import { ComponentProps, ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ReactElement,
+} from 'react';
 import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
@@ -7,8 +14,8 @@ import {
   IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
-  NewDocumentInfoFragment,
   NewDocumentInfoFragmentDoc,
+  type NewDocumentInfoFragment,
 } from '../../../gql/graphql.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -21,7 +28,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
 import { normalizeClientInfo } from '../forms/issue-document/client-form.js';
-import { PreviewDocumentInput } from '../forms/issue-document/types/document.js';
+import type { PreviewDocumentInput } from '../forms/issue-document/types/document.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

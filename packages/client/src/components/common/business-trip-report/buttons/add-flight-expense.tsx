@@ -1,13 +1,13 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  AddBusinessTripFlightsExpenseInput,
   AttendeesByBusinessTripDocument,
   FlightClass,
+  type AddBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
 import { Button } from '../../../ui/button.js';

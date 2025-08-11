@@ -1,7 +1,7 @@
-import { Dispatch, ReactElement, SetStateAction, useState } from 'react';
+import { useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { VatReportMissingInfoFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ChargesTable } from '../../charges/charges-table.js';
 import { Button } from '../../ui/button.js';
 

@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { ColumnDef } from '@tanstack/react-table';
-import { DocumentType, TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
+import type { ColumnDef } from '@tanstack/react-table';
+import { DocumentType, type TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { CloseDocumentButton, EditMiniButton, PreviewDocumentModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {

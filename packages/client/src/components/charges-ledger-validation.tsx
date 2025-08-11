@@ -1,8 +1,8 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
-import { ChargeFilter, ChargesLedgerValidationDocument } from '../gql/graphql.js';
+import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { ChargesFilters } from './charges/charges-filters.js';

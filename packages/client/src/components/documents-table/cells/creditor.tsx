@@ -1,11 +1,16 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type ReactElement } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessHref } from '../../charges/helpers.js';
 import { ConfirmMiniButton } from '../../common/index.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
+
+export const COUNTERPARTIES_LESS_DOCUMENT_TYPES: DocumentType[] = [
+  DocumentType.Unprocessed,
+  DocumentType.Other,
+] as const;
 
 type Props = {
   document: DocumentsTableRowType;
@@ -15,12 +20,10 @@ export const Creditor = ({ document }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
-  const shouldHaveCreditor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
-    document.documentType as DocumentType,
-  );
+  const shouldHaveCreditor =
+    !document.documentType || !COUNTERPARTIES_LESS_DOCUMENT_TYPES.includes(document.documentType);
   const isError =
-    (shouldHaveCreditor && !dbCreditor?.id) ||
-    [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
+    (shouldHaveCreditor && !dbCreditor?.id) || DocumentType.Unprocessed === document.documentType;
 
   const encodedFilters = get('chargesFilters');
 

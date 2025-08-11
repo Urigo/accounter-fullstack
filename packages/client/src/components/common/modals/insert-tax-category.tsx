@@ -1,6 +1,6 @@
-import { ReactElement, useState } from 'react';
-import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
-import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
+import { useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
+import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { useInsertTaxCategory } from '../../../hooks/use-insert-tax-category.js';
 import { Button } from '../../ui/button.js';
 import {

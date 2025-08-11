@@ -1,4 +1,4 @@
-import { ReactElement, useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from 'urql';
 import { BalanceReportExtendedTransactionsDocument } from '../../../../gql/graphql.js';

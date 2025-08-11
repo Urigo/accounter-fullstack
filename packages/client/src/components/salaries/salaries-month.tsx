@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { SalariesMonthFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { MonthTitleRow } from './record-cells/month-title.js';
 import { SalaryRecord } from './salary-record.js';
 

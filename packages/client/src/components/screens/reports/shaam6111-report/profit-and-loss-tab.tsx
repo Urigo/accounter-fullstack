@@ -1,7 +1,7 @@
 'use client';
 
 import { Shaam6111DataContentProfitLossFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TabsContent } from '../../../ui/tabs.js';
 import { CodeField } from './code-field.js';
 

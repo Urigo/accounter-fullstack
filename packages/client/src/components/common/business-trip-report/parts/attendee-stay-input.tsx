@@ -1,13 +1,13 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
-  ArrayPath,
   Controller,
-  FieldArray,
-  FieldValues,
-  Path,
   useFieldArray,
-  UseFormReturn,
+  type ArrayPath,
+  type FieldArray,
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
 } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';

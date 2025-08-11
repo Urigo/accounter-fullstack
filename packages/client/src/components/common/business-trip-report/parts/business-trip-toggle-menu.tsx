@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { HandCoins } from 'lucide-react';
 import { Burger, Menu } from '@mantine/core';
 import { useCreditShareholdersBusinessTripTnS } from '../../../../hooks/use-credit-shareholders-business-trip-tns.js';

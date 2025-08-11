@@ -1,5 +1,5 @@
 import React from 'react';
-import { DragLayerMonitorProps } from '@minoru/react-dnd-treeview';
+import type { DragLayerMonitorProps } from '@minoru/react-dnd-treeview';
 import { TypeIcon } from './type-icon.js';
 
 type Props = {

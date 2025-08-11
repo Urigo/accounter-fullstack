@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { AddSortCodeDocument, AddSortCodeMutationVariables } from '../gql/graphql.js';
+import { AddSortCodeDocument, type AddSortCodeMutationVariables } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

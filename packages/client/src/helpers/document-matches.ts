@@ -1,6 +1,6 @@
 import {
-  ChargeToMatchDocumentsFieldsFragment,
-  DocumentsToMatchFieldsFragment,
+  type ChargeToMatchDocumentsFieldsFragment,
+  type DocumentsToMatchFieldsFragment,
 } from '../gql/graphql.js';
 import { getStandardDeviation } from './statistics.js';
 import { stringComparer } from './strings-manipulations.js';

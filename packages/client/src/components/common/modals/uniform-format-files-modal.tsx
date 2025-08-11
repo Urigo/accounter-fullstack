@@ -7,7 +7,7 @@ import iconv from 'iconv-lite';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { UniformFormatDocument } from '../../../gql/graphql.js';
-import { downloadFile, TimelessDateString } from '../../../helpers/index.js';
+import { downloadFile, type TimelessDateString } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,

@@ -1,8 +1,8 @@
-import { Fragment, ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import {
-  DepreciationReportFilter,
   DepreciationReportScreenDocument,
+  type DepreciationReportFilter,
 } from '../../../../gql/graphql.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';

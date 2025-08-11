@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { ListPlus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';

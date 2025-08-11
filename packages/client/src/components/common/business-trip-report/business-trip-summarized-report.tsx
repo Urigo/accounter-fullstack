@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { BusinessTripReportFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ReportHeader } from './parts/report-header.js';
 import { Summary } from './parts/summary.js';
 

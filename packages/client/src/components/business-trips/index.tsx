@@ -1,13 +1,13 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Accordion, Container, Tooltip } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsScreenDocument,
-  BusinessTripsScreenQuery,
+  type BusinessTripsScreenQuery,
 } from '../../gql/graphql.js';
-import { FragmentType } from '../../gql/index.js';
+import type { FragmentType } from '../../gql/index.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusinessTripModal, PrintToPdfButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';

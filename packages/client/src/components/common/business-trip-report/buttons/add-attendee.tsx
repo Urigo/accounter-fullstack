@@ -1,11 +1,11 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
-import { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
+import type { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useInsertBusinessTripAttendee } from '../../../../hooks/use-insert-business-trip-attendee.js';

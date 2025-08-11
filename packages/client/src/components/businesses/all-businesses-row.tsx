@@ -1,10 +1,10 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Paper } from '@mantine/core';
 import {
-  AllBusinessesForScreenQuery,
-  AllBusinessesRowFieldsFragment,
   AllBusinessesRowFieldsFragmentDoc,
+  type AllBusinessesForScreenQuery,
+  type AllBusinessesRowFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
 import { BusinessCard, ToggleMergeSelected } from '../common/index.js';

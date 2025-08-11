@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { SimpleGrid as Grid } from '@mantine/core';
 
 export interface SimpleGridProps {

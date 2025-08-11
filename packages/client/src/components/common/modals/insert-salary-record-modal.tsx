@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useCallback } from 'react';
+import { useCallback, type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import type { SalaryRecordInput } from '../../../gql/graphql.js';
 import { useInsertSalaryRecord } from '../../../hooks/use-insert-salary-record.js';
 import { ModifySalaryRecord, PopUpDrawer } from '../index.js';

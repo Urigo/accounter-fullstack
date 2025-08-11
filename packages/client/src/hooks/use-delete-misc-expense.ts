@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   DeleteMiscExpenseDocument,
-  DeleteMiscExpenseMutation,
-  DeleteMiscExpenseMutationVariables,
+  type DeleteMiscExpenseMutation,
+  type DeleteMiscExpenseMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

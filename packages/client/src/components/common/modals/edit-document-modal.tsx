@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Tooltip } from '@mantine/core';
 import {
   CopyToClipboardButton,

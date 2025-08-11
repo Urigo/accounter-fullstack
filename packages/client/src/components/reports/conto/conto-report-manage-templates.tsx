@@ -1,19 +1,19 @@
-import { ReactElement, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, CloudCog, Loader2, MoreHorizontal } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
-  ColumnDef,
-  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
 } from '@tanstack/react-table';
-import { AllContoReportsDocument, AllContoReportsQuery } from '../../../gql/graphql.js';
+import { AllContoReportsDocument, type AllContoReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';

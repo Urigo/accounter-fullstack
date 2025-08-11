@@ -1,6 +1,6 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Control, Controller } from 'react-hook-form';
+import { Controller, type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { NavLink, Select, Text } from '@mantine/core';
@@ -9,9 +9,9 @@ import {
   AttendeesByBusinessTripDocument,
   BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
   Currency,
-  UpdateBusinessTripFlightsExpenseInput,
+  type UpdateBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { getChargeHref } from '../../../screens/charges/charge.js';
 import { CurrencyInput } from '../../index.js';

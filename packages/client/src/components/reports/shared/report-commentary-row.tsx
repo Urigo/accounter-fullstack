@@ -1,7 +1,7 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { ReportCommentaryTableFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ToggleExpansionButton } from '../../common/index.js';
 import { ReportSubCommentaryRow } from './report-sub-commentary-row.jsx';
 

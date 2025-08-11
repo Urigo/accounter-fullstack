@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { getDocumentNameFromType } from '../../../helpers/index.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;

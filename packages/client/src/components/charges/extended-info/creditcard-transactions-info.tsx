@@ -1,9 +1,9 @@
-import { ReactNode, useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   CreditcardBankChargeInfoFragmentDoc,
   TransactionForTransactionsTableFieldsFragmentDoc,
 } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ChargeNavigateButton } from '../../common/index.js';
 import {
   Account,

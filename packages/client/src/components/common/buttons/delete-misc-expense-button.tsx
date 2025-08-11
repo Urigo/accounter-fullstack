@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDeleteMiscExpense } from '../../../hooks/use-delete-misc-expense.js';

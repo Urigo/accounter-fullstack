@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Unlink } from 'lucide-react';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';

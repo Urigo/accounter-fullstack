@@ -1,14 +1,14 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Edit, Loader2 } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import {
-  AddSortCodeMutationVariables,
   SortCodeToUpdateDocument,
-  SortCodeToUpdateQuery,
+  type AddSortCodeMutationVariables,
+  type SortCodeToUpdateQuery,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers/index.js';
+import { relevantDataPicker, type MakeBoolean } from '../../../helpers/index.js';
 import { useUpdateSortCode } from '../../../hooks/use-update-sort-code.js';
 import { Button } from '../../ui/button.jsx';
 import {

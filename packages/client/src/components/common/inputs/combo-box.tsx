@@ -1,4 +1,4 @@
-import React, { ComponentProps, useMemo } from 'react';
+import React, { useMemo, type ComponentProps } from 'react';
 import { Check } from 'lucide-react';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
 import { cn } from '../../../lib/utils.js';

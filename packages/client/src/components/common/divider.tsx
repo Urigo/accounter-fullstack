@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
-import { Divider, DividerProps } from '@mantine/core';
+import type { ReactElement } from 'react';
+import { Divider, type DividerProps } from '@mantine/core';
 
 export const AccounterDivider = (props: DividerProps): ReactElement => <Divider {...props} />;

@@ -1,14 +1,14 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AllDepreciationCategoriesDocument,
-  InsertDepreciationRecordInput,
+  type InsertDepreciationRecordInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';

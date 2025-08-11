@@ -1,13 +1,13 @@
-import { ReactElement, useEffect } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
-  ArrayPath,
   Controller,
-  FieldArray,
-  FieldValues,
-  Path,
   useFieldArray,
-  UseFormReturn,
+  type ArrayPath,
+  type FieldArray,
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
 } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { useGetTags } from '../../../hooks/use-get-tags.js';

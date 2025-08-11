@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
-import { UseFormReturn } from 'react-hook-form';
-import { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
+import type { ReactElement } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
+import type { InsertNewBusinessInput, UpdateBusinessInput } from '../../../gql/graphql.js';
 import { ModifyBusinessFields } from './modify-business-fields.js';
 
 type ModalProps = {

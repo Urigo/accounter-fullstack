@@ -1,8 +1,11 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Table, Tooltip } from '@mantine/core';
-import { AllBusinessesForScreenDocument, AllBusinessesForScreenQuery } from '../../gql/graphql.js';
+import {
+  AllBusinessesForScreenDocument,
+  type AllBusinessesForScreenQuery,
+} from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';

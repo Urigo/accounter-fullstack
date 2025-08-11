@@ -6,7 +6,7 @@ import {
   Shaam6111DataContentFragmentDoc,
   Shaam6111DataContentHeaderBusinessFragmentDoc,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { Button } from '../../../ui/button.js';
 import { Tabs, TabsList, TabsTrigger } from '../../../ui/tabs.js';
 import { BalanceSheetTab } from './balance-sheet-tab.js';

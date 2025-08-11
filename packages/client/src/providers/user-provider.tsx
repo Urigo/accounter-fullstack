@@ -1,9 +1,9 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import equal from 'deep-equal';
 import { useQuery } from 'urql';
 import { AccounterLoader } from '../components/common/index.js';
-import { UserContextDocument, UserContextQuery } from '../gql/graphql.js';
-import { User } from '../services/user-service.js';
+import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
+import { type User } from '../services/user-service.js';
 import { AuthContext } from './auth-guard.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

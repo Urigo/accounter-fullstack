@@ -1,14 +1,14 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Card, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
-  BusinessTripAttendeeUpdateInput,
   BusinessTripReportAttendeeRowFieldsFragmentDoc,
+  type BusinessTripAttendeeUpdateInput,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';

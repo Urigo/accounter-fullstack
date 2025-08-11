@@ -140,6 +140,8 @@ const config: CodegenConfig = {
         },
       },
       config: {
+        enumsAsConst: true,
+        useTypeImports: true,
         scalars: {
           TimelessDate: '../helpers/index.js#TimelessDateString',
           FileScalar: {

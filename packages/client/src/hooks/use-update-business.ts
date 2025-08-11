@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   UpdateBusinessDocument,
-  UpdateBusinessMutation,
-  UpdateBusinessMutationVariables,
+  type UpdateBusinessMutation,
+  type UpdateBusinessMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

@@ -1,7 +1,10 @@
 'use client';
 
 import { User } from 'lucide-react';
-import { GreenInvoiceCountry, IssueDocumentClientFieldsFragment } from '../../../../gql/graphql.js';
+import {
+  GreenInvoiceCountry,
+  type IssueDocumentClientFieldsFragment,
+} from '../../../../gql/graphql.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
 import { Label } from '../../../ui/label.js';

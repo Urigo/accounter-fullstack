@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { NavLink } from '@mantine/core';
 import { NewFetchedDocumentFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

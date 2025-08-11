@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
 
 interface StatsCardProps {

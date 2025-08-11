@@ -1,4 +1,4 @@
-import { Dispatch, ReactElement, SetStateAction, useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import { Pagination } from '@mantine/core';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { Input } from '../ui/input.js';

@@ -1,7 +1,7 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { InsertMiscExpenseInput } from '../../../gql/graphql.js';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import type { InsertMiscExpenseInput } from '../../../gql/graphql.js';
 import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
 import { Form } from '../../ui/form.js';
 import { ModifyMiscExpenseFields } from './index.js';

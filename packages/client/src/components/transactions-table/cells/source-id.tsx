@@ -1,5 +1,5 @@
-import { ReactElement } from 'react';
-import { TransactionsTableRowType } from '../columns.js';
+import type { ReactElement } from 'react';
+import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
   transaction: TransactionsTableRowType;

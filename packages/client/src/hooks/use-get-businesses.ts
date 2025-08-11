@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { AllBusinessesDocument, AllBusinessesQuery } from '../gql/graphql.js';
+import { AllBusinessesDocument, type AllBusinessesQuery } from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   GenerateBalanceChargeDocument,
-  GenerateBalanceChargeMutation,
-  GenerateBalanceChargeMutationVariables,
+  type GenerateBalanceChargeMutation,
+  type GenerateBalanceChargeMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { Button } from '../ui/button.js';

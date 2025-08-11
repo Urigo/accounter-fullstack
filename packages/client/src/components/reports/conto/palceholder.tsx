@@ -1,5 +1,5 @@
 import React from 'react';
-import { NodeModel } from '@minoru/react-dnd-treeview';
+import type { NodeModel } from '@minoru/react-dnd-treeview';
 
 type Props = {
   node: NodeModel;

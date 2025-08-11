@@ -1,9 +1,9 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
 import { Drawer, Indicator, SimpleGrid, Tooltip } from '@mantine/core';
 import { ImageMagnifier } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;

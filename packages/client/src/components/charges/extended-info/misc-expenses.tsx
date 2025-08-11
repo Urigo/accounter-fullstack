@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { TableMiscExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.jsx';
 import { EditMiscExpenseModal } from '../../common/index.js';
 

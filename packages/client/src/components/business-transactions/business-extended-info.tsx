@@ -1,19 +1,20 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Mark, NavLink, Table, Tooltip } from '@mantine/core';
 import {
-  BusinessTransactionsFilter,
   BusinessTransactionsInfoDocument,
-  BusinessTransactionsInfoQuery,
   Currency,
+  type BusinessTransactionsFilter,
+  type BusinessTransactionsInfoQuery,
 } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
+import { FIAT_CURRENCIES } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -328,17 +329,7 @@ export function CurrencyCells({
 }
 
 const currenciesToExtend = Object.values(Currency).filter(
-  currency =>
-    ![
-      Currency.Ils,
-      Currency.Eur,
-      Currency.Usd,
-      Currency.Gbp,
-      Currency.Cad,
-      Currency.Jpy,
-      Currency.Aud,
-      Currency.Sek,
-    ].includes(currency),
+  currency => !FIAT_CURRENCIES.includes(currency),
 );
 
 export function ExtendedCurrencyCells({ data }: { data: ExtendedTransaction }): ReactElement {

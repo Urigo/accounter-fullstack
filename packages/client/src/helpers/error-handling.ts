@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { OperationResult } from 'urql';
+import type { OperationResult } from 'urql';
 
 type NonCommonError<T, K extends keyof T | undefined = undefined> = K extends keyof T
   ? Omit<T, K> & { [K in keyof T]: Exclude<T[K], { __typename: 'CommonError' }> }

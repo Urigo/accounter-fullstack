@@ -1,6 +1,6 @@
-import { ReactElement, useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Currency, ExchangeRatesInfoFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { currencyCodeToSymbol } from '../../../helpers/index.js';
 import { Badge } from '../../ui/badge.js';
 import { Card, CardContent, CardTitle } from '../../ui/card.js';

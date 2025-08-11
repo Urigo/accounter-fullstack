@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import Chart, { ChartConfiguration } from 'chart.js/auto';
+import Chart, { type ChartConfiguration } from 'chart.js/auto';
 
 interface BarChartProps {
   data: {

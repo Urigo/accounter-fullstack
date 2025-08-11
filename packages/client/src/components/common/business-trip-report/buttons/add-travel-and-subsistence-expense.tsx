@@ -1,9 +1,9 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, Overlay, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { AddBusinessTripTravelAndSubsistenceExpenseInput } from '../../../../gql/graphql.js';
+import type { AddBusinessTripTravelAndSubsistenceExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripTravelAndSubsistenceExpense } from '../../../../hooks/use-add-business-trip-travel-and-subsistence-expense.js';
 import { Button } from '../../../ui/button.js';
 import {

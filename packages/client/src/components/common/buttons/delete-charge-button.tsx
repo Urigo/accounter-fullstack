@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Trash } from 'lucide-react';
 import { useDeleteCharge } from '../../../hooks/use-delete-charge.js';
 import { Button } from '../../ui/button.js';

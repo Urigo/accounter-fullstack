@@ -1,4 +1,9 @@
-import { ComponentProps, DetailedHTMLProps, forwardRef, SelectHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  type ComponentProps,
+  type DetailedHTMLProps,
+  type SelectHTMLAttributes,
+} from 'react';
 import { NumberInput, Select } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 

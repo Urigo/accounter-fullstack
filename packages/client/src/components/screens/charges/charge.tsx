@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument } from '../../../gql/graphql.js';

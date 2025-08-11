@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Loader } from '@mantine/core';
 import { Icon } from './icon.js';
 

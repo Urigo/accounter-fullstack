@@ -4,7 +4,7 @@ import { useMutation } from 'urql';
 import {
   AccountantStatus,
   UpdateChargeAccountantApprovalDocument,
-  UpdateChargeAccountantApprovalMutationVariables,
+  type UpdateChargeAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

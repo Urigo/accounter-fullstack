@@ -1,7 +1,6 @@
 import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-// @ts-expect-error Missing type definitions for tailwindcss
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 

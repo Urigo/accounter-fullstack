@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Filter } from 'lucide-react';
 import { YearPickerInput } from '@mantine/dates';
 import { PopUpModal } from '../../common/index.js';

@@ -1,12 +1,12 @@
-import { ReactElement, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import {
-  BusinessTransactionsFilter,
   BusinessTransactionsSummeryDocument,
-  BusinessTransactionsSummeryQuery,
   Currency,
+  type BusinessTransactionsFilter,
+  type BusinessTransactionsSummeryQuery,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';

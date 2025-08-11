@@ -1,7 +1,7 @@
 import { useCallback, type ReactElement } from 'react';
 import { getDescendants, type NodeModel } from '@minoru/react-dnd-treeview';
 import { DownloadCSVButton } from '../../common/index.js';
-import { ContoReportFiltersType } from './conto-report-filters.js';
+import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { REPORT_TREE_ROOT_ID } from './index.js';
 import type { CustomData } from './types.js';
 

@@ -3,14 +3,14 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
-import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import { SimilarChargesTableFragmentDoc } from '../../../../gql/graphql.js';
 import { getChargeTypeName } from '../../../../helpers/index.js';
 import { useBatchUpdateCharges } from '../../../../hooks/use-batch-update-charges.js';

@@ -1,8 +1,8 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Image } from '@mantine/core';
 import {
-  ChargeToMatchDocumentsFieldsFragment,
-  DocumentsToMatchFieldsFragment,
+  type ChargeToMatchDocumentsFieldsFragment,
+  type DocumentsToMatchFieldsFragment,
 } from '../../../../gql/graphql.js';
 import { AccounterTable, Button, PopUpModal } from '../../index.js';
 

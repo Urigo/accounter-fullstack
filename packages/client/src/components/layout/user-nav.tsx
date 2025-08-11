@@ -1,4 +1,4 @@
-import { JSX, useState } from 'react';
+import { useState, type JSX } from 'react';
 import { CircleCheckBig, FileDown, User2Icon } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';

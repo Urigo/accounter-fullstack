@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   InsertSalaryRecordDocument,
-  InsertSalaryRecordMutation,
-  InsertSalaryRecordMutationVariables,
+  type InsertSalaryRecordMutation,
+  type InsertSalaryRecordMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

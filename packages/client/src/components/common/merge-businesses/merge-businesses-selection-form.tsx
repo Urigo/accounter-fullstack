@@ -1,10 +1,10 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import {
   FetchMultipleBusinessesDocument,
-  FetchMultipleBusinessesQuery,
+  type FetchMultipleBusinessesQuery,
 } from '../../../gql/graphql.js';
 import { useMergeBusinesses } from '../../../hooks/use-merge-businesses.js';
 import { AccounterLoader } from '../index.js';

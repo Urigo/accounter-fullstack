@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';

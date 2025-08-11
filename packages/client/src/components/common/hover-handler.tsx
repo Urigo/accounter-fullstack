@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
 interface Props {
   hoverElement: ReactElement;

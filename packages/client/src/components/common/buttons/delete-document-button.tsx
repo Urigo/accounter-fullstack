@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Trash } from 'lucide-react';
 import { useDeleteDocument } from '../../../hooks/use-delete-document.js';
 import { Button } from '../../ui/button.js';

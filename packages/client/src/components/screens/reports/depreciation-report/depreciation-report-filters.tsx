@@ -1,8 +1,8 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { DepreciationReportFilter } from '../../../../gql/graphql.js';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import type { DepreciationReportFilter } from '../../../../gql/graphql.js';
 import { isObjectEmpty } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';

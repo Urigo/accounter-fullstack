@@ -1,11 +1,11 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
+import type { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
@@ -20,13 +20,15 @@ export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null):
 
 export const BALANCE_REPORT_FILTERS_QUERY_PARAM = 'balanceReportFilters';
 
-export enum Period {
-  MONTHLY = 'Monthly',
-  BI_MONTHLY = 'Bi-monthly',
-  QUARTERLY = 'Quarterly',
-  SEMI_ANNUALLY = 'Semi-Annually',
-  ANNUALLY = 'Annually',
-}
+export const Periods = {
+  MONTHLY: 'Monthly',
+  BI_MONTHLY: 'Bi-monthly',
+  QUARTERLY: 'Quarterly',
+  SEMI_ANNUALLY: 'Semi-Annually',
+  ANNUALLY: 'Annually',
+} as const;
+
+export type Period = (typeof Periods)[keyof typeof Periods];
 
 export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   period: Period;
@@ -151,11 +153,11 @@ function BalanceReportFiltersForm({
         <Controller
           name="period"
           control={control}
-          defaultValue={Period.MONTHLY}
+          defaultValue={Periods.MONTHLY}
           render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
-              data={Object.values(Period).map(period => ({ value: period, label: period }))}
+              data={Object.values(Periods).map(period => ({ value: period, label: period }))}
               value={field.value}
               label="Period"
               // placeholder="Filter income/expense"

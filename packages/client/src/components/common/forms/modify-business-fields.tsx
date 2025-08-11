@@ -1,5 +1,5 @@
-import { ReactElement, useEffect, useState } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import { useEffect, useState, type ReactElement } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
 import type {
   InsertNewBusinessInput,
   Pcn874RecordType,

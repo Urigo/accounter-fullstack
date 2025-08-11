@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { AddTravelAndSubsistenceExpense } from '../buttons/add-travel-and-subsistence-expense.js';
 import { CoreExpenseHeader } from './core-expense-row.js';
 import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.jsx';

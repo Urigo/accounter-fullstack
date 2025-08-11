@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportCarRentalFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { AddCarRentalExpense } from '../buttons/add-car-rental-expense.jsx';
 import { CarRentalRow } from './car-rental-row.jsx';
 import { CoreExpenseHeader } from './core-expense-row.jsx';

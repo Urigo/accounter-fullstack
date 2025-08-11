@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
-import { UseFormReturn } from 'react-hook-form';
-import { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
+import type { ReactElement } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
+import type { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.jsx';
 import { Input } from '../../ui/input.jsx';
 import { NumberInput } from '../index.js';

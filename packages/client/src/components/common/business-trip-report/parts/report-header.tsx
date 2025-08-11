@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { differenceInDays, format, setHours } from 'date-fns';
 import { Grid, Text } from '@mantine/core';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { CopyToClipboardButton } from '../../index.js';
 import { AccountantApproval } from '../buttons/accountant-approval.js';
 import { BusinessTripToggleMenu } from './business-trip-toggle-menu.js';

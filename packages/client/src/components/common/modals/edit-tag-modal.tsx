@@ -1,9 +1,9 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Edit } from 'lucide-react';
 import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { EditTagFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType } from '../../../gql/index.js';
+import type { FragmentType } from '../../../gql/index.js';
 import { Button } from '../../ui/button.js';
 import { EditTag } from '../index.js';
 

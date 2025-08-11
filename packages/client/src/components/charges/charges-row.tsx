@@ -1,15 +1,15 @@
-import { ReactElement, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Paper } from '@mantine/core';
 import {
   ChargeForRowDocument,
   ChargesTableBusinessTripFieldsFragmentDoc,
   ChargesTableEntityFieldsFragmentDoc,
-  ChargesTableFieldsFragment,
-  ChargesTableRowFieldsFragment,
   ChargesTableRowFieldsFragmentDoc,
   ChargesTableTagsFieldsFragmentDoc,
   ChargesTableTaxCategoryFieldsFragmentDoc,
+  type ChargesTableFieldsFragment,
+  type ChargesTableRowFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady } from '../../gql/index.js';
 import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';

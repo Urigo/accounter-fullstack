@@ -1,8 +1,8 @@
-import { ReactElement, useCallback, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useCallback, useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Loader } from '@mantine/core';
-import { InsertBusinessTripInput } from '../../../gql/graphql.js';
+import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { useInsertBusinessTrip } from '../../../hooks/use-insert-business-trip.js';
 import { Form } from '../../ui/form.js';
 import { ModifyBusinessTripFields } from './modify-business-trip-fields.js';

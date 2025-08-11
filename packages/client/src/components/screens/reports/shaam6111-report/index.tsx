@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useQuery } from 'urql';
 import {
   Shaam6111ReportScreenDocument,
-  Shaam6111ReportScreenQuery,
+  type Shaam6111ReportScreenQuery,
 } from '../../../../gql/graphql.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { Card, CardContent, CardHeader } from '../../../ui/card.js';

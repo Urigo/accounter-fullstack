@@ -1,4 +1,4 @@
-import { createContext, ReactElement } from 'react';
+import { createContext, type ReactElement } from 'react';
 
 type ContextType = {
   filtersContext: ReactElement | null;

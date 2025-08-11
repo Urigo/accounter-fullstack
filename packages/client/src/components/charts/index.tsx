@@ -1,17 +1,18 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Decimal } from 'decimal.js';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
-  ChargeFilter,
   Currency,
   IncomeChargesChartDocument,
-  IncomeChargesChartQuery,
+  type ChargeFilter,
+  type IncomeChargesChartQuery,
 } from '../../gql/graphql.js';
-import { TimelessDateString } from '../../helpers/dates.js';
+import type { TimelessDateString } from '../../helpers/dates.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
+import { FIAT_CURRENCIES } from '../business-transactions/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
 import { ChargeFilterFilter } from './chart-filters.js';
@@ -101,16 +102,7 @@ export const ChartPage = (): ReactElement => {
         // Filter crypto as we're lacking the conversion rates
         if (
           // TODO: implement crypto exchange and add here
-          [
-            Currency.Eur,
-            Currency.Gbp,
-            Currency.Ils,
-            Currency.Usd,
-            Currency.Cad,
-            Currency.Jpy,
-            Currency.Aud,
-            Currency.Sek,
-          ].includes(transaction.amount?.currency)
+          FIAT_CURRENCIES.includes(transaction.amount?.currency)
         ) {
           transactions.push(transaction);
         }

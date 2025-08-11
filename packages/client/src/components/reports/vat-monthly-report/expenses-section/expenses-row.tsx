@@ -1,7 +1,7 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Paper } from '@mantine/core';
 import { VatReportExpensesRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { ChargeExtendedInfo } from '../../../charges/charge-extended-info.js';
 import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';

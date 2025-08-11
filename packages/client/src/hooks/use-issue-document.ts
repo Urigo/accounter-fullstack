@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   IssueGreenInvoiceDocumentDocument,
-  IssueGreenInvoiceDocumentMutation,
-  IssueGreenInvoiceDocumentMutationVariables,
+  type IssueGreenInvoiceDocumentMutation,
+  type IssueGreenInvoiceDocumentMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

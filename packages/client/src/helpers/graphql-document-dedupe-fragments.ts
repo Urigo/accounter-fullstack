@@ -1,4 +1,4 @@
-import { DocumentNode } from 'graphql';
+import type { DocumentNode } from 'graphql';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 

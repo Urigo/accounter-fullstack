@@ -1,6 +1,6 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Loader2, Printer } from 'lucide-react';
-import generatePDF, { Options } from 'react-to-pdf';
+import generatePDF, { type Options } from 'react-to-pdf';
 import { Button } from '../../ui/button.js';
 
 const options: Options = {

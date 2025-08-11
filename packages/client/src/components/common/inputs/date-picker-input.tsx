@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ComponentProps, useEffect } from 'react';
+import React, { useEffect, type ComponentProps } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '../../ui/button.jsx';

@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { InsertMiniButton } from '../../common/index.js';
 

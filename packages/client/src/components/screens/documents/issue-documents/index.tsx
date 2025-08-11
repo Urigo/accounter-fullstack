@@ -1,8 +1,8 @@
-import { ReactElement, useContext, useEffect } from 'react';
+import { useContext, useEffect, type ReactElement } from 'react';
 import { format, subMonths } from 'date-fns';
 import { useQuery } from 'urql';
 import { MonthlyDocumentsDraftsDocument } from '../../../../gql/graphql.js';
-import { TimelessDateString } from '../../../../helpers/dates.js';
+import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';

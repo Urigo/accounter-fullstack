@@ -1,9 +1,9 @@
-import { ReactElement, useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   ValidatePcn874ReportsDocument,
-  ValidatePcn874ReportsQueryVariables,
+  type ValidatePcn874ReportsQueryVariables,
 } from '../../../../gql/graphql.js';
 import { Pcn874ReportPatch } from './rerport-patch.js';
 

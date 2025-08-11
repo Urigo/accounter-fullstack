@@ -1,6 +1,6 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
@@ -9,13 +9,13 @@ import {
   AllEmployeesByEmployerDocument,
   AllPensionFundsDocument,
   AllTrainingFundsDocument,
-  SalaryRecordInput,
+  type SalaryRecordInput,
 } from '../../../gql/graphql.js';
 import {
-  MakeBoolean,
   relevantDataPicker,
-  TimelessDateString,
   UUID_REGEX,
+  type MakeBoolean,
+  type TimelessDateString,
 } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { UserContext } from '../../../providers/user-provider.js';

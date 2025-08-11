@@ -14,7 +14,7 @@ import {
 } from '../ui/dropdown-menu.js';
 import { ScrollArea } from '../ui/scroll-area.js';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip.js';
-import { SideLink } from './sidelinks.js';
+import type { SideLink } from './sidelinks.js';
 
 interface NavProps extends React.HTMLAttributes<HTMLDivElement> {
   isCollapsed: boolean;

@@ -1,7 +1,7 @@
-import { Dispatch, ReactElement, SetStateAction } from 'react';
+import type { Dispatch, ReactElement, SetStateAction } from 'react';
 import { Table } from '@mantine/core';
 import { ChargesTableFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { ChargesTableRow } from './charges-row.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

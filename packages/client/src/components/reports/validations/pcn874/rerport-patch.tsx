@@ -1,4 +1,4 @@
-import { FC, ReactElement, ReactNode, useMemo } from 'react';
+import { useMemo, type FC, type ReactElement, type ReactNode } from 'react';
 import { calcPatch } from 'fast-myers-diff';
 import { Check } from 'lucide-react';
 import type { TimelessDateString } from '../../../../helpers/index.js';

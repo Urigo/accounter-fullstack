@@ -1,9 +1,9 @@
-import { ReactElement, useEffect } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import { FileDigit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Tooltip } from '@mantine/core';
-import { GeneratePcnDocument, VatReportFilter } from '../../../gql/graphql.js';
+import { GeneratePcnDocument, type VatReportFilter } from '../../../gql/graphql.js';
 import { dedupeFragments, downloadFile } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';
 

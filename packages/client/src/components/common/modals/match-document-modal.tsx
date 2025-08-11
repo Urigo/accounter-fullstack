@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { getChargeHref } from '../../screens/charges/charge.js';
 import { DocumentsToChargeMatcher } from '../documents-to-charge-matcher/index.js';
 import { CopyToClipboardButton, PopUpDrawer } from '../index.js';

@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   DeleteDynamicReportTemplateDocument,
-  DeleteDynamicReportTemplateMutation,
-  DeleteDynamicReportTemplateMutationVariables,
+  type DeleteDynamicReportTemplateMutation,
+  type DeleteDynamicReportTemplateMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

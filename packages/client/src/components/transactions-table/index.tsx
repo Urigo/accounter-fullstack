@@ -1,16 +1,16 @@
-import { ReactElement, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
+  type SortingState,
 } from '@tanstack/react-table';
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditTransactionModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { columns, TransactionsTableRowType } from './columns.js';
+import { columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {
   transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];

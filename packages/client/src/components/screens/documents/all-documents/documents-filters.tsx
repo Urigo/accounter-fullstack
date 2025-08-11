@@ -1,12 +1,12 @@
-import { ReactElement, useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
-import { TimelessDateString } from '../../../../helpers/dates.js';
+import type { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
+import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';

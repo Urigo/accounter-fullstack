@@ -8,7 +8,7 @@ import {
   Trash,
   X,
 } from 'lucide-react';
-import { NodeModel, useDragOver } from '@minoru/react-dnd-treeview';
+import { useDragOver, type NodeModel } from '@minoru/react-dnd-treeview';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { Currency } from '../../../gql/graphql.js';
@@ -28,7 +28,7 @@ import {
 import { Input } from '../../ui/input.js';
 import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { TypeIcon } from './type-icon.js';
-import { CustomData } from './types.js';
+import type { CustomData } from './types.js';
 
 const formatter = getCurrencyFormatter(Currency.Ils, {
   trailingZeroDisplay: 'stripIfInteger',
