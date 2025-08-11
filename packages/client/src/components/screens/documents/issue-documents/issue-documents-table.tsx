@@ -5,6 +5,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { MonthPickerInput } from '@mantine/dates';
 import {
   AllOpenContractsQuery,
+  BillingCycle,
   Currency,
   GenerateDocumentInfo,
   IssueMonthlyDocumentsMutationVariables,
@@ -45,8 +46,15 @@ type IssueDocumentsTableProps = {
 
 export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): ReactElement => {
   const form = useForm<IssueDocumentsVariables>({
+    values: {
+      generateDocumentsInfo: contracts
+        .filter(c => c.billingCycle === BillingCycle.Monthly)
+        .map(contract => ({
+          amount: { raw: contract.amount.raw, currency: contract.amount.currency },
+          businessId: contract.client.originalBusiness.id,
+        })),
+    },
     defaultValues: {
-      generateDocumentsInfo: [],
       issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
     },
   });
@@ -193,7 +201,7 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {contract.remarks}
+                        {`${contract.purchaseOrder ? `PO: ${contract.purchaseOrder}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`}
                       </span>
                     </TableCell>
                     <TableCell>
