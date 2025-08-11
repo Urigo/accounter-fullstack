@@ -59,7 +59,7 @@ import {
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
-  onDone?: () => void;
+  onDone?: (draft: PreviewDocumentInput) => void;
   chargeId?: string;
 }
 
@@ -212,7 +212,11 @@ export function GenerateDocument({
   };
 
   const handleIssueClick = () => {
-    setIsIssueModalOpen(true);
+    if (onDone) {
+      onDone(formData);
+    } else {
+      setIsIssueModalOpen(true);
+    }
   };
 
   const handleIssue = async (issueData: IssueDocumentData) => {
@@ -223,8 +227,6 @@ export function GenerateDocument({
       chargeId,
       ...issueData,
     });
-
-    onDone?.();
   };
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;
@@ -559,7 +561,7 @@ export function GenerateDocument({
 
                   <Button onClick={handleIssueClick} disabled={isIssueDisabled} className="flex-1">
                     <Send className="w-4 h-4 mr-2" />
-                    Issue Document
+                    {onDone ? 'Accept Changes' : 'Issue Document'}
                   </Button>
                 </div>
 

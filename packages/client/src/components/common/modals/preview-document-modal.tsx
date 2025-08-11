@@ -106,7 +106,8 @@ type Props = {
   chargeId?: string;
   documentId?: string;
   documentType?: DocumentType;
-  onDone?: () => void;
+  onDone?: (draft: PreviewDocumentInput) => void;
+  trigger?: ReactElement;
 } & ComponentProps<typeof GenerateDocument>;
 
 export function PreviewDocumentModal({
@@ -117,6 +118,7 @@ export function PreviewDocumentModal({
   documentId,
   documentType,
   onDone,
+  trigger,
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -243,13 +245,15 @@ export function PreviewDocumentModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {!setExternalOpen && (
+      {(!setExternalOpen || !!trigger) && (
         <DialogTrigger>
           <Tooltip>
             <TooltipTrigger>
-              <Button className="size-7.5" variant="ghost">
-                <Receipt className="size-5" />
-              </Button>
+              {trigger ?? (
+                <Button className="size-7.5" variant="ghost">
+                  <Receipt className="size-5" />
+                </Button>
+              )}
             </TooltipTrigger>
             <TooltipContent>
               <p>{tooltip || 'Issue new document'}</p>
@@ -264,7 +268,18 @@ export function PreviewDocumentModal({
         {fetchingByCharge || fetchingByDocument ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
-          <GenerateDocument initialFormData={initialFormData} onDone={onDone} chargeId={chargeId} />
+          <GenerateDocument
+            initialFormData={initialFormData}
+            onDone={
+              onDone
+                ? value => {
+                    onDone(value);
+                    setOpen(false);
+                  }
+                : undefined
+            }
+            chargeId={chargeId}
+          />
         )}
       </DialogContent>
     </Dialog>

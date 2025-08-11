@@ -6,8 +6,6 @@ import { MonthPickerInput } from '@mantine/dates';
 import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
 import {
   BillingCycle,
-  Currency,
-  IssueDocumentClientFieldsFragmentDoc,
   IssueMonthlyDocumentsMutationVariables,
   NewDocumentInfoFragment,
   NewDocumentInfoFragmentDoc,
@@ -16,17 +14,10 @@ import {
 import { TimelessDateString } from '../../../../helpers/index.js';
 import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
-import { ConfirmationModal, NumberInput } from '../../../common/index.js';
+import { ConfirmationModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../ui/select.js';
 import {
   Table,
   TableBody,
@@ -74,17 +65,15 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
   });
 
   const watchFieldArray = form.watch('generateDocumentsInfo');
-  const controlledFields = useMemo(
-    () =>
-      fields.map((field, index) => {
-        return {
-          ...field,
-          ...watchFieldArray[index],
-          id: field.client?.id,
-        };
-      }),
-    [fields, watchFieldArray],
-  );
+  const controlledFields = useMemo(() => {
+    return fields.map((field, index) => {
+      return {
+        ...field,
+        ...watchFieldArray[index],
+        id: field.client?.id,
+      };
+    });
+  }, [fields, watchFieldArray]);
 
   const onSubmit = useCallback(
     (data: IssueDocumentsVariables) => {
@@ -105,6 +94,8 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
     // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
     [controlledFields, openContracts],
   );
+
+  console.log(form.getValues('generateDocumentsInfo'));
 
   return (
     <div className="p-2">
@@ -144,80 +135,28 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
                 <TableHead>Name</TableHead>
                 <TableHead>Document</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Currency</TableHead>
                 <TableHead>Remark</TableHead>
                 <TableHead>Recipients</TableHead>
-                <TableHead>Green Invoice ID</TableHead>
-                <TableHead>Local ID</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {controlledFields.map((row, index) => {
-                const draft = documentDrafts.find(draft => draft.client.id === row.id);
-                if (!draft) {
-                  return null;
-                }
-                console.log(getFragmentData(IssueDocumentClientFieldsFragmentDoc, draft.client));
+              {controlledFields.map(({ id, ...row }, index) => {
                 return (
-                  <TableRow key={row.id}>
+                  <TableRow key={id}>
+                    <TableCell>{row.client?.name}</TableCell>
+                    <TableCell>{row.type}</TableCell>
                     <TableCell>
-                      {getFragmentData(IssueDocumentClientFieldsFragmentDoc, draft.client).name}
-                    </TableCell>
-                    <TableCell>{draft.type}</TableCell>
-                    <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`generateDocumentsInfo.${index}.income.0.price`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <NumberInput
-                              onValueChange={field.onChange}
-                              value={field.value ?? undefined}
-                              hideControls
-                              decimalScale={2}
-                            />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`generateDocumentsInfo.${index}.income.0.currency`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a recipient" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.entries(Currency).map(([key, value]) => (
-                                  <SelectItem key={key} value={value}>
-                                    {key}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {row.income?.[0]?.price} {row.income?.[0]?.currency}
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {draft.remarks}
+                        {row.remarks}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        {getFragmentData(
-                          IssueDocumentClientFieldsFragmentDoc,
-                          draft.client,
-                        ).emails?.map(email => (
+                        {row.client?.emails?.map(email => (
                           <span key={email} className="text-sm text-gray-500">
                             {email}
                           </span>
@@ -225,18 +164,70 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {row.id}
-                      </span>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex flex-col gap-2">
                         <Button variant="secondary" onClick={() => remove(index)}>
                           <X size={16} />
                         </Button>
-                        <Button variant="secondary" onClick={() => remove(index)}>
-                          <X size={16} />
-                        </Button>
+                        {/* <PreviewDocumentModal
+                          initialFormData={{
+                            ...row,
+                            description: row.description || undefined,
+                            remarks: row.remarks || undefined,
+                            footer: row.footer || undefined,
+                            date: row.date || undefined,
+                            dueDate: row.dueDate || undefined,
+                            discount: row.discount || undefined,
+                            rounding: row.rounding || undefined,
+                            signed: row.signed || undefined,
+                            maxPayments: row.maxPayments || undefined,
+                            client: row.client ? normalizeClientInfo(row.client) : undefined,
+                            income: row.income?.map(income => ({
+                              ...income,
+                              currencyRate: income.currencyRate ?? undefined,
+                              itemId: income.itemId || undefined,
+                              vatRate: income.vatRate ?? undefined,
+                              amount: income.amount || undefined,
+                              amountTotal: income.amountTotal || undefined,
+                              catalogNum: income.catalogNum || undefined,
+                              vat: income.vat || undefined,
+                            })),
+                            payment: row.payment?.map(payment => ({
+                              ...payment,
+                              currencyRate: payment.currencyRate || undefined,
+                              date: payment.date || undefined,
+                              subType: payment.subType || undefined,
+                              bankName: payment.bankName || undefined,
+                              bankBranch: payment.bankBranch || undefined,
+                              bankAccount: payment.bankAccount || undefined,
+                              chequeNum: payment.chequeNum || undefined,
+                              accountId: payment.accountId || undefined,
+                              transactionId: payment.transactionId || undefined,
+                              appType: payment.appType || undefined,
+                              cardType: payment.cardType || undefined,
+                              cardNum: payment.cardNum || undefined,
+                              dealType: payment.dealType || undefined,
+                              numPayments: payment.numPayments || undefined,
+                              firstPayment: payment.firstPayment || undefined,
+                            })),
+                            linkedDocumentIds: row.linkedDocumentIds || undefined,
+                            linkedPaymentId: row.linkedPaymentId || undefined,
+                            linkType: row.linkType || undefined,
+                            type: row.type,
+                          }}
+                          documentType={row.type}
+                          trigger={
+                            <Button variant="secondary">
+                              <Edit size={16} />
+                            </Button>
+                          }
+                          onDone={draft => {
+                            form.setValue(`generateDocumentsInfo.${index}`, draft, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }}
+                        /> */}
                       </div>
                     </TableCell>
                   </TableRow>
