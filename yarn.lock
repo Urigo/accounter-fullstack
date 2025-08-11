@@ -24,7 +24,7 @@ __metadata:
     "@types/pg": "npm:8.15.5"
     got: "npm:14.4.7"
     pg-promise: "npm:11.15.0"
-    slonik: "npm:48.3.0"
+    slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
     zod: "npm:3.25.76"
   languageName: unknown
@@ -7015,7 +7015,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^48.3.0, @slonik/driver@npm:^48.4.1":
+"@slonik/driver@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/driver@npm:48.4.1"
   dependencies:
@@ -7030,7 +7030,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/errors@npm:^48.3.0, @slonik/errors@npm:^48.4.1":
+"@slonik/errors@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/errors@npm:48.4.1"
   dependencies:
@@ -7039,7 +7039,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:^48.3.0":
+"@slonik/pg-driver@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/pg-driver@npm:48.4.1"
   dependencies:
@@ -7058,7 +7058,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/sql-tag@npm:^48.3.0, @slonik/sql-tag@npm:^48.4.1":
+"@slonik/sql-tag@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/sql-tag@npm:48.4.1"
   dependencies:
@@ -7081,7 +7081,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/utilities@npm:^48.3.0, @slonik/utilities@npm:^48.4.1":
+"@slonik/utilities@npm:^48.4.1":
   version: 48.4.1
   resolution: "@slonik/utilities@npm:48.4.1"
   dependencies:
@@ -19733,16 +19733,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:48.3.0":
-  version: 48.3.0
-  resolution: "slonik@npm:48.3.0"
+"slonik@npm:48.4.1":
+  version: 48.4.1
+  resolution: "slonik@npm:48.4.1"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
-    "@slonik/driver": "npm:^48.3.0"
-    "@slonik/errors": "npm:^48.3.0"
-    "@slonik/pg-driver": "npm:^48.3.0"
-    "@slonik/sql-tag": "npm:^48.3.0"
-    "@slonik/utilities": "npm:^48.3.0"
+    "@slonik/driver": "npm:^48.4.1"
+    "@slonik/errors": "npm:^48.4.1"
+    "@slonik/pg-driver": "npm:^48.4.1"
+    "@slonik/sql-tag": "npm:^48.4.1"
+    "@slonik/utilities": "npm:^48.4.1"
     "@standard-schema/spec": "npm:^1.0.0"
     get-stack-trace: "npm:^3.1.1"
     iso8601-duration: "npm:^2.1.2"
@@ -19752,7 +19752,7 @@ __metadata:
     serialize-error: "npm:^12.0.0"
     strict-event-emitter-types: "npm:^2.0.0"
     zod: "npm:^3.25.46"
-  checksum: 10c0/e5a8a9b4a8502f0c3f97214a05b83ac52af7e9038d76d8338a689c4c18a9e4f368740a8fea9cbec8ac91b767bfd555d80d0b09f40b8aa4fd864f718f409d5649
+  checksum: 10c0/5d43d56c53e186bf90ca0113470e60352a5a63efc3b99a8eb5f9309a9f050a23b8bf3100dbeeef879bad12e5d049f9dab0d6c9b5aeb7830c5f15567157aba8eb
   languageName: node
   linkType: hard
 
