@@ -3,8 +3,6 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    greenInvoiceBusiness(businessId: UUID!): GreenInvoiceBusiness! @auth(role: ACCOUNTANT)
-    greenInvoiceBusinesses: [GreenInvoiceBusiness!]! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByCharge(chargeId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByDocument(documentId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
   }
@@ -25,17 +23,6 @@ export default gql`
   }
   extend type IssuedDocumentInfo {
     originalDocument: NewDocumentInfo
-  }
-
-  " business extended with green invoice data "
-  type GreenInvoiceBusiness {
-    id: UUID!
-    originalBusiness: LtdFinancialEntity!
-    greenInvoiceId: UUID!
-    remark: String
-    emails: [String!]!
-    generatedDocumentType: DocumentType!
-    clientInfo: GreenInvoiceClient!
   }
 
   " input for generating monthly client document "

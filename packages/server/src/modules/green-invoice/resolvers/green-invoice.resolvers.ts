@@ -41,34 +41,6 @@ import type { GreenInvoiceModule } from '../types.js';
 
 export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
   Query: {
-    greenInvoiceBusiness: async (_, { businessId }, { injector }) => {
-      try {
-        const match = await injector
-          .get(GreenInvoiceProvider)
-          .getBusinessMatchByIdLoader.load(businessId);
-
-        if (!match) {
-          throw new GraphQLError(`Green Invoice business match with ID "${businessId}" not found`);
-        }
-
-        return match;
-      } catch (error) {
-        const message = 'Failed to fetch green invoice business';
-        console.error(message, error);
-        throw new GraphQLError(message);
-      }
-    },
-    greenInvoiceBusinesses: async (_, __, { injector }) => {
-      try {
-        const matches = await injector.get(GreenInvoiceProvider).getAllBusinessMatches();
-
-        return matches;
-      } catch (error) {
-        const message = 'Failed to fetch green invoice businesses';
-        console.error(message, error);
-        throw new GraphQLError(message);
-      }
-    },
     newDocumentInfoDraftByCharge: async (
       _,
       { chargeId },
@@ -654,40 +626,6 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         console.error('Error issuing document:', error);
         throw new GraphQLError('Error issuing document');
       }
-    },
-  },
-  GreenInvoiceBusiness: {
-    id: business => business.green_invoice_id,
-    originalBusiness: async (business, _, { injector }) => {
-      const businessMatch = await injector
-        .get(BusinessesProvider)
-        .getBusinessByIdLoader.load(business.business_id);
-
-      if (!businessMatch) {
-        throw new GraphQLError('Business match not found');
-      }
-
-      return businessMatch;
-    },
-    greenInvoiceId: business => business.green_invoice_id,
-    remark: business => business.remark,
-    emails: business => business.emails ?? [],
-    generatedDocumentType: business => business.document_type as DocumentType,
-    clientInfo: async (business, _, { injector }) => {
-      const client = await injector
-        .get(GreenInvoiceClientProvider)
-        .getClient({ id: business.green_invoice_id });
-      if (!client) {
-        throw new GraphQLError(
-          `Green Invoice client with ID "${business.green_invoice_id}" not found`,
-        );
-      }
-      const emails = client.emails ? (client.emails.filter(Boolean) as string[]) : [];
-      return {
-        ...client,
-        emails,
-        id: business.green_invoice_id,
-      };
     },
   },
   IssuedDocumentInfo: {
