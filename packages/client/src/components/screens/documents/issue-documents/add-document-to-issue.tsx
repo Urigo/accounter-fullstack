@@ -1,7 +1,7 @@
 import { ReactElement, useContext, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { UseFieldArrayAppend } from 'react-hook-form';
-import { AllClientsQuery, Currency } from '../../../../gql/graphql.js';
+import { AllOpenContractsQuery, Currency } from '../../../../gql/graphql.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { Button } from '../../../ui/button';
 import {
@@ -21,10 +21,10 @@ import {
 import { IssueDocumentsVariables } from './issue-documents-table.js';
 
 export function AddDocumentToIssue({
-  clients,
+  contracts,
   onAdd,
 }: {
-  clients: AllClientsQuery['allClients'];
+  contracts: AllOpenContractsQuery['allOpenContracts'];
   onAdd: UseFieldArrayAppend<IssueDocumentsVariables, 'generateDocumentsInfo'>;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -43,10 +43,10 @@ export function AddDocumentToIssue({
         </DialogHeader>
         <Select
           onValueChange={value => {
-            const business = clients.find(b => b.originalBusiness.id === value);
-            if (business) {
+            const contract = contracts.find(b => b.client.originalBusiness.id === value);
+            if (contract) {
               onAdd({
-                businessId: business.originalBusiness.id,
+                businessId: contract.client.originalBusiness.id,
                 amount: {
                   raw: 0,
                   currency: userContext?.context.defaultCryptoConversionFiatCurrency as Currency,
@@ -60,9 +60,9 @@ export function AddDocumentToIssue({
             <SelectValue placeholder="Recipient" />
           </SelectTrigger>
           <SelectContent>
-            {clients.map(client => (
-              <SelectItem key={client.id} value={client.originalBusiness.id}>
-                {client.originalBusiness.name}
+            {contracts.map(contract => (
+              <SelectItem key={contract.id} value={contract.client.originalBusiness.id}>
+                {contract.client.originalBusiness.name}
               </SelectItem>
             ))}
           </SelectContent>

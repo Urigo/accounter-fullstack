@@ -1,17 +1,16 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo } from 'react';
+import { ReactElement, useCallback, useMemo } from 'react';
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { MonthPickerInput } from '@mantine/dates';
 import {
-  AllGreenInvoiceBusinessesQuery,
+  AllOpenContractsQuery,
   Currency,
   GenerateDocumentInfo,
   IssueMonthlyDocumentsMutationVariables,
 } from '../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../helpers/index.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
-import { FiltersContext } from '../../../../providers/filters-context.js';
 import { ConfirmationModal, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
@@ -32,8 +31,6 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
-import { DownloadCSV } from './download-csv.js';
-import { UploadCsv } from './upload-csv.js';
 
 export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
@@ -43,11 +40,10 @@ export type IssueDocumentsVariables = Omit<
 };
 
 type IssueDocumentsTableProps = {
-  businessesData: AllGreenInvoiceBusinessesQuery['greenInvoiceBusinesses'];
+  contracts: AllOpenContractsQuery['allOpenContracts'];
 };
 
-export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps): ReactElement => {
-  const { setFiltersContext } = useContext(FiltersContext);
+export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): ReactElement => {
   const form = useForm<IssueDocumentsVariables>({
     defaultValues: {
       generateDocumentsInfo: [],
@@ -80,27 +76,20 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
     [issueDocuments],
   );
 
-  const unusedBusinesses = useMemo(
+  const unusedContracts = useMemo(
     () =>
-      businessesData
+      contracts
         .filter(
-          business =>
+          contract =>
             !controlledFields.some(
-              controlled => controlled.businessId === business.originalBusiness.id,
+              controlled => controlled.businessId === contract.client.originalBusiness.id,
             ),
         )
-        .sort((a, b) => a.originalBusiness.name.localeCompare(b.originalBusiness.name)),
-    [businessesData, controlledFields],
+        .sort((a, b) =>
+          a.client.originalBusiness.name.localeCompare(b.client.originalBusiness.name),
+        ),
+    [contracts, controlledFields],
   );
-
-  useEffect(() => {
-    setFiltersContext(
-      <div className="flex flex-row gap-x-5">
-        <DownloadCSV form={form} businessesData={businessesData} />
-        <UploadCsv form={form} />
-      </div>,
-    );
-  }, [form, businessesData, setFiltersContext]);
 
   return (
     <div className="p-2">
@@ -150,16 +139,16 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
             </TableHeader>
             <TableBody>
               {controlledFields.map((row, index) => {
-                const business = businessesData.find(
-                  business => business.originalBusiness.id === row.businessId,
+                const contract = contracts.find(
+                  contract => contract.client.originalBusiness.id === row.businessId,
                 );
-                if (!business) {
+                if (!contract) {
                   return null;
                 }
                 return (
                   <TableRow key={row.id}>
-                    <TableCell>{business.originalBusiness.name}</TableCell>
-                    <TableCell>{business.generatedDocumentType}</TableCell>
+                    <TableCell>{contract.client.originalBusiness.name}</TableCell>
+                    <TableCell>{contract.documentType}</TableCell>
                     <TableCell>
                       <FormField
                         control={form.control}
@@ -204,12 +193,12 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {business.remark}
+                        {contract.remarks}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        {business.emails.map(email => (
+                        {contract.client.emails.map(email => (
                           <span key={email} className="text-sm text-gray-500">
                             {email}
                           </span>
@@ -218,7 +207,7 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {business.greenInvoiceId}
+                        {contract.client.greenInvoiceId}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -227,9 +216,14 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button variant="secondary" onClick={() => remove(index)}>
-                        <X size={16} />
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button variant="secondary" onClick={() => remove(index)}>
+                          <X size={16} />
+                        </Button>
+                        <Button variant="secondary" onClick={() => remove(index)}>
+                          <X size={16} />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -237,7 +231,7 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
             </TableBody>
           </Table>
           <div className="flex justify-between items-center mt-4">
-            <AddDocumentToIssue greenInvoiceBusinesses={unusedBusinesses} onAdd={append} />
+            <AddDocumentToIssue contracts={unusedContracts} onAdd={append} />
             <ConfirmationModal
               onConfirm={form.handleSubmit(onSubmit)}
               title={`Are you sure you want to issue ${controlledFields.length} documents?`}

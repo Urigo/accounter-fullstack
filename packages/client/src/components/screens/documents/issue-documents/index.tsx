@@ -1,18 +1,18 @@
 import { ReactElement, useContext, useEffect } from 'react';
-import { useGetAllClients } from '../../../../hooks/use-get-all-clients.js';
+import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';
 
 export const IssueDocuments = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const { clients, fetching } = useGetAllClients();
+  const { openContracts, fetching } = useGetOpenContracts();
 
   useEffect(() => {
-    if (!clients) {
+    if (!openContracts) {
       setFiltersContext(null);
     }
-  }, [clients, setFiltersContext]);
+  }, [openContracts, setFiltersContext]);
 
-  return fetching ? <AccounterLoader /> : <IssueDocumentsTable clientsData={clients ?? []} />;
+  return fetching ? <AccounterLoader /> : <IssueDocumentsTable contracts={openContracts ?? []} />;
 };
