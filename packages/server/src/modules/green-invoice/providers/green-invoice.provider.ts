@@ -17,23 +17,23 @@ import type {
 
 const getAllBusinessMatches = sql<IGetAllBusinessMatchesQuery>`
   SELECT *
-  FROM accounter_schema.businesses_green_invoice_match;
+  FROM accounter_schema.clients;
 `;
 
 const getBusinessesMatchesByIds = sql<IGetBusinessesMatchesByIdsQuery>`
   SELECT *
-  FROM accounter_schema.businesses_green_invoice_match
+  FROM accounter_schema.clients
   WHERE business_id IN $$businessIds;
 `;
 
 const getBusinessesMatchesByGreenInvoiceIds = sql<IGetBusinessesMatchesByGreenInvoiceIdsQuery>`
   SELECT *
-  FROM accounter_schema.businesses_green_invoice_match
+  FROM accounter_schema.clients
   WHERE green_invoice_id IN $$greenInvoiceBusinessIds;
 `;
 
 const updateBusinessMatch = sql<IUpdateBusinessMatchQuery>`
-  UPDATE accounter_schema.businesses_green_invoice_match
+  UPDATE accounter_schema.clients
   SET
   green_invoice_id = COALESCE(
     $greenInvoiceId,
@@ -61,13 +61,13 @@ const updateBusinessMatch = sql<IUpdateBusinessMatchQuery>`
 `;
 
 const deleteBusinessMatch = sql<IDeleteBusinessMatchQuery>`
-  DELETE FROM accounter_schema.businesses_green_invoice_match
+  DELETE FROM accounter_schema.clients
   WHERE business_id = $businessId
   RETURNING business_id;
 `;
 
 const insertBusinessMatch = sql<IInsertBusinessMatchQuery>`
-    INSERT INTO accounter_schema.businesses_green_invoice_match (green_invoice_id)
+    INSERT INTO accounter_schema.clients (green_invoice_id)
     VALUES ($greenInvoiceId)
     RETURNING *;`;
 

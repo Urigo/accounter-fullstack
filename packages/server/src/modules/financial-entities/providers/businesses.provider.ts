@@ -280,8 +280,8 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
     WHERE corporate_id = $businessIdToReplace
     RETURNING date
   ),
-  businesses_green_invoice_match as (
-    UPDATE accounter_schema.businesses_green_invoice_match
+  clients AS (
+    UPDATE accounter_schema.clients
     SET business_id = $targetBusinessId
     WHERE business_id = $businessIdToReplace
     RETURNING green_invoice_id
