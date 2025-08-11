@@ -10,13 +10,10 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation IssueMonthlyDocuments(
-    $generateDocumentsInfo: [GenerateDocumentInfo!]!
+    $generateDocumentsInfo: [NewDocumentInput!]!
     $issueMonth: TimelessDate
   ) {
-    generateMonthlyClientDocuments(
-      generateDocumentsInfo: $generateDocumentsInfo
-      issueMonth: $issueMonth
-    ) {
+    issueGreenInvoiceDocuments(generateDocumentsInfo: $generateDocumentsInfo) {
       success
       errors
     }
@@ -45,7 +42,7 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
       try {
         const res = await mutate(variables);
         const data = handleCommonErrors(res, message, notificationId);
-        if (data?.generateMonthlyClientDocuments?.success) {
+        if (data?.issueGreenInvoiceDocuments?.success) {
           toast.success('Success', {
             id: notificationId,
             description: 'Business updated',
@@ -53,8 +50,8 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
           return;
         }
 
-        if (data?.generateMonthlyClientDocuments?.errors) {
-          console.error(data.generateMonthlyClientDocuments.errors);
+        if (data?.issueGreenInvoiceDocuments?.errors) {
+          console.error(data.issueGreenInvoiceDocuments.errors);
         }
         toast.error('Error', {
           id: notificationId,

@@ -5,12 +5,16 @@ export default gql`
   extend type Query {
     newDocumentInfoDraftByCharge(chargeId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByDocument(documentId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
+    clientMonthlyChargesDrafts(issueMonth: TimelessDate!): [NewDocumentInfo!]!
+      @auth(role: ACCOUNTANT)
+    clientMonthlyChargeDraft(clientId: UUID!, issueMonth: TimelessDate!): NewDocumentInfo!
+      @auth(role: ACCOUNTANT)
   }
+
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]! @auth(role: ADMIN)
-    generateMonthlyClientDocuments(
-      issueMonth: TimelessDate
-      generateDocumentsInfo: [GenerateDocumentInfo!]!
+    issueGreenInvoiceDocuments(
+      generateDocumentsInfo: [NewDocumentInput!]!
     ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
     previewGreenInvoiceDocument(input: NewDocumentInput!): FileScalar! @auth(role: ACCOUNTANT)
     issueGreenInvoiceDocument(

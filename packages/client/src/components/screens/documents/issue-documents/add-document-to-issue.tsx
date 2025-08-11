@@ -1,8 +1,14 @@
-import { ReactElement, useContext, useState } from 'react';
+import { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { UseFieldArrayAppend } from 'react-hook-form';
-import { AllOpenContractsQuery, Currency } from '../../../../gql/graphql.js';
-import { UserContext } from '../../../../providers/user-provider.js';
+import { useQuery } from 'urql';
+import {
+  MonthlyDocumentDraftByClientDocument,
+  NewDocumentInfoFragmentDoc,
+} from '../../../../gql/graphql.js';
+import { getFragmentData } from '../../../../gql/index.js';
+import { TimelessDateString } from '../../../../helpers/index.js';
+import { AllOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { Button } from '../../../ui/button';
 import {
   Dialog,
@@ -20,15 +26,50 @@ import {
 } from '../../../ui/select.js';
 import { IssueDocumentsVariables } from './issue-documents-table.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query MonthlyDocumentDraftByClient($clientId: UUID!, $issueMonth: TimelessDate!) {
+    clientMonthlyChargeDraft(clientId: $clientId, issueMonth: $issueMonth) {
+      ...NewDocumentInfo
+    }
+  }
+`;
+
 export function AddDocumentToIssue({
+  issueMonth,
   contracts,
   onAdd,
 }: {
-  contracts: AllOpenContractsQuery['allOpenContracts'];
+  issueMonth: TimelessDateString;
+  contracts: AllOpenContracts;
   onAdd: UseFieldArrayAppend<IssueDocumentsVariables, 'generateDocumentsInfo'>;
 }): ReactElement {
   const [open, setOpen] = useState(false);
-  const { userContext } = useContext(UserContext);
+  const [clientId, setClientId] = useState<string>('');
+
+  const [{ data }, fetchDraft] = useQuery({
+    query: MonthlyDocumentDraftByClientDocument,
+    variables: {
+      issueMonth,
+      clientId,
+    },
+  });
+
+  const onSelect = useCallback(
+    (clientId: string) => {
+      setClientId(clientId);
+      fetchDraft();
+      console.log('Fetching draft for client ID:', clientId);
+    },
+    [fetchDraft, setClientId],
+  );
+
+  useEffect(() => {
+    if (clientId !== '' && data) {
+      onAdd(getFragmentData(NewDocumentInfoFragmentDoc, data.clientMonthlyChargeDraft));
+      setOpen(false);
+    }
+  }, [clientId, data, onAdd]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -41,27 +82,16 @@ export function AddDocumentToIssue({
         <DialogHeader>
           <DialogTitle>Select document recipient</DialogTitle>
         </DialogHeader>
-        <Select
-          onValueChange={value => {
-            const contract = contracts.find(b => b.client.originalBusiness.id === value);
-            if (contract) {
-              onAdd({
-                businessId: contract.client.originalBusiness.id,
-                amount: {
-                  raw: 0,
-                  currency: userContext?.context.defaultCryptoConversionFiatCurrency as Currency,
-                },
-              });
-              setOpen(false);
-            }
-          }}
-        >
+        <Select onValueChange={onSelect}>
           <SelectTrigger>
             <SelectValue placeholder="Recipient" />
           </SelectTrigger>
           <SelectContent>
             {contracts.map(contract => (
-              <SelectItem key={contract.id} value={contract.client.originalBusiness.id}>
+              <SelectItem
+                key={contract.client.originalBusiness.id}
+                value={contract.client.originalBusiness.id}
+              >
                 {contract.client.originalBusiness.name}
               </SelectItem>
             ))}

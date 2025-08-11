@@ -24,6 +24,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
+import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
   Currency,
   DocumentType,
@@ -40,7 +41,6 @@ import {
   type GreenInvoiceVatType,
 } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
-import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
@@ -546,15 +546,15 @@ export async function insertNewDocumentFromGreenInvoice(
       .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
 
     // Get matching business
-    const businessPromise = injector
-      .get(GreenInvoiceProvider)
-      .getBusinessMatchByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
+    const clientPromise = injector
+      .get(ClientsProvider)
+      .getClientByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
 
     const linkedDocumentsPromise = getLinkedDocuments(injector, greenInvoiceDoc.id);
 
-    const [{ imageUrl }, business, linkedDocumentIds] = await Promise.all([
+    const [{ imageUrl }, client, linkedDocumentIds] = await Promise.all([
       imagePromise,
-      businessPromise,
+      clientPromise,
       linkedDocumentsPromise,
     ]);
 
@@ -596,7 +596,7 @@ export async function insertNewDocumentFromGreenInvoice(
       chargeId = charge.id;
     }
 
-    const counterpartyId = business?.business_id ?? null;
+    const counterpartyId = client?.business_id ?? null;
 
     // insert document
     const rawDocument: IInsertDocumentsParams['document']['0'] = {
@@ -689,8 +689,8 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
   let client: mutationInput_addDocument_input_allOf_0_client_Input | undefined = undefined;
   if (initialInput.client) {
     const clientInfo = await injector
-      .get(GreenInvoiceProvider)
-      .getBusinessMatchByIdLoader.load(initialInput.client.id);
+      .get(ClientsProvider)
+      .getClientByIdLoader.load(initialInput.client.id);
     if (!clientInfo) {
       throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
     }

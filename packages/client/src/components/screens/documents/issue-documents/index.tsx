@@ -1,18 +1,40 @@
 import { ReactElement, useContext, useEffect } from 'react';
-import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
+import { format, subMonths } from 'date-fns';
+import { useQuery } from 'urql';
+import { MonthlyDocumentsDraftsDocument } from '../../../../gql/graphql.js';
+import { TimelessDateString } from '../../../../helpers/dates.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query MonthlyDocumentsDrafts($issueMonth: TimelessDate!) {
+    clientMonthlyChargesDrafts(issueMonth: $issueMonth) {
+      ...NewDocumentInfo
+    }
+  }
+`;
+
 export const IssueDocuments = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const { openContracts, fetching } = useGetOpenContracts();
+
+  const [{ data, fetching }] = useQuery({
+    query: MonthlyDocumentsDraftsDocument,
+    variables: {
+      issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
+    },
+  });
 
   useEffect(() => {
-    if (!openContracts) {
+    if (!data?.clientMonthlyChargesDrafts) {
       setFiltersContext(null);
     }
-  }, [openContracts, setFiltersContext]);
+  }, [data, setFiltersContext]);
 
-  return fetching ? <AccounterLoader /> : <IssueDocumentsTable contracts={openContracts ?? []} />;
+  return fetching ? (
+    <AccounterLoader />
+  ) : (
+    <IssueDocumentsTable drafts={data?.clientMonthlyChargesDrafts ?? []} />
+  );
 };

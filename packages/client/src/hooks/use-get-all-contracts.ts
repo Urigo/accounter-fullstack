@@ -37,7 +37,9 @@ import { AllOpenContractsDocument, AllOpenContractsQuery } from '../gql/graphql.
   }
 `;
 
-type AllOpenContracts = Array<NonNullable<AllOpenContractsQuery['allOpenContracts']>[number]>;
+export type AllOpenContracts = Array<
+  NonNullable<AllOpenContractsQuery['allOpenContracts']>[number]
+>;
 
 type UseGetContracts = {
   fetching: boolean;

@@ -1,35 +1,33 @@
 import { GraphQLError } from 'graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { GreenInvoiceProvider } from '@modules/green-invoice/providers/green-invoice.provider.js';
+import { ClientsProvider } from '../providers/clients.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
 
 export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
   Query: {
     client: async (_, { businessId }, { injector }) => {
       try {
-        const match = await injector
-          .get(GreenInvoiceProvider)
-          .getBusinessMatchByIdLoader.load(businessId);
+        const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
 
-        if (!match) {
-          throw new GraphQLError(`Green Invoice business match with ID "${businessId}" not found`);
+        if (!client) {
+          throw new GraphQLError(`Client with ID "${businessId}" not found`);
         }
 
-        return match;
+        return client;
       } catch (error) {
-        const message = 'Failed to fetch green invoice business';
+        const message = 'Failed to fetch client';
         console.error(message, error);
         throw new GraphQLError(message);
       }
     },
     allClients: async (_, __, { injector }) => {
       try {
-        const matches = await injector.get(GreenInvoiceProvider).getAllBusinessMatches();
+        const matches = await injector.get(ClientsProvider).getAllClients();
 
         return matches;
       } catch (error) {
-        const message = 'Failed to fetch green invoice businesses';
+        const message = 'Failed to fetch clients';
         console.error(message, error);
         throw new GraphQLError(message);
       }
@@ -43,7 +41,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
         .getBusinessByIdLoader.load(business.business_id);
 
       if (!businessMatch) {
-        throw new GraphQLError('Business match not found');
+        throw new GraphQLError('Client not found');
       }
 
       return businessMatch;

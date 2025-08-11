@@ -3,14 +3,18 @@ import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { MonthPickerInput } from '@mantine/dates';
+import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
 import {
-  AllOpenContractsQuery,
   BillingCycle,
   Currency,
-  GenerateDocumentInfo,
+  IssueDocumentClientFieldsFragmentDoc,
   IssueMonthlyDocumentsMutationVariables,
+  NewDocumentInfoFragment,
+  NewDocumentInfoFragmentDoc,
+  NewDocumentInput,
 } from '../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../helpers/index.js';
+import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
 import { ConfirmationModal, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
@@ -37,28 +41,32 @@ export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
   'generateDocumentsInfo'
 > & {
-  generateDocumentsInfo: GenerateDocumentInfo[];
+  generateDocumentsInfo: NewDocumentInput[];
 };
 
 type IssueDocumentsTableProps = {
-  contracts: AllOpenContractsQuery['allOpenContracts'];
+  drafts: FragmentType<typeof NewDocumentInfoFragmentDoc>[];
 };
 
-export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): ReactElement => {
+export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): ReactElement => {
+  const documentDrafts = drafts.map(draft =>
+    getFragmentData(NewDocumentInfoFragmentDoc, draft),
+  ) as (Omit<NewDocumentInfoFragment, 'client'> & {
+    client: NewDocumentInfoFragment['client'] & { id: string };
+  })[];
+
+  const defaultIssueMonth = format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString;
+
   const form = useForm<IssueDocumentsVariables>({
     values: {
-      generateDocumentsInfo: contracts
-        .filter(c => c.billingCycle === BillingCycle.Monthly)
-        .map(contract => ({
-          amount: { raw: contract.amount.raw, currency: contract.amount.currency },
-          businessId: contract.client.originalBusiness.id,
-        })),
+      generateDocumentsInfo: documentDrafts,
     },
     defaultValues: {
-      issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
+      issueMonth: defaultIssueMonth,
     },
   });
   const { issueDocuments } = useIssueMonthlyDocuments();
+  const { openContracts } = useGetOpenContracts();
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -72,6 +80,7 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
         return {
           ...field,
           ...watchFieldArray[index],
+          id: field.client?.id,
         };
       }),
     [fields, watchFieldArray],
@@ -86,17 +95,15 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
 
   const unusedContracts = useMemo(
     () =>
-      contracts
-        .filter(
-          contract =>
-            !controlledFields.some(
-              controlled => controlled.businessId === contract.client.originalBusiness.id,
-            ),
-        )
-        .sort((a, b) =>
-          a.client.originalBusiness.name.localeCompare(b.client.originalBusiness.name),
-        ),
-    [contracts, controlledFields],
+      openContracts.filter(
+        openContract =>
+          openContract.billingCycle === BillingCycle.Monthly &&
+          !controlledFields.some(
+            controlled => controlled.client?.id === openContract.client.originalBusiness.id,
+          ),
+      ),
+    // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
+    [controlledFields, openContracts],
   );
 
   return (
@@ -147,20 +154,21 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
             </TableHeader>
             <TableBody>
               {controlledFields.map((row, index) => {
-                const contract = contracts.find(
-                  contract => contract.client.originalBusiness.id === row.businessId,
-                );
-                if (!contract) {
+                const draft = documentDrafts.find(draft => draft.client.id === row.id);
+                if (!draft) {
                   return null;
                 }
+                console.log(getFragmentData(IssueDocumentClientFieldsFragmentDoc, draft.client));
                 return (
                   <TableRow key={row.id}>
-                    <TableCell>{contract.client.originalBusiness.name}</TableCell>
-                    <TableCell>{contract.documentType}</TableCell>
+                    <TableCell>
+                      {getFragmentData(IssueDocumentClientFieldsFragmentDoc, draft.client).name}
+                    </TableCell>
+                    <TableCell>{draft.type}</TableCell>
                     <TableCell>
                       <FormField
                         control={form.control}
-                        name={`generateDocumentsInfo.${index}.amount.raw`}
+                        name={`generateDocumentsInfo.${index}.income.0.price`}
                         render={({ field }) => (
                           <FormItem>
                             <NumberInput
@@ -177,7 +185,7 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
                     <TableCell>
                       <FormField
                         control={form.control}
-                        name={`generateDocumentsInfo.${index}.amount.currency`}
+                        name={`generateDocumentsInfo.${index}.income.0.currency`}
                         render={({ field }) => (
                           <FormItem>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -201,22 +209,20 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {`${contract.purchaseOrder ? `PO: ${contract.purchaseOrder}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`}
+                        {draft.remarks}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        {contract.client.emails.map(email => (
+                        {getFragmentData(
+                          IssueDocumentClientFieldsFragmentDoc,
+                          draft.client,
+                        ).emails?.map(email => (
                           <span key={email} className="text-sm text-gray-500">
                             {email}
                           </span>
                         ))}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {contract.client.greenInvoiceId}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
@@ -239,7 +245,11 @@ export const IssueDocumentsTable = ({ contracts }: IssueDocumentsTableProps): Re
             </TableBody>
           </Table>
           <div className="flex justify-between items-center mt-4">
-            <AddDocumentToIssue contracts={unusedContracts} onAdd={append} />
+            <AddDocumentToIssue
+              contracts={unusedContracts}
+              onAdd={append}
+              issueMonth={form.getValues('issueMonth') ?? defaultIssueMonth}
+            />
             <ConfirmationModal
               onConfirm={form.handleSubmit(onSubmit)}
               title={`Are you sure you want to issue ${controlledFields.length} documents?`}

@@ -18,7 +18,7 @@ import { AllClientsDocument, AllClientsQuery } from '../gql/graphql.js';
   }
 `;
 
-type AllClients = Array<NonNullable<AllClientsQuery['allClients']>[number]>;
+export type AllClients = Array<NonNullable<AllClientsQuery['allClients']>[number]>;
 
 type UseGetAllClients = {
   fetching: boolean;
