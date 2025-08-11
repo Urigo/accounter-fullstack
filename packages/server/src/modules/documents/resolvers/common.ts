@@ -1,16 +1,27 @@
 import { DocumentType } from '@shared/enums';
 import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { DocumentsProvider } from '../providers/documents.provider.js';
-import type { DocumentsModule } from '../types.js';
+import type { document_type, DocumentsModule } from '../types.js';
 
-export const documentType: DocumentsModule.DocumentResolvers['documentType'] = documentRoot => {
-  let key = documentRoot.type[0].toUpperCase() + documentRoot.type.substring(1).toLocaleLowerCase();
-  if (key === 'Invoice_receipt') {
-    key = 'InvoiceReceipt';
-  } else if (key === 'Credit_invoice') {
-    key = 'CreditInvoice';
+export const normalizeDocumentType = (type: document_type): DocumentType => {
+  switch (type) {
+    case 'CREDIT_INVOICE':
+      return DocumentType.CreditInvoice;
+    case 'INVOICE':
+      return DocumentType.Invoice;
+    case 'INVOICE_RECEIPT':
+      return DocumentType.InvoiceReceipt;
+    case 'OTHER':
+      return DocumentType.Other;
+    case 'PROFORMA':
+      return DocumentType.Proforma;
+    case 'RECEIPT':
+      return DocumentType.Receipt;
+    case 'UNPROCESSED':
+      return DocumentType.Unprocessed;
+    default:
+      throw new Error(`Unknown document type: ${type}`);
   }
-  return DocumentType[key as keyof typeof DocumentType];
 };
 
 export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
@@ -30,7 +41,7 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
     return url;
   },
   isReviewed: documentRoot => documentRoot.is_reviewed,
-  documentType,
+  documentType: documentRoot => normalizeDocumentType(documentRoot.type),
 };
 
 export const commonFinancialDocumentsFields:
