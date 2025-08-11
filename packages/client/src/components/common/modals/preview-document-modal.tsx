@@ -264,7 +264,7 @@ export function PreviewDocumentModal({
         {fetchingByCharge || fetchingByDocument ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
-          <GenerateDocument initialFormData={initialFormData} onDone={onDone} />
+          <GenerateDocument initialFormData={initialFormData} onDone={onDone} chargeId={chargeId} />
         )}
       </DialogContent>
     </Dialog>

@@ -14,8 +14,14 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
     $input: NewDocumentInput!
     $emailContent: String
     $attachment: Boolean
+    $chargeId: UUID
   ) {
-    issueGreenInvoiceDocument(input: $input, emailContent: $emailContent, attachment: $attachment) {
+    issueGreenInvoiceDocument(
+      input: $input
+      emailContent: $emailContent
+      attachment: $attachment
+      chargeId: $chargeId
+    ) {
       id
     }
   }

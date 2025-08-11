@@ -60,6 +60,7 @@ import {
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
   onDone?: () => void;
+  chargeId?: string;
 }
 
 const currencies = getCurrencyOptions();
@@ -68,7 +69,11 @@ const documentLangs = getDocumentLangOptions();
 const vatTypes = getVatTypeOptions();
 // const discountTypes = getDiscountTypeOptions();
 
-export function GenerateDocument({ initialFormData = {}, onDone }: GenerateDocumentProps) {
+export function GenerateDocument({
+  initialFormData = {},
+  onDone,
+  chargeId,
+}: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     type: DocumentType.Invoice,
     lang: GreenInvoiceDocumentLang.English,
@@ -215,6 +220,7 @@ export function GenerateDocument({ initialFormData = {}, onDone }: GenerateDocum
 
     await issueDocument({
       input: formData,
+      chargeId,
       ...issueData,
     });
 

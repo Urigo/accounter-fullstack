@@ -167,6 +167,19 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         })),
       );
 
+      if (income.length === 0 && transactions.length > 0) {
+        income.push(
+          ...transactions.map(transaction => ({
+            description: transaction.source_description ?? '',
+            quantity: 1,
+            price: Number(transaction.amount),
+            currency: transaction.currency as Currency,
+            currencyRate: undefined,
+            vatType,
+          })),
+        );
+      }
+
       const linkedDocsAttributes = getLinkedDocumentsAttributes(openIssuedDocuments);
 
       const type = getTypeFromDocumentsAndTransactions(greenInvoiceDocuments, transactions);
