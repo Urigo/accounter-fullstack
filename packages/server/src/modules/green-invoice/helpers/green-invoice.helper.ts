@@ -702,6 +702,13 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
         `Green Invoice client with ID ${clientInfo.green_invoice_id} not found`,
       );
     }
+    const emails: (string | null)[] = ['ap@the-guild.dev'];
+    const inputEmails = initialInput.client?.emails?.filter(Boolean) ?? [];
+    if (inputEmails.length) {
+      emails.push(...inputEmails);
+    } else {
+      emails.push(...(greenInvoiceClient.emails ?? []));
+    }
     client = {
       id: clientInfo.green_invoice_id,
       country: greenInvoiceClient.country,
@@ -714,7 +721,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       zip: greenInvoiceClient.zip,
       fax: greenInvoiceClient.fax,
       mobile: greenInvoiceClient.mobile,
-      emails: [...(greenInvoiceClient.emails ?? []), 'ap@the-guild.dev'],
+      emails,
     };
   }
   return {

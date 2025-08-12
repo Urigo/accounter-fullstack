@@ -398,7 +398,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             signed: true,
             client: {
               ...greenInvoiceClient,
-              emails: [...((client.emails?.filter(Boolean) as string[]) ?? []), 'ap@the-guild.dev'],
+              emails: [...((client.emails?.filter(Boolean) as string[]) ?? [])],
             },
             income: [
               {
@@ -474,7 +474,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         signed: true,
         client: {
           ...greenInvoiceClient,
-          emails: [...((client.emails?.filter(Boolean) as string[]) ?? []), 'ap@the-guild.dev'],
+          emails: [...((client.emails?.filter(Boolean) as string[]) ?? [])],
         },
         income: [
           {

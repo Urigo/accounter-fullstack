@@ -306,12 +306,13 @@ export async function executeDocumentIssue(
     const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
     const input = {
       ...coreInput,
-      client: coreInput.client
-        ? {
-            ...coreInput.client,
-            emails: sendEmail ? coreInput.client?.emails : [],
-          }
-        : undefined,
+      client:
+        !coreInput.client || sendEmail
+          ? coreInput.client
+          : {
+              ...coreInput.client,
+              emails: [], // if client exists, and sendEmail is false, we don't want to send emails
+            },
       emailContent,
       attachment,
     };
