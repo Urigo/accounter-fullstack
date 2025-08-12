@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../ui/table.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../ui/tooltip.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
 import { EditIssueDocumentModal } from './edit-issue-document-modal.js';
 
@@ -176,9 +177,20 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-2">
-                        <Button variant="secondary" onClick={() => remove(index)}>
-                          <X size={16} />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild type="button">
+                            <Button
+                              className="size-7.5"
+                              variant="secondary"
+                              onClick={() => remove(index)}
+                            >
+                              <X size={16} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Remove document</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <EditIssueDocumentModal
                           draft={row}
                           onApprove={document => {
