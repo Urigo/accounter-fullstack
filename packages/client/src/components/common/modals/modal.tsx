@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Modal } from '@mantine/core';
 
 export interface ModalProps {

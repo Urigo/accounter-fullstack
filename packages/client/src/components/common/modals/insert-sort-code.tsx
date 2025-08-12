@@ -1,6 +1,6 @@
-import { ReactElement, useState } from 'react';
-import { SubmitHandler, useForm, UseFormReturn } from 'react-hook-form';
-import { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
+import { useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
+import type { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
 import { useAddSortCode } from '../../../hooks/use-add-sort-code.js';
 import { Button } from '../../ui/button.jsx';
 import {

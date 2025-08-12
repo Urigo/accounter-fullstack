@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { Drawer } from '@mantine/core';
 
 export interface PopUpDrawerProps {

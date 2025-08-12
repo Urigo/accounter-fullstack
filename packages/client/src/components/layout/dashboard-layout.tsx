@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useSidebar } from '../../hooks/use-sidebar.js';
 import { Footer } from './footer.js';
 import { Header } from './header.js';

@@ -1,6 +1,9 @@
-import { Dispatch, ReactElement, SetStateAction, useMemo } from 'react';
-import { SalariesTableFieldsFragment, SalariesTableFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { useMemo, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import {
+  SalariesTableFieldsFragmentDoc,
+  type SalariesTableFieldsFragment,
+} from '../../gql/graphql.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { SalariesMonth } from './salaries-month.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

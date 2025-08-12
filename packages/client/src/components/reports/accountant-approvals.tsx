@@ -1,11 +1,11 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Progress } from '@mantine/core';
 import {
   AccountantApprovalsChargesTableDocument,
-  ChargeFilter,
   ChargeSortByField,
+  type ChargeFilter,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';

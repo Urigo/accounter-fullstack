@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   BatchUpdateChargesDocument,
-  BatchUpdateChargesMutation,
-  BatchUpdateChargesMutationVariables,
+  type BatchUpdateChargesMutation,
+  type BatchUpdateChargesMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

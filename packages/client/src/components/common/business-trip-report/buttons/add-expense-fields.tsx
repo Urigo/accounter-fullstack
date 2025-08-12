@@ -1,14 +1,14 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Control, Controller } from 'react-hook-form';
+import { Controller, type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
-  AddBusinessTripFlightsExpenseInput,
   AttendeesByBusinessTripDocument,
   Currency,
+  type AddBusinessTripFlightsExpenseInput,
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';

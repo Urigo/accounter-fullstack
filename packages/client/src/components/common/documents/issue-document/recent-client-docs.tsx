@@ -2,13 +2,13 @@
 
 import { useMemo } from 'react';
 import { useQuery } from 'urql';
-import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import {
   RecentClientIssuedDocumentsDocument,
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
-import { columns, DocumentsTableRowType } from '../../../documents-table/columns.js';
+import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   Table,

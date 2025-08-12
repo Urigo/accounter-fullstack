@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { toast } from 'sonner';
 import { Dropzone } from '@mantine/dropzone';
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';

@@ -1,7 +1,7 @@
-import { ReactElement, useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { TrialBalanceTableFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers/index.js';
 import { DownloadCSV } from './download-csv.js';
 import type { TrialBalanceReportFilters } from './trial-balance-report-filters.js';

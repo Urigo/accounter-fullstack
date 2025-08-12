@@ -1,6 +1,6 @@
-import { ReactElement, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { InsertNewBusinessInput } from '../../../gql/graphql.js';
+import { useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import type { InsertNewBusinessInput } from '../../../gql/graphql.js';
 import { useInsertBusiness } from '../../../hooks/use-insert-business.js';
 import { Button } from '../../ui/button.js';
 import {

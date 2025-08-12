@@ -1,7 +1,7 @@
-import { ReactElement, useEffect } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useEffect, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Currency, DocumentType, InsertDocumentInput } from '../../../gql/graphql.js';
+import { Currency, DocumentType, type InsertDocumentInput } from '../../../gql/graphql.js';
 import { useInsertDocument } from '../../../hooks/use-insert-document.js';
 import { Form } from '../../ui/form.js';
 import { SimpleGrid } from '../index.js';

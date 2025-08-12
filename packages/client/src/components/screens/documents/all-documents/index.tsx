@@ -1,22 +1,22 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
-  VisibilityState,
+  type ColumnDef,
+  type SortingState,
+  type VisibilityState,
 } from '@tanstack/react-table';
 import {
-  DocumentsFilters as DocumentsFiltersType,
   DocumentsScreenDocument,
-  DocumentsScreenQuery,
+  type DocumentsFilters as DocumentsFiltersType,
+  type DocumentsScreenQuery,
 } from '../../../../gql/graphql.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';

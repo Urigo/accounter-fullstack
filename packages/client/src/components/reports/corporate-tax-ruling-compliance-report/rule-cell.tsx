@@ -1,5 +1,5 @@
-import { ReactElement } from 'react';
-import { FragmentType, getFragmentData } from '../../../gql/fragment-masking.js';
+import type { ReactElement } from 'react';
+import { getFragmentData, type FragmentType } from '../../../gql/fragment-masking.js';
 import { CorporateTaxRulingReportRuleCellFieldsFragmentDoc } from '../../../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

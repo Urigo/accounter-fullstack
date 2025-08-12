@@ -1,17 +1,21 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select, Tooltip } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   AllDepreciationCategoriesDocument,
   DepreciationRecordRowFieldsFragmentDoc,
-  UpdateDepreciationRecordInput,
+  type UpdateDepreciationRecordInput,
 } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { MakeBoolean, relevantDataPicker, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import {
+  relevantDataPicker,
+  TIMELESS_DATE_REGEX,
+  type MakeBoolean,
+} from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { Button } from '../../ui/button.js';
 import { CurrencyInput } from '../index.js';

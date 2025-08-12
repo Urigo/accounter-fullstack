@@ -1,11 +1,11 @@
-import { ReactElement, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import {
   ChargeToMatchDocumentsFieldsFragmentDoc,
-  DocumentsToChargeMatcherQuery,
-  DocumentsToMatchFieldsFragment,
   DocumentsToMatchFieldsFragmentDoc,
+  type DocumentsToChargeMatcherQuery,
+  type DocumentsToMatchFieldsFragment,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
 import { FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';

@@ -5,12 +5,12 @@ import { format } from 'date-fns';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'urql';
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
 import { SimilarTransactionsDocument } from '../../../gql/graphql.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';

@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useState, type ReactElement } from 'react';
 import { ListPlus, Loader2, Trash2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';

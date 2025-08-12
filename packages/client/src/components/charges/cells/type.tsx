@@ -1,7 +1,7 @@
-import { ReactElement, useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { ThemeIcon } from '@mantine/core';
 import { ChargesTableTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { getChargeTypeIcon, getChargeTypeName } from '../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

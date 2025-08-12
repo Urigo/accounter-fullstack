@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { FileInput, Loader } from '@mantine/core';
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
 

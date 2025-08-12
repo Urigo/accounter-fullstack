@@ -1,7 +1,7 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Group, Indicator, Text } from '@mantine/core';
 import { ChargesTableTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
 

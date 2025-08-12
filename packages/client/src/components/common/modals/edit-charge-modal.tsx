@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { EditChargeDocument } from '../../../gql/graphql.js';

@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { DocumentsToChargeMatcherDocument } from '../../../gql/graphql.js';
 import { AccounterLoader } from '../index.js';

@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 type Props = {
   items: Array<ReactNode | { content: ReactNode; extraClassName?: string }>;

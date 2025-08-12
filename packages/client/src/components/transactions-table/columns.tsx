@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { ColumnDef } from '@tanstack/react-table';
-import { TransactionForTransactionsTableFieldsFragment } from '../../gql/graphql.js';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { TransactionForTransactionsTableFieldsFragment } from '../../gql/graphql.js';
 import { ChargeNavigateButton, EditMiniButton, InsertMiscExpenseModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {

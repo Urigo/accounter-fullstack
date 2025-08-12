@@ -1,9 +1,9 @@
 import {
-  ChangeEvent,
-  DetailedHTMLProps,
   forwardRef,
-  InputHTMLAttributes,
-  ReactElement,
+  type ChangeEvent,
+  type DetailedHTMLProps,
+  type InputHTMLAttributes,
+  type ReactElement,
 } from 'react';
 
 type Props = Omit<

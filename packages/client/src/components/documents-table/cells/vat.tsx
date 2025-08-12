@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;
@@ -10,7 +10,7 @@ type Props = {
 export const Vat = ({ document }: Props): ReactElement => {
   const vat = 'vat' in document ? document.vat : undefined;
 
-  const shouldHaveVat = ![DocumentType.Other].includes(document.documentType as DocumentType);
+  const shouldHaveVat = DocumentType.Other !== document.documentType;
   const isError = shouldHaveVat && vat?.formatted == null;
 
   return (

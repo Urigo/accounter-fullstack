@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Currency } from '../../gql/graphql.js';
 
 type AmountData = {

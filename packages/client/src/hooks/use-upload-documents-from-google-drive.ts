@@ -5,10 +5,10 @@ import { NewDocumentsList } from '../components/common/new-documents-list.jsx';
 import {
   NewFetchedDocumentFieldsFragmentDoc,
   UploadDocumentsFromGoogleDriveDocument,
-  UploadDocumentsFromGoogleDriveMutation,
-  UploadDocumentsFromGoogleDriveMutationVariables,
+  type UploadDocumentsFromGoogleDriveMutation,
+  type UploadDocumentsFromGoogleDriveMutationVariables,
 } from '../gql/graphql.js';
-import { FragmentType } from '../gql/index.js';
+import type { FragmentType } from '../gql/index.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

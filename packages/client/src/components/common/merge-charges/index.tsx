@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Merge } from 'lucide-react';
 import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';

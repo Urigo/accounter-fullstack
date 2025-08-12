@@ -1,7 +1,7 @@
-import { ReactElement, useEffect } from 'react';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { useEffect, type ReactElement } from 'react';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 import { Select } from '@mantine/core';
-import { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
+import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';

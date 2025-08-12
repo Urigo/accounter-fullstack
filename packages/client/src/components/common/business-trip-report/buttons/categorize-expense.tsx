@@ -1,11 +1,11 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Edit } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripExpenseCategories,
-  CategorizeBusinessTripExpenseInput,
+  type CategorizeBusinessTripExpenseInput,
 } from '../../../../gql/graphql.js';
 import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categorize-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';

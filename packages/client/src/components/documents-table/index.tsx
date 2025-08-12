@@ -1,17 +1,17 @@
-import { ReactElement, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
-  VisibilityState,
+  type SortingState,
+  type VisibilityState,
 } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragmentDoc } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditDocumentModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { columns, DocumentsTableRowType } from './columns.js';
+import { columns, type DocumentsTableRowType } from './columns.js';
 
 type Props = {
   documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];

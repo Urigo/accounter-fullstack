@@ -1,19 +1,19 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { MonthPickerInput } from '@mantine/dates';
-import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import {
   BillingCycle,
-  IssueMonthlyDocumentsMutationVariables,
   MonthlyDocumentsDraftsDocument,
-  NewDocumentInfoFragment,
   NewDocumentInfoFragmentDoc,
-  NewDocumentInput,
+  type IssueMonthlyDocumentsMutationVariables,
+  type NewDocumentInfoFragment,
+  type NewDocumentInput,
 } from '../../../../gql/graphql.js';
-import { TimelessDateString } from '../../../../helpers/index.js';
+import type { TimelessDateString } from '../../../../helpers/index.js';
 import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
 import { ConfirmationModal } from '../../../common/index.js';

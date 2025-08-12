@@ -1,17 +1,17 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { YearPickerInput } from '@mantine/dates';
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
-  Row,
   useReactTable,
+  type ColumnDef,
+  type Row,
 } from '@tanstack/react-table';
-import { Currency, YearlyLedgerDocument, YearlyLedgerQuery } from '../../../gql/graphql.js';
+import { Currency, YearlyLedgerDocument, type YearlyLedgerQuery } from '../../../gql/graphql.js';
 import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination } from '../../common/index.js';

@@ -1,12 +1,12 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { CheckSquare, XSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
 import {
   FetchMultipleChargesDocument,
-  FetchMultipleChargesQuery,
-  UpdateChargeInput,
+  type FetchMultipleChargesQuery,
+  type UpdateChargeInput,
 } from '../../../gql/graphql.js';
 import { useMergeCharges } from '../../../hooks/use-merge-charges.js';
 import { AccounterLoader, ListCapsule } from '../index.js';

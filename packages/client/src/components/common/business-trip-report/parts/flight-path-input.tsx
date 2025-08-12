@@ -1,12 +1,12 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
-  ArrayPath,
-  FieldArray,
-  FieldValues,
-  Path,
   useFieldArray,
-  UseFormReturn,
+  type ArrayPath,
+  type FieldArray,
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
 } from 'react-hook-form';
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';

@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { EditTagFieldsFragmentDoc, UpdateTagFieldsInput } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers/index.js';
+import type { ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import { EditTagFieldsFragmentDoc, type UpdateTagFieldsInput } from '../../../gql/graphql.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { relevantDataPicker, type MakeBoolean } from '../../../helpers/index.js';
 import { useUpdateTag } from '../../../hooks/use-update-tag.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';

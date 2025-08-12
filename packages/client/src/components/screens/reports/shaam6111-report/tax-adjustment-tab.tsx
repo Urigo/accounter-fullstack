@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react/jsx-runtime';
 import { Shaam6111DataContentTaxAdjustmentFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TabsContent } from '../../../ui/tabs.js';
 import { CodeField } from './code-field.js';
 

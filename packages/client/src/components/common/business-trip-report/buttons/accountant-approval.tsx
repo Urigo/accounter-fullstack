@@ -1,6 +1,6 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { BusinessTripAccountantApprovalFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateBusinessTripAccountantApproval } from '../../../../hooks/use-update-business-trip-accountant-approval.js';
 import { UpdateAccountantStatus } from '../../index.js';
 

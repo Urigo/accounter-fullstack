@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import * as PDFJS from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderParameters } from 'pdfjs-dist/types/src/display/api';
 import { Button } from '../../../ui/button';

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { BarChart, type BarSeriesType } from '@mui/x-charts';
 import { MonthlyIncomeExpenseChartInfoFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

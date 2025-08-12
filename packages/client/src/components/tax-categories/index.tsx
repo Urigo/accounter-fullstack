@@ -1,18 +1,18 @@
-import { ReactElement, useContext, useEffect } from 'react';
+import { useContext, useEffect, type ReactElement } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  type ColumnDef,
 } from '@tanstack/react-table';
 import {
   AllTaxCategoriesForScreenDocument,
-  AllTaxCategoriesForScreenQuery,
+  type AllTaxCategoriesForScreenQuery,
 } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { DataTablePagination, InsertTaxCategory } from '../common/index.js';

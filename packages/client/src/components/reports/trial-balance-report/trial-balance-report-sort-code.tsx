@@ -1,8 +1,11 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Text } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
-import { ExtendedBusiness, TrialBalanceReportBusiness } from './trial-balance-report-account.js';
+import {
+  TrialBalanceReportBusiness,
+  type ExtendedBusiness,
+} from './trial-balance-report-account.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedSortCode = {

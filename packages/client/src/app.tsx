@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { BusinessTransactionsSingle } from './components/business-transactions/business-transactions-single.js';
 import { BusinessTransactionsSummery } from './components/business-transactions/index.js';

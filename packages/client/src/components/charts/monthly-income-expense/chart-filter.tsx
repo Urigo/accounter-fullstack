@@ -1,12 +1,16 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import { Currency, IncomeExpenseChartFilters } from '../../../gql/graphql.js';
-import { isObjectEmpty, TIMELESS_DATE_REGEX, TimelessDateString } from '../../../helpers/index.js';
+import { Currency, type IncomeExpenseChartFilters } from '../../../gql/graphql.js';
+import {
+  isObjectEmpty,
+  TIMELESS_DATE_REGEX,
+  type TimelessDateString,
+} from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';

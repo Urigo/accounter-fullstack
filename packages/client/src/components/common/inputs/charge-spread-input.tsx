@@ -1,14 +1,14 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
-  ArrayPath,
   Controller,
-  FieldArray,
-  FieldValues,
-  Path,
   useFieldArray,
-  UseFormReturn,
+  type ArrayPath,
+  type FieldArray,
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
 } from 'react-hook-form';
 import { NumberInput } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';

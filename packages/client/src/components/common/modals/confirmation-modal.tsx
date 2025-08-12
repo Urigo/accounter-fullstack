@@ -1,4 +1,4 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,

@@ -1,9 +1,12 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Text } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
-import { ExtendedSortCode, TrialBalanceReportSortCode } from './trial-balance-report-sort-code.js';
+import {
+  TrialBalanceReportSortCode,
+  type ExtendedSortCode,
+} from './trial-balance-report-sort-code.js';
 
 interface Props {
   data: {

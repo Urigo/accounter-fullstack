@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect } from 'react';
+import { useContext, useEffect, type ReactElement } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Container } from '@mantine/core';

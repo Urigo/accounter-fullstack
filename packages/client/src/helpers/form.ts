@@ -1,4 +1,4 @@
-import { ControllerFieldState } from 'react-hook-form';
+import type { ControllerFieldState } from 'react-hook-form';
 
 export type MakeBoolean<T> =
   T extends Record<string, unknown> ? { [K in keyof T]: MakeBoolean<T[K]> } : boolean | undefined;

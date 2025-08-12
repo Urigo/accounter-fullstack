@@ -1,5 +1,5 @@
-import { ReactElement } from 'react';
-import { AllTaxCategoriesForScreenQuery } from '../../../gql/graphql.js';
+import type { ReactElement } from 'react';
+import type { AllTaxCategoriesForScreenQuery } from '../../../gql/graphql.js';
 
 interface Props {
   data: AllTaxCategoriesForScreenQuery['taxCategories'][number];

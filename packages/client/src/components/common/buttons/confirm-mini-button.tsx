@@ -1,4 +1,4 @@
-import { ComponentProps, MouseEvent, ReactElement } from 'react';
+import type { ComponentProps, MouseEvent, ReactElement } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';

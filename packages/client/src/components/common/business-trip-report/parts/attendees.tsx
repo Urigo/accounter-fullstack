@@ -1,7 +1,7 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportAttendeesFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { AddAttendee } from '../buttons/add-attendee.js';
 import { AttendeeRow } from './attendee-row.js';
 

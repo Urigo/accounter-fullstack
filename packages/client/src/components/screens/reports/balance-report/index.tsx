@@ -1,13 +1,13 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 import { useQuery } from 'urql';
 import {
   BalanceReportScreenDocument,
-  BalanceReportScreenQuery,
   Currency,
+  type BalanceReportScreenQuery,
 } from '../../../../gql/graphql.js';
-import { getCurrencyFormatter, TimelessDateString } from '../../../../helpers/index.js';
+import { getCurrencyFormatter, type TimelessDateString } from '../../../../helpers/index.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.jsx';
@@ -24,10 +24,11 @@ import {
 } from '../../../ui/chart.jsx';
 import {
   BALANCE_REPORT_FILTERS_QUERY_PARAM,
-  BalanceReportFilter,
   BalanceReportFilters,
   encodeBalanceReportFilters,
-  Period,
+  Periods,
+  type BalanceReportFilter,
+  type Period,
 } from './balance-report-filters.jsx';
 import { ExtendedTransactionsCard } from './extended-transactions.jsx';
 
@@ -93,50 +94,50 @@ const chartConfig = {
 
 function getPeriodKey(year: number, month: number, period: Period): string {
   switch (period) {
-    case Period.MONTHLY: {
+    case Periods.MONTHLY: {
       const monthString = String(month).padStart(2, '0');
       return `${year}-${monthString}`;
     }
-    case Period.BI_MONTHLY: {
+    case Periods.BI_MONTHLY: {
       const firstMonth = month % 2 === 0 ? month - 1 : month;
       const monthString = String(firstMonth).padStart(2, '0');
       return `${year}-${monthString}`;
     }
-    case Period.QUARTERLY: {
+    case Periods.QUARTERLY: {
       const quarter = Math.ceil(month / 3);
       return `${year}-Q${quarter}`;
     }
-    case Period.SEMI_ANNUALLY: {
+    case Periods.SEMI_ANNUALLY: {
       const half = month > 6 ? 2 : 1;
       return `${year}-H${half}`;
     }
-    case Period.ANNUALLY:
+    case Periods.ANNUALLY:
       return String(year);
   }
 }
 
 function getPeriodLabel(key: string, period: Period): string {
   switch (period) {
-    case Period.MONTHLY: {
+    case Periods.MONTHLY: {
       const [year, month] = key.split('-');
       return `${month}/${year}`;
     }
-    case Period.BI_MONTHLY: {
+    case Periods.BI_MONTHLY: {
       const [year, firstMonth] = key.split('-');
       const secondMonthNum = Number(firstMonth) + 1;
       const secondMonth = String(secondMonthNum).padStart(2, '0');
 
       return `${firstMonth}-${secondMonth}/${year}`;
     }
-    case Period.QUARTERLY: {
+    case Periods.QUARTERLY: {
       const [year, quarter] = key.split('-');
       return `${quarter}, ${year}`;
     }
-    case Period.SEMI_ANNUALLY: {
+    case Periods.SEMI_ANNUALLY: {
       const [year, half] = key.split('-');
       return `${half}, ${year}`;
     }
-    case Period.ANNUALLY:
+    case Periods.ANNUALLY:
       return key;
   }
 }
@@ -151,7 +152,7 @@ export const BalanceReport = (): ReactElement => {
     const defaultFilters: BalanceReportFilter = {
       ownerId: userContext?.context.adminBusinessId,
       toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
-      period: Period.MONTHLY,
+      period: Periods.MONTHLY,
       fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
       excludedCounterparties: [],
       includedTags: [],

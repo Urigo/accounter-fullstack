@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { Combine } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';

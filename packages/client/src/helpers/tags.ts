@@ -1,4 +1,4 @@
-import { AllTagsQuery } from '../gql/graphql.js';
+import type { AllTagsQuery } from '../gql/graphql.js';
 
 export function sortTags<T extends AllTagsQuery['allTags']>(tags: T): T {
   return tags.sort((a, b) => {

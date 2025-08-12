@@ -1,5 +1,5 @@
-import { ReactElement, useEffect } from 'react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { useEffect, type ReactElement } from 'react';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Modal, Select } from '@mantine/core';
 import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';

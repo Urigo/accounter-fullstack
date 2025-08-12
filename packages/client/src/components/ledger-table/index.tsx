@@ -1,16 +1,16 @@
-import { ReactElement, useMemo, useState } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  SortingState,
   useReactTable,
+  type SortingState,
 } from '@tanstack/react-table';
 import {
-  TableLedgerRecordsFieldsFragment,
   TableLedgerRecordsFieldsFragmentDoc,
+  type TableLedgerRecordsFieldsFragment,
 } from '../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EMPTY_UUID } from '../../helpers/consts.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';

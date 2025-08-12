@@ -1,12 +1,12 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { format, subYears } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
-import { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
-import { isObjectEmpty, TimelessDateString } from '../../../helpers/index.js';
+import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
+import { isObjectEmpty, type TimelessDateString } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.jsx';

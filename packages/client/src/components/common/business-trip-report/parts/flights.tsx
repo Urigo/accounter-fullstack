@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { BusinessTripReportFlightsFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { FlightsTable } from './flights-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

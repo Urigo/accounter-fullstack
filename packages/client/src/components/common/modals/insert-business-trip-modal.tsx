@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { MapPlus } from 'lucide-react';
 import { Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';

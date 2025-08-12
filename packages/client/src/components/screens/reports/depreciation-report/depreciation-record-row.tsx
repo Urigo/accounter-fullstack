@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import {
   DepreciationReportRecordCoreFragmentDoc,
-  DepreciationReportScreenQuery,
+  type DepreciationReportScreenQuery,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/numbers.js';

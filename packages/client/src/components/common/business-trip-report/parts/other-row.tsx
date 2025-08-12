@@ -1,12 +1,12 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Text, Tooltip } from '@mantine/core';
 import {
   BusinessTripReportOtherRowFieldsFragmentDoc,
-  UpdateBusinessTripOtherExpenseInput,
+  type UpdateBusinessTripOtherExpenseInput,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateBusinessTripOtherExpense } from '../../../../hooks/use-update-business-trip-other-expense.js';
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';

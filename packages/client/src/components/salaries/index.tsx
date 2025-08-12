@@ -1,4 +1,4 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
@@ -10,7 +10,7 @@ import {
   InsertSalaryRecordModal,
 } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { getDefaultFilterDates, SalariesFilter, SalariesFilters } from './salaries-filters.js';
+import { getDefaultFilterDates, SalariesFilters, type SalariesFilter } from './salaries-filters.js';
 import { SalariesTable } from './salaries-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

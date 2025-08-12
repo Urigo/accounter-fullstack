@@ -1,12 +1,12 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Edit, Loader2 } from 'lucide-react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import {
   TaxCategoryToUpdateDocument,
-  TaxCategoryToUpdateQuery,
-  UpdateTaxCategoryInput,
+  type TaxCategoryToUpdateQuery,
+  type UpdateTaxCategoryInput,
 } from '../../../gql/graphql.js';
 import { useUpdateTaxCategory } from '../../../hooks/use-update-tax-category.js';
 import { Button } from '../../ui/button.jsx';

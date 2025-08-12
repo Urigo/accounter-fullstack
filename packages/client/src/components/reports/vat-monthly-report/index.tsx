@@ -1,13 +1,13 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   ChargeFilterType,
   VatMonthlyReportDocument,
-  VatReportFilter,
+  type VatReportFilter,
 } from '../../../gql/graphql.js';
-import { dedupeFragments, TimelessDateString } from '../../../helpers/index.js';
+import { dedupeFragments, type TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';

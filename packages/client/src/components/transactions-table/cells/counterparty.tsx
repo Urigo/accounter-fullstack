@@ -1,6 +1,6 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
-import { ChargeFilter } from '../../../gql/graphql.js';
+import type { ChargeFilter } from '../../../gql/graphql.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -10,7 +10,7 @@ import { InsertBusiness } from '../../common/modals/insert-business.jsx';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.jsx';
 import { Button } from '../../ui/button.jsx';
 import { SelectWithSearch } from '../../ui/select-with-search.jsx';
-import { TransactionsTableRowType } from '../columns.js';
+import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
   transaction: TransactionsTableRowType;

@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { FileInput, Loader } from '@mantine/core';
 import { useUploadPayrollFile } from '../../../hooks/use-upload-payroll-file.js';
 

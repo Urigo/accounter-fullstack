@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { GenerateDocument } from '../../common/documents/issue-document/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 

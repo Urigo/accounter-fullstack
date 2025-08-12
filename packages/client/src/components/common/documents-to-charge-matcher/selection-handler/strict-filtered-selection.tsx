@@ -1,9 +1,9 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Barcode, Bookmark, Calendar, Coins, FileQuestion } from 'lucide-react';
 import {
-  ChargeToMatchDocumentsFieldsFragment,
-  DocumentsToMatchFieldsFragment,
+  type ChargeToMatchDocumentsFieldsFragment,
+  type DocumentsToMatchFieldsFragment,
 } from '../../../../gql/graphql.js';
 import { rateOptionalDocumentsMatches } from '../../../../helpers/document-matches.js';
 

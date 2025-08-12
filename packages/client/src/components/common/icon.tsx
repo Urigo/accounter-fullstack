@@ -1,5 +1,5 @@
 import type { ReactElement, RefAttributes } from 'react';
-import { Image, ImageProps } from '@mantine/core';
+import { Image, type ImageProps } from '@mantine/core';
 
 export type IconName = 'logo';
 

@@ -1,8 +1,8 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Table } from '@mantine/core';
 import { VatReportIncomeFieldsFragmentDoc } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { Button } from '../../../ui/button.js';
 import { IncomeRow } from './income-row.js';
 

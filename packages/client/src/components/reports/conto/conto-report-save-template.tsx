@@ -1,10 +1,10 @@
-import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { CloudUpload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { NodeModel } from '@minoru/react-dnd-treeview';
+import type { NodeModel } from '@minoru/react-dnd-treeview';
 import { useInsertDynamicReportTemplate } from '../../../hooks/use-insert-dynamic-report-template.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.jsx';
@@ -18,7 +18,7 @@ import {
 } from '../../ui/dialog.jsx';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { CustomData } from './types.js';
+import type { CustomData } from './types.js';
 
 const FormSchema = z.object({
   name: z.string().min(5, { message: 'Name must be at least 5 characters long' }),

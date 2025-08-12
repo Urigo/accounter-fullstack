@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { Trash } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDeleteBusinessTripAttendee } from '../../../../hooks/use-delete-business-trip-attendee.js';

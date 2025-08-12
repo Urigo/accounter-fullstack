@@ -1,10 +1,10 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
-  IncomeExpenseChartFilters,
   MonthlyIncomeExpenseChartDocument,
+  type IncomeExpenseChartFilters,
 } from '../../../gql/graphql.js';
 import { currencyCodeToSymbol, type TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';

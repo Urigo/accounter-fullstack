@@ -4,8 +4,8 @@ import { useMutation } from 'urql';
 import { NewDocumentsList } from '../components/common/new-documents-list.js';
 import {
   FetchIncomeDocumentsDocument,
-  FetchIncomeDocumentsMutation,
-  FetchIncomeDocumentsMutationVariables,
+  type FetchIncomeDocumentsMutation,
+  type FetchIncomeDocumentsMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

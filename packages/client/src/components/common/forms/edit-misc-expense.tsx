@@ -1,8 +1,11 @@
-import { ReactElement, useCallback, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useCallback, useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader } from '@mantine/core';
-import { EditMiscExpenseFieldsFragmentDoc, UpdateMiscExpenseInput } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import {
+  EditMiscExpenseFieldsFragmentDoc,
+  type UpdateMiscExpenseInput,
+} from '../../../gql/graphql.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateMiscExpense } from '../../../hooks/use-update-misc-expense.js';
 import { Form } from '../../ui/form.js';
 import { ModifyMiscExpenseFields } from './index.js';

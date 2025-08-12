@@ -1,14 +1,14 @@
-import { forwardRef, ReactElement, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Grid, Loader, Modal, NumberInput, Overlay, Select, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  CategorizeIntoExistingBusinessTripExpenseInput,
   UncategorizedTransactionsByBusinessTripDocument,
-  UncategorizedTransactionsByBusinessTripQuery,
+  type CategorizeIntoExistingBusinessTripExpenseInput,
+  type UncategorizedTransactionsByBusinessTripQuery,
 } from '../../../../gql/graphql.js';
 import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/use-categorize-into-existing-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';

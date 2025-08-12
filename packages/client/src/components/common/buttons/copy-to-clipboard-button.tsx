@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Copy, Link } from 'lucide-react';
 import { writeToClipboard } from '../../../helpers/index.js';
 import { Button } from '../../ui/button.js';

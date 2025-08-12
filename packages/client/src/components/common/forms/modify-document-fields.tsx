@@ -1,13 +1,13 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Controller, UseFormReturn } from 'react-hook-form';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 import { DatePickerInput, MonthPickerInput } from '@mantine/dates';
 import {
   Currency,
   DocumentType,
-  EditDocumentQuery,
-  InsertDocumentInput,
-  UpdateDocumentFieldsInput,
+  type EditDocumentQuery,
+  type InsertDocumentInput,
+  type UpdateDocumentFieldsInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import {

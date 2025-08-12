@@ -1,14 +1,14 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
-import { UseFieldArrayAppend } from 'react-hook-form';
+import type { UseFieldArrayAppend } from 'react-hook-form';
 import { useQuery } from 'urql';
 import {
   MonthlyDocumentDraftByClientDocument,
   NewDocumentInfoFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
-import { TimelessDateString } from '../../../../helpers/index.js';
-import { AllOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
+import type { TimelessDateString } from '../../../../helpers/index.js';
+import type { AllOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { Button } from '../../../ui/button';
 import {
   Dialog,
@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
-import { IssueDocumentsVariables } from './issue-documents-table.js';
+import type { IssueDocumentsVariables } from './issue-documents-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -1,13 +1,13 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { NavLink, Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  BusinessTripUncategorizedTransactionsFieldsFragment,
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
   UncategorizedTransactionsTableAmountFieldsFragmentDoc,
+  type BusinessTripUncategorizedTransactionsFieldsFragment,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { getChargeHref } from '../../../screens/charges/charge.js';
 import {

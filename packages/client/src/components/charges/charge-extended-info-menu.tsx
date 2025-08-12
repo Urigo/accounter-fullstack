@@ -1,8 +1,8 @@
-import { ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { ArrowDownWideNarrow, FilePlus2, ListPlus, Search, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
+import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {

@@ -7,10 +7,10 @@ import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-d
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
 import {
-  AllSortCodesQuery,
   ContoReportDocument,
-  ContoReportQuery,
   TemplateForContoReportDocument,
+  type AllSortCodesQuery,
+  type ContoReportQuery,
 } from '../../../gql/graphql.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -21,14 +21,14 @@ import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
 import {
   ContoReportFilters,
-  ContoReportFiltersType,
   encodeContoReportFilters,
+  type ContoReportFiltersType,
 } from './conto-report-filters.js';
 import { ManageTemplates } from './conto-report-manage-templates.js';
 import { SaveTemplate } from './conto-report-save-template.js';
 import { DownloadCSV } from './download-csv.js';
 import { TreeView } from './tree-view.js';
-import { CustomData } from './types.js';
+import type { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

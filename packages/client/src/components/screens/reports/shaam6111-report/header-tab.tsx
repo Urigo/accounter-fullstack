@@ -11,7 +11,7 @@ import {
   Shaam6111DataContentHeaderBusinessFragmentDoc,
   Shaam6111DataContentHeaderFragmentDoc,
 } from '../../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TabsContent } from '../../../ui/tabs.jsx';
 import { DataField } from './data-field.jsx';
 

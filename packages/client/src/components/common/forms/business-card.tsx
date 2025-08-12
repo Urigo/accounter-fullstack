@@ -1,14 +1,14 @@
-import { ReactElement, useContext, useEffect, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { useQuery, UseQueryExecute } from 'urql';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
+import { useQuery, type UseQueryExecute } from 'urql';
 import { Loader } from '@mantine/core';
 import {
-  AllBusinessesRowFieldsFragment,
   FetchBusinessDocument,
-  FetchBusinessQuery,
-  UpdateBusinessInput,
+  type AllBusinessesRowFieldsFragment,
+  type FetchBusinessQuery,
+  type UpdateBusinessInput,
 } from '../../../gql/graphql.js';
-import { MakeBoolean, relevantDataPicker } from '../../../helpers/index.js';
+import { relevantDataPicker, type MakeBoolean } from '../../../helpers/index.js';
 import { useUpdateBusiness } from '../../../hooks/use-update-business.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { Form } from '../../ui/form.js';

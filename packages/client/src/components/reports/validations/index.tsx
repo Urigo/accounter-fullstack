@@ -1,7 +1,7 @@
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format, subYears } from 'date-fns';
-import { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
-import { TimelessDateString } from '../../../helpers/index.js';
+import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
+import type { TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';

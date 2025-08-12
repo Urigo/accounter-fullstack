@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Accordion, Card } from '@mantine/core';

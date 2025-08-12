@@ -1,9 +1,9 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
-import { EditSalaryRecordDocument, SalaryRecordInput } from '../../../gql/graphql.js';
-import { TimelessDateString } from '../../../helpers/index.js';
+import { EditSalaryRecordDocument, type SalaryRecordInput } from '../../../gql/graphql.js';
+import type { TimelessDateString } from '../../../helpers/index.js';
 import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.js';
 import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
 

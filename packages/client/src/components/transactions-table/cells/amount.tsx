@@ -1,6 +1,6 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { formatStringifyAmount } from '../../../helpers/index.js';
-import { TransactionsTableRowType } from '../columns.js';
+import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
   transaction: TransactionsTableRowType;

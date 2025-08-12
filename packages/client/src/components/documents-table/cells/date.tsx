@@ -1,8 +1,8 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;
@@ -11,7 +11,7 @@ type Props = {
 export const DateCell = ({ document }: Props): ReactElement => {
   const date = 'date' in document ? document.date : undefined;
 
-  const shouldHaveDate = ![DocumentType.Other].includes(document.documentType as DocumentType);
+  const shouldHaveDate = DocumentType.Other !== document.documentType;
   const isError = shouldHaveDate && !date;
 
   const formattedDate = date ? format(new Date(date), 'dd/MM/yy') : 'Missing Data';

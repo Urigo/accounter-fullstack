@@ -1,11 +1,12 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type ReactElement } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessHref } from '../../charges/helpers.js';
 import { ConfirmMiniButton } from '../../common/index.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
+import { COUNTERPARTIES_LESS_DOCUMENT_TYPES } from './index.js';
 
 type Props = {
   document: DocumentsTableRowType;
@@ -15,12 +16,10 @@ export const Debtor = ({ document }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const dbDebtor = 'debtor' in document ? document.debtor : undefined;
 
-  const shouldHaveDebtor = ![DocumentType.Unprocessed, DocumentType.Other].includes(
-    document.documentType as DocumentType,
-  );
+  const shouldHaveDebtor =
+    !document.documentType || !COUNTERPARTIES_LESS_DOCUMENT_TYPES.includes(document.documentType);
   const isError =
-    (shouldHaveDebtor && !dbDebtor?.id) ||
-    [DocumentType.Unprocessed].includes(document.documentType as DocumentType);
+    (shouldHaveDebtor && !dbDebtor?.id) || DocumentType.Unprocessed === document.documentType;
 
   const encodedFilters = get('chargesFilters');
 

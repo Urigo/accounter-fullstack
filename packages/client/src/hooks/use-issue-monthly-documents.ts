@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   IssueMonthlyDocumentsDocument,
-  IssueMonthlyDocumentsMutationVariables,
+  type IssueMonthlyDocumentsMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

@@ -1,6 +1,6 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { NavLink } from '@mantine/core';
-import { ChargeFilter } from '../../gql/graphql.js';
+import type { ChargeFilter } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { getBusinessTransactionsHref } from '../business-transactions/index.js';
 

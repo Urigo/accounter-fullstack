@@ -1,9 +1,9 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import { Currency, DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { ConfirmMiniButton } from '../../common/index.js';
-import { DocumentsTableRowType } from '../columns.js';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;
@@ -37,7 +37,7 @@ export const Amount = ({ document }: Props): ReactElement => {
     [document.id, updateDocument, document.onUpdate],
   );
 
-  const shouldHaveAmount = ![DocumentType.Other].includes(document.documentType as DocumentType);
+  const shouldHaveAmount = DocumentType.Other !== document.documentType;
   const isError = shouldHaveAmount && amount?.formatted == null;
 
   return (

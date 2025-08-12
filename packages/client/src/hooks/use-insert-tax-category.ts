@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
   InsertTaxCategoryDocument,
-  InsertTaxCategoryMutation,
-  InsertTaxCategoryMutationVariables,
+  type InsertTaxCategoryMutation,
+  type InsertTaxCategoryMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 

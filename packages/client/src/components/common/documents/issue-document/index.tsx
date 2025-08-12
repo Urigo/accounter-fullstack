@@ -18,7 +18,7 @@ import {
   getDocumentTypeOptions,
   type PreviewDocumentInput,
 } from '../../forms/index.js';
-import { IssueDocumentData, IssueDocumentModal } from './issue-document-modal.js';
+import { IssueDocumentModal, type IssueDocumentData } from './issue-document-modal.js';
 import { PdfViewer } from './pdf-viewer.js';
 import { RecentClientDocs } from './recent-client-docs.js';
 import { RecentDocsOfSameType } from './recent-docs-of-same-type.js';

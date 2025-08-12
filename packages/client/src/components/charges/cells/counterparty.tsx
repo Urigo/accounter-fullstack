@@ -1,11 +1,11 @@
-import { ReactElement, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type ReactElement } from 'react';
 import { Indicator, NavLink } from '@mantine/core';
 import {
-  ChargeFilter,
   ChargesTableEntityFieldsFragmentDoc,
   MissingChargeInfo,
+  type ChargeFilter,
 } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessTransactionsHref } from '../../business-transactions/index.js';
 

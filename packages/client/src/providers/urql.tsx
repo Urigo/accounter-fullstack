@@ -1,6 +1,13 @@
-import { ReactNode, useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AnyVariables, createClient, fetchExchange, mapExchange, Operation, Provider } from 'urql';
+import {
+  createClient,
+  fetchExchange,
+  mapExchange,
+  Provider,
+  type AnyVariables,
+  type Operation,
+} from 'urql';
 import { authExchange } from '@urql/exchange-auth';
 import { AuthContext } from './auth-guard.js';
 

@@ -1,9 +1,9 @@
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Control, Controller } from 'react-hook-form';
+import { Controller, type Control } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { InsertBusinessTripInput } from '../../../gql/graphql.js';
+import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useAllCountries } from '../../../hooks/use-get-countries.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';

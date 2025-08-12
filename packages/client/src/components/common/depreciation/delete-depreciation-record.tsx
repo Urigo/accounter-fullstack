@@ -1,4 +1,4 @@
-import { ReactElement, useCallback } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { Trash } from 'lucide-react';
 import { Tooltip } from '@mantine/core';
 import { useDeleteDepreciationRecord } from '../../../hooks/use-delete-depreciation-record.js';

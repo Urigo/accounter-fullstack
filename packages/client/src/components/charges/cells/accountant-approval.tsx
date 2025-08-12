@@ -1,6 +1,6 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { ChargesTableAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { FragmentType, getFragmentData } from '../../../gql/index.js';
+import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateChargeAccountantApproval } from '../../../hooks/use-update-charge-accountant-approval.js';
 import { UpdateAccountantStatus } from '../../common/index.js';
 
