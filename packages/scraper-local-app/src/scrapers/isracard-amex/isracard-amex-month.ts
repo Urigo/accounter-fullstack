@@ -274,6 +274,7 @@ async function isTransactionNew(
     'requestNumber',
     'accountErrorCode',
     'id',
+    'EsbServicesCall',
   ];
   newAttributesChecker(transaction, columnNames, logger, nickname, optionalTransactionKeys);
 

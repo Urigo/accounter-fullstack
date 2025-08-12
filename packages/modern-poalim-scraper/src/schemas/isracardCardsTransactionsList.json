@@ -65,7 +65,8 @@
         "totalDebit",
         "userId",
         "year",
-        "requestNumber"
+        "requestNumber",
+        "EsbServicesCall"
       ],
       "properties": {
         "card0": {
@@ -242,6 +243,9 @@
         },
         "accountErrorCode": {
           "type": "null"
+        },
+        "EsbServicesCall": {
+          "type": "null"
         }
       },
       "patternProperties": {
@@ -270,7 +274,8 @@
               "totalDollar",
               "totalEuro",
               "totalNis",
-              "requestNumber"
+              "requestNumber",
+              "EsbServicesCall"
             ],
             "properties": {
               "clientIpAddress": {
@@ -336,6 +341,9 @@
                 "type": "null"
               },
               "accountErrorCode": {
+                "type": "null"
+              },
+              "EsbServicesCall": {
                 "type": "null"
               }
             }
@@ -417,7 +425,8 @@
                     "voucherNumberRatz",
                     "voucherNumberRatzOutbound",
                     "requestNumber",
-                    "kodMatbeaMekori"
+                    "kodMatbeaMekori",
+                    "EsbServicesCall"
                   ],
                   "properties": {
                     "adendum": {
@@ -608,6 +617,9 @@
                     },
                     "kodMatbeaMekori": {
                       "type": "null"
+                    },
+                    "EsbServicesCall": {
+                      "type": "null"
                     }
                   }
                 }
@@ -664,7 +676,8 @@
                     "voucherNumber",
                     "voucherNumberRatz",
                     "voucherNumberRatzOutbound",
-                    "requestNumber"
+                    "requestNumber",
+                    "EsbServicesCall"
                   ],
                   "properties": {
                     "adendum": {
@@ -841,6 +854,9 @@
                     "kodMatbeaMekori": {
                       "type": ["string", "null"],
                       "enum": ["ש\"ח", "דולר", null]
+                    },
+                    "EsbServicesCall": {
+                      "type": "null"
                     }
                   }
                 }
@@ -872,7 +888,8 @@
           "totalDollar",
           "totalEuro",
           "totalNis",
-          "requestNumber"
+          "requestNumber",
+          "EsbServicesCall"
         ],
         "properties": {
           "clientIpAddress": {
@@ -941,6 +958,9 @@
             "type": "null"
           },
           "accountErrorCode": {
+            "type": "null"
+          },
+          "EsbServicesCall": {
             "type": "null"
           }
         }
