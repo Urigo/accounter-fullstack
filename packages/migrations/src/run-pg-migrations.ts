@@ -113,6 +113,7 @@ import migration_2025_07_25T11_55_52_self_issued_documents_table from './actions
 import migration_2025_07_30T19_01_04_jpy_rate_fix from './actions/2025-07-30T19-01-04.jpy-rate-fix.js';
 import migration_2025_08_03T15_08_25_add_charge_open_docs_flag from './actions/2025-08-03T15-08-25.add-charge-open-docs-flag.js';
 import migration_2025_08_11T11_45_42_clients_contracts_table from './actions/2025-08-11T11-45-42.clients-contracts-table.js';
+import migration_2025_08_12T18_50_12_extend_isracard_table from './actions/2025-08-12T18-50-12.extend-isracard-table.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -233,5 +234,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_07_25T11_55_52_self_issued_documents_table,
       migration_2025_08_03T15_08_25_add_charge_open_docs_flag,
       migration_2025_08_11T11_45_42_clients_contracts_table,
+      migration_2025_08_12T18_50_12_extend_isracard_table,
     ],
   });

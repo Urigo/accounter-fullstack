@@ -1,10 +1,7 @@
 import { differenceInMonths, format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type {
-  Index,
-  IsracardCardsTransactionsList,
-} from '@accounter/modern-poalim-scraper/dist/__generated__/isracardCardsTransactionsList.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/zod-schemas/isracard-cards-transactions-list-schema.js';
 import { sql, type TaggedQuery } from '@pgtyped/runtime';
 import {
   camelCase,
@@ -23,6 +20,8 @@ import type {
 } from '../../helpers/types.js';
 import type { Logger } from '../../logger.js';
 import type { IsracardAmexAccountContext, IsracardAmexContext } from './index.js';
+
+type Index = IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0'];
 
 type Context = {
   transactionsListBean?: IsracardCardsTransactionsList['CardsTransactionsListBean'];
@@ -112,7 +111,8 @@ const insertIsracardTransactions = sql<IInsertIsracardTransactionsQuery>`
                                                 client_ip_address,
                                                 card,
                                                 charging_date,
-                                                kod_matbea_mekori)
+                                                kod_matbea_mekori,
+                                                esb_services_call)
   VALUES $$transactions(specificDate,
                         cardIndex,
                         dealsInbound,
@@ -159,7 +159,8 @@ const insertIsracardTransactions = sql<IInsertIsracardTransactionsQuery>`
                         clientIpAddress,
                         card,
                         chargingDate,
-                        kodMatbeaMekori)
+                        kodMatbeaMekori,
+                        esbServicesCall)
   RETURNING *;`;
 
 const insertAmexTransactions = sql<IInsertAmexTransactionsQuery>`
@@ -209,7 +210,8 @@ const insertAmexTransactions = sql<IInsertAmexTransactionsQuery>`
                                                 client_ip_address,
                                                 card,
                                                 charging_date,
-                                                kod_matbea_mekori)
+                                                kod_matbea_mekori,
+                                                esb_services_call)
   VALUES $$transactions(specificDate,
                         cardIndex,
                         dealsInbound,
@@ -256,7 +258,8 @@ const insertAmexTransactions = sql<IInsertAmexTransactionsQuery>`
                         clientIpAddress,
                         card,
                         chargingDate,
-                        kodMatbeaMekori)
+                        kodMatbeaMekori,
+                        esbServicesCall)
   RETURNING *;`;
 
 async function isTransactionNew(
@@ -266,7 +269,9 @@ async function isTransactionNew(
   logger: Logger,
 ): Promise<boolean> {
   const { columns, type, nickname } = context;
-  const columnNames = columns!.map(column => camelCase(column.column_name));
+  const columnNames = columns!.map(column =>
+    column.column_name === 'esb_services_call' ? 'EsbServicesCall' : camelCase(column.column_name),
+  );
   const optionalTransactionKeys = [
     'clientIpAddress',
     'bcKey',
@@ -275,7 +280,7 @@ async function isTransactionNew(
     'accountErrorCode',
     'id',
   ];
-  newAttributesChecker(transaction, columnNames, logger, nickname, optionalTransactionKeys);
+  newAttributesChecker(transaction, [...columnNames], logger, nickname, optionalTransactionKeys);
 
   // fill in default values for missing keys, to prevent missing preexisting DB records and creation of duplicates
   fillInDefaultValues(transaction, columns!, logger, context.nickname);
@@ -419,6 +424,7 @@ async function insertTransactions(
       card: Number(transaction.card),
       chargingDate: null,
       kodMatbeaMekori: transaction.kodMatbeaMekori ?? null,
+      esbServicesCall: transaction.EsbServicesCall ?? null,
     };
     transactionsToInsert.push(transactionToInsert);
   }
