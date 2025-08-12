@@ -379,7 +379,19 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector
           .get(GreenInvoiceClientProvider)
           .closeDocument({ id: issuedDocument.external_id });
+
         if (res) {
+          // update document's status
+          await injector
+            .get(IssuedDocumentsProvider)
+            .updateIssuedDocument({
+              documentId: id,
+              status: 'CLOSED',
+            })
+            .catch(e => {
+              throw new Error(`Failed to update document's status (ID ${id}): ${e.message}`);
+            });
+
           return true;
         }
         throw new GraphQLError(`Failed to close document ID="${id}"`);
