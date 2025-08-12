@@ -7,6 +7,8 @@ import process from 'node:process';
 // Dynamically resolve the path to the @slonik/pg-driver using createRequire
 const require = createRequire(import.meta.url);
 
+console.log('🔍 Locating @slonik/pg-driver...');
+
 let pgDriverPath;
 
 try {
@@ -32,6 +34,7 @@ const content = fs.readFileSync(target, 'utf8');
 const tr = `throw new InvalidInputError('Must not use multiple statements in a single query.');`;
 const tr2 = `throw new errors_1.InvalidInputError('Must not use multiple statements in a single query.');`;
 if (content.includes(tr) || content.includes(tr2)) {
+  console.log('🔧 Patching @slonik/pg-driver...');
   const newContent = content
     .replace(
       tr,
