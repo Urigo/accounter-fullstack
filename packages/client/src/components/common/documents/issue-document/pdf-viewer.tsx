@@ -72,7 +72,7 @@ export function PdfViewer(props: PdfProps) {
             return;
           }
         })
-        .catch(error => console.log(error));
+        .catch(error => console.error(error));
     },
     [pdfDoc],
   );

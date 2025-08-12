@@ -59,7 +59,6 @@ export function AddDocumentToIssue({
     (clientId: string) => {
       setClientId(clientId);
       fetchDraft();
-      console.log('Fetching draft for client ID:', clientId);
     },
     [fetchDraft, setClientId],
   );

@@ -227,7 +227,6 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                       {/* <XCircle
                         className="ml-2 h-4 w-4 cursor-pointer"
                         onClick={event => {
-                          console.log('XCircle clicked');
                           event.stopPropagation();
                           clearExtraOptions();
                         }}
