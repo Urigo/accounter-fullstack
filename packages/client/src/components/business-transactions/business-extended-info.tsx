@@ -9,12 +9,15 @@ import {
   type BusinessTransactionsFilter,
   type BusinessTransactionsInfoQuery,
 } from '../../gql/graphql.js';
-import { currencyCodeToSymbol, formatStringifyAmount } from '../../helpers/index.js';
+import {
+  currencyCodeToSymbol,
+  FIAT_CURRENCIES,
+  formatStringifyAmount,
+} from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
-import { FIAT_CURRENCIES } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

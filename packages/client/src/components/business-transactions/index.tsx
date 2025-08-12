@@ -14,6 +14,7 @@ import {
   type BusinessTransactionsFilter,
   type BusinessTransactionsSummeryQuery,
 } from '../../gql/graphql.js';
+import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterTableRow } from '../common/index.js';
@@ -279,17 +280,6 @@ function getCurrencyCells(currency: Currency): CellInfo[] {
     },
   ];
 }
-
-export const FIAT_CURRENCIES: Currency[] = [
-  Currency.Ils,
-  Currency.Eur,
-  Currency.Usd,
-  Currency.Gbp,
-  Currency.Cad,
-  Currency.Jpy,
-  Currency.Aud,
-  Currency.Sek,
-] as const;
 
 function getExtendedCurrencies(isExpandedCurrencies: boolean): CellInfo[] {
   if (!isExpandedCurrencies) {

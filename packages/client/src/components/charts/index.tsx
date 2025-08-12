@@ -10,9 +10,9 @@ import {
   type IncomeChargesChartQuery,
 } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
+import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { FIAT_CURRENCIES } from '../business-transactions/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
 import { ChargeFilterFilter } from './chart-filters.js';

@@ -57,3 +57,14 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
   }
   return currencySymbol;
 }
+
+export const FIAT_CURRENCIES: Currency[] = [
+  Currency.Ils,
+  Currency.Eur,
+  Currency.Usd,
+  Currency.Gbp,
+  Currency.Cad,
+  Currency.Jpy,
+  Currency.Aud,
+  Currency.Sek,
+] as const;
