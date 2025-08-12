@@ -1,6 +1,6 @@
-import { ReactElement, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Check, Edit, Eye, FileText, Loader2 } from 'lucide-react';
-import { NewDocumentInfoFragment } from '../../../../gql/graphql.js';
+import type { NewDocumentInfoFragment } from '../../../../gql/graphql.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { PdfViewer } from '../../../common/documents/issue-document/pdf-viewer.js';
 import { RecentClientDocs } from '../../../common/documents/issue-document/recent-client-docs.js';

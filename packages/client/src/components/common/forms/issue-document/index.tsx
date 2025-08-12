@@ -9,8 +9,8 @@ import {
   DocumentType,
   GreenInvoiceDocumentLang,
   GreenInvoiceVatType,
-  IssueDocumentClientFieldsFragment,
   IssueDocumentClientFieldsFragmentDoc,
+  type IssueDocumentClientFieldsFragment,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import { useGetAllClients } from '../../../../hooks/use-get-all-clients.js';
