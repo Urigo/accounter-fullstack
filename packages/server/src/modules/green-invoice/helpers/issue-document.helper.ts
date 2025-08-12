@@ -2,12 +2,15 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import {
   IGetDocumentsByChargeIdResult,
   IGetIssuedDocumentsByIdsResult,
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
 import {
@@ -18,12 +21,14 @@ import {
   GreenInvoicePaymentType,
   GreenInvoiceVatType,
   NewDocumentInfo,
+  NewDocumentInput,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { GreenInvoiceProvider } from '../providers/green-invoice.provider.js';
 import {
+  convertDocumentInputIntoGreenInvoiceInput,
   getVatTypeFromGreenInvoiceDocument,
+  insertNewDocumentFromGreenInvoice,
   normalizeDocumentType,
 } from './green-invoice.helper.js';
 
@@ -240,16 +245,14 @@ export async function getClientFromGreenInvoiceClient(
   businessId: string,
   useGreenInvoiceId = false,
 ): Promise<GreenInvoiceClient | undefined> {
-  const greenInvoiceBusinessMatch = await injector
-    .get(GreenInvoiceProvider)
-    .getBusinessMatchByIdLoader.load(businessId);
-  if (!greenInvoiceBusinessMatch) {
+  const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
+  if (!client) {
     return useGreenInvoiceId ? undefined : { id: businessId };
   }
 
   const greenInvoiceClient = await injector
     .get(GreenInvoiceClientProvider)
-    .getClient({ id: greenInvoiceBusinessMatch.green_invoice_id });
+    .getClient({ id: client.green_invoice_id });
 
   if (!greenInvoiceClient) {
     return useGreenInvoiceId ? undefined : { id: businessId };
@@ -288,4 +291,82 @@ export async function deduceVatTypeFromBusiness(
   }
 
   return 'EXEMPT';
+}
+
+export async function executeDocumentIssue(
+  injector: Injector,
+  adminBusinessId: string,
+  initialInput: NewDocumentInput,
+  emailContent?: string,
+  attachment = true,
+  chargeId?: string,
+  sendEmail = false,
+) {
+  try {
+    const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
+    const input = {
+      ...coreInput,
+      client:
+        !coreInput.client || sendEmail
+          ? coreInput.client
+          : {
+              ...coreInput.client,
+              emails: [], // if client exists, and sendEmail is false, we don't want to send emails
+            },
+      emailContent,
+      attachment,
+    };
+    const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
+
+    if (!document) {
+      throw new GraphQLError('Failed to issue new document');
+    }
+
+    if ('id' in document && document.id) {
+      const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
+        id: document.id,
+      });
+      if (!greenInvoiceDocument) {
+        console.error('Failed to fetch issued document from Green Invoice', document);
+        throw new GraphQLError('Failed to issue new document');
+      }
+
+      // Insert new issued document to DB
+      const newDocument = await insertNewDocumentFromGreenInvoice(
+        injector,
+        greenInvoiceDocument,
+        adminBusinessId,
+        chargeId,
+      );
+
+      if (!newDocument.charge_id) {
+        console.error('New document does not have a charge ID', newDocument);
+        throw new GraphQLError('Failed to issue new document');
+      }
+
+      // Close linked documents
+      if (coreInput.linkedDocumentIds?.length) {
+        await Promise.all(
+          coreInput.linkedDocumentIds.map(async id => {
+            if (id) {
+              await injector
+                .get(IssuedDocumentsProvider)
+                .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' })
+                .catch(e => {
+                  throw new Error(`Failed to close linked document with ID ${id}: ${e.message}`);
+                });
+            }
+          }),
+        );
+      }
+
+      return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
+    }
+
+    console.error('Document issue failed', document);
+    throw new GraphQLError('Document issue failed');
+  } catch (error) {
+    console.error('Error issuing document:', error);
+    throw new GraphQLError('Error issuing document');
+  }
 }

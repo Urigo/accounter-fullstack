@@ -78,6 +78,7 @@ const config: CodegenConfig = {
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
+          Client: '@modules/financial-entities/types.js#IGetAllClientsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonTransaction: 'string',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
@@ -85,6 +86,7 @@ const config: CodegenConfig = {
           CorporateTax: '@modules/corporate-taxes/types.js#IGetCorporateTaxesByCorporateIdsResult',
           CorporateTaxRulingComplianceReport:
             '@shared/types#CorporateTaxRulingComplianceReportProto',
+          Contract: '@modules/contracts/types.js#IGetAllOpenContractsResult',
           Country: '@modules/countries/types.js#IGetAllCountriesResult',
           CreditcardBankCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '@modules/documents/types.js#IGetAllDocumentsResult',
@@ -98,7 +100,6 @@ const config: CodegenConfig = {
           DynamicReportInfo: '@modules/reports/types.js#IGetTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
-          GreenInvoiceBusiness: '@modules/green-invoice/types.js#IGetAllBusinessMatchesResult',
           IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',

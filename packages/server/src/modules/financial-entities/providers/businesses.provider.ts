@@ -3,7 +3,6 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
-import { GreenInvoiceProvider } from '@modules/green-invoice/providers/green-invoice.provider.js';
 import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
@@ -21,6 +20,7 @@ import type {
   IUpdateBusinessParams,
   IUpdateBusinessQuery,
 } from '../types.js';
+import { ClientsProvider } from './clients.provider.js';
 import { TaxCategoriesProvider } from './tax-categories.provider.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
@@ -280,8 +280,8 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
     WHERE corporate_id = $businessIdToReplace
     RETURNING date
   ),
-  businesses_green_invoice_match as (
-    UPDATE accounter_schema.businesses_green_invoice_match
+  clients AS (
+    UPDATE accounter_schema.clients
     SET business_id = $targetBusinessId
     WHERE business_id = $businessIdToReplace
     RETURNING green_invoice_id
@@ -305,7 +305,7 @@ export class BusinessesProvider {
     @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
     private taxCategoryProvider: TaxCategoriesProvider,
-    private businessesGreenInvoiceMatcherProvider: GreenInvoiceProvider,
+    private clientsProvider: ClientsProvider,
     private employeesProvider: EmployeesProvider,
     private fundsProvider: FundsProvider,
     private dividendsProvider: DividendsProvider,
@@ -427,8 +427,7 @@ export class BusinessesProvider {
       this.balanceCancellationProvider.deleteBalanceCancellationByBusinessId(businessId);
 
     // remove from business green invoice match
-    const deleteGreenInvoiceMatch =
-      this.businessesGreenInvoiceMatcherProvider.deleteBusinessMatch(businessId);
+    const deleteGreenInvoiceMatch = this.clientsProvider.deleteClient(businessId);
 
     // TODO: remove when corporate: corporate-tax-variables
     // TODO: remove when owner: financial entities, charges, business-tax-category, ledger

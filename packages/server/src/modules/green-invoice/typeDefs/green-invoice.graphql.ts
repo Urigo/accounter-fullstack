@@ -3,16 +3,18 @@ import { gql } from 'graphql-modules';
 // eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
-    greenInvoiceBusiness(businessId: UUID!): GreenInvoiceBusiness! @auth(role: ACCOUNTANT)
-    greenInvoiceBusinesses: [GreenInvoiceBusiness!]! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByCharge(chargeId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
     newDocumentInfoDraftByDocument(documentId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
+    clientMonthlyChargesDrafts(issueMonth: TimelessDate!): [NewDocumentInfo!]!
+      @auth(role: ACCOUNTANT)
+    clientMonthlyChargeDraft(clientId: UUID!, issueMonth: TimelessDate!): NewDocumentInfo!
+      @auth(role: ACCOUNTANT)
   }
+
   extend type Mutation {
     fetchIncomeDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]! @auth(role: ADMIN)
-    generateMonthlyClientDocuments(
-      issueMonth: TimelessDate
-      generateDocumentsInfo: [GenerateDocumentInfo!]!
+    issueGreenInvoiceDocuments(
+      generateDocumentsInfo: [NewDocumentInput!]!
     ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)
     previewGreenInvoiceDocument(input: NewDocumentInput!): FileScalar! @auth(role: ACCOUNTANT)
     issueGreenInvoiceDocument(
@@ -25,23 +27,6 @@ export default gql`
   }
   extend type IssuedDocumentInfo {
     originalDocument: NewDocumentInfo
-  }
-
-  " business extended with green invoice data "
-  type GreenInvoiceBusiness {
-    id: UUID!
-    originalBusiness: LtdFinancialEntity!
-    greenInvoiceId: UUID!
-    remark: String
-    emails: [String!]!
-    generatedDocumentType: DocumentType!
-    clientInfo: GreenInvoiceClient!
-  }
-
-  " input for generating monthly client document "
-  input GenerateDocumentInfo {
-    businessId: UUID!
-    amount: FinancialAmountInput!
   }
 
   " result type for generateMonthlyClientDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this

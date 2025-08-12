@@ -2,18 +2,18 @@
 
 import { Plus, Receipt, Trash2 } from 'lucide-react';
 import { Currency, GreenInvoiceVatType } from '../../../../gql/graphql.js';
-import { Button } from '../../../ui/button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
-import { Input } from '../../../ui/input.jsx';
-import { Label } from '../../../ui/label.jsx';
+import { Button } from '../../../ui/button.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
+import { Input } from '../../../ui/input.js';
+import { Label } from '../../../ui/label.js';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../ui/select.jsx';
-import { Textarea } from '../../../ui/textarea.jsx';
+} from '../../../ui/select.js';
+import { Textarea } from '../../../ui/textarea.js';
 import type { Income } from './types/document.js';
 import { getCurrencyOptions, getVatTypeOptions } from './utils/enum-helpers.js';
 

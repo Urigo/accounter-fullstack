@@ -1,28 +1,25 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo } from 'react';
+import { ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useQuery } from 'urql';
 import { MonthPickerInput } from '@mantine/dates';
+import { FragmentType, getFragmentData } from '../../../../gql/fragment-masking.js';
 import {
-  AllGreenInvoiceBusinessesQuery,
-  Currency,
-  GenerateDocumentInfo,
+  BillingCycle,
   IssueMonthlyDocumentsMutationVariables,
+  MonthlyDocumentsDraftsDocument,
+  NewDocumentInfoFragment,
+  NewDocumentInfoFragmentDoc,
+  NewDocumentInput,
 } from '../../../../gql/graphql.js';
 import { TimelessDateString } from '../../../../helpers/index.js';
+import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
-import { FiltersContext } from '../../../../providers/filters-context.js';
-import { ConfirmationModal, NumberInput } from '../../../common/index.js';
+import { ConfirmationModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
+import { Form } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../ui/select.js';
 import {
   Table,
   TableBody,
@@ -31,47 +28,82 @@ import {
   TableHeader,
   TableRow,
 } from '../../../ui/table.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../ui/tooltip.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
-import { DownloadCSV } from './download-csv.js';
-import { UploadCsv } from './upload-csv.js';
+import { EditIssueDocumentModal } from './edit-issue-document-modal.js';
 
 export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
   'generateDocumentsInfo'
 > & {
-  generateDocumentsInfo: GenerateDocumentInfo[];
+  generateDocumentsInfo: NewDocumentInput[];
 };
 
 type IssueDocumentsTableProps = {
-  businessesData: AllGreenInvoiceBusinessesQuery['greenInvoiceBusinesses'];
+  drafts: FragmentType<typeof NewDocumentInfoFragmentDoc>[];
 };
 
-export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps): ReactElement => {
-  const { setFiltersContext } = useContext(FiltersContext);
+export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): ReactElement => {
+  const [documentDrafts, setDocumentDrafts] = useState(
+    drafts.map(draft => getFragmentData(NewDocumentInfoFragmentDoc, draft)) as (Omit<
+      NewDocumentInfoFragment,
+      'client'
+    > & {
+      client: NewDocumentInfoFragment['client'] & { id: string };
+    })[],
+  );
+
+  const defaultIssueMonth = format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString;
+
+  const [issueMonth, setIssueMonth] = useState<TimelessDateString>(defaultIssueMonth);
+
+  const [{ data }, fetchNewDrafts] = useQuery({
+    query: MonthlyDocumentsDraftsDocument,
+    variables: {
+      issueMonth,
+    },
+    pause: true,
+  });
+
+  useEffect(() => {
+    if (data?.clientMonthlyChargesDrafts) {
+      setDocumentDrafts(
+        data.clientMonthlyChargesDrafts.map(draft =>
+          getFragmentData(NewDocumentInfoFragmentDoc, draft),
+        ) as (Omit<NewDocumentInfoFragment, 'client'> & {
+          client: NewDocumentInfoFragment['client'] & { id: string };
+        })[],
+      );
+    }
+  }, [data, setDocumentDrafts]);
+
+  useEffect(() => {
+    fetchNewDrafts();
+  }, [issueMonth, fetchNewDrafts]);
+
   const form = useForm<IssueDocumentsVariables>({
-    defaultValues: {
-      generateDocumentsInfo: [],
-      issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
+    values: {
+      generateDocumentsInfo: documentDrafts,
     },
   });
   const { issueDocuments } = useIssueMonthlyDocuments();
+  const { openContracts } = useGetOpenContracts();
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: 'generateDocumentsInfo',
   });
 
   const watchFieldArray = form.watch('generateDocumentsInfo');
-  const controlledFields = useMemo(
-    () =>
-      fields.map((field, index) => {
-        return {
-          ...field,
-          ...watchFieldArray[index],
-        };
-      }),
-    [fields, watchFieldArray],
-  );
+  const controlledFields = useMemo(() => {
+    return fields.map((field, index) => {
+      return {
+        ...field,
+        ...watchFieldArray[index],
+        id: field.client?.id,
+      };
+    });
+  }, [fields, watchFieldArray]);
 
   const onSubmit = useCallback(
     (data: IssueDocumentsVariables) => {
@@ -80,27 +112,18 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
     [issueDocuments],
   );
 
-  const unusedBusinesses = useMemo(
+  const unusedContracts = useMemo(
     () =>
-      businessesData
-        .filter(
-          business =>
-            !controlledFields.some(
-              controlled => controlled.businessId === business.originalBusiness.id,
-            ),
-        )
-        .sort((a, b) => a.originalBusiness.name.localeCompare(b.originalBusiness.name)),
-    [businessesData, controlledFields],
+      openContracts.filter(
+        openContract =>
+          openContract.billingCycle === BillingCycle.Monthly &&
+          !controlledFields.some(
+            controlled => controlled.client?.id === openContract.client.originalBusiness.id,
+          ),
+      ),
+    // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
+    [controlledFields, openContracts],
   );
-
-  useEffect(() => {
-    setFiltersContext(
-      <div className="flex flex-row gap-x-5">
-        <DownloadCSV form={form} businessesData={businessesData} />
-        <UploadCsv form={form} />
-      </div>,
-    );
-  }, [form, businessesData, setFiltersContext]);
 
   return (
     <div className="p-2">
@@ -109,29 +132,13 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
           {/* date input for issueMonth */}
           <div className="flex gap-2 items-center mb-4">
             <Label>Issue Month:</Label>
-            <FormField
-              control={form.control}
-              name="issueMonth"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormControl>
-                    <MonthPickerInput
-                      {...field}
-                      value={field.value ? new Date(field.value) : new Date()}
-                      onChange={(date: Date) => {
-                        const month = new Date(date.getFullYear(), date.getMonth(), 15);
-                        form.setValue(
-                          'issueMonth',
-                          format(month, 'yyyy-MM-dd') as TimelessDateString,
-                        );
-                      }}
-                      error={fieldState.error?.message}
-                      popoverProps={{ withinPortal: true }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <MonthPickerInput
+              value={new Date(issueMonth)}
+              onChange={(date: Date) => {
+                const month = new Date(date.getFullYear(), date.getMonth(), 15);
+                setIssueMonth(format(month, 'yyyy-MM-dd') as TimelessDateString);
+              }}
+              popoverProps={{ withinPortal: true }}
             />
           </div>
           <Table>
@@ -140,76 +147,28 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                 <TableHead>Name</TableHead>
                 <TableHead>Document</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Currency</TableHead>
                 <TableHead>Remark</TableHead>
                 <TableHead>Recipients</TableHead>
-                <TableHead>Green Invoice ID</TableHead>
-                <TableHead>Local ID</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {controlledFields.map((row, index) => {
-                const business = businessesData.find(
-                  business => business.originalBusiness.id === row.businessId,
-                );
-                if (!business) {
-                  return null;
-                }
+              {controlledFields.map(({ id, ...row }, index) => {
                 return (
-                  <TableRow key={row.id}>
-                    <TableCell>{business.originalBusiness.name}</TableCell>
-                    <TableCell>{business.generatedDocumentType}</TableCell>
+                  <TableRow key={id}>
+                    <TableCell>{row.client?.name}</TableCell>
+                    <TableCell>{row.type}</TableCell>
                     <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`generateDocumentsInfo.${index}.amount.raw`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <NumberInput
-                              onValueChange={field.onChange}
-                              value={field.value ?? undefined}
-                              hideControls
-                              decimalScale={2}
-                            />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`generateDocumentsInfo.${index}.amount.currency`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a recipient" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.entries(Currency).map(([key, value]) => (
-                                  <SelectItem key={key} value={value}>
-                                    {key}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {row.income?.[0]?.price} {row.income?.[0]?.currency}
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {business.remark}
+                        {row.remarks}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        {business.emails.map(email => (
+                        {row.client?.emails?.map(email => (
                           <span key={email} className="text-sm text-gray-500">
                             {email}
                           </span>
@@ -217,19 +176,35 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {business.greenInvoiceId}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-500 whitespace-normal max-w-50">
-                        {row.id}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="secondary" onClick={() => remove(index)}>
-                        <X size={16} />
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild type="button">
+                            <Button
+                              className="size-7.5"
+                              variant="secondary"
+                              onClick={() => remove(index)}
+                            >
+                              <X size={16} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Remove document</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <EditIssueDocumentModal
+                          draft={row}
+                          onApprove={document => {
+                            form.setValue(`generateDocumentsInfo.${index}`, document, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                            update(index, {
+                              ...document,
+                            });
+                          }}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -237,7 +212,11 @@ export const IssueDocumentsTable = ({ businessesData }: IssueDocumentsTableProps
             </TableBody>
           </Table>
           <div className="flex justify-between items-center mt-4">
-            <AddDocumentToIssue greenInvoiceBusinesses={unusedBusinesses} onAdd={append} />
+            <AddDocumentToIssue
+              contracts={unusedContracts}
+              onAdd={append}
+              issueMonth={issueMonth}
+            />
             <ConfirmationModal
               onConfirm={form.handleSubmit(onSubmit)}
               title={`Are you sure you want to issue ${controlledFields.length} documents?`}

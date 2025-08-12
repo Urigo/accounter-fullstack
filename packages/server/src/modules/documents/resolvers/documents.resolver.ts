@@ -53,7 +53,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const sortedDocs = [...clientDocs].sort(
         (a, b) => (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
       );
-      return sortedDocs.slice(0, limit ?? 5);
+      return sortedDocs.slice(0, limit ?? 7);
     },
     recentIssuedDocumentsByType: async (_, { documentType, limit = 3 }, { injector }) => {
       const docs = await injector

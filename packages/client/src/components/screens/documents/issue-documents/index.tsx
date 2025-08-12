@@ -1,35 +1,33 @@
 import { ReactElement, useContext, useEffect } from 'react';
+import { format, subMonths } from 'date-fns';
 import { useQuery } from 'urql';
-import { AllGreenInvoiceBusinessesDocument } from '../../../../gql/graphql.js';
+import { MonthlyDocumentsDraftsDocument } from '../../../../gql/graphql.js';
+import { TimelessDateString } from '../../../../helpers/dates.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllGreenInvoiceBusinesses {
-    greenInvoiceBusinesses {
-      id
-      greenInvoiceId
-      remark
-      emails
-      generatedDocumentType
-      originalBusiness {
-        id
-        name
-      }
+  query MonthlyDocumentsDrafts($issueMonth: TimelessDate!) {
+    clientMonthlyChargesDrafts(issueMonth: $issueMonth) {
+      ...NewDocumentInfo
     }
   }
 `;
 
 export const IssueDocuments = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
+
   const [{ data, fetching }] = useQuery({
-    query: AllGreenInvoiceBusinessesDocument,
+    query: MonthlyDocumentsDraftsDocument,
+    variables: {
+      issueMonth: format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
+    },
   });
 
   useEffect(() => {
-    if (!data) {
+    if (!data?.clientMonthlyChargesDrafts) {
       setFiltersContext(null);
     }
   }, [data, setFiltersContext]);
@@ -37,6 +35,6 @@ export const IssueDocuments = (): ReactElement => {
   return fetching ? (
     <AccounterLoader />
   ) : (
-    <IssueDocumentsTable businessesData={data?.greenInvoiceBusinesses ?? []} />
+    <IssueDocumentsTable drafts={data?.clientMonthlyChargesDrafts ?? []} />
   );
 };
