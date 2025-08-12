@@ -2,16 +2,16 @@
 
 import { User } from 'lucide-react';
 import { GreenInvoiceCountry, IssueDocumentClientFieldsFragment } from '../../../../gql/graphql.js';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
-import { Input } from '../../../ui/input.jsx';
-import { Label } from '../../../ui/label.jsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
+import { Input } from '../../../ui/input.js';
+import { Label } from '../../../ui/label.js';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../ui/select.jsx';
+} from '../../../ui/select.js';
 import type { Client } from './types/document.js';
 import { getCountryOptions } from './utils/enum-helpers.js';
 

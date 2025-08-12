@@ -42,7 +42,7 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
         if (data?.issueGreenInvoiceDocuments?.success) {
           toast.success('Success', {
             id: notificationId,
-            description: 'Business updated',
+            description: 'Documents issued successfully',
           });
           return;
         }

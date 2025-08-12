@@ -19,9 +19,9 @@ import {
   DialogTrigger,
 } from '../../ui/dialog.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
-import { normalizeClientInfo } from '../documents/issue-document/client-form.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
-import { PreviewDocumentInput } from '../documents/issue-document/types/document.js';
+import { normalizeClientInfo } from '../forms/issue-document/client-form.js';
+import { PreviewDocumentInput } from '../forms/issue-document/types/document.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -98,6 +98,56 @@ import { PreviewDocumentInput } from '../documents/issue-document/types/document
     linkedPaymentId
   }
 `;
+
+export function convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
+  newDocumentInfo: NewDocumentInfoFragment,
+  documentTypeOverride?: DocumentType,
+): PreviewDocumentInput {
+  return {
+    ...newDocumentInfo,
+    description: newDocumentInfo.description || undefined,
+    remarks: newDocumentInfo.remarks || undefined,
+    footer: newDocumentInfo.footer || undefined,
+    date: newDocumentInfo.date || undefined,
+    dueDate: newDocumentInfo.dueDate || undefined,
+    discount: newDocumentInfo.discount || undefined,
+    rounding: newDocumentInfo.rounding || undefined,
+    signed: newDocumentInfo.signed || undefined,
+    maxPayments: newDocumentInfo.maxPayments || undefined,
+    client: newDocumentInfo.client
+      ? normalizeClientInfo(
+          getFragmentData(IssueDocumentClientFieldsFragmentDoc, newDocumentInfo.client),
+        )
+      : undefined,
+    income: newDocumentInfo.income?.map(income => ({
+      ...income,
+      currencyRate: income.currencyRate ?? undefined,
+      itemId: income.itemId || undefined,
+      vatRate: income.vatRate ?? undefined,
+    })),
+    payment: newDocumentInfo.payment?.map(payment => ({
+      ...payment,
+      currencyRate: payment.currencyRate || undefined,
+      date: payment.date || undefined,
+      subType: payment.subType || undefined,
+      bankName: payment.bankName || undefined,
+      bankBranch: payment.bankBranch || undefined,
+      bankAccount: payment.bankAccount || undefined,
+      chequeNum: payment.chequeNum || undefined,
+      accountId: payment.accountId || undefined,
+      transactionId: payment.transactionId || undefined,
+      appType: payment.appType || undefined,
+      cardType: payment.cardType || undefined,
+      cardNum: payment.cardNum || undefined,
+      dealType: payment.dealType || undefined,
+      numPayments: payment.numPayments || undefined,
+      firstPayment: payment.firstPayment || undefined,
+    })),
+    linkedDocumentIds: newDocumentInfo.linkedDocumentIds || undefined,
+    linkedPaymentId: newDocumentInfo.linkedPaymentId || undefined,
+    type: documentTypeOverride || newDocumentInfo.type,
+  };
+}
 
 type Props = {
   open?: boolean;
@@ -195,50 +245,10 @@ export function PreviewDocumentModal({
       );
     }
     if (newDocumentInfoDraft) {
-      const draft: PreviewDocumentInput = {
-        ...newDocumentInfoDraft,
-        description: newDocumentInfoDraft.description || undefined,
-        remarks: newDocumentInfoDraft.remarks || undefined,
-        footer: newDocumentInfoDraft.footer || undefined,
-        date: newDocumentInfoDraft.date || undefined,
-        dueDate: newDocumentInfoDraft.dueDate || undefined,
-        discount: newDocumentInfoDraft.discount || undefined,
-        rounding: newDocumentInfoDraft.rounding || undefined,
-        signed: newDocumentInfoDraft.signed || undefined,
-        maxPayments: newDocumentInfoDraft.maxPayments || undefined,
-        client: newDocumentInfoDraft.client
-          ? normalizeClientInfo(
-              getFragmentData(IssueDocumentClientFieldsFragmentDoc, newDocumentInfoDraft.client),
-            )
-          : undefined,
-        income: newDocumentInfoDraft.income?.map(income => ({
-          ...income,
-          currencyRate: income.currencyRate ?? undefined,
-          itemId: income.itemId || undefined,
-          vatRate: income.vatRate ?? undefined,
-        })),
-        payment: newDocumentInfoDraft.payment?.map(payment => ({
-          ...payment,
-          currencyRate: payment.currencyRate || undefined,
-          date: payment.date || undefined,
-          subType: payment.subType || undefined,
-          bankName: payment.bankName || undefined,
-          bankBranch: payment.bankBranch || undefined,
-          bankAccount: payment.bankAccount || undefined,
-          chequeNum: payment.chequeNum || undefined,
-          accountId: payment.accountId || undefined,
-          transactionId: payment.transactionId || undefined,
-          appType: payment.appType || undefined,
-          cardType: payment.cardType || undefined,
-          cardNum: payment.cardNum || undefined,
-          dealType: payment.dealType || undefined,
-          numPayments: payment.numPayments || undefined,
-          firstPayment: payment.firstPayment || undefined,
-        })),
-        linkedDocumentIds: newDocumentInfoDraft.linkedDocumentIds || undefined,
-        linkedPaymentId: newDocumentInfoDraft.linkedPaymentId || undefined,
-        type: documentType || newDocumentInfoDraft.type,
-      };
+      const draft = convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
+        newDocumentInfoDraft,
+        documentType,
+      );
       setInitialFormData(draft);
     }
   }, [dataByCharge, dataByDocument, documentType]);

@@ -7,21 +7,25 @@ import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { ConfirmationModal, PreviewDocumentModal } from '../index.js';
 
-export function CloseDocumentButton(
-  props: ComponentProps<typeof Button> & {
-    documentId: string;
-    couldIssueCreditInvoice: boolean;
-  },
-): ReactElement {
+type Props = ComponentProps<typeof Button> & {
+  documentId: string;
+  couldIssueCreditInvoice: boolean;
+};
+
+export function CloseDocumentButton({
+  documentId,
+  couldIssueCreditInvoice,
+  ...props
+}: Props): ReactElement {
   const { closeDocument } = useCloseDocument();
   const [open, setOpen] = useState(false);
   const [previewCreditInvoice, setPreviewCreditInvoice] = useState(false);
 
   const onFinallyClose = useCallback(() => {
-    closeDocument({ documentId: props.documentId });
-  }, [closeDocument, props.documentId]);
+    closeDocument({ documentId });
+  }, [closeDocument, documentId]);
 
-  if (!props.couldIssueCreditInvoice) {
+  if (!couldIssueCreditInvoice) {
     return (
       <ConfirmationModal
         onConfirm={onFinallyClose}
@@ -75,7 +79,7 @@ export function CloseDocumentButton(
         </DialogContent>
       </Dialog>
       <PreviewDocumentModal
-        documentId={props.documentId}
+        documentId={documentId}
         documentType={DocumentType.CreditInvoice}
         open={previewCreditInvoice}
         setOpen={setPreviewCreditInvoice}

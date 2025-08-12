@@ -8,6 +8,7 @@ export * from './insert-business-fields.js';
 export * from './insert-business-trip.js';
 export * from './insert-document.js';
 export * from './insert-misc-expense.js';
+export * from './issue-document/index.js';
 export * from './modify-business-trip-fields.js';
 export * from './modify-document-fields.js';
 export * from './modify-misc-expense-fields.js';

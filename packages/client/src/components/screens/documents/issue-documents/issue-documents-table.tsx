@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
+import { EditIssueDocumentModal } from './edit-issue-document-modal.js';
 
 export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
@@ -87,7 +88,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
   const { issueDocuments } = useIssueMonthlyDocuments();
   const { openContracts } = useGetOpenContracts();
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: 'generateDocumentsInfo',
   });
@@ -122,8 +123,6 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
     // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
     [controlledFields, openContracts],
   );
-
-  console.log(form.getValues('generateDocumentsInfo'));
 
   return (
     <div className="p-2">
@@ -180,66 +179,19 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
                         <Button variant="secondary" onClick={() => remove(index)}>
                           <X size={16} />
                         </Button>
-                        {/* <PreviewDocumentModal
-                          initialFormData={{
-                            ...row,
-                            description: row.description || undefined,
-                            remarks: row.remarks || undefined,
-                            footer: row.footer || undefined,
-                            date: row.date || undefined,
-                            dueDate: row.dueDate || undefined,
-                            discount: row.discount || undefined,
-                            rounding: row.rounding || undefined,
-                            signed: row.signed || undefined,
-                            maxPayments: row.maxPayments || undefined,
-                            client: row.client ? normalizeClientInfo(row.client) : undefined,
-                            income: row.income?.map(income => ({
-                              ...income,
-                              currencyRate: income.currencyRate ?? undefined,
-                              itemId: income.itemId || undefined,
-                              vatRate: income.vatRate ?? undefined,
-                              amount: income.amount || undefined,
-                              amountTotal: income.amountTotal || undefined,
-                              catalogNum: income.catalogNum || undefined,
-                              vat: income.vat || undefined,
-                            })),
-                            payment: row.payment?.map(payment => ({
-                              ...payment,
-                              currencyRate: payment.currencyRate || undefined,
-                              date: payment.date || undefined,
-                              subType: payment.subType || undefined,
-                              bankName: payment.bankName || undefined,
-                              bankBranch: payment.bankBranch || undefined,
-                              bankAccount: payment.bankAccount || undefined,
-                              chequeNum: payment.chequeNum || undefined,
-                              accountId: payment.accountId || undefined,
-                              transactionId: payment.transactionId || undefined,
-                              appType: payment.appType || undefined,
-                              cardType: payment.cardType || undefined,
-                              cardNum: payment.cardNum || undefined,
-                              dealType: payment.dealType || undefined,
-                              numPayments: payment.numPayments || undefined,
-                              firstPayment: payment.firstPayment || undefined,
-                            })),
-                            linkedDocumentIds: row.linkedDocumentIds || undefined,
-                            linkedPaymentId: row.linkedPaymentId || undefined,
-                            linkType: row.linkType || undefined,
-                            type: row.type,
-                          }}
-                          documentType={row.type}
-                          trigger={
-                            <Button variant="secondary">
-                              <Edit size={16} />
-                            </Button>
-                          }
-                          onDone={draft => {
-                            form.setValue(`generateDocumentsInfo.${index}`, draft, {
+                        <EditIssueDocumentModal
+                          draft={row}
+                          onApprove={document => {
+                            form.setValue(`generateDocumentsInfo.${index}`, document, {
                               shouldDirty: true,
                               shouldTouch: true,
                               shouldValidate: true,
                             });
+                            update(index, {
+                              ...document,
+                            });
                           }}
-                        /> */}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
