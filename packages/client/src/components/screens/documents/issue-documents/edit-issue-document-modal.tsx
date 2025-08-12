@@ -1,5 +1,5 @@
 import { ReactElement, useCallback, useEffect, useState } from 'react';
-import { Edit, Eye, FileText, Loader2, Send } from 'lucide-react';
+import { Check, Edit, Eye, FileText, Loader2 } from 'lucide-react';
 import { NewDocumentInfoFragment } from '../../../../gql/graphql.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { PdfViewer } from '../../../common/documents/issue-document/pdf-viewer.js';
@@ -22,7 +22,6 @@ type Props = {
 
 export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElement {
   const [open, setOpen] = useState(false);
-  const [hasFormChanged, setHasFormChanged] = useState(false);
   const [isPreviewCurrent, setIsPreviewCurrent] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const { previewDocument, fetching: previewFetching } = usePreviewDocument();
@@ -42,11 +41,10 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
 
   // Track form changes
   useEffect(() => {
-    setHasFormChanged(true);
     setIsPreviewCurrent(false);
   }, [document]);
 
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     try {
       // Simulate API call to generate document preview
       const fileText = await previewDocument({
@@ -59,11 +57,16 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
 
       setPreviewContent(fileText);
       setIsPreviewCurrent(true);
-      setHasFormChanged(false);
     } catch (error) {
       console.error('Failed to generate preview:', error);
     }
-  };
+  }, [document, previewDocument]);
+
+  useEffect(() => {
+    if (open && !previewContent) {
+      handlePreview();
+    }
+  }, [open, previewContent, handlePreview]);
 
   const totalAmount =
     document.income?.reduce((total, item) => {
@@ -135,16 +138,10 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
                       </Button>
 
                       <Button onClick={onApproveHandler} className="flex-1">
-                        <Send className="w-4 h-4 mr-2" />
+                        <Check className="w-4 h-4 mr-2" />
                         Accept Changes
                       </Button>
                     </div>
-
-                    {hasFormChanged && !previewFetching && (
-                      <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded mt-3">
-                        Form has been modified. Click Preview to update the document before issuing.
-                      </p>
-                    )}
 
                     {totalAmount > 0 && (
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg">
