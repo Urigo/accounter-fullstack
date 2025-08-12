@@ -11,12 +11,12 @@ import { ShaamFormatError } from './errors.js';
  * Converts Zod errors to ValidationError format
  */
 function convertZodErrorsToValidationErrors(zodError: ZodError): ValidationError[] {
-  return zodError.issues.map((error, index) => ({
+  return zodError.issues.map((issue, index) => ({
     recordType: 'input',
-    recordIndex: index,
-    field: error.path.join('.') || 'unknown',
-    message: error.message,
-    value: error.input,
+    recordIndex: typeof issue.path[1] === 'number' ? issue.path[1] : index,
+    field: issue.path.join('.') || 'unknown',
+    message: issue.message,
+    value: issue.input,
   }));
 }
 
