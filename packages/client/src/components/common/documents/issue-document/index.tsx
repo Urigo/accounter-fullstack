@@ -73,7 +73,7 @@ export function GenerateDocument({
   }, [formData]);
 
   useEffect(() => {
-    if (initialFormData.client?.id) {
+    if (initialFormData.client?.id && formData.client?.id !== initialFormData.client.id) {
       updateFormData('client', {
         ...formData.client,
         id: initialFormData.client.id,
