@@ -1,11 +1,13 @@
 import type { Page } from 'puppeteer';
-import type { IsracardCardsTransactionsList } from '../__generated__/isracardCardsTransactionsList.js';
 import type { IsracardDashboardMonth } from '../__generated__/isracardDashboardMonth.js';
-import isracardCardsTransactionsList from '../schemas/isracardCardsTransactionsList.json' with { type: 'json' };
 import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPostWithinPage } from '../utils/fetch.js';
 import { userAgentOverride } from '../utils/user-agent-override.js';
 import { validateSchema } from '../utils/validate-schema.js';
+import {
+  IsracardCardsTransactionsListSchema,
+  type IsracardCardsTransactionsList,
+} from '../zod-schemas/isracard-cards-transactions-list-schema.js';
 
 const SERVICE_URL = 'https://digital.isracard.co.il/services/ProxyRequestHandler.ashx';
 
@@ -47,10 +49,11 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: Israc
 
   if (options?.validateSchema) {
     const data = await getTransactionsFunction;
-    const validation = await validateSchema(isracardCardsTransactionsList, data);
+    const validation = IsracardCardsTransactionsListSchema.safeParse(data);
     return {
       data,
-      ...validation,
+      isValid: validation.success,
+      errors: validation.success ? null : validation.error.issues,
     };
   }
 
