@@ -1,0 +1,23 @@
+diff --git a/package.json b/package.json
+index b3b5ec75b9f86d95ce6964d66d5dce8b4d2be6d3..4282eca2b253a892e8b424a43dc308c79d12e161 100644
+--- a/package.json
++++ b/package.json
+@@ -8,7 +8,7 @@
+     "@opentelemetry/api": "^1.9.0",
+     "@slonik/driver": "^48.4.1",
+     "@slonik/errors": "^48.4.1",
+-    "@slonik/pg-driver": "^48.4.1",
++    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch",
+     "@slonik/sql-tag": "^48.4.1",
+     "@slonik/utilities": "^48.4.1",
+     "@standard-schema/spec": "^1.0.0",
+@@ -65,5 +65,8 @@
+     "lint:eslint": "eslint --cache ./src",
+     "lint:tsc": "tsc --noEmit",
+     "test": "ava --verbose --serial"
++  },
++  "resolutions": {
++    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch"
+   }
+ }
+\ No newline at end of file
