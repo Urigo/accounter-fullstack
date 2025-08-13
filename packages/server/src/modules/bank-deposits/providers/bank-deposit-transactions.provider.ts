@@ -50,7 +50,7 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
         USING (id)
       WHERE charge_id = $chargeId
     )
-    AND charge_id <> $chargeId;`;
+    AND ($includeCharge OR charge_id <> $chargeId);`;
 
 const updateBankDepositTransaction = sql<IUpdateBankDepositTransactionQuery>`
   UPDATE accounter_schema.transactions_bank_deposits
@@ -116,8 +116,8 @@ export class BankDepositTransactionsProvider {
     return getDepositTransactionsByTransactionId.run({ transactionId }, this.dbProvider);
   }
 
-  public getDepositTransactionsByChargeId(chargeId: string) {
-    return getDepositTransactionsByChargeId.run({ chargeId }, this.dbProvider);
+  public getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
+    return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.dbProvider);
   }
 
   public updateBankDepositTransaction(params: IUpdateBankDepositTransactionParams) {
