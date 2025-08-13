@@ -5,9 +5,9 @@ import lodash from 'lodash';
 import { DiscountCredentials } from 'packages/modern-poalim-scraper/src/scrapers/discount.js';
 import pg from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
-import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/__generated__/isracardCardsTransactionsList.js';
 import type { CalCredentials } from '../../modern-poalim-scraper/src/scrapers/cal.js';
 import type { IsracardCredentials } from '../../modern-poalim-scraper/src/scrapers/isracard.js';
+import type { IsracardCardsTransactionsList } from '../../modern-poalim-scraper/src/zod-schemas/isracard-cards-transactions-list-schema.js';
 import { getCurrencyRates } from './data/currency.js';
 import {
   saveCalTransactionsToDB,
