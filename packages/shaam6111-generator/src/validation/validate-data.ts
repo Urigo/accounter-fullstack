@@ -29,10 +29,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (data.header) {
     const headerValidation = headerSchema.safeParse(data.header);
     if (!headerValidation.success) {
-      headerValidation.error.errors.map(err => {
+      headerValidation.error.issues.map(err => {
         errors.push({
           path: `header.${err.path.join('.')}`,
           message: err.message,
+          code: err.code,
+          value: err.input,
         });
       });
     }
@@ -47,10 +49,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (Array.isArray(data.profitAndLoss)) {
     const profitLossValidation = profitLossArraySchema.safeParse(data.profitAndLoss);
     if (!profitLossValidation.success) {
-      profitLossValidation.error.errors.map(err => {
+      profitLossValidation.error.issues.map(err => {
         errors.push({
           path: ['profitAndLoss', ...err.path].join('.'),
           message: err.message,
+          code: err.code,
+          value: err.input,
         });
       });
     }
@@ -60,10 +64,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (Array.isArray(data.taxAdjustment)) {
     const taxAdjustmentValidation = taxAdjustmentArraySchema.safeParse(data.taxAdjustment);
     if (!taxAdjustmentValidation.success) {
-      taxAdjustmentValidation.error.errors.map(err => {
+      taxAdjustmentValidation.error.issues.map(err => {
         errors.push({
           path: ['taxAdjustment', ...err.path].join('.'),
           message: err.message,
+          code: err.code,
+          value: err.input,
         });
       });
     }
@@ -75,10 +81,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (hasBalanceSheet) {
     const balanceSheetValidation = balanceSheetArraySchema.safeParse(data.balanceSheet);
     if (!balanceSheetValidation.success) {
-      balanceSheetValidation.error.errors.map(err => {
+      balanceSheetValidation.error.issues.map(err => {
         errors.push({
           path: ['balanceSheet', ...err.path].join('.'),
           message: err.message,
+          code: err.code,
+          value: err.input,
         });
       });
     }

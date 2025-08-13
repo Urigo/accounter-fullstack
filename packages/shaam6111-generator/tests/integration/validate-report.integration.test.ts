@@ -308,7 +308,9 @@ describe('Integration Test: validateReport', () => {
     const result = validateReport(reportContent);
     expect(result.isValid).toBe(false);
     expect(result.errors?.length).toBeGreaterThan(0);
-    expect(result.errors?.some(err => err.message.includes('Invalid enum value'))).toBe(true);
+    expect(
+      result.errors?.some(err => err.message.includes('Invalid option: expected one of ')),
+    ).toBe(true);
   });
 
   it('should handle empty report content', () => {
