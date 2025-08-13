@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/__generated__/isracardCardsTransactionsList.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/zod-schemas/isracard-cards-transactions-list-schema.js';
 import { sql } from '@pgtyped/runtime';
 import { normalizeCurrencySymbol } from '../../helpers/currency.js';
 import type {
