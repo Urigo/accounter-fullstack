@@ -1,22 +1,22 @@
 export enum MissingChargeInfo {
   Counterparty = 'COUNTERPARTY',
-  Transactions = 'TRANSACTIONS',
-  Tags = 'TAGS',
-  Vat = 'VAT',
-  Documents = 'DOCUMENTS',
   Description = 'DESCRIPTION',
+  Documents = 'DOCUMENTS',
+  Tags = 'TAGS',
   TaxCategory = 'TAX_CATEGORY',
+  Transactions = 'TRANSACTIONS',
+  Vat = 'VAT',
 }
 
 export enum ChargeSortByField {
-  Date = 'DATE',
-  Amount = 'AMOUNT',
   AbsAmount = 'ABS_AMOUNT',
+  Amount = 'AMOUNT',
+  Date = 'DATE',
 }
 
 export enum TransactionDirection {
-  Debit = 'DEBIT',
   Credit = 'CREDIT',
+  Debit = 'DEBIT',
 }
 
 export enum Currency {
@@ -34,24 +34,25 @@ export enum Currency {
 }
 
 export enum DocumentType {
-  Invoice = 'INVOICE',
-  Receipt = 'RECEIPT',
-  InvoiceReceipt = 'INVOICE_RECEIPT',
   CreditInvoice = 'CREDIT_INVOICE',
-  Proforma = 'PROFORMA',
-  Unprocessed = 'UNPROCESSED',
+  Invoice = 'INVOICE',
+  InvoiceReceipt = 'INVOICE_RECEIPT',
   Other = 'OTHER',
+  Proforma = 'PROFORMA',
+  Receipt = 'RECEIPT',
+  Unprocessed = 'UNPROCESSED',
 }
 
 export enum ChargeTypeEnum {
-  Conversion = 'ConversionCharge',
-  Salary = 'SalaryCharge',
-  BusinessTrip = 'BusinessTripCharge',
-  InternalTransfer = 'InternalTransferCharge',
-  Dividend = 'DividendCharge',
-  MonthlyVat = 'MonthlyVatCharge',
-  Common = 'CommonCharge',
   BankDeposit = 'BankDepositCharge',
+  BusinessTrip = 'BusinessTripCharge',
+  Common = 'CommonCharge',
+  Conversion = 'ConversionCharge',
   CreditcardBankCharge = 'CreditcardBankCharge',
+  Dividend = 'DividendCharge',
   Financial = 'FinancialCharge',
+  ForeignSecurities = 'ForeignSecuritiesCharge',
+  InternalTransfer = 'InternalTransferCharge',
+  MonthlyVat = 'MonthlyVatCharge',
+  Salary = 'SalaryCharge',
 }

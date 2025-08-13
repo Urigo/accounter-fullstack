@@ -81,15 +81,19 @@ export default gql`
     miscExpenses: [MiscExpense!]!
   }
 
+  extend type FinancialCharge {
+    miscExpenses: [MiscExpense!]!
+  }
+
+  extend type ForeignSecuritiesCharge {
+    miscExpenses: [MiscExpense!]!
+  }
+
   extend type InternalTransferCharge {
     miscExpenses: [MiscExpense!]!
   }
 
   extend type MonthlyVatCharge {
-    miscExpenses: [MiscExpense!]!
-  }
-
-  extend type FinancialCharge {
     miscExpenses: [MiscExpense!]!
   }
 

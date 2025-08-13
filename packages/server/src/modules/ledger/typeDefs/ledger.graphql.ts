@@ -72,6 +72,10 @@ export default gql`
     ledger: Ledger!
   }
 
+  extend type ForeignSecuritiesCharge {
+    ledger: Ledger!
+  }
+
   extend type CreditcardBankCharge {
     ledger: Ledger!
   }

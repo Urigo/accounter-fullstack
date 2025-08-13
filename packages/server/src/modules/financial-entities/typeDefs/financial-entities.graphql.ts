@@ -62,6 +62,10 @@ export default gql`
     counterparty: FinancialEntity
   }
 
+  extend type ForeignSecuritiesCharge {
+    counterparty: FinancialEntity
+  }
+
   extend type CreditcardBankCharge {
     counterparty: FinancialEntity
   }

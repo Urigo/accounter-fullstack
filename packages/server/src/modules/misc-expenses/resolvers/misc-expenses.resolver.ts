@@ -152,8 +152,9 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
   CommonCharge: commonChargeFields,
   ConversionCharge: commonChargeFields,
   DividendCharge: commonChargeFields,
+  FinancialCharge: commonChargeFields,
+  ForeignSecuritiesCharge: commonChargeFields,
   InternalTransferCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
-  FinancialCharge: commonChargeFields,
   SalaryCharge: commonChargeFields,
 };

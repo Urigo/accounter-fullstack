@@ -132,6 +132,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
+  ForeignSecuritiesCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   ConversionTransaction: {
     ...commonTransactionFields,

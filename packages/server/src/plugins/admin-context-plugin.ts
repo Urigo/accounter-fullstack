@@ -75,6 +75,11 @@ export type AdminContext = {
     bankDepositBusinessId: string | null;
     bankDepositInterestIncomeTaxCategoryId: string | null;
   };
+
+  foreignSecurities: {
+    foreignSecuritiesBusinessId: string | null;
+    foreignSecuritiesFeesCategoryId: string | null;
+  };
   salaries: {
     zkufotExpensesTaxCategoryId: string | null;
     zkufotIncomeTaxCategoryId: string | null;
@@ -198,6 +203,10 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       bankDepositBusinessId: rawContext.bank_deposit_business_id,
       bankDepositInterestIncomeTaxCategoryId:
         rawContext.bank_deposit_interest_income_tax_category_id,
+    },
+    foreignSecurities: {
+      foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
+      foreignSecuritiesFeesCategoryId: rawContext.foreign_securities_fees_category_id,
     },
     dividends: {
       dividendWithholdingTaxBusinessId: rawContext.dividend_withholding_tax_business_id,
