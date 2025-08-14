@@ -44,6 +44,7 @@ export const MoreInfo = ({ data: rawData }: Props): ReactElement => {
       case 'SalaryCharge':
       case 'MonthlyVatCharge':
       case 'BankDepositCharge':
+      case 'ForeignSecuritiesCharge':
       case 'CreditcardBankCharge':
       case 'FinancialCharge':
         return false;
