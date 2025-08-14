@@ -173,9 +173,9 @@ export class GreenInvoiceClientProvider {
   public async searchDocuments(...params: Parameters<Sdk['searchDocuments_query']>) {
     const sdk = await this.getSDK();
     return sdk.searchDocuments_query(...params).then(res => {
-      res.searchDocuments?.items.map(doc => {
+      for (const doc of res.searchDocuments?.items ?? []) {
         if (doc) this.cache.set(`document-${doc.id}`, doc);
-      });
+      }
 
       return res.searchDocuments;
     });
@@ -196,25 +196,34 @@ export class GreenInvoiceClientProvider {
     return sdk.getLinkedDocuments_query({ id: documentId }).then(res => res.getLinkedDocuments);
   }
 
-  private async batchDocumentsByIds(ids: readonly string[]) {
+  private async _batchLoadByIds<T extends { id?: string | null }>(
+    ids: readonly string[],
+    fetcher: (sdk: Sdk, id: string) => Promise<T | null | undefined>,
+    cachePrefix: string,
+  ): Promise<(T | null)[]> {
     const sdk = await this.getSDK();
     const uniqueIds = Array.from(new Set(ids));
-    const documents = await Promise.all(
-      uniqueIds.map(id =>
-        sdk.getDocument_query({ id }).then(res => {
-          const doc = res.getDocument;
-          if (doc) {
-            this.cache.set(`document-${doc.id}`, doc);
+    const items: (T | undefined)[] = await Promise.all(
+      uniqueIds.map(async id =>
+        fetcher(sdk, id).then(item => {
+          if (item?.id) {
+            this.cache.set(`${cachePrefix}-${item.id}`, item);
           }
-          return doc;
+          return item ?? undefined;
         }),
       ),
     );
 
-    return ids.map(id => {
-      const document = documents.find(doc => doc?.id === id);
-      return document || null;
-    });
+    const itemsMap = new Map(items.filter((i): i is T => !!i).map(i => [i.id, i]));
+    return ids.map(id => itemsMap.get(id) ?? null);
+  }
+
+  private async batchDocumentsByIds(ids: readonly string[]) {
+    return this._batchLoadByIds(
+      ids,
+      (sdk, id) => sdk.getDocument_query({ id }).then(res => res.getDocument),
+      'document',
+    );
   }
 
   public documentLoader = new DataLoader(
@@ -240,24 +249,11 @@ export class GreenInvoiceClientProvider {
    * */
 
   private async batchClientsByIds(ids: readonly string[]) {
-    const sdk = await this.getSDK();
-    const uniqueIds = Array.from(new Set(ids));
-    const clients = await Promise.all(
-      uniqueIds.map(id =>
-        sdk.getClient_query({ id }).then(res => {
-          const client = res.getClient;
-          if (client) {
-            this.cache.set(`client-${client.id}`, client);
-          }
-          return client;
-        }),
-      ),
+    return this._batchLoadByIds(
+      ids,
+      (sdk, id) => sdk.getClient_query({ id }).then(res => res.getClient),
+      'client',
     );
-
-    return ids.map(id => {
-      const client = clients.find(client => client?.id === id);
-      return client || null;
-    });
   }
 
   public clientLoader = new DataLoader((ids: readonly string[]) => this.batchClientsByIds(ids), {
