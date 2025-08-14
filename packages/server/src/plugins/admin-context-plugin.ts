@@ -67,6 +67,7 @@ export type AdminContext = {
     etanaBusinessId: string | null;
     krakenBusinessId: string | null;
     etherScanBusinessId: string | null;
+    foreignSecuritiesBusinessId: string | null;
     bankAccountIds: string[];
     creditCardIds: string[];
     internalWalletsIds: string[];
@@ -233,6 +234,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       etanaBusinessId: rawContext.etana_business_id,
       krakenBusinessId: rawContext.kraken_business_id,
       etherScanBusinessId: rawContext.etherscan_business_id,
+      foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
       bankAccountIds,
       creditCardIds,
       internalWalletsIds: [
@@ -241,6 +243,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
         rawContext.etana_business_id,
         rawContext.kraken_business_id,
         rawContext.etherscan_business_id,
+        rawContext.foreign_securities_business_id,
       ].filter(Boolean) as string[],
     },
     salaries: {
