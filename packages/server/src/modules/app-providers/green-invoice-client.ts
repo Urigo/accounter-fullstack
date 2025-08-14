@@ -1,7 +1,8 @@
+import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { init, type Sdk } from '@accounter/green-invoice-graphql';
 import type { Currency } from '@shared/enums';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 
@@ -17,6 +18,9 @@ export type ExpenseDraft = NonNullable<
 })
 export class GreenInvoiceClientProvider {
   localCurrency: Currency;
+  cache = getCacheInstance({
+    stdTTL: 60 * 5, // 5 minutes
+  });
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
@@ -52,6 +56,10 @@ export class GreenInvoiceClientProvider {
       throw new Error(`Green Invoice error: ${(e as Error).message}`);
     }
   }
+
+  /**
+   * Expenses
+   * */
 
   public async addExpenseDraftByFile(file: File | Blob): Promise<ExpenseDraft> {
     try {
@@ -158,9 +166,19 @@ export class GreenInvoiceClientProvider {
     }
   }
 
+  /**
+   * Documents
+   * */
+
   public async searchDocuments(...params: Parameters<Sdk['searchDocuments_query']>) {
     const sdk = await this.getSDK();
-    return sdk.searchDocuments_query(...params).then(res => res.searchDocuments);
+    return sdk.searchDocuments_query(...params).then(res => {
+      res.searchDocuments?.items.map(doc => {
+        if (doc) this.cache.set(`document-${doc.id}`, doc);
+      });
+
+      return res.searchDocuments;
+    });
   }
 
   public async addDocuments(...params: Parameters<Sdk['addDocument_mutation']>) {
@@ -173,23 +191,77 @@ export class GreenInvoiceClientProvider {
     return sdk.previewDocument_query(...params).then(res => res.previewDocument);
   }
 
-  public async getLinkedDocuments(...params: Parameters<Sdk['getLinkedDocuments_query']>) {
+  public async getLinkedDocuments(documentId: string) {
     const sdk = await this.getSDK();
-    return sdk.getLinkedDocuments_query(...params).then(res => res.getLinkedDocuments);
+    return sdk.getLinkedDocuments_query({ id: documentId }).then(res => res.getLinkedDocuments);
   }
 
-  public async getDocument(...params: Parameters<Sdk['getDocument_query']>) {
+  private async batchDocumentsByIds(ids: readonly string[]) {
     const sdk = await this.getSDK();
-    return sdk.getDocument_query(...params).then(res => res.getDocument);
+    const uniqueIds = Array.from(new Set(ids));
+    const documents = await Promise.all(
+      uniqueIds.map(id =>
+        sdk.getDocument_query({ id }).then(res => {
+          const doc = res.getDocument;
+          if (doc) {
+            this.cache.set(`document-${doc.id}`, doc);
+          }
+          return doc;
+        }),
+      ),
+    );
+
+    return ids.map(id => {
+      const document = documents.find(doc => doc?.id === id);
+      return document || null;
+    });
   }
 
-  public async closeDocument(...params: Parameters<Sdk['closeDocument_mutation']>) {
+  public documentLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchDocumentsByIds(ids),
+    {
+      cacheKeyFn: id => `document-${id}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  public async closeDocument(documentId: string) {
+    this.invalidateDocument(documentId);
     const sdk = await this.getSDK();
-    return sdk.closeDocument_mutation(...params).then(res => res.closeDocument);
+    return sdk.closeDocument_mutation({ id: documentId }).then(res => res.closeDocument);
   }
 
-  public async getClient(...params: Parameters<Sdk['getClient_query']>) {
-    const sdk = await this.getSDK();
-    return sdk.getClient_query(...params).then(res => res.getClient);
+  public async invalidateDocument(documentId: string) {
+    this.cache.delete(`document-${documentId}`);
   }
+
+  /**
+   * Clients
+   * */
+
+  private async batchClientsByIds(ids: readonly string[]) {
+    const sdk = await this.getSDK();
+    const uniqueIds = Array.from(new Set(ids));
+    const clients = await Promise.all(
+      uniqueIds.map(id =>
+        sdk.getClient_query({ id }).then(res => {
+          const client = res.getClient;
+          if (client) {
+            this.cache.set(`client-${client.id}`, client);
+          }
+          return client;
+        }),
+      ),
+    );
+
+    return ids.map(id => {
+      const client = clients.find(client => client?.id === id);
+      return client || null;
+    });
+  }
+
+  public clientLoader = new DataLoader((ids: readonly string[]) => this.batchClientsByIds(ids), {
+    cacheKeyFn: id => `client-${id}`,
+    cacheMap: this.cache,
+  });
 }

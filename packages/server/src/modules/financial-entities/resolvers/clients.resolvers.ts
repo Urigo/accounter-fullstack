@@ -51,7 +51,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
     greenInvoiceInfo: async (business, _, { injector }) => {
       const client = await injector
         .get(GreenInvoiceClientProvider)
-        .getClient({ id: business.green_invoice_id });
+        .clientLoader.load(business.green_invoice_id);
       if (!client) {
         throw new GraphQLError(
           `Green Invoice client with ID "${business.green_invoice_id}" not found`,
