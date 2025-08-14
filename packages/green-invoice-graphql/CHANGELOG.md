@@ -1,5 +1,89 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.8.0
+
+### Minor Changes
+
+- [#2334](https://github.com/Urigo/accounter-fullstack/pull/2334)
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New UI for Document Generation**: A
+  comprehensive new UI screen (`IssueDocumentScreen`) has been added, allowing users to create and
+  configure various accounting documents (e.g., invoices, receipts) with detailed settings for
+  document type, language, currency, and VAT.
+  - **Real-time Document Preview**: Users can now preview generated documents (likely PDFs) directly
+    within the UI before officially issuing them, powered by the `pdfjs-dist` library for
+    client-side rendering.
+  - **Detailed Document Configuration**: The new UI provides extensive fields for capturing client
+    information, managing multiple income items (description, price, quantity, VAT), and specifying
+    various payment methods with their unique details (e.g., bank, credit card, PayPal, payment
+    app).
+  - **GraphQL API Extension for Preview**: The backend GraphQL API has been extended with a new
+    `previewGreenInvoiceDocument` mutation, enabling the client to send detailed document input and
+    receive a base64-encoded PDF preview.
+  - **Improved Green Invoice Integration**: New helper functions and schema updates ensure proper
+    mapping of UI inputs to the Green Invoice API's complex data structures for document generation
+    and preview, handling various enums and nested objects.
+
+- [#2365](https://github.com/Urigo/accounter-fullstack/pull/2365)
+  [`1be8c87`](https://github.com/Urigo/accounter-fullstack/commit/1be8c87be477204ddfc57c38d1ab8cfc66cea1a9)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Extend and update the JSON schema
+
+### Patch Changes
+
+- [#2402](https://github.com/Urigo/accounter-fullstack/pull/2402)
+  [`b1352c4`](https://github.com/Urigo/accounter-fullstack/commit/b1352c4190bad2d93d1be823d96ff2b53df7387a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.8)
+    (from `0.108.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.7)
+    (from `0.106.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.8)
+    (from `0.109.7`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.7)
+    (from `0.106.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.7)
+    (from `0.104.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.7)
+    (from `0.104.6`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.7)
+    (from `0.104.6`, in `dependencies`)
+
+- [#2334](https://github.com/Urigo/accounter-fullstack/pull/2334)
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Document Generation UI**: I've
+  introduced a brand new UI screen, `IssueDocumentScreen`, that allows users to create and configure
+  various accounting documents like invoices and receipts with extensive settings for document type,
+  language, currency, and VAT.
+  - **Real-time PDF Document Preview**: Users can now preview generated documents in real-time
+    directly within the UI before issuing them, powered by the `pdfjs-dist` library for client-side
+    PDF rendering.
+  - **Comprehensive Document Configuration**: The new UI provides detailed configuration options,
+    including fields for client information, managing multiple income items (description, price,
+    quantity, VAT), and specifying various payment methods with their unique details (e.g., bank,
+    credit card, PayPal, payment app).
+  - **GraphQL API Extensions for Document Management**: I've extended the GraphQL API with a new
+    `previewGreenInvoiceDocument` mutation for generating PDF previews and a `newDocumentInfoDraft`
+    query to pre-populate document forms based on existing charge data.
+  - **Enhanced Document Actions in Table View**: I've added the ability to close and re-issue
+    documents directly from the documents table, providing a more streamlined workflow for managing
+    document statuses.
+  - **New 'With Open Documents' Filter**: A new filter, 'With Open Documents', has been added to the
+    charges filter, allowing users to easily identify and manage charges that have associated open
+    documents.
+  - **GraphQL Query Refactoring**: I've refactored several GraphQL queries from fetching multiple
+    charges (`chargesByIDs`) to fetching a single charge (`charge`), simplifying data retrieval for
+    individual charge details.
+  - **Database Migration for Open Documents Flag**: A new database migration introduces an
+    `open_docs_flag` to the `extended_charges` view, enabling efficient filtering of charges based
+    on their associated open documents.
+
 ## 0.7.4
 
 ### Patch Changes
