@@ -496,9 +496,9 @@ export async function getLinkedDocuments(
   injector: Injector,
   externalDocumentId: string,
 ): Promise<string[] | null> {
-  const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
-    id: externalDocumentId,
-  });
+  const greenInvoiceDocument = await injector
+    .get(GreenInvoiceClientProvider)
+    .documentLoader.load(externalDocumentId);
   if (!greenInvoiceDocument?.linkedDocuments) {
     return null;
   }
@@ -696,7 +696,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     }
     const greenInvoiceClient = await injector
       .get(GreenInvoiceClientProvider)
-      .getClient({ id: clientInfo.green_invoice_id });
+      .clientLoader.load(clientInfo.green_invoice_id);
     if (!greenInvoiceClient) {
       throw new GraphQLError(
         `Green Invoice client with ID ${clientInfo.green_invoice_id} not found`,

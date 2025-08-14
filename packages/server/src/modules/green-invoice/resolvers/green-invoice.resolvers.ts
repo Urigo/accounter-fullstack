@@ -122,7 +122,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         openIssuedDocuments.map(doc =>
           injector
             .get(GreenInvoiceClientProvider)
-            .getDocument({ id: doc.external_id })
+            .documentLoader.load(doc.external_id)
             .then(res => {
               if (!res) {
                 console.error('Failed to fetch document from Green Invoice', doc.external_id);
@@ -263,7 +263,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const greenInvoiceDocumentPromise: Promise<Document | null> = injector
         .get(GreenInvoiceClientProvider)
-        .getDocument({ id: openIssuedDocument.external_id })
+        .documentLoader.load(openIssuedDocument.external_id)
         .then(res => {
           if (!res) {
             console.error(
@@ -560,8 +560,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           if (latestStatus !== localDoc.status) {
             docToUpdate.status = latestStatus;
           }
-          // check if the document amount has changed
-          const linkedDocuments = await getLinkedDocuments(injector, externalDoc.id);
+
+          // check if the linked documents have changed
+          const linkedDocuments = await getLinkedDocuments(injector, externalDoc.id).catch(e => {
+            console.error('Failed to fetch linked documents', e);
+            return null;
+          });
           if (
             linkedDocuments?.length &&
             (!localDoc.linked_document_ids ||
@@ -570,6 +574,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           ) {
             docToUpdate.linkedDocumentIds = linkedDocuments;
           }
+
           // if has attributes to update, add to the update list
           if (Object.keys(docToUpdate).length > 0) {
             await injector
@@ -663,9 +668,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError('External ID is required to fetch original document');
       }
       try {
-        const document = await injector.get(GreenInvoiceClientProvider).getDocument({
-          id: info.externalId,
-        });
+        const document = await injector
+          .get(GreenInvoiceClientProvider)
+          .documentLoader.load(info.externalId);
         if (!document) {
           throw new GraphQLError('Original document not found');
         }
