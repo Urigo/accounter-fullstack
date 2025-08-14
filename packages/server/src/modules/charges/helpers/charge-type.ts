@@ -19,6 +19,7 @@ export function getChargeType(
   }
 
   const {
+    foreignSecurities: { foreignSecuritiesBusinessId },
     bankDeposits: { bankDepositBusinessId },
     dividends: { dividendBusinessIds },
     authorities: { vatBusinessId },
@@ -31,6 +32,14 @@ export function getChargeType(
       charge.business_array?.includes(bankDepositBusinessId))
   ) {
     return ChargeTypeEnum.BankDeposit;
+  }
+
+  if (
+    foreignSecuritiesBusinessId &&
+    (charge.business_id === foreignSecuritiesBusinessId ||
+      charge.business_array?.includes(foreignSecuritiesBusinessId))
+  ) {
+    return ChargeTypeEnum.ForeignSecurities;
   }
 
   if (

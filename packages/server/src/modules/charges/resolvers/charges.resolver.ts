@@ -578,6 +578,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
       getChargeType(DbCharge, context) === ChargeTypeEnum.BankDeposit,
     ...commonChargeFields,
   },
+  ForeignSecuritiesCharge: {
+    __isTypeOf: (DbCharge, context) =>
+      getChargeType(DbCharge, context) === ChargeTypeEnum.ForeignSecurities,
+    ...commonChargeFields,
+  },
   CreditcardBankCharge: {
     __isTypeOf: (DbCharge, context) =>
       getChargeType(DbCharge, context) === ChargeTypeEnum.CreditcardBankCharge,

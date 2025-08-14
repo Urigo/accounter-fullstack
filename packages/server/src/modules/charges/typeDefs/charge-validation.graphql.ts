@@ -43,6 +43,10 @@ export default gql`
     validationData: ValidationData
   }
 
+  extend type ForeignSecuritiesCharge {
+    validationData: ValidationData
+  }
+
   extend type CreditcardBankCharge {
     validationData: ValidationData
   }

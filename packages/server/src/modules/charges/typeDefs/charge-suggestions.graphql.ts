@@ -60,6 +60,10 @@ export default gql`
     missingInfoSuggestions: ChargeSuggestions
   }
 
+  extend type ForeignSecuritiesCharge {
+    missingInfoSuggestions: ChargeSuggestions
+  }
+
   extend type CreditcardBankCharge {
     missingInfoSuggestions: ChargeSuggestions
   }

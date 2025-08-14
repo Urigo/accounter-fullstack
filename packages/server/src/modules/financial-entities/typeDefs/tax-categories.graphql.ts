@@ -52,6 +52,10 @@ export default gql`
     taxCategory: TaxCategory
   }
 
+  extend type ForeignSecuritiesCharge {
+    taxCategory: TaxCategory
+  }
+
   extend type CreditcardBankCharge {
     taxCategory: TaxCategory
   }

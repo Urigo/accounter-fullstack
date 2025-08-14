@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { ChargeTypeEnum } from '@shared/enums';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
@@ -11,6 +12,7 @@ import { generateLedgerRecordsForCommonCharge } from '../resolvers/ledger-genera
 import { generateLedgerRecordsForConversion } from '../resolvers/ledger-generation/conversion-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDividend } from '../resolvers/ledger-generation/dividend-ledger-generation.resolver.js';
 import { generateLedgerRecordsForFinancialCharge } from '../resolvers/ledger-generation/financial-ledger-generation.resolver.js';
+import { generateLedgerRecordsForForeignSecurities } from '../resolvers/ledger-generation/foreign-securities-ledger-generation.resolver.js';
 import { generateLedgerRecordsForInternalTransfer } from '../resolvers/ledger-generation/internal-transfer-ledger-generation.resolver.js';
 import { generateLedgerRecordsForMonthlyVat } from '../resolvers/ledger-generation/monthly-vat-ledger-generation.resolver.js';
 import { generateLedgerRecordsForSalary } from '../resolvers/ledger-generation/salary-ledger-generation.resolver.js';
@@ -53,25 +55,27 @@ export function ledgerGenerationByCharge(
   }
   const chargeType = getChargeType(charge, context);
   switch (chargeType) {
-    case 'CommonCharge':
+    case ChargeTypeEnum.Common:
       return generateLedgerRecordsForCommonCharge;
-    case 'ConversionCharge':
+    case ChargeTypeEnum.Conversion:
       return generateLedgerRecordsForConversion;
-    case 'SalaryCharge':
+    case ChargeTypeEnum.Salary:
       return generateLedgerRecordsForSalary;
-    case 'InternalTransferCharge':
+    case ChargeTypeEnum.InternalTransfer:
       return generateLedgerRecordsForInternalTransfer;
-    case 'DividendCharge':
+    case ChargeTypeEnum.Dividend:
       return generateLedgerRecordsForDividend;
-    case 'BusinessTripCharge':
+    case ChargeTypeEnum.BusinessTrip:
       return generateLedgerRecordsForBusinessTrip;
-    case 'MonthlyVatCharge':
+    case ChargeTypeEnum.MonthlyVat:
       return generateLedgerRecordsForMonthlyVat;
-    case 'BankDepositCharge':
+    case ChargeTypeEnum.BankDeposit:
       return generateLedgerRecordsForBankDeposit;
-    case 'CreditcardBankCharge':
+    case ChargeTypeEnum.ForeignSecurities:
+      return generateLedgerRecordsForForeignSecurities;
+    case ChargeTypeEnum.CreditcardBankCharge:
       return generateLedgerRecordsForCommonCharge;
-    case 'FinancialCharge':
+    case ChargeTypeEnum.Financial:
       return generateLedgerRecordsForFinancialCharge;
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
@@ -127,17 +131,13 @@ export async function ledgerUnbalancedBusinessesByCharge(
     case 'MonthlyVatCharge':
       return undefined;
     case 'BankDepositCharge':
-      throw new Error('BankDepositCharge is not supported yet');
+      throw new Error('Bank Deposit Charge is not supported yet');
+    case 'ForeignSecuritiesCharge':
+      throw new Error('Foreign Securities Charge is not supported yet');
     case 'CreditcardBankCharge':
-      ///////////
-      // TODO //
-      //////////
-      return undefined;
+      throw new Error('Credit Card Bank Charge is not supported yet');
     case 'FinancialCharge':
-      ///////////
-      // TODO //
-      //////////
-      return undefined;
+      throw new Error('Financial Charge is not supported yet');
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }

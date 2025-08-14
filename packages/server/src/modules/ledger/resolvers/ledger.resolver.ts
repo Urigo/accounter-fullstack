@@ -507,6 +507,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   BankDepositCharge: {
     ...commonChargeLedgerResolver,
   },
+  ForeignSecuritiesCharge: {
+    ...commonChargeLedgerResolver,
+  },
   CreditcardBankCharge: {
     ...commonChargeLedgerResolver,
   },

@@ -130,6 +130,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   BusinessTripCharge: commonTaxChargeFields,
   MonthlyVatCharge: commonTaxChargeFields,
   BankDepositCharge: commonTaxChargeFields,
+  ForeignSecuritiesCharge: commonTaxChargeFields,
   CreditcardBankCharge: commonTaxChargeFields,
   LtdFinancialEntity: {
     taxCategory: async (parent, _, { injector, adminContext: { defaultAdminBusinessId } }) => {

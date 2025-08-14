@@ -74,6 +74,10 @@ export default gql`
     exchangeRates: ExchangeRates
   }
 
+  extend type ForeignSecuritiesCharge {
+    exchangeRates: ExchangeRates
+  }
+
   extend type CreditcardBankCharge {
     exchangeRates: ExchangeRates
   }

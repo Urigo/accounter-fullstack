@@ -166,6 +166,10 @@ export default gql`
     owner: Business!
   }
 
+  extend type ForeignSecuritiesCharge {
+    owner: Business!
+  }
+
   extend type CreditcardBankCharge {
     owner: Business!
   }

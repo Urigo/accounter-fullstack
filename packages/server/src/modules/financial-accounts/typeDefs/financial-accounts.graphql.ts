@@ -45,6 +45,14 @@ export default gql`
     number: String!
   }
 
+  " represent a foreign securities account "
+  type ForeignSecuritiesFinancialAccount implements FinancialAccount {
+    id: UUID!
+    name: String!
+    type: String!
+    number: String!
+  }
+
   extend interface Transaction {
     " link to the account "
     account: FinancialAccount!

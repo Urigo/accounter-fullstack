@@ -9,6 +9,7 @@ import {
   Plane,
   Receipt,
   Scale,
+  TrendingUpDown,
   Wallet,
 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ type ChargeType =
   | 'InternalTransferCharge'
   | 'MonthlyVatCharge'
   | 'BankDepositCharge'
+  | 'ForeignSecuritiesCharge'
   | 'CreditcardBankCharge'
   | 'FinancialCharge';
 
@@ -33,6 +35,7 @@ const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
   InternalTransferCharge: 'Internal Transfer',
   MonthlyVatCharge: 'Monthly VAT',
   BankDepositCharge: 'Bank Deposit',
+  ForeignSecuritiesCharge: 'Foreign Securities',
   CreditcardBankCharge: 'Credit Card Bank Charge',
   FinancialCharge: 'Financial Charge',
 };
@@ -48,6 +51,7 @@ const ICON_MAP: Record<ChargeType, ReactElement> = {
   InternalTransferCharge: <ArrowRightLeft />,
   MonthlyVatCharge: <Receipt />,
   BankDepositCharge: <PiggyBank />,
+  ForeignSecuritiesCharge: <TrendingUpDown />,
   CreditcardBankCharge: <CreditCard />,
   FinancialCharge: <Scale />,
 };

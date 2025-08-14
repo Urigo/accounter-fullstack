@@ -1,10 +1,10 @@
+import { BankDepositTransactionsProvider } from '@modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { BankDepositTransactionsProvider } from '@modules/transactions/providers/bank-deposit-transactions.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type {

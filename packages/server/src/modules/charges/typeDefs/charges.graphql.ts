@@ -219,6 +219,26 @@ export default gql`
     optionalDocuments: Boolean
   }
 
+  " charge of foreign securities "
+  type ForeignSecuritiesCharge implements Charge {
+    id: UUID!
+    vat: FinancialAmount
+    withholdingTax: FinancialAmount
+    totalAmount: FinancialAmount
+    property: Boolean
+    conversion: Boolean
+    salary: Boolean
+    isInvoicePaymentDifferentCurrency: Boolean
+    userDescription: String
+    minEventDate: DateTime
+    minDebitDate: DateTime
+    minDocumentsDate: DateTime
+    metadata: ChargeMetadata
+    yearsOfRelevance: [YearOfRelevance!]
+    optionalVAT: Boolean
+    optionalDocuments: Boolean
+  }
+
   " charge of creditcard over bank account "
   type CreditcardBankCharge implements Charge {
     id: UUID!
@@ -419,6 +439,10 @@ export default gql`
   }
 
   extend type CryptoWalletFinancialAccount {
+    charges(filter: ChargeFilter): [Charge!]!
+  }
+
+  extend type ForeignSecuritiesFinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }
 

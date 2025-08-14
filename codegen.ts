@@ -100,6 +100,9 @@ const config: CodegenConfig = {
           DynamicReportInfo: '@modules/reports/types.js#IGetTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity: '@modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
+          ForeignSecuritiesCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
+          ForeignSecuritiesFinancialAccount:
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',

@@ -67,6 +67,7 @@ export type AdminContext = {
     etanaBusinessId: string | null;
     krakenBusinessId: string | null;
     etherScanBusinessId: string | null;
+    foreignSecuritiesBusinessId: string | null;
     bankAccountIds: string[];
     creditCardIds: string[];
     internalWalletsIds: string[];
@@ -74,6 +75,11 @@ export type AdminContext = {
   bankDeposits: {
     bankDepositBusinessId: string | null;
     bankDepositInterestIncomeTaxCategoryId: string | null;
+  };
+
+  foreignSecurities: {
+    foreignSecuritiesBusinessId: string | null;
+    foreignSecuritiesFeesCategoryId: string | null;
   };
   salaries: {
     zkufotExpensesTaxCategoryId: string | null;
@@ -199,6 +205,10 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       bankDepositInterestIncomeTaxCategoryId:
         rawContext.bank_deposit_interest_income_tax_category_id,
     },
+    foreignSecurities: {
+      foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
+      foreignSecuritiesFeesCategoryId: rawContext.foreign_securities_fees_category_id,
+    },
     dividends: {
       dividendWithholdingTaxBusinessId: rawContext.dividend_withholding_tax_business_id,
       dividendTaxCategoryId: rawContext.dividend_tax_category_id,
@@ -224,6 +234,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       etanaBusinessId: rawContext.etana_business_id,
       krakenBusinessId: rawContext.kraken_business_id,
       etherScanBusinessId: rawContext.etherscan_business_id,
+      foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
       bankAccountIds,
       creditCardIds,
       internalWalletsIds: [
@@ -232,6 +243,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
         rawContext.etana_business_id,
         rawContext.kraken_business_id,
         rawContext.etherscan_business_id,
+        rawContext.foreign_securities_business_id,
       ].filter(Boolean) as string[],
     },
     salaries: {

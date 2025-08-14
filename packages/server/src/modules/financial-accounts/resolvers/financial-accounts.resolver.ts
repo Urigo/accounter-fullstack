@@ -36,6 +36,12 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
         ? DbAccount.account_number.slice(-8)
         : DbAccount.account_number,
   },
+  ForeignSecuritiesFinancialAccount: {
+    __isTypeOf: DbAccount => DbAccount.type === 'FOREIGN_SECURITIES',
+    ...commonFinancialAccountFields,
+    number: DbAccount => DbAccount.account_number,
+    name: DbAccount => DbAccount.account_number,
+  },
   ConversionTransaction: {
     ...commonTransactionFields,
   },

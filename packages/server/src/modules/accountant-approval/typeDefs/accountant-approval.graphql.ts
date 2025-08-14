@@ -54,6 +54,10 @@ export default gql`
     accountantApproval: AccountantStatus!
   }
 
+  extend type ForeignSecuritiesCharge {
+    accountantApproval: AccountantStatus!
+  }
+
   extend type CreditcardBankCharge {
     accountantApproval: AccountantStatus!
   }

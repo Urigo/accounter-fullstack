@@ -29,6 +29,7 @@ import { LedgerTable } from '../ledger-table/index.js';
 import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
+import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
 import { ExchangeRates } from './extended-info/exchange-rates.js';
@@ -160,8 +161,11 @@ export function ChargeExtendedInfo({
     if (hasMiscExpenses) {
       tabs.push('miscExpenses');
     }
+    if (chargeType === 'BankDepositCharge') {
+      tabs.push('bankDeposit');
+    }
     setAccordionItems(tabs);
-  }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge, hasMiscExpenses]);
+  }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge, hasMiscExpenses, chargeType]);
 
   function toggleAccordionItem(item: string): void {
     if (accordionItems.includes(item)) {
@@ -266,7 +270,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {chargeType === 'FinancialCharge' && (
               <Accordion.Item value="exchangeRates">
                 <Accordion.Control
@@ -284,7 +287,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {hasTransactions && (
               <Accordion.Item value="transactions">
                 <Accordion.Control
@@ -306,7 +308,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {hasMiscExpenses && (
               <Accordion.Item value="miscExpenses">
                 <Accordion.Control
@@ -325,7 +326,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {hasDocs && (
               <Accordion.Item value="documents">
                 <Accordion.Control
@@ -368,7 +368,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {chargeType === 'SalaryCharge' && (
               <Accordion.Item value="salaries">
                 <Accordion.Control
@@ -382,7 +381,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {charge.__typename === 'BusinessTripCharge' && (
               <Accordion.Item value="businessTrip">
                 <Accordion.Control onClick={() => toggleAccordionItem('businessTrip')}>
@@ -393,7 +391,6 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
-
             {chargeType === 'CreditcardBankCharge' && (
               <Accordion.Item value="creditcard">
                 <Accordion.Control onClick={() => toggleAccordionItem('creditcard')}>
@@ -407,6 +404,17 @@ export function ChargeExtendedInfo({
                       }
                     />
                   )}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {chargeType === 'BankDepositCharge' && (
+              <Accordion.Item value="bankDeposit">
+                <Accordion.Control onClick={() => toggleAccordionItem('bankDeposit')}>
+                  Bank Deposit
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <ChargeBankDeposit chargeId={charge.id} />
                 </Accordion.Panel>
               </Accordion.Item>
             )}

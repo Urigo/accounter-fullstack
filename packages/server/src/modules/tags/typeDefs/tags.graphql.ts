@@ -65,6 +65,10 @@ export default gql`
     tags: [Tag!]!
   }
 
+  extend type ForeignSecuritiesCharge {
+    tags: [Tag!]!
+  }
+
   " defines a tag / category for charge arrangement"
   type Tag {
     name: String!

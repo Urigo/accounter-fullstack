@@ -295,6 +295,10 @@ export default gql`
     additionalDocuments: [Document!]!
   }
 
+  extend type ForeignSecuritiesCharge {
+    additionalDocuments: [Document!]!
+  }
+
   extend type CreditcardBankCharge {
     additionalDocuments: [Document!]!
   }

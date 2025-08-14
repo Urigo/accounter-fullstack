@@ -161,16 +161,17 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       throw new GraphQLError('Unexpected type for UpdateTransactionResult');
     },
   },
-  CommonCharge: commonChargeFields,
-  FinancialCharge: commonChargeFields,
-  ConversionCharge: commonChargeFields,
-  SalaryCharge: commonChargeFields,
-  InternalTransferCharge: commonChargeFields,
-  DividendCharge: commonChargeFields,
-  BusinessTripCharge: commonChargeFields,
-  MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
+  BusinessTripCharge: commonChargeFields,
+  CommonCharge: commonChargeFields,
+  ConversionCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
+  DividendCharge: commonChargeFields,
+  FinancialCharge: commonChargeFields,
+  ForeignSecuritiesCharge: commonChargeFields,
+  InternalTransferCharge: commonChargeFields,
+  MonthlyVatCharge: commonChargeFields,
+  SalaryCharge: commonChargeFields,
   ConversionTransaction: {
     __isTypeOf: async (transactionId, { injector }) => {
       const transaction = await injector

@@ -55,6 +55,7 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   BusinessTripCharge: commonChargeFields,
   MonthlyVatCharge: commonChargeFields,
   BankDepositCharge: commonChargeFields,
+  ForeignSecuritiesCharge: commonChargeFields,
   CreditcardBankCharge: commonChargeFields,
   BusinessTrip: {
     accountantApproval: dbBusinessTrip => dbBusinessTrip.accountant_status ?? 'UNAPPROVED',
