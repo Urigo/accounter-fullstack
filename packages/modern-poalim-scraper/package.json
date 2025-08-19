@@ -20,11 +20,11 @@
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "date-fns": "4.1.0",
-    "inquirer": "12.9.1",
+    "inquirer": "12.9.3",
     "node-fetch": "3.3.2",
-    "puppeteer": "24.16.1",
+    "puppeteer": "24.16.2",
     "uuid": "11.1.0",
-    "zod": "4.0.13"
+    "zod": "4.0.17"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.9",
