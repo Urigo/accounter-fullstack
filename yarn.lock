@@ -130,7 +130,7 @@ __metadata:
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:5.4.54"
     react: "npm:19.1.1"
-    react-day-picker: "npm:9.8.1"
+    react-day-picker: "npm:9.9.0"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.1.1"
     react-error-boundary: "npm:6.0.0"
@@ -1400,7 +1400,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@date-fns/tz@npm:^1.2.0":
+"@date-fns/tz@npm:^1.4.1":
   version: 1.4.1
   resolution: "@date-fns/tz@npm:1.4.1"
   checksum: 10c0/9033fdc4682fe3d4d147625ce04fa88a8792653594e2de8d5a438c8f3bfc0990ee28fe773f91cac6810b06d818b5b281ae0608752ba8337257d0279ded3f019a
@@ -18249,16 +18249,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-day-picker@npm:9.8.1":
-  version: 9.8.1
-  resolution: "react-day-picker@npm:9.8.1"
+"react-day-picker@npm:9.9.0":
+  version: 9.9.0
+  resolution: "react-day-picker@npm:9.9.0"
   dependencies:
-    "@date-fns/tz": "npm:^1.2.0"
+    "@date-fns/tz": "npm:^1.4.1"
     date-fns: "npm:^4.1.0"
     date-fns-jalali: "npm:^4.1.0-0"
   peerDependencies:
     react: ">=16.8.0"
-  checksum: 10c0/389b5f120cc3d8588d5e3e7bdb1973ac4b4610781ec9c2fc2d7c340ce558e1338487742609222da89cd07334afafd366fa8ec04ac7b75224612c201f02a510c1
+  checksum: 10c0/b364df634d87348ccb052d0657cc745e5e84e1982b69f860b9b95886ecd34cb5a2d76abf3ca25cf098df8a35c5bf7d6cc191adaedc1ceceefddd2d9af732ed1a
   languageName: node
   linkType: hard
 
