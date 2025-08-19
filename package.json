@@ -18,6 +18,7 @@
     "client:dev": "yarn --cwd packages/client dev",
     "db:migrate": "yarn migration:run",
     "deploy": "git push heroku master",
+    "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
     "generate:all": "yarn generate",
     "generate:graphql": "yarn generate:graphql:clear; graphql-codegen",
