@@ -60,7 +60,7 @@
     "next-themes": "0.4.6",
     "pdfjs-dist": "5.4.54",
     "react": "19.1.1",
-    "react-day-picker": "9.8.1",
+    "react-day-picker": "9.9.0",
     "react-dnd": "16.0.1",
     "react-dom": "19.1.1",
     "react-error-boundary": "6.0.0",
