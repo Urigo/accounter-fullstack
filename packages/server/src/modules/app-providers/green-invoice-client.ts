@@ -1,7 +1,8 @@
+import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { init, type Sdk } from '@accounter/green-invoice-graphql';
 import type { Currency } from '@shared/enums';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 
@@ -17,6 +18,9 @@ export type ExpenseDraft = NonNullable<
 })
 export class GreenInvoiceClientProvider {
   localCurrency: Currency;
+  cache = getCacheInstance({
+    stdTTL: 60 * 5, // 5 minutes
+  });
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
@@ -52,6 +56,10 @@ export class GreenInvoiceClientProvider {
       throw new Error(`Green Invoice error: ${(e as Error).message}`);
     }
   }
+
+  /**
+   * Expenses
+   * */
 
   public async addExpenseDraftByFile(file: File | Blob): Promise<ExpenseDraft> {
     try {
@@ -158,9 +166,19 @@ export class GreenInvoiceClientProvider {
     }
   }
 
+  /**
+   * Documents
+   * */
+
   public async searchDocuments(...params: Parameters<Sdk['searchDocuments_query']>) {
     const sdk = await this.getSDK();
-    return sdk.searchDocuments_query(...params).then(res => res.searchDocuments);
+    return sdk.searchDocuments_query(...params).then(res => {
+      for (const doc of res.searchDocuments?.items ?? []) {
+        if (doc) this.cache.set(`document-${doc.id}`, doc);
+      }
+
+      return res.searchDocuments;
+    });
   }
 
   public async addDocuments(...params: Parameters<Sdk['addDocument_mutation']>) {
@@ -173,23 +191,73 @@ export class GreenInvoiceClientProvider {
     return sdk.previewDocument_query(...params).then(res => res.previewDocument);
   }
 
-  public async getLinkedDocuments(...params: Parameters<Sdk['getLinkedDocuments_query']>) {
+  public async getLinkedDocuments(documentId: string) {
     const sdk = await this.getSDK();
-    return sdk.getLinkedDocuments_query(...params).then(res => res.getLinkedDocuments);
+    return sdk.getLinkedDocuments_query({ id: documentId }).then(res => res.getLinkedDocuments);
   }
 
-  public async getDocument(...params: Parameters<Sdk['getDocument_query']>) {
+  private async _batchLoadByIds<T extends { id?: string | null }>(
+    ids: readonly string[],
+    fetcher: (sdk: Sdk, id: string) => Promise<T | null | undefined>,
+    cachePrefix: string,
+  ): Promise<(T | null)[]> {
     const sdk = await this.getSDK();
-    return sdk.getDocument_query(...params).then(res => res.getDocument);
+    const uniqueIds = Array.from(new Set(ids));
+    const items: (T | undefined)[] = await Promise.all(
+      uniqueIds.map(async id =>
+        fetcher(sdk, id).then(item => {
+          if (item?.id) {
+            this.cache.set(`${cachePrefix}-${item.id}`, item);
+          }
+          return item ?? undefined;
+        }),
+      ),
+    );
+
+    const itemsMap = new Map(items.filter((i): i is T => !!i).map(i => [i.id, i]));
+    return ids.map(id => itemsMap.get(id) ?? null);
   }
 
-  public async closeDocument(...params: Parameters<Sdk['closeDocument_mutation']>) {
-    const sdk = await this.getSDK();
-    return sdk.closeDocument_mutation(...params).then(res => res.closeDocument);
+  private async batchDocumentsByIds(ids: readonly string[]) {
+    return this._batchLoadByIds(
+      ids,
+      (sdk, id) => sdk.getDocument_query({ id }).then(res => res.getDocument),
+      'document',
+    );
   }
 
-  public async getClient(...params: Parameters<Sdk['getClient_query']>) {
+  public documentLoader = new DataLoader(
+    (ids: readonly string[]) => this.batchDocumentsByIds(ids),
+    {
+      cacheKeyFn: id => `document-${id}`,
+      cacheMap: this.cache,
+    },
+  );
+
+  public async closeDocument(documentId: string) {
+    this.invalidateDocument(documentId);
     const sdk = await this.getSDK();
-    return sdk.getClient_query(...params).then(res => res.getClient);
+    return sdk.closeDocument_mutation({ id: documentId }).then(res => res.closeDocument);
   }
+
+  public async invalidateDocument(documentId: string) {
+    this.cache.delete(`document-${documentId}`);
+  }
+
+  /**
+   * Clients
+   * */
+
+  private async batchClientsByIds(ids: readonly string[]) {
+    return this._batchLoadByIds(
+      ids,
+      (sdk, id) => sdk.getClient_query({ id }).then(res => res.getClient),
+      'client',
+    );
+  }
+
+  public clientLoader = new DataLoader((ids: readonly string[]) => this.batchClientsByIds(ids), {
+    cacheKeyFn: id => `client-${id}`,
+    cacheMap: this.cache,
+  });
 }

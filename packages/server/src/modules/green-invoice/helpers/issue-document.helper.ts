@@ -252,7 +252,7 @@ export async function getClientFromGreenInvoiceClient(
 
   const greenInvoiceClient = await injector
     .get(GreenInvoiceClientProvider)
-    .getClient({ id: client.green_invoice_id });
+    .clientLoader.load(client.green_invoice_id);
 
   if (!greenInvoiceClient) {
     return useGreenInvoiceId ? undefined : { id: businessId };
@@ -323,9 +323,9 @@ export async function executeDocumentIssue(
     }
 
     if ('id' in document && document.id) {
-      const greenInvoiceDocument = await injector.get(GreenInvoiceClientProvider).getDocument({
-        id: document.id,
-      });
+      const greenInvoiceDocument = await injector
+        .get(GreenInvoiceClientProvider)
+        .documentLoader.load(document.id);
       if (!greenInvoiceDocument) {
         console.error('Failed to fetch issued document from Green Invoice', document);
         throw new GraphQLError('Failed to issue new document');

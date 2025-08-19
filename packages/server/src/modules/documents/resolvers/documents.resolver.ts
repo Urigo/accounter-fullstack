@@ -378,7 +378,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
         const res = await injector
           .get(GreenInvoiceClientProvider)
-          .closeDocument({ id: issuedDocument.external_id });
+          .closeDocument(issuedDocument.external_id);
 
         if (res) {
           // update document's status
