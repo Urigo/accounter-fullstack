@@ -21,7 +21,7 @@
     "@accounter/pcn874-generator": "workspace:^",
     "@accounter/shaam-uniform-format-generator": "workspace:^",
     "@accounter/shaam6111-generator": "workspace:^",
-    "@ai-sdk/anthropic": "1.2.12",
+    "@ai-sdk/anthropic": "2.0.5",
     "@envelop/generic-auth": "10.0.0",
     "@envelop/graphql-modules": "8.0.0",
     "@graphql-hive/yoga": "0.42.2",
