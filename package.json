@@ -57,7 +57,7 @@
     "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
-    "@types/node": "22.17.1",
+    "@types/node": "22.17.2",
     "@types/pg": "8.15.5",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.2.0",
@@ -74,7 +74,7 @@
     "prettier-plugin-sql": "0.19.2",
     "rimraf": "6.0.1",
     "ts-node": "10.9.2",
-    "tsx": "4.20.3",
+    "tsx": "4.20.4",
     "typescript": "5.8.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.4"
