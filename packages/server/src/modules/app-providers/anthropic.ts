@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '@shared/enums';
 
@@ -77,24 +77,23 @@ export class AnthropicProvider {
    * @returns Parsed invoice data
    */
   async extractInvoiceDetails(fileOrBlob: File | Blob): Promise<DocumentData> {
-    try {
-      const fileType = fileOrBlob.type.toLowerCase();
-      if (!isSupportedFileType(fileType)) {
-        throw new Error('Unsupported file type. Please provide an image or PDF.');
-      }
+    const fileType = fileOrBlob.type.toLowerCase();
+    if (!isSupportedFileType(fileType)) {
+      throw new Error('Unsupported file type. Please provide an image or PDF.');
+    }
 
-      const fileData = await this.fileToBase64(fileOrBlob);
+    const fileData = await this.fileToBase64(fileOrBlob);
 
-      const { object, usage } = await generateObject({
-        model: anthropic('claude-4-sonnet-20250514'),
-        schema: documentDataSchema,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: stripIndent(`Please analyze the provided document and extract:
+    const { object } = await generateObject({
+      model: anthropic('claude-4-sonnet-20250514'),
+      schema: documentDataSchema,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: stripIndent(`Please analyze the provided document and extract:
                         - Document type
                         - Issuer and recipient details
                         - Monetary amounts (total and VAT)
@@ -102,30 +101,23 @@ export class AnthropicProvider {
                         - Allocation number (if VAT exists and applicable)
 
                         Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
-              },
-              fileType === 'application/pdf'
-                ? {
-                    type: 'file',
-                    data: fileData,
-                    mimeType: fileType,
-                  }
-                : {
-                    type: 'image',
-                    image: fileData,
-                    mimeType: fileType,
-                  },
-            ],
-          },
-        ],
-      });
+            },
+            fileType === 'application/pdf'
+              ? {
+                  type: 'file',
+                  data: fileData,
+                  mediaType: fileType,
+                }
+              : {
+                  type: 'image',
+                  image: fileData,
+                  mediaType: fileType,
+                },
+          ],
+        },
+      ],
+    });
 
-      // Shows token usage to calculate the cost of the request
-      console.log('Usage:', usage);
-
-      return object;
-    } catch (error) {
-      console.error('Error in document extraction:', error);
-      throw error;
-    }
+    return object;
   }
 }
