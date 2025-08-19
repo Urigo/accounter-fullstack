@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "./src/index.mts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "tsup",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
@@ -14,7 +14,7 @@
     "pgtyped": "yarn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c $(node scripts/generate-local-pgconfig.cjs)",
     "pgtyped:watch": "yarn pgtyped -w",
     "server:dev": "yarn dev",
-    "start": "yarn build && node dist/server/src/index.js"
+    "start": "yarn build && node dist/index.js"
   },
   "dependencies": {
     "@accounter/green-invoice-graphql": "workspace:^",
@@ -55,7 +55,7 @@
     "nodemon": "3.1.10",
     "pino-pretty": "13.1.1",
     "rimraf": "6.0.1",
-    "tsc-alias": "1.8.16",
+    "tsup": "8.5.0",
     "typescript": "5.8.3"
   },
   "publishConfig": {
