@@ -81,6 +81,7 @@
     "vitest": "3.2.4"
   },
   "resolutions": {
+    "@slonik/pg-driver@npm:^48.4.1": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch",
     "@theguild/eslint-config/eslint-plugin-unicorn": "56.0.1",
     "graphql": "16.11.0"
   },

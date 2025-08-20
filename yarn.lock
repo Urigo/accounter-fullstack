@@ -21,6 +21,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch"
     "@types/pg": "npm:8.15.5"
     got: "npm:14.4.7"
     pg-promise: "npm:11.15.0"
@@ -6885,7 +6886,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:^48.4.1":
+"@slonik/pg-driver@npm:48.4.1":
   version: 48.4.1
   resolution: "@slonik/pg-driver@npm:48.4.1"
   dependencies:
@@ -6901,6 +6902,25 @@ __metadata:
   peerDependencies:
     zod: ^3
   checksum: 10c0/c727b56e6ec5c80267b40c58e0dce1d1b4570c2470fab6f150298241ee88ca4a6a220837512bb013faab8c4dceabdba5b21e97df1f023493ae88929123d48703
+  languageName: node
+  linkType: hard
+
+"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch":
+  version: 48.4.1
+  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch::version=48.4.1&hash=a80fbe"
+  dependencies:
+    "@slonik/driver": "npm:^48.4.1"
+    "@slonik/errors": "npm:^48.4.1"
+    "@slonik/sql-tag": "npm:^48.4.1"
+    "@slonik/types": "npm:^48.4.1"
+    "@slonik/utilities": "npm:^48.4.1"
+    pg: "npm:^8.13.1"
+    pg-query-stream: "npm:^4.9.6"
+    pg-types: "npm:^4.0.2"
+    postgres-array: "npm:^3.0.4"
+  peerDependencies:
+    zod: ^3
+  checksum: 10c0/ac09307a5895a64e2dbe7e2c60a7a72ed80aa1db941ef86088dea3ed6165a65f9e868a1a106c437f66fb3609cb19002f7863c5a6767aa3ca984c585b15d7716a
   languageName: node
   linkType: hard
 
