@@ -11,7 +11,7 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "../",
-    "utils": "../../lib/utils.js"
+    "components": "@/components",
+    "utils": "@/lib/utils.js"
   }
 }
