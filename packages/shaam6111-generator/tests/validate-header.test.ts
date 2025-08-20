@@ -30,7 +30,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Tax file number must include at least 5 digits');
+      expect(result.error.issues[0].message).toBe('Tax file number must include at least 5 digits');
     }
   });
 
@@ -39,7 +39,9 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Required');
+      expect(result.error.issues[0].message).toBe(
+        'Invalid input: expected string, received undefined',
+      );
     }
   });
 
@@ -48,7 +50,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('Invalid enum value');
+      expect(result.error.issues[0].message).toContain('Invalid option: expected one of ');
     }
   });
 
@@ -57,7 +59,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Invalid ID number');
+      expect(result.error.issues[0].message).toBe('Invalid ID number');
     }
   });
 
@@ -95,7 +97,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Partnership count cannot be negative');
+      expect(result.error.issues[0].message).toBe('Partnership count cannot be negative');
     }
   });
 
@@ -104,7 +106,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Tax year must contain only digits');
+      expect(result.error.issues[0].message).toBe('Tax year must contain only digits');
     }
   });
 
@@ -113,7 +115,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Industry code must be exactly 4 digits');
+      expect(result.error.issues[0].message).toBe('Industry code must be exactly 4 digits');
     }
   });
 
@@ -125,7 +127,7 @@ describe('headerSchema', () => {
     const result = headerSchema.safeParse(invalidRecord);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe(
+      expect(result.error.issues[0].message).toBe(
         'Business description cannot exceed 50 characters',
       );
     }

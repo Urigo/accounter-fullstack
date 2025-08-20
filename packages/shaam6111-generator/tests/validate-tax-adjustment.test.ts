@@ -27,7 +27,7 @@ describe('taxAdjustmentArraySchema', () => {
     const result = taxAdjustmentArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toBe('Invalid code for tax adjustment section');
+      expect(result.error.issues[0].message).toBe('Invalid code for tax adjustment section');
     }
   });
 
@@ -36,7 +36,7 @@ describe('taxAdjustmentArraySchema', () => {
     const result = taxAdjustmentArraySchema.safeParse(duplicateRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('Duplicate code');
+      expect(result.error.issues[0].message).toContain('Duplicate code');
     }
   });
 
@@ -51,11 +51,11 @@ describe('taxAdjustmentArraySchema', () => {
     const result = taxAdjustmentArraySchema.safeParse(invalidRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('does not allow negative amounts');
+      expect(result.error.issues[0].message).toContain('does not allow negative amounts');
     }
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('does not allow negative amounts');
-      expect(result.error.errors[0].path).toContain(index110);
+      expect(result.error.issues[0].message).toContain('does not allow negative amounts');
+      expect(result.error.issues[0].path).toContain(index110);
     }
   });
 
@@ -82,7 +82,7 @@ describe('taxAdjustmentArraySchema', () => {
     const result = taxAdjustmentArraySchema.safeParse(invalidSummaryRecords);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.errors[0].message).toContain('should equal the sum');
+      expect(result.error.issues[0].message).toContain('should equal the sum');
     }
   });
 });

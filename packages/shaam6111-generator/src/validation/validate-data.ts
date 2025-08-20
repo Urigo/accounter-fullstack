@@ -29,12 +29,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (data.header) {
     const headerValidation = headerSchema.safeParse(data.header);
     if (!headerValidation.success) {
-      headerValidation.error.errors.map(err => {
+      for (const issue of headerValidation.error.issues) {
         errors.push({
-          path: `header.${err.path.join('.')}`,
-          message: err.message,
+          path: `header.${issue.path.join('.')}`,
+          message: issue.message,
         });
-      });
+      }
     }
   } else {
     errors.push({
@@ -47,12 +47,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (Array.isArray(data.profitAndLoss)) {
     const profitLossValidation = profitLossArraySchema.safeParse(data.profitAndLoss);
     if (!profitLossValidation.success) {
-      profitLossValidation.error.errors.map(err => {
+      for (const issue of profitLossValidation.error.issues) {
         errors.push({
-          path: ['profitAndLoss', ...err.path].join('.'),
-          message: err.message,
+          path: ['profitAndLoss', ...issue.path].join('.'),
+          message: issue.message,
         });
-      });
+      }
     }
   }
 
@@ -60,12 +60,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (Array.isArray(data.taxAdjustment)) {
     const taxAdjustmentValidation = taxAdjustmentArraySchema.safeParse(data.taxAdjustment);
     if (!taxAdjustmentValidation.success) {
-      taxAdjustmentValidation.error.errors.map(err => {
+      for (const issue of taxAdjustmentValidation.error.issues) {
         errors.push({
-          path: ['taxAdjustment', ...err.path].join('.'),
-          message: err.message,
+          path: ['taxAdjustment', ...issue.path].join('.'),
+          message: issue.message,
         });
-      });
+      }
     }
   }
 
@@ -75,12 +75,12 @@ export function validateData(data: ReportData): ValidationResult {
   if (hasBalanceSheet) {
     const balanceSheetValidation = balanceSheetArraySchema.safeParse(data.balanceSheet);
     if (!balanceSheetValidation.success) {
-      balanceSheetValidation.error.errors.map(err => {
+      for (const issue of balanceSheetValidation.error.issues) {
         errors.push({
-          path: ['balanceSheet', ...err.path].join('.'),
-          message: err.message,
+          path: ['balanceSheet', ...issue.path].join('.'),
+          message: issue.message,
         });
-      });
+      }
     }
   }
 

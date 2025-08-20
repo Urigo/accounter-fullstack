@@ -117,9 +117,9 @@ describe('Document Type Field Validation', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ZodError);
         const zodError = error as ZodError;
-        expect(zodError.errors[0].path).toEqual(['documentType']);
-        expect(zodError.errors[0].code).toBe('invalid_enum_value');
-        expect(zodError.errors[0].message).toContain('Invalid enum value');
+        expect(zodError.issues[0].path).toEqual(['documentType']);
+        expect(zodError.issues[0].code).toBe('invalid_value');
+        expect(zodError.issues[0].message).toContain('Invalid option: expected one of');
       }
     });
   });
@@ -421,13 +421,13 @@ describe('Document Type Field Validation', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ZodError);
         const zodError = error as ZodError;
-        expect(zodError.errors[0].code).toBe('invalid_enum_value');
-        expect(zodError.errors[0].message).toContain('Invalid enum value');
+        expect(zodError.issues[0].code).toBe('invalid_value');
+        expect(zodError.issues[0].message).toContain('Invalid option: expected one of');
 
         // Check that all valid options are listed
-        const errorMessage = zodError.errors[0].message;
+        const errorMessage = zodError.issues[0].message;
         for (const validType of validDocumentTypes) {
-          expect(errorMessage).toContain(`'${validType}'`);
+          expect(errorMessage).toContain(`"${validType}"`);
         }
       }
     });
