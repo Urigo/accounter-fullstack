@@ -38,7 +38,21 @@ const PostgresModel = zod.object({
 });
 
 const configs = {
-  postgres: PostgresModel.safeParse(process.env),
+  postgres: PostgresModel.safeParse(
+    process.env?.['POSTGRES_DB']
+      ? process.env
+      : {
+          ...process.env,
+          // Default values for local development
+          _errors: 0,
+          POSTGRES_USER: 'postgres',
+          POSTGRES_PASSWORD: 'postgres',
+          POSTGRES_HOST: 'localhost',
+          POSTGRES_PORT: 5432,
+          POSTGRES_DB: 'accounter',
+          POSTGRES_SSL: null,
+        },
+  ),
 };
 
 const environmentErrors: Array<string> = [];
@@ -55,7 +69,7 @@ if (environmentErrors.length) {
   process.exit(1);
 }
 
-function extractConfig<Input, Output>(config: zod.SafeParseReturnType<Input, Output>): Output {
+function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
   if (!config.success) {
     throw new Error('Something went wrong.');
   }

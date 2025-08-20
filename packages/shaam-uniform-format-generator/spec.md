@@ -1,6 +1,6 @@
 # 📘 Project Specification: SHAAM Uniform Format Generator & Parser
 
-**Name (suggested):** @accounter/shaam-uniform-format-generator` **Version:** 0.1.0 **Target
+**Name (suggested):** @accounter/shaam-uniform-format-generator **Version:** 0.1.0 **Target
 environment:** Node.js + TypeScript **Tech stack:**
 
 - **TypeScript** (strict mode)
@@ -48,11 +48,11 @@ The tool must support the following **record types** (from SHAAM 1.31 spec):
 
 ```ts
 interface ReportInput {
-  business: BusinessMetadata // from INI.TXT and A100
-  documents: Document[] // C100 + D110 + D120
-  journalEntries: JournalEntry[] // B100s
-  accounts: Account[] // B110s
-  inventory: InventoryItem[] // M100s
+  business: BusinessMetadata; // from INI.TXT and A100
+  documents: Document[]; // C100 + D110 + D120
+  journalEntries: JournalEntry[]; // B100s
+  accounts: Account[]; // B110s
+  inventory: InventoryItem[]; // M100s
 }
 ```
 
@@ -72,15 +72,15 @@ interface ReportInput {
 
 ```ts
 interface ReportOutput {
-  iniText: string
-  dataText: string
-  iniFile: File
-  dataFile: File
+  iniText: string;
+  dataText: string;
+  iniFile: File;
+  dataFile: File;
   summary: {
-    totalRecords: number
-    perType: Record<string, number>
-    errors?: ValidationError[]
-  }
+    totalRecords: number;
+    perType: Record<string, number>;
+    errors?: ValidationError[];
+  };
 }
 ```
 
@@ -160,9 +160,9 @@ src/
 Each `record/*.ts` module should export:
 
 ```ts
-export const C100Schema: z.ZodType<C100>
-export function encodeC100(input: C100): string
-export function parseC100(line: string): C100
+export const C100Schema: z.ZodType<C100>;
+export function encodeC100(input: C100): string;
+export function parseC100(line: string): C100;
 ```
 
 ---
@@ -173,10 +173,10 @@ Validation errors will follow this structure:
 
 ```ts
 interface ValidationError {
-  recordType: string
-  recordIndex: number
-  field: string
-  message: string
+  recordType: string;
+  recordIndex: number;
+  field: string;
+  message: string;
 }
 ```
 
@@ -191,7 +191,7 @@ interface ValidationError {
 - Record types are available via:
 
   ```ts
-  import { DocumentType } from '@your-org/shaam-ufgen'
+  import { DocumentType } from '@your-org/shaam-ufgen';
   ```
 
 - Types align closely with real business use cases (no cryptic field names)

@@ -62,8 +62,8 @@ Generates SHAAM uniform format report files from a high-level JSON input object.
 ```typescript
 import {
   generateUniformFormatReport,
-  type ReportInput
-} from '@accounter/shaam-uniform-format-generator'
+  type ReportInput,
+} from '@accounter/shaam-uniform-format-generator';
 
 const reportInput: ReportInput = {
   business: {
@@ -72,8 +72,8 @@ const reportInput: ReportInput = {
     taxId: '123456789',
     reportingPeriod: {
       startDate: '2023-01-01',
-      endDate: '2023-12-31'
-    }
+      endDate: '2023-12-31',
+    },
   },
   documents: [
     {
@@ -81,8 +81,8 @@ const reportInput: ReportInput = {
       type: '320', // Invoice
       date: '2023-06-15',
       amount: 1000.0,
-      description: 'Service invoice'
-    }
+      description: 'Service invoice',
+    },
   ],
   journalEntries: [
     {
@@ -90,35 +90,35 @@ const reportInput: ReportInput = {
       date: '2023-06-15',
       amount: 1000.0,
       accountId: '1100',
-      description: 'Revenue entry'
-    }
+      description: 'Revenue entry',
+    },
   ],
   accounts: [
     {
       id: '1100',
       name: 'Revenue Account',
       type: '4', // Revenue
-      balance: 1000.0
-    }
+      balance: 1000.0,
+    },
   ],
   inventory: [
     {
       id: 'ITEM001',
       name: 'Service Item',
       quantity: 1,
-      unitPrice: 1000.0
-    }
-  ]
-}
+      unitPrice: 1000.0,
+    },
+  ],
+};
 
 const result = generateUniformFormatReport(reportInput, {
   validationMode: 'fail-fast', // or 'collect-all'
-  fileNameBase: 'my-report'
-})
+  fileNameBase: 'my-report',
+});
 
-console.log(result.iniText) // INI.TXT content
-console.log(result.dataText) // BKMVDATA.TXT content
-console.log(result.summary) // Generation summary
+console.log(result.iniText); // INI.TXT content
+console.log(result.dataText); // BKMVDATA.TXT content
+console.log(result.summary); // Generation summary
 ```
 
 #### `parseUniformFormatFiles(iniContent, dataContent, options?)`
@@ -126,19 +126,19 @@ console.log(result.summary) // Generation summary
 Parses SHAAM uniform format files back into structured JSON with comprehensive validation.
 
 ```typescript
-import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator'
+import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator';
 
 const parseResult = parseUniformFormatFiles(iniFileContent, dataFileContent, {
   validationMode: 'lenient', // 'strict' | 'lenient' | 'none'
   skipUnknownRecords: true,
-  allowPartialData: true
-})
+  allowPartialData: true,
+});
 
-console.log(parseResult.data.business) // Parsed business metadata
-console.log(parseResult.data.documents) // Parsed documents
-console.log(parseResult.summary.totalRecords) // Parse summary
-console.log(parseResult.summary.errors) // Validation errors
-console.log(parseResult.summary.crossValidationPassed) // Cross-validation result
+console.log(parseResult.data.business); // Parsed business metadata
+console.log(parseResult.data.documents); // Parsed documents
+console.log(parseResult.summary.totalRecords); // Parse summary
+console.log(parseResult.summary.errors); // Validation errors
+console.log(parseResult.summary.crossValidationPassed); // Cross-validation result
 ```
 
 ### Types and Interfaces
@@ -147,11 +147,11 @@ console.log(parseResult.summary.crossValidationPassed) // Cross-validation resul
 
 ```typescript
 interface ReportInput {
-  business: BusinessMetadata
-  documents: Document[]
-  journalEntries: JournalEntry[]
-  accounts: Account[]
-  inventory: InventoryItem[]
+  business: BusinessMetadata;
+  documents: Document[];
+  journalEntries: JournalEntry[];
+  accounts: Account[];
+  inventory: InventoryItem[];
 }
 ```
 
@@ -159,13 +159,13 @@ interface ReportInput {
 
 ```typescript
 interface BusinessMetadata {
-  businessId: string
-  name: string
-  taxId: string
+  businessId: string;
+  name: string;
+  taxId: string;
   reportingPeriod: {
-    startDate: string // YYYY-MM-DD format
-    endDate: string // YYYY-MM-DD format
-  }
+    startDate: string; // YYYY-MM-DD format
+    endDate: string; // YYYY-MM-DD format
+  };
 }
 ```
 
@@ -173,11 +173,11 @@ interface BusinessMetadata {
 
 ```typescript
 interface Document {
-  id: string
-  type: DocumentType // e.g., "320" for invoice, "330" for credit note
-  date: string // YYYY-MM-DD format
-  amount: number
-  description?: string
+  id: string;
+  type: DocumentType; // e.g., "320" for invoice, "330" for credit note
+  date: string; // YYYY-MM-DD format
+  amount: number;
+  description?: string;
 }
 ```
 
@@ -185,32 +185,32 @@ interface Document {
 
 ```typescript
 interface JournalEntry {
-  id: string
-  date: string // YYYY-MM-DD format
-  amount: number
-  accountId: string
-  description?: string
-  transactionNumber?: number
-  transactionLineNumber?: number
-  batchNumber?: number
-  transactionType?: string
-  referenceDocument?: string
-  referenceDocumentType?: DocumentType
-  referenceDocument2?: string
-  referenceDocumentType2?: DocumentType
-  valueDate?: string
-  counterAccountKey?: string
-  debitCreditIndicator?: '1' | '2' // 1=Debit, 2=Credit
-  currencyCode?: CurrencyCode
-  transactionAmount?: number // Preserve original B100 transaction amount
-  foreignCurrencyAmount?: number
-  quantityField?: number
-  matchingField1?: string
-  matchingField2?: string
-  branchId?: string
-  entryDate?: string
-  operatorUsername?: string
-  reserved?: string
+  id: string;
+  date: string; // YYYY-MM-DD format
+  amount: number;
+  accountId: string;
+  description?: string;
+  transactionNumber?: number;
+  transactionLineNumber?: number;
+  batchNumber?: number;
+  transactionType?: string;
+  referenceDocument?: string;
+  referenceDocumentType?: DocumentType;
+  referenceDocument2?: string;
+  referenceDocumentType2?: DocumentType;
+  valueDate?: string;
+  counterAccountKey?: string;
+  debitCreditIndicator?: '1' | '2'; // 1=Debit, 2=Credit
+  currencyCode?: CurrencyCode;
+  transactionAmount?: number; // Preserve original B100 transaction amount
+  foreignCurrencyAmount?: number;
+  quantityField?: number;
+  matchingField1?: string;
+  matchingField2?: string;
+  branchId?: string;
+  entryDate?: string;
+  operatorUsername?: string;
+  reserved?: string;
 }
 ```
 
@@ -218,29 +218,29 @@ interface JournalEntry {
 
 ```typescript
 interface Account {
-  id: string
-  name?: string // Optional for round-trip compatibility
+  id: string;
+  name?: string; // Optional for round-trip compatibility
   sortCode: {
-    key: string // Required - Account sort code key
-    name?: string // Optional - Sort code description
-  }
+    key: string; // Required - Account sort code key
+    name?: string; // Optional - Sort code description
+  };
   address?: {
-    street?: string
-    houseNumber?: string
-    city?: string
-    zip?: string
-    country?: string
-  }
-  countryCode?: string // ISO country code
-  parentAccountKey?: string // Parent account identifier
-  vatId?: string // Supplier/Customer VAT ID
-  accountOpeningBalance: number // Required - Opening balance amount
-  totalDebits?: number // Total debit transactions
-  totalCredits?: number // Total credit transactions
-  accountingClassificationCode?: string // Classification code (max 4 digits)
-  branchId?: string // Branch identifier
-  openingBalanceForeignCurrency?: number // Opening balance in foreign currency
-  foreignCurrencyCode?: string // Foreign currency code (e.g., "USD", "EUR")
+    street?: string;
+    houseNumber?: string;
+    city?: string;
+    zip?: string;
+    country?: string;
+  };
+  countryCode?: string; // ISO country code
+  parentAccountKey?: string; // Parent account identifier
+  vatId?: string; // Supplier/Customer VAT ID
+  accountOpeningBalance: number; // Required - Opening balance amount
+  totalDebits?: number; // Total debit transactions
+  totalCredits?: number; // Total credit transactions
+  accountingClassificationCode?: string; // Classification code (max 4 digits)
+  branchId?: string; // Branch identifier
+  openingBalanceForeignCurrency?: number; // Opening balance in foreign currency
+  foreignCurrencyCode?: string; // Foreign currency code (e.g., "USD", "EUR")
 }
 ```
 
@@ -248,10 +248,10 @@ interface Account {
 
 ```typescript
 interface InventoryItem {
-  id: string
-  name: string
-  quantity: number
-  unitPrice: number
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
 }
 ```
 
@@ -259,11 +259,11 @@ interface InventoryItem {
 
 ```typescript
 interface ValidationError {
-  recordType: string
-  recordIndex: number
-  field: string
-  message: string
-  severity?: 'error' | 'warning' // Only in parse results
+  recordType: string;
+  recordIndex: number;
+  field: string;
+  message: string;
+  severity?: 'error' | 'warning'; // Only in parse results
 }
 ```
 
@@ -289,13 +289,13 @@ interface ReportOutput {
 
 ```typescript
 interface ParseResult {
-  data: ReportInput // Parsed structured data
+  data: ReportInput; // Parsed structured data
   summary: {
-    totalRecords: number
-    perType: Record<string, number>
-    errors: ValidationError[]
-    crossValidationPassed: boolean
-  }
+    totalRecords: number;
+    perType: Record<string, number>;
+    errors: ValidationError[];
+    crossValidationPassed: boolean;
+  };
 }
 ```
 
@@ -305,8 +305,8 @@ interface ParseResult {
 
 ```typescript
 interface GenerationOptions {
-  validationMode?: 'fail-fast' | 'collect-all' // Default: 'fail-fast'
-  fileNameBase?: string // Default: 'report'
+  validationMode?: 'fail-fast' | 'collect-all'; // Default: 'fail-fast'
+  fileNameBase?: string; // Default: 'report'
 }
 ```
 
@@ -326,29 +326,29 @@ import {
   DebitCreditIndicatorEnum,
   DocumentTypeEnum,
   PaymentMethodEnum,
-  RecordTypeEnum
+  RecordTypeEnum,
   // ... and many more
-} from '@accounter/shaam-uniform-format-generator'
+} from '@accounter/shaam-uniform-format-generator';
 
 // Document types
-const invoiceType = DocumentTypeEnum.enum['320'] // Invoice
-const creditNoteType = DocumentTypeEnum.enum['330'] // Credit Tax Invoice
+const invoiceType = DocumentTypeEnum.enum['320']; // Invoice
+const creditNoteType = DocumentTypeEnum.enum['330']; // Credit Tax Invoice
 
 // Currency codes
-const ils = CurrencyCodeEnum.enum.ILS // Israeli Shekel
-const usd = CurrencyCodeEnum.enum.USD // US Dollar
+const ils = CurrencyCodeEnum.enum.ILS; // Israeli Shekel
+const usd = CurrencyCodeEnum.enum.USD; // US Dollar
 
 // Payment methods
-const cash = PaymentMethodEnum.enum['1'] // Cash
-const check = PaymentMethodEnum.enum['2'] // Check
+const cash = PaymentMethodEnum.enum['1']; // Cash
+const check = PaymentMethodEnum.enum['2']; // Check
 
 // Debit/Credit indicators
-const debit = DebitCreditIndicatorEnum.enum['1'] // Debit
-const credit = DebitCreditIndicatorEnum.enum['2'] // Credit
+const debit = DebitCreditIndicatorEnum.enum['1']; // Debit
+const credit = DebitCreditIndicatorEnum.enum['2']; // Credit
 
 // Record types
-const b110 = RecordTypeEnum.enum.B110 // Account record
-const c100 = RecordTypeEnum.enum.C100 // Document header record
+const b110 = RecordTypeEnum.enum.B110; // Account record
+const c100 = RecordTypeEnum.enum.C100; // Document header record
 ```
 
 ## 🎯 Complete Example
@@ -357,8 +357,8 @@ const c100 = RecordTypeEnum.enum.C100 // Document header record
 import {
   generateUniformFormatReport,
   parseUniformFormatFiles,
-  type ReportInput
-} from '@accounter/shaam-uniform-format-generator'
+  type ReportInput,
+} from '@accounter/shaam-uniform-format-generator';
 
 // 1. Prepare your data
 const reportData: ReportInput = {
@@ -368,8 +368,8 @@ const reportData: ReportInput = {
     taxId: '123456789',
     reportingPeriod: {
       startDate: '2023-01-01',
-      endDate: '2023-12-31'
-    }
+      endDate: '2023-12-31',
+    },
   },
   documents: [
     {
@@ -377,15 +377,15 @@ const reportData: ReportInput = {
       type: '320', // Invoice
       date: '2023-03-15',
       amount: 2340.0,
-      description: 'Consulting services'
+      description: 'Consulting services',
     },
     {
       id: 'CN-2023-001',
       type: '330', // Credit note
       date: '2023-04-10',
       amount: -340.0,
-      description: 'Service adjustment'
-    }
+      description: 'Service adjustment',
+    },
   ],
   journalEntries: [
     {
@@ -396,7 +396,7 @@ const reportData: ReportInput = {
       description: 'Consulting revenue',
       batchNumber: 'BATCH-Q1-2023',
       transactionType: 'SALE',
-      referenceDocument: 'INV-2023-001'
+      referenceDocument: 'INV-2023-001',
     },
     {
       id: 'JE-2023-002',
@@ -405,8 +405,8 @@ const reportData: ReportInput = {
       accountId: '4000',
       description: 'Revenue adjustment',
       currencyCode: 'USD',
-      foreignCurrencyAmount: -290.0
-    }
+      foreignCurrencyAmount: -290.0,
+    },
   ],
   accounts: [
     {
@@ -414,54 +414,54 @@ const reportData: ReportInput = {
       name: 'Consulting Revenue',
       sortCode: {
         key: 'Revenue',
-        name: 'Revenue Accounts'
+        name: 'Revenue Accounts',
       },
       accountOpeningBalance: 0.0,
       totalDebits: 500.0,
       totalCredits: 2500.0,
-      accountingClassificationCode: '0001'
+      accountingClassificationCode: '0001',
     },
     {
       id: '1200',
       name: 'Accounts Receivable',
       sortCode: {
         key: 'Asset',
-        name: 'Asset Accounts'
+        name: 'Asset Accounts',
       },
       accountOpeningBalance: 1500.0,
       countryCode: 'IL',
       branchId: 'MAIN',
       foreignCurrencyCode: 'USD',
-      openingBalanceForeignCurrency: 1250.0
-    }
+      openingBalanceForeignCurrency: 1250.0,
+    },
   ],
   inventory: [
     {
       id: 'SERV-001',
       name: 'Consulting Hour',
       quantity: 20,
-      unitPrice: 117.0
-    }
-  ]
-}
+      unitPrice: 117.0,
+    },
+  ],
+};
 
 // 2. Generate the files
 try {
   const result = generateUniformFormatReport(reportData, {
     validationMode: 'fail-fast',
-    fileNameBase: 'quarterly-report-2023-q1'
-  })
+    fileNameBase: 'quarterly-report-2023-q1',
+  });
 
   // 3. Access the generated content
-  console.log('Generated INI.TXT:')
-  console.log(result.iniText)
+  console.log('Generated INI.TXT:');
+  console.log(result.iniText);
 
-  console.log('\nGenerated BKMVDATA.TXT:')
-  console.log(result.dataText)
+  console.log('\nGenerated BKMVDATA.TXT:');
+  console.log(result.dataText);
 
-  console.log('\nSummary:')
-  console.log(`Total records: ${result.summary.totalRecords}`)
-  console.log('Records per type:', result.summary.perType)
+  console.log('\nSummary:');
+  console.log(`Total records: ${result.summary.totalRecords}`);
+  console.log('Records per type:', result.summary.perType);
 
   // 4. Save files (example using Node.js fs)
   // import { writeFileSync } from 'fs'
@@ -469,12 +469,12 @@ try {
   // writeFileSync('report.BKMVDATA.TXT', result.dataText, 'utf8')
 
   // 5. Parse files back (round-trip test)
-  const parsedData = parseUniformFormatFiles(result.iniText, result.dataText)
-  console.log('\nParsed business data:', parsedData.business)
+  const parsedData = parseUniformFormatFiles(result.iniText, result.dataText);
+  console.log('\nParsed business data:', parsedData.business);
 } catch (error) {
-  console.error('Generation failed:', error.message)
+  console.error('Generation failed:', error.message);
   if (error.errors) {
-    console.error('Validation errors:', error.errors)
+    console.error('Validation errors:', error.errors);
   }
 }
 ```
@@ -484,49 +484,49 @@ try {
 ### Custom Validation
 
 ```typescript
-import { ReportInputSchema } from '@accounter/shaam-uniform-format-generator'
+import { ReportInputSchema } from '@accounter/shaam-uniform-format-generator';
 
 // Validate data before generation
-const validationResult = ReportInputSchema.safeParse(yourData)
+const validationResult = ReportInputSchema.safeParse(yourData);
 if (!validationResult.success) {
-  console.error('Validation errors:', validationResult.error.issues)
+  console.error('Validation errors:', validationResult.error.issues);
 }
 ```
 
 ### Parse with Different Validation Modes
 
 ```typescript
-import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator'
+import { parseUniformFormatFiles } from '@accounter/shaam-uniform-format-generator';
 
 // Strict validation - throws on any error
 try {
   const strictResult = parseUniformFormatFiles(iniContent, dataContent, {
     validationMode: 'strict',
-    allowPartialData: false
-  })
-  console.log('Strict parsing succeeded:', strictResult.data)
+    allowPartialData: false,
+  });
+  console.log('Strict parsing succeeded:', strictResult.data);
 } catch (error) {
-  console.error('Strict parsing failed:', error.message)
+  console.error('Strict parsing failed:', error.message);
 }
 
 // Lenient validation - reports issues but continues
 const lenientResult = parseUniformFormatFiles(iniContent, dataContent, {
-  validationMode: 'lenient'
-})
-console.log('Parsed data:', lenientResult.data)
-console.log('Validation issues:', lenientResult.summary.errors)
+  validationMode: 'lenient',
+});
+console.log('Parsed data:', lenientResult.data);
+console.log('Validation issues:', lenientResult.summary.errors);
 
 // No validation - fastest parsing
 const fastResult = parseUniformFormatFiles(iniContent, dataContent, {
-  validationMode: 'none'
-})
-console.log('Fast parsing result:', fastResult.data)
+  validationMode: 'none',
+});
+console.log('Fast parsing result:', fastResult.data);
 ```
 
 ### Working with Individual Records
 
 ```typescript
-import { encodeC100, parseC100, type C100 } from '@accounter/shaam-uniform-format-generator'
+import { encodeC100, parseC100, type C100 } from '@accounter/shaam-uniform-format-generator';
 
 // Encode a single document record
 const documentRecord: C100 = {
@@ -565,15 +565,15 @@ const documentRecord: C100 = {
   cancelledAttribute3: '',
   actionExecutor: '',
   lineConnectingField: '',
-  reserved: ''
-}
+  reserved: '',
+};
 
-const encodedLine = encodeC100(documentRecord)
-console.log(encodedLine) // Fixed-width formatted line
+const encodedLine = encodeC100(documentRecord);
+console.log(encodedLine); // Fixed-width formatted line
 
 // Parse it back
-const parsedRecord = parseC100(encodedLine)
-console.log(parsedRecord) // Structured object
+const parsedRecord = parseC100(encodedLine);
+console.log(parsedRecord); // Structured object
 ```
 
 ## 🏗️ Development
@@ -613,34 +613,34 @@ yarn lint
 The library provides detailed error information:
 
 ```typescript
-import { ShaamFormatError } from '@accounter/shaam-uniform-format-generator'
+import { ShaamFormatError } from '@accounter/shaam-uniform-format-generator';
 
 try {
-  const result = generateUniformFormatReport(invalidData)
+  const result = generateUniformFormatReport(invalidData);
 } catch (error) {
   if (error instanceof ShaamFormatError) {
-    console.error('SHAAM format error:', error.message)
-    console.error('Validation errors:', error.errors)
+    console.error('SHAAM format error:', error.message);
+    console.error('Validation errors:', error.errors);
   }
 }
 
 // Parse errors include context and severity
 try {
   const parseResult = parseUniformFormatFiles(iniContent, dataContent, {
-    validationMode: 'strict'
-  })
+    validationMode: 'strict',
+  });
 } catch (error) {
-  console.error('Parse failed:', error.message)
+  console.error('Parse failed:', error.message);
 }
 
 // Access detailed validation information
 const parseResult = parseUniformFormatFiles(iniContent, dataContent, {
-  validationMode: 'lenient'
-})
+  validationMode: 'lenient',
+});
 
 for (const error of parseResult.summary.errors) {
-  console.log(`${error.severity}: ${error.message}`)
-  console.log(`Record: ${error.recordType}[${error.recordIndex}], Field: ${error.field}`)
+  console.log(`${error.severity}: ${error.message}`);
+  console.log(`Record: ${error.recordType}[${error.recordIndex}], Field: ${error.field}`);
 }
 ```
 

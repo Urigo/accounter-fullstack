@@ -95,7 +95,7 @@ shaam-6111/
  * @returns The formatted SHAAM 6111 report as a string
  * @throws Error if validation fails
  */
-export function generateReport(data: ReportData): string
+export function generateReport(data: ReportData): string;
 
 /**
  * Parses a SHAAM 6111 report into structured data
@@ -103,21 +103,21 @@ export function generateReport(data: ReportData): string
  * @returns Structured report data
  * @throws Error if the report is invalid or malformed
  */
-export function parseReport(reportContent: string): ReportData
+export function parseReport(reportContent: string): ReportData;
 
 /**
  * Validates report data against SHAAM 6111 requirements
  * @param data Structured report data to validate
  * @returns Validation result with errors if applicable
  */
-export function validateData(data: ReportData): ValidationResult
+export function validateData(data: ReportData): ValidationResult;
 
 /**
  * Validates an existing SHAAM 6111 report
  * @param reportContent The SHAAM 6111 report content as a string
  * @returns Validation result with errors if applicable
  */
-export function validateReport(reportContent: string): ValidationResult
+export function validateReport(reportContent: string): ValidationResult;
 ```
 
 ### Type Definitions
@@ -127,23 +127,23 @@ Based on the SHAAM 6111 specification, the following types will be implemented:
 ```typescript
 // Main data structure
 export interface ReportData {
-  header: HeaderRecord
-  profitAndLoss: ReportEntry[]
-  taxAdjustment: ReportEntry[]
-  balanceSheet: ReportEntry[]
+  header: HeaderRecord;
+  profitAndLoss: ReportEntry[];
+  taxAdjustment: ReportEntry[];
+  balanceSheet: ReportEntry[];
 }
 
 // Validation results
 export interface ValidationResult {
-  isValid: boolean
-  errors?: ValidationError[]
+  isValid: boolean;
+  errors?: ValidationError[];
 }
 
 export interface ValidationErrorDetail {
-  path?: string // Path to the invalid field
-  message: string // Developer-friendly error message
-  code?: string // Error code (if applicable)
-  value?: unknown // The invalid value
+  path?: string; // Path to the invalid field
+  message: string; // Developer-friendly error message
+  code?: string; // Error code (if applicable)
+  value?: unknown; // The invalid value
 }
 
 // Record types based on SHAAM 6111 specification
@@ -151,16 +151,16 @@ export interface ValidationErrorDetail {
 // that will be mapped to/from the numeric field IDs in the spec
 
 export interface HeaderRecord {
-  taxFileNumber: string
-  taxYear: string
-  idNumber: string
-  vatFileNumber?: string
+  taxFileNumber: string;
+  taxYear: string;
+  idNumber: string;
+  vatFileNumber?: string;
   // Other fields as specified in the SHAAM 6111 documentation
 }
 
 export interface ReportEntry {
-  code: string
-  amount: number
+  code: string;
+  amount: number;
 }
 
 // Additional record type interfaces will be defined according to the spec
@@ -195,18 +195,18 @@ export interface ReportEntry {
 ```typescript
 // Error classes
 export class ValidationError extends Error {
-  public errors: ValidationErrorDetail[]
+  public errors: ValidationErrorDetail[];
   constructor(message: string, errors: ValidationErrorDetail[]) {
-    super(message)
-    this.name = 'ValidationError'
-    this.errors = errors
+    super(message);
+    this.name = 'ValidationError';
+    this.errors = errors;
   }
 }
 
 export class ParsingError extends Error {
   constructor(message: string) {
-    super(message)
-    this.name = 'ParsingError'
+    super(message);
+    this.name = 'ParsingError';
   }
 }
 ```
@@ -245,9 +245,9 @@ export const headerSchema = z.object({
     .string()
     .length(9, { message: 'VAT file number must be exactly 9 digits' })
     .regex(/^\d+$/, { message: 'VAT file number must contain only digits' })
-    .optional()
+    .optional(),
   // Additional fields with appropriate validations
-})
+});
 ```
 
 ### Custom Validators
