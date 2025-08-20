@@ -48,8 +48,8 @@ configuration file before running the app.
    ```typescript
    export const ENV = {
      database: '<Database connection details>',
-     ...sources
-   }
+     ...sources,
+   };
    ```
 
 3. Save the changes.
