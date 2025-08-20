@@ -151,6 +151,7 @@ export interface ValidationError {
   recordIndex: number;
   field: string;
   message: string;
+  value?: unknown; // Optional value that caused the error
 }
 
 // Generation options

@@ -33,6 +33,8 @@ export function validateData(data: ReportData): ValidationResult {
         errors.push({
           path: `header.${issue.path.join('.')}`,
           message: issue.message,
+          code: issue.code,
+          value: issue.input,
         });
       }
     }
@@ -51,6 +53,8 @@ export function validateData(data: ReportData): ValidationResult {
         errors.push({
           path: ['profitAndLoss', ...issue.path].join('.'),
           message: issue.message,
+          code: issue.code,
+          value: issue.input,
         });
       }
     }
@@ -64,6 +68,8 @@ export function validateData(data: ReportData): ValidationResult {
         errors.push({
           path: ['taxAdjustment', ...issue.path].join('.'),
           message: issue.message,
+          code: issue.code,
+          value: issue.input,
         });
       }
     }
@@ -79,6 +85,8 @@ export function validateData(data: ReportData): ValidationResult {
         errors.push({
           path: ['balanceSheet', ...issue.path].join('.'),
           message: issue.message,
+          code: issue.code,
+          value: issue.input,
         });
       }
     }

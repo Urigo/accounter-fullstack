@@ -16,6 +16,7 @@ function convertZodErrorsToValidationErrors(zodError: ZodError): ValidationError
     recordIndex: index,
     field: issue.path.join('.') || 'unknown',
     message: issue.message,
+    value: issue.input,
   }));
 }
 
