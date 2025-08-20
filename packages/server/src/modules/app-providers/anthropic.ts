@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
-import { z } from 'zod/v3';
+import { z } from 'zod';
 import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '@shared/enums';
 
