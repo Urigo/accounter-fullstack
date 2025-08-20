@@ -36,7 +36,7 @@ export function convertReportToFile(
   }
 
   // Create and return a File object with .dat extension
-  return new File([encodedReport], fileName, {
+  return new File([new Uint8Array(encodedReport)], fileName, {
     type: 'application/octet-stream',
   });
 }

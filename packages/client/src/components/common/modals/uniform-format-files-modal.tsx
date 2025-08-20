@@ -75,10 +75,14 @@ export function UniformFormatFilesDownloadModal({
         }
 
         // Create files from the response data
-        const bkmvdataFile = new File([iconv.encode(bkmvdata, 'ISO-8859-8')], 'bkmvdata.txt', {
-          type: 'text/plain',
-        });
-        const iniFile = new File([iconv.encode(ini, 'ISO-8859-8')], 'ini.txt', {
+        const bkmvdataFile = new File(
+          [new Uint8Array(iconv.encode(bkmvdata, 'ISO-8859-8'))],
+          'bkmvdata.txt',
+          {
+            type: 'text/plain',
+          },
+        );
+        const iniFile = new File([new Uint8Array(iconv.encode(ini, 'ISO-8859-8'))], 'ini.txt', {
           type: 'text/plain',
         });
 
