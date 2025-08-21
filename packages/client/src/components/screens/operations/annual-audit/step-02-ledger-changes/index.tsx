@@ -3,9 +3,9 @@ import { AlertTriangle, Settings } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeSortByField, LedgerValidationStatusDocument } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/index.js';
+import { getLedgerValidationHref } from '../../../../charges-ledger-validation.js';
 import { Badge } from '../../../../ui/badge.jsx';
 import { CardContent } from '../../../../ui/card.jsx';
-import { getAllChargesHref } from '../../../charges/all-charges.jsx';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -78,7 +78,7 @@ export function Step02LedgerChanges(props: Step02Props) {
   }, [data]);
 
   const href = useMemo(() => {
-    return getAllChargesHref({
+    return getLedgerValidationHref({
       byOwners: props.adminBusinessId ? [props.adminBusinessId] : undefined,
       fromAnyDate: `${props.year}-01-01` as TimelessDateString,
       toAnyDate: `${props.year}-12-31` as TimelessDateString,
@@ -100,20 +100,31 @@ export function Step02LedgerChanges(props: Step02Props) {
     >
       {pendingChanges > 0 && (
         <CardContent className="pt-0 border-t">
-          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <div className="flex-1">
-              <span className="text-sm text-red-800 font-medium">
-                {pendingChanges} pending ledger changes detected
-              </span>
-              {/* <div className="text-xs text-red-600 mt-1">
+          {fetching ? (
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-pulse">
+              <Settings className="h-4 w-4 text-gray-400" />
+              <div className="flex-1">
+                <span className="text-sm text-gray-600 font-medium">
+                  Checking for pending ledger changes...
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <div className="flex-1">
+                <span className="text-sm text-red-800 font-medium">
+                  {pendingChanges} pending ledger changes detected
+                </span>
+                {/* <div className="text-xs text-red-600 mt-1">
                 Last updated: {new Date(ledgerStatus.lastUpdate).toLocaleString()}
               </div> */}
+              </div>
+              <Badge variant="destructive" className="text-xs">
+                Action Required
+              </Badge>
             </div>
-            <Badge variant="destructive" className="text-xs">
-              Action Required
-            </Badge>
-          </div>
+          )}
         </CardContent>
       )}
     </BaseStepCard>

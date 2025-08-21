@@ -245,7 +245,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Year-end audit',
         label: '',
-        href: '/workflows/year-end-audit',
+        href: '/workflows/annual-audit',
         icon: <ListChecks size={18} />,
       },
     ],
