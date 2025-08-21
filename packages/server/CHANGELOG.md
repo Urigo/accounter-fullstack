@@ -1,5 +1,53 @@
 # @accounter/server
 
+## 0.0.7
+
+### Patch Changes
+
+- [#2291](https://github.com/Urigo/accounter-fullstack/pull/2291)
+  [`633a688`](https://github.com/Urigo/accounter-fullstack/commit/633a68824433dcd4df7be7e9c118ddadbf9a2029)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.0.17` ↗︎](https://www.npmjs.com/package/zod/v/4.0.17) (from
+    `3.25.76`, in `dependencies`)
+
+- [#2368](https://github.com/Urigo/accounter-fullstack/pull/2368)
+  [`1aa95ab`](https://github.com/Urigo/accounter-fullstack/commit/1aa95abcab34009fa5133352bc3fa54511e293fd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.5` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.5) (from
+    `1.2.12`, in `dependencies`)
+  - Updated dependency [`ai@5.0.16` ↗︎](https://www.npmjs.com/package/ai/v/5.0.16) (from `4.3.19`,
+    in `dependencies`)
+
+- [#2444](https://github.com/Urigo/accounter-fullstack/pull/2444)
+  [`6b530f5`](https://github.com/Urigo/accounter-fullstack/commit/6b530f551f1fc559913d966a6e93874338704d9c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@5.0.18` ↗︎](https://www.npmjs.com/package/ai/v/5.0.18) (from `5.0.16`,
+    in `dependencies`)
+
+- [#2436](https://github.com/Urigo/accounter-fullstack/pull/2436)
+  [`17c75ad`](https://github.com/Urigo/accounter-fullstack/commit/17c75ad6c675c3db6e35c4ef309b9d005dacd265)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Performance Optimization**: Introduced
+  DataLoader for batching and caching requests to the Green Invoice API for both documents and
+  clients, significantly reducing redundant API calls.
+  - **Caching Implementation**: Implemented a caching layer for Green Invoice API responses,
+    improving response times and overall system efficiency.
+  - **Document Status Update Fix**: Fixed an issue with document status updates by ensuring that
+    document data is invalidated from the cache when a document is closed, preventing stale data
+    from being served.
+  - **API Call Refactoring**: Refactored various parts of the codebase to utilize the newly
+    introduced DataLoader and caching mechanisms, streamlining interactions with the Green Invoice
+    API.
+- Updated dependencies
+  [[`633a688`](https://github.com/Urigo/accounter-fullstack/commit/633a68824433dcd4df7be7e9c118ddadbf9a2029),
+  [`633a688`](https://github.com/Urigo/accounter-fullstack/commit/633a68824433dcd4df7be7e9c118ddadbf9a2029),
+  [`c56e276`](https://github.com/Urigo/accounter-fullstack/commit/c56e276f6e2addab88cd9fcd11b68fbc15c6f41a),
+  [`633a688`](https://github.com/Urigo/accounter-fullstack/commit/633a68824433dcd4df7be7e9c118ddadbf9a2029),
+  [`c56e276`](https://github.com/Urigo/accounter-fullstack/commit/c56e276f6e2addab88cd9fcd11b68fbc15c6f41a)]:
+  - @accounter/pcn874-generator@0.6.2
+  - @accounter/shaam-uniform-format-generator@0.2.1
+  - @accounter/shaam6111-generator@0.1.3
+
 ## 0.0.6
 
 ### Patch Changes

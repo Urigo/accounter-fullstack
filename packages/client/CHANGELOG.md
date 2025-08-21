@@ -1,5 +1,101 @@
 # @accounter/client
 
+## 0.0.7
+
+### Patch Changes
+
+- [#2291](https://github.com/Urigo/accounter-fullstack/pull/2291)
+  [`633a688`](https://github.com/Urigo/accounter-fullstack/commit/633a68824433dcd4df7be7e9c118ddadbf9a2029)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.0.17` ↗︎](https://www.npmjs.com/package/zod/v/4.0.17) (from
+    `3.25.76`, in `dependencies`)
+
+- [#2368](https://github.com/Urigo/accounter-fullstack/pull/2368)
+  [`1aa95ab`](https://github.com/Urigo/accounter-fullstack/commit/1aa95abcab34009fa5133352bc3fa54511e293fd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.85.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.85.5)
+    (from `5.84.2`, in `dependencies`)
+  - Updated dependency
+    [`react-day-picker@9.9.0` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.9.0) (from
+    `9.8.1`, in `dependencies`)
+
+- [#2431](https://github.com/Urigo/accounter-fullstack/pull/2431)
+  [`ba17ccf`](https://github.com/Urigo/accounter-fullstack/commit/ba17ccf0b15293482de55a1cc7a61ff96c1fc757)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@radix-ui/react-accordion@1.2.12` ↗︎](https://www.npmjs.com/package/@radix-ui/react-accordion/v/1.2.12)
+    (from `1.2.11`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-checkbox@1.3.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.3.3)
+    (from `1.3.2`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-collapsible@1.1.12` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.12)
+    (from `1.1.11`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dialog@1.1.15` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.15)
+    (from `1.1.14`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-dropdown-menu@2.1.16` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.16)
+    (from `2.1.15`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-popover@1.1.15` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.15)
+    (from `1.1.14`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-scroll-area@1.2.10` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.10)
+    (from `1.2.9`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-select@2.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.2.6)
+    (from `2.2.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-switch@1.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-switch/v/1.2.6)
+    (from `1.2.5`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tabs@1.1.13` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.13)
+    (from `1.1.12`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-toggle@1.1.10` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.10)
+    (from `1.1.9`, in `dependencies`)
+  - Updated dependency
+    [`@radix-ui/react-tooltip@1.2.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.2.8)
+    (from `1.2.7`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.8.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.8.1) (from
+    `7.8.0`, in `dependencies`)
+
+- [#2432](https://github.com/Urigo/accounter-fullstack/pull/2432)
+  [`e6b4c58`](https://github.com/Urigo/accounter-fullstack/commit/e6b4c5801e3437761dc4d39dbfcc8584499878b1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.85.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.85.5)
+    (from `5.84.2`, in `dependencies`)
+
+- [#2439](https://github.com/Urigo/accounter-fullstack/pull/2439)
+  [`78591b1`](https://github.com/Urigo/accounter-fullstack/commit/78591b11cfbb8faf23c6c5aa018b6af53d0e7548)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.9.0` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.9.0) (from
+    `9.8.1`, in `dependencies`)
+
+- [#2441](https://github.com/Urigo/accounter-fullstack/pull/2441)
+  [`8a556ab`](https://github.com/Urigo/accounter-fullstack/commit/8a556ab540bfe017c2de512a7e5fd034f370b163)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.540.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.540.0) (from
+    `0.539.0`, in `dependencies`)
+
+- [#2444](https://github.com/Urigo/accounter-fullstack/pull/2444)
+  [`6b530f5`](https://github.com/Urigo/accounter-fullstack/commit/6b530f551f1fc559913d966a6e93874338704d9c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zustand@5.0.8` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.8) (from
+    `5.0.7`, in `dependencies`)
+
+- [#2446](https://github.com/Urigo/accounter-fullstack/pull/2446)
+  [`c56e276`](https://github.com/Urigo/accounter-fullstack/commit/c56e276f6e2addab88cd9fcd11b68fbc15c6f41a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`iconv-lite@0.7.0` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.0)
+    (from `0.6.3`, in `dependencies`)
+
 ## 0.0.6
 
 ### Patch Changes
