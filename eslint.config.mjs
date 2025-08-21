@@ -103,7 +103,7 @@ export default [
           exceptions: {
             types: [
               'AcceptInvitationPayload',
-              'AccountantApproval',
+              'AccountantApprovalStatus',
               'AnnualId',
               'AutoMatchChargesResult',
               'BatchUpdateChargesSuccessfulResult',
