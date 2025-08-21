@@ -129,6 +129,7 @@ export default function Step03OpeningBalance(props: Step03Props) {
           setStatus('pending');
         }
       } catch (error) {
+        console.error('Error fetching user type:', error);
         setStatus('blocked');
       }
     };
@@ -142,7 +143,7 @@ export default function Step03OpeningBalance(props: Step03Props) {
         {...props}
         status={status}
         icon={<Calculator className="h-4 w-4" />}
-        hasSubsteps={true}
+        hasSubsteps
         isExpanded={isExpanded}
         onToggleExpanded={() => setIsExpanded(!isExpanded)}
       />
