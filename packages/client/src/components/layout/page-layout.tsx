@@ -1,5 +1,4 @@
 import { type JSX } from 'react';
-import { Heading } from '../ui/heading.js';
 import { Separator } from '../ui/separator.js';
 
 type PageLayoutProps = {
@@ -18,7 +17,8 @@ export function PageLayout({
   return (
     <div className="flex flex-col gap-5" id="main-page">
       <div className="flex justify-between items-center">
-        <Heading title={title} description={description} />
+        <h2 className="w-full text-2xl font-bold tracking-tight md:text-3xl">{title}</h2>
+        {description && <p className="mt-2 text-gray-500">{description}</p>}
         {headerActions}
       </div>
       <Separator />

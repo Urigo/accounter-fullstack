@@ -13,7 +13,7 @@ export function DashboardLayout({ children, filtersContext }: DashboardLayoutPro
   const { isMinimized } = useSidebar();
 
   return (
-    <main className="light">
+    <main>
       <Header />
       <div className="flex h-screen overflow-hidden bg-gray-100">
         <Sidebar />

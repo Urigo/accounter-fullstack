@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CheckIcon, ChevronDownIcon } from '@radix-ui/react-icons';
-import { cn } from '../../lib/utils.js';
-import { Button } from '../ui/button.js';
+import { cn } from '../../../lib/utils.js';
+import { Button } from '../../ui/button.jsx';
 import {
   Command,
   CommandEmpty,
@@ -9,9 +9,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '../ui/command.js';
-import { Label } from '../ui/label.js';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover.js';
+} from '../../ui/command.jsx';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.jsx';
 
 function SelectWithSearch({
   options,
@@ -19,24 +18,18 @@ function SelectWithSearch({
   onChange,
   search,
   onSearchChange,
-  label,
   placeholder,
   empty,
-  id,
 }: {
   options: Array<{ value: string; label: string }>;
   value: string | null;
   onChange: (value: string | null) => void;
   search: string | null;
   onSearchChange: (value: string | null) => void;
-  label?: string;
   placeholder?: string;
   empty: React.ReactNode;
-  id?: string;
 }) {
   const [open, setOpen] = useState<boolean>(false);
-
-  const selectId = id || 'select-with-search';
 
   const labelMap = useMemo(
     () => Object.fromEntries(options.map(option => [option.value, option.label.toLowerCase()])),
@@ -45,11 +38,9 @@ function SelectWithSearch({
 
   return (
     <div className="space-y-2 w-[300px]">
-      {label && <Label htmlFor={selectId}>{label}</Label>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            id={selectId}
             variant="outline"
             role="combobox"
             aria-expanded={open}

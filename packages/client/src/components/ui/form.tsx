@@ -8,10 +8,10 @@ import {
   type FieldPath,
   type FieldValues,
 } from 'react-hook-form';
+import { Label } from '@/components/ui/label.js';
+import { cn } from '@/lib/utils.js';
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { Slot } from '@radix-ui/react-slot';
-import { cn } from '../../lib/utils.js';
-import { Label } from './label.js';
 
 const Form = FormProvider;
 
@@ -84,7 +84,7 @@ function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPri
       data-slot="form-label"
       data-error={!!error}
       className={cn(
-        'data-[error=true]:text-gray-50 dark:data-[error=true]:text-gray-50',
+        'data-[error=true]:text-red-500 dark:data-[error=true]:text-red-900',
         className,
       )}
       htmlFor={formItemId}
@@ -132,7 +132,7 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn('text-red-500 text-sm dark:text-red-500', className)}
+      className={cn('text-red-500 text-sm dark:text-red-900', className)}
       {...props}
     >
       {body}

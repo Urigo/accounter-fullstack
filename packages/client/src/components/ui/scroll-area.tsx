@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
+import { cn } from '@/lib/utils.js';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { cn } from '../../lib/utils.js';
 
 function ScrollArea({
   className,
@@ -15,7 +17,7 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="ring-gray-950/10 dark:ring-gray-950/20 dark:outline-ring/40 outline-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] focus-visible:ring-4 focus-visible:outline-1 dark:ring-gray-300/10 dark:dark:ring-gray-300/20"
+        className="focus-visible:ring-gray-950/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 dark:focus-visible:ring-gray-300/50"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

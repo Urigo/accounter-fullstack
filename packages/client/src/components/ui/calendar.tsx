@@ -1,8 +1,8 @@
 import React from 'react';
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker';
-import { cn } from '../../lib/utils.js';
-import { Button, buttonVariants } from './button.js';
+import { Button, buttonVariants } from '@/components/ui/button.js';
+import { cn } from '@/lib/utils.js';
 
 function Calendar({
   className,
@@ -62,7 +62,10 @@ function Calendar({
           'relative has-focus:border-gray-950 border border-gray-200 shadow-xs has-focus:ring-gray-950/50 has-focus:ring-[3px] rounded-md dark:has-focus:border-gray-300 dark:border-gray-800 dark:has-focus:ring-gray-300/50',
           defaultClassNames.dropdown_root,
         ),
-        dropdown: cn('absolute inset-0 opacity-0', defaultClassNames.dropdown),
+        dropdown: cn(
+          'absolute bg-white inset-0 opacity-0 dark:bg-gray-950',
+          defaultClassNames.dropdown,
+        ),
         caption_label: cn(
           'select-none font-medium',
           captionLayout === 'label'
