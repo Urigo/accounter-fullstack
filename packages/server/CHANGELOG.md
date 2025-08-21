@@ -1,5 +1,451 @@
 # @accounter/server
 
+## 0.0.6
+
+### Patch Changes
+
+- [#2252](https://github.com/Urigo/accounter-fullstack/pull/2252)
+  [`f783100`](https://github.com/Urigo/accounter-fullstack/commit/f783100e05aa0aeb4bd5587760d098613cb2e24f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.1) (from
+    `16.6.1`, in `dependencies`)
+
+- [#2263](https://github.com/Urigo/accounter-fullstack/pull/2263)
+  [`6003953`](https://github.com/Urigo/accounter-fullstack/commit/6003953e6fd21be6601ec7f7d9b5a077453ab094)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.14.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.14.0)
+    (from `3.13.5`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.14.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.14.0) (from `5.13.5`,
+    in `dependencies`)
+
+- [#2268](https://github.com/Urigo/accounter-fullstack/pull/2268)
+  [`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.71` ↗︎](https://www.npmjs.com/package/zod/v/3.25.71) (from
+    `3.25.67`, in `dependencies`)
+
+- [#2273](https://github.com/Urigo/accounter-fullstack/pull/2273)
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.74` ↗︎](https://www.npmjs.com/package/zod/v/3.25.74) (from
+    `3.25.71`, in `dependencies`)
+
+- [#2278](https://github.com/Urigo/accounter-fullstack/pull/2278)
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`zod@3.25.74` ↗︎](https://www.npmjs.com/package/zod/v/3.25.74) (from
+    `3.25.71`, in `dependencies`)
+
+- [#2281](https://github.com/Urigo/accounter-fullstack/pull/2281)
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.75` ↗︎](https://www.npmjs.com/package/zod/v/3.25.75) (from
+    `3.25.74`, in `dependencies`)
+
+- [#2285](https://github.com/Urigo/accounter-fullstack/pull/2285)
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`zod@3.25.75` ↗︎](https://www.npmjs.com/package/zod/v/3.25.75) (from
+    `3.25.74`, in `dependencies`)
+
+- [#2286](https://github.com/Urigo/accounter-fullstack/pull/2286)
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2289](https://github.com/Urigo/accounter-fullstack/pull/2289)
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-hive/yoga@0.42.2` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.42.2)
+    (from `0.42.1`, in `dependencies`)
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2292](https://github.com/Urigo/accounter-fullstack/pull/2292)
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`ai@4.3.17` ↗︎](https://www.npmjs.com/package/ai/v/4.3.17) (from `4.3.16`,
+    in `dependencies`)
+  - Updated dependency [`zod@3.25.76` ↗︎](https://www.npmjs.com/package/zod/v/3.25.76) (from
+    `3.25.75`, in `dependencies`)
+
+- [#2293](https://github.com/Urigo/accounter-fullstack/pull/2293)
+  [`3a511ca`](https://github.com/Urigo/accounter-fullstack/commit/3a511ca20d9cf7f62f0d5f6c1f8283d103160de4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-hive/yoga@0.42.2` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.42.2)
+    (from `0.42.1`, in `dependencies`)
+
+- [#2298](https://github.com/Urigo/accounter-fullstack/pull/2298)
+  [`814c130`](https://github.com/Urigo/accounter-fullstack/commit/814c13063fbf41bd7a737005eb618efd20876d0f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.0)
+    (from `3.14.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.0) (from `5.14.0`,
+    in `dependencies`)
+
+- [#2306](https://github.com/Urigo/accounter-fullstack/pull/2306)
+  [`a491206`](https://github.com/Urigo/accounter-fullstack/commit/a491206eeedf25ddab8e308a409357d841673062)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.0)
+    (from `3.14.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.0) (from `5.14.0`,
+    in `dependencies`)
+
+- [#2307](https://github.com/Urigo/accounter-fullstack/pull/2307)
+  [`70e1f9e`](https://github.com/Urigo/accounter-fullstack/commit/70e1f9e5b1139aaecf3be58b616ccb361256b917)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.15.1` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.15.1)
+    (from `3.15.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.15.1` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.15.1) (from `5.15.0`,
+    in `dependencies`)
+
+- [#2310](https://github.com/Urigo/accounter-fullstack/pull/2310)
+  [`95da5aa`](https://github.com/Urigo/accounter-fullstack/commit/95da5aa4e2666e78fc42c3c8f231b43a3f23a506)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.18` ↗︎](https://www.npmjs.com/package/ai/v/4.3.18) (from `4.3.17`,
+    in `dependencies`)
+
+- [#2315](https://github.com/Urigo/accounter-fullstack/pull/2315)
+  [`4b8b51f`](https://github.com/Urigo/accounter-fullstack/commit/4b8b51f3b33577283137caa8232f4457c20aa9cf)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@4.3.19` ↗︎](https://www.npmjs.com/package/ai/v/4.3.19) (from `4.3.18`,
+    in `dependencies`)
+
+- [#2320](https://github.com/Urigo/accounter-fullstack/pull/2320)
+  [`fcf060c`](https://github.com/Urigo/accounter-fullstack/commit/fcf060c93a42fceb401cab55f62104dba14ddc36)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.9` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.9)
+    (from `0.10.8`, in `dependencies`)
+
+- [#2322](https://github.com/Urigo/accounter-fullstack/pull/2322)
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@accounter/shaam-uniform-format-generator@workspace:^` ↗︎](https://www.npmjs.com/package/@accounter/shaam-uniform-format-generator/v/workspace:^)
+    (to `dependencies`)
+
+- [#2336](https://github.com/Urigo/accounter-fullstack/pull/2336)
+  [`5dea1b7`](https://github.com/Urigo/accounter-fullstack/commit/5dea1b7c849d901ce7d161e24169c24b4d5bea61)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv-cli@9.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/9.0.0)
+    (from `8.0.0`, in `dependencies`)
+
+- [#2357](https://github.com/Urigo/accounter-fullstack/pull/2357)
+  [`eac0da7`](https://github.com/Urigo/accounter-fullstack/commit/eac0da793a164a332aa0fdee86b257945ec8ec6a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv-cli@10.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/10.0.0)
+    (from `9.0.0`, in `dependencies`)
+
+- [#2376](https://github.com/Urigo/accounter-fullstack/pull/2376)
+  [`dbd9059`](https://github.com/Urigo/accounter-fullstack/commit/dbd905919904037404bde90b3d34f055b0c8a4c8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.10` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.10)
+    (from `0.10.9`, in `dependencies`)
+
+- [#2374](https://github.com/Urigo/accounter-fullstack/pull/2374)
+  [`44a0512`](https://github.com/Urigo/accounter-fullstack/commit/44a0512e18d2c103a7d307397f3c4bd94f244441)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - * **Refactored Invoice Filtering**: The
+  `fetchAndFilterInvoices` helper function in `deel.helper.ts` has been streamlined. It now
+  exclusively identifies and returns Deel invoices that are *not\* yet present in the database,
+  removing the previous logic for tracking 'known' receipt IDs. This simplifies its responsibility
+  to only provide new invoices for processing.
+  - **Improved Receipt-Charge Matching Efficiency**: A new, optimized database query
+    (`getReceiptToCharge`) has been introduced in `deel-invoices.provider.ts`. This query
+    efficiently retrieves all existing Deel receipt-to-charge mappings directly from the database,
+    ensuring that for each payment ID, the most recent associated charge ID is fetched.
+  - **Streamlined Charge Matching Logic**: The `getChargeMatchesForPayments` helper function in
+    `deel.helper.ts` has been updated to leverage the new `getReceiptToCharge` method from
+    `DeelInvoicesProvider`. This change eliminates the need to pass an intermediate
+    `knownReceiptIds` set and perform individual lookups, leading to a more direct and efficient
+    matching process.
+
+- [#2300](https://github.com/Urigo/accounter-fullstack/pull/2300)
+  [`aa95d61`](https://github.com/Urigo/accounter-fullstack/commit/aa95d61169177165cbe513c8a9ccb7766518e824)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Features**
+  - Added modal to display similar charges by business, accessible from business card.
+  - The modal appears after updating business information if suggestion tags or descriptions are
+    present.
+  - **Improvements**
+    - Enhanced filtering of similar charges to exclude charges with identical tags or descriptions.
+    - Improved suggestion merging logic to better retain existing tags and phrases.
+  - **Bug Fixes**
+    - Fixed modal behavior to ensure correct display and filtering based on user actions.
+
+- [#2334](https://github.com/Urigo/accounter-fullstack/pull/2334)
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Document Generation UI**: I've
+  introduced a brand new UI screen, `IssueDocumentScreen`, that allows users to create and configure
+  various accounting documents like invoices and receipts with extensive settings for document type,
+  language, currency, and VAT.
+  - **Real-time PDF Document Preview**: Users can now preview generated documents in real-time
+    directly within the UI before issuing them, powered by the `pdfjs-dist` library for client-side
+    PDF rendering.
+  - **Comprehensive Document Configuration**: The new UI provides detailed configuration options,
+    including fields for client information, managing multiple income items (description, price,
+    quantity, VAT), and specifying various payment methods with their unique details (e.g., bank,
+    credit card, PayPal, payment app).
+  - **GraphQL API Extensions for Document Management**: I've extended the GraphQL API with a new
+    `previewGreenInvoiceDocument` mutation for generating PDF previews and a `newDocumentInfoDraft`
+    query to pre-populate document forms based on existing charge data.
+  - **Enhanced Document Actions in Table View**: I've added the ability to close and re-issue
+    documents directly from the documents table, providing a more streamlined workflow for managing
+    document statuses.
+  - **New 'With Open Documents' Filter**: A new filter, 'With Open Documents', has been added to the
+    charges filter, allowing users to easily identify and manage charges that have associated open
+    documents.
+  - **GraphQL Query Refactoring**: I've refactored several GraphQL queries from fetching multiple
+    charges (`chargesByIDs`) to fetching a single charge (`charge`), simplifying data retrieval for
+    individual charge details.
+  - **Database Migration for Open Documents Flag**: A new database migration introduces an
+    `open_docs_flag` to the `extended_charges` view, enabling efficient filtering of charges based
+    on their associated open documents.
+
+- [#2424](https://github.com/Urigo/accounter-fullstack/pull/2424)
+  [`140bb3e`](https://github.com/Urigo/accounter-fullstack/commit/140bb3e9a4604a7f0d32e3fcee0e53c30d5c277b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **Introduced Client and Contract
+  Management**: Replaced the GreenInvoiceBusiness concept with dedicated Client and Contract
+  entities, enabling more granular management of client relationships and billing agreements.
+  - **Database Schema Evolution**: Implemented a new migration to rename the
+    businesses_green_invoice_match table to clients and introduced a new clients_contracts table to
+    store contract details.
+  - **GraphQL API Expansion**: Added new GraphQL modules for contracts and enhanced the
+    financial-entities module with clients resolvers and types, providing a more structured API for
+    client and contract data.
+  - **Streamlined Monthly Document Generation UI**: Updated the user interface for issuing monthly
+    documents to leverage the new client and contract data, improving the selection process and
+    draft generation.
+  - **Removed Legacy CSV Functionality**: Deprecated and removed the CSV upload and download
+    features related to monthly document drafts, simplifying the workflow.
+
+- [#2399](https://github.com/Urigo/accounter-fullstack/pull/2399)
+  [`ffe296d`](https://github.com/Urigo/accounter-fullstack/commit/ffe296d26899cb8cf6d843c4efebefa170cac95e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **Client Form Refactoring**: The client
+  form (`client-form.tsx`) has been updated to use GraphQL fragments for client data, introducing a
+  `normalizeClientInfo` utility for consistent data transformation. It now includes a `fetching`
+  state to provide better loading feedback.
+  - **Income Form Enhancements**: The income form (`income-form.tsx`) has been reorganized to
+    improve layout and data input, including the addition of currency selection and reordering of
+    fields. Some previously included fields like 'Catalog Number' have been commented out or removed
+    from the data structure.
+  - **Main Document Issuance Form Logic**: The central `GenerateDocument` component (`index.tsx`)
+    now dynamically fetches client information using `urql`'s `useQuery` hook, allowing for
+    pre-population of client details. Several sections related to description, footer text,
+    discount, rounding, and digital signature have been temporarily commented out in the UI.
+  - **Payment Form Modularity**: The payment form (`payment-form.tsx`) has been refactored to
+    generalize account and transaction input fields using a `useCallback` hook, and payment
+    type-specific fields (e.g., for wire transfers, cheques, PayPal, and other payment apps) are now
+    conditionally rendered for better clarity.
+  - **Backend Data Handling**: On the server-side, new helper functions have been introduced
+    (`issue-document.helper.ts`) to deduce VAT types, retrieve linked document attributes, determine
+    document dates from transactions, and fetch detailed client information from Green Invoice. The
+    GraphQL schema (`green-invoice.graphql.ts`) and resolvers (`green-invoice.resolvers.ts`) have
+    been updated to reflect these new data structures and logic, including the removal of redundant
+    fields from `GreenInvoiceIncome`.
+  - **Document Naming Conventions**: Minor textual updates have been made to document names (e.g.,
+    "Proforma" to "Proforma Invoice") for improved clarity.
+
+- [#2334](https://github.com/Urigo/accounter-fullstack/pull/2334)
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New UI for Document Generation**: A
+  comprehensive new UI screen (`IssueDocumentScreen`) has been added, allowing users to create and
+  configure various accounting documents (e.g., invoices, receipts) with detailed settings for
+  document type, language, currency, and VAT.
+  - **Real-time Document Preview**: Users can now preview generated documents (likely PDFs) directly
+    within the UI before officially issuing them, powered by the `pdfjs-dist` library for
+    client-side rendering.
+  - **Detailed Document Configuration**: The new UI provides extensive fields for capturing client
+    information, managing multiple income items (description, price, quantity, VAT), and specifying
+    various payment methods with their unique details (e.g., bank, credit card, PayPal, payment
+    app).
+  - **GraphQL API Extension for Preview**: The backend GraphQL API has been extended with a new
+    `previewGreenInvoiceDocument` mutation, enabling the client to send detailed document input and
+    receive a base64-encoded PDF preview.
+  - **Improved Green Invoice Integration**: New helper functions and schema updates ensure proper
+    mapping of UI inputs to the Green Invoice API's complex data structures for document generation
+    and preview, handling various enums and nested objects.
+
+- [#2392](https://github.com/Urigo/accounter-fullstack/pull/2392)
+  [`abe60ad`](https://github.com/Urigo/accounter-fullstack/commit/abe60ad1cece8223c7c95b472c3b8104e9a91acb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Email Sending Control**: I've added a
+  new sendEmail option to the document issuing flow, giving users the flexibility to decide whether
+  an email should be dispatched to the client along with the document.
+  - **Enhanced UI for Email Options**: I've integrated a 'Should Send Email' checkbox into the
+    document issuance modal. This checkbox dynamically controls the enabled state of the email
+    content and attachment fields, ensuring a streamlined user experience.
+  - **Backend Email Dispatch Logic**: On the server side, I've updated the issueGreenInvoiceDocument
+    resolver to honor the sendEmail flag. If sendEmail is false, the system will prevent emails from
+    being sent by clearing the client's email addresses before processing.
+  - **Automated Linked Document Closure**: I've implemented a feature that automatically closes any
+    linked documents when a new document is successfully issued, improving document lifecycle
+    management.
+  - **Improved Green Invoice Remarks**: I've enhanced the Green Invoice integration to automatically
+    pull and apply remarks from associated business matches, providing more relevant document
+    descriptions.
+
+- [#2435](https://github.com/Urigo/accounter-fullstack/pull/2435)
+  [`eeb533e`](https://github.com/Urigo/accounter-fullstack/commit/eeb533e95042abb684bb72461a89e780cd25121e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Feature: Foreign Securities
+  Charges**: Comprehensive support for 'Foreign Securities Charges' has been introduced across the
+  application. This includes new database fields, GraphQL types, frontend UI components, and backend
+  resolvers to correctly categorize, display, and process these charges.
+  - **Module Refactoring and Enhancements: Bank Deposits**: A new dedicated GraphQL module for 'Bank
+    Deposits' has been created, along with new UI components to display bank deposit information,
+    including balances and associated transactions. This refactors existing bank deposit logic into
+    a more organized structure.
+  - **Enhanced Ledger Generation for Foreign Securities**: Advanced ledger generation logic has been
+    implemented specifically for 'Foreign Securities Charges'. This new resolver handles complex
+    scenarios involving main transactions, associated fees, and currency exchange rates to ensure
+    accurate financial record-keeping.
+  - **Admin Context Configuration for Foreign Securities**: The application's administrative context
+    has been updated to include configuration for foreign securities, allowing for the definition of
+    specific business and fees categories related to these charges.
+  - **System-Wide Integration of New Charge Type**: Various frontend and backend components have
+    been updated to recognize and correctly handle the new 'ForeignSecuritiesCharge' type, ensuring
+    proper display, validation, and integration with existing features like accountant approval,
+    documents, and tags.
+
+- [#2338](https://github.com/Urigo/accounter-fullstack/pull/2338)
+  [`585d74c`](https://github.com/Urigo/accounter-fullstack/commit/585d74cb2867c933e745468e496d951b6488c155)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Support SEK currency across all layers of
+  the project.
+
+- [#2322](https://github.com/Urigo/accounter-fullstack/pull/2322)
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Client-Side Feature**: I've added
+  a new modal component (`FileDownloadModal`) to the client application, allowing users to select a
+  date range and trigger the generation and download of uniform format files (bkmvdata and ini)
+  directly from the UI.
+  - **Data Model Extension**: The `JournalEntry` and `BusinessMetadata` schemas have been extended
+    to support additional optional fields, such as `batchNumber`, `transactionType`,
+    `referenceDocument`, `currencyCode`, `foreignCurrencyAmount` for journal entries, and `address`
+    details for business metadata. This enriches the data available for reporting.
+  - **Uniform Format Generator Enhancement**: The `generateUniformFormatReport` function in the
+    generator package has been updated to consume and incorporate these new extended fields from the
+    `JournalEntry` and `BusinessMetadata` into the generated uniform format files, ensuring more
+    comprehensive reports.
+  - **Testing**: New unit tests have been added to verify that the uniform format generator
+    correctly handles journal entries with the newly introduced extended fields, ensuring data
+    integrity and proper report generation.
+
+- [#2367](https://github.com/Urigo/accounter-fullstack/pull/2367)
+  [`33b7fd7`](https://github.com/Urigo/accounter-fullstack/commit/33b7fd7f476bd59aad37442ad1d0b7497e31d3d4)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Database Schema for Issued
+  Documents**: I've introduced a new `documents_issued` table in the database. This table stores
+  crucial metadata for documents generated by our system (e.g., via Green Invoice), including their
+  external ID, current status, and any linked documents. A new `document_status` enum has also been
+  added to track the lifecycle of these documents.
+  - **Enhanced Green Invoice Integration**: The Green Invoice client and GraphQL API have been
+    significantly extended. New capabilities allow us to preview, issue, and close documents
+    directly through the Green Invoice API via new GraphQL mutations. This provides more
+    comprehensive control over self-issued financial documents.
+  - **Improved Document Synchronization Logic**: The `fetchIncomeDocuments` mutation has been
+    refactored to not only ingest new documents from Green Invoice but also to intelligently
+    identify and update the status and linked documents of existing self-issued records in our
+    database. This ensures better data consistency with the external system.
+  - **GraphQL API Expansion for Document Management**: I've exposed new GraphQL types
+    (`IssuedDocumentInfo`) and mutations (`closeDocument`, `previewGreenInvoiceDocument`,
+    `issueGreenInvoiceDocument`) to provide a richer API for managing self-issued documents and
+    their associated information, including their status and links to other documents.
+
+- [#2272](https://github.com/Urigo/accounter-fullstack/pull/2272)
+  [`a6f9e78`](https://github.com/Urigo/accounter-fullstack/commit/a6f9e78705414e772d6b92dcab8319f529e886e6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Introduce Admin Businesses module,to
+  defrenciate from common businesses and add unique relevant information
+
+- [#2409](https://github.com/Urigo/accounter-fullstack/pull/2409)
+  [`bb522fd`](https://github.com/Urigo/accounter-fullstack/commit/bb522fd110a880397cda47c7baf20ef6b0479166)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **Component Renaming**: I've renamed the
+  `IssueDocumentModal` to `PreviewDocumentModal` across the client-side components to better reflect
+  its primary function of preparing and reviewing documents before final issuance.
+  - **Enhanced Document Closure**: The `CloseDocumentButton` now includes enhanced functionality,
+    allowing users to optionally issue a credit invoice when closing certain types of documents,
+    complete with a confirmation modal for a smoother workflow.
+  - **Improved Document Generation Form**: I've refined the `GenerateDocument` form by implementing
+    conditional rendering for fields like `maxPayments` and `dueDate`, and for the `IncomeForm` and
+    `PaymentForm`, ensuring only relevant fields are displayed based on the document type.
+    Additionally, `linkedDocumentIds` are now passed to `RecentClientDocs` for better context.
+  - **Refactored Document Tables**: The `RecentClientDocs` component has been refactored to leverage
+    `@tanstack/react-table`, providing a more robust and flexible table display. It now also
+    highlights linked documents, making it easier to identify related entries.
+  - **New Document Description Column**: I've introduced a new `Description` column to document
+    tables, which displays a summary of income descriptions from the associated documents, offering
+    more immediate insight into document content.
+  - **Backend Document Synchronization and Closure Improvements**: On the backend, I've updated the
+    document synchronization logic to first process new document insertions and then handle updates
+    to existing documents. The process for closing linked documents has also been improved to use
+    `updateIssuedDocumentByExternalId` and now correctly avoids closing receipts.
+  - **GraphQL API Enhancement**: A new `originalDocument` field has been added to the
+    `IssuedDocumentInfo` GraphQL type, enabling the retrieval of full Green Invoice document details
+    directly from the API.
+
+- [#2257](https://github.com/Urigo/accounter-fullstack/pull/2257)
+  [`29895c4`](https://github.com/Urigo/accounter-fullstack/commit/29895c4af2e34455a438743a37c43fc1d67531b7)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Extend Deel API response schema
+
+- [#2285](https://github.com/Urigo/accounter-fullstack/pull/2285)
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Enable batch approval for charge
+  tags/description suggestions.
+
+- [#2404](https://github.com/Urigo/accounter-fullstack/pull/2404)
+  [`9c2c79c`](https://github.com/Urigo/accounter-fullstack/commit/9c2c79cf9c36bfeea84119e61a062c6fec843ec0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New GraphQL Queries and Resolvers**:
+  Introduced new GraphQL queries (`recentDocumentsByClient` and `recentIssuedDocumentsByType`) and
+  corresponding backend resolvers to efficiently fetch documents based on client ID and document
+  type, respectively. This enables the new UI features.
+  - **Reusable Documents Table**: The `DocumentsTable` component has been refactored to be more
+    generic and reusable. It now accepts a direct array of document fragments and includes a
+    `limited` prop to control column visibility, making it suitable for displaying concise lists of
+    documents in various contexts.
+  - **Backend Data Fetching Improvements**: New SQL queries and a DataLoader have been added to the
+    `IssuedDocumentsProvider` to optimize the fetching of documents by client ID, ensuring efficient
+    data retrieval for the new frontend features.
+- Updated dependencies
+  [[`b1352c4`](https://github.com/Urigo/accounter-fullstack/commit/b1352c4190bad2d93d1be823d96ff2b53df7387a),
+  [`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691),
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46),
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee),
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61),
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232),
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23),
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6),
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a),
+  [`1069779`](https://github.com/Urigo/accounter-fullstack/commit/1069779e986bbdb9f5d1ef8c1f25ccd66e2b1691),
+  [`dc6fae4`](https://github.com/Urigo/accounter-fullstack/commit/dc6fae4ae197f8ec12e426bb773cfb88fa111a46),
+  [`2bab7e1`](https://github.com/Urigo/accounter-fullstack/commit/2bab7e1529ef7ee313f928f58772aefe200a16ee),
+  [`138acaa`](https://github.com/Urigo/accounter-fullstack/commit/138acaa9014546f9fffa30386fa956340f92df61),
+  [`53c880d`](https://github.com/Urigo/accounter-fullstack/commit/53c880d21e0cc49333e725a57659bdcbb5bf1232),
+  [`b72c486`](https://github.com/Urigo/accounter-fullstack/commit/b72c48695f7f2f1a3e99077da1a362ab5f389f23),
+  [`bd7a74b`](https://github.com/Urigo/accounter-fullstack/commit/bd7a74b173994b6449d250e4868509a1243e5af6),
+  [`6c797c6`](https://github.com/Urigo/accounter-fullstack/commit/6c797c6f885ee1d45395a76089f92a95483d5d3a),
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b),
+  [`0c6ac6c`](https://github.com/Urigo/accounter-fullstack/commit/0c6ac6c0fd8d7afe96ce26260a514ccb682e621b),
+  [`88207b1`](https://github.com/Urigo/accounter-fullstack/commit/88207b1f3fbafbd67b67fe8edca6a576d42e25bd),
+  [`1be8c87`](https://github.com/Urigo/accounter-fullstack/commit/1be8c87be477204ddfc57c38d1ab8cfc66cea1a9),
+  [`9915dd2`](https://github.com/Urigo/accounter-fullstack/commit/9915dd2c0f7f78103320bc99dabd2de2384bbfbc),
+  [`408b287`](https://github.com/Urigo/accounter-fullstack/commit/408b287588f1753776cd98755383fc269d7410fb)]:
+  - @accounter/green-invoice-graphql@0.8.0
+  - @accounter/pcn874-generator@0.6.1
+  - @accounter/shaam6111-generator@0.1.2
+  - @accounter/shaam-uniform-format-generator@0.2.0
+
 ## 0.0.5
 
 ### Patch Changes
