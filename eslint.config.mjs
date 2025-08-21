@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import gitignore from 'eslint-config-flat-gitignore';
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
@@ -13,6 +14,13 @@ const compat = new FlatCompat({
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
+
+// override @theguild's unicorn version with local
+function replaceUnicornRules(set) {
+  return set?.plugins?.unicorn
+    ? { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } }
+    : set;
+}
 
 export default [
   gitignore(),
@@ -30,7 +38,7 @@ export default [
       '.yarn/*',
     ],
   },
-  ...compat.extends('@theguild'),
+  ...compat.extends('@theguild').map(replaceUnicornRules),
   {
     languageOptions: {
       ecmaVersion: 5,
@@ -176,10 +184,12 @@ export default [
       ],
     },
   },
-  ...compat.extends('@theguild/eslint-config/react').map(config => ({
-    ...config,
-    files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
-  })),
+  ...compat.extends('@theguild/eslint-config/react').map(config => {
+    return {
+      ...replaceUnicornRules(config),
+      files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
+    };
+  }),
   {
     files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
 
