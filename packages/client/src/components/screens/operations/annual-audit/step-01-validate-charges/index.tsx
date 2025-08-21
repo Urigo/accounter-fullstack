@@ -98,10 +98,10 @@ export function Step01ValidateCharges(props: Step01Props) {
         approvedPercentage: (approvedCount / totalCharges) * 100 || 0,
         pendingPercentage: (pendingCount / totalCharges) * 100 || 0,
         unapprovedPercentage: (unapprovedCount / totalCharges) * 100 || 0,
-        totalCharges: totalCharges,
-        approvedCount: approvedCount,
-        pendingCount: pendingCount,
-        unapprovedCount: unapprovedCount,
+        totalCharges,
+        approvedCount,
+        pendingCount,
+        unapprovedCount,
       };
 
       setChargeData(accountantApprovalStatus);
