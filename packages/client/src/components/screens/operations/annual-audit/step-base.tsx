@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, Loader2 } from 'lucide-react';
 import { Badge } from '../../../ui/badge.jsx';
 import { Button } from '../../../ui/button.jsx';

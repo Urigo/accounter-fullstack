@@ -6,7 +6,7 @@ import {
   AccountantStatus,
   ChargeSortByField,
 } from '../../../../../gql/graphql.js';
-import { TimelessDateString } from '../../../../../helpers/dates.js';
+import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { Badge } from '../../../../ui/badge.jsx';
 import { Button } from '../../../../ui/button.jsx';
 import { CardContent } from '../../../../ui/card.jsx';

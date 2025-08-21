@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Settings } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeSortByField, LedgerValidationStatusDocument } from '../../../../../gql/graphql.js';
-import { TimelessDateString } from '../../../../../helpers/index.js';
+import type { TimelessDateString } from '../../../../../helpers/index.js';
 import { Badge } from '../../../../ui/badge.jsx';
 import { CardContent } from '../../../../ui/card.jsx';
 import { getAllChargesHref } from '../../../charges/all-charges.jsx';
