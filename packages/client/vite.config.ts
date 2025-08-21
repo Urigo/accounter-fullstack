@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { config as dotenv } from 'dotenv';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -30,6 +31,7 @@ export default defineConfig({
   resolve: {
     alias: {
       html2canvas: 'html2canvas-pro',
+      '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
