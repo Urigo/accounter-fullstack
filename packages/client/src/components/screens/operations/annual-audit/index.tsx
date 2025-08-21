@@ -1,4 +1,12 @@
-import { ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
@@ -9,9 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
 import {
   ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM,
-  AnnualAuditFlowFilter,
   AnnualAuditFlowFilters,
   encodeAnnualAuditFlowFilters,
+  type AnnualAuditFlowFilter,
 } from './annual-audit-filters.js';
 // Import step components
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';

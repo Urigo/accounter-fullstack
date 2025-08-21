@@ -1,7 +1,7 @@
-import { ReactElement, useCallback, useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { Filter } from 'tabler-icons-react';
+import { Filter, Loader2 } from 'lucide-react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator } from '@mantine/core';
 import { isObjectEmpty } from '../../../../helpers/index.js';
 import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
@@ -53,7 +53,13 @@ function AnnualAuditFlowFiltersForm({
 
   return (
     <>
-      {adminBusinessesFetching ? <div>Loading...</div> : <div />}
+      {adminBusinessesFetching ? (
+        <div className="flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : (
+        <div />
+      )}
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FormField
