@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from '@/lib/utils.js';
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
@@ -58,7 +58,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot="table-head"
       className={cn(
-        'text-gray-500 h-10 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-400',
+        'text-gray-950 h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px] dark:text-gray-50',
         className,
       )}
       {...props}
