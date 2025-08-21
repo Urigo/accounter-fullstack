@@ -5,11 +5,10 @@ import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessTransactionsHref } from '../../business-transactions/index.js';
-import { Tooltip } from '../../common/index.js';
+import { SelectWithSearch, Tooltip } from '../../common/index.js';
 import { InsertBusiness } from '../../common/modals/insert-business.jsx';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.jsx';
 import { Button } from '../../ui/button.jsx';
-import { SelectWithSearch } from '../../ui/select-with-search.jsx';
 import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
