@@ -27,7 +27,7 @@ __metadata:
     pg-promise: "npm:11.15.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -107,7 +107,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.1.10"
+    "@types/react": "npm:19.1.11"
     "@types/react-dom": "npm:19.1.7"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.0.1"
@@ -137,7 +137,7 @@ __metadata:
     react-error-boundary: "npm:6.0.0"
     react-hook-form: "npm:7.62.0"
     react-number-format: "npm:5.4.4"
-    react-router-dom: "npm:7.8.1"
+    react-router-dom: "npm:7.8.2"
     react-to-pdf: "npm:2.0.1"
     recharts: "npm:2.15.4"
     sonner: "npm:2.0.7"
@@ -149,7 +149,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:7.1.3"
     vite-plugin-node-polyfills: "npm:0.24.0"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
     zustand: "npm:5.0.8"
   languageName: unknown
   linkType: soft
@@ -262,7 +262,7 @@ __metadata:
     puppeteer: "npm:24.17.0"
     typescript: "npm:5.9.2"
     uuid: "npm:11.1.0"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -289,7 +289,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -312,7 +312,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
     "@whatwg-node/fetch": "npm:0.10.10"
-    ai: "npm:5.0.21"
+    ai: "npm:5.0.22"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.7.0"
@@ -334,7 +334,7 @@ __metadata:
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.9.2"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -346,7 +346,7 @@ __metadata:
     eslint: "npm:9.34.0"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:3.2.4"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -358,7 +358,7 @@ __metadata:
     eslint: "npm:9.34.0"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:3.2.4"
-    zod: "npm:4.1.0"
+    zod: "npm:4.1.1"
   languageName: unknown
   linkType: soft
 
@@ -374,15 +374,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:1.0.10":
-  version: 1.0.10
-  resolution: "@ai-sdk/gateway@npm:1.0.10"
+"@ai-sdk/gateway@npm:1.0.11":
+  version: 1.0.11
+  resolution: "@ai-sdk/gateway@npm:1.0.11"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/c3eff381b246da9f7abb5dce145b9a1c0d3e8541e97db83a3bb1d5e147d7cbe9bf15213967e456f8a9f7f7162154250b31e8fd92a1b4c879fd394372bbab94a0
+  checksum: 10c0/17fd10fbe9c9b9f46dbfc72f0630d1381f089410d533a5331ef4f68f3f200dd2474c6c0378ce57213c114778b7cca03149b21019651668cb138c6f48a05fdc9c
   languageName: node
   linkType: hard
 
@@ -7735,12 +7735,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.1.10":
-  version: 19.1.10
-  resolution: "@types/react@npm:19.1.10"
+"@types/react@npm:19.1.11":
+  version: 19.1.11
+  resolution: "@types/react@npm:19.1.11"
   dependencies:
     csstype: "npm:^3.0.2"
-  checksum: 10c0/fb583deacd0a815e2775dc1b9f764532d8cacb748ddd2c2914805a46c257ce6c237b4078f44009692074db212ab61a390301c6470f07f5aa5bfdeb78a2acfda1
+  checksum: 10c0/639b225c2bbcd4b8a30e1ea7a73aec81ae5b952a4c432460b48c9881c9d12e76645c9032d24f15eefae9985a12d5cb26557fe10e9850b2da0fabfb0a1e2d16bd
   languageName: node
   linkType: hard
 
@@ -8319,7 +8319,7 @@ __metadata:
     prettier-plugin-sql: "npm:0.19.2"
     rimraf: "npm:6.0.1"
     ts-node: "npm:10.9.2"
-    tsx: "npm:4.20.4"
+    tsx: "npm:4.20.5"
     typescript: "npm:5.9.2"
     vite-tsconfig-paths: "npm:5.1.4"
     vitest: "npm:3.2.4"
@@ -8370,17 +8370,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.21":
-  version: 5.0.21
-  resolution: "ai@npm:5.0.21"
+"ai@npm:5.0.22":
+  version: 5.0.22
+  resolution: "ai@npm:5.0.22"
   dependencies:
-    "@ai-sdk/gateway": "npm:1.0.10"
+    "@ai-sdk/gateway": "npm:1.0.11"
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.5"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/d570342be9a703c46ad8046cf57b8f9493be67f62e2ba22b696c8865a852bb9fe004d2b403f9c1bfc47dcb0728483d4664330639dd07c3cbf3b44917de78f2e2
+  checksum: 10c0/27aa43dd888f4aae13903528a0ffb486e0e5cd79a58aae09426a37f906f808f8f06c2bfa622ec887b6fe8b46c6d2403d0394fed2012f4b039d5c35290e2e27b6
   languageName: node
   linkType: hard
 
@@ -18300,21 +18300,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.8.1":
-  version: 7.8.1
-  resolution: "react-router-dom@npm:7.8.1"
+"react-router-dom@npm:7.8.2":
+  version: 7.8.2
+  resolution: "react-router-dom@npm:7.8.2"
   dependencies:
-    react-router: "npm:7.8.1"
+    react-router: "npm:7.8.2"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/7616ae6b6c741446c6168a4ec760c01cbe24e8d14364a605bb002ba3f9bc060c0307ae1fb01cb76552aceb0dd956f023a0fb23b2f40436173e7e587a28301a8f
+  checksum: 10c0/b285182ffa1b26df5025f6e7952edca066928d5688d3447b02e4a7e699ca16941e8a42ecad65ab505914e27fed04a2023c92ae3ebf838226b4381a2e3a69ae01
   languageName: node
   linkType: hard
 
-"react-router@npm:7.8.1":
-  version: 7.8.1
-  resolution: "react-router@npm:7.8.1"
+"react-router@npm:7.8.2":
+  version: 7.8.2
+  resolution: "react-router@npm:7.8.2"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -18324,7 +18324,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/6d3229080a0f67f4644e0d8ecdb5e2637f640bf9e3a87c3e1e6ca91cce156cf3606d57dac3899869b25156b8343bc274291345914e45bb30ef38556a14e24eac
+  checksum: 10c0/e3122c2949bcad5e9c990cfb88e9cbd139e5a2a5c1d29664732623907a488634c0ddbf673d07af8f113d418f66270c174f014de8b885996722f431d09f5734be
   languageName: node
   linkType: hard
 
@@ -20798,9 +20798,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:4.20.4":
-  version: 4.20.4
-  resolution: "tsx@npm:4.20.4"
+"tsx@npm:4.20.5":
+  version: 4.20.5
+  resolution: "tsx@npm:4.20.5"
   dependencies:
     esbuild: "npm:~0.25.0"
     fsevents: "npm:~2.3.3"
@@ -20810,7 +20810,7 @@ __metadata:
       optional: true
   bin:
     tsx: dist/cli.mjs
-  checksum: 10c0/2deb24b0c689031962901f29fc3411bc9a3753780e9a39b8bf0233dba7fc59dc8f9732f6ebbfe16f498fc27b6adf1eeecfa46360d1161081aafffaaa26371998
+  checksum: 10c0/70f9bf746be69281312a369c712902dbf9bcbdd9db9184a4859eb4859c36ef0c5a6d79b935c1ec429158ee73fd6584089400ae8790345dae34c5b0222bdb94f3
   languageName: node
   linkType: hard
 
@@ -22194,10 +22194,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:4.1.0":
-  version: 4.1.0
-  resolution: "zod@npm:4.1.0"
-  checksum: 10c0/b39bce830cf9864e33b00da2e3fee008e1abb96fff169936ba779648276b6a031d35ed5438d7659ac5d5e09b932d40dce6c255344184794d56f8bd22e501561b
+"zod@npm:4.1.1":
+  version: 4.1.1
+  resolution: "zod@npm:4.1.1"
+  checksum: 10c0/bbc5936b313e96401d8a384531cb87dd68a45acf6b1a624a4806dc7934c4ee7e1257937ba676a3c02973bc3045b1086f2621ef683c8019ea63cc05dd9a568293
   languageName: node
   linkType: hard
 
