@@ -101,7 +101,7 @@ export default [
 
           exceptions: {
             types: [
-              'AccountantApproval',
+              'AccountantApprovalStatus',
               'BatchUpdateChargesSuccessfulResult',
               'BusinessTripSummary',
               'BusinessTripSummaryRow',

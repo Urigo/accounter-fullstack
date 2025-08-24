@@ -5,7 +5,7 @@ import { Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
-import { ChargesFilters } from './charges/charges-filters.js';
+import { ChargesFilters, encodeChargesFilters } from './charges/charges-filters.js';
 import { ChargesTable } from './charges/charges-table.js';
 import {
   EditChargeModal,
@@ -28,6 +28,22 @@ import { Button } from './ui/button.js';
     }
   }
 `;
+
+export function getLedgerValidationHref(filter?: ChargeFilter | null, page?: number): string {
+  const params = new URLSearchParams();
+  if (page) {
+    params.append('page', String(page));
+  }
+
+  const chargesFilters = encodeChargesFilters(filter);
+  if (chargesFilters) {
+    // Add it as a single encoded parameter
+    params.append('chargesFilters', chargesFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/charges-ledger-validation${queryParams}`;
+}
 
 export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
