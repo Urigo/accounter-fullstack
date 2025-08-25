@@ -21,6 +21,7 @@ export interface StepAction {
   label: string;
   href?: string;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 export const getStatusIcon = (status: StepStatus) => {
@@ -125,7 +126,7 @@ export function BaseStepCard({
                   key={index}
                   variant="outline"
                   size="sm"
-                  disabled={disabled}
+                  disabled={action.disabled || disabled}
                   onClick={action.onClick}
                   asChild={!!action.href && !disabled}
                 >
