@@ -60,10 +60,12 @@ export function Step01ValidateCharges(props: Step01Props) {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [hasReportedCompletion, setHasReportedCompletion] = useState(false);
 
+  const { adminBusinessId, id, onStatusChange, year } = props;
+
   // Report status changes to parent
   useEffect(() => {
-    if (props.onStatusChange) {
-      props.onStatusChange(props.id, status);
+    if (onStatusChange) {
+      onStatusChange(id, status);
     }
 
     // Track if we've reported completion to avoid double counting
@@ -72,23 +74,23 @@ export function Step01ValidateCharges(props: Step01Props) {
     } else if (status !== 'completed' && hasReportedCompletion) {
       setHasReportedCompletion(false);
     }
-  }, [status, props.onStatusChange, props.id, hasReportedCompletion]);
+  }, [status, onStatusChange, id, hasReportedCompletion]);
 
   const [{ data, fetching }, fetchStatus] = useQuery({
     query: AccountantApprovalStatusDocument,
     variables: {
-      fromDate: `${props.year}-01-01` as TimelessDateString,
-      toDate: `${props.year}-12-31` as TimelessDateString,
+      fromDate: `${year}-01-01` as TimelessDateString,
+      toDate: `${year}-12-31` as TimelessDateString,
     },
   });
 
   useEffect(() => {
-    if (!props.adminBusinessId) {
+    if (!adminBusinessId) {
       setStatus('blocked');
     } else if (fetching) {
       setStatus('loading');
     }
-  }, [props.adminBusinessId, fetching]);
+  }, [adminBusinessId, fetching]);
 
   useEffect(() => {
     if (data?.accountantApprovalStatus) {
@@ -125,16 +127,16 @@ export function Step01ValidateCharges(props: Step01Props) {
 
   const href = useMemo(() => {
     return getAllChargesHref({
-      byOwners: props.adminBusinessId ? [props.adminBusinessId] : undefined,
-      fromAnyDate: `${props.year}-01-01` as TimelessDateString,
-      toAnyDate: `${props.year}-12-31` as TimelessDateString,
+      byOwners: adminBusinessId ? [adminBusinessId] : undefined,
+      fromAnyDate: `${year}-01-01` as TimelessDateString,
+      toAnyDate: `${year}-12-31` as TimelessDateString,
       accountantStatus: [AccountantStatus.Pending, AccountantStatus.Unapproved],
       sortBy: {
         field: ChargeSortByField.Date,
         asc: false,
       },
     });
-  }, [props.adminBusinessId, props.year]);
+  }, [adminBusinessId, year]);
 
   const actions: StepAction[] = [{ label: 'Review Charges', href }];
 

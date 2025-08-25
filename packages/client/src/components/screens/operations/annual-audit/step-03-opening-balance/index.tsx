@@ -95,24 +95,26 @@ export default function Step03OpeningBalance(props: Step03Props) {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const { adminBusinessId, id, onStatusChange } = props;
+
   useEffect(() => {
-    if (!props.adminBusinessId) {
+    if (!adminBusinessId) {
       setStatus('blocked');
     }
-  }, [props.adminBusinessId]);
+  }, [adminBusinessId]);
 
   // Report status changes to parent
   useEffect(() => {
-    if (props.onStatusChange) {
-      props.onStatusChange(props.id, status);
+    if (onStatusChange) {
+      onStatusChange(id, status);
     }
-  }, [status, props.onStatusChange, props.id]);
+  }, [status, onStatusChange, id]);
 
   useEffect(() => {
     const fetchUserType = async () => {
       try {
         // Simulate API call to determine user type
-        await new Promise(resolve => setTimeout(resolve, 600));
+        await new Promise(resolve => setTimeout(resolve, 600)); // TODO: replace with actual API call
 
         const data: UserType = {
           type: 'continuing',
