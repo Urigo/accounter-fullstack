@@ -191,6 +191,14 @@ function nullifyEmptyStrings(raw: string) {
   return raw === '' ? null : raw;
 }
 
+function nullifyFeeInvoices(contractType: string, contractId: string | null) {
+  const feeTypes: string[] = ['payment_processing_fee', 'eor_management_fee', 'unknown'];
+  if (feeTypes.includes(contractType)) {
+    return null;
+  }
+  return contractId;
+}
+
 export function convertMatchToDeelInvoiceRecord(
   match: DeelInvoiceMatch,
   documentId: string,
@@ -203,7 +211,7 @@ export function convertMatchToDeelInvoiceRecord(
     bonus: match.breakdown_bonus,
     commissions: match.breakdown_commissions,
     contractCountry: nullifyEmptyStrings(match.breakdown_contract_country),
-    contractId: match.contract_id,
+    contractId: nullifyFeeInvoices(match.breakdown_contract_type, match.contract_id),
     contractStartDate: nullifyEmptyStrings(match.breakdown_contract_start_date),
     contractType: nullifyEmptyStrings(match.breakdown_contract_type),
     contractorEmail: nullifyEmptyStrings(match.breakdown_contractor_email),
