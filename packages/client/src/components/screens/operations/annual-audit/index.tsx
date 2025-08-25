@@ -25,6 +25,7 @@ import {
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
 import Step03OpeningBalance from './step-03-opening-balance/index.js';
+import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
 
@@ -156,20 +157,14 @@ export const AnnualAuditFlow = (): ReactElement => {
           />
 
           {/* Step 4 - Simple step with static data */}
-          <SimpleStep
+          <Step04FinancialCharges
             id="4"
             title="Generate Financial Charges"
             description="Create various financial charges and reserves"
             icon={<Calculator className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Calculate Vacation Reserves', href: '/reserves/vacation' },
-              { label: 'Calculate Recovery Reserves', href: '/reserves/recovery' },
-              { label: 'Process Bank Deposits', href: '/deposits/bank' },
-              { label: 'Perform Revaluation', href: '/revaluation' },
-              { label: 'Calculate Tax Expenses', href: '/tax/expenses' },
-              { label: 'Calculate Depreciation', href: '/depreciation/calculate' },
-            ]}
+            year={YEAR}
+            adminBusinessId={userContext?.context.adminBusinessId}
           />
 
           {/* Step 5 - Simple step */}
