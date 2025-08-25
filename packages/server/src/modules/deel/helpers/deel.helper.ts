@@ -191,8 +191,8 @@ function nullifyEmptyStrings(raw: string) {
   return raw === '' ? null : raw;
 }
 
-function nullifyFeeInvoices(contractType: string, contractId: string | null) {
-  const feeTypes: string[] = ['payment_processing_fee', 'eor_management_fee', 'unknown'];
+function nullifyFeeInvoices(contractType: string, contractId: string | null): string | null {
+  const feeTypes: readonly string[] = ['payment_processing_fee', 'eor_management_fee', 'unknown'];
   if (feeTypes.includes(contractType)) {
     return null;
   }
