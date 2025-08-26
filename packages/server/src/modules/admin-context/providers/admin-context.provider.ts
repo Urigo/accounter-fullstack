@@ -287,7 +287,9 @@ export class AdminContextProvider {
   );
 
   public updateAdminContext(params: IUpdateAdminContextParams) {
-    this.getAdminContextLoader.clear(params.ownerId);
+    if (params.ownerId) {
+      this.getAdminContextLoader.clear(params.ownerId);
+    }
     return updateAdminContext.run(params, this.dbProvider);
   }
 
