@@ -1,5 +1,6 @@
 import { createApplication, Scope } from 'graphql-modules';
 import postgres from 'pg';
+import { adminContextModule } from '@modules/admin-context/index.js';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
@@ -80,6 +81,7 @@ export async function createGraphQLApp(env: Environment) {
       greenInvoiceModule,
       contractsModule,
       bankDepositsModule,
+      adminContextModule,
     ],
     providers: [
       {
