@@ -62,7 +62,7 @@ export const AnnualAuditFlow = (): ReactElement => {
       }
     }
     return defaultFilters;
-  }, [userContext?.context.adminBusinessId]);
+  }, [userContext?.context.adminBusinessId, get]);
   const [filter, setFilter] = useState<AnnualAuditFlowFilter>(initialFilters);
 
   useEffect(() => {
@@ -74,7 +74,6 @@ export const AnnualAuditFlow = (): ReactElement => {
   }, [filter, setFiltersContext, setFilter]);
 
   const totalSteps = 21;
-  const YEAR = 2024; // TODO: Example year, should be dynamic
 
   // Track step statuses to avoid double counting
   const stepStatusesRef = useRef<Map<string, StepStatus>>(new Map());
@@ -130,8 +129,8 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 1 - Charges Validation */}
           <Step01ValidateCharges
             id="1"
-            year={YEAR}
-            adminBusinessId={userContext?.context.adminBusinessId}
+            year={filter.year}
+            adminBusinessId={filter.adminBusinessId}
             title="Validate All Charges"
             description="Ensure all charges of the year were reviewed, handle pending charges"
             onStatusChange={handleStatusChange}
@@ -140,8 +139,8 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 2 - Pending Ledger Changes */}
           <Step02LedgerChanges
             id="2"
-            year={YEAR}
-            adminBusinessId={userContext?.context.adminBusinessId}
+            year={filter.year}
+            adminBusinessId={filter.adminBusinessId}
             title="Check Pending Ledger Changes"
             description="Ensure no pending ledger changes exist"
             onStatusChange={handleStatusChange}
@@ -150,8 +149,8 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 3 - Opening Balance Verification */}
           <Step03OpeningBalance
             id="3"
-            year={YEAR}
-            adminBusinessId={userContext?.context.adminBusinessId}
+            year={filter.year}
+            adminBusinessId={filter.adminBusinessId}
             title="Verify Opening Balance"
             description="Handle opening balance verification based on user type"
             onStatusChange={handleStatusChange}
@@ -164,8 +163,8 @@ export const AnnualAuditFlow = (): ReactElement => {
             description="Create various financial charges and reserves"
             icon={<Calculator className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            year={YEAR}
-            adminBusinessId={userContext?.context.adminBusinessId}
+            year={filter.year}
+            adminBusinessId={filter.adminBusinessId}
           />
 
           {/* Step 5 - Audit Main Process */}
@@ -217,7 +216,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             id="8"
             title="Lock Ledger"
             description="Lock ledger by records and by date"
-            year={YEAR}
+            year={filter.year}
             icon={<Lock className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
           />
