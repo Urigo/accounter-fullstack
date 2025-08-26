@@ -26,6 +26,7 @@ import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
 import Step03OpeningBalance from './step-03-opening-balance/index.js';
 import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
+import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
 
@@ -196,9 +197,9 @@ export const AnnualAuditFlow = (): ReactElement => {
               { label: 'Manage Shareholders', href: '/shareholders/manage' },
               { label: 'Import Data', href: '/shareholders/import' },
             ]}
-            disabled
           />
 
+          {/* Steps 7 - Revalidate Charges And Ledger */}
           <SimpleStep
             id="7"
             title="Revalidate Pending Items"
@@ -211,16 +212,14 @@ export const AnnualAuditFlow = (): ReactElement => {
             ]}
           />
 
-          <SimpleStep
+          {/* Steps 8 - Ledger Lock */}
+          <Step08LedgerLock
             id="8"
             title="Lock Ledger"
             description="Lock ledger by records and by date"
+            year={YEAR}
             icon={<Lock className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Lock by Records', href: '/ledger/lock-records' },
-              { label: 'Lock by Date', href: '/ledger/lock-date' },
-            ]}
           />
 
           <SimpleStep
