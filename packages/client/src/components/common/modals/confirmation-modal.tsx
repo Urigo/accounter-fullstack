@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -15,6 +15,8 @@ interface Props {
   onConfirm: () => void;
   onClose?: () => void;
   children?: ReactElement | ReactElement[];
+  open?: boolean;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 }
 
 export function ConfirmationModal({
@@ -23,20 +25,26 @@ export function ConfirmationModal({
   onConfirm,
   onClose,
   children,
+  open: externalOpen,
+  setOpen: setExternalOpen,
 }: Props): ReactElement {
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const setOpen = setExternalOpen ?? setLocalOpen;
+  const open = externalOpen == null ? localOpen : externalOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        asChild
-        onClick={event => {
-          event.stopPropagation();
-          setOpen(current => !current);
-        }}
-      >
-        {children}
-      </DialogTrigger>
+      {children && (
+        <DialogTrigger
+          asChild
+          onClick={event => {
+            event.stopPropagation();
+            setOpen(current => !current);
+          }}
+        >
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>{title && <DialogTitle>{title}</DialogTitle>}</DialogHeader>
 
