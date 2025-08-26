@@ -21,6 +21,9 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           return res;
         })
         .catch(e => {
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error fetching admin context`);
         }),
@@ -39,6 +42,9 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           return res[0];
         })
         .catch(e => {
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating admin context`);
         }),
@@ -183,6 +189,9 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           return res;
         })
         .catch(e => {
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error fetching business trip tag`);
         });

@@ -26,6 +26,9 @@ export function fetchTaxCategory(
       return res;
     })
     .catch(e => {
+      if (e instanceof GraphQLError) {
+        throw e;
+      }
       console.error(JSON.stringify(e, null, 2));
       throw new GraphQLError(`Error fetching tax category`);
     });
@@ -49,6 +52,9 @@ export function fetchBusiness(
       return res;
     })
     .catch(e => {
+      if (e instanceof GraphQLError) {
+        throw e;
+      }
       console.error(JSON.stringify(e, null, 2));
       throw new GraphQLError(`Error fetching business`);
     });

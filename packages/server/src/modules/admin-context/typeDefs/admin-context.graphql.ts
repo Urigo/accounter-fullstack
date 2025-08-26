@@ -10,10 +10,9 @@ export default gql`
     updateAdminContext(context: AdminContextInput!): AdminContext! @auth(role: ADMIN)
   }
 
-  " input variables for updateTag "
+  " input variables for updateAdminContext "
   input AdminContextInput {
     ownerId: UUID!
-    name: String
     defaultLocalCurrency: Currency
     defaultForeignCurrency: Currency
     defaultTaxCategoryId: UUID
@@ -140,14 +139,5 @@ export default gql`
     ledgerLock: TimelessDate
     foreignSecuritiesBusiness: Business
     foreignSecuritiesFeesCategory: TaxCategory
-  }
-
-  extend input UpdateChargeInput {
-    tags: [TagInput!]
-  }
-
-  " input variables for Tag"
-  input TagInput {
-    id: String!
   }
 `;
