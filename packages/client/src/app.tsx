@@ -25,6 +25,7 @@ import { MissingInfoCharges } from './components/screens/charges/missing-info-ch
 import { DocumentsReport } from './components/screens/documents/all-documents/index.jsx';
 import { IssueDocumentScreen } from './components/screens/documents/issue-document.js';
 import { IssueDocuments } from './components/screens/documents/issue-documents/index.js';
+import { PageNotFound } from './components/screens/page-not-found.js';
 import { BalanceReport } from './components/screens/reports/balance-report/index.js';
 import { DepreciationReport } from './components/screens/reports/depreciation-report/index.js';
 import { Shaam6111Report } from './components/screens/reports/shaam6111-report/index.js';
@@ -89,14 +90,7 @@ export function App(): ReactElement {
           <Route path="tags" element={<TagsManager />} />
           <Route path="tax-categories" element={<TaxCategories />} />
           <Route path="sort-codes" element={<SortCodes />} />
-          <Route
-            path="*"
-            element={
-              <main className="p-4">
-                <p>404: There&apos;s nothing here!</p>
-              </main>
-            }
-          />
+          <Route path="*" element={<PageNotFound />} />
         </Routes>
       </DashboardLayout>
     </FiltersContext.Provider>
