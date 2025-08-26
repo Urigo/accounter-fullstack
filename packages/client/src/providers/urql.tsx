@@ -47,10 +47,10 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
       exchanges: [
         mapExchange({
           onResult(result) {
-            const networkError = !!result?.error?.networkError;
-            if (networkError) {
-              console.error('Network Error:', result.error!.networkError);
+            if (result.error?.networkError) {
+              console.error('Network Error:', result.error.networkError);
               navigate('/network-error');
+              return;
             }
             const isAuthError =
               result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
