@@ -126,7 +126,7 @@ export const AnnualAuditFlow = (): ReactElement => {
         </div>
 
         <div className="space-y-4">
-          {/* Step 1 - Custom component with server data */}
+          {/* Step 1 - Charges Validation */}
           <Step01ValidateCharges
             id="1"
             year={YEAR}
@@ -136,7 +136,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             onStatusChange={handleStatusChange}
           />
 
-          {/* Step 2 - Custom component with server data */}
+          {/* Step 2 - Pending Ledger Changes */}
           <Step02LedgerChanges
             id="2"
             year={YEAR}
@@ -146,7 +146,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             onStatusChange={handleStatusChange}
           />
 
-          {/* Step 3 - Custom component with substeps */}
+          {/* Step 3 - Opening Balance Verification */}
           <Step03OpeningBalance
             id="3"
             year={YEAR}
@@ -156,7 +156,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             onStatusChange={handleStatusChange}
           />
 
-          {/* Step 4 - Simple step with static data */}
+          {/* Step 4 - Financial Charges */}
           <Step04FinancialCharges
             id="4"
             title="Generate Financial Charges"
@@ -167,7 +167,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             adminBusinessId={userContext?.context.adminBusinessId}
           />
 
-          {/* Step 5 - Simple step */}
+          {/* Step 5 - Audit Main Process */}
           <SimpleStep
             id="5"
             title="Audit Main Process"
@@ -185,7 +185,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             ]}
           />
 
-          {/* Steps 6-21 - Simple steps with basic configuration */}
+          {/* Steps 6 - Shareholders Data */}
           <SimpleStep
             id="6"
             title="Add Shareholders Data (1214)"
@@ -196,6 +196,7 @@ export const AnnualAuditFlow = (): ReactElement => {
               { label: 'Manage Shareholders', href: '/shareholders/manage' },
               { label: 'Import Data', href: '/shareholders/import' },
             ]}
+            disabled
           />
 
           <SimpleStep
