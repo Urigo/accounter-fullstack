@@ -13,9 +13,9 @@
     "node": "24.6.0"
   },
   "scripts": {
-    "build": "yarn generate && yarn workspaces foreach --all run build",
-    "client:build": "yarn --cwd packages/client build",
-    "client:dev": "yarn --cwd packages/client dev",
+    "build": "yarn generate && yarn workspaces foreach --all --parallel run build",
+    "client:build": "yarn workspace @accounter/client build",
+    "client:dev": "yarn workspace @accounter/client dev",
     "db:migrate": "yarn migration:run",
     "deploy": "git push heroku master",
     "encrypt-password": "node scripts/encrypt-password.mjs",
@@ -33,9 +33,9 @@
     "prettier:check": "prettier --cache --check .",
     "prettier:fix": "prettier --cache --write --list-different .",
     "release": "yarn build && changeset publish",
-    "scrape": "yarn --cwd packages/scraper-local-app start",
+    "scrape": "yarn workspace @accounter-helper/scraper-local-app start",
     "seed": "tsx scripts/seed.ts",
-    "server:build": "yarn --cwd packages/server build",
+    "server:build": "yarn workspace @accounter/server build",
     "setup": "yarn db:init && yarn generate",
     "test": "vitest"
   },
