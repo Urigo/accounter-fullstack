@@ -14,7 +14,7 @@
     "csv-parse": "6.1.0",
     "diary": "0.4.5",
     "dotenv": "17.2.1",
-    "pg-promise": "11.15.0"
+    "pg-promise": "12.0.0"
   },
   "devDependencies": {
     "tsup": "8.5.0"
