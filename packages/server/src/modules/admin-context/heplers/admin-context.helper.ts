@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import type {
   IGetAllTaxCategoriesResult,
