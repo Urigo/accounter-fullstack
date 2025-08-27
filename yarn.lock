@@ -27,7 +27,7 @@ __metadata:
     pg-promise: "npm:12.0.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
@@ -108,7 +108,7 @@ __metadata:
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
     "@types/react": "npm:19.1.11"
-    "@types/react-dom": "npm:19.1.7"
+    "@types/react-dom": "npm:19.1.8"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.0.1"
     autoprefixer: "npm:10.4.21"
@@ -149,7 +149,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:7.1.3"
     vite-plugin-node-polyfills: "npm:0.24.0"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
     zustand: "npm:5.0.8"
   languageName: unknown
   linkType: soft
@@ -262,7 +262,7 @@ __metadata:
     puppeteer: "npm:24.17.0"
     typescript: "npm:5.9.2"
     uuid: "npm:11.1.0"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
@@ -289,7 +289,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
@@ -301,7 +301,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.6"
+    "@ai-sdk/anthropic": "npm:2.0.7"
     "@envelop/generic-auth": "npm:10.0.0"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@graphql-hive/yoga": "npm:0.42.2"
@@ -312,7 +312,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
     "@whatwg-node/fetch": "npm:0.10.10"
-    ai: "npm:5.0.23"
+    ai: "npm:5.0.24"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.7.0"
@@ -334,7 +334,7 @@ __metadata:
     strip-indent: "npm:4.0.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.9.2"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
@@ -346,7 +346,7 @@ __metadata:
     eslint: "npm:9.34.0"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:3.2.4"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
@@ -358,45 +358,44 @@ __metadata:
     eslint: "npm:9.34.0"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:3.2.4"
-    zod: "npm:4.1.1"
+    zod: "npm:4.1.3"
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.6":
-  version: 2.0.6
-  resolution: "@ai-sdk/anthropic@npm:2.0.6"
+"@ai-sdk/anthropic@npm:2.0.7":
+  version: 2.0.7
+  resolution: "@ai-sdk/anthropic@npm:2.0.7"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/d45f9d183ff609cd29620bf8038db0b2e2bb75a5e411851fb27403ed24e3b8934926b425a2fb0f07077a6abce8918c5d79da567b9035d134c95c8c4a2ed6b6d6
+  checksum: 10c0/f5015c6046e027bc0928f7e97b03552cd6b0afab5f4a4365d0617b6b83176254ad0305c740359b9717b877adcab73459f52a6b8f2857e6bd019036a9c0a36a4a
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:1.0.12":
-  version: 1.0.12
-  resolution: "@ai-sdk/gateway@npm:1.0.12"
+"@ai-sdk/gateway@npm:1.0.13":
+  version: 1.0.13
+  resolution: "@ai-sdk/gateway@npm:1.0.13"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/5a69bd4310987412b24b287a69eea6815bfc4de1c2f5fc2c54376d3bed5ced1f9a721e28446720ea74e5859b600cd0f0d991d2762c3141f525e1f410dece9506
+  checksum: 10c0/cfd655440d68e1e99204cdf3a4c30fcd9d9dd21d2b6851932584fc228617e9f844b0419c5b74e8e8ee9c00256b64e34c9346369cebe43f9c76e6f31203ca4b8c
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:3.0.5":
-  version: 3.0.5
-  resolution: "@ai-sdk/provider-utils@npm:3.0.5"
+"@ai-sdk/provider-utils@npm:3.0.6":
+  version: 3.0.6
+  resolution: "@ai-sdk/provider-utils@npm:3.0.6"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@standard-schema/spec": "npm:^1.0.0"
     eventsource-parser: "npm:^3.0.3"
-    zod-to-json-schema: "npm:^3.24.1"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/4057810b320bda149a178dc1bfc9cdd592ca88b736c3c22bd0c1f8111c75ef69beec4a523f363e5d0d120348b876942fd66c0bb4965864da4c12c5cfddee15a3
+  checksum: 10c0/00f8d5a4e76f66aad6ebde97d3512b8295c144c6802465ec0d7b38c6eaa0fc97fbcaeb51284f66bb7e42bcf38a92ed0edba95c1ccddf50af3040d2b64227352a
   languageName: node
   linkType: hard
 
@@ -7709,12 +7708,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:19.1.7":
-  version: 19.1.7
-  resolution: "@types/react-dom@npm:19.1.7"
+"@types/react-dom@npm:19.1.8":
+  version: 19.1.8
+  resolution: "@types/react-dom@npm:19.1.8"
   peerDependencies:
     "@types/react": ^19.0.0
-  checksum: 10c0/8db5751c1567552fe4e1ece9f5823b682f2994ec8d30ed34ba0ef984e3c8ace1435f8be93d02f55c350147e78ac8c4dbcd8ed2c3b6a60f575bc5374f588c51c9
+  checksum: 10c0/561f9679c99e93adba8ecdf7d5ad69cc9d5e35837fa996246a83713f0ce498fc5b871f9a2a3342c7d440fc02159abe10f29c4a4004527d5d38b2e84f21840793
   languageName: node
   linkType: hard
 
@@ -8363,17 +8362,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.23":
-  version: 5.0.23
-  resolution: "ai@npm:5.0.23"
+"ai@npm:5.0.24":
+  version: 5.0.24
+  resolution: "ai@npm:5.0.24"
   dependencies:
-    "@ai-sdk/gateway": "npm:1.0.12"
+    "@ai-sdk/gateway": "npm:1.0.13"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.5"
+    "@ai-sdk/provider-utils": "npm:3.0.6"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/f127aeef40bbd303902a10563b6d8bfdc884b36541685db88e2b290f93ee38fa9a5698991ac109202f32c1b42362a5c023abb80fab60f244d53cbe04be61e94c
+  checksum: 10c0/a5735ee935a9499f1b87fa99d0d2aa87732db0e01dfdfd38ffa233c9e7242572f4442c15fe3f6e441b1ca62491a72ca603ca782f3f0ed7bf42c57fa7d6f2e891
   languageName: node
   linkType: hard
 
@@ -22120,15 +22119,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod-to-json-schema@npm:^3.24.1":
-  version: 3.24.6
-  resolution: "zod-to-json-schema@npm:3.24.6"
-  peerDependencies:
-    zod: ^3.24.1
-  checksum: 10c0/b907ab6d057100bd25a37e5545bf5f0efa5902cd84d3c3ec05c2e51541431a47bd9bf1e5e151a244273409b45f5986d55b26e5d207f98abc5200702f733eb368
-  languageName: node
-  linkType: hard
-
 "zod@npm:3.24.1":
   version: 3.24.1
   resolution: "zod@npm:3.24.1"
@@ -22136,10 +22126,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:4.1.1":
-  version: 4.1.1
-  resolution: "zod@npm:4.1.1"
-  checksum: 10c0/bbc5936b313e96401d8a384531cb87dd68a45acf6b1a624a4806dc7934c4ee7e1257937ba676a3c02973bc3045b1086f2621ef683c8019ea63cc05dd9a568293
+"zod@npm:4.1.3":
+  version: 4.1.3
+  resolution: "zod@npm:4.1.3"
+  checksum: 10c0/27e2acc9e3bb3880704acc70dc0631aadd49c006414c38f6b651fdfe41767a4a3a4c4d744fa9a138afdba4d9ef76ee4d92c34ccb5b5d0af177f28399a7a5778d
   languageName: node
   linkType: hard
 
