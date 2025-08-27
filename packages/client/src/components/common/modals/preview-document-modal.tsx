@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Loader2, Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
+import { getDocumentNameFromType } from '@/helpers/index.js';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
 import {
   DocumentType,
@@ -110,10 +111,27 @@ export function convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
   newDocumentInfo: NewDocumentInfoFragment,
   documentTypeOverride?: DocumentType,
 ): PreviewDocumentInput {
+  let remarks: string | undefined = undefined;
+  if (newDocumentInfo.remarks) {
+    remarks = newDocumentInfo.remarks;
+    if (documentTypeOverride === DocumentType.CreditInvoice) {
+      remarks = remarks.replace(
+        getDocumentNameFromType(DocumentType.Receipt),
+        getDocumentNameFromType(DocumentType.CreditInvoice),
+      );
+    }
+  }
+
+  let { currency } = newDocumentInfo;
+  if (documentTypeOverride === DocumentType.CreditInvoice) {
+    currency = newDocumentInfo.income?.[0]?.currency || currency;
+  }
+
   return {
     ...newDocumentInfo,
+    currency,
     description: newDocumentInfo.description || undefined,
-    remarks: newDocumentInfo.remarks || undefined,
+    remarks,
     footer: newDocumentInfo.footer || undefined,
     date: newDocumentInfo.date || undefined,
     dueDate: newDocumentInfo.dueDate || undefined,

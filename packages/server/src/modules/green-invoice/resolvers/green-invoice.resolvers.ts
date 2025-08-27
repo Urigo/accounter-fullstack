@@ -327,9 +327,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.transactions_currency ||
-          charge.documents_currency ||
-          defaultCryptoConversionFiatCurrency) as Currency,
+        currency: (charge.documents_currency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
         signed: true,
