@@ -118,7 +118,7 @@ __metadata:
     cmdk: "npm:1.1.1"
     csv-parse: "npm:6.1.0"
     date-fns: "npm:4.1.0"
-    dayjs: "npm:1.11.13"
+    dayjs: "npm:1.11.14"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
     dotenv: "npm:17.2.1"
@@ -301,7 +301,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.7"
+    "@ai-sdk/anthropic": "npm:2.0.8"
     "@envelop/generic-auth": "npm:10.0.0"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@graphql-hive/yoga": "npm:0.42.2"
@@ -312,7 +312,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
     "@whatwg-node/fetch": "npm:0.10.10"
-    ai: "npm:5.0.24"
+    ai: "npm:5.0.26"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.7.0"
@@ -362,40 +362,40 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.7":
-  version: 2.0.7
-  resolution: "@ai-sdk/anthropic@npm:2.0.7"
+"@ai-sdk/anthropic@npm:2.0.8":
+  version: 2.0.8
+  resolution: "@ai-sdk/anthropic@npm:2.0.8"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.6"
+    "@ai-sdk/provider-utils": "npm:3.0.7"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/f5015c6046e027bc0928f7e97b03552cd6b0afab5f4a4365d0617b6b83176254ad0305c740359b9717b877adcab73459f52a6b8f2857e6bd019036a9c0a36a4a
+  checksum: 10c0/bb6760e9dfc688663543f1166c9e19944cf5d02d64b03f2c02ff6ca9d04aa5da0a92d7d045334e6ab1dcd47415fffbf336613aa3cc6847da033e138435ae8a2e
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:1.0.13":
-  version: 1.0.13
-  resolution: "@ai-sdk/gateway@npm:1.0.13"
+"@ai-sdk/gateway@npm:1.0.15":
+  version: 1.0.15
+  resolution: "@ai-sdk/gateway@npm:1.0.15"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.6"
+    "@ai-sdk/provider-utils": "npm:3.0.7"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/cfd655440d68e1e99204cdf3a4c30fcd9d9dd21d2b6851932584fc228617e9f844b0419c5b74e8e8ee9c00256b64e34c9346369cebe43f9c76e6f31203ca4b8c
+  checksum: 10c0/cdd09f119d6618f00c363a27f51dc466a8a64f57f01bcdd127030a804825bd143b0fef2dbdb7802530865d474f4b9d55855670fecd7f2e6c615a5d9ac9fd6e3b
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:3.0.6":
-  version: 3.0.6
-  resolution: "@ai-sdk/provider-utils@npm:3.0.6"
+"@ai-sdk/provider-utils@npm:3.0.7":
+  version: 3.0.7
+  resolution: "@ai-sdk/provider-utils@npm:3.0.7"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@standard-schema/spec": "npm:^1.0.0"
-    eventsource-parser: "npm:^3.0.3"
+    eventsource-parser: "npm:^3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/00f8d5a4e76f66aad6ebde97d3512b8295c144c6802465ec0d7b38c6eaa0fc97fbcaeb51284f66bb7e42bcf38a92ed0edba95c1ccddf50af3040d2b64227352a
+  checksum: 10c0/7e709289f9e514a6ba56a9b19764eb124ea1bd36d4b3b3e455a1c05353674c152839a4d3cd061af7a4cc36106bd15859a2346e54d4ed0a861feec3b2c4c21513
   languageName: node
   linkType: hard
 
@@ -8362,17 +8362,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.24":
-  version: 5.0.24
-  resolution: "ai@npm:5.0.24"
+"ai@npm:5.0.26":
+  version: 5.0.26
+  resolution: "ai@npm:5.0.26"
   dependencies:
-    "@ai-sdk/gateway": "npm:1.0.13"
+    "@ai-sdk/gateway": "npm:1.0.15"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.6"
+    "@ai-sdk/provider-utils": "npm:3.0.7"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4
-  checksum: 10c0/a5735ee935a9499f1b87fa99d0d2aa87732db0e01dfdfd38ffa233c9e7242572f4442c15fe3f6e441b1ca62491a72ca603ca782f3f0ed7bf42c57fa7d6f2e891
+  checksum: 10c0/0423f296b1aa9f22ad106278e8d1e7a2ae9d068358720cdc23c0f222af5406ac1e5ccbce19833709aa1c62b841361d310fb3c42781f426966a9f9ca287ae7faa
   languageName: node
   linkType: hard
 
@@ -10666,6 +10666,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dayjs@npm:1.11.14":
+  version: 1.11.14
+  resolution: "dayjs@npm:1.11.14"
+  checksum: 10c0/9ef4788e171c966e146edf357bfbbec21e125f68648c08b853e81e7a4657c9ab67c024cd69ce2bb568fdc609a6d51d690396838d082dd077beb4f81a12718cc0
+  languageName: node
+  linkType: hard
+
 "debounce@npm:^1.2.0":
   version: 1.2.1
   resolution: "debounce@npm:1.2.1"
@@ -12152,7 +12159,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventsource-parser@npm:^3.0.3":
+"eventsource-parser@npm:^3.0.5":
   version: 3.0.5
   resolution: "eventsource-parser@npm:3.0.5"
   checksum: 10c0/5cb75e3f84ff1cfa1cee6199d4fd430c4544855ab03e953ddbe5927e7b31bc2af3933ab8aba6440ba160ed2c48972b6c317f27b8a1d0764c7b12e34e249de631
