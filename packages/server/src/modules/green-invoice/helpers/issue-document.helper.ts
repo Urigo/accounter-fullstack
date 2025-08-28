@@ -17,6 +17,7 @@ import {
   Currency,
   GreenInvoiceClient,
   GreenInvoiceIncome,
+  GreenInvoiceLinkType,
   GreenInvoicePayment,
   GreenInvoicePaymentType,
   GreenInvoiceVatType,
@@ -27,6 +28,7 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
+  getGreenInvoiceDocumentType,
   getVatTypeFromGreenInvoiceDocument,
   insertNewDocumentFromGreenInvoice,
   normalizeDocumentType,
@@ -216,11 +218,20 @@ export function filterAndHandleSwiftTransactions(
 
 export function getLinkedDocumentsAttributes(
   issuedDocuments: IGetIssuedDocumentsByIdsResult[],
+  shouldCancel: boolean = false,
 ): Pick<NewDocumentInfo, 'linkedDocumentIds' | 'linkType'> {
   const linkedDocumentIds = issuedDocuments.map(doc => doc.external_id);
+  let linkType: GreenInvoiceLinkType | undefined = undefined;
+  if (linkedDocumentIds.length) {
+    if (shouldCancel) {
+      linkType = 'CANCEL';
+    } else {
+      linkType = 'LINK';
+    }
+  }
   return {
     linkedDocumentIds,
-    linkType: linkedDocumentIds.length ? 'LINK' : undefined,
+    linkType,
   };
 }
 
@@ -358,6 +369,9 @@ export async function executeDocumentIssue(
             }
           }),
         );
+      }
+      if (coreInput.type === getGreenInvoiceDocumentType(DocumentType.CreditInvoice)) {
+        // Close origin
       }
 
       return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);

@@ -154,9 +154,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         );
       }
 
-      const linkedDocsAttributes = getLinkedDocumentsAttributes(openIssuedDocuments);
-
       const type = getTypeFromDocumentsAndTransactions(greenInvoiceDocuments, transactions);
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes(
+        openIssuedDocuments,
+        type === DocumentType.CreditInvoice,
+      );
 
       let remarks = charge.user_description;
       if (greenInvoiceDocuments.length) {
@@ -301,9 +304,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         },
       ]);
 
-      const linkedDocsAttributes = getLinkedDocumentsAttributes([openIssuedDocument]);
-
       const type = getTypeFromDocumentsAndTransactions([greenInvoiceDocument], transactions ?? []);
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes(
+        [openIssuedDocument],
+        type === DocumentType.CreditInvoice,
+      );
 
       let remarks = greenInvoiceDocument.remarks;
       switch (type) {
