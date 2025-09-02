@@ -121,6 +121,11 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       }
     },
   },
+  TaxCategory: {
+    __isTypeOf: parent => 'hashavshevet_name' in parent,
+    id: parent => parent.id,
+    name: parent => parent.name,
+  },
   CommonCharge: commonTaxChargeFields,
   FinancialCharge: commonTaxChargeFields,
   ConversionCharge: commonTaxChargeFields,

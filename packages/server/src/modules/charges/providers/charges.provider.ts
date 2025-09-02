@@ -216,6 +216,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($toDate ::TEXT IS NULL OR COALESCE(ec.documents_max_date, ec.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
   AND ($toAnyDate ::TEXT IS NULL OR LEAST(ec.documents_min_date, ec.transactions_min_event_date, ec.transactions_min_debit_date, ec.ledger_min_invoice_date, ec.ledger_min_value_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND ec.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND ec.transactions_event_amount <= 0))
+  AND ($type::accounter_schema.charge_type IS NULL OR ec.type = $type)
   AND ($withoutInvoice = FALSE OR COALESCE(ec.invoices_count, 0) = 0)
   AND ($withoutReceipt = FALSE OR (COALESCE(ec.receipts_count, 0) = 0 AND (ec.no_invoices_required IS FALSE)))
   AND ($withoutDocuments = FALSE OR COALESCE(ec.documents_count, 0) = 0)

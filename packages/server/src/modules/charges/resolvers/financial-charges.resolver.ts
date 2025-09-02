@@ -6,10 +6,56 @@ import { ChargeTypeEnum } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { getChargeType } from '../helpers/charge-type.js';
 import { generateAndTagCharge } from '../helpers/financial-charge.helper.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule } from '../types.js';
 import { commonChargeFields } from './common.js';
 
 export const financialChargesResolvers: ChargesModule.Resolvers = {
+  Query: {
+    annualFinancialCharges: async (_, { ownerId, year }, { injector, adminContext }) => {
+      const charges = await injector.get(ChargesProvider).getChargesByFilters({
+        ownerIds: [ownerId ?? adminContext.defaultAdminBusinessId],
+        type: 'FINANCIAL',
+        fromAnyDate: year,
+        toAnyDate: year,
+      });
+
+      return {
+        id: `${year}-financial-charges`,
+        revaluationCharge: charges.find(c =>
+          c.business_array?.includes(
+            adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
+          ),
+        ),
+        taxExpensesCharge: charges.find(c =>
+          c.business_array?.includes(adminContext.authorities.taxExpensesTaxCategoryId),
+        ),
+        depreciationCharge: adminContext.depreciation.accumulatedDepreciationTaxCategoryId
+          ? charges.find(c =>
+              c.business_array?.includes(
+                adminContext.depreciation.accumulatedDepreciationTaxCategoryId!,
+              ),
+            )
+          : null,
+        recoveryReserveCharge: adminContext.salaries.recoveryReserveTaxCategoryId
+          ? charges.find(c =>
+              c.business_array?.includes(adminContext.salaries.recoveryReserveTaxCategoryId!),
+            )
+          : null,
+        vacationReserveCharge: adminContext.salaries.vacationReserveTaxCategoryId
+          ? charges.find(c =>
+              c.business_array?.includes(adminContext.salaries.vacationReserveTaxCategoryId!),
+            )
+          : null,
+        bankDepositsRevaluationCharge: adminContext.bankDeposits
+          .bankDepositInterestIncomeTaxCategoryId
+          ? charges.find(c =>
+              c.business_array?.includes(adminContext.bankDeposits.bankDepositBusinessId!),
+            )
+          : null,
+      };
+    },
+  },
   Mutation: {
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
       const { injector, adminContext } = context;

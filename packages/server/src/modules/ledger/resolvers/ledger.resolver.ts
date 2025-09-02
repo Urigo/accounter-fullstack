@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
+import { AdminContextProvider } from '@modules/admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -303,12 +304,34 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
     },
-    lockLedgerRecords: async (_, { date }, { injector }) => {
+    lockLedgerRecords: async (
+      _,
+      { date },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
       try {
-        await injector.get(LedgerProvider).lockLedgerRecords(date);
+        const lockByRecords = injector
+          .get(LedgerProvider)
+          .lockLedgerRecords(date)
+          .catch(e => {
+            console.error(`Error locking ledger records for ${date}: ${e}`);
+            throw new Error(`Error locking ledger records for ${date}`);
+          });
+        const lockByDate = injector
+          .get(AdminContextProvider)
+          .updateAdminContext({
+            ownerId: defaultAdminBusinessId,
+            ledgerLock: date,
+          })
+          .catch(e => {
+            console.error(`Error locking ledger by date ${date}: ${e}`);
+            throw new Error(`Error locking ledger by date ${date}`);
+          });
+        await Promise.all([lockByRecords, lockByDate]);
+
         return true;
       } catch (error) {
-        console.error(`Error locking ledger records for ${date}: ${error}`);
+        console.error(`Error locking ledger for ${date}: ${error}`);
         return false;
       }
     },

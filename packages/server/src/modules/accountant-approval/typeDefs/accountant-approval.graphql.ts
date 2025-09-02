@@ -2,6 +2,19 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    accountantApprovalStatus(from: TimelessDate!, to: TimelessDate!): AccountantApprovalStatus!
+      @auth(role: ACCOUNTANT)
+  }
+
+  " represents accountant approval status for a charge "
+  type AccountantApprovalStatus {
+    totalCharges: Int!
+    approvedCount: Int!
+    pendingCount: Int!
+    unapprovedCount: Int!
+  }
+
   extend type Mutation {
     updateChargeAccountantApproval(
       chargeId: UUID!

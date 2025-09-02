@@ -2,6 +2,10 @@ import { gql } from 'graphql-modules';
 
 // eslint-disable-next-line import/no-default-export
 export default gql`
+  extend type Query {
+    annualFinancialCharges(ownerId: UUID, year: TimelessDate!): FinancialChargesGenerationResult!
+      @auth(role: ACCOUNTANT)
+  }
   extend type Mutation {
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
       @auth(role: ACCOUNTANT)
@@ -39,5 +43,16 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " result type for generateFinancialCharges "
+  type FinancialChargesGenerationResult {
+    id: ID!
+    revaluationCharge: FinancialCharge
+    taxExpensesCharge: FinancialCharge
+    depreciationCharge: FinancialCharge
+    recoveryReserveCharge: FinancialCharge
+    vacationReserveCharge: FinancialCharge
+    bankDepositsRevaluationCharge: FinancialCharge
   }
 `;
