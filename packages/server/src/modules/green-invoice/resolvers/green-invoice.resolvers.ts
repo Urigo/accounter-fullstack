@@ -154,9 +154,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         );
       }
 
-      const linkedDocsAttributes = getLinkedDocumentsAttributes(openIssuedDocuments);
-
       const type = getTypeFromDocumentsAndTransactions(greenInvoiceDocuments, transactions);
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes(
+        openIssuedDocuments,
+        type === DocumentType.CreditInvoice,
+      );
 
       let remarks = charge.user_description;
       if (greenInvoiceDocuments.length) {
@@ -301,9 +304,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         },
       ]);
 
-      const linkedDocsAttributes = getLinkedDocumentsAttributes([openIssuedDocument]);
-
       const type = getTypeFromDocumentsAndTransactions([greenInvoiceDocument], transactions ?? []);
+
+      const linkedDocsAttributes = getLinkedDocumentsAttributes(
+        [openIssuedDocument],
+        type === DocumentType.CreditInvoice,
+      );
 
       let remarks = greenInvoiceDocument.remarks;
       switch (type) {
@@ -327,9 +333,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.transactions_currency ||
-          charge.documents_currency ||
-          defaultCryptoConversionFiatCurrency) as Currency,
+        currency: (charge.documents_currency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
         signed: true,
