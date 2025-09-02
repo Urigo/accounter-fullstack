@@ -21,7 +21,7 @@ export default gql`
       chargeIdsToMerge: [UUID!]!
       fields: UpdateChargeInput
     ): MergeChargeResult! @auth(role: ACCOUNTANT)
-    deleteCharge(chargeId: UUID!): Boolean! @auth(role: ADMIN)
+    deleteCharge(chargeId: UUID!): Boolean! @auth(role: ACCOUNTANT)
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
