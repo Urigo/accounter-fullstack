@@ -45,6 +45,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
       metadata {
         transactionsCount
         documentsCount
+        receiptsCount
         ledgerCount
         isLedgerLocked
         openDocuments
@@ -139,10 +140,11 @@ export function ChargeExtendedInfo({
   const hasLedgerRecords = !!charge?.metadata?.ledgerCount;
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
+  const hasReceipts = !!charge?.metadata?.receiptsCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
-  const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasDocs;
+  const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
 
   useEffect(() => {
     const tabs = [];
