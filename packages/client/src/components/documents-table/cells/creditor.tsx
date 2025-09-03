@@ -1,10 +1,11 @@
-import { useCallback, useMemo, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { DocumentType } from '@/gql/graphql.js';
+import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
+import { useUpdateDocument } from '@/hooks/use-update-document.js';
+import { useUrlQuery } from '@/hooks/use-url-query.js';
 import { Indicator, NavLink } from '@mantine/core';
-import { DocumentType } from '../../../gql/graphql.js';
-import { useUpdateDocument } from '../../../hooks/use-update-document.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessHref } from '../../charges/helpers.js';
-import { ConfirmMiniButton } from '../../common/index.js';
+import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 export const COUNTERPARTIES_LESS_DOCUMENT_TYPES: DocumentType[] = [
@@ -14,9 +15,10 @@ export const COUNTERPARTIES_LESS_DOCUMENT_TYPES: DocumentType[] = [
 
 type Props = {
   document: DocumentsTableRowType;
+  onChange?: () => void;
 };
 
-export const Creditor = ({ document }: Props): ReactElement => {
+export const Creditor = ({ document, onChange }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
@@ -24,6 +26,8 @@ export const Creditor = ({ document }: Props): ReactElement => {
     !document.documentType || !COUNTERPARTIES_LESS_DOCUMENT_TYPES.includes(document.documentType);
   const isError =
     (shouldHaveCreditor && !dbCreditor?.id) || DocumentType.Unprocessed === document.documentType;
+
+  const { selectableBusinesses } = useGetBusinesses();
 
   const encodedFilters = get('chargesFilters');
 
@@ -65,6 +69,9 @@ export const Creditor = ({ document }: Props): ReactElement => {
   const hasAlternative = !dbCreditor && !!suggestedCreditor;
 
   const creditor = dbCreditor ?? suggestedCreditor;
+  const { name = 'Missing', id } = creditor || {};
+
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(id ?? null);
 
   const { updateDocument, fetching } = useUpdateDocument();
 
@@ -82,7 +89,15 @@ export const Creditor = ({ document }: Props): ReactElement => {
     [document.id, updateDocument, document.onUpdate],
   );
 
-  const { name = 'Missing', id } = creditor || {};
+  const [search, setSearch] = useState<string | null>(null);
+
+  const onAddBusiness = useCallback(
+    async (businessId: string) => {
+      await updateCreditor(businessId);
+      onChange?.();
+    },
+    [updateCreditor, onChange],
+  );
 
   return (
     <div className="flex flex-wrap">
@@ -94,9 +109,18 @@ export const Creditor = ({ document }: Props): ReactElement => {
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
             ) : (
-              name
+              <SelectWithSearch
+                options={selectableBusinesses}
+                value={selectedBusinessId}
+                onChange={setSelectedBusinessId}
+                search={search}
+                onSearchChange={setSearch}
+                placeholder="Choose or create a business"
+                empty={
+                  search ? <InsertBusiness description={search} onAdd={onAddBusiness} /> : null
+                }
+              />
             ))}
-          {isError && <p className="bg-yellow-400">{name}</p>}
         </Indicator>
       </div>
       {hasAlternative && (
