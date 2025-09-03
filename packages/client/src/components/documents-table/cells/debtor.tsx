@@ -1,18 +1,20 @@
-import { useCallback, useMemo, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
 import { Indicator, NavLink } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { getBusinessHref } from '../../charges/helpers.js';
-import { ConfirmMiniButton } from '../../common/index.js';
+import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 import { COUNTERPARTIES_LESS_DOCUMENT_TYPES } from './index.js';
 
 type Props = {
   document: DocumentsTableRowType;
+  onChange?: () => void;
 };
 
-export const Debtor = ({ document }: Props): ReactElement => {
+export const Debtor = ({ document, onChange }: Props): ReactElement => {
   const { get } = useUrlQuery();
   const dbDebtor = 'debtor' in document ? document.debtor : undefined;
 
@@ -20,6 +22,8 @@ export const Debtor = ({ document }: Props): ReactElement => {
     !document.documentType || !COUNTERPARTIES_LESS_DOCUMENT_TYPES.includes(document.documentType);
   const isError =
     (shouldHaveDebtor && !dbDebtor?.id) || DocumentType.Unprocessed === document.documentType;
+
+  const { selectableBusinesses, refresh: refreshBusinesses } = useGetBusinesses();
 
   const encodedFilters = get('chargesFilters');
 
@@ -61,6 +65,7 @@ export const Debtor = ({ document }: Props): ReactElement => {
   const hasAlternative = !dbDebtor && !!suggestedDebtor;
 
   const debtor = dbDebtor ?? suggestedDebtor;
+  const { name = 'Missing', id } = debtor || {};
 
   const { updateDocument, fetching } = useUpdateDocument();
 
@@ -78,7 +83,16 @@ export const Debtor = ({ document }: Props): ReactElement => {
     [document.id, updateDocument, document.onUpdate],
   );
 
-  const { name = 'Missing', id } = debtor || {};
+  const [search, setSearch] = useState<string | null>(null);
+
+  const onAddBusiness = useCallback(
+    async (businessId: string) => {
+      await updateDebtor(businessId);
+      refreshBusinesses();
+      onChange?.();
+    },
+    [updateDebtor, onChange, refreshBusinesses],
+  );
 
   return (
     <div className="flex flex-wrap">
@@ -90,9 +104,18 @@ export const Debtor = ({ document }: Props): ReactElement => {
                 <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
               </a>
             ) : (
-              name
+              <SelectWithSearch
+                options={selectableBusinesses}
+                value={id ?? null}
+                onChange={businessId => businessId && updateDebtor(businessId)}
+                search={search}
+                onSearchChange={setSearch}
+                placeholder="Choose or create a business"
+                empty={
+                  search ? <InsertBusiness description={search} onAdd={onAddBusiness} /> : null
+                }
+              />
             ))}
-          {isError && <p className="bg-yellow-400">{name}</p>}
         </Indicator>
       </div>
       {hasAlternative && (
