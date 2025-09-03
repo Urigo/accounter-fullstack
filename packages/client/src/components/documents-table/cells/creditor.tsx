@@ -27,7 +27,7 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
   const isError =
     (shouldHaveCreditor && !dbCreditor?.id) || DocumentType.Unprocessed === document.documentType;
 
-  const { selectableBusinesses } = useGetBusinesses();
+  const { selectableBusinesses, refresh: refreshBusinesses } = useGetBusinesses();
 
   const encodedFilters = get('chargesFilters');
 
@@ -71,8 +71,6 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
   const creditor = dbCreditor ?? suggestedCreditor;
   const { name = 'Missing', id } = creditor || {};
 
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(id ?? null);
-
   const { updateDocument, fetching } = useUpdateDocument();
 
   const updateCreditor = useCallback(
@@ -94,9 +92,10 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
   const onAddBusiness = useCallback(
     async (businessId: string) => {
       await updateCreditor(businessId);
+      refreshBusinesses();
       onChange?.();
     },
-    [updateCreditor, onChange],
+    [updateCreditor, onChange, refreshBusinesses],
   );
 
   return (
@@ -111,8 +110,8 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
             ) : (
               <SelectWithSearch
                 options={selectableBusinesses}
-                value={selectedBusinessId}
-                onChange={setSelectedBusinessId}
+                value={id ?? null}
+                onChange={businessId => businessId && updateCreditor(businessId)}
                 search={search}
                 onSearchChange={setSearch}
                 placeholder="Choose or create a business"

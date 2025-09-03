@@ -23,7 +23,7 @@ export const Debtor = ({ document, onChange }: Props): ReactElement => {
   const isError =
     (shouldHaveDebtor && !dbDebtor?.id) || DocumentType.Unprocessed === document.documentType;
 
-  const { selectableBusinesses } = useGetBusinesses();
+  const { selectableBusinesses, refresh: refreshBusinesses } = useGetBusinesses();
 
   const encodedFilters = get('chargesFilters');
 
@@ -67,8 +67,6 @@ export const Debtor = ({ document, onChange }: Props): ReactElement => {
   const debtor = dbDebtor ?? suggestedDebtor;
   const { name = 'Missing', id } = debtor || {};
 
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(id ?? null);
-
   const { updateDocument, fetching } = useUpdateDocument();
 
   const updateDebtor = useCallback(
@@ -90,9 +88,10 @@ export const Debtor = ({ document, onChange }: Props): ReactElement => {
   const onAddBusiness = useCallback(
     async (businessId: string) => {
       await updateDebtor(businessId);
+      refreshBusinesses();
       onChange?.();
     },
-    [updateDebtor, onChange],
+    [updateDebtor, onChange, refreshBusinesses],
   );
 
   return (
@@ -107,8 +106,8 @@ export const Debtor = ({ document, onChange }: Props): ReactElement => {
             ) : (
               <SelectWithSearch
                 options={selectableBusinesses}
-                value={selectedBusinessId}
-                onChange={setSelectedBusinessId}
+                value={id ?? null}
+                onChange={businessId => businessId && updateDebtor(businessId)}
                 search={search}
                 onSearchChange={setSearch}
                 placeholder="Choose or create a business"

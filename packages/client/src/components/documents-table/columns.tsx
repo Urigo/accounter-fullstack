@@ -238,7 +238,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
       );
     },
     cell: ({ row }) => {
-      return <Creditor document={row.original} />;
+      return <Creditor document={row.original} onChange={row.original.onUpdate} />;
     },
   },
   {
@@ -261,7 +261,7 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
       );
     },
     cell: ({ row }) => {
-      return <Debtor document={row.original} />;
+      return <Debtor document={row.original} onChange={row.original.onUpdate} />;
     },
   },
   {
