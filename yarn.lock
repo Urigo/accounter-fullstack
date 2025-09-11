@@ -331,7 +331,7 @@ __metadata:
     pino-pretty: "npm:13.1.1"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.0.1"
-    strip-indent: "npm:4.0.0"
+    strip-indent: "npm:4.1.0"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.9.2"
     zod: "npm:4.1.5"
@@ -20377,7 +20377,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strip-indent@npm:4.0.0, strip-indent@npm:^4.0.0":
+"strip-indent@npm:4.1.0":
+  version: 4.1.0
+  resolution: "strip-indent@npm:4.1.0"
+  checksum: 10c0/ea8193b60a85769ca42d3589c865d4bc743017c1e6ce846332f0f49f103d127dfc25af81849bd00aa98420474fa171ecc2dbe8c1ccd7b9260c43477a5e79431a
+  languageName: node
+  linkType: hard
+
+"strip-indent@npm:^4.0.0":
   version: 4.0.0
   resolution: "strip-indent@npm:4.0.0"
   dependencies:
