@@ -8511,7 +8511,7 @@ __metadata:
     dotenv: "npm:17.2.1"
     eslint: "npm:9.35.0"
     eslint-config-flat-gitignore: "npm:2.1.0"
-    eslint-plugin-unicorn: "npm:60.0.0"
+    eslint-plugin-unicorn: "npm:61.0.2"
     glob: "npm:11.0.3"
     globals: "npm:16.4.0"
     graphql: "npm:16.11.0"
@@ -12124,9 +12124,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-unicorn@npm:60.0.0":
-  version: 60.0.0
-  resolution: "eslint-plugin-unicorn@npm:60.0.0"
+"eslint-plugin-unicorn@npm:61.0.2":
+  version: 61.0.2
+  resolution: "eslint-plugin-unicorn@npm:61.0.2"
   dependencies:
     "@babel/helper-validator-identifier": "npm:^7.27.1"
     "@eslint-community/eslint-utils": "npm:^4.7.0"
@@ -12148,7 +12148,7 @@ __metadata:
     strip-indent: "npm:^4.0.0"
   peerDependencies:
     eslint: ">=9.29.0"
-  checksum: 10c0/8411c0cf7c1c331e6c3f7ac30a8892d5ec8993e2b958ceda7a435167a7c9f7c94abf5ae03a8f04a70586bf0214041601b61d80db2fefbe70036c77501a57315b
+  checksum: 10c0/18be9b6f16dcf55711fa640fd88e7bdca5062c4a463736b0c673e74cc15e2c9377b19f2f06c02567768b4d7e38b304432c0edb563c6da3af436316217c98edc3
   languageName: node
   linkType: hard
 

@@ -212,7 +212,6 @@ export default [
     files: ['packages/migrations/**'],
     rules: {
       'unicorn/filename-case': 0,
-      'import/no-default-export': 0,
       'promise/no-nesting': 1,
     },
   },

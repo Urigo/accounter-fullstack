@@ -162,7 +162,6 @@ export const BalanceReport = (): ReactElement => {
     if (uriFilters) {
       try {
         return JSON.parse(decodeURIComponent(uriFilters)) as BalanceReportFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         console.log('Error parsing balance report filters from URL:', error);
       }

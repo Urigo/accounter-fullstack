@@ -1,6 +1,5 @@
 import { gql } from 'graphql-modules';
 
-// eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
     taxReport(reportYear: Int!, referenceYears: [Int!]!): TaxReport! @auth(role: ACCOUNTANT)

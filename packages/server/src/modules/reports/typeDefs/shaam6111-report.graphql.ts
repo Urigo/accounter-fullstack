@@ -1,6 +1,5 @@
 import { gql } from 'graphql-modules';
 
-// eslint-disable-next-line import/no-default-export
 export default gql`
   extend type Query {
     shaam6111(year: Int!, businessId: UUID): Shaam6111Report! @auth(role: ACCOUNTANT)

@@ -162,11 +162,10 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
           throw new SalaryError(`Employee with national id ${nationalId} not found`);
         }
 
-        // eslint-disable-next-line no-inner-declarations
         function validateNumericCellWrapper(category: string, nullable?: boolean) {
           return validateNumericCell(salaryData, category, employeeColumn, nullable);
         }
-        // eslint-disable-next-line no-inner-declarations
+
         function validateFund(category: string, nullable?: boolean) {
           const data = validateGenericSalaryData(salaryData);
           const { rowNum: prevRowNum } = validateRowByCategory(data, category);
