@@ -102,7 +102,6 @@ export const DepreciationReport = (): ReactElement => {
     if (uriFilters) {
       try {
         return JSON.parse(decodeURIComponent(uriFilters)) as DepreciationReportFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         console.error('Failed to parse depreciation report filters from URL', error);
       }

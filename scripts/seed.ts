@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-array-push-push */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { config } from 'dotenv';

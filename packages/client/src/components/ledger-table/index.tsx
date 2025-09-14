@@ -185,7 +185,7 @@ export const LedgerTable = ({ ledgerFragment }: Props): ReactElement => {
       return {
         ...record,
         matchingStatus:
-          !ledger.validate?.matches || ledger.validate.matches?.some(id => id === record.id)
+          !ledger.validate?.matches || ledger.validate.matches?.includes(record.id)
             ? undefined
             : diff
               ? 'Diff'

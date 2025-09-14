@@ -84,7 +84,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     });
 
     const profitLossByYear = new Map<number, ReturnType<typeof getProfitLossReportAmounts>>();
-    // eslint-disable-next-line no-inner-declarations
+
     function getProfitLossReportAmountsByYear(year: number) {
       let amounts = profitLossByYear.get(year);
       if (!amounts) {

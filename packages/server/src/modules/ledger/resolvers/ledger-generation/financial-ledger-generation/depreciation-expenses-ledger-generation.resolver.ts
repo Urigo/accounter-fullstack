@@ -60,7 +60,6 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
     } = await calculateDepreciationAmount(injector, year);
     const ledgerEntries: LedgerProto[] = [];
 
-    // eslint-disable-next-line no-inner-declarations
     function addLedgerEntry(
       amount: number,
       description: string,
