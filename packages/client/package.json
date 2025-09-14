@@ -38,7 +38,7 @@
     "@radix-ui/react-tabs": "1.1.13",
     "@radix-ui/react-toggle": "1.1.10",
     "@radix-ui/react-tooltip": "1.2.8",
-    "@tanstack/react-query": "5.86.0",
+    "@tanstack/react-query": "5.87.4",
     "@tanstack/react-table": "8.21.3",
     "@urql/exchange-auth": "3.0.0",
     "chart.js": "4.5.0",
