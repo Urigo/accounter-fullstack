@@ -21,7 +21,7 @@
     "@accounter/pcn874-generator": "workspace:^",
     "@accounter/shaam-uniform-format-generator": "workspace:^",
     "@accounter/shaam6111-generator": "workspace:^",
-    "@ai-sdk/anthropic": "2.0.9",
+    "@ai-sdk/anthropic": "2.0.17",
     "@envelop/generic-auth": "10.0.0",
     "@envelop/graphql-modules": "8.0.0",
     "@graphql-hive/yoga": "0.42.2",
@@ -29,13 +29,13 @@
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
     "@whatwg-node/fetch": "0.10.10",
-    "ai": "5.0.29",
+    "ai": "5.0.44",
     "basic-auth": "2.0.1",
     "bcrypt": "6.0.0",
     "cloudinary": "2.7.0",
     "dataloader": "2.2.3",
     "date-fns": "4.1.0",
-    "dotenv": "17.2.1",
+    "dotenv": "17.2.2",
     "dotenv-cli": "10.0.0",
     "graphql": "16.11.0",
     "graphql-modules": "3.0.0",
@@ -46,7 +46,7 @@
     "pg": "8.16.3",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.0",
-    "zod": "4.1.5"
+    "zod": "4.1.8"
   },
   "devDependencies": {
     "@types/basic-auth": "1.1.8",
