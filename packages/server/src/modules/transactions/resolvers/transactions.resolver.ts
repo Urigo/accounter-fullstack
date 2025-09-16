@@ -179,15 +179,19 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             );
 
           const transactionsWithChargeId = transactions.filter(t => t.charge_id);
-          if (transactionsWithChargeId.length) {
-            Promise.all([
-              ...transactionsWithChargeId.map(async transaction => {
+          if (transactionsWithChargeId.length > 0) {
+            const chargesToDelete = new Set<string>();
+            await Promise.all(
+              transactionsWithChargeId.map(async transaction => {
+                if (!transaction.charge_id) {
+                  return;
+                }
                 const charge = await injector
                   .get(ChargesProvider)
                   .getChargeByIdLoader.load(transaction.charge_id);
                 if (!charge) {
                   throw new GraphQLError(
-                    `Former transaction's charge ID ("${chargeId}") not valid`,
+                    `Former transaction's charge ID ("${transaction.charge_id}") not valid`,
                   );
                 }
 
@@ -195,32 +199,36 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
                   Number(charge.documents_count ?? 0) === 0 &&
                   Number(charge.transactions_count ?? 1) === 1
                 ) {
-                  postUpdateActions = async () =>
-                    deleteCharges([charge.id], injector)
-                      .catch(e => {
-                        if (e instanceof GraphQLError) {
-                          throw e;
-                        }
-                        console.error(e);
-                        throw new GraphQLError(
-                          `Failed to delete the empty former charge ID="${charge.id}"`,
-                        );
-                      })
-                      .then(postUpdateActions);
+                  chargesToDelete.add(charge.id);
                 }
               }),
-              async () => {
-                // generate new charge
-                const newCharge = await injector.get(ChargesProvider).generateCharge({
-                  ownerId: defaultAdminBusinessId,
-                  userDescription: 'Transactions unlinked from charge',
+            );
+
+            if (chargesToDelete.size > 0) {
+              const oldPostUpdateActions = postUpdateActions;
+              postUpdateActions = async () => {
+                await oldPostUpdateActions();
+                await deleteCharges(Array.from(chargesToDelete), injector).catch(e => {
+                  if (e instanceof GraphQLError) {
+                    throw e;
+                  }
+                  console.error(e);
+                  throw new GraphQLError(
+                    `Failed to delete empty former charges: ${Array.from(chargesToDelete).join(', ')}`,
+                  );
                 });
-                if (!newCharge || newCharge.length === 0) {
-                  throw new GraphQLError(`Failed to generate new charge for transactions update`);
-                }
-                chargeId = newCharge?.[0]?.id;
-              },
-            ]);
+              };
+            }
+
+            // generate new charge
+            const newCharge = await injector.get(ChargesProvider).generateCharge({
+              ownerId: defaultAdminBusinessId,
+              userDescription: 'Transactions unlinked from charge',
+            });
+            if (!newCharge || newCharge.length === 0) {
+              throw new GraphQLError(`Failed to generate new charge for transactions update`);
+            }
+            chargeId = newCharge[0].id;
           }
         };
 
