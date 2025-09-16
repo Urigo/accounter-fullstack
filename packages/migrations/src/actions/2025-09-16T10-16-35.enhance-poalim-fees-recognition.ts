@@ -14,7 +14,6 @@ DECLARE
     charge_id_var      UUID    = NULL;
     is_conversion      BOOLEAN = false;
     is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
 BEGIN
     -- Create merged raw transactions record:
     INSERT INTO accounter_schema.transactions_raw_list (poalim_ils_id)
@@ -98,8 +97,7 @@ BEGIN
                 ELSE NULL::text
                 END,
             is_fee,
-            NEW.id)
-    RETURNING id INTO transaction_id_var;
+            NEW.id);
 
     RETURN NEW;
 END;
@@ -117,7 +115,6 @@ DECLARE
     charge_id_var      UUID    = NULL;
     is_conversion      BOOLEAN = false;
     is_fee             BOOLEAN = false;
-    transaction_id_var UUID    = NULL;
 BEGIN
     -- Create merged raw transactions record:
     INSERT INTO accounter_schema.transactions_raw_list (poalim_foreign_id)
@@ -202,8 +199,7 @@ BEGIN
                         new.contra_branch_number, '-',
                         new.contra_account_number)
                 ELSE NULL::text
-                END, NEW.id)
-    RETURNING id INTO transaction_id_var;
+                END, NEW.id);
 
     RETURN NEW;
 END;
