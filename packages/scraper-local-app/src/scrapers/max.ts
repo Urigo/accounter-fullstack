@@ -366,6 +366,8 @@ async function insertTransactions(
 
     const transactionToInsert: IInsertMaxCreditcardTransactionsParams['transactions'][number] = {
       ...transaction,
+      ethocaInd: transaction.ethocaInd ?? null,
+      receiptPDF: transaction.receiptPDF ?? null,
       fundsTransferComment: transaction.fundsTransferComment ?? null,
       fundsTransferReceiverOrTransfer: transaction.fundsTransferReceiverOrTransfer ?? null,
       paymentDate: transaction.paymentDate ?? null,
