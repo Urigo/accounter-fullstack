@@ -380,7 +380,7 @@ async function insertTransactions(
   if (transactionsToInsert.length > 0) {
     try {
       const res = await insertMaxCreditcardTransactions.run(
-        { transactions: transactionsToInsert.filter(t => !!t.actualPaymentAmount) },
+        { transactions: transactionsToInsert.filter(t => t.actualPaymentAmount != null) },
         pool,
       );
       res.map(transaction => {
