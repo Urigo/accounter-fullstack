@@ -225,7 +225,7 @@ export class TransactionsProvider {
 
   public async updateTransactions(params: IUpdateTransactionsParams) {
     if (params.transactionIds) {
-      Promise.all(
+      await Promise.all(
         params.transactionIds.map(async id => {
           if (id) {
             await this.invalidateTransactionByID(id);
