@@ -300,22 +300,30 @@ async function isTransactionNew(
   }
 
   try {
-    const res = await existingTransactionsChecker.run(
-      {
-        card: Number(transaction.card),
-        currentPaymentCurrency: transaction.currentPaymentCurrency,
-        fullPaymentDate: transaction.fullPaymentDate,
-        fullPurchaseDate: transaction.fullPurchaseDate,
-        fullPurchaseDateOutbound: transaction.fullPurchaseDateOutbound,
-        fullSupplierNameOutbound: transaction.fullSupplierNameOutbound,
-        moreInfo: transaction.moreInfo,
-        paymentSum: transaction.paymentSum,
-        paymentSumOutbound: transaction.paymentSumOutbound,
-        supplierId: transaction.supplierId ? Number(transaction.supplierId) : null,
-        voucherNumber: transaction.voucherNumber ? Number(transaction.voucherNumber) : null,
-      },
-      pool,
-    );
+    if (Number.isNaN(transaction.paymentSum) || Number.isNaN(transaction.paymentSumOutbound)) {
+      throw new Error('Invalid transaction amounts');
+    }
+    const res = await existingTransactionsChecker
+      .run(
+        {
+          card: Number(transaction.card),
+          currentPaymentCurrency: transaction.currentPaymentCurrency,
+          fullPaymentDate: transaction.fullPaymentDate,
+          fullPurchaseDate: transaction.fullPurchaseDate,
+          fullPurchaseDateOutbound: transaction.fullPurchaseDateOutbound,
+          fullSupplierNameOutbound: transaction.fullSupplierNameOutbound,
+          moreInfo: transaction.moreInfo,
+          paymentSum: transaction.paymentSum,
+          paymentSumOutbound: transaction.paymentSumOutbound,
+          supplierId: transaction.supplierId ? Number(transaction.supplierId) : null,
+          voucherNumber: transaction.voucherNumber ? Number(transaction.voucherNumber) : null,
+        },
+        pool,
+      )
+      .catch(e => {
+        logger.error(e);
+        throw e;
+      });
 
     const columnNamesToExcludeFromComparison: string[] = [
       'formattedEventAmount',
