@@ -20,7 +20,7 @@ const HeaderSchema = z
   .object({
     ErrorPage: z.string().optional(),
     Status: z.enum(['1', '-2']),
-    Message: z.null(),
+    Message: z.string().nullable(),
   })
   .strict();
 

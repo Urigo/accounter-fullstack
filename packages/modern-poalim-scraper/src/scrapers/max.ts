@@ -487,12 +487,15 @@ function getLoginOptions(page: Page, credentials: MaxCredentials): LoginOptions 
   return {
     loginUrl: LOGIN_URL,
     fields: createLoginFields(credentials),
-    submitButtonSelector: '#login-password #send-code',
+    submitButtonSelector:
+      '#login-password > app-user-login-form > form > div.button-wrapper > button',
     preAction: async () => {
       if (await elementPresentOnPage(page, '#closePopup')) {
         await clickButton(page, '#closePopup');
       }
       await clickButton(page, '.personal-area > a.go-to-personal-area');
+      await waitUntilElementFound(page, '#private', true);
+      await clickButton(page, '#private');
       await waitUntilElementFound(page, '#login-password-link', true);
       await clickButton(page, '#login-password-link');
       await waitUntilElementFound(
