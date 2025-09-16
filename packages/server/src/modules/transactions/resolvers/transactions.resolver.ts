@@ -9,7 +9,6 @@ import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type {
   IGetTransactionsByIdsResult,
-  IUpdateTransactionParams,
   IUpdateTransactionsParams,
   TransactionsModule,
 } from '../types.js';
@@ -118,8 +117,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         await chargePromise;
 
-        const adjustedFields: IUpdateTransactionParams = {
-          transactionId,
+        const adjustedFields: IUpdateTransactionsParams = {
+          transactionIds: [transactionId],
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
           debitDate: fields.effectiveDate ?? null,
@@ -128,7 +127,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         const res = await injector
           .get(TransactionsProvider)
-          .updateTransaction({ ...adjustedFields });
+          .updateTransactions({ ...adjustedFields });
         if (!res[0]?.id) {
           throw new GraphQLError('Transaction update failed');
         }
