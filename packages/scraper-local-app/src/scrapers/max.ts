@@ -54,8 +54,8 @@ type NormalizedTransaction = Omit<Transaction, 'dealData' | 'merchantData' | 'ru
   dealDataAmountLeft: number | null;
   dealDataArn: string | null;
   dealDataAuthorizationNumber: string | null;
-  dealDataCardName: null;
-  dealDataCardToken: null;
+  dealDataCardName: string | null;
+  dealDataCardToken: string | null;
   dealDataCommissionVat: number | null;
   dealDataDirectExchange: null;
   dealDataExchangeCommissionAmount: null;
@@ -69,7 +69,7 @@ type NormalizedTransaction = Omit<Transaction, 'dealData' | 'merchantData' | 'ru
   dealDataIsAllowedSpreadWithBenefit: boolean | null;
   dealDataIssuerCurrency: string | null;
   dealDataIssuerExchangeRate: null;
-  dealDataOriginalTerm: null;
+  dealDataOriginalTerm: number | null;
   dealDataPercentMaam: number | null;
   dealDataPlan: number | null;
   dealDataPosEntryEmv: number | null;
@@ -95,7 +95,7 @@ type NormalizedTransaction = Omit<Transaction, 'dealData' | 'merchantData' | 'ru
   merchantCommercialName: string | null;
   merchantNumber: string;
   merchantPhone: string;
-  merchantTaxId: string;
+  merchantTaxId: string | null;
   runtimeReferenceInternalId: string;
   runtimeReferenceType: number;
 };
@@ -371,13 +371,16 @@ async function insertTransactions(
       fundsTransferComment: transaction.fundsTransferComment ?? null,
       fundsTransferReceiverOrTransfer: transaction.fundsTransferReceiverOrTransfer ?? null,
       paymentDate: transaction.paymentDate ?? null,
+      dealDataOriginalTerm: transaction.dealDataOriginalTerm
+        ? transaction.dealDataOriginalTerm.toString()
+        : null,
     };
     transactionsToInsert.push(transactionToInsert);
   }
   if (transactionsToInsert.length > 0) {
     try {
       const res = await insertMaxCreditcardTransactions.run(
-        { transactions: transactionsToInsert },
+        { transactions: transactionsToInsert.filter(t => !!t.actualPaymentAmount) },
         pool,
       );
       res.map(transaction => {
