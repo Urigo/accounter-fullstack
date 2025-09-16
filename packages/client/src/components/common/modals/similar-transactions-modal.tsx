@@ -13,7 +13,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { SimilarTransactionsDocument } from '../../../gql/graphql.js';
-import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { useUpdateTransactions } from '../../../hooks/use-update-transactions.js';
 import { Button } from '../../ui/button.js';
 import { Card } from '../../ui/card.js';
 import { Checkbox } from '../../ui/checkbox.js';
@@ -212,23 +212,21 @@ function SimilarTransactionsTable({
     },
   });
 
-  const { updateTransaction } = useUpdateTransaction();
+  const { updateTransactions } = useUpdateTransactions();
 
   const onApproveSelected = useCallback(async () => {
     const ids = table.getSelectedRowModel().rows.map(row => row.original.id);
 
     // Avoid overloading the server with Promise.all
-    for (const id of ids) {
-      await updateTransaction({
-        transactionId: id,
-        fields: {
-          counterpartyId,
-        },
-      });
-    }
+    await updateTransactions({
+      transactionIds: ids,
+      fields: {
+        counterpartyId,
+      },
+    });
 
     onOpenChange(false);
-  }, [updateTransaction, onOpenChange, table, counterpartyId]);
+  }, [updateTransactions, onOpenChange, table, counterpartyId]);
 
   useEffect(() => {
     if (data.length === 0) {

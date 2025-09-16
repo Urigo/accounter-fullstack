@@ -16,6 +16,8 @@ import type {
   IReplaceTransactionsChargeIdQuery,
   IUpdateTransactionParams,
   IUpdateTransactionQuery,
+  IUpdateTransactionsParams,
+  IUpdateTransactionsQuery,
 } from '../types.js';
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
@@ -101,6 +103,39 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
     )
   WHERE
     id = $transactionId
+  RETURNING *;
+`;
+
+const updateTransactions = sql<IUpdateTransactionsQuery>`
+  UPDATE accounter_schema.transactions
+  SET
+    account_id = COALESCE(
+      $accountId,
+      account_id,
+      NULL
+    ),
+    charge_id = COALESCE(
+      $chargeId,
+      charge_id,
+      NULL
+    ),
+    debit_date_override = COALESCE(
+      $debitDate,
+      debit_date_override,
+      NULL
+    ),
+    business_id = COALESCE(
+      $businessId,
+      business_id,
+      NULL
+    ),
+    is_fee = COALESCE(
+      $isFee,
+      is_fee,
+      NULL
+    )
+  WHERE
+    id IN $$transactionIds
   RETURNING *;
 `;
 
@@ -223,11 +258,24 @@ export class TransactionsProvider {
     return replaceTransactionsChargeId.run(params, this.dbProvider);
   }
 
-  public async updateTransaction(params: IUpdateTransactionParams) {
-    if (params.transactionId) {
-      await this.invalidateTransactionByID(params.transactionId);
+  public async updateTransaction({ transactionId, ...params }: IUpdateTransactionParams) {
+    if (transactionId) {
+      await this.invalidateTransactionByID(transactionId);
     }
-    return updateTransaction.run(params, this.dbProvider);
+    return updateTransactions.run({ transactionIds: [transactionId], ...params }, this.dbProvider);
+  }
+
+  public async updateTransactions(params: IUpdateTransactionsParams) {
+    if (params.transactionIds) {
+      Promise.all(
+        params.transactionIds.map(async id => {
+          if (id) {
+            await this.invalidateTransactionByID(id);
+          }
+        }),
+      );
+    }
+    return updateTransactions.run(params, this.dbProvider);
   }
 
   public async invalidateTransactionByChargeID(chargeId: string) {

@@ -10,6 +10,10 @@ export default gql`
       transactionId: UUID!
       fields: UpdateTransactionInput!
     ): UpdateTransactionResult! @auth(role: ACCOUNTANT)
+    updateTransactions(
+      transactionIds: [UUID!]!
+      fields: UpdateTransactionInput!
+    ): UpdateTransactionsResult! @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {
@@ -157,4 +161,12 @@ export default gql`
 
   " result type for updateTransaction "
   union UpdateTransactionResult = CommonTransaction | ConversionTransaction | CommonError # TODO: update to match more than common transaction
+  " result type for updateTransactions "
+  union UpdateTransactionsResult = UpdatedTransactionsSuccessfulResult | CommonError # TODO: update to match more than common transaction
+  " result type for successful updateTransactions mutation "
+  union UpdatedTransaction = CommonTransaction | ConversionTransaction
+  " result type for successful updateTransactions mutation "
+  type UpdatedTransactionsSuccessfulResult {
+    transactions: [UpdatedTransaction!]!
+  }
 `;
