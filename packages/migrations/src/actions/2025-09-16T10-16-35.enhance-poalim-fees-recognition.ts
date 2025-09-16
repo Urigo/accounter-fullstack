@@ -74,14 +74,11 @@ BEGIN
     VALUES (account_id_var,
             charge_id_var,
             merged_id,
-            concat(
+            concat_ws(' ',
                     new.activity_description,
-                    ' ',
-                    coalesce(new.beneficiary_details_data_party_name, ''),
-                    ' ',
-                    coalesce(new.beneficiary_details_data_message_detail, ''),
-                    ' ',
-                    coalesce(new.english_action_desc, '')
+                    new.beneficiary_details_data_party_name,
+                    new.beneficiary_details_data_message_detail,
+                    new.english_action_desc
             ),
             'ILS',
             new.event_date::text::date,
