@@ -179,12 +179,10 @@ BEGIN
     VALUES (account_id_var,
             charge_id_var,
             merged_id,
-            concat(
+            concat_ws(' ',
                     new.activity_description,
-                    ' ',
-                    coalesce(new.event_details, ''),
-                    ' ',
-                    coalesce(new.account_name, '')
+                    new.event_details,
+                    new.account_name
             ),
             new.currency,
             new.executing_date::text::date,
