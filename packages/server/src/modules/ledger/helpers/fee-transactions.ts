@@ -70,6 +70,11 @@ export async function getEntriesFromFeeTransaction(
     );
   }
 
+  if (Number(transaction.amount) === 0) {
+    // no ledger entries for 0 amount fee transactions
+    return ledgerEntries;
+  }
+
   const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
