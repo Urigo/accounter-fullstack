@@ -398,9 +398,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       Array.from(businessTransactions.entries())
         .map(([businessId, transactionIds]) =>
           transactionIds.map(transactionId =>
-            injector.get(TransactionsProvider).updateTransaction({
+            injector.get(TransactionsProvider).updateTransactions({
               businessId,
-              transactionId,
+              transactionIds: [transactionId],
             }),
           ),
         )
