@@ -29,10 +29,15 @@
    - Download client configuration
 
 ### Step 3: Getting OAuth2 Refresh Token
-   - Go to the link https://developers.google.com/oauthplayground. On configure, check `Use your own OAuth credentials` and input your client ID and secret
-   - On same page, select `Gmail API v1` and then `https://mail.google.com/`. You will be redirected to your google accounts list, select the email you wish to handle and approve the requested access permissions
-   - After this is done, you will be redirected back to the Oauth playground, and receive an authorization code. click 'Exchange authorization code for tokens' (If the 'Step 2' bar shrinks, click it to open again) and save the refresh token
 
+- Go to the link https://developers.google.com/oauthplayground. On configure, check
+  `Use your own OAuth credentials` and input your client ID and secret
+- On same page, select `Gmail API v1` and then `https://mail.google.com/`. You will be redirected to
+  your google accounts list, select the email you wish to handle and approve the requested access
+  permissions
+- After this is done, you will be redirected back to the Oauth playground, and receive an
+  authorization code. click 'Exchange authorization code for tokens' (If the 'Step 2' bar shrinks,
+  click it to open again) and save the refresh token
 
 ### Step 4: Environment Configuration
 
@@ -42,7 +47,6 @@ Create a `.env` file:
 # Gmail OAuth2 Credentials
 GMAIL_CLIENT_ID=your_client_id
 GMAIL_CLIENT_SECRET=your_client_secret
-GMAIL_REDIRECT_URI=your_domain
 GMAIL_REFRESH_TOKEN=your_refresh_token
 
 # Google Cloud
