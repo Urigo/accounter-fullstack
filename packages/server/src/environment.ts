@@ -73,8 +73,8 @@ const GmailModel = zod.union([
   zod.object({
     GMAIL_CLIENT_ID: zod.string(),
     GMAIL_CLIENT_SECRET: zod.string(),
-    GMAIL_REDIRECT_URI: zod.string(),
     GMAIL_REFRESH_TOKEN: zod.string(),
+    GMAIL_LABEL_PATH: zod.string().optional(), // Optional custom label
     GOOGLE_CLOUD_PROJECT_ID: zod.string(),
     GOOGLE_APPLICATION_CREDENTIALS: zod.string(),
     PUBSUB_TOPIC: zod.string(),
@@ -169,8 +169,8 @@ export const env = {
     ? {
         clientId: gmail.GMAIL_CLIENT_ID,
         clientSecret: gmail.GMAIL_CLIENT_SECRET,
-        redirectUri: gmail.GMAIL_REDIRECT_URI,
         refreshToken: gmail.GMAIL_REFRESH_TOKEN,
+        labelPath: gmail.GMAIL_LABEL_PATH || 'accounter/documents/', // Default label if not specified
         cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID,
         appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS,
         topicName: gmail.PUBSUB_TOPIC,
