@@ -170,7 +170,7 @@ export const env = {
         clientId: gmail.GMAIL_CLIENT_ID,
         clientSecret: gmail.GMAIL_CLIENT_SECRET,
         refreshToken: gmail.GMAIL_REFRESH_TOKEN,
-        labelPath: gmail.GMAIL_LABEL_PATH || 'accounter/documents/', // Default label if not specified
+        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
         cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID,
         appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS,
         topicName: gmail.PUBSUB_TOPIC,
