@@ -14,8 +14,8 @@ import type {
   IGetTransactionsByMissingRequiredInfoQuery,
   IReplaceTransactionsChargeIdParams,
   IReplaceTransactionsChargeIdQuery,
-  IUpdateTransactionParams,
-  IUpdateTransactionQuery,
+  IUpdateTransactionsParams,
+  IUpdateTransactionsQuery,
 } from '../types.js';
 
 const getTransactionsByIds = sql<IGetTransactionsByIdsQuery>`
@@ -71,7 +71,7 @@ const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   RETURNING id;
 `;
 
-const updateTransaction = sql<IUpdateTransactionQuery>`
+const updateTransactions = sql<IUpdateTransactionsQuery>`
   UPDATE accounter_schema.transactions
   SET
     account_id = COALESCE(
@@ -100,7 +100,7 @@ const updateTransaction = sql<IUpdateTransactionQuery>`
       NULL
     )
   WHERE
-    id = $transactionId
+    id IN $$transactionIds
   RETURNING *;
 `;
 
@@ -223,11 +223,17 @@ export class TransactionsProvider {
     return replaceTransactionsChargeId.run(params, this.dbProvider);
   }
 
-  public async updateTransaction(params: IUpdateTransactionParams) {
-    if (params.transactionId) {
-      await this.invalidateTransactionByID(params.transactionId);
+  public async updateTransactions(params: IUpdateTransactionsParams) {
+    if (params.transactionIds) {
+      await Promise.all(
+        params.transactionIds.map(async id => {
+          if (id) {
+            await this.invalidateTransactionByID(id);
+          }
+        }),
+      );
     }
-    return updateTransaction.run(params, this.dbProvider);
+    return updateTransactions.run(params, this.dbProvider);
   }
 
   public async invalidateTransactionByChargeID(chargeId: string) {

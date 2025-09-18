@@ -147,6 +147,7 @@ export default [
               'UncategorizedTransaction',
               'UniformFormat',
               'UpdateChargeSuccessfulResult',
+              'UpdatedTransactionsSuccessfulResult',
               'UserContext',
               'VatReportResult',
               'VatReportRecord',

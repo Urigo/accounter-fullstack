@@ -7,7 +7,11 @@ import type { Resolvers } from '@shared/gql-types';
 import { formatCurrency } from '@shared/helpers';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
-import type { IUpdateTransactionParams, TransactionsModule } from '../types.js';
+import type {
+  IGetTransactionsByIdsResult,
+  IUpdateTransactionsParams,
+  TransactionsModule,
+} from '../types.js';
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
@@ -113,8 +117,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         await chargePromise;
 
-        const adjustedFields: IUpdateTransactionParams = {
-          transactionId,
+        const adjustedFields: IUpdateTransactionsParams = {
+          transactionIds: [transactionId],
           businessId: fields.counterpartyId,
           chargeId: chargeId ?? null,
           debitDate: fields.effectiveDate ?? null,
@@ -123,7 +127,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         const res = await injector
           .get(TransactionsProvider)
-          .updateTransaction({ ...adjustedFields });
+          .updateTransactions({ ...adjustedFields });
         if (!res[0]?.id) {
           throw new GraphQLError('Transaction update failed');
         }
@@ -131,6 +135,129 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         await postUpdateActions();
 
         return res[0].id;
+      } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        console.error(e);
+        return {
+          __typename: 'CommonError',
+          message: (e as Error)?.message ?? 'Unknown error',
+        };
+      }
+    },
+    updateTransactions: async (
+      _,
+      { transactionIds, fields },
+      { injector, adminContext: { defaultAdminBusinessId } },
+    ) => {
+      let postUpdateActions = async (): Promise<void> => void 0;
+
+      try {
+        const existingChargePromise = async () => {
+          // verify charge exists
+          const charge = await injector
+            .get(ChargesProvider)
+            .getChargeByIdLoader.load(fields.chargeId ?? '');
+          if (!charge) {
+            throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
+          }
+        };
+        const emptyChargePromise = async () => {
+          // case unlinked from charge
+          const transactions = await injector
+            .get(TransactionsProvider)
+            .transactionByIdLoader.loadMany(transactionIds)
+            .then(
+              res =>
+                res.filter((t, i) => {
+                  if (t instanceof Error) {
+                    throw new GraphQLError(`Transaction ID="${transactionIds[i]}" not valid`);
+                  }
+                  return true;
+                }) as IGetTransactionsByIdsResult[],
+            );
+
+          const transactionsWithChargeId = transactions.filter(t => t.charge_id);
+          if (transactionsWithChargeId.length > 0) {
+            const chargesToDelete = new Set<string>();
+            await Promise.all(
+              transactionsWithChargeId.map(async transaction => {
+                if (!transaction.charge_id) {
+                  return;
+                }
+                const charge = await injector
+                  .get(ChargesProvider)
+                  .getChargeByIdLoader.load(transaction.charge_id);
+                if (!charge) {
+                  throw new GraphQLError(
+                    `Former transaction's charge ID ("${transaction.charge_id}") not valid`,
+                  );
+                }
+
+                if (
+                  Number(charge.documents_count ?? 0) === 0 &&
+                  Number(charge.transactions_count ?? 1) === 1
+                ) {
+                  chargesToDelete.add(charge.id);
+                }
+              }),
+            );
+
+            if (chargesToDelete.size > 0) {
+              const oldPostUpdateActions = postUpdateActions;
+              postUpdateActions = async () => {
+                await oldPostUpdateActions();
+                await deleteCharges(Array.from(chargesToDelete), injector).catch(e => {
+                  if (e instanceof GraphQLError) {
+                    throw e;
+                  }
+                  console.error(e);
+                  throw new GraphQLError(
+                    `Failed to delete empty former charges: ${Array.from(chargesToDelete).join(', ')}`,
+                  );
+                });
+              };
+            }
+
+            // generate new charge
+            const newCharge = await injector.get(ChargesProvider).generateCharge({
+              ownerId: defaultAdminBusinessId,
+              userDescription: 'Transactions unlinked from charge',
+            });
+            if (!newCharge || newCharge.length === 0) {
+              throw new GraphQLError(`Failed to generate new charge for transactions update`);
+            }
+            chargeId = newCharge[0].id;
+          }
+        };
+
+        let chargeId = fields.chargeId;
+        const chargePromise =
+          chargeId && chargeId !== EMPTY_UUID
+            ? existingChargePromise()
+            : chargeId === EMPTY_UUID
+              ? emptyChargePromise()
+              : Promise.resolve();
+
+        await chargePromise;
+
+        const adjustedFields: IUpdateTransactionsParams = {
+          transactionIds,
+          businessId: fields.counterpartyId,
+          chargeId: chargeId ?? null,
+          debitDate: fields.effectiveDate ?? null,
+          isFee: fields.isFee,
+        };
+
+        const res = await injector.get(TransactionsProvider).updateTransactions(adjustedFields);
+        if (!res[0]?.id) {
+          throw new GraphQLError('Transactions update failed');
+        }
+
+        await postUpdateActions();
+
+        return { transactions: res.map(transaction => transaction.id) };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
