@@ -2,6 +2,8 @@ import type { YogaInitialContext } from 'graphql-yoga';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { CorporateTaxRulingComplianceReport, Currency, Role } from '@shared/gql-types';
 import type { env } from '../../environment.js';
+import type { GmailService } from '../../gmail-listener/gmail-service.js';
+import type { PubSubService } from '../../gmail-listener/pubsub-service.js';
 
 export type Environment = typeof env;
 
@@ -54,6 +56,10 @@ export type BusinessTransactionProto = {
 
 export type AccounterContext = YogaInitialContext & {
   env: Environment;
+  gmail?: {
+    gmailService: GmailService;
+    pubsubService: PubSubService;
+  };
   session?: {
     role?: Role;
   };

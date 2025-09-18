@@ -85,7 +85,7 @@ export class GmailService {
 
   async setupPushNotifications(topicName: string): Promise<void> {
     try {
-      // await troubleshootOAuth();
+      // await troubleshootOAuth(env.gmail);
 
       await gmail.users.watch({
         userId: 'me',

@@ -12,6 +12,8 @@ import { deelModule } from '@modules/deel/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
 import { greenInvoiceModule } from '@modules/green-invoice/index.js';
 import { vatModule } from '@modules/vat/index.js';
+import type { GmailService } from './gmail-listener/gmail-service.js';
+import type { PubSubService } from './gmail-listener/pubsub-service.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -46,6 +48,10 @@ declare global {
   namespace GraphQLModules {
     interface GlobalContext {
       env: Environment;
+      gmail?: {
+        gmailService: GmailService;
+        pubsubService: PubSubService;
+      };
       currentUser: UserType;
       adminContext: AdminContext;
     }
