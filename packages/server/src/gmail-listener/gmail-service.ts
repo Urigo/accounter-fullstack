@@ -1,16 +1,115 @@
-import { gmail, troubleshootOAuth } from './config.js';
-import { EmailData } from './types.js';
+import { google, type gmail_v1 } from 'googleapis';
+import { Environment } from '@shared/types';
+import { troubleshootOAuth } from './config.js';
+
+interface EmailData {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  to: string;
+  body: string;
+  labels: string[];
+  receivedAt: Date;
+  attachments?: {
+    filename?: string;
+    content?: string;
+    mimeType?: string;
+  }[];
+}
+
+type Labels = 'processed' | 'main' | 'errors' | 'debug';
 
 export class GmailService {
   private targetLabel: string;
+  public labelsDict: Record<Labels, string | undefined> = {
+    main: undefined,
+    processed: undefined,
+    errors: undefined,
+    debug: undefined,
+  };
+  public gmail: gmail_v1.Gmail;
 
-  constructor(targetLabel: string) {
-    this.targetLabel = targetLabel;
+  constructor(private gmailEnv: NonNullable<Environment['gmail']>) {
+    this.targetLabel = this.gmailEnv.labelPath;
+
+    const oauth2Client = new google.auth.OAuth2(this.gmailEnv.clientId, this.gmailEnv.clientSecret);
+
+    oauth2Client.setCredentials({
+      refresh_token: this.gmailEnv.refreshToken,
+    });
+    oauth2Client.getAccessToken();
+
+    this.gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+  }
+
+  private getBodyWithRecursion(payload: gmail_v1.Schema$MessagePart, mimeType: string) {
+    let body = '';
+
+    if (payload.parts) {
+      for (const part of payload.parts) {
+        body = this.getBodyWithRecursion(part, mimeType) || body;
+      }
+    } else if (
+      payload.body?.data != null &&
+      payload.body.attachmentId == null &&
+      payload.mimeType === mimeType
+    ) {
+      body = Buffer.from(payload.body.data, 'base64').toString('utf8');
+    }
+
+    return body;
+  }
+
+  private getEmailBody(payload?: gmail_v1.Schema$MessagePart): string {
+    if (!payload) return '';
+
+    const htmlBody = this.getBodyWithRecursion(payload, 'text/html');
+    if (htmlBody) {
+      return htmlBody;
+    }
+    return this.getBodyWithRecursion(payload, 'text/plain');
+  }
+
+  private async getEmailAttachments(
+    messageId: string,
+    payload?: gmail_v1.Schema$MessagePart,
+  ): Promise<EmailData['attachments']> {
+    if (!payload?.parts) return [];
+
+    const attachments: EmailData['attachments'] = [];
+    // handle relevant attachment
+    const attachmentParts = payload.parts.filter(
+      part =>
+        part.mimeType === 'application/pdf' ||
+        (part.mimeType === 'application/octet-stream' && part.filename?.includes('.pdf')) ||
+        part.mimeType?.split('/')[0] === 'image',
+    );
+    if (attachmentParts.length) {
+      for (const attachmentPart of attachmentParts) {
+        const attachment = await this.gmail.users.messages.attachments
+          .get({
+            userId: 'me',
+            messageId,
+            id: attachmentPart.body?.attachmentId ?? undefined,
+          })
+          .catch(e => {
+            throw `Error on fetching attachement: ${e.message}`;
+          });
+
+        attachments.push({
+          filename: attachmentPart.filename ?? undefined,
+          content: attachment.data.data ?? undefined,
+          mimeType: attachmentPart.mimeType ?? undefined,
+        });
+      }
+    }
+    return attachments;
   }
 
   async getEmailById(messageId: string): Promise<EmailData | null> {
     try {
-      const response = await gmail.users.messages.get({
+      const response = await this.gmail.users.messages.get({
         userId: 'me',
         id: messageId,
         format: 'full',
@@ -25,18 +124,9 @@ export class GmailService {
       const to = headers.find(h => h.name === 'To')?.value || '';
       const date = headers.find(h => h.name === 'Date')?.value || '';
 
-      // Extract body (simplified - you might want to handle multipart messages)
-      let body = '';
-      if (message.payload?.body?.data) {
-        body = Buffer.from(message.payload.body.data, 'base64').toString();
-      } else if (message.payload?.parts) {
-        const textPart = message.payload.parts.find(
-          part => part.mimeType === 'text/plain' || part.mimeType === 'text/html',
-        );
-        if (textPart?.body?.data) {
-          body = Buffer.from(textPart.body.data, 'base64').toString();
-        }
-      }
+      const body = this.getEmailBody(message.payload);
+
+      const attachments = await this.getEmailAttachments(messageId, message.payload);
 
       return {
         id: message.id!,
@@ -47,6 +137,7 @@ export class GmailService {
         body,
         labels: message.labelIds || [],
         receivedAt: new Date(date),
+        attachments,
       };
     } catch (error) {
       console.error('Error fetching email:', error);
@@ -56,7 +147,7 @@ export class GmailService {
 
   async getLabelId(labelName: string): Promise<string | null> {
     try {
-      const response = await gmail.users.labels.list({ userId: 'me' });
+      const response = await this.gmail.users.labels.list({ userId: 'me' });
       const label = response.data.labels?.find(l => l.name === labelName);
       return label?.id || null;
     } catch (error) {
@@ -65,12 +156,25 @@ export class GmailService {
     }
   }
 
+  async createLabel(name: string): Promise<string> {
+    const newLabel = await this.gmail.users.labels.create({
+      userId: 'me',
+      requestBody: {
+        name,
+      },
+    });
+    if (!newLabel.data.id) {
+      throw new Error('Failed to create label');
+    }
+    return newLabel.data.id;
+  }
+
   async hasTargetLabel(messageId: string): Promise<boolean> {
     try {
       const labelId = await this.getLabelId(this.targetLabel);
       if (!labelId) return false;
 
-      const message = await gmail.users.messages.get({
+      const message = await this.gmail.users.messages.get({
         userId: 'me',
         id: messageId,
         format: 'minimal',
@@ -85,9 +189,7 @@ export class GmailService {
 
   async setupPushNotifications(topicName: string): Promise<void> {
     try {
-      // await troubleshootOAuth(env.gmail);
-
-      await gmail.users.watch({
+      await this.gmail.users.watch({
         userId: 'me',
         requestBody: {
           topicName: `projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/topics/${topicName}`,
@@ -99,5 +201,70 @@ export class GmailService {
       console.error('Error setting up push notifications:', error);
       throw error;
     }
+  }
+
+  async setupLabels() {
+    const response = await this.gmail.users.labels.list({ userId: 'me' }).catch(err => {
+      throw `Error fetching inbox labels: ${err}`;
+    });
+    const labels = response.data.labels ?? [];
+
+    await Promise.all(
+      Object.keys(this.labelsDict).map(async key => {
+        try {
+          const path = key === 'main' ? this.targetLabel : `${this.targetLabel}/${key}`;
+          const existingLabel = labels.find(label => label.name === path);
+          this.labelsDict[key as Labels] = existingLabel?.id ?? (await this.createLabel(path));
+        } catch (e) {
+          throw new Error(`Error creating new label [${key}]: ${e}`);
+        }
+      }),
+    );
+  }
+
+  async handleMessage(message?: gmail_v1.Schema$Message) {
+    if (!message?.id) return;
+
+    if (await this.hasTargetLabel(message.id)) {
+      const emailData = await this.getEmailById(message.id);
+      if (emailData) {
+        // Replace this with your custom logic
+        console.log('Executing custom function for email:', {
+          subject: emailData.subject,
+          from: emailData.from,
+          id: emailData.id,
+        });
+
+        // Example: Save to database, send webhook, process content, etc.
+        // await saveToDatabase(emailData);
+        // await sendWebhook(emailData);
+        // await processEmailContent(emailData);
+      }
+    }
+  }
+
+  async handlePendingMessages() {
+    try {
+      // Get recent messages
+      const response = await this.gmail.users.messages.list({
+        userId: 'me',
+        maxResults: 1000,
+        q: `in:${this.gmailEnv.labelPath}`,
+      });
+
+      const messages = response.data.messages || [];
+
+      for (const message of messages) {
+        await this.handleMessage(message);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  }
+
+  async init() {
+    await troubleshootOAuth(this.gmailEnv);
+    await this.setupLabels();
+    await this.handlePendingMessages();
   }
 }

@@ -112,16 +112,14 @@ const GmailModel = zod.union([
         data.GMAIL_REFRESH_TOKEN,
         data.GOOGLE_CLOUD_PROJECT_ID,
         data.GOOGLE_APPLICATION_CREDENTIALS,
-        data.PUBSUB_TOPIC,
-        data.PUBSUB_SUBSCRIPTION,
       ];
-      // GMAIL_LABEL_PATH is optional and can be omitted
+      // GMAIL_LABEL_PATH, PUBSUB_TOPIC and PUBSUB_SUBSCRIPTION are optional and can be omitted
       const definedCount = gmailVars.filter(v => !!v).length;
       if (definedCount !== 0 && definedCount !== gmailVars.length) {
         ctx.addIssue({
           code: 'custom',
           message:
-            'All Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS, PUBSUB_TOPIC, PUBSUB_SUBSCRIPTION) must be provided together or all omitted.',
+            'Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS) must be provided together or all omitted.',
         });
       }
     }),
@@ -223,11 +221,11 @@ export const env = {
         clientSecret: gmail.GMAIL_CLIENT_SECRET!,
         redirectUri: gmail.GMAIL_REDIRECT_URI!,
         refreshToken: gmail.GMAIL_REFRESH_TOKEN!,
-        labelPath: gmail.GMAIL_LABEL_PATH! || 'accounter/documents/', // Default label if not specified
+        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents/', // Default label if not specified
         cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID!,
         appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS!,
-        topicName: gmail.PUBSUB_TOPIC!,
-        subscriptionName: gmail.PUBSUB_SUBSCRIPTION!,
+        topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
+        subscriptionName: gmail.PUBSUB_SUBSCRIPTION || 'gmail-notifications-sub',
       }
     : undefined,
 } as const;

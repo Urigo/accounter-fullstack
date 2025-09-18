@@ -1,7 +1,5 @@
 import { google } from 'googleapis';
-import { PubSub } from '@google-cloud/pubsub';
 import { Environment } from '@shared/types';
-import { env } from '../environment.js';
 
 export async function troubleshootOAuth(gmailEnv: Environment['gmail']) {
   console.log('🔍 OAuth2 Configuration Troubleshooter\n');
@@ -140,15 +138,3 @@ export async function troubleshootOAuth(gmailEnv: Environment['gmail']) {
 
   console.log('\n🔧 Configuration check complete!');
 }
-
-export const gmailConfig = env.gmail!;
-
-export const oauth2Client = new google.auth.OAuth2(gmailConfig.clientId, gmailConfig.clientSecret);
-
-oauth2Client.setCredentials({
-  refresh_token: gmailConfig.refreshToken,
-});
-oauth2Client.getAccessToken();
-
-export const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-export const pubSubClient = new PubSub();

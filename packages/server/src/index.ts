@@ -12,21 +12,19 @@ import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 
-const gmailService = env.gmail ? new GmailService(env.gmail.labelPath) : null;
-const pubsubService = env.gmail ? new PubSubService(env.gmail.labelPath) : null;
+const gmailService = env.gmail ? new GmailService(env.gmail) : null;
+const pubsubService = env.gmail && gmailService ? new PubSubService(env.gmail, gmailService) : null;
 
 async function main() {
-  if (env.gmail) {
-    try {
-      // Setup Gmail push notifications
-      await gmailService!.setupPushNotifications(env.gmail.topicName);
+  try {
+    // Setup Gmail labels and push notifications
+    await gmailService?.init();
 
-      // Start listening to Pub/Sub
-      await pubsubService!.startListening();
-    } catch (error) {
-      console.error('Failed to start service:', error);
-      process.exit(1);
-    }
+    // Start listening to Pub/Sub
+    await pubsubService?.startListening();
+  } catch (error) {
+    console.error('Failed to start service:', error);
+    process.exit(1);
   }
 
   const application = await createGraphQLApp(env);
