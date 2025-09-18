@@ -6,27 +6,11 @@ import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { AccounterContext } from '@shared/types';
 import { env } from './environment.js';
-import { GmailService } from './gmail-listener/gmail-service.js';
-import { PubSubService } from './gmail-listener/pubsub-service.js';
 import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 
-const gmailService = env.gmail ? new GmailService(env.gmail) : null;
-const pubsubService = env.gmail && gmailService ? new PubSubService(env.gmail, gmailService) : null;
-
 async function main() {
-  try {
-    // Setup Gmail labels and push notifications
-    await gmailService?.init();
-
-    // Start listening to Pub/Sub
-    await pubsubService?.startListening();
-  } catch (error) {
-    console.error('Failed to start service:', error);
-    process.exit(1);
-  }
-
   const application = await createGraphQLApp(env);
 
   const yoga = createYoga({
@@ -45,12 +29,6 @@ async function main() {
       return {
         ...yogaContext,
         env,
-        gmail: env.gmail
-          ? {
-              gmailService: gmailService!,
-              pubsubService: pubsubService!,
-            }
-          : undefined,
       };
     },
   });
@@ -66,11 +44,5 @@ async function main() {
     },
   );
 }
-
-process.on('SIGINT', () => {
-  console.log('Shutting down gracefully...');
-  pubsubService?.stopListening();
-  process.exit(0);
-});
 
 main();

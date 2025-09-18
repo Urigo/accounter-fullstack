@@ -1,8 +1,15 @@
+import { Inject, Injectable, Scope } from 'graphql-modules';
 import { PubSub, Topic, type Message, type Subscription } from '@google-cloud/pubsub';
+import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
-import { GmailService } from './gmail-service.js';
+import { GmailServiceProvider } from './gmail-service.provider.js';
 
-export class PubSubService {
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
+export class PubsubServiceProvider {
+  private gmailEnv: NonNullable<Environment['gmail']>;
   private subscription: Subscription | null = null;
   private topic: Topic | null = null;
   private pubSubClient: PubSub;
@@ -10,10 +17,13 @@ export class PubSubService {
   private processesGuard = new Set<string>();
 
   constructor(
-    private gmailEnv: NonNullable<Environment['gmail']>,
-    private gmailService: GmailService,
+    @Inject(ENVIRONMENT) private env: Environment,
+    private gmailService: GmailServiceProvider,
   ) {
+    this.gmailEnv = this.env.gmail!;
     this.pubSubClient = new PubSub({ projectId: this.gmailEnv.cloudProjectId });
+
+    this.startListening();
   }
 
   async validateAndCreateTopic(): Promise<Topic> {
@@ -105,6 +115,28 @@ export class PubSubService {
     }
   }
 
+  private async setupPushNotifications(topicName: string): Promise<void> {
+    try {
+      await this.gmailService.gmail.users
+        .watch({
+          userId: 'me',
+          requestBody: {
+            topicName: `projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/topics/${topicName}`,
+            labelIds: ['INBOX'], // Watch inbox changes
+          },
+        })
+        .then(res => {
+          if (res?.data?.historyId) {
+            this.historyId = res.data.historyId;
+          }
+        });
+      console.log('Push notifications set up successfully');
+    } catch (error) {
+      console.error('Error setting up push notifications:', error);
+      throw error;
+    }
+  }
+
   async startListening(): Promise<void> {
     // populate topic and subscription
     this.topic ||= await this.validateAndCreateTopic().catch(error => {
@@ -118,7 +150,7 @@ export class PubSubService {
     });
 
     // Setup Gmail push notifications
-    await this.gmailService.setupPushNotifications(this.gmailEnv.topicName).catch(error => {
+    await this.setupPushNotifications(this.gmailEnv.topicName).catch(error => {
       console.error('Error setting up Gmail push notifications:', error);
     });
 
