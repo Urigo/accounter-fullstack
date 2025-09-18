@@ -12,12 +12,12 @@ import { deelModule } from '@modules/deel/index.js';
 import { depreciationModule } from '@modules/depreciation/index.js';
 import { greenInvoiceModule } from '@modules/green-invoice/index.js';
 import { vatModule } from '@modules/vat/index.js';
-import type { GmailService } from './gmail-listener/gmail-service.js';
-import type { PubSubService } from './gmail-listener/pubsub-service.js';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
+import { GmailServiceProvider } from './modules/app-providers/gmail-listener/gmail-service.provider.js';
+import { PubsubServiceProvider } from './modules/app-providers/gmail-listener/pubsub-service.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
@@ -48,10 +48,6 @@ declare global {
   namespace GraphQLModules {
     interface GlobalContext {
       env: Environment;
-      gmail?: {
-        gmailService: GmailService;
-        pubsubService: PubSubService;
-      };
       currentUser: UserType;
       adminContext: AdminContext;
     }
@@ -109,6 +105,7 @@ export async function createGraphQLApp(env: Environment) {
       CoinMarketCapProvider,
       AnthropicProvider,
       GoogleDriveProvider,
+      ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
       {
         provide: ENVIRONMENT,
         useValue: env,
