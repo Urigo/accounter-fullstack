@@ -117,11 +117,11 @@ BEGIN
                  LEFT JOIN accounter_schema.transactions t
                            ON tr.id = t.source_id
         WHERE t.charge_id IS NOT NULL
-            AND s.formatted_value_date = NEW.formatted_start_date
-            AND currency_code = s.currency
-            AND (s.event_details LIKE '%' || TRIM(LEFT(NEW.charge_party_name, 13)) || '%'
-                AND NEW.amount::NUMERIC = s.event_amount)
-           OR (transaction_amount * -1 = s.event_amount);
+          AND s.formatted_value_date = NEW.formatted_start_date
+          AND currency_code = s.currency
+          AND ((s.event_details LIKE '%' || TRIM(LEFT(NEW.charge_party_name, 13)) || '%'
+            AND NEW.amount::NUMERIC = s.event_amount)
+            OR (transaction_amount * -1 = s.event_amount));
 
         -- if no match, create new charge
         IF (charge_id_var IS NULL) THEN
