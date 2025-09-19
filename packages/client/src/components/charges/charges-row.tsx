@@ -42,6 +42,9 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
         miscExpensesCount
       }
     }
+    totalAmount {
+      raw
+    }
     ...ChargesTableAccountantApprovalFields
     ...ChargesTableAmountFields
     ...ChargesTableBusinessTripFields @defer
@@ -131,6 +134,8 @@ export const ChargesTableRow = ({
     ],
   );
 
+  const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
+
   return (
     <>
       <tr
@@ -215,6 +220,7 @@ export const ChargesTableRow = ({
               setInsertDocument={() => setInsertDocument(onChange)}
               setMatchDocuments={setMatchDocuments}
               onChange={onChange}
+              isIncome={isIncomeCharge}
             />
             {hasExtendedInfo && (
               <ToggleExpansionButton

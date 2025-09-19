@@ -20,6 +20,7 @@ interface ChargeExtendedInfoMenuProps {
   setInsertDocument: () => void;
   setMatchDocuments: () => void;
   onChange?: () => void;
+  isIncome: boolean;
 }
 
 type ClickEvent = React.MouseEvent<HTMLAnchorElement, MouseEvent>;
@@ -30,6 +31,7 @@ export function ChargeExtendedInfoMenu({
   setInsertDocument,
   setMatchDocuments,
   onChange,
+  isIncome,
 }: ChargeExtendedInfoMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
@@ -105,16 +107,18 @@ export function ChargeExtendedInfoMenu({
           >
             Match Document
           </Menu.Item>
-          <Menu.Item
-            icon={<ListPlus size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              setPreviewIssueDocument(true);
-              closeMenu();
-            }}
-          >
-            Issue Document
-          </Menu.Item>
+          {isIncome && (
+            <Menu.Item
+              icon={<ListPlus size={14} />}
+              onClick={(event: ClickEvent): void => {
+                event.stopPropagation();
+                setPreviewIssueDocument(true);
+                closeMenu();
+              }}
+            >
+              Issue Document
+            </Menu.Item>
+          )}
           <Menu.Divider />
           <Menu.Label>Misc Expenses</Menu.Label>
           <Menu.Item
