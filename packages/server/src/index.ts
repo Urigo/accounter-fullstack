@@ -19,11 +19,13 @@ async function main() {
       adminContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
-      useHive({
-        enabled: !!env.hive.hiveToken,
-        token: env.hive.hiveToken ?? '',
-        usage: true,
-      }),
+      env.hive
+        ? useHive({
+            enabled: true,
+            token: env.hive.hiveToken,
+            usage: true,
+          })
+        : {},
     ],
     context: (yogaContext): AccounterContext => {
       return {

@@ -16,6 +16,8 @@ import { accountantApprovalModule } from './modules/accountant-approval/index.js
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
+import { GmailServiceProvider } from './modules/app-providers/gmail-listener/gmail-service.provider.js';
+import { PubsubServiceProvider } from './modules/app-providers/gmail-listener/pubsub-service.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesModule } from './modules/charges/index.js';
@@ -103,6 +105,7 @@ export async function createGraphQLApp(env: Environment) {
       CoinMarketCapProvider,
       AnthropicProvider,
       GoogleDriveProvider,
+      ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
       {
         provide: ENVIRONMENT,
         useValue: env,
