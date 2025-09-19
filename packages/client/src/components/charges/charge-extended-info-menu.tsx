@@ -8,6 +8,7 @@ import { Depreciation } from '../common/depreciation/index.js';
 import {
   ConfirmationModal,
   InsertMiscExpense,
+  PreviewDocumentModal,
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
@@ -37,6 +38,7 @@ export function ChargeExtendedInfoMenu({
   const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
   const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
     useDisclosure(false);
+  const [previewIssueDocument, setPreviewIssueDocument] = useState(false);
 
   const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
@@ -102,6 +104,16 @@ export function ChargeExtendedInfoMenu({
             }}
           >
             Match Document
+          </Menu.Item>
+          <Menu.Item
+            icon={<ListPlus size={14} />}
+            onClick={(event: ClickEvent): void => {
+              event.stopPropagation();
+              setPreviewIssueDocument(true);
+              closeMenu();
+            }}
+          >
+            Issue Document
           </Menu.Item>
           <Menu.Divider />
           <Menu.Label>Misc Expenses</Menu.Label>
@@ -197,6 +209,11 @@ export function ChargeExtendedInfoMenu({
         onOpenChange={setUploadDocumentsOpen}
         onChange={onChange}
         chargeId={chargeId}
+      />
+      <PreviewDocumentModal
+        chargeId={chargeId}
+        open={previewIssueDocument}
+        setOpen={setPreviewIssueDocument}
       />
     </>
   );
