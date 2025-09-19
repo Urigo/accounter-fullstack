@@ -158,7 +158,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etana-scrapper@workspace:packages/etana-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.10"
+    "@whatwg-node/fetch": "npm:0.10.11"
     csv-parse: "npm:6.1.0"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.2"
@@ -171,7 +171,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/etherscan-scrapper@workspace:packages/etherscan-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.10"
+    "@whatwg-node/fetch": "npm:0.10.11"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.2"
     pg-promise: "npm:12.1.3"
@@ -235,7 +235,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/kraken-scrapper@workspace:packages/kraken-scrapper"
   dependencies:
-    "@whatwg-node/fetch": "npm:0.10.10"
+    "@whatwg-node/fetch": "npm:0.10.11"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.2"
     node-kraken-api: "npm:2.2.2"
@@ -311,7 +311,7 @@ __metadata:
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
-    "@whatwg-node/fetch": "npm:0.10.10"
+    "@whatwg-node/fetch": "npm:0.10.11"
     ai: "npm:5.0.47"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
@@ -8450,7 +8450,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@whatwg-node/fetch@npm:0.10.10, @whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.10, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6":
+"@whatwg-node/fetch@npm:0.10.11":
+  version: 0.10.11
+  resolution: "@whatwg-node/fetch@npm:0.10.11"
+  dependencies:
+    "@whatwg-node/node-fetch": "npm:^0.8.0"
+    urlpattern-polyfill: "npm:^10.0.0"
+  checksum: 10c0/d64fd5b545313f3d5cd362aa5700de5f6a25684ac7b74d8dd809ac27b67d3fc99cf5e47124dcc6623bbfef55ee87394c423933298feedc13c29aa6061f0cb894
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/fetch@npm:^0.10.0, @whatwg-node/fetch@npm:^0.10.10, @whatwg-node/fetch@npm:^0.10.4, @whatwg-node/fetch@npm:^0.10.5, @whatwg-node/fetch@npm:^0.10.6":
   version: 0.10.10
   resolution: "@whatwg-node/fetch@npm:0.10.10"
   dependencies:
@@ -8491,6 +8501,18 @@ __metadata:
     "@whatwg-node/promise-helpers": "npm:^1.3.2"
     tslib: "npm:^2.6.3"
   checksum: 10c0/8799a00977ce6ca1b2da903dc9174d82eca77529a13f0e795f2caa87a97bbff65a5e23d51b42cc848358776d58b9a6377809063abe7297b7f31c32ca2e4856b7
+  languageName: node
+  linkType: hard
+
+"@whatwg-node/node-fetch@npm:^0.8.0":
+  version: 0.8.0
+  resolution: "@whatwg-node/node-fetch@npm:0.8.0"
+  dependencies:
+    "@fastify/busboy": "npm:^3.1.1"
+    "@whatwg-node/disposablestack": "npm:^0.0.6"
+    "@whatwg-node/promise-helpers": "npm:^1.3.2"
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/c0a90269220674013122f2c40e1a85271e26165281d0307d4b42fa159f41bef346869ddf756ae10c0bf6765fc39bdc4cb5f7dd6861b3799d1e320ea7945f9bbb
   languageName: node
   linkType: hard
 
