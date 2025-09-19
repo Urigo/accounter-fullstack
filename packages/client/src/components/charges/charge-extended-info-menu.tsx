@@ -218,6 +218,7 @@ export function ChargeExtendedInfoMenu({
         chargeId={chargeId}
         open={previewIssueDocument}
         setOpen={setPreviewIssueDocument}
+        onDone={() => onChange?.()}
       />
     </>
   );
