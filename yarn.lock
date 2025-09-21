@@ -131,7 +131,7 @@ __metadata:
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:5.4.149"
     react: "npm:19.1.1"
-    react-day-picker: "npm:9.10.0"
+    react-day-picker: "npm:9.11.0"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.1.1"
     react-error-boundary: "npm:6.0.0"
@@ -18437,16 +18437,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-day-picker@npm:9.10.0":
-  version: 9.10.0
-  resolution: "react-day-picker@npm:9.10.0"
+"react-day-picker@npm:9.11.0":
+  version: 9.11.0
+  resolution: "react-day-picker@npm:9.11.0"
   dependencies:
     "@date-fns/tz": "npm:^1.4.1"
     date-fns: "npm:^4.1.0"
     date-fns-jalali: "npm:^4.1.0-0"
   peerDependencies:
     react: ">=16.8.0"
-  checksum: 10c0/a070ec3245f4adcb3561a5e3d44c6627d3933010ba0eb711f7f5bc9da2f439b905959c12854dcd81264fadc589837a9420a0530f0b87a9630d1a8d22cb22f15c
+  checksum: 10c0/1d719600302ae5ce43a57fd2a0edfd8609ee62675d4b285957bfe186bc91e8c58c9088a586f8d7fa09ed5f820e1e5f5905410a162be2bb204378932b41fa0fe0
   languageName: node
   linkType: hard
 
