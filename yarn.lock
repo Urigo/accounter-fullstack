@@ -103,7 +103,7 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.10"
     "@radix-ui/react-tooltip": "npm:1.2.8"
     "@tailwindcss/vite": "npm:4.1.13"
-    "@tanstack/react-query": "npm:5.89.0"
+    "@tanstack/react-query": "npm:5.90.1"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -7411,21 +7411,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.89.0":
-  version: 5.89.0
-  resolution: "@tanstack/query-core@npm:5.89.0"
-  checksum: 10c0/8e1e92fb4e3694d7f706bb686135a237280528ad5da890e996521780ecf30dbe139662dfd75b2f73bfe617e9275de1b3e7ab5c9fc6cacbf79cabf8163922e334
+"@tanstack/query-core@npm:5.90.1":
+  version: 5.90.1
+  resolution: "@tanstack/query-core@npm:5.90.1"
+  checksum: 10c0/2c98402fa4d129bdf69e121e87e2438fc19059ff4adaad2da5996b14a308ff33b8b26a52ff967751872483e29c9749799d83a77a42af6ca4559967b475d7ecb3
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.89.0":
-  version: 5.89.0
-  resolution: "@tanstack/react-query@npm:5.89.0"
+"@tanstack/react-query@npm:5.90.1":
+  version: 5.90.1
+  resolution: "@tanstack/react-query@npm:5.90.1"
   dependencies:
-    "@tanstack/query-core": "npm:5.89.0"
+    "@tanstack/query-core": "npm:5.90.1"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/07364b36bcf8424777b79fad3a87e16867e955a09c27696e8a9833bacf5cd2a3f69474bb7285b6103a7c49f578a23a3f211cf3dbd36c63871ffdacd8baf0faeb
+  checksum: 10c0/57ffcdc565e7e00e8fb26354e55f886a9c4f3f7727cd4348b7518cc23b7339c230fdb459262116d323625accaefa0c849cb3278b507b7342ceda2783de5f3893
   languageName: node
   linkType: hard
 
