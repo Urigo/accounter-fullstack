@@ -10024,18 +10024,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromium-bidi@npm:8.0.0":
-  version: 8.0.0
-  resolution: "chromium-bidi@npm:8.0.0"
-  dependencies:
-    mitt: "npm:^3.0.1"
-    zod: "npm:^3.24.1"
-  peerDependencies:
-    devtools-protocol: "*"
-  checksum: 10c0/d012b76c8b3ef06fd0d1e288668c92db56a8723edeff3a32e7c8029a18e3afcae435a0da381e22145611d9d96f20ea91a43fbb43ae84b6edfc76ab60c65d67f7
-  languageName: node
-  linkType: hard
-
 "chromium-bidi@npm:9.1.0":
   version: 9.1.0
   resolution: "chromium-bidi@npm:9.1.0"
@@ -18298,21 +18286,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:24.22.0":
-  version: 24.22.0
-  resolution: "puppeteer-core@npm:24.22.0"
-  dependencies:
-    "@puppeteer/browsers": "npm:2.10.10"
-    chromium-bidi: "npm:8.0.0"
-    debug: "npm:^4.4.3"
-    devtools-protocol: "npm:0.0.1495869"
-    typed-query-selector: "npm:^2.12.0"
-    webdriver-bidi-protocol: "npm:0.2.11"
-    ws: "npm:^8.18.3"
-  checksum: 10c0/24059f35337d436a4d12a51ea67e47478a94869a2eb9b8fcebc53d83fc889d1eeb6d57b0bdb2668b3f8aa395e081f21615740e6878e45510551772c1826938da
-  languageName: node
-  linkType: hard
-
 "puppeteer-core@npm:24.22.3":
   version: 24.22.3
   resolution: "puppeteer-core@npm:24.22.3"
@@ -18328,23 +18301,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*":
-  version: 24.22.0
-  resolution: "puppeteer@npm:24.22.0"
-  dependencies:
-    "@puppeteer/browsers": "npm:2.10.10"
-    chromium-bidi: "npm:8.0.0"
-    cosmiconfig: "npm:^9.0.0"
-    devtools-protocol: "npm:0.0.1495869"
-    puppeteer-core: "npm:24.22.0"
-    typed-query-selector: "npm:^2.12.0"
-  bin:
-    puppeteer: lib/cjs/puppeteer/node/cli.js
-  checksum: 10c0/4362574391a6655483ab7e900bfb20a68ace61d57f827b50139444b8e4d32283a89623c44337f1a25aae1617f9dbea0b4b7aae80384b04bf7b288725c88bb84c
-  languageName: node
-  linkType: hard
-
-"puppeteer@npm:24.22.3":
+"puppeteer@npm:*, puppeteer@npm:24.22.3":
   version: 24.22.3
   resolution: "puppeteer@npm:24.22.3"
   dependencies:
