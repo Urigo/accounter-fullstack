@@ -22,9 +22,9 @@
     "date-fns": "4.1.0",
     "inquirer": "12.9.6",
     "node-fetch": "3.3.2",
-    "puppeteer": "24.22.0",
+    "puppeteer": "24.22.3",
     "uuid": "13.0.0",
-    "zod": "4.1.9"
+    "zod": "4.1.11"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.9",
