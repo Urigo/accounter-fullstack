@@ -1,16 +1,12 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { suggestionDataSchema } from '@modules/documents/helpers/suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
-
-type SuggestionData = {
-  phrases: Array<string>;
-  priority?: number;
-};
 
 type Suggestion = Omit<Awaited<ResolversTypes['TransactionSuggestions']>, 'business'> & {
   business: string;
@@ -123,9 +119,10 @@ const missingInfoSuggestions = async (
     .then(businesses => businesses.filter(business => business.suggestion_data));
   const suggestions: Record<string, DecoratedSuggestion> = {};
   for (const business of businesses) {
-    if (!business.suggestion_data) continue;
-    const suggestionData = business.suggestion_data as SuggestionData;
-
+    const { data: suggestionData, success } = suggestionDataSchema.safeParse(
+      business.suggestion_data,
+    );
+    if (!success) continue;
     if (!suggestionData.phrases) continue;
 
     for (const phrase of suggestionData.phrases) {
