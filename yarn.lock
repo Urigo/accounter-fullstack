@@ -107,7 +107,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.1.14"
+    "@types/react": "npm:19.1.15"
     "@types/react-dom": "npm:19.1.9"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.0.4"
@@ -312,7 +312,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/pg": "npm:8.15.5"
     "@whatwg-node/fetch": "npm:0.10.11"
-    ai: "npm:5.0.56"
+    ai: "npm:5.0.57"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.7.0"
@@ -8013,12 +8013,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.1.14":
-  version: 19.1.14
-  resolution: "@types/react@npm:19.1.14"
+"@types/react@npm:19.1.15":
+  version: 19.1.15
+  resolution: "@types/react@npm:19.1.15"
   dependencies:
     csstype: "npm:^3.0.2"
-  checksum: 10c0/0d1629e065413be79c949f011845836e7f515c8f97dbfef057719be2f312b404405d2d064cb28e03363c62c153c100e84268c09dd9aeda488858d45033b520f0
+  checksum: 10c0/f72cb36cb12a0c8aeba4df5a52d6b8a66509983c109201582c156676e8f1a6f5f2b74103f996ae756a04154d3722154350bd606cb87df211bbacda93139225b2
   languageName: node
   linkType: hard
 
@@ -8594,7 +8594,7 @@ __metadata:
     globals: "npm:16.4.0"
     graphql: "npm:16.11.0"
     husky: "npm:9.1.7"
-    lint-staged: "npm:16.2.2"
+    lint-staged: "npm:16.2.3"
     pg: "npm:8.16.3"
     prettier: "npm:3.6.2"
     prettier-plugin-sql: "npm:0.19.2"
@@ -8651,9 +8651,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.56":
-  version: 5.0.56
-  resolution: "ai@npm:5.0.56"
+"ai@npm:5.0.57":
+  version: 5.0.57
+  resolution: "ai@npm:5.0.57"
   dependencies:
     "@ai-sdk/gateway": "npm:1.0.30"
     "@ai-sdk/provider": "npm:2.0.0"
@@ -8661,7 +8661,7 @@ __metadata:
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/22f27d0907eee30b919f53ef1b19b497f2c72bad77b94b0c121eadf9921304031936dbb4540b17bc5c62df7c301160a3d7b7d10c7f7df2230e0a754e2b51e1e0
+  checksum: 10c0/e28475ea34670a1f491de4f1e2224df95af27713597d6a57527c42d3c8ff469762009e365bd8c3076c47772a9b942d571aedbde41ee5c0ec69ade2ecd6aa1a4b
   languageName: node
   linkType: hard
 
@@ -15276,9 +15276,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:16.2.2":
-  version: 16.2.2
-  resolution: "lint-staged@npm:16.2.2"
+"lint-staged@npm:16.2.3":
+  version: 16.2.3
+  resolution: "lint-staged@npm:16.2.3"
   dependencies:
     commander: "npm:^14.0.1"
     listr2: "npm:^9.0.4"
@@ -15289,7 +15289,7 @@ __metadata:
     yaml: "npm:^2.8.1"
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/b2bd97f537f5331aed4f304afd32123f2774d20456a8be4df2ecc39ec9438cd969372f468e174469655a99c5c7085516f006e94d8d0659d3a5d21715e3e5c1a4
+  checksum: 10c0/9b057949f07f78539cd1540402df97b524a2d72d394e535d7c179025014982e4231fb81145fb1763704424d3dfac1184fee5eb4b7fc7d9534fae4106f5bf07d5
   languageName: node
   linkType: hard
 
