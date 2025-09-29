@@ -203,6 +203,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               tags: fields.suggestions.tags?.map(tag => tag.id),
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
+              emails: fields.suggestions.emails ? [...fields.suggestions.emails] : undefined,
+              internalEmailLinks: fields.suggestions.internalEmailLinks
+                ? [...fields.suggestions.internalEmailLinks]
+                : undefined,
+              priority: fields.suggestions.priority ?? undefined,
             }
           : undefined;
 
@@ -527,6 +532,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             : [],
           phrases: suggestionData.phrases ?? [],
           description: suggestionData.description ?? null,
+          emails: suggestionData.emails ?? [],
+          internalEmailLinks: suggestionData.internalEmailLinks ?? [],
+          priority: suggestionData.priority ?? null,
         };
       }
       return null;
