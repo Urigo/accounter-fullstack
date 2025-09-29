@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { suggestionDataSchema } from '@modules/documents/helpers/suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
@@ -17,12 +18,6 @@ import { formatAmount } from '@shared/helpers';
 import { getChargeType } from '../../helpers/charge-type.js';
 import type { ChargesModule } from '../../types.js';
 import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';
-
-type SuggestionData = {
-  description?: string;
-  tags: Array<string>;
-  phrases: Array<string>;
-};
 
 export type Suggestion = Awaited<ResolversTypes['ChargeSuggestions']>;
 
@@ -52,12 +47,23 @@ const missingInfoSuggestions: Resolver<
       .get(BusinessesProvider)
       .getBusinessByIdLoader.load(DbCharge.business_id);
     if (business?.suggestion_data) {
-      const suggestionData = business.suggestion_data as SuggestionData;
+      const {
+        data: suggestionData,
+        error,
+        success,
+      } = suggestionDataSchema.safeParse(business.suggestion_data);
+      if (!success) {
+        console.error('Failed to parse suggestion data for business', {
+          businessId: business.id,
+          error,
+        });
+        throw new GraphQLError('Failed to parse suggestion data for business');
+      }
 
       return {
         description: suggestionData.description,
         tags: await Promise.all(
-          suggestionData.tags.map(tag =>
+          (suggestionData.tags ?? []).map(tag =>
             UUID_REGEX.test(tag)
               ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
               : injector.get(TagsProvider).getTagByNameLoader.load(tag),
@@ -107,13 +113,24 @@ const missingInfoSuggestions: Resolver<
   const suggestions: Record<string, Suggestion> = {};
   for (const business of allBusinesses) {
     if (!business.suggestion_data) continue;
-    const suggestionData = business.suggestion_data as SuggestionData;
+    const {
+      data: suggestionData,
+      error,
+      success,
+    } = suggestionDataSchema.safeParse(business.suggestion_data);
+    if (!success) {
+      console.error('Failed to parse suggestion data for business', {
+        businessId: business.id,
+        error,
+      });
+      continue;
+    }
 
     if (business.id in (DbCharge.business_array ?? [])) {
       return {
         description: suggestionData.description,
         tags: await Promise.all(
-          suggestionData.tags.map(tag =>
+          (suggestionData.tags ?? []).map(tag =>
             UUID_REGEX.test(tag)
               ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
               : injector.get(TagsProvider).getTagByNameLoader.load(tag),

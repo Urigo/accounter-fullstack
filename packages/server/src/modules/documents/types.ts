@@ -15,3 +15,5 @@ export type IssuedDocumentInfoProto = {
   status: document_status;
   linkedDocumentIds?: string[];
 } | null;
+
+export type { SuggestionData } from './helpers/suggestion-data-schema.helper.js';

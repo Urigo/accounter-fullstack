@@ -1,4 +1,8 @@
 import { GraphQLError } from 'graphql';
+import {
+  SuggestionData,
+  suggestionDataSchema,
+} from '@modules/documents/helpers/suggestion-data-schema.helper.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -13,11 +17,9 @@ import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessesByIdsResult,
-  IInsertBusinessesParams,
   IInsertBusinessTaxCategoryResult,
   IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
-  Json,
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
 
@@ -78,7 +80,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         });
       }
 
-      let suggestionData: IUpdateBusinessParams['suggestionData'] = null;
+      let suggestionData: SuggestionData | null = null;
       if (fields.suggestions) {
         const currentBusiness = await injector
           .get(BusinessesProvider)
@@ -196,14 +198,18 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           };
         }
 
-        const suggestions: IInsertBusinessesParams['businesses'][number]['suggestions'] =
-          fields.suggestions
-            ? ({
-                tags: fields.suggestions.tags?.map(tag => tag.id),
-                phrases: fields.suggestions.phrases?.map(phrase => phrase),
-                description: fields.suggestions.description ?? undefined,
-              } as Json)
-            : undefined;
+        const suggestions: SuggestionData | undefined = fields.suggestions
+          ? {
+              tags: fields.suggestions.tags?.map(tag => tag.id),
+              phrases: fields.suggestions.phrases?.map(phrase => phrase),
+              description: fields.suggestions.description ?? undefined,
+              emails: fields.suggestions.emails ? [...fields.suggestions.emails] : undefined,
+              internalEmailLinks: fields.suggestions.internalEmailLinks
+                ? [...fields.suggestions.internalEmailLinks]
+                : undefined,
+              priority: fields.suggestions.priority ?? undefined,
+            }
+          : undefined;
 
         const insertBusinessPromise = injector.get(BusinessesProvider).insertBusiness({
           id: financialEntity.id,
@@ -269,27 +275,44 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         await Promise.all(mergeBusinessPromises);
 
         // handle suggestions
-        let suggestionData = targetBusiness.suggestion_data;
+        let suggestionData: SuggestionData | null = null;
+
+        const {
+          data: targetSuggestionData,
+          error,
+          success,
+        } = suggestionDataSchema.safeParse(targetBusiness.suggestion_data);
+        if (success) {
+          suggestionData = targetSuggestionData;
+        } else {
+          console.error('Failed to parse suggestion data for business', {
+            businessId: targetBusiness.id,
+            error,
+          });
+          throw new GraphQLError('Failed to parse suggestion data for target business');
+        }
+
         for (const businessToMerge of businessesToMerge) {
           if (!businessToMerge || businessToMerge instanceof Error) {
             continue;
           }
-          if (
-            businessToMerge.suggestion_data &&
-            typeof businessToMerge.suggestion_data === 'object' &&
-            'phrases' in businessToMerge.suggestion_data
-          ) {
+          const { data: mergedBusinessSuggestionData, success } = suggestionDataSchema.safeParse(
+            businessToMerge.suggestion_data,
+          );
+          if (success && mergedBusinessSuggestionData.phrases) {
             suggestionData = updateSuggestions(
-              { phrases: businessToMerge.suggestion_data['phrases'] as string[] },
+              { phrases: mergedBusinessSuggestionData.phrases },
               suggestionData,
               true,
             );
           }
         }
-        await injector.get(BusinessesProvider).updateBusiness({
-          businessId: targetBusinessId,
-          suggestionData,
-        });
+        if (suggestionData) {
+          await injector.get(BusinessesProvider).updateBusiness({
+            businessId: targetBusinessId,
+            suggestionData,
+          });
+        }
 
         // refetch updated target business
         const updatedBusiness = await injector
@@ -335,15 +358,13 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         }
       });
       businesses.map(business => {
-        if (
-          !business.suggestion_data ||
-          typeof business.suggestion_data !== 'object' ||
-          !('phrases' in business.suggestion_data)
-        ) {
+        const { data: suggestionData, success } = suggestionDataSchema.safeParse(
+          business.suggestion_data,
+        );
+        if (!success || !suggestionData.phrases) {
           return;
         }
-        const phrases = business.suggestion_data.phrases as string[];
-        phrases.map(phrase => {
+        suggestionData.phrases.map(phrase => {
           const description = phrase.toLowerCase();
           if (!businessIdsPerDescription.has(description)) {
             businessIdsPerDescription.set(description, new Set());
@@ -486,35 +507,34 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,
     suggestions: (DbBusiness, _, { injector }) => {
-      if (DbBusiness.suggestion_data && typeof DbBusiness.suggestion_data === 'object') {
+      const { data: suggestionData, success } = suggestionDataSchema.safeParse(
+        DbBusiness.suggestion_data,
+      );
+      if (success) {
         return {
-          tags:
-            'tags' in DbBusiness.suggestion_data
-              ? (DbBusiness.suggestion_data.tags as string[]).map(suggestedTag =>
-                  (UUID_REGEX.test(suggestedTag)
-                    ? injector.get(TagsProvider).getTagByIDLoader.load(suggestedTag)
-                    : injector.get(TagsProvider).getTagByNameLoader.load(suggestedTag)
-                  )
-                    .then(tag => {
-                      if (!tag) {
-                        throw new GraphQLError(`Tag "${suggestedTag}" not found`);
-                      }
-                      return tag;
-                    })
-                    .catch(e => {
-                      console.error(e);
-                      throw new GraphQLError(`Failed to load tag "${suggestedTag}"`);
-                    }),
+          tags: suggestionData.tags
+            ? suggestionData.tags.map(suggestedTag =>
+                (UUID_REGEX.test(suggestedTag)
+                  ? injector.get(TagsProvider).getTagByIDLoader.load(suggestedTag)
+                  : injector.get(TagsProvider).getTagByNameLoader.load(suggestedTag)
                 )
-              : [],
-          phrases:
-            'phrases' in DbBusiness.suggestion_data
-              ? (DbBusiness.suggestion_data.phrases as string[])
-              : [],
-          description:
-            'description' in DbBusiness.suggestion_data
-              ? (DbBusiness.suggestion_data.description as string)
-              : null,
+                  .then(tag => {
+                    if (!tag) {
+                      throw new GraphQLError(`Tag "${suggestedTag}" not found`);
+                    }
+                    return tag;
+                  })
+                  .catch(e => {
+                    console.error(e);
+                    throw new GraphQLError(`Failed to load tag "${suggestedTag}"`);
+                  }),
+              )
+            : [],
+          phrases: suggestionData.phrases ?? [],
+          description: suggestionData.description ?? null,
+          emails: suggestionData.emails ?? [],
+          internalEmailLinks: suggestionData.internalEmailLinks ?? [],
+          priority: suggestionData.priority ?? null,
         };
       }
       return null;

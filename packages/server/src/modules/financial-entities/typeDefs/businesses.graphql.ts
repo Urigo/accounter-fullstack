@@ -48,6 +48,9 @@ export default gql`
     phrases: [String!]!
     tags: [Tag!]!
     description: String
+    emails: [String!]
+    internalEmailLinks: [String!]
+    priority: Int
   }
 
   " Financial entity, identifier by ID, represents an actual person "
@@ -122,6 +125,9 @@ export default gql`
     phrases: [String!]
     tags: [TagInput!]
     description: String
+    emails: [String!]
+    internalEmailLinks: [String!]
+    priority: Int
   }
 
   extend interface Charge {
