@@ -1,18 +1,14 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
-import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
-import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
-import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
-import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
-import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
+import { suggestionDataSchema } from '@modules/documents/helpers/suggestion-data-schema.helper.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
-  IDeleteBusinessQuery,
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
+  IGetBusinessByEmailQuery,
+  IGetBusinessByEmailResult,
   IGetBusinessesByIdsQuery,
   IInsertBusinessesParams,
   IInsertBusinessesQuery,
@@ -20,8 +16,6 @@ import type {
   IUpdateBusinessParams,
   IUpdateBusinessQuery,
 } from '../types.js';
-import { ClientsProvider } from './clients.provider.js';
-import { TaxCategoriesProvider } from './tax-categories.provider.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
     SELECT *
@@ -35,6 +29,15 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
+
+const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
+    SELECT *
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
+    WHERE
+      suggestion_data->'emails' @> to_jsonb(array[$email::text])
+    LIMIT 1;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
   UPDATE accounter_schema.businesses
@@ -189,12 +192,6 @@ const insertBusinesses = sql<IInsertBusinessesQuery>`
   VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride)
   RETURNING *;`;
 
-const deleteBusiness = sql<IDeleteBusinessQuery>`
-  DELETE FROM accounter_schema.businesses
-  WHERE id = $businessId
-  RETURNING id;
-`;
-
 const replaceBusinesses = sql<IReplaceBusinessesQuery>`
   WITH ledger_debit1 AS (
     UPDATE accounter_schema.ledger_records
@@ -293,7 +290,7 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Operation,
+  scope: Scope.Singleton,
   global: true,
 })
 export class BusinessesProvider {
@@ -301,18 +298,7 @@ export class BusinessesProvider {
     stdTTL: 60 * 5,
   });
 
-  constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
-    private dbProvider: DBProvider,
-    private taxCategoryProvider: TaxCategoriesProvider,
-    private clientsProvider: ClientsProvider,
-    private employeesProvider: EmployeesProvider,
-    private fundsProvider: FundsProvider,
-    private dividendsProvider: DividendsProvider,
-    private businessTripAttendeesProvider: BusinessTripAttendeesProvider,
-    private balanceCancellationProvider: BalanceCancellationProvider,
-    private unbalancedBusinessesProvider: UnbalancedBusinessesProvider,
-  ) {}
+  constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
@@ -341,6 +327,16 @@ export class BusinessesProvider {
     return getAllBusinesses.run(undefined, this.dbProvider);
   }
 
+  public getBusinessByEmail(email: string) {
+    const data = this.cache.get<IGetBusinessByEmailResult>(`business-email-${email}`);
+    if (data) {
+      return Promise.resolve(data);
+    }
+    return getBusinessByEmail
+      .run({ email }, this.dbProvider)
+      .then(res => (res?.length ? res[0] : null));
+  }
+
   public async updateBusiness(
     params: Omit<IUpdateBusinessParams, 'businessId'> & { businessId: string },
   ) {
@@ -348,14 +344,16 @@ export class BusinessesProvider {
     return updateBusiness.run(params, this.dbProvider);
   }
 
-  public insertBusiness(business: IInsertBusinessesParams['businesses'][number]) {
-    this.cache.delete('all-businesses');
-    return insertBusinesses.run({ businesses: [business] }, this.dbProvider);
-  }
-
   private async batchInsertBusinesses(
     newBusinesses: readonly IInsertBusinessesParams['businesses'][number][],
   ) {
+    await Promise.all(
+      newBusinesses.map(async nb => {
+        if (nb.id) {
+          await this.invalidateBusinessById(nb.id);
+        }
+      }),
+    );
     const businesses = await insertBusinesses.run(
       {
         businesses: newBusinesses,
@@ -365,7 +363,7 @@ export class BusinessesProvider {
     return newBusinesses.map(nb => businesses.find(b => b.id === nb.id) ?? null);
   }
 
-  public insertBusinessesLoader = new DataLoader(
+  public insertBusinessLoader = new DataLoader(
     (businesses: readonly IInsertBusinessesParams['businesses'][number][]) =>
       this.batchInsertBusinesses(businesses),
     {
@@ -373,89 +371,7 @@ export class BusinessesProvider {
     },
   );
 
-  public insertBusinesses(params: IInsertBusinessesParams) {
-    this.cache.delete('all-businesses');
-    return insertBusinesses.run(params, this.dbProvider);
-  }
-
-  public async invalidateBusinessById(businessId: string) {
-    this.cache.delete('all-businesses');
-    this.cache.delete(`business-${businessId}`);
-  }
-
-  public async deleteBusinessById(businessId: string) {
-    this.invalidateBusinessById(businessId);
-
-    // remove employee
-    const employeePromise = this.employeesProvider.getEmployeesByIdLoader
-      .load(businessId)
-      .then(employee => {
-        if (employee) throw new Error('Cannot delete business as it represent an employee');
-      });
-
-    // remove pension funds
-    const fundPromise = this.fundsProvider.getAllFunds().then(funds => {
-      const fund = funds.find(f => f.id === businessId);
-      if (fund) throw new Error('Cannot delete business as it represent a pension/training fund');
-    });
-
-    // remove business trips attendees
-    const tripsPromise = this.businessTripAttendeesProvider
-      .getBusinessTripsByAttendeeId(businessId)
-      .then(trips => {
-        if (trips.length)
-          throw new Error('Cannot delete business as it represent business trip attendee');
-      });
-
-    // remove from dividends
-    const dividendsPromise = this.dividendsProvider.getDividendsByBusinessIdLoader
-      .load(businessId)
-      .then(dividends => {
-        if (dividends.length)
-          throw new Error('Cannot delete business as it represent dividends receiver');
-      });
-
-    // some validations before deleting the business
-    await Promise.all([employeePromise, tripsPromise, fundPromise, dividendsPromise]);
-
-    // remove from charge unbalanced ledger businesses
-    const deleteUnbalancedChargesBusinesses =
-      this.unbalancedBusinessesProvider.deleteChargeUnbalancedBusinessesByBusinessId(businessId);
-
-    // remove from charge balance cancellation
-    const deleteBalanceCancellation =
-      this.balanceCancellationProvider.deleteBalanceCancellationByBusinessId(businessId);
-
-    // remove from business green invoice match
-    const deleteGreenInvoiceMatch = this.clientsProvider.deleteClient(businessId);
-
-    // TODO: remove when corporate: corporate-tax-variables
-    // TODO: remove when owner: financial entities, charges, business-tax-category, ledger
-
-    // TODO: should remove transactions, documents?
-
-    // remove business-tax-category matches
-    const deleteMatchingTaxCategory = this.taxCategoryProvider.deleteBusinessTaxCategory({
-      businessId,
-      ownerId: this.context.currentUser.userId,
-    });
-
-    await Promise.all([
-      deleteUnbalancedChargesBusinesses,
-      deleteBalanceCancellation,
-      deleteGreenInvoiceMatch,
-      deleteMatchingTaxCategory,
-    ]);
-
-    // delete businesses
-    deleteBusiness.run({ businessId }, this.dbProvider);
-  }
-
-  public async replaceBusiness(
-    targetBusinessId: string,
-    businessIdToReplace: string,
-    deleteBusiness: boolean = false,
-  ) {
+  public async replaceBusiness(targetBusinessId: string, businessIdToReplace: string) {
     const [businessToReplace, business] = await Promise.all([
       this.getBusinessByIdLoader.load(businessIdToReplace),
       this.getBusinessByIdLoader.load(targetBusinessId),
@@ -481,11 +397,23 @@ export class BusinessesProvider {
     // TODO: convert when owner: financial entities, charges, business-tax-category, ledger
 
     // TODO: should convert business tax category matches?
+  }
 
-    // delete businesses
-    if (deleteBusiness) {
-      await this.deleteBusinessById(businessIdToReplace);
+  public async invalidateBusinessById(businessId: string) {
+    const business = await this.getBusinessByIdLoader.load(businessId);
+    if (business) {
+      if (business.suggestion_data) {
+        const { data: suggestionData } = suggestionDataSchema.safeParse(business.suggestion_data);
+        if (suggestionData?.emails) {
+          for (const email of suggestionData.emails) {
+            this.cache.delete(`business-email-${email}`);
+          }
+        }
+      }
+      this.getBusinessByIdLoader.clear(businessId);
     }
+    this.cache.delete('all-businesses');
+    this.cache.delete(`business-${businessId}`);
   }
 
   public clearCache() {

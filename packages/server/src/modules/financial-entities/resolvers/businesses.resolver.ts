@@ -211,7 +211,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             }
           : undefined;
 
-        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusiness({
+        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusinessLoader.load({
           id: financialEntity.id,
           address: fields.address,
           email: fields.email,
@@ -244,10 +244,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             });
         }
 
-        const [[business], _taxCategory] = await Promise.all([
+        const [business, _taxCategory] = await Promise.all([
           insertBusinessPromise,
           taxCategoryPromise,
         ]);
+
+        if (!business) {
+          throw new GraphQLError(`Failed to create business`);
+        }
 
         return { ...financialEntity, ...business };
       } catch (e) {
@@ -449,7 +453,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             );
           }
 
-          const business = await injector.get(BusinessesProvider).insertBusinessesLoader.load({
+          const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
             id: financialEntity.id,
             country: 'Israel',
             hebrewName: description,
