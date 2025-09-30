@@ -167,7 +167,7 @@ export const BalanceReport = (): ReactElement => {
       }
     }
     return defaultFilters;
-  }, [userContext?.context.adminBusinessId]);
+  }, [userContext?.context.adminBusinessId, get]);
   const [filter, setFilter] = useState<BalanceReportFilter>(initialFilters);
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
