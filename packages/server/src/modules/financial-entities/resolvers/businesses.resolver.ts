@@ -211,7 +211,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
                       ? [...fields.suggestions.emailListener.internalEmailLinks]
                       : undefined,
                     emailBody: fields.suggestions.emailListener.emailBody ?? undefined,
-                    attachments: fields.suggestions.emailListener.attachments ?? undefined,
+                    attachments: fields.suggestions.emailListener.attachments
+                      ? [...fields.suggestions.emailListener.attachments]
+                      : undefined,
                   }
                 : undefined,
               priority: fields.suggestions.priority ?? undefined,

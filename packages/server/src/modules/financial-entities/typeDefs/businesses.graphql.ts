@@ -57,7 +57,7 @@ export default gql`
   type SuggestionsEmailListenerConfig {
     internalEmailLinks: [String!]
     emailBody: Boolean
-    attachments: EmailAttachmentType
+    attachments: [EmailAttachmentType!]
   }
 
   " types of email attachments that can be parsed "
@@ -148,7 +148,7 @@ export default gql`
   input SuggestionsEmailListenerConfigInput {
     internalEmailLinks: [String!]
     emailBody: Boolean
-    attachments: EmailAttachmentType
+    attachments: [EmailAttachmentType!]
   }
 
   extend interface Charge {

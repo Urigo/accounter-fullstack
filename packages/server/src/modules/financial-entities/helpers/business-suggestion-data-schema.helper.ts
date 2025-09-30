@@ -4,7 +4,7 @@ const emailListener = z
   .object({
     internalEmailLinks: z.array(z.string()).optional(),
     emailBody: z.boolean().optional(),
-    attachments: z.enum(['PDF', 'PNG', 'JPEG']).optional(),
+    attachments: z.array(z.enum(['PDF', 'PNG', 'JPEG'])).optional(),
   })
   .strict();
 
