@@ -1,6 +1,24 @@
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { UpdateBusinessInput } from '@shared/gql-types';
+import { SuggestionsEmailListenerConfigInput, UpdateBusinessInput } from '@shared/gql-types';
 import type { Json, SuggestionData } from '../types.js';
+
+function mergeEmailListenerConfig(
+  currentConfig: NonNullable<SuggestionData['emailListener']>,
+  newConfig: SuggestionsEmailListenerConfigInput,
+): NonNullable<SuggestionData['emailListener']> {
+  const internalEmailLinks = [
+    ...(currentConfig.internalEmailLinks ?? []),
+    ...(newConfig.internalEmailLinks ?? []),
+  ];
+  const emailBody = newConfig.emailBody ?? currentConfig.emailBody;
+  const attachments = newConfig.attachments ?? currentConfig.attachments;
+
+  return {
+    internalEmailLinks,
+    emailBody,
+    attachments,
+  };
+}
 
 export function updateSuggestions(
   newSuggestions: NonNullable<UpdateBusinessInput['suggestions']>,
@@ -27,10 +45,12 @@ export function updateSuggestions(
   const newEmails = newSuggestions.emails ?? [];
   const emails = merge ? [...(currentSuggestionData.emails ?? []), ...newEmails] : newEmails;
 
-  const newInternalEmailLinks = newSuggestions.internalEmailLinks ?? [];
-  const internalEmailLinks = merge
-    ? [...(currentSuggestionData.internalEmailLinks ?? []), ...newInternalEmailLinks]
-    : newInternalEmailLinks;
+  const newEmailListener = newSuggestions.emailListener ?? null;
+  const emailListener = merge
+    ? currentSuggestionData.emailListener && newEmailListener
+      ? mergeEmailListenerConfig(currentSuggestionData.emailListener, newEmailListener)
+      : (currentSuggestionData.emailListener ?? newSuggestions.emailListener)
+    : newEmailListener;
 
   const description = newSuggestions.description ?? currentSuggestionData.description;
 
@@ -45,7 +65,7 @@ export function updateSuggestions(
     phrases,
     description,
     emails,
-    internalEmailLinks,
+    emailListener,
     priority,
   });
   if (!success) {

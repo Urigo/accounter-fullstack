@@ -204,8 +204,15 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
               emails: fields.suggestions.emails ? [...fields.suggestions.emails] : undefined,
-              internalEmailLinks: fields.suggestions.internalEmailLinks
-                ? [...fields.suggestions.internalEmailLinks]
+              emailListener: fields.suggestions.emailListener
+                ? {
+                    ...fields.suggestions.emailListener,
+                    internalEmailLinks: fields.suggestions.emailListener.internalEmailLinks
+                      ? [...fields.suggestions.emailListener.internalEmailLinks]
+                      : undefined,
+                    emailBody: fields.suggestions.emailListener.emailBody ?? undefined,
+                    attachments: fields.suggestions.emailListener.attachments ?? undefined,
+                  }
                 : undefined,
               priority: fields.suggestions.priority ?? undefined,
             }
@@ -537,7 +544,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phrases: suggestionData.phrases ?? [],
           description: suggestionData.description ?? null,
           emails: suggestionData.emails ?? [],
-          internalEmailLinks: suggestionData.internalEmailLinks ?? [],
+          emailListener: suggestionData.emailListener ?? null,
           priority: suggestionData.priority ?? null,
         };
       }

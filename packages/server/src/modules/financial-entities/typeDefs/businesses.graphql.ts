@@ -49,8 +49,22 @@ export default gql`
     tags: [Tag!]!
     description: String
     emails: [String!]
-    internalEmailLinks: [String!]
+    emailListener: SuggestionsEmailListenerConfig
     priority: Int
+  }
+
+  " business suggestions email listener config "
+  type SuggestionsEmailListenerConfig {
+    internalEmailLinks: [String!]
+    emailBody: Boolean
+    attachments: EmailAttachmentType
+  }
+
+  " types of email attachments that can be parsed "
+  enum EmailAttachmentType {
+    PDF
+    PNG
+    JPEG
   }
 
   " Financial entity, identifier by ID, represents an actual person "
@@ -126,8 +140,15 @@ export default gql`
     tags: [TagInput!]
     description: String
     emails: [String!]
-    internalEmailLinks: [String!]
+    emailListener: SuggestionsEmailListenerConfigInput
     priority: Int
+  }
+
+  " input for business suggestions email listener config "
+  input SuggestionsEmailListenerConfigInput {
+    internalEmailLinks: [String!]
+    emailBody: Boolean
+    attachments: EmailAttachmentType
   }
 
   extend interface Charge {

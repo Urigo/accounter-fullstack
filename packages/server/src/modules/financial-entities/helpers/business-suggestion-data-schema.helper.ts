@@ -1,12 +1,22 @@
 import { z } from 'zod';
 
-export const suggestionDataSchema = z.object({
-  tags: z.array(z.uuid()).optional(),
-  phrases: z.array(z.string()).optional(),
-  description: z.string().optional(),
-  emails: z.array(z.email()).optional(),
-  internalEmailLinks: z.array(z.string()).optional(),
-  priority: z.int().optional(),
-});
+const emailListener = z
+  .object({
+    internalEmailLinks: z.array(z.string()).optional(),
+    emailBody: z.boolean().optional(),
+    attachments: z.enum(['PDF', 'PNG', 'JPEG']).optional(),
+  })
+  .strict();
+
+export const suggestionDataSchema = z
+  .object({
+    tags: z.array(z.uuid()).optional(),
+    phrases: z.array(z.string()).optional(),
+    description: z.string().optional(),
+    emails: z.array(z.email()).optional(),
+    emailListener: emailListener.optional(),
+    priority: z.int().optional(),
+  })
+  .strict();
 
 export type SuggestionData = z.infer<typeof suggestionDataSchema>;
