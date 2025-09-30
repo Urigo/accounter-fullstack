@@ -6,12 +6,13 @@ function mergeEmailListenerConfig(
   currentConfig: NonNullable<SuggestionData['emailListener']>,
   newConfig: SuggestionsEmailListenerConfigInput,
 ): NonNullable<SuggestionData['emailListener']> {
-  const internalEmailLinks = [
-    ...(currentConfig.internalEmailLinks ?? []),
-    ...(newConfig.internalEmailLinks ?? []),
-  ];
+  const internalEmailLinks = Array.from(
+    new Set([...(currentConfig.internalEmailLinks ?? []), ...(newConfig.internalEmailLinks ?? [])]),
+  );
   const emailBody = newConfig.emailBody ?? currentConfig.emailBody;
-  const attachments = newConfig.attachments ?? currentConfig.attachments;
+  const attachments = Array.from(
+    new Set([...(currentConfig.attachments ?? []), ...(newConfig.attachments ?? [])]),
+  );
 
   return {
     internalEmailLinks,
@@ -36,21 +37,24 @@ export function updateSuggestions(
     }
   }
 
-  const newTags = newSuggestions.tags?.map(tag => tag.id) ?? [];
-  const tags = merge ? [...(currentSuggestionData.tags ?? []), ...newTags] : newTags;
+  const currentTags = currentSuggestionData.tags ?? [];
+  const newTags = newSuggestions.tags?.map(tag => tag.id) ?? currentTags ?? [];
+  const tags = merge ? Array.from(new Set([...currentTags, ...newTags])) : newTags;
 
-  const newPhrases = newSuggestions.phrases ?? [];
-  const phrases = merge ? [...(currentSuggestionData.phrases ?? []), ...newPhrases] : newPhrases;
+  const currentPhrases = currentSuggestionData.phrases ?? [];
+  const newPhrases = newSuggestions.phrases ?? currentPhrases ?? [];
+  const phrases = merge ? Array.from(new Set([...currentPhrases, ...newPhrases])) : newPhrases;
 
-  const newEmails = newSuggestions.emails ?? [];
-  const emails = merge ? [...(currentSuggestionData.emails ?? []), ...newEmails] : newEmails;
+  const currentEmails = currentSuggestionData.emails ?? [];
+  const newEmails = newSuggestions.emails ?? currentEmails ?? [];
+  const emails = merge ? Array.from(new Set([...currentEmails, ...newEmails])) : newEmails;
 
-  const newEmailListener = newSuggestions.emailListener ?? null;
-  const emailListener = merge
-    ? currentSuggestionData.emailListener && newEmailListener
-      ? mergeEmailListenerConfig(currentSuggestionData.emailListener, newEmailListener)
-      : (currentSuggestionData.emailListener ?? newSuggestions.emailListener)
-    : newEmailListener;
+  const currentEmailListener = currentSuggestionData.emailListener ?? undefined;
+  const newEmailListener = newSuggestions.emailListener ?? undefined;
+  const emailListener =
+    merge && currentEmailListener && newEmailListener
+      ? mergeEmailListenerConfig(currentEmailListener, newEmailListener)
+      : (newEmailListener ?? currentEmailListener);
 
   const description = newSuggestions.description ?? currentSuggestionData.description;
 
