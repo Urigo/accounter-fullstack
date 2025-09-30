@@ -14,6 +14,7 @@ import type {
   IUpdateFinancialEntityParams,
   IUpdateFinancialEntityQuery,
 } from '../types.js';
+import { BusinessesOperationProvider } from './businesses-operation.provider.js';
 import { BusinessesProvider } from './businesses.provider.js';
 import { TaxCategoriesProvider } from './tax-categories.provider.js';
 
@@ -114,6 +115,7 @@ export class FinancialEntitiesProvider {
   constructor(
     private dbProvider: DBProvider,
     private businessesProvider: BusinessesProvider,
+    private businessesOperationProvider: BusinessesOperationProvider,
     private taxCategoriesProvider: TaxCategoriesProvider,
   ) {}
 
@@ -197,7 +199,7 @@ export class FinancialEntitiesProvider {
     // remove business
     const deleteBusiness =
       entity.type === 'business'
-        ? this.businessesProvider.deleteBusinessById(financialEntityId)
+        ? this.businessesOperationProvider.deleteBusinessById(financialEntityId)
         : Promise.resolve();
 
     // remove tax category
@@ -244,7 +246,10 @@ export class FinancialEntitiesProvider {
     // convert business
     const businessReplacementPromise =
       entity.type === 'business'
-        ? this.businessesProvider.replaceBusiness(targetEntityId, entityIdToReplace, deleteEntity)
+        ? this.businessesProvider.replaceBusiness(targetEntityId, entityIdToReplace).then(() => {
+            if (deleteEntity)
+              this.businessesOperationProvider.deleteBusinessById(entityIdToReplace);
+          })
         : Promise.resolve();
 
     // convert tax category
