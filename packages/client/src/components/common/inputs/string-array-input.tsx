@@ -9,15 +9,17 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 import { Button } from '../../ui/button.js';
-import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form';
-import { Input } from '../../ui/input';
+import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
 
 type Props<T extends FieldValues> = {
+  label: string;
   formManager: UseFormReturn<T, unknown>;
   phrasesPath: Path<T>;
 };
 
-export function PhrasesInput<T extends FieldValues>({
+export function StringArrayInput<T extends FieldValues>({
+  label,
   formManager,
   phrasesPath,
 }: Props<T>): ReactElement {
@@ -37,7 +39,7 @@ export function PhrasesInput<T extends FieldValues>({
 
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">Phrases</span>
+      <span className="mantine-InputWrapper-label mantine-Select-label">{label}</span>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields.map((phrase, index) => (
           <div key={phrase.id} className=" flex items-center gap-2 text-gray-600 mb-2">
