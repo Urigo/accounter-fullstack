@@ -2,8 +2,12 @@ import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import nodeHtmlToImage from 'node-html-to-image';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { getDocumentFromUrlsAndOceData } from '@modules/documents/helpers/upload.helper.js';
+import {
+  getDocumentFromUrlsAndOceData,
+  type OcrData,
+} from '@modules/documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { DocumentType } from '@shared/enums';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
@@ -22,6 +26,7 @@ interface EmailData {
   threadId: string;
   subject: string;
   from: string;
+  originalFrom?: string;
   to: string;
   body: string;
   labels: string[];
@@ -70,6 +75,7 @@ export class GmailServiceProvider {
     private anthropicProvider: AnthropicProvider,
     private chargesProvider: ChargesProvider,
     private documentsProvider: DocumentsProvider,
+    private businessesProvider: BusinessesProvider,
   ) {
     this.gmailEnv = this.env.gmail!;
     this.targetLabel = this.gmailEnv.labelPath;
@@ -245,6 +251,14 @@ export class GmailServiceProvider {
     return attachments;
   }
 
+  private extractEmailAddress(original: string): string {
+    const match = original.match(/<(.+)>/);
+    if (match?.[1]) {
+      return match[1];
+    }
+    return original;
+  }
+
   private async getEmailById(messageId: string): Promise<EmailData | null> {
     try {
       const response = await this.gmail.users.messages.get({
@@ -264,7 +278,10 @@ export class GmailServiceProvider {
         return null;
       }
 
-      const to = headers.find(h => h.name === 'To')?.value || '';
+      const originalFrom = this.extractEmailAddress(
+        headers.find(h => h.name === 'X-Original-From')?.value || '',
+      );
+      const to = this.extractEmailAddress(headers.find(h => h.name === 'To')?.value || '');
       const subject = headers.find(h => h.name === 'Subject')?.value || '';
       const date = headers.find(h => h.name === 'Date')?.value || '';
       const body = this.getEmailBody(message.payload);
@@ -274,6 +291,7 @@ export class GmailServiceProvider {
         threadId: message.threadId!,
         subject,
         from,
+        originalFrom,
         to,
         body,
         labels: message.labelIds || [],
@@ -330,7 +348,7 @@ export class GmailServiceProvider {
       });
   }
 
-  private async getOcrData(doc: EmailDocument) {
+  private async getOcrData(doc: EmailDocument): Promise<OcrData> {
     const validateNumber = (value: unknown): number | null => {
       return typeof value === 'number' && !Number.isNaN(value) ? value : null;
     };
@@ -397,17 +415,22 @@ export class GmailServiceProvider {
             subject: emailData.subject,
             from: emailData.from,
             id: emailData.id,
-            documents: emailData.documents,
           });
 
-          const [charge] = await this.chargesProvider
+          const businessPromise = this.businessesProvider.getBusinessByEmail(
+            emailData.originalFrom || emailData.from,
+          );
+
+          const chargePromise = this.chargesProvider
             .generateCharge({
               ownerId: this.env.authorization.adminBusinessId,
-              userDescription: `Email documents: ${emailData.subject}`,
+              userDescription: `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`,
             })
             .catch(e => {
               throw new Error(`Error generating charge for email id=${message.id}: ${e}`);
             });
+
+          const [[charge], business] = await Promise.all([chargePromise, businessPromise]);
 
           if (!charge?.id) {
             throw new Error(`Charge creation failed for email id=${message.id}`);
@@ -423,6 +446,11 @@ export class GmailServiceProvider {
                 this.getUrls(doc),
                 this.getOcrData(doc),
               ]);
+
+              if (business) {
+                // link business if found by email
+                ocrData.counterpartyId = business.id;
+              }
 
               const documentToUpload = getDocumentFromUrlsAndOceData(
                 fileUrl,
