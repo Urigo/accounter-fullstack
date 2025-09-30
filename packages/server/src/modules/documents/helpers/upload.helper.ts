@@ -24,7 +24,7 @@ export const uploadToCloudinary = async (injector: Injector, file: File | Blob) 
   }
 };
 
-type OcrData = {
+export type OcrData = {
   isOwnerIssuer: boolean | null;
   counterpartyId: string | null;
   documentType: DocumentType;
