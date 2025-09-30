@@ -126,6 +126,40 @@ function figureOutSides(
   return res;
 }
 
+export function getDocumentFromUrlsAndOceData(
+  fileUrl: string,
+  imageUrl: string,
+  ocrData: OcrData,
+  adminBusinessId: string,
+  chargeId?: string | null,
+): IInsertDocumentsParams['document'][number] {
+  const sides = figureOutSides(
+    ocrData.documentType,
+    ocrData.isOwnerIssuer,
+    adminBusinessId,
+    ocrData.counterpartyId,
+  );
+
+  const newDocument: IInsertDocumentsParams['document'][number] = {
+    image: imageUrl ?? null,
+    file: fileUrl ?? null,
+    documentType: ocrData.documentType,
+    serialNumber: ocrData.serial,
+    date: ocrData.date,
+    amount: ocrData.amount,
+    currencyCode: ocrData.currency,
+    vat: ocrData.vat,
+    chargeId: chargeId ?? null,
+    vatReportDateOverride: null,
+    noVatAmount: null,
+    allocationNumber: ocrData.allocationNumber,
+    exchangeRateOverride: null,
+    ...sides,
+  };
+
+  return newDocument;
+}
+
 export async function getDocumentFromFile(
   context: GraphQLModules.ModuleContext,
   file: File | Blob,
@@ -146,31 +180,13 @@ export async function getDocumentFromFile(
       throw new Error('No data returned from Green Invoice');
     }
 
-    const sides = figureOutSides(
-      ocrData.documentType,
-      ocrData.isOwnerIssuer,
+    return getDocumentFromUrlsAndOceData(
+      fileUrl,
+      imageUrl,
+      ocrData,
       context.adminContext.defaultAdminBusinessId,
-      ocrData.counterpartyId,
+      chargeId,
     );
-
-    const newDocument: IInsertDocumentsParams['document'][number] = {
-      image: imageUrl ?? null,
-      file: fileUrl ?? null,
-      documentType: ocrData.documentType,
-      serialNumber: ocrData.serial,
-      date: ocrData.date,
-      amount: ocrData.amount,
-      currencyCode: ocrData.currency,
-      vat: ocrData.vat,
-      chargeId: chargeId ?? null,
-      vatReportDateOverride: null,
-      noVatAmount: null,
-      allocationNumber: ocrData.allocationNumber,
-      exchangeRateOverride: null,
-      ...sides,
-    };
-
-    return newDocument;
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);

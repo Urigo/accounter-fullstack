@@ -57,21 +57,35 @@ const AuthorizationModel = zod.object({
 
 const HiveModel = zod.union([
   zod.object({
-    HIVE_TOKEN: zod.string().optional(),
+    HIVE_TOKEN: zod.string(),
   }),
   zod.void(),
 ]);
 
-const GoogleModel = zod.union([
+const GoogleDriveModel = zod.union([
   zod.object({
     GOOGLE_DRIVE_API_KEY: zod.string().optional(),
   }),
   zod.void(),
 ]);
 
+const GmailModel = zod.union([
+  zod.object({
+    GMAIL_CLIENT_ID: zod.string(),
+    GMAIL_CLIENT_SECRET: zod.string(),
+    GMAIL_REFRESH_TOKEN: zod.string(),
+    GMAIL_LABEL_PATH: zod.string().optional(), // Optional custom label
+    GOOGLE_CLOUD_PROJECT_ID: zod.string(),
+    GOOGLE_APPLICATION_CREDENTIALS: zod.string(),
+    PUBSUB_TOPIC: zod.string(),
+    PUBSUB_SUBSCRIPTION: zod.string(),
+  }),
+  zod.void(),
+]);
+
 const DeelModel = zod.union([
   zod.object({
-    DEEL_TOKEN: zod.string().optional(),
+    DEEL_TOKEN: zod.string(),
   }),
   zod.void(),
 ]);
@@ -82,7 +96,8 @@ const configs = {
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
-  google: GoogleModel.safeParse(process.env),
+  googleDrive: GoogleDriveModel.safeParse(process.env),
+  gmail: GmailModel.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
 };
 
@@ -112,7 +127,8 @@ const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
-const google = extractConfig(configs.google);
+const googleDrive = extractConfig(configs.googleDrive);
+const gmail = extractConfig(configs.gmail);
 const deel = extractConfig(configs.deel);
 
 export const env = {
@@ -129,21 +145,41 @@ export const env = {
     apiKey: cloudinary?.CLOUDINARY_API_KEY,
     apiSecret: cloudinary?.CLOUDINARY_API_SECRET,
   },
-  greenInvoice: {
-    id: greenInvoice?.GREEN_INVOICE_ID,
-    secret: greenInvoice?.GREEN_INVOICE_SECRET,
-  },
+  greenInvoice: greenInvoice
+    ? {
+        id: greenInvoice.GREEN_INVOICE_ID,
+        secret: greenInvoice.GREEN_INVOICE_SECRET,
+      }
+    : undefined,
   authorization: {
     users: authorization?.AUTHORIZED_USERS,
     adminBusinessId: authorization?.DEFAULT_FINANCIAL_ENTITY_ID,
   },
-  hive: {
-    hiveToken: hive?.HIVE_TOKEN,
-  },
-  google: {
-    driveApiKey: google?.GOOGLE_DRIVE_API_KEY,
-  },
-  deel: {
-    apiToken: deel?.DEEL_TOKEN,
-  },
+  hive: hive
+    ? {
+        hiveToken: hive.HIVE_TOKEN,
+      }
+    : undefined,
+  googleDrive: googleDrive
+    ? {
+        driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY,
+      }
+    : undefined,
+  gmail: gmail
+    ? {
+        clientId: gmail.GMAIL_CLIENT_ID,
+        clientSecret: gmail.GMAIL_CLIENT_SECRET,
+        refreshToken: gmail.GMAIL_REFRESH_TOKEN,
+        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
+        cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID,
+        appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS,
+        topicName: gmail.PUBSUB_TOPIC,
+        subscriptionName: gmail.PUBSUB_SUBSCRIPTION,
+      }
+    : undefined,
+  deel: deel
+    ? {
+        apiToken: deel.DEEL_TOKEN,
+      }
+    : undefined,
 } as const;
