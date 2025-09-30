@@ -1,7 +1,6 @@
-import { suggestionDataSchema } from '@modules/documents/helpers/suggestion-data-schema.helper.js';
-import { SuggestionData } from '@modules/documents/types.js';
+import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { UpdateBusinessInput } from '@shared/gql-types';
-import type { Json } from '../types.js';
+import type { Json, SuggestionData } from '../types.js';
 
 export function updateSuggestions(
   newSuggestions: NonNullable<UpdateBusinessInput['suggestions']>,

@@ -1,6 +1,6 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { suggestionDataSchema } from '@modules/documents/helpers/suggestion-data-schema.helper.js';
+import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';

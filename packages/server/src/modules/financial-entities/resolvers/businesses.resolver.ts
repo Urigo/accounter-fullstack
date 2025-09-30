@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import {
   SuggestionData,
   suggestionDataSchema,
-} from '@modules/documents/helpers/suggestion-data-schema.helper.js';
+} from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';

@@ -6,3 +6,5 @@ export * from './__generated__/admin-businesses.types.js';
 export * from './__generated__/financial-entities.types.js';
 export * from './__generated__/tax-categories.types.js';
 export * from './__generated__/clients.types.js';
+
+export type { SuggestionData } from './helpers/business-suggestion-data-schema.helper.js';
