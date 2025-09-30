@@ -341,6 +341,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           debtorId: record.debtorId ?? null,
           allocationNumber: record.allocationNumber ?? null,
           exchangeRateOverride: record.exchangeRateOverride ?? null,
+          fileHash: null,
         };
         const res = await injector
           .get(DocumentsProvider)

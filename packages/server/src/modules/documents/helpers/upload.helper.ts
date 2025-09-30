@@ -2,6 +2,7 @@ import type { Injector } from 'graphql-modules';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { Currency, DocumentType } from '@shared/enums';
+import { hashStringToInt } from '@shared/helpers';
 import type { IInsertDocumentsParams } from '../types.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
@@ -91,6 +92,10 @@ export async function getOcrData(
   };
 }
 
+export async function getHashFromFile(file: File | Blob): Promise<number> {
+  return hashStringToInt(await file.text());
+}
+
 function figureOutSides(
   documentType: DocumentType,
   isOwnerIssuer: boolean | null,
@@ -132,6 +137,7 @@ export function getDocumentFromUrlsAndOceData(
   ocrData: OcrData,
   adminBusinessId: string,
   chargeId?: string | null,
+  fileHash?: number,
 ): IInsertDocumentsParams['document'][number] {
   const sides = figureOutSides(
     ocrData.documentType,
@@ -154,6 +160,7 @@ export function getDocumentFromUrlsAndOceData(
     noVatAmount: null,
     allocationNumber: ocrData.allocationNumber,
     exchangeRateOverride: null,
+    fileHash: fileHash?.toString() ?? null,
     ...sides,
   };
 
@@ -171,9 +178,10 @@ export async function getDocumentFromFile(
       injector,
       // adminContext: { defaultAdminBusinessId },
     } = context;
-    const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+    const [{ fileUrl, imageUrl }, ocrData, hash] = await Promise.all([
       uploadToCloudinary(injector, file),
       getOcrData(injector, file, isSensitive),
+      getHashFromFile(file),
     ]);
 
     if (!ocrData) {
@@ -186,6 +194,7 @@ export async function getDocumentFromFile(
       ocrData,
       context.adminContext.defaultAdminBusinessId,
       chargeId,
+      hash,
     );
   } catch (e) {
     const message = 'Error extracting document data from file';

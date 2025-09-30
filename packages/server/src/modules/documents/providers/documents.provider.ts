@@ -170,7 +170,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       creditor_id,
       debtor_id,
       allocation_number,
-      exchange_rate_override
+      exchange_rate_override,
+      file_hash
     )
     VALUES $$document(
       image,
@@ -187,7 +188,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       creditorId,
       debtorId,
       allocationNumber,
-      exchangeRateOverride
+      exchangeRateOverride,
+      fileHash
     )
     RETURNING *;`;
 

@@ -16,7 +16,7 @@ import type {
 } from '@modules/documents/types';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString, hashStringToInt } from '@shared/helpers';
 import type { LedgerProto, StrictLedgerProto } from '@shared/types';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
@@ -147,7 +147,13 @@ export async function uploadDeelInvoice(
     const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
 
     // upload file to cloudinary
-    const { fileUrl, imageUrl } = await uploadToCloudinary(injector, file);
+    const cloudinaryPromise = uploadToCloudinary(injector, file);
+
+    const hashPromise = async () => {
+      const content = await file.text();
+      return hashStringToInt(content).toString();
+    };
+    const [{ fileUrl, imageUrl }, fileHash] = await Promise.all([cloudinaryPromise, hashPromise()]);
 
     // create the new document object
     const newDocumentFromInvoice: IInsertDocumentsParams['document'][number] = {
@@ -169,6 +175,7 @@ export async function uploadDeelInvoice(
       creditorId: DEEL_BUSINESS_ID,
       allocationNumber: null,
       exchangeRateOverride: null,
+      fileHash,
     };
 
     // upload the document

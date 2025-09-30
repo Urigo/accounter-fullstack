@@ -615,6 +615,7 @@ export async function insertNewDocumentFromGreenInvoice(
       debtorId: isOwnerCreditor ? counterpartyId : ownerId,
       allocationNumber: null, // TODO: add allocation number from GreenInvoice API
       exchangeRateOverride: null,
+      fileHash: null,
     };
 
     const newDocumentResponse = await injector
