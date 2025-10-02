@@ -7,8 +7,14 @@ import {
   type OcrData,
 } from '@modules/documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import {
+  EmailListenerConfig,
+  suggestionDataSchema,
+} from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { DocumentType } from '@shared/enums';
+import { EmailAttachmentType } from '@shared/gql-types';
+import { hashStringToInt } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import type { Environment } from '@shared/types';
 import { AnthropicProvider } from '../anthropic.js';
@@ -162,7 +168,7 @@ export class GmailServiceProvider {
         userId: 'me',
         requestBody: {
           addLabelIds: [this.labelsDict.errors],
-          removeLabelIds: [this.labelsDict.main, this.labelsDict.processed],
+          removeLabelIds: [this.labelsDict.main, this.labelsDict.processed, this.labelsDict.debug],
         },
       } as gmail_v1.Params$Resource$Users$Messages$Modify)
       .catch(e => {
@@ -177,11 +183,26 @@ export class GmailServiceProvider {
         userId: 'me',
         requestBody: {
           addLabelIds: [this.labelsDict.processed],
-          removeLabelIds: [this.labelsDict.main, this.labelsDict.errors],
+          removeLabelIds: [this.labelsDict.main, this.labelsDict.errors, this.labelsDict.debug],
         },
       } as gmail_v1.Params$Resource$Users$Messages$Modify)
       .catch(e => {
         console.error(`Error labeling email id=${messageId} as processed: ${e}`);
+      });
+  }
+
+  private async labelMessageAsDebug(messageId: string) {
+    await this.gmail.users.messages
+      .modify({
+        id: messageId,
+        userId: 'me',
+        requestBody: {
+          addLabelIds: [this.labelsDict.debug],
+          removeLabelIds: [this.labelsDict.main, this.labelsDict.errors, this.labelsDict.processed],
+        },
+      } as gmail_v1.Params$Resource$Users$Messages$Modify)
+      .catch(e => {
+        console.error(`Error labeling email id=${messageId} as debug: ${e}`);
       });
   }
 
@@ -278,9 +299,13 @@ export class GmailServiceProvider {
         return null;
       }
 
-      const originalFrom = this.extractEmailAddress(
-        headers.find(h => h.name === 'X-Original-From')?.value || '',
-      );
+      const originalFrom =
+        headers.find(h => h.name === 'X-Original-Sender')?.value ||
+        this.extractEmailAddress(
+          headers.find(h => h.name === 'X-Original-From')?.value ||
+            headers.find(h => h.name === 'Reply-To')?.value ||
+            '',
+        );
       const to = this.extractEmailAddress(headers.find(h => h.name === 'To')?.value || '');
       const subject = headers.find(h => h.name === 'Subject')?.value || '';
       const date = headers.find(h => h.name === 'Date')?.value || '';
@@ -298,37 +323,9 @@ export class GmailServiceProvider {
         receivedAt: new Date(date),
       };
 
-      // 1. Check for attached files
-      const attachments = await this.getEmailAttachments(messageId, message.payload);
-      if (attachments?.length) {
-        return { ...emailData, documents: attachments };
-      }
+      const documents = await this.getEmailAttachments(messageId, message.payload);
 
-      // 2. Check for links inside the email body
-      // TODO: implement
-
-      // 3. Use the email body as a document
-
-      const dataUrl = await nodeHtmlToImage({
-        type: 'png',
-        encoding: 'base64',
-        html: `<html><body>${body}</body></html>`,
-      })
-        .then(res => res as string)
-        .catch(error => {
-          throw `Error while trying to convert Email body to an image: ${error}`;
-        });
-
-      return {
-        ...emailData,
-        documents: [
-          {
-            filename: 'body.png',
-            content: dataUrl,
-            mimeType: 'image/png',
-          },
-        ],
-      };
+      return { ...emailData, documents };
     } catch (error) {
       console.error('Error fetching email:', error);
       return null;
@@ -399,6 +396,52 @@ export class GmailServiceProvider {
     }
   }
 
+  private async handleAttachment(
+    doc: Required<EmailDocument>,
+    chargeId: string,
+    messageId?: string,
+    businessId?: string,
+  ) {
+    try {
+      console.log(`Uploading document: ${doc.filename}, type: ${doc.mimeType}`);
+
+      const hash = hashStringToInt(doc.content);
+
+      const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+        this.getUrls(doc),
+        this.getOcrData(doc),
+      ]);
+
+      if (businessId) {
+        // link business if found by email
+        ocrData.counterpartyId = businessId;
+      }
+
+      const documentToUpload = getDocumentFromUrlsAndOceData(
+        fileUrl,
+        imageUrl,
+        ocrData,
+        this.env.authorization.adminBusinessId,
+        chargeId,
+        hash,
+      );
+
+      // insert to DB
+      const [document] = await this.documentsProvider.insertDocuments({
+        document: [documentToUpload],
+      });
+
+      if (!document) {
+        throw new Error('Failed to insert document into the database');
+      }
+
+      console.log('Document to upload:', documentToUpload);
+    } catch (e) {
+      console.error(`Error processing document ${doc.filename} in email id=${messageId}: ${e}`);
+      throw new Error(`Error processing document ${doc.filename}`);
+    }
+  }
+
   public async handleMessage(message?: gmail_v1.Schema$Message) {
     if (!message?.id) return;
 
@@ -410,18 +453,95 @@ export class GmailServiceProvider {
     ) {
       try {
         const emailData = await this.getEmailById(message.id);
-        if (emailData?.documents?.length) {
+        if (emailData) {
           console.log('Processing email:', {
             subject: emailData.subject,
             from: emailData.from,
             id: emailData.id,
           });
 
-          const businessPromise = this.businessesProvider.getBusinessByEmail(
+          const business = await this.businessesProvider.getBusinessByEmail(
             emailData.originalFrom || emailData.from,
           );
 
-          const chargePromise = this.chargesProvider
+          let listenerConfig: EmailListenerConfig = {};
+          if (business?.suggestion_data) {
+            const { data, success, error } = suggestionDataSchema.safeParse(
+              business.suggestion_data,
+            );
+            if (success) {
+              if (data.emailListener) {
+                listenerConfig = data.emailListener;
+              }
+            } else {
+              console.error(
+                `Invalid suggestion_data schema for business ${business.id}: ${JSON.stringify(error.issues)}`,
+              );
+            }
+          }
+
+          const extractedDocuments: Array<Required<EmailDocument>> = [];
+
+          // Attachments documents
+          const relevantDocuments: Required<EmailDocument>[] = (emailData.documents ?? []).filter(
+            doc => {
+              if (!doc.content || !doc.mimeType) return false;
+
+              if (listenerConfig.attachments) {
+                const docType = doc.mimeType
+                  .split('/')[1]
+                  .toLocaleUpperCase() as EmailAttachmentType;
+                if (!listenerConfig.attachments.includes(docType)) {
+                  return false; // skip this attachment as per config
+                }
+              }
+              return true;
+            },
+          ) as Required<EmailDocument>[];
+
+          for (const doc of relevantDocuments) {
+            extractedDocuments.push(doc);
+          }
+
+          // Email body as image
+          if (!business || listenerConfig.emailBody === true) {
+            try {
+              const image = await nodeHtmlToImage({
+                type: 'png',
+                encoding: 'base64',
+                html: `<html><body>${emailData.body}</body></html>`,
+              }).catch(error => {
+                console.error(
+                  `Error converting email body to image for email id=${message.id}: ${error}`,
+                );
+                throw new Error('Error while trying to convert Email body to an image');
+              });
+
+              const doc = {
+                filename: 'body.png',
+                content: image.toString(),
+                mimeType: 'image/png',
+              };
+
+              extractedDocuments.push(doc);
+            } catch (e) {
+              console.error(`Error processing email body for email id=${message.id}: ${e}`);
+              throw new Error('Error processing email body');
+            }
+          }
+
+          // Extract documents from internal links
+          if (listenerConfig.internalEmailLinks?.length) {
+            // future feature
+          }
+
+          if (extractedDocuments.length === 0) {
+            console.log(`No relevant documents found in email id=${message.id}, skipping.`);
+            await this.labelMessageAsDebug(message.id);
+            return;
+          }
+
+          const [charge] = await this.chargesProvider
             .generateCharge({
               ownerId: this.env.authorization.adminBusinessId,
               userDescription: `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`,
@@ -430,53 +550,15 @@ export class GmailServiceProvider {
               throw new Error(`Error generating charge for email id=${message.id}: ${e}`);
             });
 
-          const [[charge], business] = await Promise.all([chargePromise, businessPromise]);
-
           if (!charge?.id) {
             throw new Error(`Charge creation failed for email id=${message.id}`);
           }
 
-          for (const doc of emailData.documents) {
-            if (!doc.content || !doc.mimeType) continue;
-
-            try {
-              console.log(`Uploading document: ${doc.filename}, type: ${doc.mimeType}`);
-
-              const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-                this.getUrls(doc),
-                this.getOcrData(doc),
-              ]);
-
-              if (business) {
-                // link business if found by email
-                ocrData.counterpartyId = business.id;
-              }
-
-              const documentToUpload = getDocumentFromUrlsAndOceData(
-                fileUrl,
-                imageUrl,
-                ocrData,
-                this.env.authorization.adminBusinessId,
-                charge.id,
-              );
-
-              // insert to DB
-              const [document] = await this.documentsProvider.insertDocuments({
-                document: [documentToUpload],
-              });
-
-              if (!document) {
-                throw new Error('Failed to insert document into the database');
-              }
-
-              console.log('Document to upload:', documentToUpload);
-            } catch (e) {
-              console.error(
-                `Error processing document ${doc.filename} in email id=${message.id}: ${e}`,
-              );
-              throw new Error(`Error processing document ${doc.filename}`);
-            }
-          }
+          await Promise.all(
+            extractedDocuments.map(async doc =>
+              this.handleAttachment(doc, charge.id, message.id ?? undefined, business?.id),
+            ),
+          );
 
           this.labelMessageAsProcessed(message.id);
         }

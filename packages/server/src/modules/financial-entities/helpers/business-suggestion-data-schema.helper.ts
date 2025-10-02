@@ -8,6 +8,8 @@ const emailListener = z
   })
   .strict();
 
+export type EmailListenerConfig = z.infer<typeof emailListener>;
+
 export const suggestionDataSchema = z
   .object({
     tags: z.array(z.uuid()).optional(),

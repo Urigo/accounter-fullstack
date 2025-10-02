@@ -408,7 +408,7 @@ export function ModifyBusinessFields({
         <StringArrayInput
           label="Phrases"
           formManager={formManager}
-          phrasesPath="suggestions.phrases"
+          arrayPath="suggestions.phrases"
         />
         <TagsInput
           formManager={formManager}
@@ -442,40 +442,40 @@ export function ModifyBusinessFields({
 
       <div className="font-bold text-base">Email Documents Extraction</div>
       <div className="grid grid-cols-3 gap-4">
-        <StringArrayInput
-          label="Emails"
-          formManager={formManager}
-          phrasesPath="suggestions.emails"
-        />
+        <StringArrayInput label="Emails" formManager={formManager} arrayPath="suggestions.emails" />
 
         <StringArrayInput
           label="Internal Email Links"
           formManager={formManager}
-          phrasesPath="suggestions.emailListener.internalEmailLinks"
+          arrayPath="suggestions.emailListener.internalEmailLinks"
         />
 
         <FormField
           name="suggestions.emailListener.attachments"
           control={control}
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Extract Email Body?</FormLabel>
-              <FormControl>
-                <MultiSelect
-                  options={Object.values(EmailAttachmentType).map(value => ({
-                    label: value,
-                    value,
-                  }))}
-                  onValueChange={field.onChange}
-                  defaultValue={field.value || []}
-                  placeholder="Select File Types"
-                  variant="default"
-                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
-                  // maxCount={1}
-                />
-              </FormControl>
-            </FormItem>
-          )}
+          render={({ field, fieldState }) => {
+            console.log('attachment types', field.value);
+            return (
+              <FormItem>
+                <FormLabel>Attached Documents types</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={Object.values(EmailAttachmentType).map(value => ({
+                      label: value,
+                      value,
+                    }))}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value || []}
+                    value={field.value || []}
+                    placeholder="Select File Types"
+                    variant="default"
+                    className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                    // maxCount={1}
+                  />
+                </FormControl>
+              </FormItem>
+            );
+          }}
         />
 
         <FormField

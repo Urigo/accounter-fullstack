@@ -5,14 +5,23 @@ import type { Json, SuggestionData } from '../types.js';
 function mergeEmailListenerConfig(
   currentConfig: NonNullable<SuggestionData['emailListener']>,
   newConfig: SuggestionsEmailListenerConfigInput,
+  merge: boolean = false,
 ): NonNullable<SuggestionData['emailListener']> {
-  const internalEmailLinks = Array.from(
-    new Set([...(currentConfig.internalEmailLinks ?? []), ...(newConfig.internalEmailLinks ?? [])]),
-  );
-  const emailBody = newConfig.emailBody ?? currentConfig.emailBody;
-  const attachments = Array.from(
-    new Set([...(currentConfig.attachments ?? []), ...(newConfig.attachments ?? [])]),
-  );
+  const newInternalEmailLinks = newConfig.internalEmailLinks
+    ? [...newConfig.internalEmailLinks]
+    : undefined;
+  const currentInternalEmailLinks = currentConfig.internalEmailLinks;
+  const internalEmailLinks = merge
+    ? Array.from(new Set([...(currentInternalEmailLinks ?? []), ...(newInternalEmailLinks ?? [])]))
+    : (newInternalEmailLinks ?? currentInternalEmailLinks);
+
+  const emailBody = newConfig.emailBody == null ? currentConfig.emailBody : newConfig.emailBody;
+
+  const newAttachments = newConfig.attachments ? [...newConfig.attachments] : undefined;
+  const currentAttachments = currentConfig.attachments;
+  const attachments = merge
+    ? Array.from(new Set([...(currentAttachments ?? []), ...(newAttachments ?? [])]))
+    : (newAttachments ?? currentAttachments);
 
   return {
     internalEmailLinks,
@@ -52,8 +61,8 @@ export function updateSuggestions(
   const currentEmailListener = currentSuggestionData.emailListener ?? undefined;
   const newEmailListener = newSuggestions.emailListener ?? undefined;
   const emailListener =
-    merge && currentEmailListener && newEmailListener
-      ? mergeEmailListenerConfig(currentEmailListener, newEmailListener)
+    currentEmailListener && newEmailListener
+      ? mergeEmailListenerConfig(currentEmailListener, newEmailListener, merge)
       : (newEmailListener ?? currentEmailListener);
 
   const description = newSuggestions.description ?? currentSuggestionData.description;
