@@ -64,7 +64,7 @@
     "react-dnd": "16.0.1",
     "react-dom": "19.1.1",
     "react-error-boundary": "6.0.0",
-    "react-hook-form": "7.63.0",
+    "react-hook-form": "7.64.0",
     "react-number-format": "5.4.4",
     "react-router-dom": "7.9.3",
     "react-to-pdf": "2.0.1",
