@@ -339,7 +339,7 @@ export class GmailServiceProvider {
     }
   }
 
-  private async getUrls(doc: EmailDocument) {
+  private async getUploadedDocUrls(doc: EmailDocument) {
     if (!doc.content || !doc.mimeType) {
       throw new Error('Document content or mimeType is missing for URL extraction');
     }
@@ -456,7 +456,7 @@ export class GmailServiceProvider {
       }
 
       const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-        this.getUrls(doc),
+        this.getUploadedDocUrls(doc),
         this.getOcrData(doc),
       ]);
 
@@ -487,6 +487,95 @@ export class GmailServiceProvider {
     } catch (e) {
       console.error(`Error processing document ${doc.filename} in email id=${messageId}: ${e}`);
       throw new Error(`Error processing document ${doc.filename}`);
+    }
+  }
+
+  private async convertHtmlToImage(html: string): Promise<Required<EmailDocument>> {
+    try {
+      const image = await nodeHtmlToImage({
+        type: 'png',
+        encoding: 'base64',
+        html: `<html><body>${html}</body></html>`,
+      }).catch(error => {
+        console.error(`Error converting email body to image: ${error}`);
+        throw new Error('Error while trying to convert Email body to an image');
+      });
+
+      const doc = {
+        filename: 'body.png',
+        content: image.toString(),
+        mimeType: 'image/png',
+      };
+
+      return doc;
+    } catch (e) {
+      console.error(`Error processing email body: ${e}`);
+      throw new Error('Error processing email body');
+    }
+  }
+
+  private getLinkFromBody(body: string, partialUrl: string): string | null {
+    const regex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/gi;
+    let match;
+    try {
+      const partial = new URL(partialUrl);
+      while ((match = regex.exec(body)) !== null) {
+        const urlString = match[1];
+        try {
+          const fullUrl = new URL(urlString);
+          if (fullUrl.hostname === partial.hostname) {
+            return urlString;
+          }
+        } catch {
+          // ignore invalid URLs in href
+        }
+      }
+    } catch {
+      // ignore invalid partialUrl
+    }
+    return null;
+  }
+
+  private async innerLinkDocumentFetcher(
+    body: string,
+    internalLink: string,
+  ): Promise<Required<EmailDocument> | null> {
+    try {
+      const link = this.getLinkFromBody(body, internalLink);
+      if (!link) {
+        return null;
+      }
+      const response = await fetch(link);
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('text/html')) {
+        const html = await response.text();
+
+        const doc = await this.convertHtmlToImage(html);
+        return doc;
+      }
+
+      if (contentType?.includes('application/pdf')) {
+        const data = await response
+          .arrayBuffer()
+          .then(buffer => Buffer.from(buffer).toString('base64url'));
+
+        if (!data) {
+          return null;
+        }
+
+        return {
+          filename: 'external.pdf',
+          content: data,
+          mimeType: 'application/pdf',
+        };
+      }
+
+      console.error(`Unsupported content type from link ${link}: ${contentType}`);
+      return null;
+    } catch (e) {
+      console.error(`Error fetching document from internal link ${internalLink}: ${e}`);
+      return null;
     }
   }
 
@@ -547,34 +636,18 @@ export class GmailServiceProvider {
 
         // Email body as image
         if (!business || listenerConfig.emailBody === true) {
-          try {
-            const image = await nodeHtmlToImage({
-              type: 'png',
-              encoding: 'base64',
-              html: `<html><body>${emailData.body}</body></html>`,
-            }).catch(error => {
-              console.error(
-                `Error converting email body to image for email id=${message.id}: ${error}`,
-              );
-              throw new Error('Error while trying to convert Email body to an image');
-            });
-
-            const doc = {
-              filename: 'body.png',
-              content: image.toString(),
-              mimeType: 'image/png',
-            };
-
-            extractedDocuments.push(doc);
-          } catch (e) {
-            console.error(`Error processing email body for email id=${message.id}: ${e}`);
-            throw new Error('Error processing email body');
-          }
+          const doc = await this.convertHtmlToImage(emailData.body);
+          extractedDocuments.push(doc);
         }
 
         // Extract documents from internal links
         if (listenerConfig.internalEmailLinks?.length) {
-          // future feature
+          for (const link of listenerConfig.internalEmailLinks) {
+            const doc = await this.innerLinkDocumentFetcher(emailData.body, link);
+            if (doc) {
+              extractedDocuments.push(doc);
+            }
+          }
         }
 
         if (extractedDocuments.length === 0) {
