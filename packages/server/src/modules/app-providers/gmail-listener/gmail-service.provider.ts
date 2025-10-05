@@ -469,7 +469,7 @@ export class GmailServiceProvider {
             id: attachmentPart.body?.attachmentId ?? undefined,
           })
           .catch(e => {
-            throw `Error on fetching attachement: ${e.message}`;
+            throw `Error on fetching attachment: ${e.message}`;
           });
 
         attachments.push({
