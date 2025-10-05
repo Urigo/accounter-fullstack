@@ -121,7 +121,7 @@ export class PubsubServiceProvider {
         .watch({
           userId: 'me',
           requestBody: {
-            topicName: `projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/topics/${topicName}`,
+            topicName: `projects/${this.gmailEnv.cloudProjectId}/topics/${topicName}`,
             labelIds: ['INBOX'], // Watch inbox changes
           },
         })
