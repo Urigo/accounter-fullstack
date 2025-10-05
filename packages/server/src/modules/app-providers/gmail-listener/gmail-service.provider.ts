@@ -125,24 +125,6 @@ export class GmailServiceProvider {
     return newLabel.data.id;
   }
 
-  async isMessageLabeledToProcess(messageId: string): Promise<boolean> {
-    try {
-      const labelId = await this.getLabelId(this.targetLabel);
-      if (!labelId) return false;
-
-      const message = await this.gmail.users.messages.get({
-        userId: 'me',
-        id: messageId,
-        format: 'minimal',
-      });
-
-      return message.data.labelIds?.includes(labelId) || false;
-    } catch (error) {
-      console.error('Error checking labels:', error);
-      throw new Error('Error checking message labels');
-    }
-  }
-
   private async setupLabels() {
     const response = await this.gmail.users.labels.list({ userId: 'me' }).catch(err => {
       throw `Error fetching inbox labels: ${err}`;
@@ -160,6 +142,24 @@ export class GmailServiceProvider {
         }
       }),
     );
+  }
+
+  private async isMessageLabeledToProcess(messageId: string): Promise<boolean> {
+    try {
+      const labelId = await this.getLabelId(this.targetLabel);
+      if (!labelId) return false;
+
+      const message = await this.gmail.users.messages.get({
+        userId: 'me',
+        id: messageId,
+        format: 'minimal',
+      });
+
+      return message.data.labelIds?.includes(labelId) || false;
+    } catch (error) {
+      console.error('Error checking labels:', error);
+      throw new Error('Error checking message labels');
+    }
   }
 
   private async labelMessageAsError(messageId: string) {
@@ -205,6 +205,215 @@ export class GmailServiceProvider {
       .catch(e => {
         console.error(`Error labeling email id=${messageId} as debug: ${e}`);
       });
+  }
+
+  /* documents handling */
+
+  private async getUploadedDocUrls(doc: EmailDocument) {
+    if (!doc.content || !doc.mimeType) {
+      throw new Error('Document content or mimeType is missing for URL extraction');
+    }
+
+    return this.cloudinaryProvider
+      .uploadInvoiceToCloudinary(`data:${doc.mimeType};base64,${decode64Url(doc.content)}`)
+      .catch(e => {
+        console.error('Error uploading to Cloudinary:', e);
+        throw new Error(`Error on uploading file to cloudinary: ${e.message}`);
+      });
+  }
+
+  private async getOcrData(doc: EmailDocument): Promise<OcrData> {
+    const validateNumber = (value: unknown): number | null => {
+      return typeof value === 'number' && !Number.isNaN(value) ? value : null;
+    };
+
+    const validateDate = (value: string | null): Date | null => {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    if (!doc.content || !doc.mimeType) {
+      throw new Error('Document content or mimeType is missing for OCR');
+    }
+
+    try {
+      const buffer = Buffer.from(decode64Url(doc.content), 'base64');
+      const file = new File([buffer], doc.filename ?? 'unknown', { type: doc.mimeType });
+
+      const draft = await this.anthropicProvider.extractInvoiceDetails(file);
+
+      if (!draft) {
+        throw new Error('No data returned from Anthropic OCR');
+      }
+
+      let isOwnerIssuer: boolean | null = null;
+      if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
+        isOwnerIssuer = false;
+      }
+      if (draft.issuer?.toLocaleLowerCase().includes('the guild')) {
+        isOwnerIssuer = true;
+      }
+
+      return {
+        isOwnerIssuer,
+        counterpartyId: null,
+        documentType: draft.type ?? DocumentType.Unprocessed,
+        serial: draft.referenceCode,
+        date: validateDate(draft.date),
+        amount: validateNumber(draft.fullAmount),
+        currency: draft.currency,
+        vat: validateNumber(draft.vatAmount),
+        allocationNumber: draft.allocationNumber ?? null,
+      };
+    } catch (e) {
+      const message = 'Error extracting OCR data from document';
+      console.error(`${message}: ${e}`);
+      throw new Error(message);
+    }
+  }
+
+  private async convertHtmlToImage(html: string): Promise<Required<EmailDocument>> {
+    try {
+      const image = await nodeHtmlToImage({
+        type: 'png',
+        encoding: 'base64',
+        html: `<html><body>${html}</body></html>`,
+      }).catch(error => {
+        console.error(`Error converting email body to image: ${error}`);
+        throw new Error('Error while trying to convert Email body to an image');
+      });
+
+      const doc = {
+        filename: 'body.png',
+        content: image.toString(),
+        mimeType: 'image/png',
+      };
+
+      return doc;
+    } catch (e) {
+      console.error(`Error processing email body: ${e}`);
+      throw new Error('Error processing email body');
+    }
+  }
+
+  private getLinkFromBody(body: string, partialUrl: string): string | null {
+    const regex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/gi;
+    let match;
+    try {
+      const partial = new URL(partialUrl);
+      while ((match = regex.exec(body)) !== null) {
+        const urlString = match[1];
+        try {
+          const fullUrl = new URL(urlString);
+          if (fullUrl.hostname === partial.hostname) {
+            return urlString;
+          }
+        } catch {
+          // ignore invalid URLs in href
+        }
+      }
+    } catch {
+      // ignore invalid partialUrl
+    }
+    return null;
+  }
+
+  private async innerLinkDocumentFetcher(
+    body: string,
+    internalLink: string,
+  ): Promise<Required<EmailDocument> | null> {
+    try {
+      const link = this.getLinkFromBody(body, internalLink);
+      if (!link) {
+        return null;
+      }
+      const response = await fetch(link);
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('text/html')) {
+        const html = await response.text();
+
+        const doc = await this.convertHtmlToImage(html);
+        return doc;
+      }
+
+      if (contentType?.includes('application/pdf')) {
+        const data = await response
+          .arrayBuffer()
+          .then(buffer => Buffer.from(buffer).toString('base64url'));
+
+        if (!data) {
+          return null;
+        }
+
+        return {
+          filename: 'external.pdf',
+          content: data,
+          mimeType: 'application/pdf',
+        };
+      }
+
+      console.error(`Unsupported content type from link ${link}: ${contentType}`);
+      return null;
+    } catch (e) {
+      console.error(`Error fetching document from internal link ${internalLink}: ${e}`);
+      return null;
+    }
+  }
+
+  private async handleDocument(
+    doc: Required<EmailDocument>,
+    chargeId: string,
+    messageId?: string,
+    businessId?: string,
+  ) {
+    try {
+      console.log(`Uploading document: ${doc.filename}, type: ${doc.mimeType}`);
+
+      const hash = hashStringToInt(doc.content);
+
+      const existingDocument = await this.documentsProvider.getDocumentByHash.load(hash);
+      if (existingDocument) {
+        console.log(
+          `Document ${doc.filename} already exists in the database with id=${existingDocument.id}, skipping upload.`,
+        );
+        return;
+      }
+
+      const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+        this.getUploadedDocUrls(doc),
+        this.getOcrData(doc),
+      ]);
+
+      if (businessId) {
+        // link business if found by email
+        ocrData.counterpartyId = businessId;
+      }
+
+      const documentToUpload = getDocumentFromUrlsAndOceData(
+        fileUrl,
+        imageUrl,
+        ocrData,
+        this.env.authorization.adminBusinessId,
+        chargeId,
+        hash,
+      );
+
+      // insert to DB
+      const [document] = await this.documentsProvider.insertDocuments({
+        document: [documentToUpload],
+      });
+
+      if (!document) {
+        throw new Error('Failed to insert document into the database');
+      }
+
+      console.log('Document to upload:', documentToUpload);
+    } catch (e) {
+      console.error(`Error processing document ${doc.filename} in email id=${messageId}: ${e}`);
+      throw new Error(`Error processing document ${doc.filename}`);
+    }
   }
 
   /* email parsing */
@@ -339,70 +548,6 @@ export class GmailServiceProvider {
     }
   }
 
-  private async getUploadedDocUrls(doc: EmailDocument) {
-    if (!doc.content || !doc.mimeType) {
-      throw new Error('Document content or mimeType is missing for URL extraction');
-    }
-
-    return this.cloudinaryProvider
-      .uploadInvoiceToCloudinary(`data:${doc.mimeType};base64,${decode64Url(doc.content)}`)
-      .catch(e => {
-        console.error('Error uploading to Cloudinary:', e);
-        throw new Error(`Error on uploading file to cloudinary: ${e.message}`);
-      });
-  }
-
-  private async getOcrData(doc: EmailDocument): Promise<OcrData> {
-    const validateNumber = (value: unknown): number | null => {
-      return typeof value === 'number' && !Number.isNaN(value) ? value : null;
-    };
-
-    const validateDate = (value: string | null): Date | null => {
-      if (!value) return null;
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? null : date;
-    };
-
-    if (!doc.content || !doc.mimeType) {
-      throw new Error('Document content or mimeType is missing for OCR');
-    }
-
-    try {
-      const buffer = Buffer.from(decode64Url(doc.content), 'base64');
-      const file = new File([buffer], doc.filename ?? 'unknown', { type: doc.mimeType });
-
-      const draft = await this.anthropicProvider.extractInvoiceDetails(file);
-
-      if (!draft) {
-        throw new Error('No data returned from Anthropic OCR');
-      }
-
-      let isOwnerIssuer: boolean | null = null;
-      if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
-        isOwnerIssuer = false;
-      }
-      if (draft.issuer?.toLocaleLowerCase().includes('the guild')) {
-        isOwnerIssuer = true;
-      }
-
-      return {
-        isOwnerIssuer,
-        counterpartyId: null,
-        documentType: draft.type ?? DocumentType.Unprocessed,
-        serial: draft.referenceCode,
-        date: validateDate(draft.date),
-        amount: validateNumber(draft.fullAmount),
-        currency: draft.currency,
-        vat: validateNumber(draft.vatAmount),
-        allocationNumber: draft.allocationNumber ?? null,
-      };
-    } catch (e) {
-      const message = 'Error extracting OCR data from document';
-      console.error(`${message}: ${e}`);
-      throw new Error(message);
-    }
-  }
-
   private getIssuerEmail(emailData: EmailData): string {
     // This regex looks for a mailto link inside an anchor tag
     // that appears after "From:".
@@ -434,149 +579,6 @@ export class GmailServiceProvider {
     }
 
     return emailData.from;
-  }
-
-  private async handleDocument(
-    doc: Required<EmailDocument>,
-    chargeId: string,
-    messageId?: string,
-    businessId?: string,
-  ) {
-    try {
-      console.log(`Uploading document: ${doc.filename}, type: ${doc.mimeType}`);
-
-      const hash = hashStringToInt(doc.content);
-
-      const existingDocument = await this.documentsProvider.getDocumentByHash.load(hash);
-      if (existingDocument) {
-        console.log(
-          `Document ${doc.filename} already exists in the database with id=${existingDocument.id}, skipping upload.`,
-        );
-        return;
-      }
-
-      const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-        this.getUploadedDocUrls(doc),
-        this.getOcrData(doc),
-      ]);
-
-      if (businessId) {
-        // link business if found by email
-        ocrData.counterpartyId = businessId;
-      }
-
-      const documentToUpload = getDocumentFromUrlsAndOceData(
-        fileUrl,
-        imageUrl,
-        ocrData,
-        this.env.authorization.adminBusinessId,
-        chargeId,
-        hash,
-      );
-
-      // insert to DB
-      const [document] = await this.documentsProvider.insertDocuments({
-        document: [documentToUpload],
-      });
-
-      if (!document) {
-        throw new Error('Failed to insert document into the database');
-      }
-
-      console.log('Document to upload:', documentToUpload);
-    } catch (e) {
-      console.error(`Error processing document ${doc.filename} in email id=${messageId}: ${e}`);
-      throw new Error(`Error processing document ${doc.filename}`);
-    }
-  }
-
-  private async convertHtmlToImage(html: string): Promise<Required<EmailDocument>> {
-    try {
-      const image = await nodeHtmlToImage({
-        type: 'png',
-        encoding: 'base64',
-        html: `<html><body>${html}</body></html>`,
-      }).catch(error => {
-        console.error(`Error converting email body to image: ${error}`);
-        throw new Error('Error while trying to convert Email body to an image');
-      });
-
-      const doc = {
-        filename: 'body.png',
-        content: image.toString(),
-        mimeType: 'image/png',
-      };
-
-      return doc;
-    } catch (e) {
-      console.error(`Error processing email body: ${e}`);
-      throw new Error('Error processing email body');
-    }
-  }
-
-  private getLinkFromBody(body: string, partialUrl: string): string | null {
-    const regex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/gi;
-    let match;
-    try {
-      const partial = new URL(partialUrl);
-      while ((match = regex.exec(body)) !== null) {
-        const urlString = match[1];
-        try {
-          const fullUrl = new URL(urlString);
-          if (fullUrl.hostname === partial.hostname) {
-            return urlString;
-          }
-        } catch {
-          // ignore invalid URLs in href
-        }
-      }
-    } catch {
-      // ignore invalid partialUrl
-    }
-    return null;
-  }
-
-  private async innerLinkDocumentFetcher(
-    body: string,
-    internalLink: string,
-  ): Promise<Required<EmailDocument> | null> {
-    try {
-      const link = this.getLinkFromBody(body, internalLink);
-      if (!link) {
-        return null;
-      }
-      const response = await fetch(link);
-      const contentType = response.headers.get('content-type');
-
-      if (contentType?.includes('text/html')) {
-        const html = await response.text();
-
-        const doc = await this.convertHtmlToImage(html);
-        return doc;
-      }
-
-      if (contentType?.includes('application/pdf')) {
-        const data = await response
-          .arrayBuffer()
-          .then(buffer => Buffer.from(buffer).toString('base64url'));
-
-        if (!data) {
-          return null;
-        }
-
-        return {
-          filename: 'external.pdf',
-          content: data,
-          mimeType: 'application/pdf',
-        };
-      }
-
-      console.error(`Unsupported content type from link ${link}: ${contentType}`);
-      return null;
-    } catch (e) {
-      console.error(`Error fetching document from internal link ${internalLink}: ${e}`);
-      return null;
-    }
   }
 
   public async handleMessage(message?: gmail_v1.Schema$Message) {
@@ -687,7 +689,7 @@ export class GmailServiceProvider {
     }
   }
 
-  private async handlePendingMessages() {
+  private async handlePendingMessages(): Promise<boolean> {
     try {
       // Get recent messages
       const response = await this.gmail.users.messages.list({
@@ -701,8 +703,11 @@ export class GmailServiceProvider {
       for (const message of messages) {
         await this.handleMessage(message);
       }
+
+      return true;
     } catch (error) {
       console.error('Error fetching messages:', error);
+      return false;
     }
   }
 
@@ -710,5 +715,9 @@ export class GmailServiceProvider {
     await troubleshootOAuth(this.gmailEnv);
     await this.setupLabels();
     await this.handlePendingMessages();
+  }
+
+  public async triggerHandlePendingMessages() {
+    return await this.handlePendingMessages();
   }
 }

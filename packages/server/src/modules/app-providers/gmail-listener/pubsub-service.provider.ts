@@ -26,7 +26,7 @@ export class PubsubServiceProvider {
     this.startListening();
   }
 
-  async validateAndCreateTopic(): Promise<Topic> {
+  private async validateAndCreateTopic(): Promise<Topic> {
     if (this.topic) return this.topic;
 
     // Look for existing topic
@@ -49,7 +49,7 @@ export class PubsubServiceProvider {
     return topic;
   }
 
-  async validateAndCreateSubscription(): Promise<Subscription> {
+  private async validateAndCreateSubscription(): Promise<Subscription> {
     if (this.subscription) return this.subscription;
 
     this.topic ||= await this.validateAndCreateTopic();
@@ -75,7 +75,7 @@ export class PubsubServiceProvider {
     return subscription;
   }
 
-  async handleGmailNotification(historyId: string): Promise<void> {
+  private async handleGmailNotification(historyId: string): Promise<void> {
     try {
       if (!this.gmailService.labelsDict.main) {
         console.error('Main label not found, cannot process emails');
@@ -137,7 +137,7 @@ export class PubsubServiceProvider {
     }
   }
 
-  async startListening(): Promise<void> {
+  public async startListening(): Promise<void> {
     // populate topic and subscription
     this.topic ||= await this.validateAndCreateTopic().catch(error => {
       console.error('Error validating/creating Pub/Sub topic:', error);
@@ -178,8 +178,12 @@ export class PubsubServiceProvider {
     });
   }
 
-  stopListening(): void {
+  public stopListening(): void {
     this.subscription?.removeAllListeners();
     console.log('Stopped listening for notifications');
+  }
+
+  public healthCheck(): boolean {
+    return !!this.subscription;
   }
 }
