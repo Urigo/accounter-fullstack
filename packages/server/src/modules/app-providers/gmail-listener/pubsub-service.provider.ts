@@ -111,7 +111,7 @@ export class PubsubServiceProvider {
 
       this.historyId = historyId;
     } catch (err) {
-      throw `Error handling push message: ${err}`;
+      throw new Error(`Error handling push message: ${err}`);
     }
   }
 
