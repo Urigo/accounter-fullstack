@@ -608,7 +608,7 @@ export class GmailServiceProvider {
             }
           } else {
             console.error(
-              `Invalid suggestion_data schema for business ${business.id}: ${JSON.stringify(error.issues)}`,
+              `Invalid suggestion_data schema for business "${business.name}" [${business.id}]: ${JSON.stringify(error.issues)}`,
             );
           }
         }
@@ -621,8 +621,12 @@ export class GmailServiceProvider {
             if (!doc.content || !doc.mimeType) return false;
 
             if (listenerConfig.attachments) {
-              const docType = doc.mimeType.split('/')[1].toLocaleUpperCase() as EmailAttachmentType;
-              if (!listenerConfig.attachments.includes(docType)) {
+              let docType = doc.mimeType.split('/')[1].toLocaleUpperCase();
+              if (docType === 'OCTET-STREAM' && doc.filename?.includes('.pdf')) {
+                doc.mimeType = 'application/pdf';
+                docType = 'PDF';
+              }
+              if (!listenerConfig.attachments.includes(docType as EmailAttachmentType)) {
                 return false; // skip this attachment as per config
               }
             }
