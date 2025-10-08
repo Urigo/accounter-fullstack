@@ -10,9 +10,9 @@ import type { Environment } from '@shared/types';
 export class CloudinaryProvider {
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
     cloudinary.config({
-      cloud_name: this.env.cloudinary.name,
-      api_key: this.env.cloudinary.apiKey,
-      api_secret: this.env.cloudinary.apiSecret,
+      cloud_name: this.env.cloudinary?.name,
+      api_key: this.env.cloudinary?.apiKey,
+      api_secret: this.env.cloudinary?.apiSecret,
       secure: true,
     });
   }
@@ -29,11 +29,9 @@ export class CloudinaryProvider {
 
       return { fileUrl, imageUrl };
     } catch (e) {
-      throw new Error(
-        `Error on uploading file to cloudinary: ${
-          typeof e === 'string' ? e : (e as Error)?.message
-        }`,
-      );
+      const message = 'Error on uploading file to cloudinary';
+      console.error(`${message}: ${e}`);
+      throw new Error(message);
     }
   }
 }

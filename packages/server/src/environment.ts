@@ -34,19 +34,41 @@ const PostgresModel = zod.object({
 });
 
 const CloudinaryModel = zod.union([
-  zod.object({
-    CLOUDINARY_NAME: zod.string(),
-    CLOUDINARY_API_KEY: zod.string(),
-    CLOUDINARY_API_SECRET: zod.string(),
-  }),
+  zod
+    .object({
+      CLOUDINARY_NAME: zod.string().optional(),
+      CLOUDINARY_API_KEY: zod.string().optional(),
+      CLOUDINARY_API_SECRET: zod.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (
+        !!data.CLOUDINARY_NAME !== !!data.CLOUDINARY_API_KEY ||
+        !!data.CLOUDINARY_NAME !== !!data.CLOUDINARY_API_SECRET
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'CLOUDINARY_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET must be provided together.',
+        });
+      }
+    }),
   zod.void(),
 ]);
 
 const GreenInvoiceModel = zod.union([
-  zod.object({
-    GREEN_INVOICE_ID: zod.string(),
-    GREEN_INVOICE_SECRET: zod.string(),
-  }),
+  zod
+    .object({
+      GREEN_INVOICE_ID: zod.string().optional(),
+      GREEN_INVOICE_SECRET: zod.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (!!data.GREEN_INVOICE_ID !== !!data.GREEN_INVOICE_SECRET) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'GREEN_INVOICE_ID and GREEN_INVOICE_SECRET must be provided together.',
+        });
+      }
+    }),
   zod.void(),
 ]);
 
@@ -57,7 +79,7 @@ const AuthorizationModel = zod.object({
 
 const HiveModel = zod.union([
   zod.object({
-    HIVE_TOKEN: zod.string(),
+    HIVE_TOKEN: zod.string().optional(),
   }),
   zod.void(),
 ]);
@@ -71,7 +93,7 @@ const GoogleDriveModel = zod.union([
 
 const DeelModel = zod.union([
   zod.object({
-    DEEL_TOKEN: zod.string(),
+    DEEL_TOKEN: zod.string().optional(),
   }),
   zod.void(),
 ]);
@@ -124,12 +146,14 @@ export const env = {
     password: postgres.POSTGRES_PASSWORD,
     ssl: postgres.POSTGRES_SSL === '1',
   },
-  cloudinary: {
-    name: cloudinary?.CLOUDINARY_NAME,
-    apiKey: cloudinary?.CLOUDINARY_API_KEY,
-    apiSecret: cloudinary?.CLOUDINARY_API_SECRET,
-  },
-  greenInvoice: greenInvoice
+  cloudinary: cloudinary?.CLOUDINARY_API_KEY
+    ? {
+        name: cloudinary.CLOUDINARY_NAME,
+        apiKey: cloudinary.CLOUDINARY_API_KEY,
+        apiSecret: cloudinary.CLOUDINARY_API_SECRET,
+      }
+    : undefined,
+  greenInvoice: greenInvoice?.GREEN_INVOICE_ID
     ? {
         id: greenInvoice.GREEN_INVOICE_ID,
         secret: greenInvoice.GREEN_INVOICE_SECRET,
@@ -139,17 +163,17 @@ export const env = {
     users: authorization?.AUTHORIZED_USERS,
     adminBusinessId: authorization?.DEFAULT_FINANCIAL_ENTITY_ID,
   },
-  hive: hive
+  hive: hive?.HIVE_TOKEN
     ? {
         hiveToken: hive.HIVE_TOKEN,
       }
     : undefined,
-  googleDrive: googleDrive
+  googleDrive: googleDrive?.GOOGLE_DRIVE_API_KEY
     ? {
         driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY,
       }
     : undefined,
-  deel: deel
+  deel: deel?.DEEL_TOKEN
     ? {
         apiToken: deel.DEEL_TOKEN,
       }
