@@ -3,7 +3,7 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import nodeHtmlToImage from 'node-html-to-image';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import {
-  getDocumentFromUrlsAndOceData,
+  getDocumentFromUrlsAndOcrData,
   type OcrData,
 } from '@modules/documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
@@ -391,7 +391,7 @@ export class GmailServiceProvider {
         ocrData.counterpartyId = businessId;
       }
 
-      const documentToUpload = getDocumentFromUrlsAndOceData(
+      const documentToUpload = getDocumentFromUrlsAndOcrData(
         fileUrl,
         imageUrl,
         ocrData,

@@ -131,7 +131,7 @@ function figureOutSides(
   return res;
 }
 
-function getDocumentFromUrlsAndOcrData(
+export function getDocumentFromUrlsAndOcrData(
   fileUrl: string,
   imageUrl: string,
   ocrData: OcrData,
