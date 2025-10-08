@@ -2,6 +2,7 @@ import type { Injector } from 'graphql-modules';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { Currency, DocumentType } from '@shared/enums';
+import { hashStringToInt } from '@shared/helpers';
 import type { IInsertDocumentsParams } from '../types.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
@@ -91,6 +92,10 @@ export async function getOcrData(
   };
 }
 
+async function getHashFromFile(file: File | Blob): Promise<number> {
+  return hashStringToInt(await file.text());
+}
+
 function figureOutSides(
   documentType: DocumentType,
   isOwnerIssuer: boolean | null,
@@ -126,6 +131,42 @@ function figureOutSides(
   return res;
 }
 
+function getDocumentFromUrlsAndOcrData(
+  fileUrl: string,
+  imageUrl: string,
+  ocrData: OcrData,
+  adminBusinessId: string,
+  chargeId?: string | null,
+  fileHash?: number,
+): IInsertDocumentsParams['document'][number] {
+  const sides = figureOutSides(
+    ocrData.documentType,
+    ocrData.isOwnerIssuer,
+    adminBusinessId,
+    ocrData.counterpartyId,
+  );
+
+  const newDocument: IInsertDocumentsParams['document'][number] = {
+    image: imageUrl ?? null,
+    file: fileUrl ?? null,
+    documentType: ocrData.documentType,
+    serialNumber: ocrData.serial,
+    date: ocrData.date,
+    amount: ocrData.amount,
+    currencyCode: ocrData.currency,
+    vat: ocrData.vat,
+    chargeId: chargeId ?? null,
+    vatReportDateOverride: null,
+    noVatAmount: null,
+    allocationNumber: ocrData.allocationNumber,
+    exchangeRateOverride: null,
+    fileHash: fileHash?.toString() ?? null,
+    ...sides,
+  };
+
+  return newDocument;
+}
+
 export async function getDocumentFromFile(
   context: GraphQLModules.ModuleContext,
   file: File | Blob,
@@ -137,40 +178,28 @@ export async function getDocumentFromFile(
       injector,
       // adminContext: { defaultAdminBusinessId },
     } = context;
-    const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-      uploadToCloudinary(injector, file),
-      getOcrData(injector, file, isSensitive),
+    // Buffer the file to allow multiple reads from a stream
+    const buffer = await file.arrayBuffer();
+    const multiReadableFile = new Blob([buffer], { type: file.type });
+
+    const [{ fileUrl, imageUrl }, ocrData, hash] = await Promise.all([
+      uploadToCloudinary(injector, multiReadableFile),
+      getOcrData(injector, multiReadableFile, isSensitive),
+      getHashFromFile(multiReadableFile),
     ]);
 
     if (!ocrData) {
       throw new Error('No data returned from Green Invoice');
     }
 
-    const sides = figureOutSides(
-      ocrData.documentType,
-      ocrData.isOwnerIssuer,
+    return getDocumentFromUrlsAndOcrData(
+      fileUrl,
+      imageUrl,
+      ocrData,
       context.adminContext.defaultAdminBusinessId,
-      ocrData.counterpartyId,
+      chargeId,
+      hash,
     );
-
-    const newDocument: IInsertDocumentsParams['document'][number] = {
-      image: imageUrl ?? null,
-      file: fileUrl ?? null,
-      documentType: ocrData.documentType,
-      serialNumber: ocrData.serial,
-      date: ocrData.date,
-      amount: ocrData.amount,
-      currencyCode: ocrData.currency,
-      vat: ocrData.vat,
-      chargeId: chargeId ?? null,
-      vatReportDateOverride: null,
-      noVatAmount: null,
-      allocationNumber: ocrData.allocationNumber,
-      exchangeRateOverride: null,
-      ...sides,
-    };
-
-    return newDocument;
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);

@@ -117,6 +117,7 @@ import migration_2025_08_12T18_50_12_extend_isracard_table from './actions/2025-
 import migration_2025_08_13T20_05_23_foreign_securities_support from './actions/2025-08-13T20-05-23.foreign-securities-support.js';
 import migration_2025_09_16T10_16_35_enhance_poalim_fees_recognition from './actions/2025-09-16T10-16-35.enhance-poalim-fees-recognition.js';
 import migration_2025_09_17T19_45_12_swift_info_even_if_0_fee from './actions/2025-09-17T19-45-12.swift-info-even-if-0-fee.js';
+import migration_2025_09_19T10_06_24_add_documents_hash from './actions/2025-09-19T10-06-24.add-documents-hash.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -241,5 +242,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_08_13T20_05_23_foreign_securities_support,
       migration_2025_09_16T10_16_35_enhance_poalim_fees_recognition,
       migration_2025_09_17T19_45_12_swift_info_even_if_0_fee,
+      migration_2025_09_19T10_06_24_add_documents_hash,
     ],
   });

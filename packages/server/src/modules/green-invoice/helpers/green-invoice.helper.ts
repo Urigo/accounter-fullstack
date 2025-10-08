@@ -40,7 +40,7 @@ import {
   type GreenInvoicePaymentSubType,
   type GreenInvoiceVatType,
 } from '@shared/gql-types';
-import { formatCurrency } from '@shared/helpers';
+import { formatCurrency, hashStringToInt } from '@shared/helpers';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
@@ -552,10 +552,28 @@ export async function insertNewDocumentFromGreenInvoice(
 
     const linkedDocumentsPromise = getLinkedDocuments(injector, greenInvoiceDoc.id);
 
-    const [{ imageUrl }, client, linkedDocumentIds] = await Promise.all([
+    const fileHashPromise = async () => {
+      try {
+        // Before creating rawDocument
+        const fileResponse = await fetch(greenInvoiceDoc.url.origin);
+        if (!fileResponse.ok) {
+          // Handle error, maybe log and continue with null hash
+          throw new Error(`Failed to fetch file from GreenInvoice: ${greenInvoiceDoc.url.origin}`);
+        }
+        const fileContent = await fileResponse.text();
+        const fileHash = hashStringToInt(fileContent).toString();
+        return fileHash;
+      } catch (error) {
+        console.error('Error fetching file for hash calculation:', error);
+        return null;
+      }
+    };
+
+    const [{ imageUrl }, client, linkedDocumentIds, fileHash] = await Promise.all([
       imagePromise,
       clientPromise,
       linkedDocumentsPromise,
+      fileHashPromise(),
     ]);
 
     let chargeId: string | null = preDictatedChargeId || null;
@@ -615,6 +633,7 @@ export async function insertNewDocumentFromGreenInvoice(
       debtorId: isOwnerCreditor ? counterpartyId : ownerId,
       allocationNumber: null, // TODO: add allocation number from GreenInvoice API
       exchangeRateOverride: null,
+      fileHash,
     };
 
     const newDocumentResponse = await injector
