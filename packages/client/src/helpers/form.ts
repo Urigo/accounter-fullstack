@@ -8,9 +8,12 @@ function isTheTruthOutThere(value: unknown): boolean {
   if (typeof value === 'boolean' && value === true) {
     return true;
   }
+  if (Array.isArray(value)) {
+    return value.some(v => !!v);
+  }
   if (typeof value === 'object') {
-    for (const key in value) {
-      if (isTheTruthOutThere((value as Record<string, unknown>)[key])) {
+    for (const subValue of Object.values(value as Record<string, unknown>)) {
+      if (isTheTruthOutThere(subValue)) {
         return true;
       }
     }
@@ -20,16 +23,26 @@ function isTheTruthOutThere(value: unknown): boolean {
 
 export function relevantDataPicker<T>(
   values: T,
-  dirtyFields: MakeBoolean<T>,
+  dirtyFields: MakeBoolean<T> | true,
 ): Partial<T> | undefined {
+  // if no dirty fields, return undefined
   if (!dirtyFields) {
     return undefined;
   }
-  if (dirtyFields === true) {
+
+  // if dirty is plain true, return the entire value
+  if (dirtyFields === true && typeof values !== 'object') {
     return values;
   }
-  if (typeof dirtyFields === 'object' && !isTheTruthOutThere(dirtyFields)) {
+
+  // if dirtyFields is an object, but none of the fields are dirty, return undefined
+  // e.g., { field1: false, field2: false } or { field1: { subField1: false } }
+  if (!isTheTruthOutThere(dirtyFields)) {
     return undefined;
+  }
+
+  if (Array.isArray(values)) {
+    return values;
   }
 
   const keysToHandle = Object.entries(dirtyFields)
@@ -40,13 +53,10 @@ export function relevantDataPicker<T>(
     keysToHandle
       .filter(key => key in (values as Record<string, unknown>))
       .map(key => {
-        const value =
-          dirtyFields[key as keyof typeof values] === true
-            ? values[key as keyof typeof values]
-            : relevantDataPicker(
-                values[key as keyof typeof values],
-                dirtyFields[key as keyof typeof values],
-              );
+        const value = relevantDataPicker(
+          values[key as keyof typeof values],
+          dirtyFields[key as keyof typeof dirtyFields] as MakeBoolean<T[keyof T]>,
+        );
         /* additions to keep entire object instead of subset */
         if (
           [

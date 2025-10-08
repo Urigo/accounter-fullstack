@@ -47,6 +47,12 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
             name
           }
           description
+          emails
+          emailListener {
+            internalEmailLinks
+            emailBody
+            attachments
+          }
         }
         optionalVAT
         irsCode
@@ -148,7 +154,16 @@ function BusinessCardContent({ business, refetchBusiness }: ContentProps): React
         dataToUpdate.suggestions.tags = dataToUpdate.suggestions.tags.map(tag => ({ id: tag.id }));
       }
       if (dataToUpdate.suggestions?.phrases) {
-        dataToUpdate.suggestions.phrases = data.suggestions!.phrases!.map(tag => tag);
+        dataToUpdate.suggestions.phrases = data.suggestions!.phrases!.map(phrase => phrase);
+      }
+      if (dataToUpdate.suggestions?.emails) {
+        dataToUpdate.suggestions.emails = data.suggestions!.emails!.map(email => email);
+      }
+      if (dataToUpdate.suggestions?.emailListener) {
+        dataToUpdate.suggestions.emailListener.attachments &&=
+          data.suggestions!.emailListener!.attachments!.map(type => type);
+        dataToUpdate.suggestions.emailListener.internalEmailLinks &&=
+          data.suggestions!.emailListener!.internalEmailLinks!.map(link => link);
       }
 
       await updateDbBusiness({

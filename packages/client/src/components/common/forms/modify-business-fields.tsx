@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import type {
-  InsertNewBusinessInput,
-  Pcn874RecordType,
-  UpdateBusinessInput,
+import {
+  EmailAttachmentType,
+  type InsertNewBusinessInput,
+  type Pcn874RecordType,
+  type UpdateBusinessInput,
 } from '../../../gql/graphql.js';
 import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
@@ -12,7 +13,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
-import { ComboBox, NumberInput, PhrasesInput, TagsInput } from '../index.js';
+import { ComboBox, MultiSelect, NumberInput, StringArrayInput, TagsInput } from '../index.js';
 
 const pcn874RecordType: Record<Pcn874RecordType, string> = {
   C: 'INPUT_SELF_INVOICE',
@@ -399,16 +400,21 @@ export function ModifyBusinessFields({
           )}
         />
       </div>
+
       <div className="border-0 border-t-[0.0625rem] border-gray-300 border-solid mx-0 my-[0.75rem]" />
+
       <div className="font-bold text-base">Suggestions</div>
       <div className="grid grid-cols-3 gap-4">
-        <PhrasesInput formManager={formManager} phrasesPath="suggestions.phrases" />
+        <StringArrayInput
+          label="Phrases"
+          formManager={formManager}
+          arrayPath="suggestions.phrases"
+        />
         <TagsInput
           formManager={formManager}
           tagsPath="suggestions.tags"
           setFetching={setTagsFetching}
         />
-
         <FormField
           name="suggestions.description"
           control={control}
@@ -426,6 +432,65 @@ export function ModifyBusinessFields({
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="border-0 border-t-[0.0625rem] border-gray-300 border-solid mx-0 my-[0.75rem]" />
+
+      <div className="font-bold text-base">Email Documents Extraction</div>
+      <div className="grid grid-cols-3 gap-4">
+        <StringArrayInput label="Emails" formManager={formManager} arrayPath="suggestions.emails" />
+
+        <StringArrayInput
+          label="Internal Email Links"
+          formManager={formManager}
+          arrayPath="suggestions.emailListener.internalEmailLinks"
+        />
+
+        <FormField
+          name="suggestions.emailListener.attachments"
+          control={control}
+          render={({ field, fieldState }) => {
+            return (
+              <FormItem>
+                <FormLabel>Attached Documents types</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={Object.values(EmailAttachmentType).map(value => ({
+                      label: value,
+                      value,
+                    }))}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? undefined}
+                    value={field.value ?? undefined}
+                    placeholder="Select File Types"
+                    variant="default"
+                    className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                  />
+                </FormControl>
+              </FormItem>
+            );
+          }}
+        />
+
+        <FormField
+          name="suggestions.emailListener.emailBody"
+          control={control}
+          defaultValue={false}
+          render={({ field, fieldState }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Extract Email Body?</FormLabel>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value === true}
+                  onCheckedChange={field.onChange}
+                  className={isInsert ? '' : dirtyFieldMarker(fieldState)}
+                />
+              </FormControl>
             </FormItem>
           )}
         />
