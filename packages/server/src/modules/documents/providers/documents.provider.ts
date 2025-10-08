@@ -15,6 +15,7 @@ import type {
   IGetDocumentsByExtendedFiltersQuery,
   IGetDocumentsByFiltersParams,
   IGetDocumentsByFiltersQuery,
+  IGetDocumentsByHashesQuery,
   IGetDocumentsByIdsQuery,
   IGetDocumentsByMissingRequiredInfoQuery,
   IInsertDocumentsParams,
@@ -42,6 +43,12 @@ const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE id IN $$Ids;
+`;
+
+const getDocumentsByHashes = sql<IGetDocumentsByHashesQuery>`
+  SELECT *
+  FROM accounter_schema.documents
+  WHERE file_hash IN $$hashes;
 `;
 
 const getDocumentsByMissingRequiredInfo = sql<IGetDocumentsByMissingRequiredInfoQuery>`
@@ -170,7 +177,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       creditor_id,
       debtor_id,
       allocation_number,
-      exchange_rate_override
+      exchange_rate_override,
+      file_hash
     )
     VALUES $$document(
       image,
@@ -187,7 +195,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       creditorId,
       debtorId,
       allocationNumber,
-      exchangeRateOverride
+      exchangeRateOverride,
+      fileHash
     )
     RETURNING *;`;
 
@@ -360,6 +369,29 @@ export class DocumentsProvider {
     },
   );
 
+  private async batchDocumentsByHash(hashes: readonly number[]) {
+    const uniqueHashes = [...new Set(hashes)];
+    try {
+      const docs = await getDocumentsByHashes.run(
+        { hashes: uniqueHashes.map(hash => hash.toString()) },
+        this.dbProvider,
+      );
+
+      return hashes.map(hash => docs.find(doc => doc.file_hash === hash.toString()));
+    } catch (e) {
+      console.error(e);
+      return hashes.map(() => null);
+    }
+  }
+
+  public getDocumentByHash = new DataLoader(
+    (hashes: readonly number[]) => this.batchDocumentsByHash(hashes),
+    {
+      cacheKeyFn: hash => `document-hash-${hash}`,
+      cacheMap: this.cache,
+    },
+  );
+
   public async getDocumentsByMissingRequiredInfo() {
     return getDocumentsByMissingRequiredInfo.run(undefined, this.dbProvider);
   }
@@ -409,6 +441,7 @@ export class DocumentsProvider {
     const document = await this.getDocumentsByIdLoader.load(id);
     if (document) {
       this.cache.delete(`document-by-charge-${document.charge_id}`);
+      this.cache.delete(`document-hash-${document.file_hash}`);
     }
     this.cache.delete(`document-${id}`);
     this.cache.delete('all-documents');
