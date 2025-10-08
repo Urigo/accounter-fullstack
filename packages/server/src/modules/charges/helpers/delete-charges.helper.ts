@@ -68,7 +68,6 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
           if (e instanceof GraphQLError) {
             throw e;
           }
-          console.error(e);
           throw new Error(message);
         });
 
