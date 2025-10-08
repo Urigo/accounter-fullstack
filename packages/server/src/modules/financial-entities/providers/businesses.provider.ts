@@ -9,10 +9,13 @@ import { EmployeesProvider } from '@modules/salaries/providers/employees.provide
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
+import { suggestionDataSchema } from '../helpers/business-suggestion-data-schema.helper.js';
 import type {
   IDeleteBusinessQuery,
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
+  IGetBusinessByEmailQuery,
+  IGetBusinessByEmailResult,
   IGetBusinessesByIdsQuery,
   IInsertBusinessesParams,
   IInsertBusinessesQuery,
@@ -35,6 +38,15 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
+
+const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
+    SELECT *
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
+    WHERE
+      suggestion_data->'emails' ? $email::text
+    LIMIT 1;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
   UPDATE accounter_schema.businesses
@@ -341,6 +353,19 @@ export class BusinessesProvider {
     return getAllBusinesses.run(undefined, this.dbProvider);
   }
 
+  public getBusinessByEmail(email: string) {
+    const cacheKey = `business-email-${email}`;
+    const cachedData = this.cache.get<IGetBusinessByEmailResult | null>(cacheKey);
+    if (cachedData !== undefined) {
+      return Promise.resolve(cachedData);
+    }
+    return getBusinessByEmail.run({ email }, this.dbProvider).then(res => {
+      const business = res?.length ? res[0] : null;
+      this.cache.set(cacheKey, business);
+      return business;
+    });
+  }
+
   public async updateBusiness(
     params: Omit<IUpdateBusinessParams, 'businessId'> & { businessId: string },
   ) {
@@ -365,7 +390,7 @@ export class BusinessesProvider {
     return newBusinesses.map(nb => businesses.find(b => b.id === nb.id) ?? null);
   }
 
-  public insertBusinessesLoader = new DataLoader(
+  public insertBusinessLoader = new DataLoader(
     (businesses: readonly IInsertBusinessesParams['businesses'][number][]) =>
       this.batchInsertBusinesses(businesses),
     {
@@ -376,11 +401,6 @@ export class BusinessesProvider {
   public insertBusinesses(params: IInsertBusinessesParams) {
     this.cache.delete('all-businesses');
     return insertBusinesses.run(params, this.dbProvider);
-  }
-
-  public async invalidateBusinessById(businessId: string) {
-    this.cache.delete('all-businesses');
-    this.cache.delete(`business-${businessId}`);
   }
 
   public async deleteBusinessById(businessId: string) {
@@ -486,6 +506,20 @@ export class BusinessesProvider {
     if (deleteBusiness) {
       await this.deleteBusinessById(businessIdToReplace);
     }
+  }
+
+  public async invalidateBusinessById(businessId: string) {
+    const business = await this.getBusinessByIdLoader.load(businessId);
+    if (business?.suggestion_data) {
+      const { data: suggestionData } = suggestionDataSchema.safeParse(business.suggestion_data);
+      if (suggestionData?.emails) {
+        for (const email of suggestionData.emails) {
+          this.cache.delete(`business-email-${email}`);
+        }
+      }
+    }
+    this.cache.delete('all-businesses');
+    this.cache.delete(`business-${businessId}`);
   }
 
   public clearCache() {
