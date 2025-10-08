@@ -32,8 +32,8 @@ export class GreenInvoiceClientProvider {
   public authToken: string | null = null;
 
   private async init() {
-    const id = this.env.greenInvoice.id;
-    const secret = this.env.greenInvoice.secret;
+    const id = this.env.greenInvoice?.id;
+    const secret = this.env.greenInvoice?.secret;
 
     if (!id || !secret) {
       throw new Error('Environment variables not found');
