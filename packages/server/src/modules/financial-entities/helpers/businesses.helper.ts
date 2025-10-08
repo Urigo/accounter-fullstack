@@ -51,11 +51,11 @@ export function updateSuggestions(
   const tags = merge ? Array.from(new Set([...currentTags, ...newTags])) : newTags;
 
   const currentPhrases = currentSuggestionData.phrases ?? [];
-  const newPhrases = newSuggestions.phrases ?? currentPhrases ?? [];
+  const newPhrases = newSuggestions.phrases ?? currentPhrases;
   const phrases = merge ? Array.from(new Set([...currentPhrases, ...newPhrases])) : newPhrases;
 
   const currentEmails = currentSuggestionData.emails ?? [];
-  const newEmails = newSuggestions.emails ?? currentEmails ?? [];
+  const newEmails = newSuggestions.emails ?? currentEmails;
   const emails = merge ? Array.from(new Set([...currentEmails, ...newEmails])) : newEmails;
 
   const currentEmailListener = currentSuggestionData.emailListener ?? undefined;
