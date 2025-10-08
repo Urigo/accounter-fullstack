@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import {
   SuggestionData,
   suggestionDataSchema,
-} from '@modules/documents/helpers/suggestion-data-schema.helper.js';
+} from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -204,14 +204,23 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
               emails: fields.suggestions.emails ? [...fields.suggestions.emails] : undefined,
-              internalEmailLinks: fields.suggestions.internalEmailLinks
-                ? [...fields.suggestions.internalEmailLinks]
+              emailListener: fields.suggestions.emailListener
+                ? {
+                    ...fields.suggestions.emailListener,
+                    internalEmailLinks: fields.suggestions.emailListener.internalEmailLinks
+                      ? [...fields.suggestions.emailListener.internalEmailLinks]
+                      : undefined,
+                    emailBody: fields.suggestions.emailListener.emailBody ?? undefined,
+                    attachments: fields.suggestions.emailListener.attachments
+                      ? [...fields.suggestions.emailListener.attachments]
+                      : undefined,
+                  }
                 : undefined,
               priority: fields.suggestions.priority ?? undefined,
             }
           : undefined;
 
-        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusiness({
+        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusinessLoader.load({
           id: financialEntity.id,
           address: fields.address,
           email: fields.email,
@@ -244,12 +253,19 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             });
         }
 
-        const [[business], _taxCategory] = await Promise.all([
+        const [business, _taxCategory] = await Promise.all([
           insertBusinessPromise,
           taxCategoryPromise,
         ]);
 
-        return { ...financialEntity, ...business };
+        if (!business) {
+          throw new Error(`Failed to create core business`);
+        }
+
+        return {
+          ...financialEntity,
+          ...business,
+        };
       } catch (e) {
         console.error(e);
         return {
@@ -449,7 +465,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             );
           }
 
-          const business = await injector.get(BusinessesProvider).insertBusinessesLoader.load({
+          const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
             id: financialEntity.id,
             country: 'Israel',
             hebrewName: description,
@@ -533,7 +549,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phrases: suggestionData.phrases ?? [],
           description: suggestionData.description ?? null,
           emails: suggestionData.emails ?? [],
-          internalEmailLinks: suggestionData.internalEmailLinks ?? [],
+          emailListener: suggestionData.emailListener ?? null,
           priority: suggestionData.priority ?? null,
         };
       }

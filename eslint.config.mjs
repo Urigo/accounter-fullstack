@@ -140,6 +140,7 @@ export default [
               'Shaam6111ReportEntry',
               'SicknessDays',
               'Suggestions',
+              'SuggestionsEmailListenerConfig',
               'ReportCommentary',
               'ReportCommentaryRecord',
               'ReportCommentarySubRecord',
