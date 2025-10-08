@@ -20,6 +20,8 @@ jobs:
 
       - name: Lint ESLint
         run: yarn lint
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
 
       - name: Lint Prettier
         run: yarn prettier:check
