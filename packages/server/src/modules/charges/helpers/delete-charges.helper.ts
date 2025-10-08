@@ -24,8 +24,12 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .get(BusinessTripsProvider)
         .updateChargeBusinessTrip(chargeId, null)
         .catch(e => {
-          console.error(e);
-          throw new Error(`Failed to clear business trip`);
+          const message = `Failed to clear business trip for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new Error(message);
         });
 
       // clear ledger records
@@ -33,11 +37,12 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .get(LedgerProvider)
         .deleteLedgerRecordsByChargeIdLoader.load(chargeId)
         .catch(e => {
+          const message = `Failed to clear ledger records for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
           if (e instanceof GraphQLError) {
             throw e;
           }
-          console.error(e);
-          throw new Error(`Failed to clear ledger records`);
+          throw new Error(message);
         });
 
       // clear charge spread
@@ -45,8 +50,12 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .get(ChargeSpreadProvider)
         .deleteAllChargeSpreadByChargeIds({ chargeIds: [chargeId] })
         .catch(e => {
-          console.error(e);
-          throw new Error(`Failed to clear spread info`);
+          const message = `Failed to clear spread info for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new Error(message);
         });
 
       // clear unbalanced businesses
@@ -54,8 +63,12 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
         .get(UnbalancedBusinessesProvider)
         .deleteChargeUnbalancedBusinessesByChargeId({ chargeId })
         .catch(e => {
-          console.error(e);
-          throw new Error(`Failed to clear unbalanced businesses`);
+          const message = `Failed to clear unbalanced businesses for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new Error(message);
         });
 
       await Promise.all([

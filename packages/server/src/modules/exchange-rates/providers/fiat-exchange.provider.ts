@@ -53,7 +53,9 @@ export class FiatExchangeProvider {
       this.cache.set(`exchange-${formattedDate}`, result);
       return result;
     } catch (error) {
-      throw new Error(`error in DB - ${error}`);
+      const message = `Error fetching exchange rates for date ${formattedDate}`;
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
     }
   }
 

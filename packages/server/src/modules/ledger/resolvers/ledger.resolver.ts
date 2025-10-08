@@ -72,7 +72,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
         })
         .catch(e => {
-          throw new Error(e.message);
+          const message = 'Error fetching charges';
+          console.error(`${message}: ${e}`);
+          throw new Error(message);
         });
 
       const limitedCharges = limit ? charges.slice(0, limit) : charges;
@@ -232,11 +234,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           .get(LedgerProvider)
           .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
           .catch(e => {
+            const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
+            console.error(`${message}: ${e}`);
             if (e instanceof GraphQLError) {
               throw e;
             }
-            console.error(e.message);
-            throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
+            throw new Error(message);
           })
           .then(() =>
             injector.get(LedgerProvider).insertLedgerRecords({
@@ -252,8 +255,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             if (e instanceof GraphQLError) {
               throw e;
             }
-            console.error(e.message);
-            throw new Error(`Failed to update ledger records for charge ID="${chargeId}"`);
+            const message = `Failed to update ledger records for charge ID="${chargeId}"`;
+            console.error(`${message}: ${e}`);
+            throw new Error(message);
           });
         const insertPromise =
           newRecords.length > 0
@@ -265,13 +269,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                   ) as IInsertLedgerRecordsParams['ledgerRecords'],
                 })
                 .catch(e => {
+                  const message = `Failed to insert new ledger records for charge ID="${chargeId}"`;
+                  console.error(`${message}: ${e}`);
                   if (e instanceof GraphQLError) {
                     throw e;
                   }
-                  console.error(e.message);
-                  throw new Error(
-                    `Failed to insert new ledger records for charge ID="${chargeId}"`,
-                  );
+                  throw new Error(message);
                 })
             : Promise.resolve();
         const removePromises = toRemove.map(record =>
@@ -279,11 +282,12 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             .get(LedgerProvider)
             .deleteLedgerRecordsByIdLoader.load(record.id)
             .catch(e => {
+              const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
+              console.error(`${message}: ${e}`);
               if (e instanceof GraphQLError) {
                 throw e;
               }
-              console.error(e.message);
-              throw new Error(`Failed to delete ledger records for charge ID="${chargeId}"`);
+              throw new Error(message);
             }),
         );
         await Promise.all([updatePromise, insertPromise, ...removePromises]);

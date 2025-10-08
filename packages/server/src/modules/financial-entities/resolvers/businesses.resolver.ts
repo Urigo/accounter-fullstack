@@ -123,8 +123,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             .get(BusinessesProvider)
             .updateBusiness({ ...adjustedFields, businessId })
             .catch((e: Error) => {
-              console.error(e);
-              throw new Error(`Update core business fields error`);
+              const message = `Error updating business ID="${businessId}"`;
+              console.error(`${message}: ${e}`);
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
+              throw new Error(message);
             });
         }
 
@@ -142,8 +146,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               .get(TaxCategoriesProvider)
               .updateBusinessTaxCategory(texCategoryParams)
               .catch((e: Error) => {
-                console.error(e);
-                throw new Error(`Update tax category error`);
+                const message = `Error updating tax category for business ID="${businessId}"`;
+                console.error(`${message}: ${e}`);
+                throw new Error(message);
               });
           }
         }
@@ -248,8 +253,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             .insertBusinessTaxCategory(texCategoryParams)
             .then(res => res[0])
             .catch((e: Error) => {
-              console.error(e);
-              throw new Error(`Update tax category error`);
+              const message = `Error updating tax category for business ID="${financialEntity.id}"`;
+              console.error(`${message}: ${e}`);
+              throw new Error(message);
             });
         }
 

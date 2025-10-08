@@ -55,8 +55,9 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             .get(TaxCategoriesProvider)
             .updateTaxCategory(adjustedFields)
             .catch((e: Error) => {
-              console.error(e);
-              throw new Error(`Update core tax category fields error`);
+              const message = `Error updating tax category for business ID="${taxCategoryId}"`;
+              console.error(`${message}: ${e}`);
+              throw new Error(message);
             });
         }
 
@@ -99,8 +100,9 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             irsCode,
           })
           .catch((e: Error) => {
-            console.error(e);
-            throw new Error(`Failed to create financial entity: ${e.message}`);
+            const message = `Failed to create financial entity: ${e.message}`;
+            console.error(`${message}: ${e}`);
+            throw new Error(message);
           });
 
         if (!financialEntity) {

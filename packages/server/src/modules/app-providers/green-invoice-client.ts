@@ -52,8 +52,9 @@ export class GreenInvoiceClientProvider {
 
       return sdk;
     } catch (e) {
-      console.error(e);
-      throw new Error(`Green Invoice error: ${(e as Error).message}`);
+      const message = 'Green Invoice SDK error';
+      console.error(`${message}: ${e}`);
+      throw new Error(message);
     }
   }
 
@@ -161,8 +162,9 @@ export class GreenInvoiceClientProvider {
       } as ExpenseDraft;
       return emptyDraft;
     } catch (e) {
-      console.error(e);
-      throw new Error(`Green Invoice error: ${(e as Error).message}`);
+      const message = 'Green Invoice Add Expense Draft error';
+      console.error(`${message}: ${e}`);
+      throw new Error(message);
     }
   }
 

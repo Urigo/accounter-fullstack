@@ -53,7 +53,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
               throw new Error(`Updated charge with id ${updatedChargeId} not found`);
             });
         }
-        throw new Error();
+        throw new Error('Error updating charge business trip');
       } catch (e) {
         console.error(`Error updating charge's business trip`, e);
         throw new GraphQLError((e as Error)?.message ?? `Error updating charge's business trip`);
