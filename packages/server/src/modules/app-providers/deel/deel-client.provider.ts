@@ -20,7 +20,7 @@ export class DeelClientProvider {
   private host = 'https://api.letsdeel.com/rest/v2';
 
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
-    this.apiToken = this.env.deel.apiToken ?? null;
+    this.apiToken = this.env.deel?.apiToken ?? null;
   }
 
   // This is a workaround for the Deel API returning PST dates as UTC dates.

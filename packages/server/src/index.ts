@@ -20,9 +20,9 @@ async function main() {
       useGraphQLModules(application),
       useDeferStream(),
       useHive({
-        enabled: !!env.hive.hiveToken,
-        token: env.hive.hiveToken ?? '',
-        usage: true,
+        enabled: !!env.hive,
+        token: env.hive?.hiveToken ?? '',
+        usage: !!env.hive,
       }),
     ],
     context: (yogaContext): AccounterContext => {

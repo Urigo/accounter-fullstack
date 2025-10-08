@@ -57,12 +57,12 @@ const AuthorizationModel = zod.object({
 
 const HiveModel = zod.union([
   zod.object({
-    HIVE_TOKEN: zod.string().optional(),
+    HIVE_TOKEN: zod.string(),
   }),
   zod.void(),
 ]);
 
-const GoogleModel = zod.union([
+const GoogleDriveModel = zod.union([
   zod.object({
     GOOGLE_DRIVE_API_KEY: zod.string().optional(),
   }),
@@ -71,7 +71,7 @@ const GoogleModel = zod.union([
 
 const DeelModel = zod.union([
   zod.object({
-    DEEL_TOKEN: zod.string().optional(),
+    DEEL_TOKEN: zod.string(),
   }),
   zod.void(),
 ]);
@@ -82,7 +82,7 @@ const configs = {
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
-  google: GoogleModel.safeParse(process.env),
+  googleDrive: GoogleDriveModel.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
 };
 
@@ -112,7 +112,7 @@ const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
-const google = extractConfig(configs.google);
+const googleDrive = extractConfig(configs.googleDrive);
 const deel = extractConfig(configs.deel);
 
 export const env = {
@@ -129,21 +129,29 @@ export const env = {
     apiKey: cloudinary?.CLOUDINARY_API_KEY,
     apiSecret: cloudinary?.CLOUDINARY_API_SECRET,
   },
-  greenInvoice: {
-    id: greenInvoice?.GREEN_INVOICE_ID,
-    secret: greenInvoice?.GREEN_INVOICE_SECRET,
-  },
+  greenInvoice: greenInvoice
+    ? {
+        id: greenInvoice.GREEN_INVOICE_ID,
+        secret: greenInvoice.GREEN_INVOICE_SECRET,
+      }
+    : undefined,
   authorization: {
     users: authorization?.AUTHORIZED_USERS,
     adminBusinessId: authorization?.DEFAULT_FINANCIAL_ENTITY_ID,
   },
-  hive: {
-    hiveToken: hive?.HIVE_TOKEN,
-  },
-  google: {
-    driveApiKey: google?.GOOGLE_DRIVE_API_KEY,
-  },
-  deel: {
-    apiToken: deel?.DEEL_TOKEN,
-  },
+  hive: hive
+    ? {
+        hiveToken: hive.HIVE_TOKEN,
+      }
+    : undefined,
+  googleDrive: googleDrive
+    ? {
+        driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY,
+      }
+    : undefined,
+  deel: deel
+    ? {
+        apiToken: deel.DEEL_TOKEN,
+      }
+    : undefined,
 } as const;

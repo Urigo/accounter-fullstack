@@ -14,7 +14,7 @@ import {
 export class GoogleDriveProvider {
   private apiKey: string;
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
-    this.apiKey = this.env.google.driveApiKey ?? '';
+    this.apiKey = this.env.googleDrive?.driveApiKey ?? '';
   }
 
   private async fetchFolderContent(folderUrl: string): Promise<DriveFolderContent> {
