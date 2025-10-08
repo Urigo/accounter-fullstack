@@ -83,7 +83,8 @@ export async function validateDocumentAllocation(
     }
     return !!document.allocation_number && document.allocation_number !== '';
   } catch (error) {
-    console.log(error);
-    throw new Error('Failed to validate document allocation');
+    const message = `Error validating document allocation for document ID=${document.id}`;
+    console.error(`${message}: ${error}`);
+    throw new Error(message);
   }
 }

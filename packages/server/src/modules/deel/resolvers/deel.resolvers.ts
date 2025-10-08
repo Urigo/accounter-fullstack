@@ -62,8 +62,12 @@ export const deelResolvers: DeelModule.Resolvers = {
             .get(DeelInvoicesProvider)
             .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId))
             .catch(error => {
-              console.error(error);
-              throw new Error('Error uploading Deel invoice record');
+              const message = 'Error uploading Deel invoice record';
+              console.error(`${message}: ${error}`);
+              if (error instanceof GraphQLError) {
+                throw error;
+              }
+              throw new Error(message);
             });
         }
 

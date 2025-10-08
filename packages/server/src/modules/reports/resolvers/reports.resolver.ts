@@ -37,15 +37,21 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     uniformFormat: async (_, { fromDate, toDate }, context, info) => {
       const accountsPromise = accountsForUniformFormat(context, info, fromDate, toDate).catch(
         err => {
-          throw new Error(`Failed to fetch accounts for uniform format: ${err.message}`);
+          const message = `Failed to fetch accounts for uniform format: ${err.message}`;
+          console.error(`${message}: ${err}`);
+          throw new Error(message);
         },
       );
       const businessPromise = businessForUniformFormat(context, fromDate, toDate).catch(err => {
-        throw new Error(`Failed to fetch main business info for uniform format: ${err.message}`);
+        const message = `Failed to fetch main business info for uniform format: ${err.message}`;
+        console.error(`${message}: ${err}`);
+        throw new Error(message);
       });
       const journalEntriesPromise = journalEntriesForUniformFormat(context, fromDate, toDate).catch(
         err => {
-          throw new Error(`Failed to fetch journal entries: ${err.message}`);
+          const message = `Failed to fetch journal entries for uniform format: ${err.message}`;
+          console.error(`${message}: ${err}`);
+          throw new Error(message);
         },
       );
       const [accounts, business, journalEntries] = await Promise.all([

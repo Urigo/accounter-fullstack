@@ -103,7 +103,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
           accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
         })
         .catch(e => {
-          throw new Error(e.message);
+          const message = 'Error fetching charges';
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new GraphQLError(message);
         });
 
       const pageCharges = charges.slice(page * limit - limit, page * limit);
@@ -474,12 +479,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
             .get(ChargesProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
-              throw new Error(
-                `Failed to update charge:\n${
-                  (e as Error)?.message ??
-                  (e as { errors: Error[] })?.errors.map(e => e.message).toString()
-                }`,
-              );
+              const message = `Failed to update charge ID="${baseChargeID}" before merge`;
+              console.error(`${message}: ${e}`);
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
+              throw new Error(message);
             });
         }
 

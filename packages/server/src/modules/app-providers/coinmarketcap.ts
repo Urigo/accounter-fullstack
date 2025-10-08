@@ -20,8 +20,9 @@ export class CoinMarketCapProvider {
     try {
       console.debug(`TEMP Fetching data from CoinMarketCap for ID="${coinmarketcapId}"`);
       const res = await fetch(url).catch(err => {
-        console.error(err);
-        throw new Error(`failed fetching data for ID="${coinmarketcapId}"`);
+        const message = `Failed fetching data for ID="${coinmarketcapId}"`;
+        console.error(`${message}: ${err}`);
+        throw new Error(message);
       });
 
       console.debug(`TEMP Got res: ${res}`);

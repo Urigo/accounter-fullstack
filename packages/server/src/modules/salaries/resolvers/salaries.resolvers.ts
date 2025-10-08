@@ -42,11 +42,12 @@ export const salariesResolvers: SalariesModule.Resolvers &
           try {
             const res = await injector.get(SalariesProvider).updateSalaryRecord(salaryRecord);
             if (res.length !== 1) {
-              throw new Error();
+              throw new Error('Failed to update salary record');
             }
             return res[0];
           } catch (e) {
-            console.error(e);
+            const message = `Failed to update salary record of employee ID=${salaryRecord.employeeId} on month ${salaryRecord.month}`;
+            console.error(`${message}: ${e}`);
           }
 
           try {
@@ -88,11 +89,12 @@ export const salariesResolvers: SalariesModule.Resolvers &
             }));
             const res = await injector.get(SalariesProvider).insertSalaryRecords({ salaryRecords });
             if (res.length !== 1) {
-              throw new Error();
+              throw new Error('Failed to insert salary record');
             }
             return res[0];
           } catch (e) {
-            console.error(e);
+            const message = `Failed to insert salary record of employee ID=${salaryRecord.employeeId} on month ${salaryRecord.month}`;
+            console.error(`${message}: ${e}`);
           }
 
           throw new Error(

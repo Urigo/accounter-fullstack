@@ -389,7 +389,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               status: 'CLOSED',
             })
             .catch(e => {
-              throw new Error(`Failed to update document's status (ID ${id}): ${e.message}`);
+              const message = `Failed to update document's status (ID ${id})`;
+              console.error(`${message}: ${e}`);
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
+              throw new GraphQLError(message);
             });
 
           return true;

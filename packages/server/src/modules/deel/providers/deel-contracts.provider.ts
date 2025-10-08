@@ -109,7 +109,7 @@ export class DeelContractsProvider {
       return insertDeelContract.run(params, this.dbProvider);
     } catch (e) {
       const message = `Error inserting Deel contract [${params.contractId}]`;
-      console.error(message, e);
+      console.error(`${message}: ${e}`);
       throw new Error(message);
     }
   }

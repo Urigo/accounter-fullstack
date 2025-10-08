@@ -364,7 +364,9 @@ export async function executeDocumentIssue(
                 .get(IssuedDocumentsProvider)
                 .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' })
                 .catch(e => {
-                  throw new Error(`Failed to close linked document with ID ${id}: ${e.message}`);
+                  const message = `Failed to close linked document with ID ${id}`;
+                  console.error(`${message}: ${e}`);
+                  throw new Error(message);
                 });
             }
           }),

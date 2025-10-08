@@ -54,8 +54,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
 
         return financialEntitiesIDs;
       } catch (e) {
-        console.error(e);
-        throw new Error('Error fetching financial entities');
+        const message = 'Error fetching financial entities';
+        console.error(`${message}: ${e}`);
+        throw new Error(message);
       }
     };
 
@@ -77,8 +78,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
 
         return ledgerRecords;
       } catch (e) {
-        console.error(e);
-        throw new Error('Error fetching ledger records');
+        const message = 'Error fetching ledger records';
+        console.error(`${message}: ${e}`);
+        throw new Error(message);
       }
     };
 

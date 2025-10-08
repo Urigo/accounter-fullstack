@@ -182,8 +182,9 @@ export async function uploadDeelInvoice(
 
     return document.id;
   } catch (error) {
-    console.error(error);
-    throw new Error('Error uploading Deel invoice');
+    const message = 'Error uploading Deel invoice';
+    console.error(`${message}: ${error}`);
+    throw new Error(message);
   }
 }
 
@@ -277,8 +278,9 @@ export async function fetchAndFilterInvoices(injector: Injector) {
           .get(DeelInvoicesProvider)
           .getInvoicesByIdLoader.load(invoice.id)
           .catch(e => {
-            console.error(e);
-            throw new Error('Error fetching invoice');
+            const message = 'Error fetching invoice by ID';
+            console.error(`${message}: ${e}`);
+            throw new Error(message);
           });
         if (!dbInvoice) {
           filteredInvoices.push(invoice);
@@ -288,8 +290,9 @@ export async function fetchAndFilterInvoices(injector: Injector) {
 
     return { invoices: filteredInvoices };
   } catch (error) {
-    console.error(error);
-    throw new Error('Error fetching Deel invoices');
+    const message = 'Error fetching Deel invoices';
+    console.error(`${message}: ${error}`);
+    throw new Error(message);
   }
 }
 
@@ -298,8 +301,9 @@ export async function fetchReceipts(injector: Injector) {
     const res = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERION_IN_MONTHS
     return res.data.rows;
   } catch (error) {
-    console.error(error);
-    throw new Error('Error fetching Deel receipts');
+    const message = 'Error fetching Deel receipts';
+    console.error(`${message}: ${error}`);
+    throw new Error(message);
   }
 }
 

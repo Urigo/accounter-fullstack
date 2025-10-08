@@ -214,8 +214,9 @@ export class MiscExpensesProvider {
       await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
       this.cache.delete(`misc-expenses-charge-${chargeId}`);
     } catch (error) {
-      console.error(error);
-      throw new Error(`Error invalidating misc expense by charge id: ${chargeId}`);
+      const message = `Error invalidating misc expense by charge id: ${chargeId}`;
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
     }
   }
 
@@ -225,10 +226,9 @@ export class MiscExpensesProvider {
       await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
       this.cache.delete(`misc-expenses-financial-entity-${financialEntityId}`);
     } catch (error) {
-      console.error(error);
-      throw new Error(
-        `Error invalidating misc expense by financial entity id: ${financialEntityId}`,
-      );
+      const message = `Error invalidating misc expense by financial entity id: ${financialEntityId}`;
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
     }
   }
 
@@ -242,8 +242,9 @@ export class MiscExpensesProvider {
       }
       this.cache.delete(`misc-expenses-${id}`);
     } catch (error) {
-      console.error(error);
-      throw new Error(`Error invalidating misc expense by id: ${id}`);
+      const message = `Error invalidating misc expense by id: ${id}`;
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
     }
   }
 
