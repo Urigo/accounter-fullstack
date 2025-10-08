@@ -21,7 +21,7 @@ async function main() {
       useDeferStream(),
       useHive({
         enabled: !!env.hive,
-        token: env.hive.hiveToken ?? '',
+        token: env.hive?.hiveToken ?? '',
         usage: !!env.hive,
       }),
     ],
