@@ -13,7 +13,7 @@
     "@whatwg-node/fetch": "0.10.11",
     "csv-parse": "6.1.0",
     "diary": "0.4.5",
-    "dotenv": "17.2.2",
+    "dotenv": "17.2.3",
     "pg-promise": "12.2.0"
   },
   "devDependencies": {
