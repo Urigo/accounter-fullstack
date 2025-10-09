@@ -96,7 +96,6 @@ const GmailModel = zod.union([
     .object({
       GMAIL_CLIENT_ID: zod.string().optional(),
       GMAIL_CLIENT_SECRET: zod.string().optional(),
-      GMAIL_REDIRECT_URI: zod.string().optional(),
       GMAIL_REFRESH_TOKEN: zod.string().optional(),
       GMAIL_LABEL_PATH: zod.string().optional(),
       GOOGLE_CLOUD_PROJECT_ID: zod.string().optional(),
@@ -108,7 +107,6 @@ const GmailModel = zod.union([
       const gmailVars = [
         data.GMAIL_CLIENT_ID,
         data.GMAIL_CLIENT_SECRET,
-        data.GMAIL_REDIRECT_URI,
         data.GMAIL_REFRESH_TOKEN,
         data.GOOGLE_CLOUD_PROJECT_ID,
         data.GOOGLE_APPLICATION_CREDENTIALS,
@@ -119,7 +117,7 @@ const GmailModel = zod.union([
         ctx.addIssue({
           code: 'custom',
           message:
-            'Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS) must be provided together or all omitted.',
+            'Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS) must be provided together or all omitted.',
         });
       }
     }),
@@ -219,9 +217,8 @@ export const env = {
     ? {
         clientId: gmail.GMAIL_CLIENT_ID!,
         clientSecret: gmail.GMAIL_CLIENT_SECRET!,
-        redirectUri: gmail.GMAIL_REDIRECT_URI!,
         refreshToken: gmail.GMAIL_REFRESH_TOKEN!,
-        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents/', // Default label if not specified
+        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
         cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID!,
         appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS!,
         topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
