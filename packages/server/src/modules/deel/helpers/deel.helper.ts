@@ -145,14 +145,13 @@ export async function uploadDeelInvoice(
 
     // fetch file from Deel
     const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
-    const content = await file.text();
-    const fileHash = hashStringToInt(content).toString();
+
+    const fileHashPromise = file.text().then(content => hashStringToInt(content).toString());
 
     // upload file to cloudinary
-    const { fileUrl, imageUrl } = await uploadToCloudinary(
-      injector,
-      new Blob([content], { type: file.type }),
-    );
+    const fileUrlsPromise = uploadToCloudinary(injector, file);
+
+    const [{ fileUrl, imageUrl }, fileHash] = await Promise.all([fileUrlsPromise, fileHashPromise]);
 
     // create the new document object
     const newDocumentFromInvoice: IInsertDocumentsParams['document'][number] = {
@@ -333,20 +332,21 @@ export async function getChargeMatchesForPayments(
 ) {
   const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
 
-  for (const receipt of receipts) {
-    if (receiptChargeMap.has(receipt.id)) {
-      continue;
-    }
-    const description = await getDeelChargeDescription(injector, receipt.workers);
-    const [charge] = await injector.get(ChargesProvider).generateCharge({
-      ownerId,
-      userDescription: description,
-    });
+  const newReceipts = receipts.filter(receipt => !receiptChargeMap.has(receipt.id));
 
-    receiptChargeMap.set(receipt.id, charge.id);
+  await Promise.all(
+    newReceipts.map(async receipt => {
+      const description = await getDeelChargeDescription(injector, receipt.workers);
+      const [charge] = await injector.get(ChargesProvider).generateCharge({
+        ownerId,
+        userDescription: description,
+      });
 
-    // TODO: upload receipt whenever available via Deel API
-  }
+      receiptChargeMap.set(receipt.id, charge.id);
+
+      // TODO: upload receipt file whenever available via Deel API
+    }),
+  );
 
   return receiptChargeMap;
 }
@@ -356,15 +356,15 @@ export function matchInvoicesWithPayments(
   paymentBreakdowns: PaymentBreakdownRecord[],
 ) {
   const matches: DeelInvoiceMatch[] = [];
+  const unmatched: Invoice[] = [];
 
   invoices.map(invoice => {
-    const optionalMatches = paymentBreakdowns.filter(
-      receipt =>
-        invoice.currency === receipt.currency &&
-        invoice.total === receipt.total &&
-        invoice.created_at === receipt.date &&
-        invoice.paid_at === receipt.payment_date,
-    );
+    if (invoice.status === 'processed' || invoice.total === '0.00') {
+      unmatched.push(invoice);
+      return;
+    }
+
+    const optionalMatches = paymentBreakdowns.filter(receipt => invoice.id === receipt.invoice_id);
     if (optionalMatches.length === 1) {
       const adjustedBreakdown: Record<string, unknown> = {};
       Object.entries(optionalMatches[0]).map(([key, value]) => {
@@ -376,5 +376,5 @@ export function matchInvoicesWithPayments(
     }
   });
 
-  return matches;
+  return { matches, unmatched };
 }
