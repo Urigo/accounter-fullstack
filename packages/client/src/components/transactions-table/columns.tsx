@@ -221,41 +221,27 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return <SourceID transaction={row.original} />;
     },
   },
-  {
-    accessorKey: 'id',
-    header: ({ table }) => {
-      const rows = table.getCenterRows();
-      if (!rows.length) return null;
-      const row = rows[0];
-      return (
-        <div>
-          {row.original.enableEdit && row.original.enableChargeLink
-            ? 'Actions'
-            : row.original.enableEdit
-              ? 'Edit'
-              : row.original.enableChargeLink
-                ? 'Charge'
-                : ''}
-        </div>
-      );
-    },
-    cell: ({ row }) => {
-      if (row.original.enableEdit) {
-        return (
-          <>
-            <EditMiniButton onClick={row.original.editTransaction} />
-            <InsertMiscExpenseModal
-              chargeId={row.original.chargeId}
-              transactionId={row.original.id}
-              onDone={row.original.onUpdate}
-            />
-          </>
-        );
-      }
-      if (row.original.enableChargeLink) {
-        return <ChargeNavigateButton chargeId={row.original.chargeId} />;
-      }
-      return null;
-    },
-  },
 ];
+
+export const actionsColumn: ColumnDef<TransactionsTableRowType> = {
+  accessorKey: 'id',
+  header: 'Actions',
+  cell: ({ row }) => {
+    if (row.original.enableEdit) {
+      return (
+        <>
+          <EditMiniButton onClick={row.original.editTransaction} />
+          <InsertMiscExpenseModal
+            chargeId={row.original.chargeId}
+            transactionId={row.original.id}
+            onDone={row.original.onUpdate}
+          />
+        </>
+      );
+    }
+    if (row.original.enableChargeLink) {
+      return <ChargeNavigateButton chargeId={row.original.chargeId} />;
+    }
+    return null;
+  },
+};
