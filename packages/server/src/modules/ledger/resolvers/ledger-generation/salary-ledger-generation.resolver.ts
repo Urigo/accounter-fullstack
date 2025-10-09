@@ -511,7 +511,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, context);
     }
 
     return {

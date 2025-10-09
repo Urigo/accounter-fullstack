@@ -181,7 +181,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     await Promise.all(entriesPromises);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
     }
 
     return {

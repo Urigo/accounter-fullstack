@@ -37,7 +37,7 @@ export const generateLedgerRecordsForBalance: ResolverFn<
     await Promise.all([expensesLedgerPromise]);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
     }
 
     return {

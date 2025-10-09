@@ -135,7 +135,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
     });
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
     }
 
     return {
