@@ -42,13 +42,13 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
 
+        const { matches, unmatched } = matchInvoicesWithPayments(invoices, paymentBreakdowns);
+
         const paymentToChargeMap = await getChargeMatchesForPayments(
           injector,
           adminContext.defaultAdminBusinessId,
           receipts,
         );
-
-        const matches = matchInvoicesWithPayments(invoices, paymentBreakdowns);
 
         for (const match of matches) {
           const documentId = await uploadDeelInvoice(
@@ -70,6 +70,8 @@ export const deelResolvers: DeelModule.Resolvers = {
               throw new Error(message);
             });
         }
+
+        console.log(unmatched.length, 'unmatched payments');
 
         // TODO: return updated charges
         return true;

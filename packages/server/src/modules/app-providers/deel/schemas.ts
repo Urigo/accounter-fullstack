@@ -10,8 +10,7 @@ const invoiceSchema = z
       .string()
       .nullable() // NOTE: by docs, not nullable
       .describe('Unique identifier of the related contract.'), // example: "string"
-    created_at: z
-      .string()
+    created_at: z.iso
       .datetime() // NOTE: by docs, nullable
       .describe('Date and time when the invoice was created (ISO-8601 format).'), // example: "2022-05-24T09:38:46.235Z",
     currency: z.string().length(3).describe('Three-letter currency code for the invoice.'), // example: "GBP",
@@ -19,8 +18,7 @@ const invoiceSchema = z
       .literal('0.00') // NOTE: by docs, nullable & optional
       .describe('Fee charged by Deel.'),
     due_date: z
-      .string()
-      .datetime() // NOTE: by docs, nullable
+      .union([z.literal(''), z.iso.datetime()]) // NOTE: by docs, nullable
       .describe('Date and time when the invoice is due (ISO-8601 format).'), // example: "2022-05-24T09:38:46.235Z",
     // early_payout_fee: z
     //   .string()
@@ -61,37 +59,44 @@ const invoiceSchema = z
     //   .nullable()
     //   .optional()
     //   .describe('Indicates whether the invoice is sealed.'),
-    issued_at: z
-      .string()
+    issued_at: z.iso
       .datetime() // NOTE: by docs, nullable
       .describe('Date and time when the invoice was issued (ISO-8601 format).'), // example: "2022-05-24T09:38:46.235Z",
     label: z.string().describe('Label or reference number of the invoice.'), // example: "INV-2023-4",
     // money_received_at: z
-    //   .string()
+    //   .iso
     //   .datetime()
     //   .nullable()
     //   .optional()
     //   .describe('Date and time when the payment was received (ISO-8601 format).'),
     paid_at: z
-      .string()
-      .datetime() // NOTE: by docs, nullable
+      .union([z.literal(''), z.iso.datetime()]) // NOTE: by docs, nullable
       .describe('Date and time when the invoice was paid (ISO-8601 format).'), // example: "2022-05-24T09:38:46.235Z",
     // payment_currency: z.string().optional().describe('Currency in which the invoice was paid.'),
     // payment_method: z.string().nullable().optional().describe('Method used to pay the invoice.'),
     // payment_processed_at: z
-    //   .string()
+    //   .iso
     //   .datetime()
     //   .nullable()
     //   .optional()
     //   .describe('Date and time when the payment was processed (ISO-8601 format).'),
     // processed_at: z
-    //   .string()
+    //   .iso
     //   .datetime()
     //   .nullable()
     //   .optional()
     //   .describe('Date and time when the invoice was processed (ISO-8601 format).'),
     status: z
-      .enum(['pending', 'paid', 'processing', 'canceled', 'skipped', 'failed', 'refunded'])
+      .enum([
+        'pending',
+        'paid',
+        'processing',
+        'canceled',
+        'skipped',
+        'failed',
+        'refunded',
+        'processed',
+      ])
       .describe('Current status of the invoice.'), // example: "paid",
     total: z.string().describe('Total invoice amount, including fees and VAT.'), // example: "1000",
     // type: z.string().nullable().optional().describe('Type of the invoice.'),
@@ -132,8 +137,7 @@ export const downloadInvoicePdfSchema = z
           .describe(
             'URL to the requested invoice for download. This URL may expire after a certain duration.',
           ),
-        expires_at: z
-          .string()
+        expires_at: z.iso
           .datetime()
           .optional() // NOTE: by docs, not optional
           .describe(
@@ -163,16 +167,15 @@ export const paymentReceiptsSchema = z
     id: z
       .string() // NOTE: by docs, optional
       .describe('Unique identifier of the payment.'),
-    created_at: z
-      .string()
+    created_at: z.iso
       .datetime() // NOTE: by docs, optional
       .describe('Date and time when the payment was created, in ISO-8601 format.'),
     label: z
       .string() // NOTE: by docs, optional
       .describe('A descriptive label for the payment.'),
-    paid_at: z
-      .string()
-      .datetime() // NOTE: by docs, optional
+    paid_at: z.iso
+      .datetime()
+      .nullable()
       .describe('Date and time when the payment was completed, in ISO-8601 format.'),
     payment_currency: z
       .string()
@@ -206,7 +209,7 @@ const paymentBreakdownRecordSchema = z
   .object({
     adjustment: z.literal('0.00').describe('Adjustment amount for the payment.'),
     approve_date: z
-      .union([z.literal(''), z.string().datetime()])
+      .union([z.literal(''), z.iso.datetime()])
       .describe('The date when the payment was approved.'),
     approvers: z.string().describe('Approvers of the payment breakdown.'),
     bonus: z.literal('0.00').describe('Bonus payment amount.'),
@@ -215,18 +218,16 @@ const paymentBreakdownRecordSchema = z
       .union([z.literal(''), z.string().length(2)])
       .describe('Country where the contract is associated.'),
     contract_start_date: z
-      .union([z.string().datetime(), z.literal('')])
+      .union([z.iso.datetime(), z.literal('')])
       .describe('Start date of the contract.'),
     contract_type: z.string(),
-    contractor_email: z
-      .union([z.literal(''), z.string().email()])
-      .describe("Worker's email address."),
+    contractor_email: z.union([z.literal(''), z.email()]).describe("Worker's email address."),
     contractor_employee_name: z.string().describe("Worker's name."),
     contractor_unique_identifier: z
-      .union([z.literal(''), z.string().uuid()])
+      .union([z.literal(''), z.uuid()])
       .describe("Worker's unique identifier as a UUID."),
     currency: z.string().describe('Currency code used for this payment.'),
-    date: z.string().datetime().describe('The date associated with the payment breakdown.'),
+    date: z.iso.datetime().describe('The date associated with the payment breakdown.'),
     deductions: z.literal('0.00').describe('Deductions from the payment.'),
     expenses: z.string().describe('Expenses related to the payment.'),
     frequency: z
@@ -234,6 +235,7 @@ const paymentBreakdownRecordSchema = z
       .describe('Frequency of payment (e.g., monthly, weekly).'),
     general_ledger_account: z.literal('').describe('General ledger account for the payment.'),
     group_id: z.string(),
+    invoice_id: z.string().describe('Invoice number associated with the payment.'),
     // invoice_number: z
     //   .string()
     //   .optional()
@@ -241,7 +243,7 @@ const paymentBreakdownRecordSchema = z
     others: z.literal('0.00').describe('Other payment amounts.'),
     overtime: z.literal('0.00').describe('Overtime payment amount.'),
     payment_currency: z.string().describe('Currency in which the payment was made.'),
-    payment_date: z.string().datetime().describe('The date the payment was made.'),
+    payment_date: z.iso.datetime().describe('The date the payment was made.'),
     pro_rata: z.string().describe('Pro-rated payment amount.'),
     processing_fee: z.string().describe('Processing fee applied to the payment.'),
     // receipt_number: z.string().optional().describe('Receipt number for the payment.'),
