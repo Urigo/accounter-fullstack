@@ -490,7 +490,7 @@ export class GmailServiceProvider {
     return original;
   }
 
-  private async getEmailById(messageId: string): Promise<EmailData | null> {
+  private async getEmailData(messageId: string): Promise<EmailData | null> {
     try {
       const response = await this.gmail.users.messages.get({
         userId: 'me',
@@ -499,7 +499,10 @@ export class GmailServiceProvider {
       });
 
       const message = response.data;
-      if (!message) return null;
+      if (!message) {
+        await this.labelMessageAsDebug(messageId);
+        return null;
+      }
 
       const headers = message.payload?.headers || [];
       let from = headers.find(h => h.name === 'From')?.value || '';
@@ -525,6 +528,12 @@ export class GmailServiceProvider {
       const subject = headers.find(h => h.name === 'Subject')?.value || '';
       const date = headers.find(h => h.name === 'Date')?.value || '';
       const body = this.getEmailBody(message.payload);
+
+      const normalizedBody = body.toLocaleLowerCase();
+      if (!normalizedBody.includes('invoice') && !normalizedBody.includes('receipt')) {
+        await this.labelMessageAsDebug(messageId);
+        return null;
+      }
 
       const emailData = {
         id: message.id!,
@@ -586,9 +595,9 @@ export class GmailServiceProvider {
 
     try {
       if (await this.isMessageLabeledToProcess(message.id)) {
-        const emailData = await this.getEmailById(message.id);
+        const emailData = await this.getEmailData(message.id);
         if (!emailData) {
-          // dealt with in getEmailById
+          // dealt with in emailData
           return;
         }
 
