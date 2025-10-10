@@ -91,6 +91,39 @@ const GoogleDriveModel = zod.union([
   zod.void(),
 ]);
 
+const GmailModel = zod.union([
+  zod
+    .object({
+      GMAIL_CLIENT_ID: zod.string().optional(),
+      GMAIL_CLIENT_SECRET: zod.string().optional(),
+      GMAIL_REFRESH_TOKEN: zod.string().optional(),
+      GMAIL_LABEL_PATH: zod.string().optional(),
+      GOOGLE_CLOUD_PROJECT_ID: zod.string().optional(),
+      GOOGLE_APPLICATION_CREDENTIALS: zod.string().optional(),
+      PUBSUB_TOPIC: zod.string().optional(),
+      PUBSUB_SUBSCRIPTION: zod.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      const gmailVars = [
+        data.GMAIL_CLIENT_ID,
+        data.GMAIL_CLIENT_SECRET,
+        data.GMAIL_REFRESH_TOKEN,
+        data.GOOGLE_CLOUD_PROJECT_ID,
+        data.GOOGLE_APPLICATION_CREDENTIALS,
+      ];
+      // GMAIL_LABEL_PATH, PUBSUB_TOPIC and PUBSUB_SUBSCRIPTION are optional and can be omitted
+      const definedCount = gmailVars.filter(v => !!v).length;
+      if (definedCount !== 0 && definedCount !== gmailVars.length) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS) must be provided together or all omitted.',
+        });
+      }
+    }),
+  zod.void(),
+]);
+
 const DeelModel = zod.union([
   zod.object({
     DEEL_TOKEN: zod.string().optional(),
@@ -105,6 +138,7 @@ const configs = {
   authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
   googleDrive: GoogleDriveModel.safeParse(process.env),
+  gmail: GmailModel.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
 };
 
@@ -135,6 +169,7 @@ const greenInvoice = extractConfig(configs.greenInvoice);
 const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
+const gmail = extractConfig(configs.gmail);
 const deel = extractConfig(configs.deel);
 
 export const env = {
@@ -148,15 +183,15 @@ export const env = {
   },
   cloudinary: cloudinary?.CLOUDINARY_API_KEY
     ? {
-        name: cloudinary.CLOUDINARY_NAME,
-        apiKey: cloudinary.CLOUDINARY_API_KEY,
-        apiSecret: cloudinary.CLOUDINARY_API_SECRET,
+        name: cloudinary.CLOUDINARY_NAME!,
+        apiKey: cloudinary.CLOUDINARY_API_KEY!,
+        apiSecret: cloudinary.CLOUDINARY_API_SECRET!,
       }
     : undefined,
   greenInvoice: greenInvoice?.GREEN_INVOICE_ID
     ? {
-        id: greenInvoice.GREEN_INVOICE_ID,
-        secret: greenInvoice.GREEN_INVOICE_SECRET,
+        id: greenInvoice.GREEN_INVOICE_ID!,
+        secret: greenInvoice.GREEN_INVOICE_SECRET!,
       }
     : undefined,
   authorization: {
@@ -165,17 +200,29 @@ export const env = {
   },
   hive: hive?.HIVE_TOKEN
     ? {
-        hiveToken: hive.HIVE_TOKEN,
+        hiveToken: hive.HIVE_TOKEN!,
       }
     : undefined,
   googleDrive: googleDrive?.GOOGLE_DRIVE_API_KEY
     ? {
-        driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY,
+        driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY!,
       }
     : undefined,
   deel: deel?.DEEL_TOKEN
     ? {
-        apiToken: deel.DEEL_TOKEN,
+        apiToken: deel.DEEL_TOKEN!,
+      }
+    : undefined,
+  gmail: gmail?.GMAIL_CLIENT_ID
+    ? {
+        clientId: gmail.GMAIL_CLIENT_ID!,
+        clientSecret: gmail.GMAIL_CLIENT_SECRET!,
+        refreshToken: gmail.GMAIL_REFRESH_TOKEN!,
+        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
+        cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID!,
+        appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS!,
+        topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
+        subscriptionName: gmail.PUBSUB_SUBSCRIPTION || 'gmail-notifications-sub',
       }
     : undefined,
 } as const;
