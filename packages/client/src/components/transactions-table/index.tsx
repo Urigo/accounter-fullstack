@@ -48,11 +48,14 @@ export const TransactionsTable = ({
     [transactions, onChange, enableEdit, enableChargeLink],
   );
 
-  const enableActions = enableEdit || enableChargeLink;
+  const tableColumns = useMemo(
+    () => (enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns),
+    [enableEdit, enableChargeLink],
+  );
 
   const table = useReactTable({
     data,
-    columns: enableActions ? [...columns, actionsColumn] : columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
