@@ -10,7 +10,7 @@ import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/grap
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditTransactionModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { columns, type TransactionsTableRowType } from './columns.js';
+import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {
   transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
@@ -48,9 +48,14 @@ export const TransactionsTable = ({
     [transactions, onChange, enableEdit, enableChargeLink],
   );
 
+  const tableColumns = useMemo(
+    () => (enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns),
+    [enableEdit, enableChargeLink],
+  );
+
   const table = useReactTable({
     data,
-    columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
