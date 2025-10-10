@@ -266,9 +266,6 @@ export async function storeInitialGeneratedRecords(
   context: GraphQLModules.Context,
 ) {
   const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-  if (!charge) {
-    return void 0;
-  }
   if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
     const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(record =>
       convertToStorageInputRecord(record, context),
