@@ -340,7 +340,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         ...miscLedgerEntries,
       ];
       if (records.length && insertLedgerRecordsIfNotExists) {
-        await storeInitialGeneratedRecords(charge, records, context);
+        await storeInitialGeneratedRecords(charge.id, records, context);
       }
       return {
         records: ledgerProtoToRecordsConverter(records),
@@ -369,7 +369,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
 
           if (insertLedgerRecordsIfNotExists) {
-            await storeInitialGeneratedRecords(charge, records, context);
+            await storeInitialGeneratedRecords(charge.id, records, context);
           }
 
           return {
@@ -501,7 +501,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, context);
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(

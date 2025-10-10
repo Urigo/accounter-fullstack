@@ -177,7 +177,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     await Promise.all([expensesLedgerPromise, ...currenciesLedgerPromise]);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
     }
 
     return {

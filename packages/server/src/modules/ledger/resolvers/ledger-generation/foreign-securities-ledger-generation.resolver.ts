@@ -181,7 +181,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       ...miscExpensesLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, context);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();

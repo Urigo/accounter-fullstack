@@ -323,7 +323,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       ...miscLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, context);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
