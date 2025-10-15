@@ -13,6 +13,7 @@
 3. **Create Service Account**
    - Go to IAM & Admin → Service Accounts
    - Create service account with Editor role
+   - On the new account's actions select Manage Keys, and create a new key (JSON)
    - Download JSON key file
 
 4. **Create Pub/Sub Topic**
@@ -26,7 +27,7 @@
 1. **Create OAuth2 Credentials**
    - Go to APIs & Credentials → Create Credentials → OAuth 2.0
    - Add your domain and `https://developers.google.com/oauthplayground` to authorized origins
-   - Download client configuration
+   - Keep the client ID + secret (Or download client configuration which include them)
 
 ### Step 3: Getting OAuth2 Refresh Token
 
@@ -48,6 +49,7 @@ Create a `.env` file:
 GMAIL_CLIENT_ID=your_client_id
 GMAIL_CLIENT_SECRET=your_client_secret
 GMAIL_REFRESH_TOKEN=your_refresh_token
+GMAIL_LABEL_PATH=path/to/label # e.g., accounter/documents
 
 # Google Cloud
 GOOGLE_CLOUD_PROJECT_ID=your_project_id
