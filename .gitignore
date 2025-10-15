@@ -20,3 +20,5 @@ docker/.*
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+**/accounter-gmail-service-key.json
