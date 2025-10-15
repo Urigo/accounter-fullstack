@@ -1,6 +1,8 @@
 import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import nodeHtmlToImage from 'node-html-to-image';
+import hb from 'handlebars';
+import inlineCss from 'inline-css';
+import puppeteer from 'puppeteer';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import {
   getDocumentFromUrlsAndOcrData,
@@ -273,27 +275,45 @@ export class GmailServiceProvider {
     }
   }
 
-  private async convertHtmlToImage(html: string): Promise<Required<EmailDocument>> {
+  private async convertHtmlToImage(rawHtml: string): Promise<Required<EmailDocument>> {
     try {
-      const image = await nodeHtmlToImage({
-        type: 'png',
-        encoding: 'base64',
-        html: `<html><body>${html}</body></html>`,
-      }).catch(error => {
-        console.error(`Error converting email body to image: ${error}`);
-        throw new Error('Error while trying to convert Email body to an image');
+      const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      const page = await browser.newPage();
+
+      const data = await inlineCss(rawHtml, { url: '/' }).catch(e => {
+        throw new Error(`Error inlining CSS: ${e.message}`);
       });
 
-      const doc = {
-        filename: 'body.png',
-        content: image.toString(),
-        mimeType: 'image/png',
-      };
+      const template = hb.compile(data, { strict: true });
+      const html = template(data);
 
-      return doc;
-    } catch (e) {
-      console.error(`Error processing email body: ${e}`);
-      throw new Error('Error processing email body');
+      await page
+        .setContent(html, {
+          waitUntil: 'networkidle0', // Wait until all network requests are done
+        })
+        .catch(e => {
+          throw new Error(`Error setting page content: ${e.message}`);
+        });
+
+      const rawPdf = await page.pdf().catch(e => {
+        throw new Error(`Error generating PDF: ${e.message}`);
+      });
+
+      await browser.close();
+
+      const content = Buffer.from(rawPdf).toString('base64url');
+
+      return {
+        filename: 'body.pdf',
+        content,
+        mimeType: 'application/pdf',
+      };
+    } catch (error) {
+      const message = `Error converting HTML to image`;
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
     }
   }
 
@@ -411,8 +431,9 @@ export class GmailServiceProvider {
 
       console.log('Document to upload:', documentToUpload);
     } catch (e) {
-      console.error(`Error processing document ${doc.filename} in email id=${messageId}: ${e}`);
-      throw new Error(`Error processing document ${doc.filename}`);
+      const message = `Error processing document ${doc.filename}`;
+      console.error(`${message} in email id=${messageId}: ${e}`);
+      throw new Error(message);
     }
   }
 
