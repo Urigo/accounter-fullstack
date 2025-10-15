@@ -529,12 +529,6 @@ export class GmailServiceProvider {
       const date = headers.find(h => h.name === 'Date')?.value || '';
       const body = this.getEmailBody(message.payload);
 
-      const normalizedBody = body.toLocaleLowerCase();
-      if (!normalizedBody.includes('invoice') && !normalizedBody.includes('receipt')) {
-        await this.labelMessageAsDebug(messageId);
-        return null;
-      }
-
       const emailData = {
         id: message.id!,
         threadId: message.threadId!,
