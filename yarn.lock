@@ -322,7 +322,7 @@ __metadata:
     dotenv-cli: "npm:10.0.0"
     graphql: "npm:16.11.0"
     graphql-modules: "npm:3.0.0"
-    graphql-scalars: "npm:1.24.2"
+    graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.16.0"
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
@@ -13530,7 +13530,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-scalars@npm:1.24.2, graphql-scalars@npm:^1.22.4":
+"graphql-scalars@npm:1.25.0":
+  version: 1.25.0
+  resolution: "graphql-scalars@npm:1.25.0"
+  dependencies:
+    tslib: "npm:^2.5.0"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/ae7151171dcd4230f4b3d3dff94e29315d2a8ab903a81f9a9f5820974a854373f877ef10d779839c437f29d4e5ef7b13e9b9e0e7f947004fda39c9e72422736a
+  languageName: node
+  linkType: hard
+
+"graphql-scalars@npm:^1.22.4":
   version: 1.24.2
   resolution: "graphql-scalars@npm:1.24.2"
   dependencies:
