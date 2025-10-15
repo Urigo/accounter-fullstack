@@ -1,6 +1,5 @@
 import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import hb from 'handlebars';
 import inlineCss from 'inline-css';
 import puppeteer from 'puppeteer';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -275,19 +274,22 @@ export class GmailServiceProvider {
     }
   }
 
-  private async convertHtmlToImage(rawHtml: string): Promise<Required<EmailDocument>> {
+  private async convertHtmlToPdf(rawHtml: string): Promise<Required<EmailDocument>> {
     try {
-      const browser = await puppeteer.launch({
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      const browser = await puppeteer
+        .launch({
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        })
+        .catch(e => {
+          throw new Error(`Error launching Puppeteer: ${e.message}`);
+        });
+      const page = await browser.newPage().catch(e => {
+        throw new Error(`Error creating new page in Puppeteer: ${e.message}`);
       });
-      const page = await browser.newPage();
 
-      const data = await inlineCss(rawHtml, { url: '/' }).catch(e => {
+      const html = await inlineCss(rawHtml, { url: '/' }).catch(e => {
         throw new Error(`Error inlining CSS: ${e.message}`);
       });
-
-      const template = hb.compile(data, { strict: true });
-      const html = template(data);
 
       await page
         .setContent(html, {
@@ -354,7 +356,7 @@ export class GmailServiceProvider {
       if (contentType?.includes('text/html')) {
         const html = await response.text();
 
-        const doc = await this.convertHtmlToImage(html);
+        const doc = await this.convertHtmlToPdf(html);
         return doc;
       }
 
@@ -664,9 +666,9 @@ export class GmailServiceProvider {
           extractedDocuments.push(doc);
         }
 
-        // Email body as image
+        // Email body as PDF
         if (!business || listenerConfig.emailBody === true) {
-          const doc = await this.convertHtmlToImage(emailData.body);
+          const doc = await this.convertHtmlToPdf(emailData.body);
           extractedDocuments.push(doc);
         }
 
