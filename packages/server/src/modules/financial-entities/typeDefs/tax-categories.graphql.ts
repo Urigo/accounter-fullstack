@@ -64,6 +64,8 @@ export default gql`
     id: UUID!
     name: String!
     irsCode: Int
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   extend type Mutation {

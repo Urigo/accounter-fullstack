@@ -12,6 +12,8 @@ export const commonFinancialEntityFields:
   id: dbFinancialEntity => dbFinancialEntity.id,
   name: dbFinancialEntity => dbFinancialEntity.name,
   irsCode: dbFinancialEntity => dbFinancialEntity.irs_code,
+  createdAt: dbFinancialEntity => dbFinancialEntity.created_at,
+  updatedAt: dbFinancialEntity => dbFinancialEntity.updated_at,
 };
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
