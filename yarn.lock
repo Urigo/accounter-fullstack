@@ -23,7 +23,7 @@ __metadata:
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch"
     "@types/pg": "npm:8.15.5"
-    got: "npm:14.5.0"
+    got: "npm:14.6.0"
     pg-promise: "npm:12.2.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
@@ -11378,6 +11378,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"decompress-response@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "decompress-response@npm:10.0.0"
+  dependencies:
+    mimic-response: "npm:^4.0.0"
+  checksum: 10c0/e8ce13b3f790fbac1e75a7be9ce4f77be62a6e5fcccfd9bd73e9d8b48b9a3b6c1b7b918ecd321095f3839b3bc9b6f6af2b1bd9c905eeddc0d1177d297b073232
+  languageName: node
+  linkType: hard
+
 "decompress-response@npm:^6.0.0":
   version: 6.0.0
   resolution: "decompress-response@npm:6.0.0"
@@ -13970,15 +13979,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"got@npm:14.5.0":
-  version: 14.5.0
-  resolution: "got@npm:14.5.0"
+"got@npm:14.6.0":
+  version: 14.6.0
+  resolution: "got@npm:14.6.0"
   dependencies:
     "@sindresorhus/is": "npm:^7.0.1"
     "@szmarczak/http-timer": "npm:^5.0.1"
     cacheable-lookup: "npm:^7.0.0"
     cacheable-request: "npm:^13.0.12"
-    decompress-response: "npm:^6.0.0"
+    decompress-response: "npm:^10.0.0"
     form-data-encoder: "npm:^4.0.2"
     http2-wrapper: "npm:^2.2.1"
     keyv: "npm:^5.5.3"
@@ -13986,7 +13995,7 @@ __metadata:
     p-cancelable: "npm:^4.0.1"
     responselike: "npm:^4.0.2"
     type-fest: "npm:^4.26.1"
-  checksum: 10c0/cc1e7db3f70dab1b23c7d50e7a581753cfecef01810d4ca33bc64de0f18cc60853515c96b2749c2979fdf46ef1a2a44e9e8ce043a20e3882ce3ae0b175b71ca9
+  checksum: 10c0/ad96cbfa1d9157a9678aeb32de7fa7399a6f88071aa454a678d092ef2a5eb845b4e38d878dddd566ece42acd3bef7ac9df769735fc13a5b288414536b0f24bba
   languageName: node
   linkType: hard
 
