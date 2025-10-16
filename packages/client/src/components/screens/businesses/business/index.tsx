@@ -1,0 +1,110 @@
+import {
+  //   Building2,
+  //   DollarSign,
+  //   FileCheck,
+  //   FileText,
+  //   Plug,
+  Settings,
+  //   TrendingUp,
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
+import { BusinessHeader } from './business-header.js';
+import { ChargesSection } from './charges-section.js';
+import { ChartsSection } from './charts-section.js';
+import { ConfigurationsSection } from './configurations-section.js';
+import { ContactInfoSection } from './contact-info-section.js';
+import { ContractsSection } from './contracts-section.js';
+import { DocumentsSection } from './documents-section.js';
+import { IntegrationsSection } from './integrations-section.js';
+
+export default function BusinessPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <BusinessHeader />
+
+      <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
+        <Tabs defaultValue="contact" className="w-full">
+          <TabsList className="grid w-full grid-cols-7 mb-6 h-auto gap-1 bg-muted/50 p-1">
+            {/* <TabsTrigger
+              value="contact"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Contact</span>
+            </TabsTrigger> */}
+            <TabsTrigger
+              value="config"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Config</span>
+            </TabsTrigger>
+            {/* <TabsTrigger
+              value="charges"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Charges</span>
+            </TabsTrigger> */}
+            {/* <TabsTrigger
+              value="documents"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Documents</span>
+            </TabsTrigger> */}
+            {/* <TabsTrigger
+              value="contracts"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <FileCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Contracts</span>
+            </TabsTrigger> */}
+            {/* <TabsTrigger
+              value="integrations"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <Plug className="h-4 w-4" />
+              <span className="hidden sm:inline">Integrations</span>
+            </TabsTrigger> */}
+            {/* <TabsTrigger
+              value="charts"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Charts</span>
+            </TabsTrigger> */}
+          </TabsList>
+
+          <TabsContent value="contact" className="mt-0">
+            <ContactInfoSection />
+          </TabsContent>
+
+          <TabsContent value="config" className="mt-0">
+            <ConfigurationsSection />
+          </TabsContent>
+
+          <TabsContent value="charges" className="mt-0">
+            <ChargesSection />
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-0">
+            <DocumentsSection />
+          </TabsContent>
+
+          <TabsContent value="contracts" className="mt-0">
+            <ContractsSection />
+          </TabsContent>
+
+          <TabsContent value="integrations" className="mt-0">
+            <IntegrationsSection />
+          </TabsContent>
+
+          <TabsContent value="charts" className="mt-0">
+            <ChartsSection />
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+}
