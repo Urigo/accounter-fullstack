@@ -9,6 +9,8 @@ import {
   //   TrendingUp,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
+import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
 import { BusinessHeader } from './business-header.js';
 import { ChargesSection } from './charges-section.jsx';
 import { ChartsSection } from './charts-section.jsx';
@@ -18,7 +20,23 @@ import { ContractsSection } from './contracts-section.jsx';
 import { DocumentsSection } from './documents-section.jsx';
 import { IntegrationsSection } from './integrations-section.jsx';
 
-export default function Business(): ReactElement {
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment BusinessPage on Business {
+    id
+  }
+`;
+
+interface Props {
+  data?: FragmentType<typeof BusinessPageFragmentDoc>;
+}
+
+export default function Business({ data }: Props): ReactElement {
+  const business = getFragmentData(BusinessPageFragmentDoc, data);
+
+  // TODO: use for debugging, remove later
+  console.log('business', business);
+
   return (
     <div className="min-h-screen bg-background">
       <BusinessHeader />

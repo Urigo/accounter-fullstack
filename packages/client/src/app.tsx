@@ -19,6 +19,7 @@ import { ValidateReportsScreen } from './components/reports/validations/index.js
 import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.js';
 import { YearlyLedgerReport } from './components/reports/yearly-ledger/index.js';
 import { Salaries } from './components/salaries/index.js';
+import { BusinessScreen } from './components/screens/businesses/business.js';
 import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
@@ -43,17 +44,20 @@ export function App(): ReactElement {
         <Routes>
           <Route path="/" element={<AllCharges />} />
           <Route path="charges" element={<AllCharges />} />
+          <Route path="charges/:chargeId" element={<Charge />} />
           <Route path="missing-info-charges" element={<MissingInfoCharges />} />
           <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
-          <Route path="charges/:chargeId" element={<Charge />} />
+
           <Route path="businesses" element={<Businesses />} />
-          <Route path="business-trips" element={<BusinessTrips />} />
-          <Route path="business-trips/:businessTripId" element={<BusinessTrip />} />
-          <Route path="business-transactions" element={<BusinessTransactionsSummery />} />
+          <Route path="businesses/:businessId" element={<BusinessScreen />} />
           <Route
             path="business-transactions/:businessId"
             element={<BusinessTransactionsSingle />}
           />
+
+          <Route path="business-trips" element={<BusinessTrips />} />
+          <Route path="business-trips/:businessTripId" element={<BusinessTrip />} />
+          <Route path="business-transactions" element={<BusinessTransactionsSummery />} />
           <Route path="charts">
             <Route path="" element={<ChartPage />} />
             <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
