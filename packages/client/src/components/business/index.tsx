@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import {
   //   Building2,
   //   DollarSign,
@@ -9,15 +10,15 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { BusinessHeader } from './business-header.js';
-import { ChargesSection } from './charges-section.js';
-import { ChartsSection } from './charts-section.js';
-import { ConfigurationsSection } from './configurations-section.js';
-import { ContactInfoSection } from './contact-info-section.js';
-import { ContractsSection } from './contracts-section.js';
-import { DocumentsSection } from './documents-section.js';
-import { IntegrationsSection } from './integrations-section.js';
+import { ChargesSection } from './charges-section.jsx';
+import { ChartsSection } from './charts-section.jsx';
+import { ConfigurationsSection } from './configurations-section.jsx';
+import { ContactInfoSection } from './contact-info-section.jsx';
+import { ContractsSection } from './contracts-section.jsx';
+import { DocumentsSection } from './documents-section.jsx';
+import { IntegrationsSection } from './integrations-section.jsx';
 
-export default function BusinessPage() {
+export default function Business(): ReactElement {
   return (
     <div className="min-h-screen bg-background">
       <BusinessHeader />
