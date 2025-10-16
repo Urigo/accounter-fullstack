@@ -24,6 +24,7 @@ import { IntegrationsSection } from './integrations-section.jsx';
 /* GraphQL */ `
   fragment BusinessPage on Business {
     id
+    ...BusinessHeader
   }
 `;
 
@@ -34,12 +35,13 @@ interface Props {
 export default function Business({ data }: Props): ReactElement {
   const business = getFragmentData(BusinessPageFragmentDoc, data);
 
-  // TODO: use for debugging, remove later
-  console.log('business', business);
+  if (!business) {
+    return <div>Business not found</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <BusinessHeader />
+      <BusinessHeader data={business} />
 
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
         <Tabs defaultValue="contact" className="w-full">
