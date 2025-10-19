@@ -8,6 +8,7 @@ import {
   Settings,
   //   TrendingUp,
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
@@ -34,6 +35,13 @@ interface Props {
 
 export default function Business({ data }: Props): ReactElement {
   const business = getFragmentData(BusinessPageFragmentDoc, data);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab = searchParams.get('tab') || 'contact';
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   if (!business) {
     return <div>Business not found</div>;
@@ -44,7 +52,7 @@ export default function Business({ data }: Props): ReactElement {
       <BusinessHeader data={business} />
 
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
-        <Tabs defaultValue="contact" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-7 mb-6 h-auto gap-1 bg-muted/50 p-1">
             {/* <TabsTrigger
               value="contact"
