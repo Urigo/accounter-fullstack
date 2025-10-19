@@ -1,115 +1,190 @@
-import { Calendar, DollarSign, FileText, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, ExternalLink, LinkIcon, Pencil } from 'lucide-react';
+import { useQuery } from 'urql';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { Progress } from '@/components/ui/progress.js';
+import { ClientContractsSectionDocument, type ClientContractsSectionQuery } from '@/gql/graphql.js';
+import {
+  formatAmountWithCurrency,
+  getDocumentNameFromType,
+  standardBillingCycle,
+  standardPlan,
+} from '@/helpers/index.js';
+import {
+  ModifyContractDialog,
+  type ContractFormValues,
+} from '../clients/contracts/modify-contract-dialog.js';
 
-const contracts = [
-  {
-    id: 'CNT-2024-001',
-    client: 'Tech Solutions Inc.',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    value: 15_000,
-    paid: 10_000,
-    status: 'active',
-    poNumber: 'PO-2024-TS-001',
-    billingCycle: 'Monthly',
-  },
-  {
-    id: 'CNT-2024-002',
-    client: 'Digital Agency Co.',
-    startDate: '2024-06-01',
-    endDate: '2025-05-31',
-    value: 24_000,
-    paid: 8000,
-    status: 'active',
-    poNumber: 'PO-2024-DA-002',
-    billingCycle: 'Quarterly',
-  },
-  {
-    id: 'CNT-2023-015',
-    client: 'Startup Ventures',
-    startDate: '2023-03-01',
-    endDate: '2024-02-29',
-    value: 12_000,
-    paid: 12_000,
-    status: 'completed',
-    poNumber: 'PO-2023-SV-015',
-    billingCycle: 'Monthly',
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query ClientContractsSection($clientId: UUID!) {
+    contractsByClient(clientId: $clientId) {
+      id
+      purchaseOrder
+      startDate
+      endDate
+      amount {
+        raw
+        currency
+      }
+      billingCycle
+      isActive
+      product
+      documentType
+      remarks
+      plan
+      msCloud
+    }
+  }
+`;
 
-export function ContractsSection() {
+function convertContractDataToFormValues(
+  contract: ClientContractsSectionQuery['contractsByClient'][number],
+): ContractFormValues {
+  return {
+    id: contract.id,
+    operationsLimit: 0, // Placeholder, as this field is not in the query
+    po: contract.purchaseOrder ?? undefined,
+    startDate: contract.startDate,
+    endDate: contract.endDate,
+    paymentAmount: contract.amount.raw,
+    paymentCurrency: contract.amount.currency,
+    productType: contract.product ?? undefined,
+    billingCycle: contract.billingCycle,
+    msCloudLink: contract.msCloud?.toString(),
+    isActive: contract.isActive,
+    subscriptionPlan: contract.plan ?? undefined,
+    defaultRemark: contract.remarks ?? undefined,
+    defaultDocumentType: contract.documentType ?? undefined,
+  };
+}
+
+interface Props {
+  clientId: string;
+}
+
+export function ContractsSection({ clientId }: Props) {
+  const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
+
+  const [{ data, fetching }] = useQuery({
+    query: ClientContractsSectionDocument,
+    variables: {
+      clientId,
+    },
+  });
+
+  const contracts = data?.contractsByClient ?? [];
+
+  if (fetching) {
+    return <div>Loading contracts...</div>;
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Contracts</CardTitle>
-            <CardDescription>Active and past contracts with payment tracking</CardDescription>
+            <CardDescription>Current and past contracts sorted by start date</CardDescription>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Contract
-          </Button>
+          <ModifyContractDialog contract={editingContract} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {contracts.map(contract => {
-          const progress = (contract.paid / contract.value) * 100;
+          const isActive = !!contract.isActive;
 
           return (
             <div key={contract.id} className="rounded-lg border p-4 space-y-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold">{contract.client}</h4>
-                    <Badge variant={contract.status === 'active' ? 'default' : 'secondary'}>
-                      {contract.status}
+                    <h4 className="font-semibold">{contract.product}</h4>
+                    <Badge variant={isActive ? 'default' : 'secondary'}>
+                      {contract.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground font-mono">{contract.id}</p>
                 </div>
-                <Button variant="outline" size="sm">
-                  <FileText className="h-4 w-4 mr-2" />
-                  View
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingContract(convertContractDataToFormValues(contract))}
+                >
+                  <Pencil className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-1">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-0">
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     Contract Period
                   </p>
                   <p className="text-sm font-medium">
-                    {contract.startDate} → {contract.endDate}
+                    {new Date(contract.startDate).toLocaleDateString()} →{' '}
+                    {new Date(contract.endDate).toLocaleDateString()}
                   </p>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0">
                   <p className="text-sm text-muted-foreground">PO Number</p>
-                  <p className="text-sm font-medium font-mono">{contract.poNumber}</p>
+                  <p className="text-sm font-medium font-mono">{contract.purchaseOrder}</p>
                 </div>
 
-                <div className="space-y-1">
+                {/* TODO: activate this field later. requires additional backend support */}
+                {/* <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Operations Limit</p>
+                  <p className="text-sm font-medium">{contract.operationsLimit.toLocaleString()}</p>
+                </div> */}
+
+                <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Payment</p>
+                  <p className="text-sm font-medium">
+                    {formatAmountWithCurrency(contract.amount.raw, contract.amount.currency)}
+                  </p>
+                </div>
+
+                <div className="space-y-0">
                   <p className="text-sm text-muted-foreground">Billing Cycle</p>
-                  <p className="text-sm font-medium">{contract.billingCycle}</p>
+                  <p className="text-sm font-medium">
+                    {standardBillingCycle(contract.billingCycle)}
+                  </p>
+                </div>
+
+                <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Subscription Plan</p>
+                  <p className="text-sm font-medium">
+                    {contract.plan ? standardPlan(contract.plan) : 'N/A'}
+                  </p>
+                </div>
+
+                <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Document Type</p>
+                  <p className="text-sm font-medium">
+                    {getDocumentNameFromType(contract.documentType)}
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    Payment Progress
-                  </span>
-                  <span className="font-medium">
-                    ${contract.paid.toLocaleString()} / ${contract.value.toLocaleString()}
-                  </span>
+              {contract.remarks && (
+                <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Remark</p>
+                  <p className="text-sm">{contract.remarks}</p>
                 </div>
-                <Progress value={progress} className="h-2" />
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {contract.msCloud && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={contract.msCloud.toString()} target="_blank" rel="noopener noreferrer">
+                      <LinkIcon className="h-4 w-4 mr-2" />
+                      MS Cloud
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  </Button>
+                )}
               </div>
             </div>
           );

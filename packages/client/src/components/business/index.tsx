@@ -146,9 +146,11 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
             <DocumentsSection businessId={business.id} />
           </TabsContent>
 
-          <TabsContent value="contracts" className="mt-0">
-            <ContractsSection />
-          </TabsContent>
+          {isClient && (
+            <TabsContent value="contracts" className="mt-0">
+              <ContractsSection clientId={business.id} />
+            </TabsContent>
+          )}
 
           <TabsContent value="integrations" className="mt-0">
             <IntegrationsSection />

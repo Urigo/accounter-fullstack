@@ -1,6 +1,7 @@
 export * from './charges.js';
 export * from './clipboard.js';
 export * from './consts.js';
+export * from './contracts.js';
 export * from './currency.js';
 export * from './dates.js';
 export * from './document-matches.js';
