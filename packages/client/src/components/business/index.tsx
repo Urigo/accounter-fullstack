@@ -5,7 +5,7 @@ import {
   DollarSign,
   FileCheck,
   FileText,
-  //   Plug,
+  Plug,
   Settings,
   //   TrendingUp,
 } from 'lucide-react';
@@ -32,6 +32,7 @@ import { TransactionsSection } from './transactions-section.js';
         id
       }
     }
+    ...ClientIntegrationsSection
     ...BusinessHeader
     ...BusinessContactSection
     ...BusinessConfigurationSection
@@ -65,7 +66,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-6 h-auto gap-1 bg-muted/50 p-1">
+          <TabsList className="grid w-full lg:grid-cols-8 sm:grid-cols-4 grid-cols-8 mb-6 h-auto gap-1 bg-muted/50 p-1">
             <TabsTrigger
               value="contact"
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -102,28 +103,30 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
             {isClient && (
-              <TabsTrigger
-                value="contracts"
-                className="flex items-center gap-2 data-[state=active]:bg-background"
-              >
-                <FileCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Contracts</span>
-              </TabsTrigger>
+              <>
+                <TabsTrigger
+                  value="contracts"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <FileCheck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Contracts</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="integrations"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <Plug className="h-4 w-4" />
+                  <span className="hidden sm:inline">Integrations</span>
+                </TabsTrigger>
+                {/* <TabsTrigger
+                  value="charts"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">Charts</span>
+                </TabsTrigger> */}
+              </>
             )}
-            {/* <TabsTrigger
-              value="integrations"
-              className="flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <Plug className="h-4 w-4" />
-              <span className="hidden sm:inline">Integrations</span>
-            </TabsTrigger> */}
-            {/* <TabsTrigger
-              value="charts"
-              className="flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Charts</span>
-            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="contact" className="mt-0">
@@ -147,18 +150,20 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           </TabsContent>
 
           {isClient && (
-            <TabsContent value="contracts" className="mt-0">
-              <ContractsSection clientId={business.id} />
-            </TabsContent>
+            <>
+              <TabsContent value="contracts" className="mt-0">
+                <ContractsSection clientId={business.id} />
+              </TabsContent>
+
+              <TabsContent value="integrations" className="mt-0">
+                <IntegrationsSection data={business} />
+              </TabsContent>
+
+              <TabsContent value="charts" className="mt-0">
+                <ChartsSection />
+              </TabsContent>
+            </>
           )}
-
-          <TabsContent value="integrations" className="mt-0">
-            <IntegrationsSection />
-          </TabsContent>
-
-          <TabsContent value="charts" className="mt-0">
-            <ChartsSection />
-          </TabsContent>
         </Tabs>
       </main>
     </div>
