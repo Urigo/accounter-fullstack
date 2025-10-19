@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -76,7 +76,7 @@ interface Props {
   onDone?: () => void;
 }
 
-export function ModifyContractDialog({ contract }: Props) {
+export function ModifyContractDialog({ contract, onDone }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
 
@@ -114,17 +114,21 @@ export function ModifyContractDialog({ contract }: Props) {
     setIsDialogOpen(true);
   };
 
-  const onSubmit = (values: ContractFormValues) => {
-    if (editingContract) {
-      console.log('[v0] Updating contract:', editingContract.id, values);
-      // TODO: Handle contract update
-    } else {
-      console.log('[v0] Creating new contract:', values);
-      // TODO: Handle contract creation
-    }
-    setIsDialogOpen(false);
-    setEditingContract(null);
-  };
+  const onSubmit = useCallback(
+    async (values: ContractFormValues) => {
+      if (editingContract) {
+        console.log('[v0] Updating contract:', editingContract.id, values);
+        // TODO: Handle contract update
+      } else {
+        console.log('[v0] Creating new contract:', values);
+        // TODO: Handle contract creation
+      }
+      setIsDialogOpen(false);
+      setEditingContract(null);
+      onDone?.();
+    },
+    [editingContract, onDone],
+  );
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -231,10 +235,11 @@ export function ModifyContractDialog({ contract }: Props) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                          <SelectItem value="ILS">ILS</SelectItem>
+                          {Object.values(Currency).map(currency => (
+                            <SelectItem key={currency} value={currency}>
+                              {currency}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />

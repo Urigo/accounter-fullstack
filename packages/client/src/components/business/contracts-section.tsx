@@ -67,7 +67,7 @@ interface Props {
 export function ContractsSection({ clientId }: Props) {
   const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetch] = useQuery({
     query: ClientContractsSectionDocument,
     variables: {
       clientId,
@@ -88,7 +88,7 @@ export function ContractsSection({ clientId }: Props) {
             <CardTitle>Contracts</CardTitle>
             <CardDescription>Current and past contracts sorted by start date</CardDescription>
           </div>
-          <ModifyContractDialog contract={editingContract} />
+          <ModifyContractDialog contract={editingContract} onDone={refetch} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

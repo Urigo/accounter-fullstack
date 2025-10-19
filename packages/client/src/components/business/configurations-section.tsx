@@ -49,6 +49,7 @@ import { useGetTags } from '@/hooks/use-get-tags.js';
 import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { UserContext } from '@/providers/user-provider.js';
+import { ModifyClientDialog } from '../clients/modify-client-dialog.js';
 import {
   ComboBox,
   MultiSelect,
@@ -87,13 +88,16 @@ import {
           attachments
         }
       }
+      clientInfo {
+        id
+      }
     }
   }
 `;
 
 interface ConfigurationFormValues {
+  isClient: boolean;
   // TODO: activate these fields later. requires additional backend support
-  // isClient: boolean;
   // isActive: boolean;
   // isReceiptEnough: boolean;
   // noDocsRequired: boolean;
@@ -120,8 +124,8 @@ function ConfigurationsSectionFragmentToFormValues(
   }
 
   return {
+    isClient: !!business.clientInfo?.id,
     // TODO: activate these fields later. requires additional backend support
-    // isClient: false,
     // isActive: true,
     // isReceiptEnough: false,
     // noDocsRequired: false,
@@ -343,13 +347,20 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
     return <div />;
   }
 
+  const isClient = form.watch('isClient');
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configurations</CardTitle>
-        <CardDescription>
-          Business status, tax settings, automation rules, and integration preferences
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Configurations</CardTitle>
+            <CardDescription>
+              Business status, tax settings, automation rules, and integration preferences
+            </CardDescription>
+          </div>
+          {!isClient && <ModifyClientDialog businessId={business.id} onDone={refetchBusiness} />}
+        </div>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -357,8 +368,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">Business Status & Behavior</h3>
               <div className="space-y-4">
-                {/* TODO: activate these fields later. requires additional backend support */}
-                {/* <FormField
+                <FormField
                   control={form.control}
                   name="isClient"
                   render={({ field }) => (
@@ -368,12 +378,13 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                         <FormDescription>Mark this business as a client</FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch disabled checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
                     </FormItem>
                   )}
-                /> */}
+                />
 
+                {/* TODO: activate these fields later. requires additional backend support */}
                 {/* <FormField
                   control={form.control}
                   name="isActive"
@@ -642,10 +653,17 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       {field.value?.map((phrase, index) => (
                         <Badge key={index} variant="secondary" className="gap-1">
                           {phrase}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0 size-3"
                             onClick={() => removePhrase(index)}
-                          />
+                          >
+                            <X
+                              className="size-3 cursor-pointer"
+                              onClick={() => removePhrase(index)}
+                            />
+                          </Button>
                         </Badge>
                       ))}
                     </div>
@@ -682,10 +700,14 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       {field.value?.map((email, index) => (
                         <Badge key={index} variant="secondary" className="gap-1">
                           {email}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0 size-3"
                             onClick={() => removeEmail(index)}
-                          />
+                          >
+                            <X className="size-3 cursor-pointer" />
+                          </Button>
                         </Badge>
                       ))}
                     </div>
