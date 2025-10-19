@@ -67,8 +67,8 @@ const deleteClient = sql<IDeleteClientQuery>`
 `;
 
 const insertClient = sql<IInsertClientQuery>`
-    INSERT INTO accounter_schema.clients (green_invoice_id, hive_id)
-    VALUES ($greenInvoiceId, $hiveId)
+    INSERT INTO accounter_schema.clients (business_id, green_invoice_id, hive_id, emails)
+    VALUES ($businessId, $greenInvoiceId, $hiveId, $emails)
     RETURNING *;`;
 
 @Injectable({

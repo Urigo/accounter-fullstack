@@ -495,6 +495,25 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       return draft;
     },
+    greenInvoiceClient: async (_, { clientId }, { injector }) => {
+      try {
+        const client = await injector.get(ClientsProvider).getClientByIdLoader.load(clientId);
+        if (!client) {
+          throw new GraphQLError(`Client not found for ID="${clientId}"`);
+        }
+
+        const greenInvoiceClient = await getClientFromGreenInvoiceClient(injector, clientId);
+        if (!greenInvoiceClient) {
+          throw new GraphQLError(`Green invoice match not found for client ID="${clientId}"`);
+        }
+
+        return greenInvoiceClient;
+      } catch (error) {
+        const message = 'Failed to fetch Green Invoice client';
+        console.error(message, error);
+        throw new GraphQLError(message);
+      }
+    },
   },
   Mutation: {
     fetchIncomeDocuments: async (
