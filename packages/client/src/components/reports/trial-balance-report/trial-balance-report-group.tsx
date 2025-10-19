@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Text } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
-import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
+import { formatAmountWithCurrency } from '../../../helpers/index.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import {
   TrialBalanceReportSortCode,
@@ -44,16 +44,14 @@ export const TrialBalanceReportGroup = ({
         <td colSpan={2}>Group total:</td>
         <td colSpan={1}>{group.replaceAll('0', '*')}</td>
         <td colSpan={1}>
-          {!!data.totalDebit &&
-            `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.totalDebit)}`}
+          {!!data.totalDebit && formatAmountWithCurrency(data.totalDebit, Currency.Ils)}
         </td>
         <td colSpan={1}>
-          {!!data.totalCredit &&
-            `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.totalCredit)}`}
+          {!!data.totalCredit && formatAmountWithCurrency(data.totalCredit, Currency.Ils)}
         </td>
         <td colSpan={1}>
           <Text fw={700} c={data.sum > 0 ? 'green' : data.sum < 0 ? 'red' : undefined}>
-            {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(data.sum)}`}
+            {formatAmountWithCurrency(data.sum, Currency.Ils)}
           </Text>
         </td>
       </tr>
