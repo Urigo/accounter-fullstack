@@ -120,6 +120,7 @@ function ConfigurationsSectionFragmentToFormValues(
   }
 
   return {
+    // TODO: activate these fields later. requires additional backend support
     // isClient: false,
     // isActive: true,
     // isReceiptEnough: false,
@@ -346,6 +347,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">Business Status & Behavior</h3>
               <div className="space-y-4">
+                {/* TODO: activate these fields later. requires additional backend support */}
                 {/* <FormField
                   control={form.control}
                   name="isClient"
