@@ -20,6 +20,15 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         throw new GraphQLError('Error fetching countries');
       }
     },
+    contractsByClient: async (_, { clientId }, { injector }) => {
+      try {
+        return injector.get(ContractsProvider).getContractsByClientIdLoader.load(clientId);
+      } catch (e) {
+        const message = 'Error fetching contracts by client';
+        console.error(message, e);
+        throw new GraphQLError(message);
+      }
+    },
   },
   Contract: {
     id: dbContract => dbContract.id,

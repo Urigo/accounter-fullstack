@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allOpenContracts: [Contract!]! @auth(role: ACCOUNTANT)
+    contractsByClient(clientId: UUID!): [Contract!]! @auth(role: ACCOUNTANT)
   }
 
   " a client contract "
