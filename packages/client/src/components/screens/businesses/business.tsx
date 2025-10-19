@@ -46,5 +46,5 @@ export const BusinessScreen = (): ReactElement => {
     return <div>Business not found</div>;
   }
 
-  return <Business data={data.business} />;
+  return <Business data={data.business} refetchBusiness={async () => fetchBusiness()} />;
 };
