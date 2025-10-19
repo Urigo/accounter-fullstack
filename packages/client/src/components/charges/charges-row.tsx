@@ -70,9 +70,9 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 `;
 
 interface Props {
-  setEditCharge: (onChange: () => void) => void;
-  setInsertDocument: (onChange: () => void) => void;
-  setMatchDocuments: () => void;
+  setEditCharge?: (onChange: () => void) => void;
+  setInsertDocument?: (onChange: () => void) => void;
+  setMatchDocuments?: () => void;
   toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: ChargesTableFieldsFragment;
@@ -198,12 +198,14 @@ export const ChargesTableRow = ({
 
         <td>
           <div className="flex flex-col gap-2">
-            <EditMiniButton
-              onClick={event => {
-                event.stopPropagation();
-                setEditCharge(onChange);
-              }}
-            />
+            {setEditCharge && (
+              <EditMiniButton
+                onClick={event => {
+                  event.stopPropagation();
+                  setEditCharge(onChange);
+                }}
+              />
+            )}
             {toggleMergeCharge && (
               <ToggleMergeSelected
                 toggleMergeSelected={(): void => toggleMergeCharge(onChange)}
@@ -217,7 +219,7 @@ export const ChargesTableRow = ({
             <ChargeExtendedInfoMenu
               chargeId={charge.id}
               chargeType={charge.__typename}
-              setInsertDocument={() => setInsertDocument(onChange)}
+              setInsertDocument={setInsertDocument ? () => setInsertDocument(onChange) : undefined}
               setMatchDocuments={setMatchDocuments}
               onChange={onChange}
               isIncome={isIncomeCharge}

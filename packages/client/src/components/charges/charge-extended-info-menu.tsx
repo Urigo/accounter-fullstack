@@ -17,8 +17,8 @@ import { Dialog, DialogContent } from '../ui/dialog.js';
 interface ChargeExtendedInfoMenuProps {
   chargeId: string;
   chargeType: ChargesTableRowFieldsFragment['__typename'];
-  setInsertDocument: () => void;
-  setMatchDocuments: () => void;
+  setInsertDocument?: () => void;
+  setMatchDocuments?: () => void;
   onChange?: () => void;
   isIncome: boolean;
 }
@@ -78,16 +78,19 @@ export function ChargeExtendedInfoMenu({
           </ConfirmationModal>
           <Menu.Divider />
           <Menu.Label>Documents</Menu.Label>
-          <Menu.Item
-            icon={<ListPlus size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              setInsertDocument();
-              closeMenu();
-            }}
-          >
-            Insert Document
-          </Menu.Item>
+          {setInsertDocument && (
+            <Menu.Item
+              icon={<ListPlus size={14} />}
+              onClick={(event: ClickEvent): void => {
+                event.stopPropagation();
+                setInsertDocument();
+                closeMenu();
+              }}
+            >
+              Insert Document
+            </Menu.Item>
+          )}
+          (
           <Menu.Item
             icon={<FilePlus2 size={14} />}
             onClick={(event: ClickEvent): void => {
@@ -98,15 +101,18 @@ export function ChargeExtendedInfoMenu({
           >
             Upload Documents
           </Menu.Item>
-          <Menu.Item
-            icon={<Search size={14} />}
-            onClick={(): void => {
-              setMatchDocuments();
-              closeMenu();
-            }}
-          >
-            Match Document
-          </Menu.Item>
+          )
+          {setMatchDocuments && (
+            <Menu.Item
+              icon={<Search size={14} />}
+              onClick={(): void => {
+                setMatchDocuments();
+                closeMenu();
+              }}
+            >
+              Match Document
+            </Menu.Item>
+          )}
           {isIncome && (
             <Menu.Item
               icon={<ListPlus size={14} />}
