@@ -26,6 +26,8 @@ import { IntegrationsSection } from './integrations-section.jsx';
   fragment BusinessPage on Business {
     id
     ...BusinessHeader
+
+    ...BusinessConfigurationSection
   }
 `;
 
@@ -110,7 +112,7 @@ export default function Business({ data }: Props): ReactElement {
           </TabsContent>
 
           <TabsContent value="config" className="mt-0">
-            <ConfigurationsSection />
+            <ConfigurationsSection data={business} />
           </TabsContent>
 
           <TabsContent value="charges" className="mt-0">
