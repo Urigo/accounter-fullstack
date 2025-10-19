@@ -1,104 +1,80 @@
-import { DollarSign, MoreVertical, Plus } from 'lucide-react';
-import { Badge } from '@/components/ui/badge.js';
-import { Button } from '@/components/ui/button.js';
+import { useContext, useState } from 'react';
+import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.js';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table.js';
+import { BusinessChargesSectionDocument, ChargeSortByField } from '@/gql/graphql.js';
+import { UserContext } from '@/providers/user-provider.js';
+import { Pagination } from '@mantine/core';
+import { ChargesTable } from '../charges/charges-table';
 
-const charges = [
-  {
-    id: 'CHG-001',
-    name: 'Monthly Subscription',
-    amount: 99.0,
-    frequency: 'Monthly',
-    status: 'active',
-  },
-  { id: 'CHG-002', name: 'Setup Fee', amount: 500.0, frequency: 'One-time', status: 'completed' },
-  { id: 'CHG-003', name: 'Premium Support', amount: 49.0, frequency: 'Monthly', status: 'active' },
-  {
-    id: 'CHG-004',
-    name: 'Additional Users',
-    amount: 15.0,
-    frequency: 'Per user/month',
-    status: 'active',
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query BusinessChargesSection($page: Int, $limit: Int, $filters: ChargeFilter) {
+    allCharges(page: $page, limit: $limit, filters: $filters) {
+      nodes {
+        id
+        ...ChargesTableFields
+      }
+      pageInfo {
+        totalPages
+      }
+    }
+  }
+`;
 
-export function ChargesSection() {
+interface Props {
+  businessId: string;
+}
+
+export function ChargesSection({ businessId }: Props) {
+  const { userContext } = useContext(UserContext);
+  const [activePage, setActivePage] = useState(1);
+
+  const [{ data, fetching }] = useQuery({
+    query: BusinessChargesSectionDocument,
+    variables: {
+      filters: {
+        byOwners: userContext?.context.adminBusinessId
+          ? [userContext.context.adminBusinessId]
+          : undefined,
+        sortBy: {
+          field: ChargeSortByField.Date,
+          asc: false,
+        },
+        byBusinesses: [businessId],
+      },
+      page: activePage,
+      limit: 100,
+    },
+  });
+
+  const totalPages = data?.allCharges?.pageInfo.totalPages ?? 1;
+  const charges = data?.allCharges?.nodes ?? [];
+
+  if (fetching) {
+    return <div>Loading charges...</div>;
+  }
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex w-full justify-between items-center">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Charges</CardTitle>
             <CardDescription>Recurring and one-time charges for this business</CardDescription>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Charge
-          </Button>
         </div>
+        {totalPages > 1 && (
+          <Pagination
+            className="flex-fit"
+            value={activePage}
+            onChange={setActivePage}
+            total={totalPages}
+          />
+        )}
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Charge ID</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[50px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {charges.map(charge => (
-                <TableRow key={charge.id}>
-                  <TableCell className="font-mono text-sm">{charge.id}</TableCell>
-                  <TableCell className="font-medium">{charge.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3 text-muted-foreground" />
-                      {charge.amount.toFixed(2)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{charge.frequency}</TableCell>
-                  <TableCell>
-                    <Badge variant={charge.status === 'active' ? 'default' : 'secondary'}>
-                      {charge.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Pause</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ChargesTable data={charges} isAllOpened={false} />
         </div>
       </CardContent>
     </Card>

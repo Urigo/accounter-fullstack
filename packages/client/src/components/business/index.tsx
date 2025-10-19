@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import {
   Building2,
-  //   DollarSign,
+  DollarSign,
   //   FileCheck,
   //   FileText,
   //   Plug,
@@ -71,13 +71,13 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Config</span>
             </TabsTrigger>
-            {/* <TabsTrigger
+            <TabsTrigger
               value="charges"
               className="flex items-center gap-2 data-[state=active]:bg-background"
             >
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Charges</span>
-            </TabsTrigger> */}
+            </TabsTrigger>
             {/* <TabsTrigger
               value="documents"
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -117,7 +117,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           </TabsContent>
 
           <TabsContent value="charges" className="mt-0">
-            <ChargesSection />
+            <ChargesSection businessId={business.id} />
           </TabsContent>
 
           <TabsContent value="documents" className="mt-0">
