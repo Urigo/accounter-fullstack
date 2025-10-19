@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import {
+  ArrowLeftRight,
   Building2,
   DollarSign,
   //   FileCheck,
@@ -20,6 +21,7 @@ import { ContactInfoSection } from './contact-info-section.jsx';
 import { ContractsSection } from './contracts-section.jsx';
 import { DocumentsSection } from './documents-section.jsx';
 import { IntegrationsSection } from './integrations-section.jsx';
+import { TransactionsSection } from './transactions-section.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -78,6 +80,13 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Charges</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="transactions"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              <span className="hidden sm:inline">Transactions</span>
+            </TabsTrigger>
             {/* <TabsTrigger
               value="documents"
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -118,6 +127,10 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
           <TabsContent value="charges" className="mt-0">
             <ChargesSection businessId={business.id} />
+          </TabsContent>
+
+          <TabsContent value="transactions" className="mt-0">
+            <TransactionsSection businessId={business.id} />
           </TabsContent>
 
           <TabsContent value="documents" className="mt-0">
