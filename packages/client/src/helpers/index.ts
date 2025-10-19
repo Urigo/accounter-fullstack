@@ -9,6 +9,7 @@ export * from './files.js';
 export * from './form.js';
 export * from './graphql-document-dedupe-fragments.js';
 export * from './numbers.js';
+export * from './pcn874.js';
 export * from './strings-manipulations.js';
 export * from './vat.js';
 export * from './tags.js';

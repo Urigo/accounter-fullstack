@@ -56,6 +56,7 @@ import { ModifyBusinessFields } from './modify-business-fields.js';
         }
         optionalVAT
         irsCode
+        pcn874RecordType
       }
     }
   }
