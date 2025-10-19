@@ -3,7 +3,7 @@ import {
   ArrowLeftRight,
   Building2,
   DollarSign,
-  //   FileCheck,
+  FileCheck,
   FileText,
   //   Plug,
   Settings,
@@ -27,6 +27,11 @@ import { TransactionsSection } from './transactions-section.js';
 /* GraphQL */ `
   fragment BusinessPage on Business {
     id
+    ... on LtdFinancialEntity {
+      clientInfo {
+        id
+      }
+    }
     ...BusinessHeader
     ...BusinessContactSection
     ...BusinessConfigurationSection
@@ -51,6 +56,8 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
   if (!business) {
     return <div>Business not found</div>;
   }
+
+  const isClient = 'clientInfo' in business && !!business.clientInfo;
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,13 +101,15 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
-            {/* <TabsTrigger
-              value="contracts"
-              className="flex items-center gap-2 data-[state=active]:bg-background"
-            >
-              <FileCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Contracts</span>
-            </TabsTrigger> */}
+            {isClient && (
+              <TabsTrigger
+                value="contracts"
+                className="flex items-center gap-2 data-[state=active]:bg-background"
+              >
+                <FileCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Contracts</span>
+              </TabsTrigger>
+            )}
             {/* <TabsTrigger
               value="integrations"
               className="flex items-center gap-2 data-[state=active]:bg-background"

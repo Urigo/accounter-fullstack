@@ -65,4 +65,11 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
       };
     },
   },
+  LtdFinancialEntity: {
+    clientInfo: async (business, _, { injector }) => {
+      const client = await injector.get(ClientsProvider).getClientByIdLoader.load(business.id);
+
+      return client || null;
+    },
+  },
 };

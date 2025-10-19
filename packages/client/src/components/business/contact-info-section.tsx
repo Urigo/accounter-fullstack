@@ -46,9 +46,14 @@ import { ComboBox } from '../common';
       country
       governmentId
       address
+      email
       # localAddress
       phoneNumber
       website
+      clientInfo {
+        id
+        emails
+      }
     }
   }
 `;
@@ -81,13 +86,12 @@ function ContactsSectionFragmentToFormValues(
     localName: business.hebrewName ?? undefined,
     govId: business.governmentId ?? undefined,
     address: business.address ?? undefined,
-    // TODO: activate these fields later. requires additional backend support
+    // TODO: activate this field later. requires additional backend support
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
     website: business.website ?? undefined,
-    // TODO: activate these fields later. requires additional backend support
-    // generalContacts: [],
-    // billingEmails: [],
+    generalContacts: business.email?.split(',').map(email => email.trim()),
+    billingEmails: business.clientInfo?.emails,
   };
 }
 
@@ -103,6 +107,7 @@ function convertFormDataToUpdateBusinessInput(
     // localAddress: formData.localAddress,
     phoneNumber: formData.phone,
     website: formData.website,
+    email: formData.generalContacts?.join(', '),
   };
 }
 
@@ -147,9 +152,8 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
     }
   }, [localAddress, defaultFormValues.localAddress, form]);
 
-  // TODO: activate these flags later. requires additional backend support
-  const isClient = false; // TODO: This would come from config in real app
-  const isLocalEntity = locality === 'ISR'; // TODO: Replace with user context based check
+  const isClient = business && 'clientInfo' in business && !!business.clientInfo;
+  const isLocalEntity = locality === 'ISR'; // TODO: Replace with user context based check. requires additional backend support
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
@@ -403,66 +407,64 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 )}
               />
 
-              {isClient && (
-                <FormField
-                  control={form.control}
-                  name="generalContacts"
-                  render={({ field, fieldState }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        General Contacts
-                      </FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          <div
-                            className={
-                              dirtyFieldMarker(fieldState) + ' flex flex-wrap gap-2 mb-2 rounded-md'
-                            }
-                          >
-                            {field.value?.map((contact, index) => (
-                              <Badge key={index} variant="secondary" className="gap-1 pr-1">
-                                {contact}
-                                <button
-                                  type="button"
-                                  onClick={() => removeGeneralContact(field.value ?? [], index)}
-                                  className="ml-1 hover:bg-muted rounded-sm p-0.5"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <Input
-                              value={newContact}
-                              onChange={e => setNewContact(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addGeneralContact(field.value ?? []);
-                                }
-                              }}
-                              placeholder="Add contact email"
-                              type="email"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              disabled={!newContact.trim()}
-                              onClick={() => addGeneralContact(field.value ?? [])}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
+              <FormField
+                control={form.control}
+                name="generalContacts"
+                render={({ field, fieldState }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      General Contacts
+                    </FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <div
+                          className={
+                            dirtyFieldMarker(fieldState) + ' flex flex-wrap gap-2 mb-2 rounded-md'
+                          }
+                        >
+                          {field.value?.map((contact, index) => (
+                            <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                              {contact}
+                              <button
+                                type="button"
+                                onClick={() => removeGeneralContact(field.value ?? [], index)}
+                                className="ml-1 hover:bg-muted rounded-sm p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
                         </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                        <div className="flex gap-2">
+                          <Input
+                            value={newContact}
+                            onChange={e => setNewContact(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addGeneralContact(field.value ?? []);
+                              }
+                            }}
+                            placeholder="Add contact email"
+                            type="email"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            disabled={!newContact.trim()}
+                            onClick={() => addGeneralContact(field.value ?? [])}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {isClient && (
                 <FormField

@@ -15,4 +15,8 @@ export default gql`
     generatedDocumentType: DocumentType!
     greenInvoiceInfo: GreenInvoiceClient!
   }
+
+  extend type LtdFinancialEntity {
+    clientInfo: Client
+  }
 `;
