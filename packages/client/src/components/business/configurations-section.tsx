@@ -458,7 +458,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 <FormField
                   control={form.control}
                   name="sortCode"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Sort Code</FormLabel>
                       <FormControl>
@@ -472,6 +472,9 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                           disabled={fetchingSortCodes}
                           placeholder="Scroll to see all options"
                           formPart
+                          triggerProps={{
+                            className: dirtyFieldMarker(fieldState),
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -482,7 +485,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 <FormField
                   control={form.control}
                   name="taxCategory"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Tax Category</FormLabel>
                       <FormControl>
@@ -493,6 +496,9 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                           onChange={field.onChange}
                           placeholder="Scroll to see all options"
                           formPart
+                          triggerProps={{
+                            className: dirtyFieldMarker(fieldState),
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
