@@ -50,7 +50,7 @@ export function ComboBox({
   if (isDesktop) {
     return (
       <Popover modal open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+        <PopoverTrigger asChild className="w-fit min-w-40">
           <Trigger
             placeholder={placeholder}
             selectedDatum={selectedDatum}
