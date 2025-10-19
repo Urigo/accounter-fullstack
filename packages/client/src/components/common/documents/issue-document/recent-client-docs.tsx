@@ -21,8 +21,8 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query RecentClientIssuedDocuments($clientId: UUID!) {
-    recentDocumentsByClient(clientId: $clientId) {
+  query RecentClientIssuedDocuments($clientId: UUID!, $limit: Int) {
+    recentDocumentsByClient(clientId: $clientId, limit: $limit) {
       id
       ... on FinancialDocument {
         issuedDocumentInfo {
@@ -45,13 +45,15 @@ type RowType = DocumentsTableRowType & {
 interface RecentClientDocsProps {
   clientId: string;
   linkedDocumentIds: string[];
+  limit?: number;
 }
 
-export function RecentClientDocs({ clientId, linkedDocumentIds }: RecentClientDocsProps) {
+export function RecentClientDocs({ clientId, linkedDocumentIds, limit }: RecentClientDocsProps) {
   const [{ data, fetching }] = useQuery({
     query: RecentClientIssuedDocumentsDocument,
     variables: {
       clientId,
+      limit,
     },
   });
 

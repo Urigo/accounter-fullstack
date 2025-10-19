@@ -4,7 +4,7 @@ import {
   Building2,
   DollarSign,
   //   FileCheck,
-  //   FileText,
+  FileText,
   //   Plug,
   Settings,
   //   TrendingUp,
@@ -87,13 +87,13 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <ArrowLeftRight className="h-4 w-4" />
               <span className="hidden sm:inline">Transactions</span>
             </TabsTrigger>
-            {/* <TabsTrigger
+            <TabsTrigger
               value="documents"
               className="flex items-center gap-2 data-[state=active]:bg-background"
             >
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Documents</span>
-            </TabsTrigger> */}
+            </TabsTrigger>
             {/* <TabsTrigger
               value="contracts"
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -134,7 +134,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           </TabsContent>
 
           <TabsContent value="documents" className="mt-0">
-            <DocumentsSection />
+            <DocumentsSection businessId={business.id} />
           </TabsContent>
 
           <TabsContent value="contracts" className="mt-0">
