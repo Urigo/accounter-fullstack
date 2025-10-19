@@ -273,7 +273,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
     const currentTypes = form.getValues('attachmentTypes');
     form.setValue(
       'attachmentTypes',
-      currentTypes.includes(type) ? currentTypes.filter(t => t !== type) : [...currentTypes, type],
+      currentTypes?.includes(type) ? currentTypes.filter(t => t !== type) : [...currentTypes, type],
       { shouldDirty: true },
     );
   };
@@ -623,7 +623,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {field.value.map((phrase, index) => (
+                      {field.value?.map((phrase, index) => (
                         <Badge key={index} variant="secondary" className="gap-1">
                           {phrase}
                           <X
@@ -663,7 +663,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {field.value.map((email, index) => (
+                      {field.value?.map((email, index) => (
                         <Badge key={index} variant="secondary" className="gap-1">
                           {email}
                           <X
@@ -699,7 +699,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       {availableAttachmentTypes.map(type => (
                         <Badge
                           key={type}
-                          variant={field.value.includes(type) ? 'default' : 'outline'}
+                          variant={field.value?.includes(type) ? 'default' : 'outline'}
                           className="cursor-pointer"
                           onClick={() => toggleAttachmentType(type)}
                         >
@@ -736,7 +736,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {field.value.map((link, index) => (
+                      {field.value?.map((link, index) => (
                         <Badge key={index} variant="secondary" className="gap-1 max-w-xs truncate">
                           {link}
                           <Button
