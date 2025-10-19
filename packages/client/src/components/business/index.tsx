@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import {
-  //   Building2,
+  Building2,
   //   DollarSign,
   //   FileCheck,
   //   FileText,
@@ -26,16 +26,17 @@ import { IntegrationsSection } from './integrations-section.jsx';
   fragment BusinessPage on Business {
     id
     ...BusinessHeader
-
+    ...BusinessContactSection
     ...BusinessConfigurationSection
   }
 `;
 
 interface Props {
   data?: FragmentType<typeof BusinessPageFragmentDoc>;
+  refetchBusiness?: () => Promise<void>;
 }
 
-export default function Business({ data }: Props): ReactElement {
+export default function Business({ data, refetchBusiness }: Props): ReactElement {
   const business = getFragmentData(BusinessPageFragmentDoc, data);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -56,13 +57,13 @@ export default function Business({ data }: Props): ReactElement {
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-7 mb-6 h-auto gap-1 bg-muted/50 p-1">
-            {/* <TabsTrigger
+            <TabsTrigger
               value="contact"
               className="flex items-center gap-2 data-[state=active]:bg-background"
             >
               <Building2 className="h-4 w-4" />
               <span className="hidden sm:inline">Contact</span>
-            </TabsTrigger> */}
+            </TabsTrigger>
             <TabsTrigger
               value="config"
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -108,11 +109,11 @@ export default function Business({ data }: Props): ReactElement {
           </TabsList>
 
           <TabsContent value="contact" className="mt-0">
-            <ContactInfoSection />
+            <ContactInfoSection data={business} refetchBusiness={refetchBusiness} />
           </TabsContent>
 
           <TabsContent value="config" className="mt-0">
-            <ConfigurationsSection data={business} />
+            <ConfigurationsSection data={business} refetchBusiness={refetchBusiness} />
           </TabsContent>
 
           <TabsContent value="charges" className="mt-0">
