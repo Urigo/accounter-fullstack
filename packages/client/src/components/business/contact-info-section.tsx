@@ -62,15 +62,15 @@ const contactInfoSchema = z.object({
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
-  generalContacts: z.array(z.string().email()),
-  billingEmails: z.array(z.string().email()),
+  generalContacts: z.array(z.email()).optional(),
+  billingEmails: z.array(z.email()).optional(),
 });
 
 type ContactInfoFormValues = z.infer<typeof contactInfoSchema>;
 
 function ContactsSectionFragmentToFormValues(
   business?: BusinessContactSectionFragment,
-): Partial<ContactInfoFormValues> {
+): ContactInfoFormValues {
   if (!business || business.__typename !== 'LtdFinancialEntity') {
     return {} as ContactInfoFormValues;
   }
@@ -81,11 +81,13 @@ function ContactsSectionFragmentToFormValues(
     localName: business.hebrewName ?? undefined,
     govId: business.governmentId ?? undefined,
     address: business.address ?? undefined,
+    // TODO: activate these fields later. requires additional backend support
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
     website: business.website ?? undefined,
-    generalContacts: [],
-    billingEmails: [],
+    // TODO: activate these fields later. requires additional backend support
+    // generalContacts: [],
+    // billingEmails: [],
   };
 }
 
@@ -111,7 +113,9 @@ interface Props {
 
 export function ContactInfoSection({ data, refetchBusiness }: Props) {
   const business = getFragmentData(BusinessContactSectionFragmentDoc, data);
-  const defaultFormValues = ContactsSectionFragmentToFormValues(business);
+  const [defaultFormValues, setDefaultFormValues] = useState(
+    ContactsSectionFragmentToFormValues(business),
+  );
   const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessUpdating } = useUpdateBusiness();
@@ -143,6 +147,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
     }
   }, [localAddress, defaultFormValues.localAddress, form]);
 
+  // TODO: activate these flags later. requires additional backend support
   const isClient = false; // TODO: This would come from config in real app
   const isLocalEntity = locality === 'ISR'; // TODO: Replace with user context based check
 
@@ -202,6 +207,14 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
     refetchBusiness?.();
   };
+
+  useEffect(() => {
+    if (business) {
+      const formValues = ContactsSectionFragmentToFormValues(business);
+      setDefaultFormValues(formValues);
+      form.reset(formValues);
+    }
+  }, [business, form]);
 
   return (
     <Card>
@@ -412,7 +425,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                                 {contact}
                                 <button
                                   type="button"
-                                  onClick={() => removeGeneralContact(field.value, index)}
+                                  onClick={() => removeGeneralContact(field.value ?? [], index)}
                                   className="ml-1 hover:bg-muted rounded-sm p-0.5"
                                 >
                                   <X className="h-3 w-3" />
@@ -427,7 +440,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  addGeneralContact(field.value);
+                                  addGeneralContact(field.value ?? []);
                                 }
                               }}
                               placeholder="Add contact email"
@@ -438,7 +451,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                               variant="outline"
                               size="icon"
                               disabled={!newContact.trim()}
-                              onClick={() => addGeneralContact(field.value)}
+                              onClick={() => addGeneralContact(field.value ?? [])}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -473,7 +486,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                                 {email}
                                 <button
                                   type="button"
-                                  onClick={() => removeBillingEmail(field.value, index)}
+                                  onClick={() => removeBillingEmail(field.value ?? [], index)}
                                   className="ml-1 hover:bg-muted rounded-sm p-0.5"
                                 >
                                   <X className="h-3 w-3" />
@@ -488,7 +501,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  addBillingEmail(field.value);
+                                  addBillingEmail(field.value ?? []);
                                 }
                               }}
                               placeholder="Add billing email"
@@ -499,7 +512,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                               variant="outline"
                               size="icon"
                               disabled={!newBillingEmail.trim()}
-                              onClick={() => addBillingEmail(field.value)}
+                              onClick={() => addBillingEmail(field.value ?? [])}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>

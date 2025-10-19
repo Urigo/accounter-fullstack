@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { Plus, Save, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge.js';
@@ -186,7 +186,9 @@ interface Props {
 
 export function ConfigurationsSection({ data, refetchBusiness }: Props) {
   const business = getFragmentData(BusinessConfigurationSectionFragmentDoc, data);
-  const defaultFormValues = ConfigurationsSectionFragmentToFormValues(business);
+  const [defaultFormValues, setDefaultFormValues] = useState(
+    ConfigurationsSectionFragmentToFormValues(business),
+  );
   const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessUpdating } = useUpdateBusiness();
@@ -328,6 +330,14 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
     },
     [form, sortCodes],
   );
+
+  useEffect(() => {
+    if (business) {
+      const formValues = ConfigurationsSectionFragmentToFormValues(business);
+      setDefaultFormValues(formValues);
+      form.reset(formValues);
+    }
+  }, [business, form]);
 
   if (!business) {
     return <div />;
