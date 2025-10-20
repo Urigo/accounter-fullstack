@@ -52,7 +52,9 @@ runs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
       with:
         path: /tmp/.buildx-cache
-        key: docker-${{ runner.os }}-${{ hashFiles('docker/**') }}
+        key:
+          docker-${{ runner.os }}-${{ hashFiles('docker/docker-compose.dev.yml', 'docker/.ci.env')
+          }}
         restore-keys: |
           docker-${{ runner.os }}-
 
