@@ -15,7 +15,7 @@
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
     "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server run build",
-    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/server run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/server --exclude accounter-monorepo run build",
     "db:migrate": "yarn migration:run",
     "deploy": "git push heroku master",
     "encrypt-password": "node scripts/encrypt-password.mjs",
