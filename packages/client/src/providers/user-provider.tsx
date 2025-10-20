@@ -15,6 +15,7 @@ import { AuthContext } from './auth-guard.js';
       defaultCryptoConversionFiatCurrency
       ledgerLock
       financialAccountsBusinessesIds
+      locality
     }
   }
 `;
@@ -31,6 +32,7 @@ export interface UserInfo extends User {
     defaultCryptoConversionFiatCurrency: string;
     ledgerLock?: string | null;
     financialAccountsBusinessesIds: string[];
+    locality: string;
   };
 }
 

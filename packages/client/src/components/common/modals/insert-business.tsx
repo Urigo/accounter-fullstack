@@ -1,5 +1,6 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
+import { UserContext } from '@/providers/user-provider.js';
 import type { InsertNewBusinessInput } from '../../../gql/graphql.js';
 import { useInsertBusiness } from '../../../hooks/use-insert-business.js';
 import { Button } from '../../ui/button.js';
@@ -44,10 +45,11 @@ type CreateBusinessFormProps = {
 };
 
 function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormProps): ReactElement {
+  const { userContext } = useContext(UserContext);
   const formManager = useForm<InsertNewBusinessInput>({
     defaultValues: {
       name: description,
-      country: 'Israel',
+      country: userContext?.context.locality || 'ISR',
       suggestions: { phrases: [description] },
     },
   });

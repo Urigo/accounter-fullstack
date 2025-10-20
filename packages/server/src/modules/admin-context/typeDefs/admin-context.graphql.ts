@@ -15,6 +15,7 @@ export default gql`
     defaultLocalCurrency: Currency
     defaultForeignCurrency: Currency
     defaultTaxCategoryId: UUID
+    locality: String
     vatBusinessId: UUID
     inputVatTaxCategoryId: UUID
     outputVatTaxCategoryId: UUID
@@ -81,6 +82,7 @@ export default gql`
     defaultLocalCurrency: Currency!
     defaultForeignCurrency: Currency!
     defaultTaxCategory: TaxCategory!
+    locality: String!
     vatBusiness: Business!
     inputVatTaxCategory: TaxCategory!
     outputVatTaxCategory: TaxCategory!

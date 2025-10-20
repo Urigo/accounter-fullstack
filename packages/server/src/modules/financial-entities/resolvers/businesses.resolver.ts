@@ -355,7 +355,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     batchGenerateBusinessesOutOfTransactions: async (
       _,
       __,
-      { injector, adminContext: { defaultAdminBusinessId } },
+      { injector, adminContext: { defaultAdminBusinessId, locality } },
     ) => {
       const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
         ownerIDs: [defaultAdminBusinessId],
@@ -473,7 +473,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
           const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
             id: financialEntity.id,
-            country: 'Israel',
+            country: locality,
             hebrewName: description,
             suggestions: {
               phrases: [description],

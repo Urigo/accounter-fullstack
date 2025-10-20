@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
+import { useAllCountries } from '@/hooks/use-get-countries.js';
 import {
   EmailAttachmentType,
   type InsertNewBusinessInput,
@@ -60,9 +61,12 @@ export function ModifyBusinessFields({
     sortCodes: rawSortCodes,
   } = useGetSortCodes();
 
+  // Countries handle
+  const { countries, fetching: fetchingCountries } = useAllCountries();
+
   useEffect(() => {
-    setFetching(tagsFetching || fetchingTaxCategories || fetchingSortCodes);
-  }, [setFetching, tagsFetching, fetchingTaxCategories, fetchingSortCodes]);
+    setFetching(tagsFetching || fetchingTaxCategories || fetchingSortCodes || fetchingCountries);
+  }, [setFetching, tagsFetching, fetchingTaxCategories, fetchingSortCodes, fetchingCountries]);
 
   // on sort code change, update IRS code
   const sortCode = watch('sortCode');
@@ -138,21 +142,16 @@ export function ModifyBusinessFields({
               <FormLabel>Locality</FormLabel>
               <Select required onValueChange={field.onChange} value={field.value ?? undefined}>
                 <FormControl>
-                  <SelectTrigger className="w-full truncate">
-                    <SelectValue placeholder="Select type" />
+                  <SelectTrigger
+                    className={(isInsert ? '' : dirtyFieldMarker(fieldState)) + ' w-full truncate'}
+                  >
+                    <SelectValue placeholder="Select Country" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent onClick={event => event.stopPropagation()}>
-                  {[
-                    { value: 'Israel', label: 'Local' },
-                    { value: 'FOREIGN', label: 'Foreign' },
-                  ].map(({ value, label }) => (
-                    <SelectItem
-                      key={value}
-                      value={value}
-                      className={isInsert ? '' : dirtyFieldMarker(fieldState)}
-                    >
-                      {label}
+                  {countries.map(({ code, name }) => (
+                    <SelectItem key={code} value={code}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>

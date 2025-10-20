@@ -26,6 +26,7 @@ export type AdminContext = {
   defaultCryptoConversionFiatCurrency: Currency;
   defaultAdminBusinessId: string;
   defaultTaxCategoryId: string;
+  locality: string;
   ledgerLock?: TimelessDateString;
   authorities: {
     vatBusinessId: string;
@@ -182,6 +183,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
     ),
     defaultAdminBusinessId: rawContext.owner_id,
     defaultTaxCategoryId: rawContext.default_tax_category_id,
+    locality: rawContext.locality,
     ledgerLock: optionalDateToTimelessDateString(rawContext.ledger_lock) ?? undefined,
 
     authorities: {

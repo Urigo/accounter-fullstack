@@ -257,6 +257,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
     foreign_securities_fees_category_id = COALESCE(
       $foreignSecuritiesFeesCategoryId,
       foreign_securities_fees_category_id
+    ),
+    locality = COALESCE(
+      $locality,
+      locality
     )
   WHERE owner_id = $ownerId
   RETURNING *;

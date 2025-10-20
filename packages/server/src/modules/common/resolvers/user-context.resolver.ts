@@ -14,6 +14,7 @@ export const userContextResolvers: CommonModule.Resolvers = {
         defaultCryptoConversionFiatCurrency: adminContext.defaultCryptoConversionFiatCurrency,
         ledgerLock: adminContext.ledgerLock,
         financialAccountsBusinessesIds,
+        locality: adminContext.locality,
       };
     },
   },

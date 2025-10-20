@@ -361,7 +361,7 @@ export async function accountsForUniformFormat(
         // houseNumber: businessesMap.get(businessId)?.address?.houseNumber,
         // city: businessesMap.get(businessId)?.address?.city,
         // zip: businessesMap.get(businessId)?.address?.zip,
-        country: businessesMap.get(businessId)?.country === 'Israel' ? 'IL' : undefined,
+        country: businessesMap.get(businessId)?.country === 'ISR' ? 'IL' : undefined,
       },
       // countryCode: businessesMap.get(businessId)?.countryCode,
       // parentAccountKey: businessesMap.get(businessId)?.parentAccountKey,
