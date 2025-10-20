@@ -13,6 +13,7 @@
     "generate:sql:watch": "dotenv -e ../../.env yarn pgtyped:watch",
     "pgtyped": "yarn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c $(node scripts/generate-local-pgconfig.cjs)",
     "pgtyped:watch": "yarn pgtyped -w",
+    "server:build": "yarn build",
     "server:dev": "yarn dev",
     "start": "yarn build && node dist/server/src/index.js"
   },
