@@ -51,6 +51,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         adminContext: {
           defaultCryptoConversionFiatCurrency,
           financialAccounts: { swiftBusinessId },
+          locality,
         },
       },
     ) => {
@@ -108,7 +109,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const paymentPromise = getPaymentsFromTransactions(injector, transactions);
 
-      const vatTypePromise = deduceVatTypeFromBusiness(injector, charge.business_id);
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, charge.business_id);
 
       const [businessMatch, openIssuedDocuments, client, payment, vatType] = await Promise.all([
         businessMatchPromise,
@@ -207,6 +208,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         adminContext: {
           defaultCryptoConversionFiatCurrency,
           financialAccounts: { swiftBusinessId },
+          locality,
         },
       },
     ) => {
@@ -246,7 +248,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
-      const vatTypePromise = deduceVatTypeFromBusiness(injector, charge.business_id);
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, charge.business_id);
 
       const [businessMatch, openIssuedDocument, vatType] = await Promise.all([
         businessMatchPromise,
