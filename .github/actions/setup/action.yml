@@ -39,7 +39,9 @@ runs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
       with:
         path: node_modules/.cache/.eslintcache
-        key: eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'package.json') }}
+        key:
+          eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'package.json',
+          'yarn.lock') }}
         restore-keys: |
           eslint-cache-${{ runner.os }}-
 
@@ -83,7 +85,8 @@ runs:
           packages/client/src/gql
         key:
           graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
-          'codegen.ts', 'graphql.config.js') }}
+          'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
+          'yarn.lock') }}
         restore-keys: |
           graphql-codegen-${{ runner.os }}-
 
@@ -101,8 +104,9 @@ runs:
           packages/server/src/**/*.types.ts
           packages/migrations/src/**/*.types.ts
         key:
-          pgtyped-${{ runner.os }}-${{ hashFiles('packages/server/src/**/*.sql',
-          'packages/migrations/src/**/*.sql', 'docker/pgconfig.json') }}
+          pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
+          'packages/server/src/**/providers/*.provider.ts',
+          'packages/server/src/plugins/admin-context-plugin.ts') }}
         restore-keys: |
           pgtyped-${{ runner.os }}-
 
