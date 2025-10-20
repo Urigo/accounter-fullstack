@@ -289,6 +289,7 @@ export async function getClientFromGreenInvoiceClient(
 
 export async function deduceVatTypeFromBusiness(
   injector: Injector,
+  locality: string,
   businessId?: string | null,
 ): Promise<GreenInvoiceVatType> {
   if (!businessId) return 'DEFAULT';
@@ -297,7 +298,7 @@ export async function deduceVatTypeFromBusiness(
   if (!business) return 'DEFAULT';
 
   // Deduce VAT type based on business information
-  if (business.country === 'Israel') {
+  if (business.country === locality) {
     return 'MIXED';
   }
 

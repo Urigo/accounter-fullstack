@@ -57,6 +57,7 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
       dbAdminContext.default_fiat_currency_for_crypto_conversions as Currency,
     defaultTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(injector, 'defaultTaxCategory', dbAdminContext.default_tax_category_id),
+    locality: dbAdminContext => dbAdminContext.locality,
     vatBusiness: async (dbAdminContext, _, { injector }) =>
       fetchBusiness(injector, 'vatBusiness', dbAdminContext.vat_business_id),
     inputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
