@@ -36,6 +36,7 @@ export default [
       '**/tsup.config.ts',
       '.pnp.*',
       '.yarn/*',
+      '**/*.pdf',
     ],
   },
   ...compat.extends('@theguild').map(replaceUnicornRules),
