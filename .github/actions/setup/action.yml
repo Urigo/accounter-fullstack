@@ -24,11 +24,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install Node
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
-      with:
-        node-version-file: .node-version
-
     - name: Install NodeJS
       uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
       with:
@@ -39,6 +34,31 @@ runs:
       shell: bash
       if: ${{ inputs.installDependencies == 'true' }}
       run: yarn install
+
+    - name: Cache ESLint
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      with:
+        path: node_modules/.cache/.eslintcache
+        key:
+          eslint-cache-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'package.json',
+          'yarn.lock') }}
+        restore-keys: |
+          eslint-cache-${{ runner.os }}-
+
+    - name: Set up Docker Buildx
+      if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}
+      uses: docker/setup-buildx-action@6524bf65af31da8d45b59e8c27de4bd072b392f5 # v3.9.0
+
+    - name: Cache Docker layers
+      if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      with:
+        path: /tmp/.buildx-cache
+        key:
+          docker-${{ runner.os }}-${{ hashFiles('docker/docker-compose.dev.yml', 'docker/.ci.env')
+          }}
+        restore-keys: |
+          docker-${{ runner.os }}-
 
     - name: Run Containers
       shell: bash
@@ -54,12 +74,45 @@ runs:
       if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}
       run: yarn db:init
 
-    - name: Generate GraphQL Types
+    - name: Cache GraphQL Generated Types
       if: ${{ inputs.codegen == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      id: graphql-cache
+      with:
+        path: |
+          schema.graphql
+          packages/server/src/modules/**/__generated__
+          packages/client/src/gql
+        key:
+          graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
+          'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
+          'yarn.lock') }}
+        restore-keys: |
+          graphql-codegen-${{ runner.os }}-
+
+    - name: Generate GraphQL Types
+      if: ${{ inputs.codegen == 'true' && steps.graphql-cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: yarn generate:graphql
 
+    - name: Cache PgTyped Generated Types
+      if: ${{ inputs.pgTyped == 'true' }}
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      id: pgtyped-cache
+      with:
+        path: |
+          packages/server/src/**/*.types.ts
+          packages/migrations/src/**/*.types.ts
+        key:
+          pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
+          'packages/server/src/**/providers/*.provider.ts',
+          'packages/server/src/plugins/admin-context-plugin.ts') }}
+        restore-keys: |
+          pgtyped-${{ runner.os }}-
+
     - name: Generate Postgres Types
-      if: ${{ inputs.pgTyped == 'true' && inputs.localDB == 'true' }}
+      if:
+        ${{ inputs.pgTyped == 'true' && inputs.localDB == 'true' &&
+        steps.pgtyped-cache.outputs.cache-hit != 'true' }}
       shell: bash
       run: yarn pgtyped -c docker/pgconfig.json
