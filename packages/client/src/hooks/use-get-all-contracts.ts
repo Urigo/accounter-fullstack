@@ -31,7 +31,6 @@ import { AllOpenContractsDocument, type AllOpenContractsQuery } from '../gql/gra
       isActive
       product
       plan
-      signedAgreement
       msCloud
     }
   }

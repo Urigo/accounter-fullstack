@@ -44,7 +44,7 @@ function convertContractDataToFormValues(
 ): ContractFormValues {
   return {
     id: contract.id,
-    operationsLimit: 0, // Placeholder, as this field is not in the query
+    // operationsLimit: 0, // Placeholder, as this field is not in the query
     po: contract.purchaseOrder ?? undefined,
     startDate: contract.startDate,
     endDate: contract.endDate,
@@ -88,7 +88,7 @@ export function ContractsSection({ clientId }: Props) {
             <CardTitle>Contracts</CardTitle>
             <CardDescription>Current and past contracts sorted by start date</CardDescription>
           </div>
-          <ModifyContractDialog contract={editingContract} onDone={refetch} />
+          <ModifyContractDialog clientId={clientId} contract={editingContract} onDone={refetch} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,19 +32,25 @@ import {
 import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
 import { BillingCycle, Currency, DocumentType, Product, SubscriptionPlan } from '@/gql/graphql.js';
-import { getDocumentNameFromType, standardBillingCycle, standardPlan } from '@/helpers/index.js';
+import {
+  getDocumentNameFromType,
+  standardBillingCycle,
+  standardPlan,
+  type TimelessDateString,
+} from '@/helpers/index.js';
+import { useCreateContract } from '@/hooks/use-create-contract.js';
+import { useUpdateContract } from '@/hooks/use-update-contract.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const contractFormSchema = z.object({
   id: z.uuid().optional(),
-  operationsLimit: z.number().min(1, 'Operations limit must be at least 1'),
-  startDate: z.iso.datetime('Start date is required'),
-  endDate: z.iso.datetime('End date is required'),
+  // operationsLimit: z.number().optional(),
+  startDate: z.iso.date('Start date is required'),
+  endDate: z.iso.date('End date is required'),
   po: z.string().optional(),
   paymentAmount: z.number().min(0, 'Payment amount must be non-negative'),
   paymentCurrency: z.enum(Object.values(Currency), 'Currency is required'),
   productType: z.enum(Object.values(Product)).optional(),
-  signedAgreementLink: z.url().optional().or(z.literal('')),
   msCloudLink: z.url().optional().or(z.literal('')),
   billingCycle: z.enum(Object.values(BillingCycle)).optional(),
   subscriptionPlan: z.enum(Object.values(SubscriptionPlan)).optional(),
@@ -55,15 +62,14 @@ const contractFormSchema = z.object({
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
 
 const newContractDefaultValues: ContractFormValues = {
-  operationsLimit: 0,
+  // operationsLimit: 0,
   startDate: '',
   endDate: '',
-  po: '',
+  po: undefined,
   paymentAmount: 0,
   paymentCurrency: Currency.Usd,
   productType: Product.Hive,
-  signedAgreementLink: '',
-  msCloudLink: '',
+  msCloudLink: undefined,
   billingCycle: BillingCycle.Monthly,
   subscriptionPlan: undefined,
   isActive: true,
@@ -72,13 +78,17 @@ const newContractDefaultValues: ContractFormValues = {
 };
 
 interface Props {
+  clientId: string;
   contract?: ContractFormValues | null;
   onDone?: () => void;
 }
 
-export function ModifyContractDialog({ contract, onDone }: Props) {
+export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
+
+  const { updateContract, updating } = useUpdateContract();
+  const { createContract, creating } = useCreateContract();
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
@@ -89,14 +99,13 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
     if (contract) {
       setEditingContract(contract);
       form.reset({
-        operationsLimit: contract.operationsLimit,
+        // operationsLimit: contract.operationsLimit,
         startDate: contract.startDate,
         endDate: contract.endDate,
         po: contract.po,
         paymentAmount: contract.paymentAmount,
         paymentCurrency: contract.paymentCurrency,
         productType: contract.productType,
-        signedAgreementLink: contract.signedAgreementLink,
         msCloudLink: contract.msCloudLink,
         billingCycle: contract.billingCycle,
         subscriptionPlan: contract.subscriptionPlan,
@@ -117,18 +126,57 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
   const onSubmit = useCallback(
     async (values: ContractFormValues) => {
       if (editingContract) {
+        // Handle contract update
         console.log('[v0] Updating contract:', editingContract.id, values);
-        // TODO: Handle contract update
+        await updateContract({
+          contractId: editingContract.id!,
+          input: {
+            amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
+            billingCycle: values.billingCycle,
+            documentType: values.defaultDocumentType,
+            endDate: format(new Date(values.endDate), 'yyyy-MM-dd') as TimelessDateString,
+            isActive: values.isActive,
+            msCloud: values.msCloudLink,
+            plan: values.subscriptionPlan,
+            product: values.productType,
+            purchaseOrder: values.po,
+            remarks: values.defaultRemark,
+            startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+          },
+        });
       } else {
+        // Handle new contract creation
+        if (!values.billingCycle) {
+          form.setError('billingCycle', { message: 'Billing cycle is required' });
+          return;
+        }
         console.log('[v0] Creating new contract:', values);
-        // TODO: Handle contract creation
+        await createContract({
+          input: {
+            clientId,
+            amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
+            billingCycle: values.billingCycle,
+            documentType: values.defaultDocumentType,
+            endDate: format(new Date(values.endDate), 'yyyy-MM-dd') as TimelessDateString,
+            isActive: values.isActive,
+            msCloud: values.msCloudLink,
+            plan: values.subscriptionPlan,
+            product: values.productType,
+            purchaseOrder: values.po,
+            remarks: values.defaultRemark,
+            startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+          },
+        });
       }
       setIsDialogOpen(false);
       setEditingContract(null);
       onDone?.();
     },
-    [editingContract, onDone],
+    [editingContract, onDone, createContract, updateContract, clientId, form],
   );
+
+  const endDate = form.watch('endDate');
+  console.log('Watched endDate:', endDate);
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -151,7 +199,7 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="operationsLimit"
                   render={({ field }) => (
@@ -163,7 +211,7 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
                 <FormField
                   control={form.control}
                   name="po"
@@ -183,11 +231,11 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
                 <FormField
                   control={form.control}
                   name="startDate"
-                  render={({ field }) => (
+                  render={({ field: { onChange, ...field } }) => (
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} onInput={date => onChange(date)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -196,11 +244,11 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
                 <FormField
                   control={form.control}
                   name="endDate"
-                  render={({ field }) => (
+                  render={({ field: { onChange, ...field } }) => (
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} onInput={date => onChange(date)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -216,7 +264,17 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Payment Amount</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="24000" {...field} />
+                        <Input
+                          type="number"
+                          placeholder="24000"
+                          {...field}
+                          onChange={event => {
+                            console.log('Payment amount changed to:', event?.target.value);
+                            field.onChange(
+                              event?.target.value ? Number(event?.target.value) : undefined,
+                            );
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -333,24 +391,6 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
 
               <FormField
                 control={form.control}
-                name="signedAgreementLink"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Signed Agreement Link</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        placeholder="https://example.com/agreements/contract.pdf"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="msCloudLink"
                 render={({ field }) => (
                   <FormItem>
@@ -414,7 +454,7 @@ export function ModifyContractDialog({ contract, onDone }: Props) {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={creating || updating}>
                 {editingContract ? 'Update Contract' : 'Create Contract'}
               </Button>
             </DialogFooter>
