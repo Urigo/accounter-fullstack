@@ -34,7 +34,7 @@
     "ai": "5.0.72",
     "basic-auth": "2.0.1",
     "bcrypt": "6.0.0",
-    "cloudinary": "2.7.0",
+    "cloudinary": "2.8.0",
     "dataloader": "2.2.3",
     "date-fns": "4.1.0",
     "dotenv": "17.2.3",
