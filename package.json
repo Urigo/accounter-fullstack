@@ -13,9 +13,9 @@
     "node": "24.10.0"
   },
   "scripts": {
-    "build": "yarn generate && yarn workspaces foreach --all --parallel run build",
-    "client:build": "yarn workspace @accounter/client build",
-    "client:dev": "yarn workspace @accounter/client dev",
+    "build": "yarn generate && yarn build:tools && yarn build:main",
+    "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/server run build",
     "db:migrate": "yarn migration:run",
     "deploy": "git push heroku master",
     "encrypt-password": "node scripts/encrypt-password.mjs",
@@ -35,7 +35,6 @@
     "release": "yarn build && changeset publish",
     "scrape": "yarn workspace @accounter-helper/scraper-local-app start",
     "seed": "tsx scripts/seed.ts",
-    "server:build": "yarn workspace @accounter/server build",
     "setup": "yarn db:init && yarn generate",
     "test": "vitest"
   },

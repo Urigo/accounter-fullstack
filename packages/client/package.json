@@ -5,6 +5,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc && vite build",
+    "client:build": "yarn build",
+    "client:dev": "yarn dev",
     "dev": "vite",
     "generate": "yarn generate:graphql",
     "preview": "vite preview"
