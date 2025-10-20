@@ -8,7 +8,7 @@ import {
   normalizeSubscriptionPlan,
 } from '../helpers/contracts.helper.js';
 import { ContractsProvider } from '../providers/contracts.provider.js';
-import type { ContractsModule } from '../types.js';
+import type { ContractsModule, IInsertContractParams, IUpdateContractParams } from '../types.js';
 
 export const contractsResolvers: ContractsModule.Resolvers = {
   Query: {
@@ -27,6 +27,63 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         const message = 'Error fetching contracts by client';
         console.error(message, e);
         throw new GraphQLError(message);
+      }
+    },
+  },
+  Mutation: {
+    createContract: async (_, { input }, { injector }) => {
+      try {
+        const params: IInsertContractParams = {
+          amount: input.amount.raw,
+          billingCycle: input.billingCycle,
+          clientId: input.clientId,
+          currency: input.amount.currency,
+          documentType: input.documentType,
+          endDate: input.endDate,
+          isActive: input.isActive,
+          msCloud: input.msCloud?.toString(),
+          plan: input.plan,
+          product: input.product,
+          purchaseOrder: input.purchaseOrder,
+          remarks: input.remarks,
+          startDate: input.startDate,
+        };
+        return injector.get(ContractsProvider).createContract(params);
+      } catch (e) {
+        console.error('Error creating contract', e);
+        throw new GraphQLError('Error creating contract');
+      }
+    },
+    updateContract: async (_, { contractId, input }, { injector }) => {
+      try {
+        const params: IUpdateContractParams = {
+          contractId,
+          amount: input.amount?.raw,
+          billing_cycle: input.billingCycle,
+          client_id: input.clientId,
+          currency: input.amount?.currency,
+          document_type: input.documentType,
+          end_date: input.endDate,
+          is_active: input.isActive,
+          ms_cloud: input.msCloud?.toString(),
+          plan: input.plan,
+          product: input.product,
+          purchase_order: input.purchaseOrder,
+          remarks: input.remarks,
+          start_date: input.startDate,
+        };
+        return injector.get(ContractsProvider).updateContract(params);
+      } catch (e) {
+        console.error('Error updating contract', e);
+        throw new GraphQLError('Error updating contract');
+      }
+    },
+    deleteContract: async (_, { id }, { injector }) => {
+      try {
+        return injector.get(ContractsProvider).deleteContract(id);
+      } catch (e) {
+        console.error('Error deleting contract', e);
+        throw new GraphQLError('Error deleting contract');
       }
     },
   },
@@ -55,7 +112,6 @@ export const contractsResolvers: ContractsModule.Resolvers = {
     isActive: dbContract => dbContract.is_active ?? false, //Boolean!
     product: dbContract => normalizeProduct(dbContract.product), //Product!
     plan: dbContract => normalizeSubscriptionPlan(dbContract.plan), //SubscriptionPlan!
-    signedAgreement: dbContract => dbContract.signed_agreement, //URL
     msCloud: dbContract => dbContract.ms_cloud, //URL
   },
 };
