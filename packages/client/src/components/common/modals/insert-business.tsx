@@ -49,7 +49,7 @@ function CreateBusinessForm({ description, close, onAdd }: CreateBusinessFormPro
   const formManager = useForm<InsertNewBusinessInput>({
     defaultValues: {
       name: description,
-      country: userContext?.context.locality || 'ILS',
+      country: userContext?.context.locality || 'ISR',
       suggestions: { phrases: [description] },
     },
   });

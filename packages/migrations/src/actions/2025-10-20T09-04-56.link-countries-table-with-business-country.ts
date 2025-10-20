@@ -13,16 +13,21 @@ ALTER TABLE
 ADD
   CONSTRAINT "user_context_countries_code_fk" FOREIGN KEY ("locality") REFERENCES "accounter_schema"."countries" ("code") ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+UPDATE "accounter_schema"."businesses"
+SET country = 'ISR'
+WHERE country = 'Israel'
+
 ALTER TABLE
   "accounter_schema"."businesses"
 ALTER COLUMN
   "country"
 SET DEFAULT
-  'ILS'::varchar(3),
+  'ISR',
 ALTER COLUMN
   "country"
 TYPE
-  varchar(3);
+  varchar(3),
+   USING "country"::varchar(3);
 
 ALTER TABLE
   "accounter_schema"."businesses"
