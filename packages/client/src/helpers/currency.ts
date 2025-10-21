@@ -1,4 +1,5 @@
 import { Currency } from '../gql/graphql.js';
+import { formatStringifyAmount } from './index.js';
 
 export function getCurrencyFormatter(
   currency: Currency,
@@ -68,3 +69,7 @@ export const FIAT_CURRENCIES: Currency[] = [
   Currency.Aud,
   Currency.Sek,
 ] as const;
+
+export function formatAmountWithCurrency(amount: number, currency: Currency, digits = 2): string {
+  return `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(amount, digits)}`;
+}

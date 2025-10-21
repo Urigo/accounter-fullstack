@@ -4,12 +4,12 @@ import { useMemo } from 'react';
 import { useQuery } from 'urql';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import {
-  RecentClientIssuedDocumentsDocument,
+  RecentBusinessIssuedDocumentsDocument,
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
-import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.js';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
+import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.jsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
 import {
   Table,
   TableBody,
@@ -17,12 +17,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../ui/table.js';
+} from '../../../ui/table.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query RecentClientIssuedDocuments($clientId: UUID!) {
-    recentDocumentsByClient(clientId: $clientId) {
+  query RecentBusinessIssuedDocuments($businessId: UUID!, $limit: Int) {
+    recentDocumentsByBusiness(businessId: $businessId, limit: $limit) {
       id
       ... on FinancialDocument {
         issuedDocumentInfo {
@@ -42,25 +42,31 @@ type RowType = DocumentsTableRowType & {
   };
 };
 
-interface RecentClientDocsProps {
-  clientId: string;
+interface RecentBusinessDocsProps {
+  businessId: string;
   linkedDocumentIds: string[];
+  limit?: number;
 }
 
-export function RecentClientDocs({ clientId, linkedDocumentIds }: RecentClientDocsProps) {
+export function RecentBusinessDocs({
+  businessId,
+  linkedDocumentIds,
+  limit,
+}: RecentBusinessDocsProps) {
   const [{ data, fetching }] = useQuery({
-    query: RecentClientIssuedDocumentsDocument,
+    query: RecentBusinessIssuedDocumentsDocument,
     variables: {
-      clientId,
+      businessId,
+      limit,
     },
   });
 
   const rows = useMemo(
     (): RowType[] =>
-      data?.recentDocumentsByClient?.map(
+      data?.recentDocumentsByBusiness?.map(
         rawDocument => getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument) as RowType,
       ) ?? [],
-    [data?.recentDocumentsByClient],
+    [data?.recentDocumentsByBusiness],
   );
   const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file'];
   const table = useReactTable<RowType>({

@@ -4,10 +4,9 @@ import { useAllCountries } from '@/hooks/use-get-countries.js';
 import {
   EmailAttachmentType,
   type InsertNewBusinessInput,
-  type Pcn874RecordType,
   type UpdateBusinessInput,
 } from '../../../gql/graphql.js';
-import { dirtyFieldMarker } from '../../../helpers/index.js';
+import { dirtyFieldMarker, pcn874RecordEnum } from '../../../helpers/index.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
@@ -15,22 +14,6 @@ import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
 import { ComboBox, MultiSelect, NumberInput, StringArrayInput, TagsInput } from '../index.js';
-
-const pcn874RecordType: Record<Pcn874RecordType, string> = {
-  C: 'INPUT_SELF_INVOICE',
-  H: 'INPUT_SINGLE_DOC_BY_LAW',
-  I: 'SALE_PALESTINIAN_CUSTOMER',
-  K: 'INPUT_PETTY_CASH',
-  L1: 'SALE_UNIDENTIFIED_CUSTOMER',
-  L2: 'SALE_UNIDENTIFIED_ZERO_OR_EXEMPT',
-  M: 'SALE_SELF_INVOICE',
-  P: 'INPUT_PALESTINIAN_SUPPLIER',
-  R: 'INPUT_IMPORT',
-  S1: 'SALE_REGULAR',
-  S2: 'SALE_ZERO_OR_EXEMPT',
-  T: 'INPUT_REGULAR',
-  Y: 'SALE_EXPORT',
-} as const;
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -327,7 +310,7 @@ export function ModifyBusinessFields({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent onClick={event => event.stopPropagation()}>
-                  {Object.entries(pcn874RecordType).map(([value, label]) => (
+                  {Object.entries(pcn874RecordEnum).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {`${label} (${value})`}
                     </SelectItem>

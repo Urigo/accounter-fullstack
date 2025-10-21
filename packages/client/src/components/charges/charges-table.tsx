@@ -16,9 +16,9 @@ import { ChargesTableRow } from './charges-row.jsx';
 `;
 
 interface Props {
-  setEditChargeId: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setInsertDocument: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setMatchDocuments: Dispatch<
+  setEditChargeId?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
+  setInsertDocument?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
+  setMatchDocuments?: Dispatch<
     React.SetStateAction<
       | {
           id: string;
@@ -68,14 +68,20 @@ export const ChargesTable = ({
           <ChargesTableRow
             key={charge.id}
             data={charge}
-            setEditCharge={(onChange: () => void): void =>
-              setEditChargeId({ id: charge.id, onChange })
+            setEditCharge={
+              setEditChargeId
+                ? (onChange: () => void): void => setEditChargeId({ id: charge.id, onChange })
+                : undefined
             }
-            setInsertDocument={(onChange: () => void): void =>
-              setInsertDocument({ id: charge.id, onChange })
+            setInsertDocument={
+              setInsertDocument
+                ? (onChange: () => void): void => setInsertDocument({ id: charge.id, onChange })
+                : undefined
             }
-            setMatchDocuments={(): void =>
-              setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
+            setMatchDocuments={
+              setMatchDocuments
+                ? (): void => setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
+                : undefined
             }
             toggleMergeCharge={
               toggleMergeCharge

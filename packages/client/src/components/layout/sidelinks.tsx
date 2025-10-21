@@ -55,13 +55,13 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Missing Info Charges',
         label: '',
-        href: '/missing-info-charges',
+        href: '/charges/missing-info',
         icon: <RectangleEllipsis size={18} />,
       },
       {
         title: 'Ledger Validation',
         label: '',
-        href: '/charges-ledger-validation',
+        href: '/charges/ledger-validation',
         icon: <BookOpenCheck size={18} />,
       },
     ],
@@ -166,7 +166,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Business Transactions',
         label: '',
-        href: '/business-transactions',
+        href: '/businesses/transactions',
         icon: <ArrowLeftRight size={18} />,
       },
       {

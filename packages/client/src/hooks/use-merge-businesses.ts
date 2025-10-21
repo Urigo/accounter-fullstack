@@ -23,7 +23,7 @@ const NOTIFICATION_ID = 'mergeBusinesses';
 
 export const useMergeBusinesses = (): UseMergeBusinesses => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(MergeBusinessesDocument);
   const mergeBusinesses = useCallback(

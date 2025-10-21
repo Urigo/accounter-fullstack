@@ -1,0 +1,17 @@
+import type { Pcn874RecordType } from '@/gql/graphql.js';
+
+export const pcn874RecordEnum: Record<Pcn874RecordType, string> = {
+  C: 'INPUT_SELF_INVOICE',
+  H: 'INPUT_SINGLE_DOC_BY_LAW',
+  I: 'SALE_PALESTINIAN_CUSTOMER',
+  K: 'INPUT_PETTY_CASH',
+  L1: 'SALE_UNIDENTIFIED_CUSTOMER',
+  L2: 'SALE_UNIDENTIFIED_ZERO_OR_EXEMPT',
+  M: 'SALE_SELF_INVOICE',
+  P: 'INPUT_PALESTINIAN_SUPPLIER',
+  R: 'INPUT_IMPORT',
+  S1: 'SALE_REGULAR',
+  S2: 'SALE_ZERO_OR_EXEMPT',
+  T: 'INPUT_REGULAR',
+  Y: 'SALE_EXPORT',
+} as const;

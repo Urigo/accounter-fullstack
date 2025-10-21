@@ -14,6 +14,9 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   " response for paginated Financial Entities "
@@ -44,6 +47,8 @@ export default gql`
     isActive: Boolean!
     isReceiptEnough: Boolean
     isDocumentsOptional: Boolean
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   " input for business suggestions "
@@ -77,6 +82,9 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   extend type Mutation {

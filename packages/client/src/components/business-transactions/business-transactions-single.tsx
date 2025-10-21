@@ -19,7 +19,7 @@ type Props = {
 };
 
 export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement => {
-  const match = useMatch('business-transactions/:businessId');
+  const match = useMatch('businesses/:businessId/transactions');
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const id = businessId || match?.params.businessId;

@@ -1,6 +1,7 @@
 export * from './charges.js';
 export * from './clipboard.js';
 export * from './consts.js';
+export * from './contracts.js';
 export * from './currency.js';
 export * from './dates.js';
 export * from './document-matches.js';
@@ -9,6 +10,7 @@ export * from './files.js';
 export * from './form.js';
 export * from './graphql-document-dedupe-fragments.js';
 export * from './numbers.js';
+export * from './pcn874.js';
 export * from './strings-manipulations.js';
 export * from './vat.js';
 export * from './tags.js';

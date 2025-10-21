@@ -9,11 +9,7 @@ import {
   type BusinessTransactionsFilter,
   type BusinessTransactionsInfoQuery,
 } from '../../gql/graphql.js';
-import {
-  currencyCodeToSymbol,
-  FIAT_CURRENCIES,
-  formatStringifyAmount,
-} from '../../helpers/index.js';
+import { FIAT_CURRENCIES, formatAmountWithCurrency } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
@@ -238,7 +234,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
               >
                 <td>
                   <a
-                    href={`/business-transactions/${row.business.id}`}
+                    href={`/businesses/${row.business.id}/transactions`}
                     target="_blank"
                     rel="noreferrer"
                     onClick={event => event.stopPropagation()}
@@ -257,11 +253,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 </td>
                 <td>
                   {row.ilsBalance === 0 ? (
-                    `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(row.ilsBalance)}`
+                    formatAmountWithCurrency(row.ilsBalance, Currency.Ils)
                   ) : (
-                    <Mark
-                      color={row.ilsBalance > 0 ? 'green' : 'red'}
-                    >{`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(row.ilsBalance)}`}</Mark>
+                    <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>
+                      {formatAmountWithCurrency(row.ilsBalance, Currency.Ils)}
+                    </Mark>
                   )}
                 </td>
                 {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
@@ -278,7 +274,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <td>
                   {row.counterAccount && (
                     <a
-                      href={`/business-transactions/${row.counterAccount?.id}`}
+                      href={`/businesses/${row.counterAccount?.id}/transactions`}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
@@ -320,11 +316,11 @@ export function CurrencyCells({
       <td>
         {(data[key] ?? 0) !== 0 &&
           (data[key] === 0 ? (
-            `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(data[key])}`
+            formatAmountWithCurrency(data[key], currency)
           ) : (
-            <Mark
-              color={data[key] > 0 ? 'green' : 'red'}
-            >{`${currencyCodeToSymbol(currency)} ${formatStringifyAmount(data[key])}`}</Mark>
+            <Mark color={data[key] > 0 ? 'green' : 'red'}>
+              {formatAmountWithCurrency(data[key], currency)}
+            </Mark>
           ))}
       </td>
     </>

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Text } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
-import { currencyCodeToSymbol, formatStringifyAmount } from '../../../helpers/index.js';
+import { formatAmountWithCurrency } from '../../../helpers/index.js';
 import {
   TrialBalanceReportBusiness,
   type ExtendedBusiness,
@@ -55,29 +55,26 @@ export const TrialBalanceReportSortCode = ({
             <td colSpan={2}>Group total:</td>
             <td colSpan={1}>{sortCode.key}</td>
             <td colSpan={1}>
-              {!!sortCode.totalDebit &&
-                `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.totalDebit)}`}
+              {!!sortCode.totalDebit && formatAmountWithCurrency(sortCode.totalDebit, Currency.Ils)}
             </td>
             <td colSpan={1}>
               {!!sortCode.totalCredit &&
-                `${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.totalCredit)}`}
+                formatAmountWithCurrency(sortCode.totalCredit, Currency.Ils)}
             </td>
             <td colSpan={1}>
-              <Text
-                c={sortCode.sum > 0 ? 'green' : sortCode.sum < 0 ? 'red' : undefined}
-              >{`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.sum)}`}</Text>
+              <Text c={sortCode.sum > 0 ? 'green' : sortCode.sum < 0 ? 'red' : undefined}>
+                {formatAmountWithCurrency(sortCode.sum, Currency.Ils)}
+              </Text>
               {!!sortCode.debit && (
                 <>
                   <br />
-                  Total Debit Balances:{' '}
-                  {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.debit)}`}
+                  Total Debit Balances: {formatAmountWithCurrency(sortCode.debit, Currency.Ils)}
                 </>
               )}
               {!!sortCode.credit && (
                 <>
                   <br />
-                  Total Credit Balances:{' '}
-                  {`${currencyCodeToSymbol(Currency.Ils)} ${formatStringifyAmount(sortCode.credit)}`}
+                  Total Credit Balances: {formatAmountWithCurrency(sortCode.credit, Currency.Ils)}
                 </>
               )}
             </td>

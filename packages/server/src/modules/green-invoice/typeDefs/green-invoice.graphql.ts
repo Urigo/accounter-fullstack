@@ -8,6 +8,7 @@ export default gql`
       @auth(role: ACCOUNTANT)
     clientMonthlyChargeDraft(clientId: UUID!, issueMonth: TimelessDate!): NewDocumentInfo!
       @auth(role: ACCOUNTANT)
+    greenInvoiceClient(clientId: UUID!): GreenInvoiceClient! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {

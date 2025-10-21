@@ -19,6 +19,7 @@ import { ValidateReportsScreen } from './components/reports/validations/index.js
 import { VatMonthlyReport } from './components/reports/vat-monthly-report/index.js';
 import { YearlyLedgerReport } from './components/reports/yearly-ledger/index.js';
 import { Salaries } from './components/salaries/index.js';
+import { BusinessScreen } from './components/screens/businesses/business.js';
 import { AllCharges } from './components/screens/charges/all-charges.js';
 import { Charge } from './components/screens/charges/charge.js';
 import { MissingInfoCharges } from './components/screens/charges/missing-info-charges.js';
@@ -42,47 +43,56 @@ export function App(): ReactElement {
       <DashboardLayout filtersContext={filtersContext}>
         <Routes>
           <Route path="/" element={<AllCharges />} />
-          <Route path="charges" element={<AllCharges />} />
-          <Route path="missing-info-charges" element={<MissingInfoCharges />} />
-          <Route path="charges-ledger-validation" element={<ChargesLedgerValidation />} />
-          <Route path="charges/:chargeId" element={<Charge />} />
-          <Route path="businesses" element={<Businesses />} />
-          <Route path="business-trips" element={<BusinessTrips />} />
-          <Route path="business-trips/:businessTripId" element={<BusinessTrip />} />
-          <Route path="business-transactions" element={<BusinessTransactionsSummery />} />
-          <Route
-            path="business-transactions/:businessId"
-            element={<BusinessTransactionsSingle />}
-          />
+
+          <Route path="charges">
+            <Route path="" element={<AllCharges />} />
+            <Route path="missing-info" element={<MissingInfoCharges />} />
+            <Route path="ledger-validation" element={<ChargesLedgerValidation />} />
+            <Route path=":chargeId" element={<Charge />} />
+          </Route>
+
+          <Route path="businesses">
+            <Route path="" element={<Businesses />} />
+            <Route path="transactions" element={<BusinessTransactionsSummery />} />
+            <Route path=":businessId" element={<BusinessScreen />} />
+            <Route path=":businessId/transactions" element={<BusinessTransactionsSingle />} />
+          </Route>
+
+          <Route path="business-trips">
+            <Route path="" element={<BusinessTrips />} />
+            <Route path=":businessTripId" element={<BusinessTrip />} />
+          </Route>
+
           <Route path="charts">
             <Route path="" element={<ChartPage />} />
             <Route path="monthly-income-expense" element={<MonthlyIncomeExpenseChart />} />
           </Route>
+
           <Route path="documents">
             <Route path="" element={<DocumentsReport />} />
-            <Route path="issue-documents" element={<IssueDocuments />} />
             <Route path="issue-document" element={<IssueDocumentScreen />} />
+            <Route path="issue-documents" element={<IssueDocuments />} />
           </Route>
           <Route path="accountant-approvals" element={<AccountantApprovals />} />
           <Route path="reports">
             <Route path="trial-balance" element={<TrialBalanceReport />} />
             <Route path="conto" element={<ContoReport />} />
             <Route path="vat-monthly" element={<VatMonthlyReport />} />
-            <Route path="profit-and-loss" element={<ProfitAndLossReport />} />
-            <Route path="profit-and-loss/:year" element={<ProfitAndLossReport />} />
-            <Route path="tax" element={<TaxReport />} />
-            <Route path="tax/:year" element={<TaxReport />} />
+            <Route path="profit-and-loss">
+              <Route path="" element={<ProfitAndLossReport />} />
+              <Route path=":year" element={<ProfitAndLossReport />} />
+            </Route>
+            <Route path="tax">
+              <Route path="" element={<TaxReport />} />
+              <Route path=":year" element={<TaxReport />} />
+            </Route>
             <Route path="depreciation" element={<DepreciationReport />} />
             <Route path="shaam6111" element={<Shaam6111Report />} />
             <Route path="yearly-ledger" element={<YearlyLedgerReport />} />
-            <Route
-              path="corporate-tax-ruling-compliance"
-              element={<CorporateTaxRulingComplianceReport />}
-            />
-            <Route
-              path="corporate-tax-ruling-compliance/:year"
-              element={<CorporateTaxRulingComplianceReport />}
-            />
+            <Route path="corporate-tax-ruling-compliance">
+              <Route path="" element={<CorporateTaxRulingComplianceReport />} />
+              <Route path=":year" element={<CorporateTaxRulingComplianceReport />} />
+            </Route>
             <Route path="balance" element={<BalanceReport />} />
             <Route path="validate-reports" element={<ValidateReportsScreen />} />
           </Route>

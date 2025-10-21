@@ -20,7 +20,7 @@ import {
 } from '../../forms/index.js';
 import { IssueDocumentModal, type IssueDocumentData } from './issue-document-modal.js';
 import { PdfViewer } from './pdf-viewer.js';
-import { RecentClientDocs } from './recent-client-docs.js';
+import { RecentBusinessDocs } from './recent-business-docs.js';
 import { RecentDocsOfSameType } from './recent-docs-of-same-type.js';
 
 interface GenerateDocumentProps {
@@ -235,8 +235,8 @@ export function GenerateDocument({
 
             {/* Previous client documents */}
             {formData.client?.id && (
-              <RecentClientDocs
-                clientId={formData.client?.id}
+              <RecentBusinessDocs
+                businessId={formData.client?.id}
                 linkedDocumentIds={formData.linkedDocumentIds ?? []}
               />
             )}

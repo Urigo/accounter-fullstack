@@ -5,6 +5,7 @@ export default gql`
     documents: [Document!]! @auth(role: ACCOUNTANT)
     documentsByFilters(filters: DocumentsFilters!): [Document!]! @auth(role: ACCOUNTANT)
     documentById(documentId: UUID!): Document @auth(role: ACCOUNTANT)
+    recentDocumentsByBusiness(businessId: UUID!, limit: Int): [Document!]! @auth(role: ACCOUNTANT)
     recentDocumentsByClient(clientId: UUID!, limit: Int): [Document!]! @auth(role: ACCOUNTANT)
     recentIssuedDocumentsByType(documentType: DocumentType!, limit: Int): [Document!]!
       @auth(role: ACCOUNTANT)

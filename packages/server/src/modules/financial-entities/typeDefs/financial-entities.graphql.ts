@@ -18,6 +18,9 @@ export default gql`
     id: UUID!
     name: String!
     irsCode: Int
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    isActive: Boolean!
   }
 
   extend interface Charge {
