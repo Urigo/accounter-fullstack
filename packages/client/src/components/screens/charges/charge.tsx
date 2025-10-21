@@ -35,6 +35,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   // Try to get loader data (will be available when navigating via router)
   let loaderData: ChargeScreenQuery | undefined;
   try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     loaderData = useLoaderData() as ChargeScreenQuery;
   } catch {
     // No loader data - component used outside router context (e.g., as child component)

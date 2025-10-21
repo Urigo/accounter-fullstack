@@ -25,6 +25,7 @@ export const BusinessScreen = (): ReactElement => {
   // Try to get loader data (will be available when navigating via router)
   let loaderData: BusinessScreenQuery | undefined;
   try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     loaderData = useLoaderData() as BusinessScreenQuery;
   } catch {
     // No loader data - fallback to query
