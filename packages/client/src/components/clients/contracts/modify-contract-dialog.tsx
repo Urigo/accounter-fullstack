@@ -44,6 +44,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 const contractFormSchema = z.object({
   id: z.uuid().optional(),
+  // TODO: activate this field later. requires additional backend support
   // operationsLimit: z.number().optional(),
   startDate: z.iso.date('Start date is required'),
   endDate: z.iso.date('End date is required'),
@@ -62,6 +63,7 @@ const contractFormSchema = z.object({
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
 
 const newContractDefaultValues: ContractFormValues = {
+  // TODO: activate this field later. requires additional backend support
   // operationsLimit: 0,
   startDate: '',
   endDate: '',
@@ -99,6 +101,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
     if (contract) {
       setEditingContract(contract);
       form.reset({
+        // TODO: activate this field later. requires additional backend support
         // operationsLimit: contract.operationsLimit,
         startDate: contract.startDate,
         endDate: contract.endDate,
@@ -194,6 +197,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-4 md:grid-cols-2">
+                {/* TODO: activate this field later. requires additional backend support */}
                 {/* <FormField
                   control={form.control}
                   name="operationsLimit"

@@ -14,6 +14,7 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -81,6 +82,7 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
   }

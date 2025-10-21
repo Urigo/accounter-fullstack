@@ -64,9 +64,12 @@ import {
     id
     pcn874RecordType
     irsCode
+    isActive
     ... on LtdFinancialEntity {
       optionalVAT
       exemptDealer
+      isReceiptEnough
+      isDocumentsOptional
       sortCode {
         id
         key
@@ -97,10 +100,9 @@ import {
 
 interface ConfigurationFormValues {
   isClient: boolean;
-  // TODO: activate these fields later. requires additional backend support
-  // isActive: boolean;
-  // isReceiptEnough: boolean;
-  // noDocsRequired: boolean;
+  isActive: boolean;
+  isReceiptEnough: boolean;
+  isDocumentsOptional: boolean;
   isVatOptional: boolean;
   isExemptDealer: boolean;
   sortCode: string;
@@ -127,10 +129,9 @@ function ConfigurationsSectionFragmentToFormValues(
 
   return {
     isClient: !!business.clientInfo?.id,
-    // TODO: activate these fields later. requires additional backend support
-    // isActive: true,
-    // isReceiptEnough: false,
-    // noDocsRequired: false,
+    isActive: business.isActive,
+    isReceiptEnough: business.isReceiptEnough ?? undefined,
+    isDocumentsOptional: business.isDocumentsOptional ?? undefined,
     isVatOptional: business.optionalVAT ?? undefined,
     isExemptDealer: business.exemptDealer ?? undefined,
     sortCode: business.sortCode?.key?.toString() ?? undefined,
@@ -181,6 +182,9 @@ function convertFormDataToUpdateBusinessInput(
     taxCategory: formData.taxCategory,
     pcn874RecordType: formData.pcn874RecordType,
     irsCode: formData.irsCode,
+    isActive: formData.isActive,
+    isReceiptEnough: formData.isReceiptEnough,
+    isDocumentsOptional: formData.isDocumentsOptional,
     suggestions,
   };
 }
@@ -343,58 +347,67 @@ function BusinessBehaviorSubSection({ form }: SubSectionProps) {
           )}
         />
 
-        {/* TODO: activate these fields later. requires additional backend support */}
-        {/* <FormField
-                  control={form.control}
-                  name="isActive"
-                  render={({ field, fieldState }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Is Active</FormLabel>
-                        <FormDescription>Business is currently active</FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} className={dirtyFieldMarker(fieldState)} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                /> */}
+        <FormField
+          control={form.control}
+          name="isActive"
+          render={({ field, fieldState }) => (
+            <FormItem className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <FormLabel>Is Active</FormLabel>
+                <FormDescription>Business is currently active</FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className={dirtyFieldMarker(fieldState)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
-        {/* <FormField
-                  control={form.control}
-                  name="isReceiptEnough"
-                  render={({ field, fieldState }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Is Receipt Enough</FormLabel>
-                        <FormDescription>
-                          Generate ledger for receipt documents if no invoice available
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} className={dirtyFieldMarker(fieldState)} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                /> */}
+        <FormField
+          control={form.control}
+          name="isReceiptEnough"
+          render={({ field, fieldState }) => (
+            <FormItem className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <FormLabel>Is Receipt Enough</FormLabel>
+                <FormDescription>
+                  Generate ledger for receipt documents if no invoice available
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className={dirtyFieldMarker(fieldState)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
-        {/* <FormField
-                  control={form.control}
-                  name="noDocsRequired"
-                  render={({ field, fieldState }) => (
-                    <FormItem className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>No Docs Required</FormLabel>
-                        <FormDescription>
-                          Skip document validation for common charges
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange className={dirtyFieldMarker(fieldState)} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                /> */}
+        <FormField
+          control={form.control}
+          name="isDocumentsOptional"
+          render={({ field, fieldState }) => (
+            <FormItem className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <FormLabel>No Docs Required</FormLabel>
+                <FormDescription>Skip document validation for common charges</FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className={dirtyFieldMarker(fieldState)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

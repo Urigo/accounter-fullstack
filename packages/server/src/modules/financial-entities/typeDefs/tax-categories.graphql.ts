@@ -66,6 +66,7 @@ export default gql`
     irsCode: Int
     createdAt: DateTime!
     updatedAt: DateTime!
+    isActive: Boolean!
   }
 
   extend type Mutation {

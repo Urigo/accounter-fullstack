@@ -572,7 +572,6 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
     optionalVAT: DbBusiness => DbBusiness.optional_vat,
     pcn874RecordType: DbBusiness => DbBusiness.pcn874_record_type_override,
-    isActive: DbBusiness => !!DbBusiness.is_active,
     isReceiptEnough: DbBusiness => DbBusiness.can_settle_with_receipt,
     isDocumentsOptional: DbBusiness => DbBusiness.no_invoices_required,
   },
