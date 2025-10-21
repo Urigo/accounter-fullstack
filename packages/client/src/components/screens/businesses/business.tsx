@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { useMatch } from 'react-router-dom';
 import { useQuery } from 'urql';
 import Business from '@/components/business/index.js';
