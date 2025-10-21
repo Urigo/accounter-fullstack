@@ -9,6 +9,7 @@ import {
   type Operation,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
+import { ROUTES } from '../router/routes.js';
 import { AuthContext } from './auth-guard.js';
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
@@ -49,14 +50,14 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
           onResult(result) {
             if (result.error?.networkError) {
               console.error('Network Error:', result.error.networkError);
-              navigate('/network-error');
-              return;
+              // navigate(ROUTES.NETWORK_ERROR);
+              // return;
             }
             const isAuthError =
               result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
               result?.error?.response?.status === 401;
             if (isAuthError) {
-              navigate('/login', {
+              navigate(ROUTES.LOGIN, {
                 state: { message: 'You are not authorized to access this page' },
               });
             }

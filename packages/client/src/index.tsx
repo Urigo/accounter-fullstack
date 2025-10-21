@@ -7,6 +7,7 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 import { App } from './app.js';
+import { ErrorBoundary } from './components/error-boundary.js';
 import { Providers } from './providers/index.js';
 import './index.css';
 
@@ -23,7 +24,7 @@ const router = createBrowserRouter(
           <App />
         </Providers>
       }
-      errorElement={<p>error</p>} // TODO: implement
+      errorElement={<ErrorBoundary />}
     />,
   ),
 );

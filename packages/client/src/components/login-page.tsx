@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthContext } from '../providers/auth-guard.js';
+import { ROUTES } from '../router/routes.js';
 import { Button } from './ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form.js';
 import { Input } from './ui/input.js';
@@ -32,7 +33,7 @@ export function LoginPage(): ReactElement {
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       authService.login(values.username, values.password).then(_user => {
-        navigate('/');
+        navigate(ROUTES.HOME);
       });
       toast.success('Success', {
         description: 'You have successfully logged in.',

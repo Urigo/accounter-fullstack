@@ -26,6 +26,7 @@ import {
   Scale,
   Tags,
 } from 'lucide-react';
+import { ROUTES } from '../../router/routes.js';
 
 export interface NavLink {
   title: string;
@@ -49,19 +50,19 @@ export const sidelinks: SideLink[] = [
       {
         title: 'All Charges',
         label: '',
-        href: '/charges',
+        href: ROUTES.CHARGES.ALL,
         icon: <Receipt size={18} />,
       },
       {
         title: 'Missing Info Charges',
         label: '',
-        href: '/charges/missing-info',
+        href: ROUTES.CHARGES.MISSING_INFO,
         icon: <RectangleEllipsis size={18} />,
       },
       {
         title: 'Ledger Validation',
         label: '',
-        href: '/charges/ledger-validation',
+        href: ROUTES.CHARGES.LEDGER_VALIDATION,
         icon: <BookOpenCheck size={18} />,
       },
     ],
@@ -75,73 +76,73 @@ export const sidelinks: SideLink[] = [
       {
         title: 'VAT Monthly Report',
         label: '',
-        href: '/reports/vat-monthly',
+        href: ROUTES.REPORTS.VAT_MONTHLY,
         icon: <Receipt size={18} />,
       },
       {
         title: 'Trial Balance Report',
         label: '',
-        href: '/reports/trial-balance',
+        href: ROUTES.REPORTS.TRIAL_BALANCE,
         icon: <Scale size={18} />,
       },
       {
         title: 'Conto Report',
         label: '',
-        href: '/reports/conto',
+        href: ROUTES.REPORTS.CONTO,
         icon: <Puzzle size={18} />,
       },
       {
         title: 'Profit and Loss Report',
         label: '',
-        href: '/reports/profit-and-loss',
+        href: ROUTES.REPORTS.PROFIT_AND_LOSS(),
         icon: <HandCoins size={18} />,
       },
       {
         title: 'Tax Report',
         label: '',
-        href: '/reports/tax',
+        href: ROUTES.REPORTS.TAX(),
         icon: <ParkingMeter size={18} />,
       },
       {
         title: 'Corporate Tax Ruling Compliance Report',
         label: '',
-        href: '/reports/corporate-tax-ruling-compliance',
+        href: ROUTES.REPORTS.CORPORATE_TAX_RULING_COMPLIANCE(),
         icon: <ParkingMeter size={18} />,
       },
       {
         title: 'Depreciation Report',
         label: '',
-        href: '/reports/depreciation',
+        href: ROUTES.REPORTS.DEPRECIATION,
         icon: <ChartColumnDecreasing size={18} />,
       },
       {
         title: 'Shaam 6111 Report',
         label: '',
-        href: '/reports/shaam6111',
+        href: ROUTES.REPORTS.SHAAM_6111,
         icon: <HandCoins size={18} />,
       },
       {
         title: 'Accountant Approvals',
         label: '',
-        href: '/accountant-approvals',
+        href: ROUTES.ACCOUNTANT_APPROVALS,
         icon: <Calculator size={18} />,
       },
       {
         title: 'Yearly Ledger Report',
         label: '',
-        href: '/reports/yearly-ledger',
+        href: ROUTES.REPORTS.YEARLY_LEDGER,
         icon: <Rows4 size={18} />,
       },
       {
         title: 'Transactions Balance',
         label: '',
-        href: '/reports/balance',
+        href: ROUTES.REPORTS.BALANCE,
         icon: <ChartNoAxesCombined size={18} />,
       },
       {
         title: 'Validate Reports',
         label: '',
-        href: '/reports/validate-reports',
+        href: ROUTES.REPORTS.VALIDATE_REPORTS,
         icon: <CheckCheck size={18} />,
       },
       {
@@ -160,25 +161,25 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Businesses',
         label: '',
-        href: '/businesses',
+        href: ROUTES.BUSINESSES.ALL,
         icon: <Factory size={18} />,
       },
       {
         title: 'Business Transactions',
         label: '',
-        href: '/businesses/transactions',
+        href: ROUTES.BUSINESSES.TRANSACTIONS,
         icon: <ArrowLeftRight size={18} />,
       },
       {
         title: 'Tax Categories',
         label: '',
-        href: '/tax-categories',
+        href: ROUTES.TAX_CATEGORIES,
         icon: <ArrowDown01 size={18} />,
       },
       {
         title: 'Sort Codes',
         label: '',
-        href: '/sort-codes',
+        href: ROUTES.SORT_CODES,
         icon: <Book size={18} />,
       },
     ],
@@ -190,7 +191,7 @@ export const sidelinks: SideLink[] = [
     icon: <Files size={18} />,
     sub: [
       {
-        href: '/documents',
+        href: ROUTES.DOCUMENTS.ALL,
         title: 'All Documents',
         label: '',
         icon: <Files size={18} />,
@@ -198,19 +199,19 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Issue Documents',
         label: '',
-        href: '/documents/issue-documents',
+        href: ROUTES.DOCUMENTS.ISSUE_DOCUMENTS,
         icon: <FilePen size={18} />,
       },
       {
         title: 'Issue Document',
         label: '',
-        href: '/documents/issue-document',
+        href: ROUTES.DOCUMENTS.ISSUE_DOCUMENT,
         icon: <FilePen size={18} />,
       },
     ],
   },
   {
-    href: '/business-trips',
+    href: ROUTES.BUSINESS_TRIPS.ALL,
     title: 'Business Trips',
     label: '',
     icon: <PlaneTakeoff size={18} />,
@@ -224,25 +225,25 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Main',
         label: '',
-        href: '/charts/',
+        href: ROUTES.CHARTS.MAIN,
         icon: <BarChartBig size={18} />,
       },
       {
         title: 'Monthly Income/Expense',
         label: '',
-        href: '/charts/monthly-income-expense',
+        href: ROUTES.CHARTS.MONTHLY_INCOME_EXPENSE,
         icon: <BarChartBig size={18} />,
       },
     ],
   },
   {
-    href: '/salaries',
+    href: ROUTES.SALARIES,
     title: 'Salaries',
     label: '',
     icon: <BadgeDollarSign size={18} />,
   },
   {
-    href: '/tags',
+    href: ROUTES.TAGS,
     title: 'Tags',
     label: '',
     icon: <Tags size={18} />,
