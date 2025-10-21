@@ -15,18 +15,17 @@ import { AuthContext } from './auth-guard.js';
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
   const { authService } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Track login state to trigger token updates
   const loggedIn = authService.isLoggedIn();
 
   const token = useMemo(() => {
     const token = authService.authToken();
     return token;
-  }, [authService]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loggedIn is needed to trigger token refresh on login
+  }, [authService, loggedIn]);
 
   const client = useMemo(() => {
-    if (!loggedIn) {
-      return null;
-    }
-
     let url: string;
     switch (import.meta.env.MODE) {
       case 'production': {
@@ -87,7 +86,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
         fetchExchange,
       ],
     });
-  }, [loggedIn, navigate, token, authService]);
+  }, [navigate, token, authService]);
 
   useEffect(() => {
     if (!client) {

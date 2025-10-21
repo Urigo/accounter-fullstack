@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import { useEffect } from 'react';
 import { useMatches } from 'react-router-dom';
 
 interface RouteHandle {
@@ -11,7 +11,7 @@ interface RouteHandle {
  * Component that updates document title based on route handle
  * Place this in the root layout to automatically update titles
  */
-export function DocumentTitle(): ReactElement | null {
+export function DocumentTitle() {
   const matches = useMatches();
 
   useEffect(() => {
@@ -27,5 +27,5 @@ export function DocumentTitle(): ReactElement | null {
     }
   }, [matches]);
 
-  return null;
+  return <div style={{ display: 'none' }} />;
 }

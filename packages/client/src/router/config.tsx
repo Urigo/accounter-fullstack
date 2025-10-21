@@ -170,7 +170,8 @@ const NetworkError = lazy(() =>
  * Helper to wrap components with Suspense
  */
 function withSuspense(
-  Component: React.LazyExoticComponent<() => ReactElement>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Component: React.LazyExoticComponent<React.ComponentType<any>>,
   fallback?: ReactElement,
 ) {
   return (

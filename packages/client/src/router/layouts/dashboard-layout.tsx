@@ -1,4 +1,4 @@
-import { type ReactElement, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Outlet } from 'react-router-dom';
 import { DashboardLayout as DashboardUI } from '../../components/layout/dashboard-layout.js';
 import { FiltersContext } from '../../providers/filters-context.js';

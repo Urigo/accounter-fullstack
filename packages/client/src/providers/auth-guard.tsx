@@ -1,8 +1,4 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
-import { NetworkError } from '@/components/screens/network-error.js';
-import { LoginPage } from '../components/login-page.js';
-import { ROUTES } from '../router/routes.js';
+import { createContext, useMemo, useState, type ReactNode } from 'react';
 import { UserService } from '../services/user-service.js';
 
 type ContextType = {
@@ -15,25 +11,19 @@ export const AuthContext = createContext<ContextType>({
   setAuthService: () => void 0,
 });
 
-export const AuthGuard = ({ children }: { children?: ReactNode }): ReactNode => {
-  const [authService, setAuthService] = useState<UserService>(new UserService());
-  const navigate = useNavigate();
+/**
+ * AuthProvider - provides authentication context
+ * Auth routing logic is now handled by route loaders
+ */
+export const AuthProvider = ({ children }: { children?: ReactNode }): ReactNode => {
+  // Use lazy initialization to prevent creating new UserService on every render
+  const [authService, setAuthService] = useState<UserService>(() => new UserService());
 
-  const loggedIn = authService.isLoggedIn();
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({ authService, setAuthService }), [authService]);
 
-  useEffect(() => {
-    if (!loggedIn) {
-      navigate(ROUTES.LOGIN);
-    }
-  }, [loggedIn, navigate]);
-
-  return (
-    <AuthContext.Provider value={{ authService, setAuthService }}>
-      <Routes>
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.NETWORK_ERROR} element={<NetworkError />} />
-        <Route path="*" element={children} />
-      </Routes>
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
+
+// Keep AuthGuard as alias for backwards compatibility
+export const AuthGuard = AuthProvider;

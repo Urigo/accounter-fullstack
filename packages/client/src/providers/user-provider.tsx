@@ -54,13 +54,14 @@ export function UserProvider({ children }: { children?: ReactNode }): ReactNode 
   });
 
   // update active user
-  const currentUser = authService.currentUser();
   useEffect(() => {
+    const currentUser = authService.currentUser();
     if (!equal(currentUser, user)) {
       setUser(currentUser);
       fetchUserContext();
     }
-  }, [currentUser, user, fetchUserContext]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- authService and fetchUserContext are stable
+  }, [user]);
 
   // on user defaults fetched, update user defaults
   useEffect(() => {
