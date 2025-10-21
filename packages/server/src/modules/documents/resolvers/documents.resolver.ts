@@ -43,6 +43,18 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
       return doc ?? null;
     },
+    recentDocumentsByBusiness: async (_, { businessId, limit }, { injector }) => {
+      const businessDocs = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByBusinessIdLoader.load(businessId);
+      if (!businessDocs?.length) {
+        return [];
+      }
+      const sortedDocs = [...businessDocs].sort(
+        (a, b) => (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
+      );
+      return sortedDocs.slice(0, limit ?? 7);
+    },
     recentDocumentsByClient: async (_, { clientId, limit }, { injector }) => {
       const clientDocs = await injector
         .get(IssuedDocumentsProvider)

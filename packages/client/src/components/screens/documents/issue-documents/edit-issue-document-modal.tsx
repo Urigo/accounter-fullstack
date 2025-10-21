@@ -3,7 +3,7 @@ import { Check, Edit, Eye, FileText, Loader2 } from 'lucide-react';
 import type { NewDocumentInfoFragment } from '../../../../gql/graphql.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { PdfViewer } from '../../../common/documents/issue-document/pdf-viewer.js';
-import { RecentClientDocs } from '../../../common/documents/issue-document/recent-client-docs.js';
+import { RecentBusinessDocs } from '../../../common/documents/issue-document/recent-business-docs.js';
 import { RecentDocsOfSameType } from '../../../common/documents/issue-document/recent-docs-of-same-type.js';
 import {
   convertNewDocumentInfoFragmentIntoPreviewDocumentInput,
@@ -201,10 +201,10 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
                   </CardContent>
                 </Card>
 
-                {/* Previous client documents */}
+                {/* Previous business documents */}
                 {document.client?.id && (
-                  <RecentClientDocs
-                    clientId={document.client?.id}
+                  <RecentBusinessDocs
+                    businessId={document.client?.id}
                     linkedDocumentIds={document.linkedDocumentIds ?? []}
                   />
                 )}

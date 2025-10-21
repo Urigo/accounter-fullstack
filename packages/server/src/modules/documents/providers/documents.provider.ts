@@ -10,6 +10,7 @@ import type {
   IGetAllDocumentsParams,
   IGetAllDocumentsQuery,
   IGetAllDocumentsResult,
+  IGetDocumentsByBusinessIdsQuery,
   IGetDocumentsByChargeIdQuery,
   IGetDocumentsByExtendedFiltersParams,
   IGetDocumentsByExtendedFiltersQuery,
@@ -43,6 +44,12 @@ const getDocumentsByIds = sql<IGetDocumentsByIdsQuery>`
   SELECT *
   FROM accounter_schema.documents
   WHERE id IN $$Ids;
+`;
+
+const getDocumentsByBusinessIds = sql<IGetDocumentsByBusinessIdsQuery>`
+  SELECT *
+  FROM accounter_schema.documents
+  WHERE debtor_id IN $$Ids OR creditor_id IN $$Ids;
 `;
 
 const getDocumentsByHashes = sql<IGetDocumentsByHashesQuery>`
@@ -369,6 +376,28 @@ export class DocumentsProvider {
     },
   );
 
+  private async batchDocumentsByBusinessIds(businessIds: readonly string[]) {
+    const uniqueIDs = [...new Set(businessIds)];
+    try {
+      const docs = await getDocumentsByBusinessIds.run({ Ids: uniqueIDs }, this.dbProvider);
+
+      return businessIds.map(id =>
+        docs.filter(doc => doc.creditor_id === id || doc.debtor_id === id),
+      );
+    } catch (e) {
+      console.error(e);
+      return businessIds.map(() => null);
+    }
+  }
+
+  public getDocumentsByBusinessIdLoader = new DataLoader(
+    (businessIds: readonly string[]) => this.batchDocumentsByBusinessIds(businessIds),
+    {
+      cacheKeyFn: key => `documents-by-business-${key}`,
+      cacheMap: this.cache,
+    },
+  );
+
   private async batchDocumentsByHash(hashes: readonly number[]) {
     const uniqueHashes = [...new Set(hashes)];
     try {
@@ -442,6 +471,8 @@ export class DocumentsProvider {
     if (document) {
       this.cache.delete(`document-by-charge-${document.charge_id}`);
       this.cache.delete(`document-hash-${document.file_hash}`);
+      this.cache.delete(`documents-by-business-${document.debtor_id}`);
+      this.cache.delete(`documents-by-business-${document.creditor_id}`);
     }
     this.cache.delete(`document-${id}`);
     this.cache.delete('all-documents');
@@ -449,7 +480,11 @@ export class DocumentsProvider {
 
   public async invalidateByChargeId(chargeId: string) {
     const documents = await this.getDocumentsByChargeIdLoader.load(chargeId);
-    documents.map(doc => this.cache.delete(`document-${doc.id}`));
+    documents.map(doc => {
+      this.cache.delete(`document-${doc.id}`);
+      this.cache.delete(`documents-by-business-${doc.debtor_id}`);
+      this.cache.delete(`documents-by-business-${doc.creditor_id}`);
+    });
     this.cache.delete(`document-by-charge-${chargeId}`);
     this.cache.delete('all-documents');
   }

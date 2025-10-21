@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { RecentClientDocs } from '../common/documents/issue-document/recent-client-docs.js';
+import { RecentBusinessDocs } from '../common/documents/issue-document/recent-business-docs.js';
 
 interface Props {
   businessId: string;
@@ -19,7 +19,7 @@ export function DocumentsSection({ businessId }: Props) {
         </div>
       </CardHeader>
       <CardContent>
-        <RecentClientDocs clientId={businessId} linkedDocumentIds={[]} limit={1000} />
+        <RecentBusinessDocs businessId={businessId} linkedDocumentIds={[]} limit={1000} />
       </CardContent>
     </Card>
   );
