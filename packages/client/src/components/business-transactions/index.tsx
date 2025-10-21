@@ -79,7 +79,7 @@ export function getBusinessTransactionsHref(filter?: BusinessTransactionsFilter 
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/business-transactions${queryParams}`;
+  return `/businesses/transactions${queryParams}`;
 }
 
 type BusinessTransactionsSum = Extract<

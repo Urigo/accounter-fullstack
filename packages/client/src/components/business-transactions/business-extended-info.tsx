@@ -234,7 +234,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
               >
                 <td>
                   <a
-                    href={`/business-transactions/${row.business.id}`}
+                    href={`/businesses/${row.business.id}/transactions`}
                     target="_blank"
                     rel="noreferrer"
                     onClick={event => event.stopPropagation()}
@@ -274,7 +274,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <td>
                   {row.counterAccount && (
                     <a
-                      href={`/business-transactions/${row.counterAccount?.id}`}
+                      href={`/businesses/${row.counterAccount?.id}/transactions`}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
