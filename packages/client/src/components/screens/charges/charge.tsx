@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { ChargeScreenDocument } from '../../../gql/graphql.js';
+import { ChargeScreenDocument, type ChargeScreenQuery } from '../../../gql/graphql.js';
 import { ChargesTable } from '../../charges/charges-table.js';
 import {
   AccounterLoader,
@@ -32,6 +32,14 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   const { chargeId: chargeIdFromUrl } = useParams<{ chargeId: string }>();
   const id = chargeId || chargeIdFromUrl;
 
+  // Try to get loader data (will be available when navigating via router)
+  let loaderData: ChargeScreenQuery | undefined;
+  try {
+    loaderData = useLoaderData() as ChargeScreenQuery;
+  } catch {
+    // No loader data - component used outside router context (e.g., as child component)
+  }
+
   const [editChargeId, setEditChargeId] = useState<
     { id: string; onChange: () => void } | undefined
   >(undefined);
@@ -42,19 +50,24 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
     undefined,
   );
 
+  // Only fetch if we don't have loader data and need to fetch (prop-based usage)
   const [{ data, fetching }, fetchCharge] = useQuery({
     query: ChargeScreenDocument,
-    pause: !id,
+    pause: !id || !!loaderData,
     variables: {
       chargeId: id ?? '',
     },
   });
 
   useEffect(() => {
-    if (id) {
+    if (id && !loaderData) {
       fetchCharge();
     }
-  }, [id, fetchCharge]);
+  }, [id, loaderData, fetchCharge]);
+
+  // Use loader data if available, otherwise use query data
+  const chargeData = loaderData || data;
+  const isLoading = !loaderData && fetching;
 
   if (!id) {
     return <div>Charge not found</div>;
@@ -62,14 +75,14 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
 
   return (
     <>
-      {fetching ? (
+      {isLoading ? (
         <AccounterLoader />
       ) : (
         <ChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
           setMatchDocuments={setMatchDocuments}
-          data={data?.charge ? [data.charge] : []}
+          data={chargeData?.charge ? [chargeData.charge] : []}
           isAllOpened
         />
       )}

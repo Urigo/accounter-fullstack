@@ -4,7 +4,7 @@ import { ErrorBoundary } from '../components/error-boundary.js';
 import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layout/page-skeleton.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
-import { publicOnly, requireAuth } from './loaders/auth-loader.js';
+import { businessLoader, chargeLoader, publicOnly, requireAuth } from './loaders/index.js';
 import { ROUTES } from './routes.js';
 
 /**
@@ -247,6 +247,7 @@ export const routes: RouteObject[] = [
               },
               {
                 path: ':chargeId',
+                loader: chargeLoader,
                 element: withSuspense(Charge),
                 handle: {
                   title: 'Charge Details',
@@ -273,6 +274,7 @@ export const routes: RouteObject[] = [
               },
               {
                 path: ':businessId',
+                loader: businessLoader,
                 element: withSuspense(BusinessScreen),
                 handle: {
                   title: 'Business Details',

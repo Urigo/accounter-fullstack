@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import Business from '@/components/business/index.js';
-import { BusinessScreenDocument } from '../../../gql/graphql.js';
+import { BusinessScreenDocument, type BusinessScreenQuery } from '../../../gql/graphql.js';
 import { AccounterLoader } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -22,21 +22,34 @@ export function getBusinessHref(businessId: string): string {
 export const BusinessScreen = (): ReactElement => {
   const { businessId } = useParams<{ businessId: string }>();
 
+  // Try to get loader data (will be available when navigating via router)
+  let loaderData: BusinessScreenQuery | undefined;
+  try {
+    loaderData = useLoaderData() as BusinessScreenQuery;
+  } catch {
+    // No loader data - fallback to query
+  }
+
+  // Only fetch if we don't have loader data
   const [{ data, fetching }, fetchBusiness] = useQuery({
     query: BusinessScreenDocument,
-    pause: !businessId,
+    pause: !businessId || !!loaderData,
     variables: {
       businessId: businessId ?? '',
     },
   });
 
-  if (fetching && !data?.business) {
+  // Use loader data if available, otherwise use query data
+  const businessData = loaderData || data;
+  const isLoading = !loaderData && fetching;
+
+  if (isLoading && !businessData?.business) {
     return <AccounterLoader />;
   }
 
-  if (!businessId || !data?.business) {
+  if (!businessId || !businessData?.business) {
     return <div>Business not found</div>;
   }
 
-  return <Business data={data.business} refetchBusiness={async () => fetchBusiness()} />;
+  return <Business data={businessData.business} refetchBusiness={async () => fetchBusiness()} />;
 };
