@@ -79,12 +79,10 @@ export const validateCharge = async (
         }
       }),
     );
-    const canSettleWithReceipt = !!(charge.can_settle_with_receipt && receiptsCount > 0);
+    const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptsCount > 0);
     const dbDocumentsAreValid = !charge.invalid_documents;
     documentsAreFine =
-      dbDocumentsAreValid &&
-      (invoicesCount > 0 || canSettleWithReceipt) &&
-      !missingAllocationNumber;
+      dbDocumentsAreValid && (invoicesCount > 0 || isReceiptEnough) && !missingAllocationNumber;
   } else {
     documentsAreFine = true;
   }

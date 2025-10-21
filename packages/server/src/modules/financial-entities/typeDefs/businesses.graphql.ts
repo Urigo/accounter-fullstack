@@ -41,6 +41,9 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean!
+    isReceiptEnough: Boolean
+    isDocumentsOptional: Boolean
   }
 
   " input for business suggestions "
@@ -108,9 +111,12 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+    isReceiptEnough: Boolean
+    isDocumentsOptional: Boolean
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean
   }
 
   " input for insertNewBusiness "
@@ -129,8 +135,11 @@ export default gql`
     exemptDealer: Boolean
     suggestions: SuggestionsInput
     optionalVAT: Boolean
+    isReceiptEnough: Boolean
+    isDocumentsOptional: Boolean
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    isActive: Boolean
   }
 
   " input for business suggestions "
