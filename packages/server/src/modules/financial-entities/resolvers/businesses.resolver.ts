@@ -77,6 +77,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           ...fields,
           financialEntityId: businessId,
           irsCode: fields.irsCode ?? null,
+          isActive: fields.isActive ?? null,
         });
       }
 
@@ -102,6 +103,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         phoneNumber: fields.phoneNumber,
         website: fields.website,
         optionalVat: fields.optionalVAT,
+        isReceiptEnough: fields.isReceiptEnough ?? null,
+        isDocumentsOptional: fields.isDocumentsOptional ?? null,
         country: fields.country,
         suggestionData,
         pcn874RecordTypeOverride: fields.pcn874RecordType,
@@ -190,6 +193,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             sortCode: fields.sortCode,
             type: 'business',
             irsCode,
+            isActive: fields.isActive ?? true,
           })
           .catch((e: Error) => {
             console.error(e);
@@ -235,6 +239,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phoneNumber: fields.phoneNumber,
           website: fields.website,
           optionalVat: fields.optionalVAT,
+          isReceiptEnough: fields.isReceiptEnough ?? null,
+          isDocumentsOptional: fields.isDocumentsOptional ?? null,
           country: fields.country,
           suggestions,
           pcn874RecordTypeOverride: fields.pcn874RecordType,
@@ -459,6 +465,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               type: 'business',
               sortCode: null,
               irsCode: null,
+              isActive: true,
             })
             .catch((e: Error) => {
               console.error(e);
@@ -485,6 +492,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             governmentId: undefined,
             exemptDealer: false,
             optionalVat: false,
+            isReceiptEnough: null,
+            isDocumentsOptional: null,
             pcn874RecordTypeOverride: null,
           });
 
@@ -563,6 +572,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
     optionalVAT: DbBusiness => DbBusiness.optional_vat,
     pcn874RecordType: DbBusiness => DbBusiness.pcn874_record_type_override,
+    isActive: DbBusiness => !!DbBusiness.is_active,
+    isReceiptEnough: DbBusiness => DbBusiness.can_settle_with_receipt,
+    isDocumentsOptional: DbBusiness => DbBusiness.no_invoices_required,
   },
   PersonalFinancialEntity: {
     ...commonFinancialEntityFields,

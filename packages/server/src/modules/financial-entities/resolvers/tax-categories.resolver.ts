@@ -42,6 +42,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
           ...fields,
           financialEntityId: taxCategoryId,
           irsCode: fields.irsCode ?? null,
+          isActive: fields.isActive ?? true,
         });
       }
       const adjustedFields: IUpdateTaxCategoryParams = {
@@ -98,6 +99,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
             sortCode: fields.sortCode,
             type: 'tax_category',
             irsCode,
+            isActive: fields.isActive ?? true,
           })
           .catch((e: Error) => {
             const message = `Failed to create financial entity: ${e.message}`;

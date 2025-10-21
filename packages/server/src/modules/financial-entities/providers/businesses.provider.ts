@@ -159,7 +159,7 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
     registration_date
   ),
   no_invoices_required = COALESCE(
-    $noInvoicesRequired,
+    $isDocumentsOptional,
     no_invoices_required
   ),
   suggestion_data = COALESCE(
@@ -167,7 +167,7 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
     suggestion_data
   ),
   can_settle_with_receipt = COALESCE(
-    $canSettleWithReceipt,
+    $isReceiptEnough,
     can_settle_with_receipt
   ),
   exempt_dealer = COALESCE(
@@ -188,8 +188,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusinesses = sql<IInsertBusinessesQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override)
-  VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required)
+  VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional)
   RETURNING *;`;
 
 const replaceBusinesses = sql<IReplaceBusinessesQuery>`
