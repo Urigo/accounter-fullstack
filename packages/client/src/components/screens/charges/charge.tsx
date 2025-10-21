@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument } from '../../../gql/graphql.js';
 import { ChargesTable } from '../../charges/charges-table.js';
@@ -29,9 +29,8 @@ type Props = {
 };
 
 export const Charge = ({ chargeId }: Props): ReactElement => {
-  const match = useMatch('/charges/:chargeId');
-
-  const id = chargeId || match?.params.chargeId;
+  const { chargeId: chargeIdFromUrl } = useParams<{ chargeId: string }>();
+  const id = chargeId || chargeIdFromUrl;
 
   const [editChargeId, setEditChargeId] = useState<
     { id: string; onChange: () => void } | undefined

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Table } from '@mantine/core';
 import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
@@ -135,10 +135,10 @@ import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 `;
 
 export const ProfitAndLossReport = (): ReactElement => {
-  const match = useMatch('/reports/profit-and-loss/:year');
+  const { year: yearFromUrl } = useParams<{ year: string }>();
   const { setFiltersContext } = useContext(FiltersContext);
   const [year, setYear] = useState<number>(
-    (match ? Number(match.params.year) : undefined) ?? new Date().getFullYear(),
+    yearFromUrl ? Number(yearFromUrl) : new Date().getFullYear(),
   );
   const [referenceYears, setReferenceYears] = useState<number[]>([]);
 
