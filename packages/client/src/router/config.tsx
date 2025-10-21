@@ -162,9 +162,6 @@ const PageNotFound = lazy(() =>
 const LoginPage = lazy(() =>
   import('../components/login-page.js').then(m => ({ default: m.LoginPage })),
 );
-const NetworkError = lazy(() =>
-  import('../components/screens/network-error.js').then(m => ({ default: m.NetworkError })),
-);
 
 /**
  * Helper to wrap components with Suspense
@@ -198,13 +195,6 @@ export const routes: RouteObject[] = [
         element: withSuspense(LoginPage),
         handle: {
           title: 'Login',
-        },
-      },
-      {
-        path: ROUTES.NETWORK_ERROR,
-        element: withSuspense(NetworkError),
-        handle: {
-          title: 'Network Error',
         },
       },
 
