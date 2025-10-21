@@ -5,11 +5,14 @@ import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '../components/ui/sonner.js';
+import { AuthGuard, AuthProvider, AuthContext } from './auth-guard.js';
+import { UrqlProvider } from './urql.js';
+import { UserProvider, UserContext, type UserInfo } from './user-provider.js';
 
-export { AuthGuard, AuthProvider, AuthContext } from './auth-guard.js';
+export { AuthGuard, AuthProvider, AuthContext };
 export { FiltersContext } from './filters-context.js';
-export { UrqlProvider } from './urql.js';
-export { UserProvider, UserContext, type UserInfo } from './user-provider.js';
+export { UrqlProvider };
+export { UserProvider, UserContext, type UserInfo };
 
 const queryClient = new QueryClient();
 
