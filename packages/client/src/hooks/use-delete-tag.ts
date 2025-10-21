@@ -20,7 +20,7 @@ const NOTIFICATION_ID = 'deleteTag';
 
 export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(DeleteTagDocument);
   const deleteTag = useCallback(

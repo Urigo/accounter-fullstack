@@ -20,7 +20,7 @@ const NOTIFICATION_ID = 'addSortCode';
 
 export const useAddSortCode = (): UseAddSortCode => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(AddSortCodeDocument);
   const addSortCode = useCallback(

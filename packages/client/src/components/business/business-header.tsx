@@ -25,6 +25,7 @@ export function BusinessHeader({ data }: Props) {
   const business = getFragmentData(BusinessHeaderFragmentDoc, data);
 
   if (!business || business.__typename !== 'LtdFinancialEntity') {
+    // TODO: handle other business types
     return <div />;
   }
 
@@ -47,10 +48,12 @@ export function BusinessHeader({ data }: Props) {
           </div>
 
           <div className="hidden md:flex items-center gap-6 text-sm">
-            <div className="text-right">
-              <p className="text-muted-foreground">Tax ID</p>
-              <p className="font-medium text-foreground">{business.governmentId}</p>
-            </div>
+            {business.governmentId && (
+              <div className="text-right">
+                <p className="text-muted-foreground">Tax ID</p>
+                <p className="font-medium text-foreground">{business.governmentId}</p>
+              </div>
+            )}
             <div className="text-right">
               <p className="text-muted-foreground">Since</p>
               <p className="font-medium text-foreground">

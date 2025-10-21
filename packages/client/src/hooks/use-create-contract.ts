@@ -22,7 +22,7 @@ const NOTIFICATION_ID = 'createContract';
 
 export const useCreateContract = (): UseCreateContract => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(CreateContractDocument);
   const createContract = useCallback(

@@ -20,7 +20,7 @@ const NOTIFICATION_ID = 'addTag';
 
 export const useAddTag = (): UseAddTag => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(AddTagDocument);
   const addTag = useCallback(

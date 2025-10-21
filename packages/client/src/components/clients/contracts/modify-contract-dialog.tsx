@@ -127,7 +127,6 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
     async (values: ContractFormValues) => {
       if (editingContract) {
         // Handle contract update
-        console.log('[v0] Updating contract:', editingContract.id, values);
         await updateContract({
           contractId: editingContract.id!,
           input: {
@@ -150,7 +149,6 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
           form.setError('billingCycle', { message: 'Billing cycle is required' });
           return;
         }
-        console.log('[v0] Creating new contract:', values);
         await createContract({
           input: {
             clientId,
@@ -174,9 +172,6 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
     },
     [editingContract, onDone, createContract, updateContract, clientId, form],
   );
-
-  const endDate = form.watch('endDate');
-  console.log('Watched endDate:', endDate);
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -269,7 +264,6 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
                           placeholder="24000"
                           {...field}
                           onChange={event => {
-                            console.log('Payment amount changed to:', event?.target.value);
                             field.onChange(
                               event?.target.value ? Number(event?.target.value) : undefined,
                             );

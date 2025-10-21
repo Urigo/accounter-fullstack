@@ -371,14 +371,19 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 <FormField
                   control={form.control}
                   name="isClient"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>Is Client</FormLabel>
                         <FormDescription>Mark this business as a client</FormDescription>
                       </div>
                       <FormControl>
-                        <Switch disabled checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch
+                          disabled
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className={dirtyFieldMarker(fieldState)}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
@@ -388,14 +393,14 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 {/* <FormField
                   control={form.control}
                   name="isActive"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>Is Active</FormLabel>
                         <FormDescription>Business is currently active</FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} className={dirtyFieldMarker(fieldState)} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -404,7 +409,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 {/* <FormField
                   control={form.control}
                   name="isReceiptEnough"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>Is Receipt Enough</FormLabel>
@@ -413,7 +418,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                         </FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch checked={field.value} onCheckedChange={field.onChange} className={dirtyFieldMarker(fieldState)} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -422,7 +427,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 {/* <FormField
                   control={form.control}
                   name="noDocsRequired"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>No Docs Required</FormLabel>
@@ -431,7 +436,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                         </FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch checked={field.value} onCheckedChange={field.onChange className={dirtyFieldMarker(fieldState)} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -440,14 +445,18 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 <FormField
                   control={form.control}
                   name="isVatOptional"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>Is VAT Optional</FormLabel>
                         <FormDescription>Mute missing VAT indicator</FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className={dirtyFieldMarker(fieldState)}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
@@ -456,14 +465,18 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                 <FormField
                   control={form.control}
                   name="isExemptDealer"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <FormLabel>Is Exempt Dealer</FormLabel>
                         <FormDescription>Business is exempt from VAT requirements</FormDescription>
                       </div>
                       <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className={dirtyFieldMarker(fieldState)}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
@@ -753,7 +766,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
               <FormField
                 control={form.control}
                 name="internalLinks"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>Internal Links</FormLabel>
                     <div className="flex gap-2">
@@ -773,7 +786,9 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div
+                      className={dirtyFieldMarker(fieldState) + ' flex flex-wrap gap-2 rounded-md'}
+                    >
                       {field.value?.map((link, index) => (
                         <Badge key={index} variant="secondary" className="gap-1 max-w-xs truncate">
                           {link}
@@ -796,14 +811,18 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
               <FormField
                 control={form.control}
                 name="useMessageBody"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <FormLabel>Should Use Message Body</FormLabel>
                       <FormDescription>Extract information from email message body</FormDescription>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className={dirtyFieldMarker(fieldState)}
+                      />
                     </FormControl>
                   </FormItem>
                 )}

@@ -111,7 +111,7 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
   const onSubmit = useCallback(
     async (values: ClientFormValues) => {
       if (editingClient) {
-        console.log('[v0] Updating client:', editingClient.id, values);
+        // Handle client update
         updateClient({
           businessId,
           fields: values,
@@ -121,7 +121,7 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
           form.setError('greenInvoiceId', { message: 'Green Invoice ID is required' });
           return;
         }
-        console.log('[v0] Creating new client:', values);
+        // Handle new client creation
         insertClient({
           fields: {
             ...values,

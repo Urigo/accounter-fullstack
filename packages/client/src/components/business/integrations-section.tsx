@@ -434,12 +434,10 @@ function UpdateIntegrationConfigDialog({ id, provider, updateClient }: updateInt
   const [updatedId, setUpdatedId] = useState(id);
 
   const handleSaveConfig = useCallback(async () => {
-    console.log(`Saving ${provider} ID: ${updatedId}`);
-
     await updateClient(updatedId!);
 
     setIsConfigOpen(false);
-  }, [provider, updatedId, updateClient]);
+  }, [updatedId, updateClient]);
 
   return (
     <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>

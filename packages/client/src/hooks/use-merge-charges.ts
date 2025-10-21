@@ -47,7 +47,7 @@ const NOTIFICATION_ID = 'mergeCharges';
 
 export const useMergeCharges = (): UseMergeCharges => {
   // TODO: add authentication
-  // TODO: add local data update method after chang e
+  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(MergeChargesDocument);
   const mergeCharges = useCallback(

@@ -153,7 +153,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
   }, [localAddress, defaultFormValues.localAddress, form]);
 
   const isClient = business && 'clientInfo' in business && !!business.clientInfo;
-  const isLocalEntity = locality === 'ISR'; // TODO: Replace with user context based check. requires additional backend support
+  const isLocalEntity = locality === userContext?.context.locality;
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
@@ -344,14 +344,6 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                       <FormControl>
                         <Textarea
                           {...field}
-                          onChange={val => {
-                            console.log(val);
-                            field.onChange(val);
-                          }}
-                          onBlur={val => {
-                            console.log(val);
-                            field.onBlur();
-                          }}
                           rows={3}
                           placeholder="Enter address in local language"
                           className={dirtyFieldMarker(fieldState)}
