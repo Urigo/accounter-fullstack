@@ -1,12 +1,15 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
+import { Button } from '@/components/ui/button.js';
+import { Label } from '@/components/ui/label.js';
 import { Drawer, Image, Loader } from '@mantine/core';
 import { EditDocumentDocument, type UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { Form } from '../../ui/form.js';
-import { ButtonWithLabel, ImageMagnifier, SimpleGrid } from '../index.js';
+import { ImageMagnifier, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -106,21 +109,31 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
               <form onSubmit={handleSubmit(onSubmit)}>
                 <SimpleGrid cols={4}>
                   <ModifyDocumentFields document={document} formManager={formManager} />
-                  <ButtonWithLabel
-                    target="_blank"
-                    textLabel="File"
-                    url={document?.file?.toString()}
-                    title="Open Link"
-                  />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="file">File</Label>
+                    <Link
+                      to={document?.file?.toString() || ''}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex flex-col items-center justify-center mt-5"
+                    >
+                      <Button variant="outline" className="w-full mb-2">
+                        Open File
+                      </Button>
+                    </Link>
+                  </div>
                 </SimpleGrid>
                 <div className="flex justify-center mt-5">
-                  <button
+                  <Button
                     type="submit"
-                    className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12  border border-transparent shadow-xs text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    variant="default"
+                    // className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12 mr-5 border border-transparent shadow-xs text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onClick={onDone}
                     disabled={fetching || Object.keys(dirtyFields).length === 0}
                   >
                     Save
-                  </button>
+                  </Button>
                 </div>
               </form>
             </Form>

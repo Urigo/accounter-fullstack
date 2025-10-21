@@ -1,5 +1,6 @@
 import { useCallback, useMemo, type ReactElement } from 'react';
-import { Indicator, NavLink } from '@mantine/core';
+import { Link } from 'react-router-dom';
+import { Indicator } from '@mantine/core';
 import {
   ChargesTableEntityFieldsFragmentDoc,
   MissingChargeInfo,
@@ -81,14 +82,15 @@ export const Counterparty = ({ data }: Props): ReactElement => {
       <div className="flex flex-wrap">
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {!isError && id && (
-            <a
-              href={getHref(id)}
+            <Link
+              to={getHref(id)}
               target="_blank"
               rel="noreferrer"
               onClick={event => event.stopPropagation()}
+              className="inline-flex items-center font-semibold"
             >
-              <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-            </a>
+              {name}
+            </Link>
           )}
           {isError && name}
         </Indicator>

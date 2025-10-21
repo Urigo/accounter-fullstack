@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { NavLink } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import { NewFetchedDocumentFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
@@ -32,14 +32,16 @@ export const NewDocumentsList = ({ data }: Props): ReactElement => {
       {documents
         .filter(({ charge }) => charge)
         .map(doc => (
-          <NavLink
+          <Link
             key={doc.id}
-            label={`${doc.charge!.counterparty?.name ?? 'Unknown'} - ${doc.charge!.userDescription}`}
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-              event.stopPropagation();
-              window.open(getChargeHref(doc.charge!.id), '_blank', 'noreferrer');
-            }}
-          />
+            to={getChargeHref(doc.charge!.id)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={event => event.stopPropagation()}
+            className="inline-flex items-center font-semibold"
+          >
+            {`${doc.charge!.counterparty?.name ?? 'Unknown'} - ${doc.charge!.userDescription}`}
+          </Link>
         ))}
     </div>
   );

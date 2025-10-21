@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { DocumentType } from '@/gql/graphql.js';
 import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
 import { useUpdateDocument } from '@/hooks/use-update-document.js';
 import { useUrlQuery } from '@/hooks/use-url-query.js';
-import { Indicator, NavLink } from '@mantine/core';
+import { Indicator } from '@mantine/core';
 import { getBusinessHref } from '../../charges/helpers.js';
 import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
@@ -104,9 +105,15 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {shouldHaveCreditor &&
             (id ? (
-              <a href={getHref(id)} target="_blank" rel="noreferrer">
-                <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-              </a>
+              <Link
+                to={getHref(id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                className="inline-flex items-center font-semibold"
+              >
+                {name}
+              </Link>
             ) : (
               <SelectWithSearch
                 options={selectableBusinesses}

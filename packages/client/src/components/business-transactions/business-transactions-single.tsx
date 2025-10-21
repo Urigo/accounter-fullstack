@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
-import { useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import {
@@ -19,10 +19,10 @@ type Props = {
 };
 
 export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement => {
-  const match = useMatch('businesses/:businessId/transactions');
+  const { businessId: businessIdFromUrl } = useParams<{ businessId: string }>();
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
-  const id = businessId || match?.params.businessId;
+  const id = businessId || businessIdFromUrl;
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
     get('transactionsFilters')
       ? {

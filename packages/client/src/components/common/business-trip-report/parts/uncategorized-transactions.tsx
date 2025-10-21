@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { NavLink, Popover, Table, Text } from '@mantine/core';
+import { Link } from 'react-router-dom';
+import { Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
@@ -92,18 +93,15 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                 <DebitDate data={uncategorizedTransaction.transaction} />
                 <Amount data={uncategorizedTransaction} />
                 <td>
-                  <NavLink
-                    label="To Charge"
-                    className="[&>*>.mantine-NavLink-label]:font-semibold"
-                    onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-                      event.stopPropagation();
-                      window.open(
-                        getChargeHref(uncategorizedTransaction.transaction.chargeId),
-                        '_blank',
-                        'noreferrer',
-                      );
-                    }}
-                  />
+                  <Link
+                    to={getChargeHref(uncategorizedTransaction.transaction.chargeId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={event => event.stopPropagation()}
+                    className="inline-flex items-center font-semibold"
+                  >
+                    To Charge
+                  </Link>
                 </td>
                 <Account data={uncategorizedTransaction.transaction} />
                 <Description data={uncategorizedTransaction.transaction} />

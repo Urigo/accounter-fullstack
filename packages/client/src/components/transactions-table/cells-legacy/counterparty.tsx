@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   TransactionsTableEntityFieldsFragmentDoc,
   type ChargeFilter,
@@ -106,9 +107,15 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     <td>
       <div className="flex flex-wrap gap-1 items-center justify-center">
         {counterparty?.id ? (
-          <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
+          <Link
+            to={getHref(counterparty.id)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={event => event.stopPropagation()}
+            className="inline-flex items-center font-semibold"
+          >
             {name}
-          </a>
+          </Link>
         ) : (
           <>
             <SelectWithSearch

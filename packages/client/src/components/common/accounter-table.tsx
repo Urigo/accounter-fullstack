@@ -1,6 +1,6 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
+import { Button } from '@/components/ui/button.js';
 import { Pagination, Paper, Table, type PaginationProps } from '@mantine/core';
-import { Button } from './index.js';
 
 export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;
@@ -47,7 +47,9 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>): ReactElem
             {moreInfoValue === null ? (
               <p>No Data Related</p>
             ) : (
-              <Button title="More Info" onClick={(): void => setOpened(!opened)} />
+              <Button onClick={(): void => setOpened(!opened)} className="ml-auto">
+                More Info
+              </Button>
             )}
           </td>
         )}
@@ -73,15 +75,14 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
       <div className="flex flex-row justify-end w-full">
         {props.pagination && <Pagination className="flex-auto" {...props.pagination} />}
         {props.showButton === true ? (
-          <button
-            className="inline-flex text-white bg-indigo-500 border-0 py-1.5 px-3 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-sm"
+          <Button
             type="button"
             onClick={(): void => {
               setIsShowAll(prev => !prev);
             }}
           >
             {isShowAll ? 'Hide All' : 'Show All'}
-          </button>
+          </Button>
         ) : null}
       </div>
       <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>

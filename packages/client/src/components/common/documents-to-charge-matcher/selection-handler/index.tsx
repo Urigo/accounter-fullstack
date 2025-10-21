@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactElement } from 'react';
+import { Button } from '@/components/ui/button.js';
 import {
   ChargeToMatchDocumentsFieldsFragmentDoc,
   DocumentsToMatchFieldsFragmentDoc,
@@ -9,7 +10,6 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateDocument } from '../../../../hooks/use-update-document.js';
 import { FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
-import { Button } from '../../index.js';
 import { StrictFilteredSelection } from './strict-filtered-selection.js';
 import { WideFilteredSelection } from './wide-filtered-selection.js';
 
@@ -165,7 +165,9 @@ export function SelectionHandler({ chargeProps, documentsProps, onDone }: Props)
             <Switch checked={filterSuggestions} onCheckedChange={setFilterSuggestions} />
           </div>
         )}
-        <Button title="Accept" disabled={selectedDocuments.length === 0} onClick={onExecuteMatch} />
+        <Button disabled={selectedDocuments.length === 0} onClick={onExecuteMatch}>
+          Accept
+        </Button>
       </div>
       <div>
         {filterSuggestions ? (
