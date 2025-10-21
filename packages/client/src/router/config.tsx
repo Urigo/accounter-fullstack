@@ -238,12 +238,18 @@ export const routes: RouteObject[] = [
               {
                 path: 'missing-info',
                 element: withSuspense(MissingInfoCharges, <TableSkeleton />),
-                handle: { title: 'Missing Info Charges' },
+                handle: {
+                  title: 'Missing Info Charges',
+                  breadcrumb: 'Missing Info',
+                },
               },
               {
                 path: 'ledger-validation',
                 element: withSuspense(ChargesLedgerValidation, <TableSkeleton />),
-                handle: { title: 'Ledger Validation' },
+                handle: {
+                  title: 'Ledger Validation',
+                  breadcrumb: 'Ledger Validation',
+                },
               },
               {
                 path: ':chargeId',
@@ -270,7 +276,10 @@ export const routes: RouteObject[] = [
               {
                 path: 'transactions',
                 element: withSuspense(BusinessTransactionsSummery, <TableSkeleton />),
-                handle: { title: 'Business Transactions Summary' },
+                handle: {
+                  title: 'Business Transactions Summary',
+                  breadcrumb: 'Transactions',
+                },
               },
               {
                 path: ':businessId',
@@ -326,7 +335,10 @@ export const routes: RouteObject[] = [
               {
                 path: 'monthly-income-expense',
                 element: withSuspense(MonthlyIncomeExpenseChart),
-                handle: { title: 'Monthly Income/Expense' },
+                handle: {
+                  title: 'Monthly Income/Expense',
+                  breadcrumb: 'Income/Expense',
+                },
               },
             ],
           },
@@ -344,12 +356,18 @@ export const routes: RouteObject[] = [
               {
                 path: 'issue-document',
                 element: withSuspense(IssueDocumentScreen),
-                handle: { title: 'Issue Document' },
+                handle: {
+                  title: 'Issue Document',
+                  breadcrumb: 'Issue Document',
+                },
               },
               {
                 path: 'issue-documents',
                 element: withSuspense(IssueDocuments),
-                handle: { title: 'Issue Documents' },
+                handle: {
+                  title: 'Issue Documents',
+                  breadcrumb: 'Issue Documents',
+                },
               },
             ],
           },
@@ -362,20 +380,30 @@ export const routes: RouteObject[] = [
               {
                 path: 'trial-balance',
                 element: withSuspense(TrialBalanceReport, <ReportSkeleton />),
-                handle: { title: 'Trial Balance Report' },
+                handle: {
+                  title: 'Trial Balance Report',
+                  breadcrumb: 'Trial Balance',
+                },
               },
               {
                 path: 'conto',
                 element: withSuspense(ContoReport, <ReportSkeleton />),
-                handle: { title: 'Conto Report' },
+                handle: {
+                  title: 'Conto Report',
+                  breadcrumb: 'Conto',
+                },
               },
               {
                 path: 'vat-monthly',
                 element: withSuspense(VatMonthlyReport, <ReportSkeleton />),
-                handle: { title: 'VAT Monthly Report' },
+                handle: {
+                  title: 'VAT Monthly Report',
+                  breadcrumb: 'VAT Monthly',
+                },
               },
               {
                 path: 'profit-and-loss',
+                handle: { breadcrumb: 'Profit & Loss' },
                 children: [
                   {
                     index: true,
@@ -385,12 +413,17 @@ export const routes: RouteObject[] = [
                   {
                     path: ':year',
                     element: withSuspense(ProfitAndLossReport, <ReportSkeleton />),
-                    handle: { title: 'Profit & Loss Report' },
+                    handle: {
+                      title: 'Profit & Loss Report',
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loader data type varies by route
+                      breadcrumb: (data: any) => data?.year || 'Year',
+                    },
                   },
                 ],
               },
               {
                 path: 'tax',
+                handle: { breadcrumb: 'Tax' },
                 children: [
                   {
                     index: true,
@@ -400,27 +433,41 @@ export const routes: RouteObject[] = [
                   {
                     path: ':year',
                     element: withSuspense(TaxReport, <ReportSkeleton />),
-                    handle: { title: 'Tax Report' },
+                    handle: {
+                      title: 'Tax Report',
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loader data type varies by route
+                      breadcrumb: (data: any) => data?.year || 'Year',
+                    },
                   },
                 ],
               },
               {
                 path: 'depreciation',
                 element: withSuspense(DepreciationReport, <ReportSkeleton />),
-                handle: { title: 'Depreciation Report' },
+                handle: {
+                  title: 'Depreciation Report',
+                  breadcrumb: 'Depreciation',
+                },
               },
               {
-                path: 'shaam6111',
+                path: 'shaam-6111',
                 element: withSuspense(Shaam6111Report, <ReportSkeleton />),
-                handle: { title: 'Shaam 6111 Report' },
+                handle: {
+                  title: 'Shaam 6111 Report',
+                  breadcrumb: 'Shaam 6111',
+                },
               },
               {
                 path: 'yearly-ledger',
                 element: withSuspense(YearlyLedgerReport, <ReportSkeleton />),
-                handle: { title: 'Yearly Ledger Report' },
+                handle: {
+                  title: 'Yearly Ledger Report',
+                  breadcrumb: 'Yearly Ledger',
+                },
               },
               {
                 path: 'corporate-tax-ruling-compliance',
+                handle: { breadcrumb: 'Tax Ruling' },
                 children: [
                   {
                     index: true,
@@ -430,19 +477,29 @@ export const routes: RouteObject[] = [
                   {
                     path: ':year',
                     element: withSuspense(CorporateTaxRulingComplianceReport, <ReportSkeleton />),
-                    handle: { title: 'Corporate Tax Ruling Compliance Report' },
+                    handle: {
+                      title: 'Corporate Tax Ruling Compliance Report',
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loader data type varies by route
+                      breadcrumb: (data: any) => data?.year || 'Year',
+                    },
                   },
                 ],
               },
               {
                 path: 'balance',
                 element: withSuspense(BalanceReport, <ReportSkeleton />),
-                handle: { title: 'Balance Report' },
+                handle: {
+                  title: 'Balance Report',
+                  breadcrumb: 'Balance',
+                },
               },
               {
                 path: 'validate-reports',
                 element: withSuspense(ValidateReportsScreen),
-                handle: { title: 'Validate Reports' },
+                handle: {
+                  title: 'Validate Reports',
+                  breadcrumb: 'Validate',
+                },
               },
             ],
           },
