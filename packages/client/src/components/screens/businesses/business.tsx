@@ -32,12 +32,6 @@ export const BusinessScreen = (): ReactElement => {
     },
   });
 
-  useEffect(() => {
-    if (businessId) {
-      fetchBusiness();
-    }
-  }, [businessId, fetchBusiness]);
-
   if (fetching && !data?.business) {
     return <AccounterLoader />;
   }

@@ -136,11 +136,11 @@ function ConfigurationsSectionFragmentToFormValues(
     pcn874RecordType: business?.pcn874RecordType ?? undefined,
     irsCode: business?.irsCode ?? undefined,
     description: business.suggestions?.description ?? undefined,
-    tags: business.suggestions?.tags?.map(tag => tag.id) ?? undefined,
-    phrases: business.suggestions?.phrases,
-    emails: business.suggestions?.emails ?? undefined,
-    internalLinks: business.suggestions?.emailListener?.internalEmailLinks ?? undefined,
-    attachmentTypes: business.suggestions?.emailListener?.attachments ?? undefined,
+    tags: business.suggestions?.tags?.map(tag => tag.id) ?? [],
+    phrases: business.suggestions?.phrases ?? [],
+    emails: business.suggestions?.emails ?? [],
+    internalLinks: business.suggestions?.emailListener?.internalEmailLinks ?? [],
+    attachmentTypes: business.suggestions?.emailListener?.attachments ?? [],
     useMessageBody: business.suggestions?.emailListener?.emailBody ?? undefined,
   };
 }
