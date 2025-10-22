@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { optionalDateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { AdminBusinessesProvider } from '../providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
@@ -42,7 +42,12 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
     taxPrepaymentId: admin => admin.tax_siduri_number_2022,
     nationalInsuranceEmployerId: admin => admin.pinkas_social_security_2022,
     advanceTaxRate: admin => admin.advance_tax_rate,
-    registrationDate: admin => optionalDateToTimelessDateString(admin.registration_date),
+    registrationDate: admin => {
+      if (!admin.registration_date) {
+        throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
+      }
+      return dateToTimelessDateString(admin.registration_date);
+    },
   },
   LtdFinancialEntity: {
     adminInfo: async (parentBusiness, _, { injector }) => {
