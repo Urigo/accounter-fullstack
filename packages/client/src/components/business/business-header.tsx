@@ -11,8 +11,15 @@ import { getFragmentData, type FragmentType } from '@/gql/index.js';
     id
     name
     createdAt
+    isActive
     ... on LtdFinancialEntity {
       governmentId
+      adminInfo {
+        id
+      }
+      clientInfo {
+        id
+      }
     }
   }
 `;
@@ -29,6 +36,12 @@ export function BusinessHeader({ data }: Props) {
     return <div />;
   }
 
+  const { isActive, adminInfo, clientInfo } = business;
+  const isAdmin = !!adminInfo?.id;
+  const isClient = !!clientInfo?.id;
+  // TODO: add worker info to the business and uncomment
+  // const isWorker = _TBD_;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
@@ -40,8 +53,14 @@ export function BusinessHeader({ data }: Props) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-semibold text-foreground">{business.name}</h1>
-                {/* TODO: make dynamic, add client badge */}
-                <Badge variant="secondary">Active</Badge>
+                {isActive ? (
+                  <Badge variant="secondary">Active</Badge>
+                ) : (
+                  <Badge variant="destructive">Inactive</Badge>
+                )}
+                {isAdmin && <Badge variant="outline">Admin</Badge>}
+                {isClient && <Badge variant="outline">Client</Badge>}
+                {/* {isWorker && <Badge variant="outline">Worker</Badge>} */}
               </div>
               <p className="text-sm text-muted-foreground truncate">Business ID: {business.id}</p>
             </div>
