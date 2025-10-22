@@ -41,7 +41,6 @@ export const issuedDocumentsResolvers: DocumentsModule.Resolvers = {
     issuedDocumentInfo,
   },
   IssuedDocumentInfo: {
-    __isTypeOf: info => !!info,
     id: info => info!.externalId,
     externalId: info => info!.externalId,
     status: info => info!.status,

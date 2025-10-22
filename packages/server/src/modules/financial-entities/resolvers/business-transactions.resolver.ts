@@ -216,7 +216,6 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         : 'CommonError',
   },
   BusinessTransaction: {
-    __isTypeOf: parent => !!parent.businessId,
     amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
       formatFinancialAmount(
         Number.isNaN(parent.foreignAmount)
