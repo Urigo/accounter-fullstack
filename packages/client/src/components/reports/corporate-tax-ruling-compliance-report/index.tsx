@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Indicator, Table, Tooltip } from '@mantine/core';
 import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
@@ -109,10 +109,10 @@ function multipleOptionalFormatter(amounts: number[], currency: Currency) {
 }
 
 export const CorporateTaxRulingComplianceReport = (): ReactElement => {
-  const match = useMatch('/reports/corporate-tax-ruling-compliance/:year');
+  const { year: yearFromUrl } = useParams<{ year: string }>();
   const { setFiltersContext } = useContext(FiltersContext);
   const [years, setYears] = useState<number[]>(
-    (match ? [Number(match.params.year)] : undefined) ?? [new Date().getFullYear()],
+    yearFromUrl ? [Number(yearFromUrl)] : [new Date().getFullYear()],
   );
 
   // fetch data

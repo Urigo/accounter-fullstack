@@ -72,13 +72,24 @@ import {
 export function getBusinessTransactionsHref(filter?: BusinessTransactionsFilter | null): string {
   const params = new URLSearchParams();
 
-  const transactionsFilters = encodeTransactionsFilters(filter);
+  let businessId: string | undefined = undefined;
+  let adjustedFilter = filter;
+  if (filter?.businessIDs && filter.businessIDs.length === 1) {
+    const { businessIDs, ...rest } = filter;
+    businessId = businessIDs[0];
+    adjustedFilter = rest;
+  }
+
+  const transactionsFilters = encodeTransactionsFilters(adjustedFilter);
   if (transactionsFilters) {
     // Add it as a single encoded parameter
     params.append('transactionsFilters', transactionsFilters);
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
+  if (businessId) {
+    return `/businesses/${businessId}/transactions${queryParams}`;
+  }
   return `/businesses/transactions${queryParams}`;
 }
 

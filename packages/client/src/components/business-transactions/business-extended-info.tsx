@@ -1,8 +1,9 @@
 import { useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Mark, NavLink, Table, Tooltip } from '@mantine/core';
+import { Mark, Table, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsInfoDocument,
   Currency,
@@ -14,6 +15,7 @@ import { AccounterLoader } from '../common/index.js';
 import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
+import { getBusinessTransactionsHref } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -233,17 +235,15 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 }}
               >
                 <td>
-                  <a
-                    href={`/businesses/${row.business.id}/transactions`}
+                  <Link
+                    to={getBusinessTransactionsHref({ businessIDs: [row.business.id] })}
                     target="_blank"
                     rel="noreferrer"
                     onClick={event => event.stopPropagation()}
+                    className="inline-flex items-center font-semibold"
                   >
-                    <NavLink
-                      label={row.business.name}
-                      className="[&>*>.mantine-NavLink-label]:font-semibold"
-                    />
-                  </a>
+                    {row.business.name}
+                  </Link>
                 </td>
                 <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -273,17 +273,15 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 <td>{row.details}</td>
                 <td>
                   {row.counterAccount && (
-                    <a
-                      href={`/businesses/${row.counterAccount?.id}/transactions`}
+                    <Link
+                      to={getBusinessTransactionsHref({ businessIDs: [row.counterAccount.id] })}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
+                      className="inline-flex items-center font-semibold"
                     >
-                      <NavLink
-                        label={row.counterAccount?.name}
-                        className="[&>*>.mantine-NavLink-label]:font-semibold"
-                      />
-                    </a>
+                      {row.counterAccount.name}
+                    </Link>
                   )}
                 </td>
                 <td />

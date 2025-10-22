@@ -1,5 +1,5 @@
 import { useCallback, type ReactElement } from 'react';
-import { NavLink } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import type { ChargeFilter } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { getBusinessTransactionsHref } from '../business-transactions/index.js';
@@ -50,21 +50,27 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
       {(account || isAccountDiff) && (
         <>
           {account && (
-            <a href={getHref(account.id)} target="_blank" rel="noreferrer">
-              <NavLink
-                label={account.name}
-                className={`[&>*>.mantine-NavLink-label]:font-semibold ${isAccountDiff ? 'line-through' : ''}`}
-              />
-            </a>
+            <Link
+              to={getHref(account.id)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={event => event.stopPropagation()}
+              className={`inline-flex items-center font-semibold ${isAccountDiff ? 'line-through' : ''}`}
+            >
+              {account.name}
+            </Link>
           )}
           {isAccountDiff && diffAccount && (
             <div className="border-2 border-yellow-500 rounded-md">
-              <a href={getHref(diffAccount.id)} target="_blank" rel="noreferrer">
-                <NavLink
-                  label={diffAccount.name}
-                  className="[&>*>.mantine-NavLink-label]:font-semibold"
-                />
-              </a>
+              <Link
+                to={getHref(diffAccount.id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                className="inline-flex items-center font-semibold"
+              >
+                {diffAccount.name}
+              </Link>
             </div>
           )}
         </>

@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { ChargeFilter } from '../../../gql/graphql.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
@@ -85,9 +86,15 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
     <>
       <div className="flex flex-wrap flex-col justify-center">
         {counterparty?.id ? (
-          <a href={getHref(counterparty.id)} target="_blank" rel="noreferrer">
+          <Link
+            to={getHref(counterparty.id)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={event => event.stopPropagation()}
+            className="inline-flex items-center font-semibold"
+          >
             {name}
-          </a>
+          </Link>
         ) : (
           <>
             <SelectWithSearch

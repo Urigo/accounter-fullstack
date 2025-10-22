@@ -1,10 +1,11 @@
 import { useState, type ReactElement } from 'react';
+import { Button } from '@/components/ui/button.js';
 import { Image } from '@mantine/core';
 import {
   type ChargeToMatchDocumentsFieldsFragment,
   type DocumentsToMatchFieldsFragment,
 } from '../../../../gql/graphql.js';
-import { AccounterTable, Button, PopUpModal } from '../../index.js';
+import { AccounterTable, PopUpModal } from '../../index.js';
 
 interface Props {
   documents: Exclude<
@@ -53,12 +54,9 @@ export function WideFilteredSelection({
             title: 'File',
             value: doc =>
               doc.file && (
-                <Button
-                  target="_blank"
-                  rel="noreferrer"
-                  herf={doc.file?.toString()}
-                  title="Open Link"
-                />
+                <a href={doc.file?.toString()} target="_blank" rel="noreferrer">
+                  <Button>Open Link</Button>
+                </a>
               ),
           },
           { title: 'Date', value: doc => ('date' in doc ? doc.date : null) },

@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { NavLink } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import { ChargesTableBusinessTripFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 
@@ -29,17 +29,15 @@ export const BusinessTrip = ({ data }: Props): ReactElement => {
 
   return (
     <td>
-      <a
-        href={`/business-trips/${charge.businessTrip?.id}`}
+      <Link
+        to={`/business-trips/${charge.businessTrip?.id}`}
         target="_blank"
         rel="noreferrer"
         onClick={event => event.stopPropagation()}
+        className="inline-flex items-center font-semibold"
       >
-        <NavLink
-          label={charge.businessTrip?.name}
-          className="[&>*>.mantine-NavLink-label]:font-semibold"
-        />
-      </a>
+        {charge.businessTrip?.name}
+      </Link>
     </td>
   );
 };

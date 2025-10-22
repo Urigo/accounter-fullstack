@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, type Control } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { NavLink, Select, Text } from '@mantine/core';
+import { Select, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   AttendeesByBusinessTripDocument,
@@ -236,15 +237,16 @@ export const CoreExpenseRow = ({
       <td>
         <div className="flex flex-col gap-2">
           {linkedChargeIds.map(id => (
-            <NavLink
+            <Link
               key={id}
-              label="To Charge"
-              className="[&>*>.mantine-NavLink-label]:font-semibold"
-              onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-                event.stopPropagation();
-                window.open(getChargeHref(id), '_blank', 'noreferrer');
-              }}
-            />
+              to={getChargeHref(id)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={event => event.stopPropagation()}
+              className="inline-flex items-center font-semibold"
+            >
+              To Charge
+            </Link>
           ))}
         </div>
       </td>

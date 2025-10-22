@@ -1,5 +1,5 @@
 import { useContext, useEffect, type ReactElement } from 'react';
-import { useMatch } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Container } from '@mantine/core';
 import { BusinessTripScreenDocument } from '../../gql/graphql.js';
@@ -26,9 +26,9 @@ type Props = {
 };
 
 export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
-  const match = useMatch('business-trips/:businessTripId');
+  const { businessTripId: businessTripIdFromUrl } = useParams<{ businessTripId: string }>();
   const { setFiltersContext } = useContext(FiltersContext);
-  const id = businessTripId ?? match?.params.businessTripId ?? '';
+  const id = businessTripId ?? businessTripIdFromUrl ?? '';
   const [{ data, fetching }] = useQuery({
     query: BusinessTripScreenDocument,
     variables: {

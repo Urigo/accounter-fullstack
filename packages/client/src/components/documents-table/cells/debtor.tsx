@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
-import { Indicator, NavLink } from '@mantine/core';
+import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -100,9 +101,15 @@ export const Debtor = ({ document, onChange }: Props): ReactElement => {
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {shouldHaveDebtor &&
             (id ? (
-              <a href={getHref(id)} target="_blank" rel="noreferrer">
-                <NavLink label={name} className="[&>*>.mantine-NavLink-label]:font-semibold" />
-              </a>
+              <Link
+                to={getHref(id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                className="inline-flex items-center font-semibold"
+              >
+                {name}
+              </Link>
             ) : (
               <SelectWithSearch
                 options={selectableBusinesses}
