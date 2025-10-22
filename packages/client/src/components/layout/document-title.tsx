@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { useMatches } from 'react-router-dom';
-
-interface RouteHandle {
-  title?: string | ((data?: unknown) => string);
-  breadcrumb?: string | ((data?: unknown) => string);
-  [key: string]: unknown;
-}
+import type { RouteHandle } from '@/router/types.js';
 
 /**
  * Component that updates document title based on route handle

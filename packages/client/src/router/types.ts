@@ -60,3 +60,9 @@ export function parseYearParam(params: Params): number | undefined {
   }
   return year;
 }
+
+export interface RouteHandle {
+  breadcrumb?: string | ((data?: unknown) => string);
+  title?: string | ((data?: unknown) => string);
+  [key: string]: unknown;
+}

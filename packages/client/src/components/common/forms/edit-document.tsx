@@ -128,8 +128,6 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
                   <Button
                     type="submit"
                     variant="default"
-                    // className="inline-flex cursor-pointer justify-center py-2 px-4 w-2/12 mr-5 border border-transparent shadow-xs text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={onDone}
                     disabled={fetching || Object.keys(dirtyFields).length === 0}
                   >
                     Save

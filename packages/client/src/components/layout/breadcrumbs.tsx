@@ -1,12 +1,7 @@
 import { Fragment, type ReactElement } from 'react';
 import { ChevronRight, Home } from 'lucide-react';
 import { Link, useMatches } from 'react-router-dom';
-
-interface RouteHandle {
-  breadcrumb?: string | ((data?: unknown) => string);
-  title?: string | ((data?: unknown) => string);
-  [key: string]: unknown;
-}
+import type { RouteHandle } from '@/router/types.js';
 
 interface Crumb {
   title: string;
