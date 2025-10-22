@@ -7,12 +7,14 @@ import {
   FileText,
   Plug,
   Settings,
+  Shield,
   //   TrendingUp,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
+import { AdminBusinessSection } from './admin-business-section.js';
 import { BusinessHeader } from './business-header.js';
 import { ChargesSection } from './charges-section.jsx';
 import { ChartsSection } from './charts-section.jsx';
@@ -31,11 +33,15 @@ import { TransactionsSection } from './transactions-section.js';
       clientInfo {
         id
       }
+      adminInfo {
+        id
+      }
     }
     ...ClientIntegrationsSection
     ...BusinessHeader
     ...BusinessContactSection
     ...BusinessConfigurationSection
+    ...BusinessAdminSection
   }
 `;
 
@@ -59,6 +65,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
   }
 
   const isClient = 'clientInfo' in business && !!business.clientInfo;
+  const isAdmin = 'adminInfo' in business && !!business.adminInfo;
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,6 +134,15 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
                 </TabsTrigger> */}
               </>
             )}
+            {isAdmin && (
+              <TabsTrigger
+                value="admin"
+                className="flex items-center gap-2 data-[state=active]:bg-background"
+              >
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="contact" className="mt-0">
@@ -163,6 +179,12 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
                 <ChartsSection />
               </TabsContent>
             </>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="admin" className="mt-0">
+              <AdminBusinessSection data={business} />
+            </TabsContent>
           )}
         </Tabs>
       </main>

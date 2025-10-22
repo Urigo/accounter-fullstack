@@ -5,6 +5,14 @@ export default gql`
     adminBusiness(id: UUID!): AdminBusiness! @auth(role: ACCOUNTANT)
     allAdminBusinesses: [AdminBusiness!]! @auth(role: ACCOUNTANT)
   }
+  extend type Mutation {
+    createAdminBusiness(input: CreateAdminBusinessInput!): AdminBusiness! @auth(role: ADMIN)
+
+    updateAdminBusiness(businessId: UUID!, fields: UpdateAdminBusinessInput!): AdminBusiness!
+      @auth(role: ADMIN)
+
+    deleteAdminBusiness(businessId: UUID!): Boolean! @auth(role: ADMIN)
+  }
 
   " Represents a business entity managed by an accountant in the system."
   type AdminBusiness {
@@ -12,5 +20,33 @@ export default gql`
     name: String!
     governmentId: String!
     business: LtdFinancialEntity!
+    employerWithholdingTaxAccountNumber: String
+    taxPrepaymentId: String
+    nationalInsuranceEmployerId: String
+    advanceTaxRate: Float
+    registrationDate: TimelessDate!
+  }
+
+  " Input type for creating a new admin business. "
+  input CreateAdminBusinessInput {
+    businessId: UUID!
+    employerWithholdingTaxAccountNumber: String
+    taxPrepaymentId: String
+    nationalInsuranceEmployerId: String
+    advanceTaxRate: Float
+    registrationDate: TimelessDate!
+  }
+
+  " Input type for updating admin business details. "
+  input UpdateAdminBusinessInput {
+    employerWithholdingTaxAccountNumber: String
+    taxPrepaymentId: String
+    nationalInsuranceEmployerId: String
+    advanceTaxRate: Float
+    registrationDate: TimelessDate
+  }
+
+  extend type LtdFinancialEntity {
+    adminInfo: AdminBusiness
   }
 `;

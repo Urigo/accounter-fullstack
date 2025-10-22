@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { dateToTimelessDateString } from '@shared/helpers';
 import { AdminBusinessesProvider } from '../providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
@@ -36,6 +37,25 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
         throw new GraphQLError(`Business ID="${admin.id}" not found`);
       }
       return business;
+    },
+    employerWithholdingTaxAccountNumber: admin => admin.tax_nikuim_pinkas_number,
+    taxPrepaymentId: admin => admin.tax_siduri_number_2022,
+    nationalInsuranceEmployerId: admin => admin.pinkas_social_security_2022,
+    advanceTaxRate: admin => admin.advance_tax_rate,
+    registrationDate: admin => {
+      if (!admin.registration_date) {
+        throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
+      }
+      return dateToTimelessDateString(admin.registration_date);
+    },
+  },
+  LtdFinancialEntity: {
+    adminInfo: async (parentBusiness, _, { injector }) => {
+      const adminBusiness = await injector
+        .get(AdminBusinessesProvider)
+        .getAdminBusinessByIdLoader.load(parentBusiness.id);
+
+      return adminBusiness ?? null;
     },
   },
 };
