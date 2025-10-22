@@ -24,16 +24,16 @@ export default gql`
     taxPrepaymentId: String
     nationalInsuranceEmployerId: String
     advanceTaxRate: Float
-    registrationDate: TimelessDate
+    registrationDate: TimelessDate!
   }
 
   " Input type for creating a new admin business. "
   input CreateAdminBusinessInput {
     businessId: UUID!
-    employerWithholdingTaxAccountNumber: String!
-    taxPrepaymentId: String!
-    nationalInsuranceEmployerId: String!
-    advanceTaxRate: Float!
+    employerWithholdingTaxAccountNumber: String
+    taxPrepaymentId: String
+    nationalInsuranceEmployerId: String
+    advanceTaxRate: Float
     registrationDate: TimelessDate!
   }
 

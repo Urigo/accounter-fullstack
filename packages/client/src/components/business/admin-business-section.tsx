@@ -31,6 +31,7 @@ import {
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import {
   dirtyFieldMarker,
+  formatTimelessDateString,
   relevantDataPicker,
   type MakeBoolean,
   type TimelessDateString,
@@ -104,7 +105,9 @@ function convertFormDataToUpdateAdminBusinessInput(
     taxPrepaymentId: formData.taxPrepaymentId,
     nationalInsuranceEmployerId: formData.nationalInsuranceEmployerId,
     advanceTaxRate: formData.advanceTaxRate,
-    registrationDate: formData.registrationDate as TimelessDateString,
+    registrationDate: formData.registrationDate
+      ? (formatTimelessDateString(new Date(formData.registrationDate)) as TimelessDateString)
+      : undefined,
   };
 }
 
@@ -119,8 +122,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
     BusinessAdminSectionFragmentToFormValues(admin),
   );
 
-  const { updateAdminBusiness: updateDbAdminBusiness, fetching: isUpdating } =
-    useUpdateAdminBusiness();
+  const { updateAdminBusiness, fetching: isUpdating } = useUpdateAdminBusiness();
 
   const form = useForm<AdminBusinessFormValues>({
     resolver: zodResolver(adminBusinessFormSchema),
@@ -141,7 +143,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
     const updateBusinessInput = convertFormDataToUpdateAdminBusinessInput(dataToUpdate);
 
-    await updateDbAdminBusiness({
+    await updateAdminBusiness({
       adminBusinessId: admin.id,
       fields: updateBusinessInput,
     });
@@ -271,7 +273,11 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
           <CardFooter className="flex justify-end border-t mt-4 pt-6">
             <Button
               type="submit"
-              disabled={isUpdating || Object.keys(form.formState.dirtyFields).length === 0}
+              disabled={
+                isUpdating ||
+                Object.keys(form.formState.dirtyFields).length === 0 ||
+                !form.formState.isValid
+              }
             >
               <Save className="h-4 w-4" />
               Save Changes
