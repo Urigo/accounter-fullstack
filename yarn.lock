@@ -301,7 +301,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.34"
+    "@ai-sdk/anthropic": "npm:2.0.35"
     "@envelop/generic-auth": "npm:10.0.0"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -367,15 +367,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.34":
-  version: 2.0.34
-  resolution: "@ai-sdk/anthropic@npm:2.0.34"
+"@ai-sdk/anthropic@npm:2.0.35":
+  version: 2.0.35
+  resolution: "@ai-sdk/anthropic@npm:2.0.35"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.12"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/e760bf4e1833d23e74cee43e5ca2844fc068307444d7c3d6ca71713c4599b583321619a73d22593c8157ecbee7a969d9f1b17c7baf3589aeb49de70b547f5b24
+  checksum: 10c0/83882f6ff405f72732d275e8cd95519417c1a3079d8c91432950523cd8984b72669f346f5ada0a2489c43a82fd5df95d940c198845eedd3a336f8039f52ef9dd
   languageName: node
   linkType: hard
 
@@ -8078,12 +8078,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:22.18.11, @types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
-  version: 22.18.11
-  resolution: "@types/node@npm:22.18.11"
+"@types/node@npm:22.18.12":
+  version: 22.18.12
+  resolution: "@types/node@npm:22.18.12"
   dependencies:
     undici-types: "npm:~6.21.0"
-  checksum: 10c0/3802f598608638e13ca350fbe2db0db5dde9a0b6704295fa1b6cec6defe24f9baf6a891eee6eaecd016bcd5ea18edecdaf71679d87079fe468913701adb61387
+  checksum: 10c0/13a4638f2baba3efba2b8bc369dd6f950dccbfca78f318f9c9f2c7adc11fce14fc119723c38567dada2d57a873c092b7356c024924d5974a08f3c1f93dc706c6
   languageName: node
   linkType: hard
 
@@ -8091,6 +8091,15 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: 10c0/3b190bb0410047d489c49bbaab592d2e6630de6a50f00ba3d7d513d59401d279972a8f5a598b5bb8ddc1702f8a2f4ec57a65d93852f9c329639738e7053637d1
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.0.0, @types/node@npm:^22.5.5":
+  version: 22.18.11
+  resolution: "@types/node@npm:22.18.11"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10c0/3802f598608638e13ca350fbe2db0db5dde9a0b6704295fa1b6cec6defe24f9baf6a891eee6eaecd016bcd5ea18edecdaf71679d87079fe468913701adb61387
   languageName: node
   linkType: hard
 
@@ -8750,7 +8759,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:22.18.11"
+    "@types/node": "npm:22.18.12"
     "@types/pg": "npm:8.15.5"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.1"
