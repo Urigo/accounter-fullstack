@@ -55,7 +55,7 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
               target="_blank"
               rel="noreferrer"
               onClick={event => event.stopPropagation()}
-              className="inline-flex items-center font-semibold"
+              className={`inline-flex items-center font-semibold ${isAccountDiff ? 'line-through' : ''}`}
             >
               {account.name}
             </Link>
