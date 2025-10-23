@@ -14,14 +14,14 @@ jobs:
       - name: setup environment
         uses: ./.github/actions/setup
         with:
-          localDB: 'false'
-          codegen: 'false'
-          pgTyped: 'false'
+          localDB: "false"
+          codegen: "false"
+          pgTyped: "false"
 
       - name: Lint ESLint
         run: yarn lint
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=2048
 
       - name: Lint Prettier
         run: yarn prettier:check

@@ -22,6 +22,21 @@ function replaceUnicornRules(set) {
     : set;
 }
 
+// Disable projectService for all configs to prevent type-aware linting memory issues
+function disableTypeAwareLinting(config) {
+  return {
+    ...config,
+    languageOptions: {
+      ...config.languageOptions,
+      parserOptions: {
+        ...config.languageOptions?.parserOptions,
+        projectService: false,
+        project: null,
+      },
+    },
+  };
+}
+
 export default [
   gitignore(),
   {
@@ -30,28 +45,49 @@ export default [
       '**/__generated__/**/*',
       '**/schema.graphql',
       '**/__tests__/**/*',
-      '**/.eslintrc.cjs',
       '**/.*rc.*js',
       '**/.bob/',
       '**/tsup.config.ts',
       '.pnp.*',
       '.yarn/*',
       '**/*.pdf',
+      '**/dist/**',
+      '**/build/**',
+      '**/node_modules/**',
+      '**/*.d.ts', // Exclude type definition files
     ],
   },
-  ...compat.extends('@theguild').map(replaceUnicornRules),
+  // Apply @theguild config BUT disable type-aware linting
+  ...compat.extends('@theguild').map(replaceUnicornRules).map(disableTypeAwareLinting),
   {
     languageOptions: {
-      ecmaVersion: 5,
-      sourceType: 'script',
-
-      parserOptions: {
-        project: ['tsconfig.json', '*/tsconfig.json'],
-      },
+      ecmaVersion: 2022,
+      sourceType: 'module',
     },
 
     rules: {
       'no-console': 1,
+      // Disable type-aware rules that require projectService
+      '@typescript-eslint/prefer-optional-chain': 'off',
+      '@typescript-eslint/dot-notation': 'off',
+      '@typescript-eslint/naming-convention': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/no-meaningless-void-operator': 'off',
+      '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unnecessary-type-arguments': 'off',
+      '@typescript-eslint/non-nullable-type-assertion-style': 'off',
+      '@typescript-eslint/prefer-includes': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
+      '@typescript-eslint/prefer-readonly': 'off',
+      '@typescript-eslint/prefer-reduce-type-parameter': 'off',
+      '@typescript-eslint/prefer-return-this-type': 'off',
+      '@typescript-eslint/prefer-string-starts-ends-with': 'off',
+      '@typescript-eslint/promise-function-async': 'off',
+      '@typescript-eslint/require-array-sort-compare': 'off',
+      '@typescript-eslint/strict-boolean-expressions': 'off',
+      '@typescript-eslint/switch-exhaustiveness-check': 'off',
     },
   },
   {
@@ -63,11 +99,12 @@ export default [
 
     languageOptions: {
       parser: graphqlPlugin.parser,
-      ecmaVersion: 5,
-      sourceType: 'script',
+      ecmaVersion: 2022,
+      sourceType: 'module',
     },
   },
   {
+    // Only process files that actually contain GraphQL operations/fragments
     files: [
       'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
       'packages/server/src/modules/*/typeDefs/*.graphql.ts',
@@ -75,12 +112,8 @@ export default [
 
     processor: graphqlPlugin.processor,
   },
-  //   ...compat.extends('plugin:@graphql-eslint/schema-recommended').map(config => ({
-  //     ...config,
-  //     files: ['packages/server/src/modules/*/typeDefs/**/*.{graphql,gql}'],
-  //   })),
   {
-    // Setup recommended config for schema files
+    // Setup recommended config for schema files (GraphQL type definitions)
     files: ['packages/server/src/modules/*/typeDefs/**/*.{graphql,gql}'],
     rules: graphqlPlugin.configs['flat/schema-recommended'].rules,
   },
@@ -163,12 +196,8 @@ export default [
       ],
     },
   },
-  //   ...compat.extends('plugin:@graphql-eslint/operations-recommended').map(config => ({
-  //     ...config,
-  //     files: ['packages/client/src/**/**/*.{graphql,gql}'],
-  //   })),
   {
-    // Setup recommended config for operations files
+    // Setup recommended config for operations files (queries, mutations, subscriptions)
     files: ['packages/client/src/**/*.{graphql,gql}'],
     rules: graphqlPlugin.configs['flat/operations-recommended'].rules,
   },
@@ -189,7 +218,7 @@ export default [
   },
   ...compat.extends('@theguild/eslint-config/react').map(config => {
     return {
-      ...replaceUnicornRules(config),
+      ...disableTypeAwareLinting(replaceUnicornRules(config)),
       files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
     };
   }),
