@@ -1,5 +1,235 @@
 # @accounter/client
 
+## 0.0.8
+
+### Patch Changes
+
+- [#2538](https://github.com/Urigo/accounter-fullstack/pull/2538)
+  [`83c07df`](https://github.com/Urigo/accounter-fullstack/commit/83c07df65488d9bc44d29dca7b6f0f0c6bf10bab)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react@19.2.0` ↗︎](https://www.npmjs.com/package/react/v/19.2.0) (from
+    `19.1.1`, in `dependencies`)
+  - Updated dependency [`react-dom@19.2.0` ↗︎](https://www.npmjs.com/package/react-dom/v/19.2.0)
+    (from `19.1.1`, in `dependencies`)
+
+- [#2542](https://github.com/Urigo/accounter-fullstack/pull/2542)
+  [`c202d2b`](https://github.com/Urigo/accounter-fullstack/commit/c202d2b832e5c73c8e8bbf8827cfc86f79272cbe)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.64.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.64.0) (from
+    `7.63.0`, in `dependencies`)
+
+- [#2543](https://github.com/Urigo/accounter-fullstack/pull/2543)
+  [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@7.3.4` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.3.4) (from `7.3.2`,
+    in `dependencies`)
+  - Updated dependency [`dotenv@17.2.3` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.3) (from
+    `17.2.2`, in `dependencies`)
+  - Updated dependency
+    [`pdfjs-dist@5.4.296` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.296) (from `5.4.149`,
+    in `dependencies`)
+  - Updated dependency [`zod@4.1.12` ↗︎](https://www.npmjs.com/package/zod/v/4.1.12) (from
+    `4.1.11`, in `dependencies`)
+
+- [#2545](https://github.com/Urigo/accounter-fullstack/pull/2545)
+  [`18eddde`](https://github.com/Urigo/accounter-fullstack/commit/18eddde782a00df448d98e55bca1f225de508334)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.545.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.545.0) (from
+    `0.544.0`, in `dependencies`)
+
+- [#2553](https://github.com/Urigo/accounter-fullstack/pull/2553)
+  [`c390a86`](https://github.com/Urigo/accounter-fullstack/commit/c390a86341805ac48c9b2f02c2bebd3d1b52abe3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.11.1` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.11.1) (from
+    `9.11.0`, in `dependencies`)
+
+- [#2559](https://github.com/Urigo/accounter-fullstack/pull/2559)
+  [`a7fc425`](https://github.com/Urigo/accounter-fullstack/commit/a7fc4250e5f7141b0f64e651c1103f38fae2a3dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.3` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.3)
+    (from `5.90.2`, in `dependencies`)
+  - Updated dependency [`chart.js@4.5.1` ↗︎](https://www.npmjs.com/package/chart.js/v/4.5.1) (from
+    `4.5.0`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.5.12` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.5.12) (from
+    `1.5.11`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.9.4` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.9.4) (from
+    `7.9.3`, in `dependencies`)
+
+- [#2565](https://github.com/Urigo/accounter-fullstack/pull/2565)
+  [`268713c`](https://github.com/Urigo/accounter-fullstack/commit/268713c583018b011c486d562fbdc8647cb93088)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.65.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.65.0) (from
+    `7.64.0`, in `dependencies`)
+
+- [#2578](https://github.com/Urigo/accounter-fullstack/pull/2578)
+  [`617086f`](https://github.com/Urigo/accounter-fullstack/commit/617086f2d21bec14670f9b1c5e55e5146d154ebf)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.546.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.546.0) (from
+    `0.545.0`, in `dependencies`)
+
+- [#2582](https://github.com/Urigo/accounter-fullstack/pull/2582)
+  [`32276b4`](https://github.com/Urigo/accounter-fullstack/commit/32276b47e164f0976fcdd5523fa5e26f0704014f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@radix-ui/react-progress@^1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-progress/v/1.1.7)
+    (to `dependencies`)
+
+- [#2587](https://github.com/Urigo/accounter-fullstack/pull/2587)
+  [`eaf61c3`](https://github.com/Urigo/accounter-fullstack/commit/eaf61c36d916e8363352d9b18e6b124f0333b437)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.5)
+    (from `5.90.3`, in `dependencies`)
+
+- [#2594](https://github.com/Urigo/accounter-fullstack/pull/2594)
+  [`d23a9a2`](https://github.com/Urigo/accounter-fullstack/commit/d23a9a29af7c52662e3c07c5286867ea54ca4bd6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.5)
+    (from `5.90.3`, in `dependencies`)
+
+- [#2618](https://github.com/Urigo/accounter-fullstack/pull/2618)
+  [`5d24324`](https://github.com/Urigo/accounter-fullstack/commit/5d24324d9f5ba6e5875a331afe55d999e510451f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.5)
+    (from `5.90.3`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@0.546.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.546.0) (from
+    `0.545.0`, in `dependencies`)
+  - Added dependency
+    [`@radix-ui/react-progress@^1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-progress/v/1.1.7)
+    (to `dependencies`)
+
+- [#2584](https://github.com/Urigo/accounter-fullstack/pull/2584)
+  [`549a2a6`](https://github.com/Urigo/accounter-fullstack/commit/549a2a6fed7959795d7ca130b0ad567c5f4f62c8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Update**: Introduced a
+  'locality' column to the 'user_context' table and established foreign key relationships for
+  country codes in both 'user_context' and 'businesses' tables, linking them to a 'countries' table.
+  - **Dynamic Country Selection**: The 'Locality' field in the 'ModifyBusinessFields' component now
+    dynamically fetches and displays a list of all countries, replacing previous hardcoded options.
+  - **User-Contextual Default Country**: New businesses created via the 'InsertBusiness' modal will
+    now default their country based on the user's 'locality' from their 'userContext'.
+  - **Centralized Locality Management**: The 'admin-context' and 'user-context' modules on the
+    server-side have been updated to store and retrieve the user's 'locality', ensuring consistent
+    access across the application.
+  - **VAT Logic Enhancement**: VAT validation and deduction logic now utilize the dynamically
+    retrieved 'adminContext.locality' instead of a hardcoded country name, improving flexibility and
+    accuracy.
+
+- [#2600](https://github.com/Urigo/accounter-fullstack/pull/2600)
+  [`812ee1c`](https://github.com/Urigo/accounter-fullstack/commit/812ee1c87da4f13dd960fd43b5103dd4138197c6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **React Router v6 Migration**: The
+  application's navigation has been significantly refactored to leverage React Router v6's
+  declarative API, replacing `useMatch` with `useParams` and standard `<a>` tags with `<Link>`
+  components for improved client-side routing and performance.
+  - **Centralized Route Management**: All application routes are now defined in a single, type-safe
+    `ROUTES` object, enhancing maintainability and ensuring consistency across navigation links. The
+    router configuration has been moved to an object-based structure, enabling advanced features
+    like loaders and error boundaries.
+  - **Enhanced User Experience**: New features include a global error boundary for graceful handling
+    of routing errors (e.g., 404, 401, 500), a navigation progress indicator for smoother
+    transitions between pages, dynamic document titles, and a breadcrumbs component to improve user
+    orientation within the application.
+  - **Data Prefetching with Loaders**: Route loaders have been introduced to prefetch necessary data
+    (e.g., business and charge details) before components render, leading to faster perceived page
+    loads. Authentication and authorization checks are also integrated into these loaders.
+  - **Refactored Button Components**: Legacy `Button` and `ButtonWithLabel` components have been
+    removed and replaced with a unified `ui/button.js` component, standardizing button styling and
+    behavior across the application.
+  - **Dedicated URQL Client for Loaders**: A new singleton URQL client (`urql-client.ts`) has been
+    implemented specifically for use within route loaders, ensuring data fetching in loaders is
+    independent of React's context system.
+
+- [#2560](https://github.com/Urigo/accounter-fullstack/pull/2560)
+  [`b301705`](https://github.com/Urigo/accounter-fullstack/commit/b301705c0d6c09e9f5e4818934a2a371a9962ab0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Refactored Actions Column**: The logic
+  for displaying action buttons (edit, charge) in the transactions table has been extracted from the
+  main `columns` array into a new, dedicated `actionsColumn` definition, improving modularity.
+  - **Conditional Actions Column Rendering**: The newly created `actionsColumn` is now conditionally
+    added to the transactions table. It will only appear if either `enableEdit` or
+    `enableChargeLink` props are true, making the table more dynamic and adaptable.
+
+- [#2609](https://github.com/Urigo/accounter-fullstack/pull/2609)
+  [`031f5c3`](https://github.com/Urigo/accounter-fullstack/commit/031f5c3b7ddf8e0a851d8b7c418aba66b32b655f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Centralized Error Handling**:
+  Implemented a centralized approach to handle GraphQL network and operation errors within the URQL
+  client configuration, ensuring consistent error feedback across the application.
+  - **User-Friendly Notifications**: Integrated the `sonner` toast library to display clear and
+    concise toast notifications for network connectivity issues and general GraphQL operation
+    failures, improving the user experience.
+  - **Refined Data Loader Logic**: Simplified data loaders by removing generic GraphQL error checks,
+    allowing them to focus on specific application-level errors (e.g., 404 Not Found) that should
+    trigger error boundaries, while other errors are handled by the new toast system.
+  - **Authentication Error Prioritization**: Ensured that authentication-related GraphQL errors
+    (e.g., `FORBIDDEN`) continue to trigger navigation to the login page, with these errors
+    explicitly skipped by the new toast notification system to avoid redundant alerts.
+
+- [#2582](https://github.com/Urigo/accounter-fullstack/pull/2582)
+  [`32276b4`](https://github.com/Urigo/accounter-fullstack/commit/32276b47e164f0976fcdd5523fa5e26f0704014f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Business/Client Page**: Introduced
+  a comprehensive new page for businesses and clients, consolidating various details into a single,
+  tabbed interface for improved management and overview.
+  - **Modular UI Components**: Developed several new UI components (`BusinessHeader`,
+    `ChargesSection`, `ChartsSection`, `ConfigurationsSection`, `ContactInfoSection`,
+    `ContractsSection`, `DocumentsSection`, `IntegrationsSection`) to structure and display
+    different aspects of business information.
+  - **Dynamic Routing and Tab Navigation**: Implemented dynamic routing for the new business page
+    (`/businesses/:businessId`) and integrated tab-based navigation to switch between different
+    sections like contact info, configurations, and analytics.
+  - **Business Configuration Form**: Added a detailed configuration form allowing users to manage
+    VAT settings, tax exemptions, default sort codes, tax categories, IRS codes, and auto-matching
+    rules for bank transactions and documents (phrases, emails, attachment types).
+  - **Backend GraphQL Enhancements**: Extended GraphQL types for `Business`, `FinancialEntity`, and
+    `TaxCategory` to include `createdAt` and `updatedAt` fields, providing essential timestamp
+    information.
+  - **UI Library Integration**: Integrated the `@radix-ui/react-progress` component and refactored
+    the `pcn874RecordType` enum definition into a shared helper for better code organization.
+
+- [#2605](https://github.com/Urigo/accounter-fullstack/pull/2605)
+  [`863a592`](https://github.com/Urigo/accounter-fullstack/commit/863a592f83b480a82156c829914b7e7a270a3f96)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Admin Business Configuration Tab**:
+  Introduced a dedicated "Admin" tab within the business details page to manage administrative
+  financial information.
+  - **Frontend Component Development**: A new `AdminBusinessSection` React component was created,
+    featuring a form for various tax and registration details, with client-side validation using
+    `zod` and `react-hook-form`.
+  - **GraphQL API Extension**: New GraphQL types (`CreateAdminBusinessInput`,
+    `UpdateAdminBusinessInput`) and mutations (`createAdminBusiness`, `updateAdminBusiness`,
+    `deleteAdminBusiness`) were added to the backend to support the management of admin business
+    data.
+  - **Data Fetching and Update Logic**: A new `useUpdateAdminBusiness` hook was implemented on the
+    frontend to interact with the new GraphQL mutations, handling data submission and user feedback.
+  - **Backend Resolver Implementation**: Server-side resolvers were updated to expose administrative
+    business fields and handle the logic for fetching and updating this data.
+
+- [#2608](https://github.com/Urigo/accounter-fullstack/pull/2608)
+  [`b27476e`](https://github.com/Urigo/accounter-fullstack/commit/b27476e4e67717223990c57b990510edbc93d910)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Businesses Screen UI Overhaul**: The
+  main businesses listing screen has been completely redesigned, transitioning from a traditional
+  table layout to a modern, card-like display for improved aesthetics and user experience.
+  - **New BusinessHeader Component**: A dedicated `BusinessHeader` component was introduced to
+    standardize the display of business information, including dynamic status (Active/Inactive) and
+    role (Admin/Client) badges.
+  - **Enhanced Business Navigation**: Each business entry in the list is now clickable, allowing
+    direct navigation to its detailed page, and includes integrated checkboxes for selection,
+    enhancing interactivity.
+  - **Refactored New Business Form**: The 'Insert Business' modal has been significantly refactored,
+    incorporating Zod for robust validation and organizing the form into distinct, user-friendly
+    sections for contact information, default settings, and auto-matching configurations.
+  - **Simplified Business Insertion Logic**: The backend `insertBusiness` resolver was updated to
+    streamline the process of adding new businesses, specifically by simplifying the handling of tax
+    category insertions.
+
 ## 0.0.7
 
 ### Patch Changes

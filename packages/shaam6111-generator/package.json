@@ -1,6 +1,6 @@
 {
   "name": "@accounter/shaam6111-generator",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Fully typed application that generates, parses, and validates SHAAM 6111 tax reports.",
   "repository": {
