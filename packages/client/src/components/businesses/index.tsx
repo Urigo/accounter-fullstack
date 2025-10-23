@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { ROUTES } from '../../router/routes.js';
 import { BusinessHeader } from '../business/business-header.js';
-import { MergeBusinessesButton } from '../common/index.js';
+import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -43,7 +43,7 @@ export const Businesses = (): ReactElement => {
   );
   const { setFiltersContext } = useContext(FiltersContext);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
     variables: {
       page: activePage,
@@ -122,7 +122,15 @@ export const Businesses = (): ReactElement => {
   const selectedIds = new Set(mergeSelectedBusinesses.map(selected => selected.id));
 
   return (
-    <PageLayout title={`Businesses (${businesses.length})`} description="All businesses">
+    <PageLayout
+      title={`Businesses (${businesses.length})`}
+      description="All businesses"
+      headerActions={
+        <div className="flex items-center py-4 gap-4">
+          <InsertBusiness description="" onAdd={() => refetch()} />
+        </div>
+      }
+    >
       {fetching ? (
         <div className="flex flex-row justify-center">
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
