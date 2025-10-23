@@ -17,8 +17,10 @@ export function PageLayout({
   return (
     <div className="flex flex-col gap-5" id="main-page">
       <div className="flex justify-between items-center">
-        <h2 className="w-full text-2xl font-bold tracking-tight md:text-3xl">{title}</h2>
-        {description && <p className="mt-2 text-gray-500">{description}</p>}
+        <div>
+          <h2 className="w-full text-2xl font-bold tracking-tight md:text-3xl">{title}</h2>
+          {description && <p className="mt-2 text-gray-500">{description}</p>}
+        </div>
         {headerActions}
       </div>
       <Separator />

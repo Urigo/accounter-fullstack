@@ -97,6 +97,7 @@ export default gql`
   " meta info for page pagination "
   type PageInfo {
     totalPages: Int!
+    totalRecords: Int!
     currentPage: Int
     pageSize: Int
   }

@@ -63,6 +63,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         nodes: pageBusinesses,
         pageInfo: {
           totalPages: limit ? Math.ceil(filteredBusinesses.length / limit) : 1,
+          totalRecords: filteredBusinesses.length,
           currentPage: page + 1,
           pageSize: limit,
         },

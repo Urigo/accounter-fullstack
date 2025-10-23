@@ -92,6 +92,7 @@ export const commonFinancialEntityFields:
       nodes: charges.slice(page * limit - limit, page * limit),
       pageInfo: {
         totalPages: Math.ceil(charges.length / limit),
+        totalRecords: charges.length,
       },
     };
   },
