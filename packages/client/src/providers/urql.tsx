@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import {
   createClient,
   fetchExchange,
@@ -12,6 +11,7 @@ import {
 import { authExchange } from '@urql/exchange-auth';
 import { ROUTES } from '../router/routes.js';
 import { AuthContext } from './auth-guard.js';
+import { handleUrqlError } from './urql-error-handler.js';
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
   const { authService } = useContext(AuthContext);
@@ -59,34 +59,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
               return;
             }
 
-            // Handle network errors
-            if (result.error?.networkError) {
-              console.error('Network Error:', result.error.networkError);
-              toast.error('Network Error', {
-                description: 'Failed to connect to the server. Please check your connection.',
-                duration: 5000,
-              });
-              return;
-            }
-
-            // Handle common GraphQL errors with toast notifications
-            if (result.error?.graphQLErrors?.length) {
-              const graphqlError = result.error.graphQLErrors[0];
-              const { message } = graphqlError;
-              const code = graphqlError.extensions?.code as string | undefined;
-
-              // Skip auth errors (already handled above)
-              if (code === 'FORBIDDEN') {
-                return;
-              }
-
-              // Show toast for common GraphQL errors
-              console.error('GraphQL Error:', graphqlError);
-              toast.error('Operation Error', {
-                description: message || 'An error occurred while processing your request.',
-                duration: 5000,
-              });
-            }
+            handleUrqlError(result);
           },
         }),
         authExchange(async utils => {
