@@ -17,7 +17,6 @@ import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessesByIdsResult,
-  IInsertBusinessTaxCategoryResult,
   IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
 } from '../types.js';
@@ -229,7 +228,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             }
           : undefined;
 
-        const insertBusinessPromise = injector.get(BusinessesProvider).insertBusinessLoader.load({
+        const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
           id: financialEntity.id,
           address: fields.address,
           email: fields.email,
@@ -246,32 +245,25 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           pcn874RecordTypeOverride: fields.pcn874RecordType,
         });
 
-        let taxCategoryPromise: Promise<IInsertBusinessTaxCategoryResult | void> =
-          Promise.resolve();
+        if (!business) {
+          throw new Error(`Failed to create core business`);
+        }
+
         if (fields.taxCategory) {
-          const texCategoryParams: IUpdateBusinessTaxCategoryParams = {
+          const taxCategoryParams: IUpdateBusinessTaxCategoryParams = {
             businessId: financialEntity.id,
             ownerId: defaultAdminBusinessId,
             taxCategoryId: fields.taxCategory,
           };
-          taxCategoryPromise = injector
+          await injector
             .get(TaxCategoriesProvider)
-            .insertBusinessTaxCategory(texCategoryParams)
+            .insertBusinessTaxCategory(taxCategoryParams)
             .then(res => res[0])
             .catch((e: Error) => {
               const message = `Error updating tax category for business ID="${financialEntity.id}"`;
               console.error(`${message}: ${e}`);
               throw new Error(message);
             });
-        }
-
-        const [business, _taxCategory] = await Promise.all([
-          insertBusinessPromise,
-          taxCategoryPromise,
-        ]);
-
-        if (!business) {
-          throw new Error(`Failed to create core business`);
         }
 
         return {

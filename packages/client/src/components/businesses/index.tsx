@@ -1,18 +1,18 @@
 import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Table, Tooltip } from '@mantine/core';
-import {
-  AllBusinessesForScreenDocument,
-  type AllBusinessesForScreenQuery,
-} from '../../gql/graphql.js';
+import { Tooltip } from '@mantine/core';
+import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { MergeBusinessesButton } from '../common/index.js';
+import { ROUTES } from '../../router/routes.js';
+import { BusinessHeader } from '../business/business-header.js';
+import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
-import { AllBusinessesRow } from './all-businesses-row.js';
+import { Checkbox } from '../ui/checkbox.js';
 import { BusinessesFilters } from './businesses-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -24,7 +24,7 @@ import { BusinessesFilters } from './businesses-filters.js';
         id
         name
         ... on LtdFinancialEntity {
-          ...AllBusinessesRowFields
+          ...BusinessHeader
         }
       }
       pageInfo {
@@ -43,7 +43,7 @@ export const Businesses = (): ReactElement => {
   );
   const { setFiltersContext } = useContext(FiltersContext);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
     variables: {
       page: activePage,
@@ -52,6 +52,7 @@ export const Businesses = (): ReactElement => {
     },
   });
 
+  const navigate = useNavigate();
   const [mergeSelectedBusinesses, setMergeSelectedBusinesses] = useState<
     Array<{ id: string; onChange: () => void }>
   >([]);
@@ -121,41 +122,57 @@ export const Businesses = (): ReactElement => {
   const selectedIds = new Set(mergeSelectedBusinesses.map(selected => selected.id));
 
   return (
-    <PageLayout title={`Businesses (${businesses.length})`} description="All businesses">
+    <PageLayout
+      title={`Businesses (${businesses.length})`}
+      description="All businesses"
+      headerActions={
+        <div className="flex items-center py-4 gap-4">
+          <InsertBusiness description="" onAdd={() => refetch()} />
+        </div>
+      }
+    >
       {fetching ? (
         <div className="flex flex-row justify-center">
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
         </div>
       ) : (
-        <Table striped highlightOnHover>
-          <thead className="sticky top-0 z-20">
-            <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
-              <th>Name</th>
-              <th>Hebrew Name</th>
-              <th>More Info</th>
-            </tr>
-          </thead>
-          <tbody>
-            {businesses.map(business => (
-              <AllBusinessesRow
-                key={business.id}
-                data={
-                  business as Extract<
-                    NonNullable<AllBusinessesForScreenQuery['allBusinesses']>['nodes'][number],
-                    { __typename: 'LtdFinancialEntity' }
-                  >
-                }
-                isAllOpened={isAllOpened}
-                toggleMergeBusiness={
-                  toggleMergeBusiness
-                    ? (onChange: () => void): void => toggleMergeBusiness(business.id, onChange)
-                    : undefined
-                }
-                isSelectedForMerge={selectedIds.has(business.id) ?? false}
-              />
-            ))}
-          </tbody>
-        </Table>
+        <div className="space-y-2">
+          {businesses.map(business => (
+            <div
+              key={business.id}
+              className="group relative border rounded-lg hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3">
+                <div className="pl-4 flex items-center">
+                  <Checkbox
+                    checked={selectedIds.has(business.id)}
+                    onCheckedChange={() => {
+                      toggleMergeBusiness(business.id, () => {});
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                    onClick={(e): void => e.stopPropagation()}
+                  />
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="flex-1 cursor-pointer"
+                  onClick={(): void => {
+                    navigate(ROUTES.BUSINESSES.DETAIL(business.id));
+                  }}
+                  onKeyDown={(e): void => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(ROUTES.BUSINESSES.DETAIL(business.id));
+                    }
+                  }}
+                >
+                  <BusinessHeader data={business} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </PageLayout>
   );
