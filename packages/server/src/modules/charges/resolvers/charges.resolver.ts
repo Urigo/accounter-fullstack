@@ -118,6 +118,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         nodes: pageCharges,
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
+          totalRecords: charges.length,
         },
       };
     },
@@ -217,6 +218,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         nodes: pageCharges,
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
+          totalRecords: charges.length,
         },
       };
     },

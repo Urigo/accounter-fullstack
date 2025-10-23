@@ -29,6 +29,7 @@ import { BusinessesFilters } from './businesses-filters.js';
       }
       pageInfo {
         totalPages
+        totalRecords
       }
     }
   }
@@ -123,7 +124,7 @@ export const Businesses = (): ReactElement => {
 
   return (
     <PageLayout
-      title={`Businesses (${businesses.length})`}
+      title={`Businesses (${data?.allBusinesses?.pageInfo.totalRecords ?? ''})`}
       description="All businesses"
       headerActions={
         <div className="flex items-center py-4 gap-4">
