@@ -8,6 +8,7 @@ import {
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
 import { UserService } from '../services/user-service.js';
+import { handleUrqlError } from './urql-error-handler.js';
 
 /**
  * Singleton URQL client for use in loaders and server-side operations
@@ -43,9 +44,7 @@ export function getUrqlClient(): Client {
     exchanges: [
       mapExchange({
         onResult(result) {
-          if (result.error?.networkError) {
-            console.error('Network Error:', result.error.networkError);
-          }
+          handleUrqlError(result);
         },
       }),
       authExchange(async utils => {

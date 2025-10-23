@@ -11,6 +11,7 @@ import {
 import { authExchange } from '@urql/exchange-auth';
 import { ROUTES } from '../router/routes.js';
 import { AuthContext } from './auth-guard.js';
+import { handleUrqlError } from './urql-error-handler.js';
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
   const { authService } = useContext(AuthContext);
@@ -47,6 +48,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
       exchanges: [
         mapExchange({
           onResult(result) {
+            // Handle authentication errors
             const isAuthError =
               result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
               result?.error?.response?.status === 401;
@@ -54,7 +56,10 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
               navigate(ROUTES.LOGIN, {
                 state: { message: 'You are not authorized to access this page' },
               });
+              return;
             }
+
+            handleUrqlError(result);
           },
         }),
         authExchange(async utils => {

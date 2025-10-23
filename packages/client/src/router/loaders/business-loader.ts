@@ -13,10 +13,8 @@ export async function businessLoader({ params }: LoaderFunctionArgs) {
   const client = getUrqlClient();
   const result = await client.query(BusinessScreenDocument, { businessId }).toPromise();
 
-  if (result.error) {
-    throw new Response('Failed to load business', { status: 500 });
-  }
-
+  // GraphQL errors are now handled by toast notifications in urql-client
+  // Only throw for 404 to show the error boundary
   if (!result.data?.business) {
     throw new Response('Business not found', { status: 404 });
   }
