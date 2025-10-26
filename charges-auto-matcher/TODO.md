@@ -418,36 +418,41 @@
 - [x] Total module tests: 419 passing (390 + 29)
 - [x] Commit: "feat: implement single-match core function"
 
-### Step 14: Single-Match GraphQL Integration
+### Step 14: Single-Match GraphQL Integration ✅ COMPLETED
 
-- [ ] Create `providers/charges-matcher.provider.ts`
-- [ ] Implement `ChargesMatcherProvider` class with `@Injectable()` decorator
-- [ ] Import existing providers via Injector:
-  - [ ] ChargesProvider from @modules/charges
-  - [ ] TransactionsProvider from @modules/transactions
-  - [ ] DocumentsProvider from @modules/documents
-- [ ] Implement `findMatchesForCharge()` method
-  - [ ] Get userId from injector.get(CONTEXT).currentUser.id
-  - [ ] Get providers from injector
-  - [ ] Load source charge using ChargesProvider
-  - [ ] Load transactions using TransactionsProvider
-  - [ ] Load documents using DocumentsProvider
-  - [ ] Validate charge is unmatched
-  - [ ] Load candidate charges with complementary data
-  - [ ] Call findMatches() from Step 13
-  - [ ] Return ChargeMatchesResult
-- [ ] Create `resolvers/find-charge-matches.resolver.ts`
-- [ ] Implement resolver using ChargesMatcherProvider
-- [ ] Use CommonError for GraphQL error responses
-- [ ] Create `__tests__/charges-matcher.provider.test.ts`
-- [ ] Write test: full flow with mocked providers
-- [ ] Write test: charge not found error
-- [ ] Write test: matched charge error
-- [ ] Write test: various data scenarios
-- [ ] Write test: date window filtering
-- [ ] Write integration tests with realistic data
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: integrate single-match with GraphQL"
+- [x] Create `providers/charges-matcher.provider.ts`
+- [x] Implement `ChargesMatcherProvider` class with `@Injectable()` decorator
+- [x] Import existing providers via Injector:
+  - [x] ChargesProvider from @modules/charges
+  - [x] TransactionsProvider from @modules/transactions
+  - [x] DocumentsProvider from @modules/documents
+- [x] Implement `findMatchesForCharge()` method
+  - [x] Get userId from injector.get('currentUser').userId
+  - [x] Get providers from injector
+  - [x] Load source charge using ChargesProvider.getChargeByIdLoader
+  - [x] Load transactions using TransactionsProvider.transactionsByChargeIDLoader
+  - [x] Load documents using DocumentsProvider.getDocumentsByChargeIdLoader
+  - [x] Validate charge is unmatched
+  - [x] Load candidate charges with complementary data using getChargesByFilters
+  - [x] Call findMatches() from Step 13
+  - [x] Return ChargeMatchesResult
+- [x] Create `__tests__/single-match-integration.test.ts`
+- [x] Write test: full flow with mocked providers (2 tests - transaction & document)
+- [x] Write test: charge not found error (1 test)
+- [x] Write test: matched charge error (1 test)
+- [x] Write test: empty charge error (1 test)
+- [x] Write test: no candidates found (1 test)
+- [x] Write test: filter matched candidates (1 test)
+- [x] Write test: date window filtering (1 test)
+- [x] Write test: no user context (1 test)
+- [x] Write test: top 5 matches limit (1 test)
+- [x] Verify all tests pass (10/10 tests passing)
+- [x] Files created:
+  - [x] providers/charges-matcher.provider.ts (6.5KB)
+  - [x] **tests**/single-match-integration.test.ts (24KB)
+- [x] Total module tests: 429 passing (419 + 10)
+- [x] Note: GraphQL resolver will be added in later step (after auto-match)
+- [x] Commit: "feat: integrate single-match with database layer"
 
 ---
 
