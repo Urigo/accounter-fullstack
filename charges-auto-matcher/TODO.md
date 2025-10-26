@@ -262,38 +262,41 @@
 - [x] Verify all tests pass (50/50 passing, total 287 tests)
 - [x] Commit: "feat: implement document amount normalization"
 
-### Step 10: Document Aggregator
+### Step 10: Document Aggregator ✅
 
-- [ ] Create `helpers/document-aggregator.helper.ts`
-- [ ] Define `AggregatedDocument` interface
-- [ ] Import business extraction and amount normalization
-- [ ] Implement `aggregateDocuments()` function
-  - [ ] Apply type priority filter
-    - [ ] If invoices + receipts exist, use only invoices
-  - [ ] Extract business from each document (creditor_id/debtor_id)
-  - [ ] Normalize each total_amount
-  - [ ] Validate non-empty array
-  - [ ] Check for mixed currency_code → throw error
-  - [ ] Check for multiple non-null business IDs → throw error
-  - [ ] Sum all normalized amounts
-  - [ ] Select latest date
-  - [ ] Concatenate serial_number or file names with line breaks
-  - [ ] Determine DocumentType for result
-  - [ ] Remember: documents use charge_id_new FK (not charge_id)
-- [ ] Create `__tests__/document-aggregator.test.ts`
-- [ ] Write test: single document (normalized)
-- [ ] Write test: multiple invoices (summed correctly)
-- [ ] Write test: multiple receipts (summed correctly)
-- [ ] Write test: mixed invoices + receipts (uses only invoices)
-- [ ] Write test: mixed currencies (should throw)
-- [ ] Write test: multiple businesses (should throw)
-- [ ] Write test: date selection (latest)
-- [ ] Write test: description concatenation
-- [ ] Write test: business extraction errors propagate
-- [ ] Write test: credit invoice normalization in aggregation
-- [ ] Write test: null dates handled gracefully
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement document aggregator"
+- [x] Create `providers/document-aggregator.ts` (206 lines)
+- [x] Define `Document` interface (matches DB schema with charge_id_new)
+- [x] Define `AggregatedDocument` interface
+- [x] Import business extraction and amount normalization
+- [x] Implement `aggregateDocuments()` function
+  - [x] Apply type priority filter
+    - [x] If invoices + receipts exist, use only invoices
+  - [x] Extract business from each document (creditor_id/debtor_id)
+  - [x] Normalize each total_amount
+  - [x] Validate non-empty array
+  - [x] Check for mixed currency_code → throw error
+  - [x] Check for multiple non-null business IDs → throw error
+  - [x] Sum all normalized amounts
+  - [x] Select latest date
+  - [x] Concatenate serial_number or file names with line breaks
+  - [x] Determine DocumentType for result
+  - [x] Remember: documents use charge_id_new FK (not charge_id)
+- [x] Create `__tests__/document-aggregator.test.ts`
+- [x] Write test: single document (normalized) - 6 tests
+- [x] Write test: multiple invoices (summed correctly) - 3 tests
+- [x] Write test: multiple receipts (summed correctly) - 2 tests
+- [x] Write test: mixed invoices + receipts (uses only invoices) - 4 tests
+- [x] Write test: mixed currencies (should throw) - 4 tests
+- [x] Write test: multiple businesses (should throw) - 4 tests
+- [x] Write test: date selection (latest) - 5 tests
+- [x] Write test: description concatenation - 5 tests
+- [x] Write test: business extraction errors propagate - 3 tests
+- [x] Write test: credit invoice normalization in aggregation
+- [x] Write test: null dates handled gracefully
+- [x] Write test: input validation - 3 tests
+- [x] Write test: complex real-world scenarios - 3 tests
+- [x] Verify all tests pass (43/43 passing, total 330 tests)
+- [x] Commit: "feat: implement document aggregator"
 
 ---
 
