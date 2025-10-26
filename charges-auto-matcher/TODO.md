@@ -178,28 +178,28 @@
 - [x] Verify all tests pass (30/30 tests passing)
 - [x] Commit: "feat: implement date confidence calculator"
 
-### Step 7: Overall Confidence Calculator
+### Step 7: Overall Confidence Calculator ✅
 
-- [ ] Create `src/calculators/overallConfidence.ts`
-- [ ] Define `ConfidenceComponents` interface
-- [ ] Define `ConfidenceInputs` interface
-- [ ] Import all previous confidence calculators
-- [ ] Implement `calculateOverallConfidence()` function
-  - [ ] Apply weights: amount×0.4 + currency×0.2 + business×0.3 + date×0.1
-  - [ ] Round to 2 decimal places
-- [ ] Implement `calculateConfidence()` convenience function
+- [x] Create `helpers/overall-confidence.helper.ts`
+- [x] Define `ConfidenceComponents` interface
+- [ ] Define `ConfidenceInputs` interface (not needed yet)
+- [x] Import all previous confidence calculators
+- [x] Implement `calculateOverallConfidence()` function
+  - [x] Apply weights: amount×0.4 + currency×0.2 + business×0.3 + date×0.1
+  - [x] Round to 2 decimal places
+- [ ] Implement `calculateConfidence()` convenience function (deferred to later step)
   - [ ] Calculate all component confidences
   - [ ] Return overall + components
-- [ ] Create `__tests__/overallConfidence.test.ts`
-- [ ] Write test: all components at 1.0 → 1.0
-- [ ] Write test: all components at 0.0 → 0.0
-- [ ] Write test: mixed scores (verify formula)
-- [ ] Write tests varying each weight individually
-- [ ] Write real-world scenario tests
-- [ ] Write integration test using convenience function
-- [ ] Verify weights are correct (0.4, 0.2, 0.3, 0.1)
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement overall confidence calculator"
+- [x] Create `__tests__/overall-confidence.test.ts`
+- [x] Write test: all components at 1.0 → 1.0
+- [x] Write test: all components at 0.0 → 0.0
+- [x] Write test: mixed scores (verify formula)
+- [x] Write tests varying each weight individually
+- [x] Write real-world scenario tests
+- [ ] Write integration test using convenience function (deferred to later step)
+- [x] Verify weights are correct (0.4, 0.2, 0.3, 0.1)
+- [x] Verify all tests pass (39/39 passing, total 195 tests)
+- [x] Commit: "feat: implement overall confidence calculator"
 
 ---
 
