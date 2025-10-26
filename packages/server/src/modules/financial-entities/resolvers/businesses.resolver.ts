@@ -239,8 +239,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           phoneNumber: fields.phoneNumber,
           website: fields.website,
           optionalVat: fields.optionalVAT,
-          isReceiptEnough: fields.isReceiptEnough ?? null,
-          isDocumentsOptional: fields.isDocumentsOptional ?? null,
+          isReceiptEnough: fields.isReceiptEnough ?? false,
+          isDocumentsOptional: fields.isDocumentsOptional ?? false,
           country: fields.country,
           suggestions,
           pcn874RecordTypeOverride: fields.pcn874RecordType,
@@ -485,8 +485,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             governmentId: undefined,
             exemptDealer: false,
             optionalVat: false,
-            isReceiptEnough: null,
-            isDocumentsOptional: null,
+            isReceiptEnough: false,
+            isDocumentsOptional: false,
             pcn874RecordTypeOverride: null,
           });
 
