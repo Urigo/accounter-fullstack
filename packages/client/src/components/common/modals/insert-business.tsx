@@ -100,7 +100,7 @@ function convertFormDataToInsertNewBusinessInput(
     address: formData.address,
     phoneNumber: formData.phone,
     website: formData.website,
-    email: formData.generalContacts?.join(', '),
+    email: formData.generalContacts.filter(contact => !!contact.trim())?.join(', '),
     sortCode: formData.sortCode ? parseInt(formData.sortCode) : undefined,
     taxCategory: formData.taxCategory,
     pcn874RecordType: formData.pcn874RecordType as Pcn874RecordType,
