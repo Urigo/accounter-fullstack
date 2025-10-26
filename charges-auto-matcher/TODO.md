@@ -11,39 +11,36 @@
 
 ## Phase 1: Foundation & Setup
 
-### Step 1: Project Setup and Type Definitions
+### Step 1: Module Setup and Type Definitions
 
-- [ ] Initialize npm project with `npm init`
-- [ ] Install dependencies
-  - [ ] TypeScript (`typescript`)
-  - [ ] Jest (`jest`, `@types/jest`, `ts-jest`)
-  - [ ] Node types (`@types/node`)
-- [ ] Create `tsconfig.json` with strict mode
-- [ ] Create `jest.config.js` for TypeScript
+- [ ] Create GraphQL module directory: `packages/server/src/modules/charges-matcher/`
+- [ ] Review existing module patterns (charges, transactions, documents)
 - [ ] Set up directory structure
-  - [ ] `src/` directory
+  - [ ] `types.ts`
+  - [ ] `typeDefs/` directory
+  - [ ] `resolvers/` directory
+  - [ ] `providers/` directory
+  - [ ] `helpers/` directory
   - [ ] `__tests__/` directory
-  - [ ] `src/types.ts`
-- [ ] Define core interfaces in `src/types.ts`
-  - [ ] `Transaction` interface
-  - [ ] `Document` interface
-  - [ ] `document_type` union type
-  - [ ] `currency` type
-- [ ] Define result types
-  - [ ] `MatchResult` type
-  - [ ] `SingleMatchOutput` type
-  - [ ] `AutoMatchOutput` type
+- [ ] Define core interfaces in `types.ts` matching database schema
+  - [ ] `Transaction` interface (with UUID id, business_id, event_date, debit_date, is_fee, etc.)
+  - [ ] `Document` interface (with charge_id_new, creditor_id, debtor_id, currency_code, etc.)
+  - [ ] `Currency` type: 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH'
+  - [ ] `DocumentType` enum matching database
+- [ ] Define GraphQL result types
+  - [ ] `ChargeMatch` type: { chargeId: string; confidenceScore: number }
+  - [ ] `ChargeMatchesResult` type: { matches: ChargeMatch[] }
+  - [ ] `AutoMatchChargesResult` with totalMatches, mergedCharges, skippedCharges, errors
 - [ ] Create test utilities file
   - [ ] `__tests__/testUtils.ts`
-  - [ ] Transaction factory function
-  - [ ] Document factory function
+  - [ ] Transaction factory function (use correct field names)
+  - [ ] Document factory function (use charge_id_new)
   - [ ] Charge factory function
 - [ ] Write setup verification test
   - [ ] At least one passing test
   - [ ] Verify TypeScript compilation works
-  - [ ] Verify Jest runs successfully
-- [ ] Run tests: `npm test`
-- [ ] Commit: "feat: project setup and type definitions"
+  - [ ] Verify test framework runs
+- [ ] Commit: "feat: charges-matcher module setup and type definitions"
 
 ---
 
@@ -51,16 +48,17 @@
 
 ### Step 2: Amount Confidence Calculator
 
-- [ ] Create `src/calculators/` directory
-- [ ] Create `src/calculators/amountConfidence.ts`
+- [ ] Create `helpers/` directory
+- [ ] Create `helpers/amount-confidence.helper.ts`
 - [ ] Implement `calculateAmountConfidence()` function
   - [ ] Handle exact match (0% diff) → 1.0
   - [ ] Handle within 1 unit → 0.9
   - [ ] Handle linear degradation (1 unit to 20%) → 0.7 to 0.0
   - [ ] Handle 20%+ diff → 0.0
   - [ ] Round to 2 decimal places
+  - [ ] Works with numeric types (not strings)
 - [ ] Create helper function for percentage difference
-- [ ] Create `__tests__/amountConfidence.test.ts`
+- [ ] Create `__tests__/amount-confidence.test.ts`
 - [ ] Write tests for exact match
 - [ ] Write tests for 0.5 unit difference
 - [ ] Write tests for 1 unit difference
@@ -78,18 +76,18 @@
 
 ### Step 3: Currency Confidence Calculator
 
-- [ ] Create `src/calculators/currencyConfidence.ts`
+- [ ] Create `helpers/currency-confidence.helper.ts`
 - [ ] Implement `calculateCurrencyConfidence()` function
   - [ ] Same currency → 1.0
   - [ ] Different currency → 0.2
   - [ ] Case-insensitive comparison
   - [ ] Handle null/undefined → 0.2
-- [ ] Create `__tests__/currencyConfidence.test.ts`
-- [ ] Write tests for same currency (USD, EUR, ILS)
+  - [ ] Use Currency type from types.ts
+- [ ] Create `__tests__/currency-confidence.test.ts`
+- [ ] Write tests for same currency (ILS, USD, EUR, GBP)
 - [ ] Write tests for different currencies
-- [ ] Write tests for case sensitivity (USD vs usd)
+- [ ] Write tests for case sensitivity
 - [ ] Write edge case tests
-  - [ ] Empty strings
   - [ ] Null values
   - [ ] Undefined values
 - [ ] Verify all tests pass
@@ -97,8 +95,28 @@
 
 ### Step 4: Business ID Extraction from Documents
 
-- [ ] Create `src/extractors/` directory
-- [ ] Create `src/extractors/documentBusiness.ts`
+- [ ] Create `helpers/document-business.helper.ts`
+- [ ] Define `DocumentBusinessInfo` interface
+  - [ ] `businessId: string | null` (UUID)
+  - [ ] `isBusinessCreditor: boolean`
+- [ ] Implement `extractDocumentBusiness()` function
+  - [ ] User is debtor → business is creditor
+  - [ ] User is creditor → business is debtor
+  - [ ] Handle null values appropriately
+  - [ ] Throw error if both creditor_id and debtor_id are userId
+  - [ ] Throw error if neither creditor_id nor debtor_id is userId
+  - [ ] All IDs are UUIDs
+- [ ] Create `__tests__/document-business.test.ts`
+- [ ] Write test: user is debtor, creditor_id is business
+- [ ] Write test: user is creditor, debtor_id is business
+- [ ] Write test: user is creditor, debtor_id is null
+- [ ] Write test: user is debtor, creditor_id is null
+- [ ] Write test: both are user (should throw)
+- [ ] Write test: neither are user (should throw)
+- [ ] Write test: all null (should throw)
+- [ ] Verify error messages are descriptive
+- [ ] Verify all tests pass
+- [ ] Commit: "feat: implement document business extraction"
 - [ ] Define `DocumentBusinessInfo` interface
   - [ ] `businessId: string | null`
   - [ ] `isBusinessCreditor: boolean`
@@ -193,28 +211,27 @@
 
 ### Step 8: Transaction Aggregator
 
-- [ ] Create `src/aggregators/` directory
-- [ ] Create `src/aggregators/transactionAggregator.ts`
+- [ ] Create `helpers/transaction-aggregator.helper.ts`
 - [ ] Define `AggregatedTransaction` interface
 - [ ] Implement `aggregateTransactions()` function
   - [ ] Filter out fee transactions (is_fee = true)
   - [ ] Validate non-empty array
   - [ ] Check for mixed currencies → throw error
-  - [ ] Check for multiple non-null business IDs → throw error
-  - [ ] Sum all amounts
+  - [ ] Check for multiple non-null business_id values → throw error
+  - [ ] Sum all amounts (numeric type)
   - [ ] Select earliest event_date
-  - [ ] Concatenate descriptions with line breaks
-  - [ ] Handle null descriptions
-- [ ] Create `__tests__/transactionAggregator.test.ts`
+  - [ ] Concatenate source_description values with line breaks
+  - [ ] Handle null source_description
+- [ ] Create `__tests__/transaction-aggregator.test.ts`
 - [ ] Write test: single transaction
 - [ ] Write test: multiple transactions, same currency
 - [ ] Write test: multiple transactions with fees (excluded)
 - [ ] Write test: mixed currencies (should throw)
-- [ ] Write test: multiple business IDs (should throw)
-- [ ] Write test: all business IDs null
-- [ ] Write test: single non-null business ID
-- [ ] Write test: date selection (earliest)
-- [ ] Write test: description concatenation
+- [ ] Write test: multiple business_id values (should throw)
+- [ ] Write test: all business_id null
+- [ ] Write test: single non-null business_id
+- [ ] Write test: date selection (earliest event_date)
+- [ ] Write test: source_description concatenation
 - [ ] Write test: empty array (should throw)
 - [ ] Verify error messages are descriptive
 - [ ] Verify all tests pass
@@ -222,17 +239,17 @@
 
 ### Step 9: Document Amount Normalization
 
-- [ ] Create `src/normalizers/` directory
-- [ ] Create `src/normalizers/documentAmount.ts`
+- [ ] Create `helpers/document-amount.helper.ts`
 - [ ] Implement `normalizeDocumentAmount()` function
-  - [ ] Step 1: Take absolute value
+  - [ ] Step 1: Take absolute value of total_amount
   - [ ] Step 2: If business is creditor, negate
-  - [ ] Step 3: If CREDIT_INVOICE, negate
-- [ ] Create `__tests__/documentAmount.test.ts`
+  - [ ] Step 3: If DocumentType is CREDIT_INVOICE, negate
+  - [ ] Works with numeric type (not string)
+- [ ] Create `__tests__/document-amount.test.ts`
 - [ ] Write test: INVOICE, business debtor → positive
 - [ ] Write test: INVOICE, business creditor → negative
 - [ ] Write test: CREDIT_INVOICE, business debtor → negative
-- [ ] Write test: CREDIT_INVOICE, business creditor → positive
+- [ ] Write test: CREDIT_INVOICE, business creditor → positive (double negation)
 - [ ] Write test: RECEIPT, both scenarios
 - [ ] Write test: INVOICE_RECEIPT, both scenarios
 - [ ] Write test: OTHER, PROFORMA, UNPROCESSED types
@@ -245,22 +262,23 @@
 
 ### Step 10: Document Aggregator
 
-- [ ] Create `src/aggregators/documentAggregator.ts`
+- [ ] Create `helpers/document-aggregator.helper.ts`
 - [ ] Define `AggregatedDocument` interface
 - [ ] Import business extraction and amount normalization
 - [ ] Implement `aggregateDocuments()` function
   - [ ] Apply type priority filter
     - [ ] If invoices + receipts exist, use only invoices
-  - [ ] Extract business from each document
-  - [ ] Normalize each amount
+  - [ ] Extract business from each document (creditor_id/debtor_id)
+  - [ ] Normalize each total_amount
   - [ ] Validate non-empty array
-  - [ ] Check for mixed currencies → throw error
+  - [ ] Check for mixed currency_code → throw error
   - [ ] Check for multiple non-null business IDs → throw error
   - [ ] Sum all normalized amounts
   - [ ] Select latest date
-  - [ ] Concatenate serial numbers/file names with line breaks
-  - [ ] Determine document type for result
-- [ ] Create `__tests__/documentAggregator.test.ts`
+  - [ ] Concatenate serial_number or file names with line breaks
+  - [ ] Determine DocumentType for result
+  - [ ] Remember: documents use charge_id_new FK (not charge_id)
+- [ ] Create `__tests__/document-aggregator.test.ts`
 - [ ] Write test: single document (normalized)
 - [ ] Write test: multiple invoices (summed correctly)
 - [ ] Write test: multiple receipts (summed correctly)
@@ -349,13 +367,12 @@
 
 ---
 
-## Phase 5: Single-Match Implementation
+## Phase 5: GraphQL Integration
 
 ### Step 13: Single-Match Core Function
 
-- [ ] Create `src/matching/` directory
-- [ ] Create `src/matching/singleMatch.ts`
-- [ ] Import all required components
+- [ ] Create `providers/charges-matcher.provider.ts`
+- [ ] Import ChargesProvider, TransactionsProvider, DocumentsProvider
 - [ ] Implement helper: `isUnmatchedCharge()` function
 - [ ] Implement helper: `getComplementaryType()` function
 - [ ] Implement helper: `calculateDateProximity()` for tie-breaking
@@ -363,14 +380,14 @@
   - [ ] Validate source charge is unmatched
   - [ ] Validate source charge aggregation
   - [ ] Filter candidates by complementary type
-  - [ ] Filter candidates by date window
+  - [ ] Filter candidates by date window (12 months)
   - [ ] Filter candidates using candidateFilter
-  - [ ] Exclude candidates with same chargeId (throw if found)
+  - [ ] Exclude candidates with same charge id (throw if found)
   - [ ] Score all remaining candidates
   - [ ] Sort by confidence (descending)
   - [ ] Apply date proximity tie-breaker
   - [ ] Return top N (default 5)
-- [ ] Create `__tests__/singleMatch.test.ts`
+- [ ] Create `__tests__/charges-matcher.provider.test.ts`
 - [ ] Write test: transaction charge → finds document matches
 - [ ] Write test: document charge → finds transaction matches
 - [ ] Write test: matched charge input (should throw)
@@ -386,37 +403,27 @@
 - [ ] Verify all tests pass
 - [ ] Commit: "feat: implement single-match core function"
 
-### Step 14: Single-Match Database Integration
+### Step 14: Single-Match GraphQL Integration
 
-- [ ] Create `src/db/` directory
-- [ ] Create `src/db/chargeRepository.ts`
-- [ ] Define `ChargeRepository` interface
-  - [ ] `getChargeById()` method
-  - [ ] `getCandidateCharges()` method
-- [ ] Define `Charge` interface
-- [ ] Implement `MockChargeRepository` class
-  - [ ] In-memory Map storage
-  - [ ] `getChargeById()` implementation
-  - [ ] `getCandidateCharges()` implementation with filtering
-  - [ ] Helper methods for test data setup
-- [ ] Create `src/matching/singleMatchService.ts`
-- [ ] Implement `findMatchesForCharge()` function
-  - [ ] Load source charge from repository
-  - [ ] Validate it's unmatched
-  - [ ] Determine reference date from aggregation
-  - [ ] Load candidate charges from repository
-  - [ ] Call findMatches() from Step 13
-  - [ ] Format and return result
-- [ ] Create `__tests__/singleMatchService.test.ts`
-- [ ] Set up MockChargeRepository with test data
-- [ ] Write test: full flow with database
+- [ ] Create `typeDefs/charges-matcher.graphql.ts`
+- [ ] Define GraphQL schema:
+  - [ ] `Query.findChargeMatches(chargeId: UUID!): ChargeMatchesResult!`
+  - [ ] `ChargeMatchesResult` type
+  - [ ] `ChargeMatch` type
+  - [ ] Add `@auth(role: ACCOUNTANT)` directive
+- [ ] Create `resolvers/find-charge-matches.resolver.ts`
+- [ ] Implement resolver using ChargesMatcherProvider
+- [ ] Extract userId from authentication context
+- [ ] Use existing ChargesProvider, TransactionsProvider, DocumentsProvider
+- [ ] Create `__tests__/find-charge-matches.resolver.test.ts`
+- [ ] Write test: full flow with database providers
 - [ ] Write test: charge not found error
 - [ ] Write test: matched charge error
 - [ ] Write test: various data scenarios
-- [ ] Write test: date window filtering at DB level
+- [ ] Write test: date window filtering
 - [ ] Write integration tests with realistic data
 - [ ] Verify all tests pass
-- [ ] Commit: "feat: integrate single-match with database layer"
+- [ ] Commit: "feat: integrate single-match with GraphQL"
 
 ---
 
@@ -451,32 +458,23 @@
 - [ ] Verify all tests pass
 - [ ] Commit: "feat: implement auto-match core function"
 
-### Step 16: Auto-Match Complete Integration
+### Step 16: Auto-Match GraphQL Integration
 
-- [ ] Extend `src/db/chargeRepository.ts` interface
-  - [ ] Add `getUnmatchedCharges()` method
-  - [ ] Add `getAllCharges()` method
-  - [ ] Add `mergeCharges()` method
-- [ ] Update `MockChargeRepository` implementation
-  - [ ] Implement `getUnmatchedCharges()`
-  - [ ] Implement `getAllCharges()`
-  - [ ] Implement `mergeCharges()` (move data, delete source)
-  - [ ] Add helper to track merge operations
-- [ ] Create `src/matching/autoMatchService.ts`
-- [ ] Implement `autoMatchAllCharges()` function
-  - [ ] Load all unmatched charges
-  - [ ] Load all charges for candidate pool
-  - [ ] Initialize result tracking
-  - [ ] For each unmatched charge:
-    - [ ] Process with processChargeForAutoMatch()
-    - [ ] If matched: determine merge direction
-    - [ ] Execute merge via repository
-    - [ ] Track merged charge in result
-    - [ ] Exclude from further processing
-    - [ ] If skipped: add to skippedCharges
-    - [ ] Handle errors: capture and continue
-  - [ ] Return AutoMatchOutput
-- [ ] Create `__tests__/autoMatchService.test.ts`
+- [ ] Update `typeDefs/charges-matcher.graphql.ts`
+  - [ ] Add `Mutation.autoMatchCharges: AutoMatchChargesResult!`
+  - [ ] Define `AutoMatchChargesResult` type
+  - [ ] Define `MergedCharge` type
+  - [ ] Add `@auth(role: ACCOUNTANT)` directive
+- [ ] Update `providers/charges-matcher.provider.ts`
+  - [ ] Implement `getUnmatchedCharges(ownerId: UUID)` method
+  - [ ] Implement `autoMatchCharges(ownerId: UUID)` method
+  - [ ] Use existing ChargesProvider.mergeCharges() for merging
+- [ ] Create `resolvers/auto-match-charges.resolver.ts`
+- [ ] Implement resolver:
+  - [ ] Extract userId from auth context
+  - [ ] Call ChargesMatcherProvider.autoMatchCharges()
+  - [ ] Return AutoMatchChargesResult
+- [ ] Create `__tests__/auto-match-charges.resolver.test.ts`
 - [ ] Write test: empty database
 - [ ] Write test: all charges already matched
 - [ ] Write test: single unmatched with good match
@@ -486,68 +484,51 @@
 - [ ] Write test: errors during merge
 - [ ] Write test: merged charges excluded from further matching
 - [ ] Write test: verify merge direction is correct
-- [ ] Write test: verify final database state
+- [ ] Write test: verify final state via providers
 - [ ] Write end-to-end integration test
 - [ ] Verify all tests pass
-- [ ] Commit: "feat: complete auto-match with full integration"
+- [ ] Commit: "feat: complete auto-match with GraphQL mutation"
 
 ---
 
-## Phase 7: Polish & Production Ready
+## Phase 7: Module Completion & Integration
 
 ### Step 17: Final Integration and Error Handling
 
-- [ ] Create `src/validation/` directory
-- [ ] Create `src/validation/chargeValidator.ts`
+- [ ] Create `helpers/charge-validator.helper.ts`
 - [ ] Implement `validateChargeForMatching()` function
 - [ ] Implement `isChargeMatched()` function
 - [ ] Implement `hasOnlyTransactions()` function
 - [ ] Implement `hasOnlyDocuments()` function
-- [ ] Create `src/errors.ts`
-- [ ] Define `MatchingError` base class
-- [ ] Define `ValidationError` class
-- [ ] Define `AggregationError` class
-- [ ] Define `BusinessExtractionError` class
-- [ ] Define `DatabaseError` class
+- [ ] Create error classes (extend existing error patterns)
+  - [ ] `MatchingError` base class
+  - [ ] `ValidationError` class
+  - [ ] `AggregationError` class
+  - [ ] Use CommonError for GraphQL responses
 - [ ] Refactor existing code to use proper error types
   - [ ] Update transaction aggregator
   - [ ] Update document aggregator
   - [ ] Update business extraction
   - [ ] Update validators
-  - [ ] Update single-match service
-  - [ ] Update auto-match service
-- [ ] Ensure all error messages are descriptive
-- [ ] Create `src/index.ts` (main export file)
-  - [ ] Export `findMatchesForCharge`
-  - [ ] Export `autoMatchAllCharges`
-  - [ ] Export all result types
-  - [ ] Export `ChargeRepository` interface
-  - [ ] Export error classes
-- [ ] Create `__tests__/integration/` directory
-- [ ] Create `__tests__/integration/singleMatch.integration.test.ts`
-  - [ ] Test realistic end-to-end scenarios
-  - [ ] Test all error paths
-  - [ ] Test edge cases from specification
-- [ ] Create `__tests__/integration/autoMatch.integration.test.ts`
-  - [ ] Test realistic batch processing
-  - [ ] Test mixed match/skip/error scenarios
-  - [ ] Test merge direction in various cases
-  - [ ] Test performance with larger datasets
-- [ ] Create `README.md`
-  - [ ] Project overview
-  - [ ] Installation instructions
-  - [ ] Quick start guide
-  - [ ] API documentation
-    - [ ] `findMatchesForCharge()`
-    - [ ] `autoMatchAllCharges()`
-  - [ ] Error handling guide
-  - [ ] Configuration options
-  - [ ] Usage examples
-  - [ ] Contributing guidelines
+  - [ ] Update provider methods
+- [ ] Create `index.ts` (module export file):
+  - [ ] Export ChargesMatcherModule
+  - [ ] Export ChargesMatcherProvider
+  - [ ] Export all types
+  - [ ] Follow existing module patterns
+- [ ] Create `resolvers/index.ts`:
+  - [ ] Export all resolvers
+  - [ ] Combine into resolvers object
+- [ ] Add module to `packages/server/src/modules-app.ts`
+- [ ] Create integration tests in `__tests__/integration/`
+  - [ ] Single-match end-to-end test
+  - [ ] Auto-match end-to-end test
+  - [ ] Error scenarios
+  - [ ] Edge cases from specification
 - [ ] Run full test suite
   - [ ] Verify all tests pass
-  - [ ] Check code coverage >90%
-- [ ] Commit: "feat: add error handling, validation, and documentation"
+  - [ ] Check code coverage >85%
+- [ ] Commit: "feat: complete charges-matcher module with error handling"
 
 ---
 
@@ -555,36 +536,37 @@
 
 ### Comprehensive Testing
 
-- [ ] Run full test suite: `npm test`
-- [ ] Check test coverage: `npm run test:coverage`
-- [ ] Verify coverage is >90% overall
-- [ ] Verify coverage is >95% for calculators
-- [ ] Run linter (if configured): `npm run lint`
+- [ ] Run module tests: `yarn test packages/server/src/modules/charges-matcher`
+- [ ] Check test coverage for module
+- [ ] Verify coverage is >85% overall
+- [ ] Verify coverage is >95% for helpers
+- [ ] Run linter: `yarn lint`
 - [ ] Fix any linting issues
-- [ ] Test with real-world data patterns
+- [ ] Test GraphQL queries/mutations with real database:
   - [ ] Load sample transaction data
   - [ ] Load sample document data
-  - [ ] Run single-match tests
-  - [ ] Run auto-match tests
+  - [ ] Test findChargeMatches query
+  - [ ] Test autoMatchCharges mutation
   - [ ] Verify results are sensible
 
 ### Edge Case Verification
 
-- [ ] Test with empty databases
-- [ ] Test with very large amounts
-- [ ] Test with many currencies
-- [ ] Test with missing optional fields
+- [ ] Test with empty database
+- [ ] Test with very large amounts (numeric precision)
+- [ ] Test with all supported currencies
+- [ ] Test with missing optional fields (null values)
 - [ ] Test with extreme dates (far past/future)
 - [ ] Test with many charges (performance)
-- [ ] Test concurrent modifications (if applicable)
+- [ ] Test UUID validation
+- [ ] Test charge_id_new field usage (not charge_id)
 
 ### Documentation Review
 
-- [ ] Review README for clarity
-- [ ] Verify all examples work
-- [ ] Check API documentation is complete
-- [ ] Ensure error messages are documented
+- [ ] Add module documentation to project docs
+- [ ] Document GraphQL queries and mutations
+- [ ] Ensure error messages are descriptive
 - [ ] Verify inline code comments are clear
+- [ ] Add JSDoc comments to all exported functions
 
 ---
 
