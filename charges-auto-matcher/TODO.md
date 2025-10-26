@@ -149,30 +149,34 @@
 - [x] Verify all tests pass (26/26 tests passing)
 - [x] Commit: "feat: implement business confidence calculator"
 
-### Step 6: Date Confidence Calculator
+### Step 6: Date Confidence Calculator ✅ COMPLETED
 
-- [ ] Create `src/calculators/dateConfidence.ts`
-- [ ] Implement `calculateDateConfidence()` function
-  - [ ] Same day → 1.0
-  - [ ] Linear degradation: 1.0 - (days_diff / 30)
-  - [ ] 30+ days → 0.0
-  - [ ] Calculate days difference (ignore time)
-  - [ ] Round to 2 decimal places
-- [ ] Create `__tests__/dateConfidence.test.ts`
-- [ ] Write test: same day → 1.0
-- [ ] Write test: 1 day diff → ~0.967
-- [ ] Write test: 7 days diff → ~0.767
-- [ ] Write test: 15 days diff → 0.5
-- [ ] Write test: 29 days diff → ~0.033
-- [ ] Write test: 30 days diff → 0.0
-- [ ] Write test: 100 days diff → 0.0
-- [ ] Write test: order independence (date1 > date2 vs date2 > date1)
-- [ ] Write edge case tests
-  - [ ] Different time zones
-  - [ ] Leap years
-  - [ ] Month boundaries
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement date confidence calculator"
+- [x] Create `helpers/date-confidence.helper.ts`
+- [x] Implement `calculateDateConfidence()` function
+  - [x] Same day → 1.0
+  - [x] Linear degradation: 1.0 - (days_diff / 30)
+  - [x] 30+ days → 0.0
+  - [x] Calculate days difference (ignore time)
+  - [x] Round to 2 decimal places
+- [x] Create `__tests__/date-confidence.test.ts`
+- [x] Write test: same day → 1.0 (3 tests)
+- [x] Write test: 1 day diff → ~0.97
+- [x] Write test: 7 days diff → ~0.77
+- [x] Write test: 15 days diff → 0.5
+- [x] Write test: 29 days diff → ~0.03
+- [x] Write test: 30 days diff → 0.0
+- [x] Write test: 100 days diff → 0.0
+- [x] Write test: order independence (3 tests)
+- [x] Write edge case tests
+  - [x] Different time zones (2 tests)
+  - [x] Leap years (3 tests)
+  - [x] Month boundaries (2 tests)
+- [x] Additional tests for linear degradation formula (2 tests)
+- [x] Additional tests for precision and rounding (3 tests)
+- [x] Additional tests for return value validation (2 tests)
+- [x] Additional tests for edge cases (3 tests)
+- [x] Verify all tests pass (30/30 tests passing)
+- [x] Commit: "feat: implement date confidence calculator"
 
 ### Step 7: Overall Confidence Calculator
 
