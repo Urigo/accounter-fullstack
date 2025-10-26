@@ -102,50 +102,32 @@
 - [x] Verify all tests pass (31/31 tests passing)
 - [x] Commit: "feat: implement currency confidence calculator"
 
-### Step 4: Business ID Extraction from Documents
+### Step 4: Business ID Extraction from Documents ✅ COMPLETED
 
-- [ ] Create `helpers/document-business.helper.ts`
-- [ ] Define `DocumentBusinessInfo` interface
-  - [ ] `businessId: string | null` (UUID)
-  - [ ] `isBusinessCreditor: boolean`
-- [ ] Implement `extractDocumentBusiness()` function
-  - [ ] User is debtor → business is creditor
-  - [ ] User is creditor → business is debtor
-  - [ ] Handle null values appropriately
-  - [ ] Throw error if both creditor_id and debtor_id are userId
-  - [ ] Throw error if neither creditor_id nor debtor_id is userId
-  - [ ] All IDs are UUIDs
-- [ ] Create `__tests__/document-business.test.ts`
-- [ ] Write test: user is debtor, creditor_id is business
-- [ ] Write test: user is creditor, debtor_id is business
-- [ ] Write test: user is creditor, debtor_id is null
-- [ ] Write test: user is debtor, creditor_id is null
-- [ ] Write test: both are user (should throw)
-- [ ] Write test: neither are user (should throw)
-- [ ] Write test: all null (should throw)
-- [ ] Verify error messages are descriptive
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement document business extraction"
-- [ ] Define `DocumentBusinessInfo` interface
-  - [ ] `businessId: string | null`
-  - [ ] `isBusinessCreditor: boolean`
-- [ ] Implement `extractDocumentBusiness()` function
-  - [ ] User is debtor → business is creditor
-  - [ ] User is creditor → business is debtor
-  - [ ] Handle null values appropriately
-  - [ ] Throw error if both IDs are userId
-  - [ ] Throw error if neither ID is userId
-- [ ] Create `__tests__/documentBusiness.test.ts`
-- [ ] Write test: user is debtor, creditor is business
-- [ ] Write test: user is creditor, debtor is business
-- [ ] Write test: user is creditor, debtor is null
-- [ ] Write test: user is debtor, creditor is null
-- [ ] Write test: both are user (should throw)
-- [ ] Write test: neither are user (should throw)
-- [ ] Write test: all null (should throw)
-- [ ] Verify error messages are descriptive
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement document business extraction"
+- [x] Create `helpers/document-business.helper.ts`
+- [x] Define `DocumentBusinessInfo` interface
+  - [x] `businessId: string | null` (UUID)
+  - [x] `isBusinessCreditor: boolean`
+- [x] Implement `extractDocumentBusiness()` function
+  - [x] User is debtor → business is creditor
+  - [x] User is creditor → business is debtor
+  - [x] Handle null values appropriately
+  - [x] Throw error if both creditor_id and debtor_id are userId
+  - [x] Throw error if neither creditor_id nor debtor_id is userId
+  - [x] Throw error if both are null
+  - [x] All IDs are UUIDs
+- [x] Create `__tests__/document-business.test.ts`
+- [x] Write test: user is debtor, creditor_id is business
+- [x] Write test: user is creditor, debtor_id is business
+- [x] Write test: user is creditor, debtor_id is null
+- [x] Write test: user is debtor, creditor_id is null
+- [x] Write test: both are user (should throw)
+- [x] Write test: neither are user (should throw)
+- [x] Write test: all null (should throw)
+- [x] Additional tests for edge cases and different ID formats
+- [x] Verify error messages are descriptive
+- [x] Verify all tests pass (21/21 tests passing)
+- [x] Commit: "feat: implement document business extraction"
 
 ### Step 5: Business Confidence Calculator
 
