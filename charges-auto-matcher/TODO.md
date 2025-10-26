@@ -129,24 +129,25 @@
 - [x] Verify all tests pass (21/21 tests passing)
 - [x] Commit: "feat: implement document business extraction"
 
-### Step 5: Business Confidence Calculator
+### Step 5: Business Confidence Calculator ✅ COMPLETED
 
-- [ ] Create `src/calculators/businessConfidence.ts`
-- [ ] Import `DocumentBusinessInfo` type
-- [ ] Implement `calculateBusinessConfidence()` function
-  - [ ] Both match and non-null → 1.0
-  - [ ] One is null → 0.5
-  - [ ] Both null → 0.5
-  - [ ] Mismatch (both non-null) → 0.2
-- [ ] Create `__tests__/businessConfidence.test.ts`
-- [ ] Write test: exact match (non-null)
-- [ ] Write test: transaction ID is null
-- [ ] Write test: document ID is null
-- [ ] Write test: both IDs are null
-- [ ] Write test: IDs don't match
-- [ ] Write tests with various business ID formats
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement business confidence calculator"
+- [x] Create `helpers/business-confidence.helper.ts`
+- [x] Import `DocumentBusinessInfo` type
+- [x] Implement `calculateBusinessConfidence()` function
+  - [x] Both match and non-null → 1.0
+  - [x] One is null → 0.5
+  - [x] Both null → 0.5
+  - [x] Mismatch (both non-null) → 0.2
+- [x] Create `__tests__/business-confidence.test.ts`
+- [x] Write test: exact match (non-null) - 3 tests
+- [x] Write test: transaction ID is null - 2 tests
+- [x] Write test: document ID is null - 2 tests
+- [x] Write test: both IDs are null - 1 test
+- [x] Write test: IDs don't match - 4 tests
+- [x] Write tests with various business ID formats - 5 tests
+- [x] Additional tests for symmetry, return value validation, edge cases - 9 tests
+- [x] Verify all tests pass (26/26 tests passing)
+- [x] Commit: "feat: implement business confidence calculator"
 
 ### Step 6: Date Confidence Calculator
 
