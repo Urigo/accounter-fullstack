@@ -427,7 +427,7 @@
   - [x] TransactionsProvider from @modules/transactions
   - [x] DocumentsProvider from @modules/documents
 - [x] Implement `findMatchesForCharge()` method
-  - [x] Get userId from injector.get('currentUser').userId
+  - [x] Get adminBusinessId from context.adminContext.defaultAdminBusinessId
   - [x] Get providers from injector
   - [x] Load source charge using ChargesProvider.getChargeByIdLoader
   - [x] Load transactions using TransactionsProvider.transactionsByChargeIDLoader
@@ -452,6 +452,9 @@
   - [x] **tests**/single-match-integration.test.ts (24KB)
 - [x] Total module tests: 429 passing (419 + 10)
 - [x] Note: GraphQL resolver will be added in later step (after auto-match)
+- [x] Fixed test data to use USER_ID for context adminBusinessId (business confidence)
+- [x] Fixed error message test to match actual error thrown
+- [x] All integration tests passing with proper mock data
 - [x] Commit: "feat: integrate single-match with database layer"
 
 ---

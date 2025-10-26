@@ -9,6 +9,7 @@ import { Injectable, Injector, Scope } from 'graphql-modules';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { dateToTimelessDateString } from '@shared/helpers';
 import type { ChargeMatchesResult, Document, Transaction } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import {
@@ -39,11 +40,15 @@ export class ChargesMatcherProvider {
    * @throws Error if charge is already matched
    * @throws Error if charge data is invalid
    */
-  async findMatchesForCharge(chargeId: string, injector: Injector): Promise<ChargeMatchesResult> {
+  async findMatchesForCharge(
+    chargeId: string,
+    injector: Injector,
+    context: GraphQLModules.AppContext,
+  ): Promise<ChargeMatchesResult> {
     // Get current user ID from context
-    const userId = injector.get('currentUser')?.userId;
-    if (!userId) {
-      throw new Error('User ID not found in context');
+    const adminBusinessId = context.adminContext.defaultAdminBusinessId;
+    if (!adminBusinessId) {
+      throw new Error('Admin business not found in context');
     }
 
     // Get providers from injector
@@ -83,11 +88,13 @@ export class ChargesMatcherProvider {
     let referenceDate: Date;
     if (hasTransactions) {
       // Use earliest transaction event_date
-      const aggregated = aggregateTransactions(sourceTransactions);
+      const aggregated = aggregateTransactions(
+        sourceTransactions.map(t => ({ ...t, amount: Number(t.amount) })),
+      );
       referenceDate = aggregated.date;
     } else {
       // Use latest document date
-      const aggregated = aggregateDocuments(sourceDocuments, userId);
+      const aggregated = aggregateDocuments(sourceDocuments, adminBusinessId);
       referenceDate = aggregated.date;
     }
 
@@ -99,9 +106,9 @@ export class ChargesMatcherProvider {
     windowEnd.setMonth(windowEnd.getMonth() + 12);
 
     const candidateCharges = await chargesProvider.getChargesByFilters({
-      ownerIds: [userId],
-      fromDate: windowStart.toISOString().split('T')[0],
-      toDate: windowEnd.toISOString().split('T')[0],
+      ownerIds: [adminBusinessId],
+      fromDate: dateToTimelessDateString(windowStart),
+      toDate: dateToTimelessDateString(windowEnd),
     });
 
     // Step 6: Load transactions and documents for all candidate charges
@@ -127,7 +134,7 @@ export class ChargesMatcherProvider {
       if (hasTxs && !hasDocs) {
         candidateChargesWithData.push({
           chargeId: candidate.id,
-          transactions: candidateTransactions,
+          transactions: candidateTransactions.map(t => ({ ...t, amount: Number(t.amount) })), // Ensure amount is number
         });
       } else if (hasDocs && !hasTxs) {
         candidateChargesWithData.push({
@@ -143,7 +150,7 @@ export class ChargesMatcherProvider {
     if (hasTransactions) {
       sourceChargeData = {
         chargeId,
-        transactions: sourceTransactions,
+        transactions: sourceTransactions.map(t => ({ ...t, amount: Number(t.amount) })), // Ensure amount is number
       };
     } else {
       sourceChargeData = {
@@ -153,10 +160,15 @@ export class ChargesMatcherProvider {
     }
 
     // Step 8: Call core findMatches function
-    const matches: MatchResult[] = findMatches(sourceChargeData, candidateChargesWithData, userId, {
-      maxMatches: 5,
-      dateWindowMonths: 12,
-    });
+    const matches: MatchResult[] = findMatches(
+      sourceChargeData,
+      candidateChargesWithData,
+      adminBusinessId,
+      {
+        maxMatches: 5,
+        dateWindowMonths: 12,
+      },
+    );
 
     // Step 9: Format and return result
     return {

@@ -20,6 +20,10 @@ vi.mock('@modules/transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 
+vi.mock('@shared/helpers', () => ({
+  dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
+}));
+
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
 
@@ -28,7 +32,7 @@ type Injector = {
 };
 
 // Test constants
-const USER_ID = 'user-123';
+const ADMIN_BUSINESS_ID = 'user-123';
 const BUSINESS_A = 'business-a';
 const BUSINESS_B = 'business-b';
 
@@ -59,7 +63,7 @@ function createDocument(overrides: Partial<Document> = {}): Document {
     id: `doc-${Math.random()}`,
     charge_id: 'charge-doc',
     creditor_id: BUSINESS_A,
-    debtor_id: USER_ID,
+    debtor_id: ADMIN_BUSINESS_ID,
     currency_code: 'USD',
     total_amount: 100,
     date: new Date('2024-01-15'),
@@ -119,16 +123,16 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const mockChargesProvider = {
         getChargeByIdLoader: {
           load: vi.fn((id: string) => {
-            if (id === sourceChargeId) return Promise.resolve(createCharge(id, USER_ID));
-            if (id === candidateCharge1Id) return Promise.resolve(createCharge(id, USER_ID));
-            if (id === candidateCharge2Id) return Promise.resolve(createCharge(id, USER_ID));
+            if (id === sourceChargeId) return Promise.resolve(createCharge(id, ADMIN_BUSINESS_ID));
+            if (id === candidateCharge1Id) return Promise.resolve(createCharge(id, ADMIN_BUSINESS_ID));
+            if (id === candidateCharge2Id) return Promise.resolve(createCharge(id, ADMIN_BUSINESS_ID));
             return Promise.resolve(new Error('Charge not found'));
           }),
         },
         getChargesByFilters: vi.fn(() =>
           Promise.resolve([
-            createCharge(candidateCharge1Id, USER_ID),
-            createCharge(candidateCharge2Id, USER_ID),
+            createCharge(candidateCharge1Id, ADMIN_BUSINESS_ID),
+            createCharge(candidateCharge2Id, ADMIN_BUSINESS_ID),
           ]),
         ),
       };
@@ -155,7 +159,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -165,7 +168,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       // Execute
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -211,14 +214,14 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const mockChargesProvider = {
         getChargeByIdLoader: {
           load: vi.fn((id: string) => {
-            if (id === sourceChargeId) return Promise.resolve(createCharge(id, USER_ID));
-            return Promise.resolve(createCharge(id, USER_ID));
+            if (id === sourceChargeId) return Promise.resolve(createCharge(id, ADMIN_BUSINESS_ID));
+            return Promise.resolve(createCharge(id, ADMIN_BUSINESS_ID));
           }),
         },
         getChargesByFilters: vi.fn(() =>
           Promise.resolve([
-            createCharge(candidateCharge1Id, USER_ID),
-            createCharge(candidateCharge2Id, USER_ID),
+            createCharge(candidateCharge1Id, ADMIN_BUSINESS_ID),
+            createCharge(candidateCharge2Id, ADMIN_BUSINESS_ID),
           ]),
         ),
       };
@@ -244,7 +247,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -254,7 +256,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       // Execute
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -265,13 +267,12 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
     it('should throw error if charge not found', async () => {
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(new Error('Charge not found'))),
+          load: vi.fn(() => Promise.resolve(new Error('Not found'))),
         },
       };
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           return null;
         }),
@@ -280,8 +281,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const provider = new ChargesMatcherProvider();
 
       await expect(
-        provider.findMatchesForCharge('non-existent', mockInjector),
-      ).rejects.toThrow(/not found/);
+        provider.findMatchesForCharge('non-existent', mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any),
+      ).rejects.toThrow(/Source charge not found/);
     });
 
     it('should throw error if charge is already matched', async () => {
@@ -289,7 +290,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(chargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(chargeId, ADMIN_BUSINESS_ID))),
         },
       };
 
@@ -307,7 +308,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -317,7 +317,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge(chargeId, mockInjector)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge(chargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any)).rejects.toThrow(
         /already matched/,
       );
     });
@@ -327,7 +327,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(chargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(chargeId, ADMIN_BUSINESS_ID))),
         },
       };
 
@@ -345,7 +345,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -355,7 +354,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge(chargeId, mockInjector)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge(chargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any)).rejects.toThrow(
         /no transactions or documents/,
       );
     });
@@ -365,7 +364,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, ADMIN_BUSINESS_ID))),
         },
         getChargesByFilters: vi.fn(() => Promise.resolve([])),
       };
@@ -384,7 +383,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -393,7 +391,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       expect(result.matches).toEqual([]);
     });
@@ -405,12 +403,12 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, ADMIN_BUSINESS_ID))),
         },
         getChargesByFilters: vi.fn(() =>
           Promise.resolve([
-            createCharge(matchedCandidateId, USER_ID),
-            createCharge(validCandidateId, USER_ID),
+            createCharge(matchedCandidateId, ADMIN_BUSINESS_ID),
+            createCharge(validCandidateId, ADMIN_BUSINESS_ID),
           ]),
         ),
       };
@@ -437,7 +435,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -446,7 +443,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       // Should only include validCandidateId, not matchedCandidateId
       expect(result.matches).toHaveLength(1);
@@ -462,15 +459,15 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, ADMIN_BUSINESS_ID))),
         },
         getChargesByFilters: vi.fn(params => {
           // Verify date window parameters
           expect(params.fromDate).toBeDefined();
           expect(params.toDate).toBeDefined();
           return Promise.resolve([
-            createCharge(withinWindowId, USER_ID),
-            createCharge(outsideWindowId, USER_ID),
+            createCharge(withinWindowId, ADMIN_BUSINESS_ID),
+            createCharge(outsideWindowId, ADMIN_BUSINESS_ID),
           ]);
         }),
       };
@@ -509,7 +506,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -518,7 +514,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       // Should only include candidate within window
       expect(result.matches).toHaveLength(1);
@@ -532,8 +528,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge('any-id', mockInjector)).rejects.toThrow(
-        /User ID not found/,
+      await expect(provider.findMatchesForCharge('any-id', mockInjector, { adminContext: { defaultAdminBusinessId: null } } as any)).rejects.toThrow(
+        /Admin business not found in context/,
       );
     });
 
@@ -545,10 +541,10 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockChargesProvider = {
         getChargeByIdLoader: {
-          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, USER_ID))),
+          load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, ADMIN_BUSINESS_ID))),
         },
         getChargesByFilters: vi.fn(() =>
-          Promise.resolve(candidateIds.map(id => createCharge(id, USER_ID))),
+          Promise.resolve(candidateIds.map(id => createCharge(id, ADMIN_BUSINESS_ID))),
         ),
       };
 
@@ -576,7 +572,6 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockInjector = {
         get: vi.fn((token: any) => {
-          if (token === 'currentUser') return { userId: USER_ID };
           if (token.name === 'ChargesProvider') return mockChargesProvider;
           if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
           if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
@@ -585,7 +580,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector);
+      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
 
       // Should return maximum of 5 matches
       expect(result.matches).toHaveLength(5);
