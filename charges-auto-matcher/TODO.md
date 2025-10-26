@@ -382,36 +382,41 @@
 
 ## Phase 5: GraphQL Integration
 
-### Step 13: Single-Match Core Function
+### Step 13: Single-Match Core Function ✅ COMPLETED
 
-- [ ] Create `providers/single-match.provider.ts`
-- [ ] Implement helper: `calculateDateProximity()` for tie-breaking
-- [ ] Implement `findMatches()` function
-  - [ ] Validate source charge is unmatched
-  - [ ] Validate source charge aggregation
-  - [ ] Filter candidates by complementary type
-  - [ ] Filter candidates by date window (12 months)
-  - [ ] Filter candidates using candidateFilter
-  - [ ] Exclude candidates with same charge id (throw if found)
-  - [ ] Score all remaining candidates
-  - [ ] Sort by confidence (descending)
-  - [ ] Apply date proximity tie-breaker
-  - [ ] Return top N (default 5)
-- [ ] Create `__tests__/single-match.test.ts`
-- [ ] Write test: transaction charge → finds document matches
-- [ ] Write test: document charge → finds transaction matches
-- [ ] Write test: matched charge input (should throw)
-- [ ] Write test: multiple currencies in source (error propagates)
-- [ ] Write test: no candidates found (empty array)
-- [ ] Write test: fewer than 5 candidates (returns all)
-- [ ] Write test: more than 5 candidates (returns top 5)
-- [ ] Write test: tie-breaking by date proximity
-- [ ] Write test: date window filtering works
-- [ ] Write test: fee transactions excluded
-- [ ] Write test: same chargeId (should throw)
-- [ ] Write test: various confidence levels (realistic data)
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement single-match core function"
+- [x] Create `providers/single-match.provider.ts`
+- [x] Implement helper: `calculateDateProximity()` for tie-breaking
+- [x] Implement `findMatches()` function
+  - [x] Validate source charge is unmatched
+  - [x] Validate source charge aggregation
+  - [x] Filter candidates by complementary type
+  - [x] Filter candidates by date window (12 months)
+  - [x] Filter candidates using candidateFilter
+  - [x] Exclude candidates with same charge id (throw if found)
+  - [x] Score all remaining candidates
+  - [x] Sort by confidence (descending)
+  - [x] Apply date proximity tie-breaker
+  - [x] Return top N (default 5)
+- [x] Create `__tests__/single-match.test.ts`
+- [x] Write test: transaction charge → finds document matches (2 tests)
+- [x] Write test: document charge → finds transaction matches (2 tests)
+- [x] Write test: matched charge input (should throw) (2 tests)
+- [x] Write test: multiple currencies in source (error propagates) (3 tests)
+- [x] Write test: no candidates found (empty array) (4 tests)
+- [x] Write test: fewer than 5 candidates (returns all) (1 test)
+- [x] Write test: more than 5 candidates (returns top 5) (2 tests)
+- [x] Write test: tie-breaking by date proximity (2 tests)
+- [x] Write test: date window filtering works (3 tests)
+- [x] Write test: fee transactions excluded (2 tests)
+- [x] Write test: same chargeId (should throw) (1 test)
+- [x] Write test: various confidence levels (realistic data) (2 tests)
+- [x] Write test: edge cases (multiple txs/docs, negative amounts) (3 tests)
+- [x] Verify all tests pass (29/29 tests passing)
+- [x] Files created:
+  - [x] providers/single-match.provider.ts (11.5KB)
+  - [x] **tests**/single-match.test.ts (23KB)
+- [x] Total module tests: 419 passing (390 + 29)
+- [x] Commit: "feat: implement single-match core function"
 
 ### Step 14: Single-Match GraphQL Integration
 
