@@ -107,8 +107,8 @@ export class ChargesMatcherProvider {
 
     const candidateCharges = await chargesProvider.getChargesByFilters({
       ownerIds: [adminBusinessId],
-      fromDate: dateToTimelessDateString(windowStart),
-      toDate: dateToTimelessDateString(windowEnd),
+      fromAnyDate: dateToTimelessDateString(windowStart),
+      toAnyDate: dateToTimelessDateString(windowEnd),
     });
 
     // Step 6: Load transactions and documents for all candidate charges
@@ -127,8 +127,10 @@ export class ChargesMatcherProvider {
         candidate.id,
       )) as Document[];
 
-      const hasTxs = candidateTransactions && candidateTransactions.length > 0;
-      const hasDocs = candidateDocuments && candidateDocuments.length > 0;
+      const hasTxs = candidate.transactions_count && Number(candidate.transactions_count) > 0;
+      const hasDocs =
+        (candidate.invoices_count && Number(candidate.invoices_count) > 0) ||
+        (candidate.receipts_count && Number(candidate.receipts_count) > 0);
 
       // Only include unmatched charges (not both types)
       if (hasTxs && !hasDocs) {
