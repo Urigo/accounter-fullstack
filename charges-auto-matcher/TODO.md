@@ -342,38 +342,41 @@
 - [x] Verify all tests pass (27/27 passing, total 357 tests)
 - [x] Commit: "feat: implement candidate filtering"
 
-### Step 12: Match Scoring Engine
+### Step 12: Match Scoring Engine ✅ COMPLETED
 
-- [ ] Create `providers/match-scorer.provider.ts`
-- [ ] Define `MatchScore` interface
-- [ ] Define `TransactionCharge` interface
-- [ ] Define `DocumentCharge` interface
-- [ ] Import aggregators and confidence calculator
-- [ ] Implement `selectTransactionDate()` function
-  - [ ] INVOICE/CREDIT_INVOICE → event_date
-  - [ ] RECEIPT/INVOICE_RECEIPT → debit_timestamp (fallback to debit_date, then event_date)
-  - [ ] OTHER/PROFORMA/UNPROCESSED → calculate both, use better score
-- [ ] Implement `scoreMatch()` function
-  - [ ] Aggregate transactions
-  - [ ] Aggregate documents
-  - [ ] Extract document business
-  - [ ] Normalize document amount
-  - [ ] Select appropriate transaction date
-  - [ ] Calculate confidence (handle flexible doc types)
-  - [ ] Return MatchScore
-- [ ] Create `__tests__/match-scorer.test.ts`
-- [ ] Write test: perfect match (all fields align)
-- [ ] Write test: partial matches (varying confidence)
-- [ ] Write test: date type selection for INVOICE
-- [ ] Write test: date type selection for RECEIPT
-- [ ] Write test: PROFORMA/OTHER (better score selection)
-- [ ] Write test: amount differences (various levels)
-- [ ] Write test: currency mismatches
-- [ ] Write test: business mismatches
-- [ ] Write integration test: full scoring pipeline
-- [ ] Write test: error propagation from aggregation
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement match scoring engine"
+- [x] Create `providers/match-scorer.provider.ts`
+- [x] Define `MatchScore` interface
+- [x] Define `TransactionCharge` interface
+- [x] Define `DocumentCharge` interface
+- [x] Import aggregators and confidence calculator
+- [x] Implement `selectTransactionDate()` function
+  - [x] INVOICE/CREDIT_INVOICE → event_date
+  - [x] RECEIPT/INVOICE_RECEIPT → debit_timestamp (fallback to debit_date, then event_date)
+  - [x] OTHER/PROFORMA/UNPROCESSED → calculate both, use better score
+- [x] Implement `scoreMatch()` function
+  - [x] Aggregate transactions
+  - [x] Aggregate documents
+  - [x] Extract document business
+  - [x] Normalize document amount
+  - [x] Select appropriate transaction date
+  - [x] Calculate confidence (handle flexible doc types)
+  - [x] Return MatchScore
+- [x] Create `__tests__/match-scorer.test.ts`
+- [x] Write test: perfect match (all fields align)
+- [x] Write test: partial matches (varying confidence)
+- [x] Write test: date type selection for INVOICE
+- [x] Write test: date type selection for RECEIPT
+- [x] Write test: PROFORMA/OTHER (better score selection)
+- [x] Write test: amount differences (various levels)
+- [x] Write test: currency mismatches
+- [x] Write test: business mismatches
+- [x] Write integration test: full scoring pipeline
+- [x] Write test: error propagation from aggregation
+- [x] Verify all tests pass (33/33 tests passing)
+- [x] Files created:
+  - [x] providers/match-scorer.provider.ts (6.5KB)
+  - [x] **tests**/match-scorer.test.ts (19KB)
+- [x] Total module tests: 390 passing (357 + 33)
 
 ---
 
