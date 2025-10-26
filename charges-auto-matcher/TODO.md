@@ -205,33 +205,35 @@
 
 ## Phase 3: Data Processing
 
-### Step 8: Transaction Aggregator
+### Step 8: Transaction Aggregator ✅
 
-- [ ] Create `helpers/transaction-aggregator.helper.ts`
-- [ ] Define `AggregatedTransaction` interface
-- [ ] Implement `aggregateTransactions()` function
-  - [ ] Filter out fee transactions (is_fee = true)
-  - [ ] Validate non-empty array
-  - [ ] Check for mixed currencies → throw error
-  - [ ] Check for multiple non-null business_id values → throw error
-  - [ ] Sum all amounts (numeric type)
-  - [ ] Select earliest event_date
-  - [ ] Concatenate source_description values with line breaks
-  - [ ] Handle null source_description
-- [ ] Create `__tests__/transaction-aggregator.test.ts`
-- [ ] Write test: single transaction
-- [ ] Write test: multiple transactions, same currency
-- [ ] Write test: multiple transactions with fees (excluded)
-- [ ] Write test: mixed currencies (should throw)
-- [ ] Write test: multiple business_id values (should throw)
-- [ ] Write test: all business_id null
-- [ ] Write test: single non-null business_id
-- [ ] Write test: date selection (earliest event_date)
-- [ ] Write test: source_description concatenation
-- [ ] Write test: empty array (should throw)
-- [ ] Verify error messages are descriptive
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement transaction aggregator"
+- [x] Create `providers/transaction-aggregator.ts`
+- [x] Define `Transaction` interface
+- [x] Define `AggregatedTransaction` interface
+- [x] Implement `aggregateTransactions()` function
+  - [x] Filter out fee transactions (is_fee = true)
+  - [x] Validate non-empty array
+  - [x] Check for mixed currencies → throw error
+  - [x] Check for multiple non-null business_id values → throw error
+  - [x] Sum all amounts (numeric type)
+  - [x] Select earliest event_date
+  - [x] Concatenate source_description values with line breaks
+  - [x] Handle null source_description (filter out nulls and empty strings)
+- [x] Create `__tests__/transaction-aggregator.test.ts`
+- [x] Write test: single transaction (4 tests)
+- [x] Write test: multiple transactions, same currency (3 tests)
+- [x] Write test: multiple transactions with fees (4 tests - excluded from sum/desc)
+- [x] Write test: mixed currencies (5 tests - should throw)
+- [x] Write test: multiple business_id values (7 tests - should throw)
+- [x] Write test: all business_id null
+- [x] Write test: single non-null business_id (3 tests)
+- [x] Write test: date selection (4 tests - earliest event_date)
+- [x] Write test: source_description concatenation (6 tests)
+- [x] Write test: empty array (3 tests - should throw for null/undefined/empty)
+- [x] Write complex scenarios (3 tests - real-world, crypto, large dataset)
+- [x] Verify error messages are descriptive (4 dedicated tests)
+- [x] Verify all tests pass (42/42 passing, total 237 tests)
+- [x] Commit: "feat: implement transaction aggregator"
 
 ### Step 9: Document Amount Normalization
 
