@@ -24,7 +24,7 @@ documents (invoices, receipts, etc.).
 **Step-by-step implementation prompts** - 17 prompts for systematic development
 
 - Updated for GraphQL module architecture
-- Uses correct database field names (charge_id_new, source_description, etc.)
+- Uses correct database field names (charge_id, source_description, etc.)
 - Follows project module patterns
 - Includes test strategies for each step
 
@@ -159,7 +159,7 @@ The matcher uses a weighted formula combining four factors:
 
 ### Key Field Names
 
-- ✅ Documents use `charge_id_new` (FK to charges)
+- ✅ Documents use `charge_id` (FK to charges)
 - ✅ Transactions use `source_description`
 - ✅ All IDs are UUIDs
 - ✅ Amounts are `numeric` or `double precision`

@@ -104,7 +104,7 @@ Create the foundational structure:
 
 2. Create a types.ts file with interfaces matching the database schema:
    - Transaction interface (with UUID id, numeric amounts, currency field as lowercase string)
-   - Document interface (with charge_id_new field, UUID ids, document_type as lowercase string)
+   - Document interface (with charge_id field, UUID ids, document_type as lowercase string)
    - Import currency type from existing schema (lowercase database type: 'ils' | 'usd' | 'eur' | 'gbp' | 'usdc' | 'grt' | 'eth')
    - Import document_type from existing schema (lowercase database enum)
    - Can create PascalCase re-exports (Currency, DocumentType) for convenience if needed
@@ -123,7 +123,7 @@ Requirements:
 - All types should match the actual database schema (see SPEC.md Section 3)
 - Use UUID type for all IDs (not plain strings)
 - Amounts are number type (numeric in DB)
-- Document FK is charge_id_new (not charge_id)
+- Document FK is charge_id
 - Include JSDoc comments
 - Follow existing module patterns
 
@@ -163,7 +163,7 @@ export function calculateAmountConfidence(
 ): number
 ````
 
-3. Create comprehensive tests in __tests__/amount-confidence.test.ts covering:
+3. Create comprehensive tests in **tests**/amount-confidence.test.ts covering:
    - Exact match (0 difference)
    - Amounts within 0.5 units
    - Amounts within exactly 1 unit
@@ -219,7 +219,7 @@ export function calculateCurrencyConfidence(
 ): number;
 ```
 
-3. Create tests in __tests__/currency-confidence.test.ts:
+3. Create tests in **tests**/currency-confidence.test.ts:
    - Same currency (various examples: USD, EUR, ILS)
    - Different currencies
    - Case sensitivity handling
@@ -276,7 +276,7 @@ export function extractDocumentBusiness(
 ): DocumentBusinessInfo;
 ```
 
-3. Create tests in __tests__/document-business.test.ts:
+3. Create tests in **tests**/document-business.test.ts:
    - User is debtor, creditor is business (returns creditor as business, isCreditor=true)
    - User is creditor, debtor is business (returns debtor as business, isCreditor=false)
    - User is creditor, debtor is null (returns null, isCreditor=false)
@@ -327,7 +327,7 @@ export function calculateBusinessConfidence(
 ): number;
 ```
 
-3. Create tests in __tests__/business-confidence.test.ts:
+3. Create tests in **tests**/business-confidence.test.ts:
    - Both IDs match and non-null: 1.0
    - Transaction ID is null: 0.5
    - Document ID is null: 0.5
@@ -373,7 +373,7 @@ Create:
 export function calculateDateConfidence(date1: Date, date2: Date): number;
 ```
 
-3. Create tests in __tests__/date-confidence.test.ts:
+3. Create tests in **tests**/date-confidence.test.ts:
    - Same day: 1.0
    - 1 day difference: ~0.967
    - 7 days difference: ~0.767
@@ -457,7 +457,7 @@ export function calculateConfidence(inputs: ConfidenceInputs): {
 };
 ```
 
-4. Create tests in __tests__/overall-confidence.test.ts:
+4. Create tests in **tests**/overall-confidence.test.ts:
    - All components at 1.0: result is 1.0
    - All components at 0.0: result is 0.0
    - Mixed scores: verify weighted formula
@@ -523,7 +523,7 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
    - Concatenate source_description values with line breaks
    - Handle null descriptions gracefully
 
-4. Create tests in __tests__/transaction-aggregator.test.ts:
+4. Create tests in **tests**/transaction-aggregator.test.ts:
    - Single transaction: returns as-is
    - Multiple transactions, same currency: sums correctly
    - Multiple transactions with fees: fees excluded
@@ -583,7 +583,7 @@ export function normalizeDocumentAmount(
 ): number;
 ```
 
-3. Create tests in __tests__/document-amount.test.ts:
+3. Create tests in **tests**/document-amount.test.ts:
    - INVOICE, business is debtor: positive (100 → 100)
    - INVOICE, business is creditor: negative (100 → -100)
    - CREDIT_INVOICE, business is debtor: negative (100 → -100)
@@ -637,7 +637,7 @@ export interface AggregatedDocument {
 
 /**
  * Aggregate multiple documents into a single representation
- * @param documents - Array of documents from a charge (use charge_id_new field for FK)
+ * @param documents - Array of documents from a charge (use charge_id field for FK)
  * @param userId - Current user UUID for business extraction
  * @returns Aggregated document data
  * @throws Error if mixed currencies, multiple business IDs, or invalid business setup
@@ -656,7 +656,7 @@ export function aggregateDocuments(documents: Document[], userId: string): Aggre
    - Concatenate serial_numbers or file names
    - Determine document type for result (use first after filtering)
 
-4. Create tests in __tests__/document-aggregator.test.ts:
+4. Create tests in **tests**/document-aggregator.test.ts:
    - Single document: returns normalized
    - Multiple invoices: sums correctly with normalization
    - Multiple receipts: sums correctly
@@ -727,7 +727,7 @@ export function isWithinDateWindow(
 ): boolean;
 ```
 
-3. Create tests in __tests__/candidate-filter.test.ts:
+3. Create tests in **tests**/candidate-filter.test.ts:
    - Transaction validation:
      - Normal transaction: included
      - Fee transaction: excluded
@@ -821,7 +821,7 @@ export function selectTransactionDate(
 ): Date;
 ```
 
-4. Create tests in __tests__/match-scorer.test.ts:
+4. Create tests in **tests**/match-scorer.test.ts:
    - Perfect match: all fields align (should be ~1.0)
    - Partial matches: varying confidence levels
    - Date type selection: INVOICE uses event_date, RECEIPT uses debit_date
@@ -892,7 +892,7 @@ export function findMatches(
    - Use date proximity as tie-breaker
    - Return top N (default 5)
 
-4. Create tests in __tests__/single-match.test.ts:
+4. Create tests in **tests**/single-match.test.ts:
    - Valid transaction charge → finds document matches
    - Valid document charge → finds transaction matches
    - Matched charge input → throws error
@@ -963,7 +963,7 @@ async findMatchesForCharge(
    - Call findMatches from Step 13
    - Return formatted result
 
-4. Create tests in __tests__/single-match-service.test.ts:
+4. Create tests in **tests**/single-match-service.test.ts:
    - Set up mock repository with test data
    - Test full flow with database
    - Test error handling for missing charges
@@ -1045,7 +1045,7 @@ export function determineMergeDirection(charge1: Charge, charge2: Charge): [Char
    - If none: no match
    - Merge direction: matched charge > transaction charge
 
-3. Create tests in __tests__/auto-match.test.ts:
+3. Create tests in **tests**/auto-match.test.ts:
    - Single high-confidence match: returns match
    - Multiple high-confidence matches: returns skipped
    - No high-confidence matches: returns no-match
@@ -1108,7 +1108,7 @@ async autoMatchCharges(
      - Handle errors: capture and continue
    - Return summary
 
-4. Create tests in __tests__/auto-match-service.test.ts:
+4. Create tests in **tests**/auto-match-service.test.ts:
    - Empty database: returns 0 matches
    - All matched: returns 0 matches
    - Single unmatched with good match: executes merge
@@ -1223,7 +1223,7 @@ import { ChargesMatcherModule } from './modules/charges-matcher/index.js';
 ChargesMatcherModule,
 ```
 
-5. Create comprehensive integration tests in __tests__/integration/:
+5. Create comprehensive integration tests in **tests**/integration/:
    - integration/single-match.integration.test.ts
    - integration/auto-match.integration.test.ts
    - Test realistic scenarios with full data

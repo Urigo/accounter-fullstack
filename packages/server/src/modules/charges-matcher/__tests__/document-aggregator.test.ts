@@ -12,7 +12,7 @@ describe('Document Aggregator', () => {
   // Helper to create test documents
   const createDocument = (overrides: Partial<Document> = {}): Document => ({
     id: 'doc-' + Math.random().toString(36).substr(2, 9),
-    charge_id_new: 'charge-123',
+    charge_id: 'charge-123',
     creditor_id: USER_ID, // Default: user is creditor
     debtor_id: 'business-1', // Default: business is debtor
     currency_code: 'USD',

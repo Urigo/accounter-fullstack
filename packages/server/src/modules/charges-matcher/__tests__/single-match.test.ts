@@ -31,7 +31,7 @@ function createTransaction(overrides: Partial<any> = {}): any {
 function createDocument(overrides: Partial<Document> = {}): Document {
   return {
     id: `doc-${Math.random()}`,
-    charge_id_new: 'charge-doc',
+    charge_id: 'charge-doc',
     creditor_id: BUSINESS_A,
     debtor_id: USER_ID,
     currency_code: 'USD',

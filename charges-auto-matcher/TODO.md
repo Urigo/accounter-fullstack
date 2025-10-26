@@ -265,7 +265,7 @@
 ### Step 10: Document Aggregator ✅
 
 - [x] Create `providers/document-aggregator.ts` (206 lines)
-- [x] Define `Document` interface (matches DB schema with charge_id_new)
+- [x] Define `Document` interface (matches DB schema with charge_id)
 - [x] Define `AggregatedDocument` interface
 - [x] Import business extraction and amount normalization
 - [x] Implement `aggregateDocuments()` function
@@ -280,7 +280,7 @@
   - [x] Select latest date
   - [x] Concatenate serial_number or file names with line breaks
   - [x] Determine DocumentType for result
-  - [x] Remember: documents use charge_id_new FK (not charge_id)
+  - [x] Remember: documents use charge_id FK
 - [x] Create `__tests__/document-aggregator.test.ts`
 - [x] Write test: single document (normalized) - 6 tests
 - [x] Write test: multiple invoices (summed correctly) - 3 tests
@@ -588,7 +588,7 @@
 - [ ] Test with extreme dates (far past/future)
 - [ ] Test with many charges (performance)
 - [ ] Test UUID validation
-- [ ] Test charge_id_new field usage (not charge_id)
+- [ ] Test charge_id field usage
 
 ### Documentation Review
 

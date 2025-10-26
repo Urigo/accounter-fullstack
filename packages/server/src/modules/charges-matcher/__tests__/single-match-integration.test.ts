@@ -57,7 +57,7 @@ function createTransaction(overrides: Partial<any> = {}): Transaction {
 function createDocument(overrides: Partial<Document> = {}): Document {
   return {
     id: `doc-${Math.random()}`,
-    charge_id_new: 'charge-doc',
+    charge_id: 'charge-doc',
     creditor_id: BUSINESS_A,
     debtor_id: USER_ID,
     currency_code: 'USD',
@@ -98,7 +98,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const candidateCharge1Id = 'doc-charge-1';
       const candidateDocuments1 = [
         createDocument({
-          charge_id_new: candidateCharge1Id,
+          charge_id: candidateCharge1Id,
           total_amount: 100,
           currency_code: 'USD',
           date: new Date('2024-01-15'),
@@ -108,7 +108,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const candidateCharge2Id = 'doc-charge-2';
       const candidateDocuments2 = [
         createDocument({
-          charge_id_new: candidateCharge2Id,
+          charge_id: candidateCharge2Id,
           total_amount: 110,
           currency_code: 'USD',
           date: new Date('2024-01-16'),
@@ -180,7 +180,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const sourceChargeId = 'doc-charge-1';
       const sourceDocuments = [
         createDocument({
-          charge_id_new: sourceChargeId,
+          charge_id: sourceChargeId,
           total_amount: 200,
           currency_code: 'USD',
           date: new Date('2024-02-15'),

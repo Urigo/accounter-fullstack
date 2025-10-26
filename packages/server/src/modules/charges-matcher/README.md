@@ -87,7 +87,7 @@ The module works with these existing tables:
 ### documents
 
 - `id`: UUID
-- `charge_id`: UUID (foreign key to charges) - **Note: Use charge_id_new field**
+- `charge_id`: UUID (foreign key to charges)
 - `total_amount`: double precision (nullable)
 - `currency_code`: enum (nullable)
 - `creditor_id`: UUID (nullable)
@@ -95,8 +95,6 @@ The module works with these existing tables:
 - `date`: DATE (nullable)
 - `type`: enum (INVOICE, CREDIT_INVOICE, RECEIPT, etc.)
 - `serial_number`: text (nullable)
-
-**Important**: Documents use `charge_id_new` as the foreign key field, not `charge_id`.
 
 ## Testing Infrastructure
 

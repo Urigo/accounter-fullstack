@@ -161,7 +161,7 @@ CREATE TABLE accounter_schema.transactions (
   is_fee BOOLEAN
 );
 
--- documents table (charge_id_new is the actual FK)
+-- documents table (charge_id is the actual FK)
 CREATE TABLE accounter_schema.documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   image_url TEXT,
@@ -177,7 +177,7 @@ CREATE TABLE accounter_schema.documents (
   debtor TEXT,
   creditor TEXT,
   is_reviewed BOOLEAN DEFAULT false,
-  charge_id_new UUID REFERENCES accounter_schema.charges,
+  charge_id UUID REFERENCES accounter_schema.charges,
   debtor_id UUID,
   creditor_id UUID,
   description TEXT,
@@ -207,7 +207,7 @@ interface Transaction {
 
 interface Document {
   id: string; // UUID
-  charge_id_new: string | null; // UUID (actual FK name in DB)
+  charge_id: string | null; // UUID (actual FK name in DB)
   creditor_id: string | null; // UUID
   debtor_id: string | null; // UUID
   currency_code: Currency | null;
@@ -252,7 +252,6 @@ type DocumentType =
 
 **Important Field Notes:**
 
-- Document charge reference: use `charge_id_new` field (not `charge_id`)
 - All IDs are UUIDs
 - Amounts are stored as `numeric` or `double precision` in DB
 - Transaction amounts already have correct sign (positive/negative)
@@ -575,7 +574,7 @@ charges list toolbar
   - `transactions_event_date_index` on `event_date`
   - `transactions_debit_date_index` on `debit_date`
   - `transactions_amount_index` on `amount`
-  - `documents_charge_id_new_index` on `charge_id_new`
+  - `documents_charge_id_index` on `charge_id`
   - `documents_date_index` on `date`
   - `documents_total_amount_index` on `total_amount`
   - `documents_debtor_id_index` and `documents_creditor_id_index`
@@ -817,7 +816,7 @@ The matcher module will need database queries for:
 
 - Charges (by UUID, by owner_id, by matched/unmatched status)
 - Transactions (by charge_id, filtered by is_fee, with date ranges)
-- Documents (by charge_id_new, filtered by type and null checks)
+- Documents (by charge_id, filtered by type and null checks)
 - Efficient filtering by:
   - Date ranges (event_date, debit_date, documents.date)
   - Currency codes
@@ -833,7 +832,7 @@ WHERE c.owner_id = $1
 AND EXISTS (SELECT 1 FROM accounter_schema.transactions t WHERE t.charge_id = c.id)
 AND NOT EXISTS (
   SELECT 1 FROM accounter_schema.documents d
-  WHERE d.charge_id_new = c.id
+  WHERE d.charge_id = c.id
   AND d.type IN ('INVOICE', 'CREDIT_INVOICE', 'RECEIPT', 'INVOICE_RECEIPT')
 );
 
@@ -843,7 +842,7 @@ WHERE c.owner_id = $1
 AND NOT EXISTS (SELECT 1 FROM accounter_schema.transactions t WHERE t.charge_id = c.id)
 AND EXISTS (
   SELECT 1 FROM accounter_schema.documents d
-  WHERE d.charge_id_new = c.id
+  WHERE d.charge_id = c.id
   AND d.type IN ('INVOICE', 'CREDIT_INVOICE', 'RECEIPT', 'INVOICE_RECEIPT')
 );
 ```

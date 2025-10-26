@@ -34,7 +34,7 @@ function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
 function createDocument(overrides: Partial<Document> = {}): Document {
   return {
     id: 'doc-1',
-    charge_id_new: 'charge-doc', // Use correct field name
+    charge_id: 'charge-doc', // Use correct field name
     creditor_id: BUSINESS_ID,
     debtor_id: USER_ID,
     currency_code: 'USD',
