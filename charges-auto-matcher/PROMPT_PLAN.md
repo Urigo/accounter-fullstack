@@ -85,43 +85,46 @@ Layer 6: Integration Layer
 
 ## Implementation Prompts
 
-### Prompt 1: Project Setup and Type Definitions
+### Prompt 1: Module Setup and Type Definitions
 
 ```
-You are building a transaction-document matching system for an accounting application. This will be implemented in TypeScript.
+You are building a transaction-document matching system for the Accounter fullstack application. This will be implemented as a GraphQL module in TypeScript.
 
-STEP 1: PROJECT SETUP AND TYPE DEFINITIONS
+STEP 1: MODULE SETUP AND TYPE DEFINITIONS
 
-Create the foundational structure with:
+Context: This is part of a larger GraphQL application at packages/server/src/modules/
 
-1. Set up a basic TypeScript project with:
-   - package.json with typescript, jest, and @types/jest
-   - tsconfig.json with strict mode enabled
-   - jest.config.js for testing
+Create the foundational structure:
 
-2. Create a types file (types.ts) with all the interfaces and types from the specification:
-   - Transaction interface
-   - Document interface
-   - document_type union type
-   - currency type (as string for now)
+1. Create new module directory:
+   - packages/server/src/modules/charges-matcher/
+   - Follow the existing module pattern from other modules (charges, transactions, documents)
 
-3. Create additional result types for function outputs:
-   - MatchResult type: { chargeId: string; confidenceScore: number }
-   - SingleMatchOutput type: { matches: MatchResult[] }
-   - AutoMatchOutput type with totalMatches, mergedCharges, skippedCharges, errors
+2. Create a types.ts file with interfaces matching the database schema:
+   - Transaction interface (with UUID id, numeric amounts, Currency enum)
+   - Document interface (with charge_id_new field, UUID ids)
+   - Currency type: 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH'
+   - DocumentType enum matching database
+
+3. Create result types for GraphQL responses:
+   - ChargeMatch type: { chargeId: string; confidenceScore: number }
+   - ChargeMatchesResult type: { matches: ChargeMatch[] }
+   - AutoMatchChargesResult with totalMatches, mergedCharges, skippedCharges, errors
 
 4. Set up the test infrastructure:
-   - Create a __tests__ directory
-   - Create a test utilities file for common test data factories
-   - Add a sample test that validates the setup works
+   - Create __tests__ directory following project patterns
+   - Create test utilities for mock data factories
+   - Use existing test helpers from the project
 
 Requirements:
-- All types should match the specification exactly
-- Include JSDoc comments for each interface explaining its purpose
-- Ensure strict null checks are enabled
-- Test file should have at least one passing test to verify setup
+- All types should match the actual database schema (see SPEC.md Section 3)
+- Use UUID type for all IDs (not plain strings)
+- Amounts are number type (numeric in DB)
+- Document FK is charge_id_new (not charge_id)
+- Include JSDoc comments
+- Follow existing module patterns
 
-Deliverable: Complete project structure with types and a passing test suite showing the setup works correctly.
+Deliverable: Module structure with types matching the actual database schema.
 ```
 
 ---
@@ -512,9 +515,9 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
    - Filter out transactions where is_fee = true
    - Throw error if multiple currencies exist
    - Throw error if multiple non-null business IDs exist
-   - Sum all amounts
+   - Sum all amounts (numeric type)
    - Use earliest event_date
-   - Concatenate descriptions with line breaks
+   - Concatenate source_description values with line breaks
    - Handle null descriptions gracefully
 
 4. Create tests in **tests**/transactionAggregator.test.ts:
@@ -622,17 +625,17 @@ Create:
 ```typescript
 export interface AggregatedDocument {
   amount: number;
-  currency: string;
-  businessId: string | null;
+  currency: Currency;
+  businessId: string | null; // UUID
   date: Date;
-  documentType: document_type;
+  documentType: DocumentType;
   description: string;
 }
 
 /**
  * Aggregate multiple documents into a single representation
- * @param documents - Array of documents from a charge
- * @param userId - Current user ID for business extraction
+ * @param documents - Array of documents from a charge (use charge_id_new field for FK)
+ * @param userId - Current user UUID for business extraction
  * @returns Aggregated document data
  * @throws Error if mixed currencies, multiple business IDs, or invalid business setup
  */
@@ -1253,16 +1256,33 @@ export class AggregationError extends MatchingError {
    - Update business extraction to throw appropriate errors
    - Ensure all error messages are descriptive and actionable
 
-4. Create src/index.ts (main export file):
+4. Create index.ts (module export):
 
 ```typescript
-// Export main public API
-export { findMatchesForCharge } from './matching/singleMatchService';
-export { autoMatchAllCharges } from './matching/autoMatchService';
-export type { SingleMatchOutput, AutoMatchOutput, MatchResult } from './types';
+import { createModule } from 'graphql-modules';
+import typeDefs from './typeDefs/charges-matcher.graphql.js';
+import { resolvers } from './resolvers/index.js';
+import { ChargesMatcherProvider } from './providers/charges-matcher.provider.js';
 
-// Export repository interface for consumers
-export type { ChargeRepository } from './db/chargeRepository';
+export const ChargesMatcherModule = createModule({
+  id: 'charges-matcher',
+  dirname: __dirname,
+  typeDefs,
+  resolvers,
+  providers: [ChargesMatcherProvider],
+});
+
+export { ChargesMatcherProvider } from './providers/charges-matcher.provider.js';
+export * as ChargesMatcherTypes from './types.js';
+```
+
+5. Add to packages/server/src/modules-app.ts:
+
+```typescript
+import { ChargesMatcherModule } from './modules/charges-matcher/index.js';
+
+// ... in modules array:
+ChargesMatcherModule,
 ```
 
 5. Create comprehensive integration tests in **tests**/integration/:
