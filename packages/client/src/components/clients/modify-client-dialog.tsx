@@ -36,7 +36,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge } from '../ui/badge';
 
 const clientFormSchema = z.object({
-  id: z.uuid().optional(),
+  businessId: z.uuid().optional(),
   emails: z.array(z.email()).optional(),
   generatedDocumentType: z.enum(Object.values(DocumentType)),
   greenInvoiceId: z.uuid().optional(),
@@ -61,7 +61,7 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
   const [newEmail, setNewEmail] = useState('');
 
   const newClientDefaultValues: ClientFormValues = {
-    id: businessId,
+    businessId,
     generatedDocumentType: DocumentType.Proforma,
     emails: [],
   };
@@ -79,7 +79,7 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
         greenInvoiceId: client.greenInvoiceId,
         hiveId: client.hiveId,
         generatedDocumentType: client.generatedDocumentType,
-        id: client.id,
+        businessId: client.businessId,
       });
       setIsDialogOpen(true);
     }
