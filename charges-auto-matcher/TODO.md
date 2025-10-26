@@ -304,8 +304,7 @@
 
 ### Step 11: Candidate Filtering
 
-- [ ] Create `src/filters/` directory
-- [ ] Create `src/filters/candidateFilter.ts`
+- [ ] Create `helpers/candidate-filter.helper.ts`
 - [ ] Implement `isValidTransactionForMatching()` function
   - [ ] Exclude if is_fee = true
   - [ ] Include otherwise
@@ -317,7 +316,7 @@
   - [ ] Calculate months difference accurately
   - [ ] Default windowMonths = 12
   - [ ] Return true if within window
-- [ ] Create `__tests__/candidateFilter.test.ts`
+- [ ] Create `__tests__/candidate-filter.test.ts`
 - [ ] Write transaction validation tests
   - [ ] Normal transaction: included
   - [ ] Fee transaction: excluded
@@ -338,8 +337,7 @@
 
 ### Step 12: Match Scoring Engine
 
-- [ ] Create `src/scoring/` directory
-- [ ] Create `src/scoring/matchScorer.ts`
+- [ ] Create `providers/match-scorer.provider.ts`
 - [ ] Define `MatchScore` interface
 - [ ] Define `TransactionCharge` interface
 - [ ] Define `DocumentCharge` interface
@@ -356,7 +354,7 @@
   - [ ] Select appropriate transaction date
   - [ ] Calculate confidence (handle flexible doc types)
   - [ ] Return MatchScore
-- [ ] Create `__tests__/matchScorer.test.ts`
+- [ ] Create `__tests__/match-scorer.test.ts`
 - [ ] Write test: perfect match (all fields align)
 - [ ] Write test: partial matches (varying confidence)
 - [ ] Write test: date type selection for INVOICE
@@ -376,10 +374,7 @@
 
 ### Step 13: Single-Match Core Function
 
-- [ ] Create `providers/charges-matcher.provider.ts`
-- [ ] Import ChargesProvider, TransactionsProvider, DocumentsProvider
-- [ ] Implement helper: `isUnmatchedCharge()` function
-- [ ] Implement helper: `getComplementaryType()` function
+- [ ] Create `providers/single-match.provider.ts`
 - [ ] Implement helper: `calculateDateProximity()` for tie-breaking
 - [ ] Implement `findMatches()` function
   - [ ] Validate source charge is unmatched
@@ -392,7 +387,7 @@
   - [ ] Sort by confidence (descending)
   - [ ] Apply date proximity tie-breaker
   - [ ] Return top N (default 5)
-- [ ] Create `__tests__/charges-matcher.provider.test.ts`
+- [ ] Create `__tests__/single-match.test.ts`
 - [ ] Write test: transaction charge → finds document matches
 - [ ] Write test: document charge → finds transaction matches
 - [ ] Write test: matched charge input (should throw)
@@ -410,18 +405,27 @@
 
 ### Step 14: Single-Match GraphQL Integration
 
-- [ ] Create `typeDefs/charges-matcher.graphql.ts`
-- [ ] Define GraphQL schema:
-  - [ ] `Query.findChargeMatches(chargeId: UUID!): ChargeMatchesResult!`
-  - [ ] `ChargeMatchesResult` type
-  - [ ] `ChargeMatch` type
-  - [ ] Add `@auth(role: ACCOUNTANT)` directive
+- [ ] Create `providers/charges-matcher.provider.ts`
+- [ ] Implement `ChargesMatcherProvider` class with `@Injectable()` decorator
+- [ ] Import existing providers via Injector:
+  - [ ] ChargesProvider from @modules/charges
+  - [ ] TransactionsProvider from @modules/transactions
+  - [ ] DocumentsProvider from @modules/documents
+- [ ] Implement `findMatchesForCharge()` method
+  - [ ] Get userId from injector.get(CONTEXT).currentUser.id
+  - [ ] Get providers from injector
+  - [ ] Load source charge using ChargesProvider
+  - [ ] Load transactions using TransactionsProvider
+  - [ ] Load documents using DocumentsProvider
+  - [ ] Validate charge is unmatched
+  - [ ] Load candidate charges with complementary data
+  - [ ] Call findMatches() from Step 13
+  - [ ] Return ChargeMatchesResult
 - [ ] Create `resolvers/find-charge-matches.resolver.ts`
 - [ ] Implement resolver using ChargesMatcherProvider
-- [ ] Extract userId from authentication context
-- [ ] Use existing ChargesProvider, TransactionsProvider, DocumentsProvider
-- [ ] Create `__tests__/find-charge-matches.resolver.test.ts`
-- [ ] Write test: full flow with database providers
+- [ ] Use CommonError for GraphQL error responses
+- [ ] Create `__tests__/charges-matcher.provider.test.ts`
+- [ ] Write test: full flow with mocked providers
 - [ ] Write test: charge not found error
 - [ ] Write test: matched charge error
 - [ ] Write test: various data scenarios
@@ -436,7 +440,7 @@
 
 ### Step 15: Auto-Match Core Function
 
-- [ ] Create `src/matching/autoMatch.ts`
+- [ ] Create `providers/auto-match.provider.ts`
 - [ ] Define `AutoMatchResult` interface
 - [ ] Implement `processChargeForAutoMatch()` function
   - [ ] Use findMatches() with no date restriction
@@ -449,7 +453,7 @@
   - [ ] If one matched: keep matched charge
   - [ ] If both unmatched: check which has transactions
   - [ ] Return [source, target] tuple
-- [ ] Create `__tests__/autoMatch.test.ts`
+- [ ] Create `__tests__/auto-match.test.ts`
 - [ ] Write test: single high-confidence match
 - [ ] Write test: multiple high-confidence matches (skipped)
 - [ ] Write test: no high-confidence matches (no-match)
@@ -465,21 +469,24 @@
 
 ### Step 16: Auto-Match GraphQL Integration
 
-- [ ] Update `typeDefs/charges-matcher.graphql.ts`
-  - [ ] Add `Mutation.autoMatchCharges: AutoMatchChargesResult!`
-  - [ ] Define `AutoMatchChargesResult` type
-  - [ ] Define `MergedCharge` type
-  - [ ] Add `@auth(role: ACCOUNTANT)` directive
 - [ ] Update `providers/charges-matcher.provider.ts`
-  - [ ] Implement `getUnmatchedCharges(ownerId: UUID)` method
-  - [ ] Implement `autoMatchCharges(ownerId: UUID)` method
-  - [ ] Use existing ChargesProvider.mergeCharges() for merging
+- [ ] Implement `autoMatchCharges()` method in ChargesMatcherProvider
+  - [ ] Get userId from injector context
+  - [ ] Load all unmatched charges using ChargesProvider
+  - [ ] For each unmatched charge:
+    - [ ] Process with processChargeForAutoMatch
+    - [ ] If matched: use ChargesProvider.mergeCharges()
+    - [ ] Track merged charges to exclude from further processing
+    - [ ] If skipped: add to skippedCharges
+    - [ ] Handle errors: capture and continue
+  - [ ] Return AutoMatchChargesResult
 - [ ] Create `resolvers/auto-match-charges.resolver.ts`
 - [ ] Implement resolver:
-  - [ ] Extract userId from auth context
+  - [ ] Get injector from context
   - [ ] Call ChargesMatcherProvider.autoMatchCharges()
+  - [ ] Use CommonError for error responses
   - [ ] Return AutoMatchChargesResult
-- [ ] Create `__tests__/auto-match-charges.resolver.test.ts`
+- [ ] Create `__tests__/auto-match-charges.test.ts`
 - [ ] Write test: empty database
 - [ ] Write test: all charges already matched
 - [ ] Write test: single unmatched with good match
@@ -505,19 +512,17 @@
 - [ ] Implement `isChargeMatched()` function
 - [ ] Implement `hasOnlyTransactions()` function
 - [ ] Implement `hasOnlyDocuments()` function
-- [ ] Create error classes (extend existing error patterns)
-  - [ ] `MatchingError` base class
-  - [ ] `ValidationError` class
-  - [ ] `AggregationError` class
-  - [ ] Use CommonError for GraphQL responses
-- [ ] Refactor existing code to use proper error types
-  - [ ] Update transaction aggregator
-  - [ ] Update document aggregator
-  - [ ] Update business extraction
-  - [ ] Update validators
-  - [ ] Update provider methods
+- [ ] Ensure proper error handling:
+  - [ ] Helpers/providers: throw standard Error with descriptive messages
+  - [ ] Resolvers: return CommonError for GraphQL responses
+  - [ ] Import CommonError from @modules/common
+- [ ] Refactor existing code for consistent error handling:
+  - [ ] Update aggregators with descriptive error messages
+  - [ ] Update validators with actionable error messages
+  - [ ] Update business extraction with clear error messages
+  - [ ] Ensure resolvers use CommonError pattern
 - [ ] Create `index.ts` (module export file):
-  - [ ] Export ChargesMatcherModule
+  - [ ] Export ChargesMatcherModule using createModule
   - [ ] Export ChargesMatcherProvider
   - [ ] Export all types
   - [ ] Follow existing module patterns

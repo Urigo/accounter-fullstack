@@ -15,9 +15,9 @@ Layer 2: Core Calculation Functions (Pure, Testable)
   ├─ Date Confidence Calculator
   └─ Overall Confidence Calculator
 Layer 3: Data Aggregation & Normalization
-  ├─ Transaction Aggregator
-  ├─ Document Aggregator
-  └─ Business ID Extractor
+  ├─ Transaction Aggregator (providers/)
+  ├─ Document Aggregator (providers/)
+  └─ Business ID Extractor (helpers/)
 Layer 4: Candidate Management
   ├─ Candidate Filter
   └─ Candidate Scorer
@@ -99,12 +99,15 @@ Create the foundational structure:
 1. Create new module directory:
    - packages/server/src/modules/charges-matcher/
    - Follow the existing module pattern from other modules (charges, transactions, documents)
+   - Core functions go in helpers/ subdirectory (pure functions)
+   - Services with dependencies go in providers/ subdirectory
 
 2. Create a types.ts file with interfaces matching the database schema:
-   - Transaction interface (with UUID id, numeric amounts, Currency enum)
-   - Document interface (with charge_id_new field, UUID ids)
-   - Currency type: 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH'
-   - DocumentType enum matching database
+   - Transaction interface (with UUID id, numeric amounts, currency field as lowercase string)
+   - Document interface (with charge_id_new field, UUID ids, document_type as lowercase string)
+   - Import currency type from existing schema (lowercase database type: 'ils' | 'usd' | 'eur' | 'gbp' | 'usdc' | 'grt' | 'eth')
+   - Import document_type from existing schema (lowercase database enum)
+   - Can create PascalCase re-exports (Currency, DocumentType) for convenience if needed
 
 3. Create result types for GraphQL responses:
    - ChargeMatch type: { chargeId: string; confidenceScore: number }
@@ -144,7 +147,7 @@ According to the specification, amount confidence follows this logic:
 
 Create:
 
-1. A new file: src/calculators/amountConfidence.ts
+1. A new file: helpers/amount-confidence.helper.ts
 
 2. Implement the function:
 ```typescript
@@ -156,11 +159,11 @@ Create:
  */
 export function calculateAmountConfidence(
   transactionAmount: number,
-  documentAmount: number
+  documentAmount: number,
 ): number
 ````
 
-3. Create comprehensive tests in **tests**/amountConfidence.test.ts covering:
+3. Create comprehensive tests in __tests__/amount-confidence.test.ts covering:
    - Exact match (0 difference)
    - Amounts within 0.5 units
    - Amounts within exactly 1 unit
@@ -199,7 +202,7 @@ This is a simpler function - same currency gets 1.0, different currencies get 0.
 
 Create:
 
-1. A new file: src/calculators/currencyConfidence.ts
+1. A new file: helpers/currency-confidence.helper.ts
 
 2. Implement the function:
 
@@ -216,7 +219,7 @@ export function calculateCurrencyConfidence(
 ): number;
 ```
 
-3. Create tests in **tests**/currencyConfidence.test.ts:
+3. Create tests in __tests__/currency-confidence.test.ts:
    - Same currency (various examples: USD, EUR, ILS)
    - Different currencies
    - Case sensitivity handling
@@ -248,7 +251,7 @@ is the business. We need to extract the business ID and determine if the busines
 
 Create:
 
-1. A new file: src/extractors/documentBusiness.ts
+1. A new file: helpers/document-business.helper.ts
 
 2. Implement the function:
 
@@ -273,7 +276,7 @@ export function extractDocumentBusiness(
 ): DocumentBusinessInfo;
 ```
 
-3. Create tests in **tests**/documentBusiness.test.ts:
+3. Create tests in __tests__/document-business.test.ts:
    - User is debtor, creditor is business (returns creditor as business, isCreditor=true)
    - User is creditor, debtor is business (returns debtor as business, isCreditor=false)
    - User is creditor, debtor is null (returns null, isCreditor=false)
@@ -307,7 +310,7 @@ This uses the business ID extraction from Step 4.
 
 Create:
 
-1. A new file: src/calculators/businessConfidence.ts
+1. A new file: helpers/business-confidence.helper.ts
 
 2. Import the DocumentBusinessInfo type and implement:
 
@@ -324,7 +327,7 @@ export function calculateBusinessConfidence(
 ): number;
 ```
 
-3. Create tests in **tests**/businessConfidence.test.ts:
+3. Create tests in __tests__/business-confidence.test.ts:
    - Both IDs match and non-null: 1.0
    - Transaction ID is null: 0.5
    - Document ID is null: 0.5
@@ -356,7 +359,7 @@ Date confidence uses linear degradation from 1.0 at 0 days to 0.0 at 30+ days di
 
 Create:
 
-1. A new file: src/calculators/dateConfidence.ts
+1. A new file: helpers/date-confidence.helper.ts
 
 2. Implement the function:
 
@@ -370,7 +373,7 @@ Create:
 export function calculateDateConfidence(date1: Date, date2: Date): number;
 ```
 
-3. Create tests in **tests**/dateConfidence.test.ts:
+3. Create tests in __tests__/date-confidence.test.ts:
    - Same day: 1.0
    - 1 day difference: ~0.967
    - 7 days difference: ~0.767
@@ -409,7 +412,7 @@ This combines all four confidence scores using weighted formula: confidence = (a
 
 Create:
 
-1. A new file: src/calculators/overallConfidence.ts
+1. A new file: helpers/overall-confidence.helper.ts
 
 2. Import all previous confidence calculators and implement:
 
@@ -454,7 +457,7 @@ export function calculateConfidence(inputs: ConfidenceInputs): {
 };
 ```
 
-4. Create tests in **tests**/overallConfidence.test.ts:
+4. Create tests in __tests__/overall-confidence.test.ts:
    - All components at 1.0: result is 1.0
    - All components at 0.0: result is 0.0
    - Mixed scores: verify weighted formula
@@ -489,7 +492,7 @@ specific rules.
 
 Create:
 
-1. A new file: src/aggregators/transactionAggregator.ts
+1. A new file: providers/transaction-aggregator.provider.ts
 
 2. Import the Transaction type and implement:
 
@@ -520,7 +523,7 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
    - Concatenate source_description values with line breaks
    - Handle null descriptions gracefully
 
-4. Create tests in **tests**/transactionAggregator.test.ts:
+4. Create tests in __tests__/transaction-aggregator.test.ts:
    - Single transaction: returns as-is
    - Multiple transactions, same currency: sums correctly
    - Multiple transactions with fees: fees excluded
@@ -561,9 +564,9 @@ Per specification, document amounts need special handling:
 
 Create:
 
-1. A new file: src/normalizers/documentAmount.ts
+1. A new file: helpers/document-amount.helper.ts
 
-2. Import the document_type and implement:
+2. Import the DocumentType and document_type from types.ts and implement:
 
 ```typescript
 /**
@@ -580,7 +583,7 @@ export function normalizeDocumentAmount(
 ): number;
 ```
 
-3. Create tests in **tests**/documentAmount.test.ts:
+3. Create tests in __tests__/document-amount.test.ts:
    - INVOICE, business is debtor: positive (100 → 100)
    - INVOICE, business is creditor: negative (100 → -100)
    - CREDIT_INVOICE, business is debtor: negative (100 → -100)
@@ -618,17 +621,17 @@ Per specification, aggregate multiple documents with type priority and amount no
 
 Create:
 
-1. A new file: src/aggregators/documentAggregator.ts
+1. A new file: providers/document-aggregator.provider.ts
 
 2. Import Document type, business extraction, and amount normalization:
 
 ```typescript
 export interface AggregatedDocument {
   amount: number;
-  currency: Currency;
+  currency: currency; // lowercase - database type
   businessId: string | null; // UUID
   date: Date;
-  documentType: DocumentType;
+  documentType: document_type; // lowercase - database type
   description: string;
 }
 
@@ -653,7 +656,7 @@ export function aggregateDocuments(documents: Document[], userId: string): Aggre
    - Concatenate serial_numbers or file names
    - Determine document type for result (use first after filtering)
 
-4. Create tests in **tests**/documentAggregator.test.ts:
+4. Create tests in __tests__/document-aggregator.test.ts:
    - Single document: returns normalized
    - Multiple invoices: sums correctly with normalization
    - Multiple receipts: sums correctly
@@ -691,7 +694,7 @@ Create logic to filter potential match candidates based on date windows and excl
 
 Create:
 
-1. A new file: src/filters/candidateFilter.ts
+1. A new file: helpers/candidate-filter.helper.ts
 
 2. Implement filtering functions:
 
@@ -724,7 +727,7 @@ export function isWithinDateWindow(
 ): boolean;
 ```
 
-3. Create tests in **tests**/candidateFilter.test.ts:
+3. Create tests in __tests__/candidate-filter.test.ts:
    - Transaction validation:
      - Normal transaction: included
      - Fee transaction: excluded
@@ -767,7 +770,7 @@ This combines aggregation and confidence calculation to score a potential match.
 
 Create:
 
-1. A new file: src/scoring/matchScorer.ts
+1. A new file: providers/match-scorer.provider.ts
 
 2. Implement the scoring function:
 
@@ -818,7 +821,7 @@ export function selectTransactionDate(
 ): Date;
 ```
 
-4. Create tests in **tests**/matchScorer.test.ts:
+4. Create tests in __tests__/match-scorer.test.ts:
    - Perfect match: all fields align (should be ~1.0)
    - Partial matches: varying confidence levels
    - Date type selection: INVOICE uses event_date, RECEIPT uses debit_date
@@ -855,7 +858,7 @@ Create the main single-match logic without database integration (will use mock d
 
 Create:
 
-1. A new file: src/matching/singleMatch.ts
+1. A new file: providers/single-match.provider.ts
 
 2. Implement the core function:
 
@@ -889,7 +892,7 @@ export function findMatches(
    - Use date proximity as tie-breaker
    - Return top N (default 5)
 
-4. Create tests in **tests**/singleMatch.test.ts:
+4. Create tests in __tests__/single-match.test.ts:
    - Valid transaction charge → finds document matches
    - Valid document charge → finds transaction matches
    - Matched charge input → throws error
@@ -929,57 +932,27 @@ Create the database layer and wire up the complete single-match function.
 
 Create:
 
-1. A new file: src/db/chargeRepository.ts (interface/mock for now):
+1. Update providers/charges-matcher.provider.ts:
 
-```typescript
-export interface ChargeRepository {
-  /**
-   * Get a charge by ID with all transactions and documents
-   */
-  getChargeById(chargeId: string): Promise<Charge>;
+Use existing providers:
 
-  /**
-   * Get all charges within date window that have complementary data
-   * @param hasTransactions - If true, return charges with documents; if false, return charges with transactions
-   * @param referenceDate - Center of date window
-   * @param windowMonths - Months before/after
-   */
-  getCandidateCharges(
-    hasTransactions: boolean,
-    referenceDate: Date,
-    windowMonths: number,
-  ): Promise<Charge[]>;
-}
+- ChargesProvider from @modules/charges
+- TransactionsProvider from @modules/transactions
+- DocumentsProvider from @modules/documents
 
-export interface Charge {
-  id: string;
-  transactions: Transaction[];
-  documents: Document[];
-}
-
-/**
- * Mock repository for testing (implement with in-memory data)
- */
-export class MockChargeRepository implements ChargeRepository {
-  // Implementation with in-memory Map
-}
-```
-
-2. A new file: src/matching/singleMatchService.ts:
+2. Implement findMatchesForCharge method in ChargesMatcherProvider:
 
 ```typescript
 /**
  * Find matches for an unmatched charge (with database integration)
  * @param chargeId - ID of unmatched charge
- * @param userId - Current user ID
- * @param repository - Charge repository
+ * @param injector - GraphQL modules injector for provider access
  * @returns Top 5 matches
  */
-export async function findMatchesForCharge(
+async findMatchesForCharge(
   chargeId: string,
-  userId: string,
-  repository: ChargeRepository,
-): Promise<SingleMatchOutput>;
+  injector: Injector,
+): Promise<ChargeMatchesResult>;
 ```
 
 3. Wire everything together:
@@ -990,7 +963,7 @@ export async function findMatchesForCharge(
    - Call findMatches from Step 13
    - Return formatted result
 
-4. Create tests in **tests**/singleMatchService.test.ts:
+4. Create tests in __tests__/single-match-service.test.ts:
    - Set up mock repository with test data
    - Test full flow with database
    - Test error handling for missing charges
@@ -1025,7 +998,7 @@ Create the auto-match function that processes all unmatched charges.
 
 Create:
 
-1. A new file: src/matching/autoMatch.ts:
+1. A new file: providers/auto-match.provider.ts:
 
 ```typescript
 export interface AutoMatchResult {
@@ -1072,7 +1045,7 @@ export function determineMergeDirection(charge1: Charge, charge2: Charge): [Char
    - If none: no match
    - Merge direction: matched charge > transaction charge
 
-3. Create tests in **tests**/autoMatch.test.ts:
+3. Create tests in __tests__/auto-match.test.ts:
    - Single high-confidence match: returns match
    - Multiple high-confidence matches: returns skipped
    - No high-confidence matches: returns no-match
@@ -1107,44 +1080,21 @@ Wire up the auto-match function with database and merge functionality.
 
 Create:
 
-1. Extend src/db/chargeRepository.ts:
+1. Update providers/charges-matcher.provider.ts with auto-match functionality:
 
-```typescript
-export interface ChargeRepository {
-  // ... existing methods ...
+Use existing ChargesProvider.mergeCharges() mutation.
 
-  /**
-   * Get all unmatched charges
-   */
-  getUnmatchedCharges(): Promise<Charge[]>;
-
-  /**
-   * Get all charges (for auto-match candidate pool)
-   */
-  getAllCharges(): Promise<Charge[]>;
-
-  /**
-   * Merge source charge into target charge
-   * @param sourceChargeId - Charge to be deleted
-   * @param targetChargeId - Charge to receive data
-   */
-  mergeCharges(sourceChargeId: string, targetChargeId: string): Promise<void>;
-}
-```
-
-2. Create src/matching/autoMatchService.ts:
+2. Implement autoMatchCharges method in ChargesMatcherProvider:
 
 ```typescript
 /**
  * Auto-match all unmatched charges
- * @param userId - Current user ID
- * @param repository - Charge repository
+ * @param injector - GraphQL modules injector for provider access
  * @returns Summary of matches made
  */
-export async function autoMatchAllCharges(
-  userId: string,
-  repository: ChargeRepository,
-): Promise<AutoMatchOutput>;
+async autoMatchCharges(
+  injector: Injector,
+): Promise<AutoMatchChargesResult>;
 ```
 
 3. Implement the full flow:
@@ -1158,7 +1108,7 @@ export async function autoMatchAllCharges(
      - Handle errors: capture and continue
    - Return summary
 
-4. Create tests in **tests**/autoMatchService.test.ts:
+4. Create tests in __tests__/auto-match-service.test.ts:
    - Empty database: returns 0 matches
    - All matched: returns 0 matches
    - Single unmatched with good match: executes merge
@@ -1196,7 +1146,7 @@ Complete the system with production-ready error handling and validation.
 
 Create:
 
-1. A new file: src/validation/chargeValidator.ts:
+1. A new file: helpers/charge-validator.helper.ts:
 
 ```typescript
 /**
@@ -1221,40 +1171,28 @@ export function hasOnlyTransactions(charge: Charge): boolean;
 export function hasOnlyDocuments(charge: Charge): boolean;
 ```
 
-2. Update src/errors.ts (create if not exists):
+2. Use existing error patterns from the project:
+
+In resolvers, return CommonError for GraphQL responses:
 
 ```typescript
-export class MatchingError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public details?: any,
-  ) {
-    super(message);
-    this.name = 'MatchingError';
-  }
-}
+import { CommonError } from '@modules/common';
 
-export class ValidationError extends MatchingError {
-  constructor(message: string, details?: any) {
-    super(message, 'VALIDATION_ERROR', details);
-  }
+if (error) {
+  return {
+    __typename: 'CommonError',
+    message: 'Descriptive error message',
+  };
 }
-
-export class AggregationError extends MatchingError {
-  constructor(message: string, details?: any) {
-    super(message, 'AGGREGATION_ERROR', details);
-  }
-}
-
-// Add other specific error types
 ```
 
-3. Refactor existing functions to use proper error types:
-   - Update aggregators to throw AggregationError
-   - Update validators to throw ValidationError
-   - Update business extraction to throw appropriate errors
-   - Ensure all error messages are descriptive and actionable
+In providers/helpers, throw standard Error with descriptive messages.
+
+3. Ensure error messages are descriptive:
+   - Aggregators throw Error with clear messages
+   - Validators throw Error with actionable messages
+   - Business extraction throws Error for invalid states
+   - Resolvers return CommonError for GraphQL
 
 4. Create index.ts (module export):
 
@@ -1285,9 +1223,9 @@ import { ChargesMatcherModule } from './modules/charges-matcher/index.js';
 ChargesMatcherModule,
 ```
 
-5. Create comprehensive integration tests in **tests**/integration/:
-   - integration/singleMatch.integration.test.ts
-   - integration/autoMatch.integration.test.ts
+5. Create comprehensive integration tests in __tests__/integration/:
+   - integration/single-match.integration.test.ts
+   - integration/auto-match.integration.test.ts
    - Test realistic scenarios with full data
    - Test all error paths end-to-end
    - Test edge cases from specification
