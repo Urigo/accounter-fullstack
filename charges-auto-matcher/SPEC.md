@@ -2,30 +2,51 @@
 
 ## 1. Overview
 
-This specification defines a matching system for an accounting application that suggests and
-automatically links transactions with their corresponding financial documents (invoices, receipts,
-etc.). The system uses a confidence-based scoring algorithm to identify potential matches and
-provides both manual review and automatic matching capabilities.
+This specification defines a matching system for the Accounter fullstack application that suggests
+and automatically links transactions with their corresponding financial documents (invoices,
+receipts, etc.). The system uses a confidence-based scoring algorithm to identify potential matches
+and provides both manual review and automatic matching capabilities.
+
+**Project Context:**
+
+- This is a GraphQL-based application using TypeScript
+- Server: `packages/server/` - GraphQL modules architecture
+- Client: `packages/client/` - React-based UI
+- Database: PostgreSQL with schema in `accounter_schema`
+- Uses UUID for IDs, not strings
 
 ## 2. Core Functionality
 
-### 2.1 Functions
+### 2.1 Functions (GraphQL API)
 
-#### 2.1.1 Single-Match Function
+#### 2.1.1 Single-Match Function (Query)
 
 **Purpose:** Find potential matches for a single unmatched charge
 
+**GraphQL Query:**
+
+```graphql
+query findChargeMatches($chargeId: UUID!) {
+  findChargeMatches(chargeId: $chargeId) {
+    matches {
+      chargeId
+      confidenceScore
+    }
+  }
+}
+```
+
 **Input:**
 
-- `chargeId: string` - The ID of an unmatched charge
-- `userId: string` - The current user's ID for business identification
+- `chargeId: UUID` - The ID of an unmatched charge
+- User ID is extracted from authentication context via `@auth` directive
 
 **Output:**
 
 ```typescript
 {
   matches: Array<{
-    chargeId: string;
+    chargeId: string; // UUID
     confidenceScore: number; // 0.00 to 1.00, two decimal precision
   }>;
 }
@@ -43,13 +64,29 @@ provides both manual review and automatic matching capabilities.
 4. Calculate confidence scores for all candidates
 5. Return top 5 by confidence, with date proximity as tie-breaker
 
-#### 2.1.2 Auto-Match Function
+#### 2.1.2 Auto-Match Function (Mutation)
 
 **Purpose:** Automatically match all unmatched charges above confidence threshold
 
+**GraphQL Mutation:**
+
+```graphql
+mutation autoMatchCharges {
+  autoMatchCharges {
+    totalMatches
+    mergedCharges {
+      chargeId
+      confidenceScore
+    }
+    skippedCharges
+    errors
+  }
+}
+```
+
 **Input:**
 
-- `userId: string` - The current user's ID
+- User ID is extracted from authentication context via `@auth` directive
 
 **Output:**
 
@@ -57,10 +94,10 @@ provides both manual review and automatic matching capabilities.
 {
   totalMatches: number;
   mergedCharges: Array<{
-    chargeId: string; // ID of the deleted/merged-away charge
+    chargeId: string; // UUID of the deleted/merged-away charge
     confidenceScore: number;
   }>;
-  skippedCharges: string[]; // Charge IDs with multiple ≥95% matches
+  skippedCharges: string[]; // UUID array - Charge IDs with multiple ≥95% matches
   errors: any;
 }
 ```
@@ -82,62 +119,114 @@ provides both manual review and automatic matching capabilities.
 - If merging matched + unmatched: keep matched charge
 - If merging two unmatched: keep transaction charge
 - Transaction charge is always deleted (its data moved to surviving charge)
+- Uses existing `mergeCharges` mutation
 
 ---
 
 ## 3. Data Definitions
 
-### 3.1 Entity Interfaces
+### 3.1 Database Schema (PostgreSQL)
+
+**Relevant tables from `accounter_schema`:**
+
+```sql
+-- charges table
+CREATE TABLE accounter_schema.charges (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES accounter_schema.businesses,
+  is_conversion BOOLEAN DEFAULT false,
+  is_property BOOLEAN DEFAULT false,
+  accountant_reviewed BOOLEAN DEFAULT false,
+  user_description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  tax_category_id UUID REFERENCES accounter_schema.tax_categories
+);
+
+-- transactions table
+CREATE TABLE accounter_schema.transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  account_id UUID NOT NULL REFERENCES accounter_schema.financial_accounts,
+  charge_id UUID NOT NULL REFERENCES accounter_schema.charges,
+  source_id UUID NOT NULL,
+  source_description TEXT,
+  currency accounter_schema.currency NOT NULL,
+  event_date DATE NOT NULL,
+  debit_date DATE,
+  amount NUMERIC NOT NULL,
+  current_balance NUMERIC NOT NULL,
+  business_id UUID REFERENCES accounter_schema.businesses,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_fee BOOLEAN
+);
+
+-- documents table (charge_id_new is the actual FK)
+CREATE TABLE accounter_schema.documents (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  image_url TEXT,
+  file_url TEXT,
+  type accounter_schema.document_type DEFAULT 'UNPROCESSED',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  modified_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  serial_number TEXT,
+  date DATE,
+  total_amount DOUBLE PRECISION,
+  currency_code accounter_schema.currency,
+  vat_amount DOUBLE PRECISION,
+  debtor TEXT,
+  creditor TEXT,
+  is_reviewed BOOLEAN DEFAULT false,
+  charge_id_new UUID REFERENCES accounter_schema.charges,
+  debtor_id UUID,
+  creditor_id UUID,
+  description TEXT,
+  no_vat_amount NUMERIC
+);
+```
+
+### 3.2 TypeScript Interfaces (for matching logic)
 
 ```typescript
+// Simplified for matching purposes
 interface Transaction {
-  account_id: string;
-  amount: string;
-  business_id: string | null;
-  charge_id: string;
-  counter_account: string | null;
-  created_at: Date;
-  currency: currency;
-  currency_rate: string;
-  current_balance: string;
-  debit_date: Date | null;
-  debit_date_override: Date | null;
-  debit_timestamp: Date | null;
+  id: string; // UUID
+  account_id: string; // UUID
+  charge_id: string; // UUID
+  amount: number; // numeric in DB
+  business_id: string | null; // UUID
+  currency: Currency;
   event_date: Date;
-  id: string;
-  is_fee: boolean;
-  origin_key: string;
+  debit_date: Date | null;
   source_description: string | null;
-  source_id: string;
-  source_origin: string;
-  source_reference: string;
+  current_balance: number; // numeric in DB
+  created_at: Date;
   updated_at: Date;
+  is_fee: boolean | null;
 }
 
 interface Document {
-  allocation_number: string | null;
-  charge_id: string | null;
-  created_at: Date;
-  creditor_id: string | null;
-  currency_code: currency | null;
+  id: string; // UUID
+  charge_id_new: string | null; // UUID (actual FK name in DB)
+  creditor_id: string | null; // UUID
+  debtor_id: string | null; // UUID
+  currency_code: Currency | null;
   date: Date | null;
-  debtor_id: string | null;
-  exchange_rate_override: string | null;
-  file_hash: string | null;
-  file_url: string | null;
-  id: string;
-  image_url: string | null;
-  is_reviewed: boolean;
-  modified_at: Date;
-  no_vat_amount: string | null;
-  serial_number: string | null;
-  total_amount: number | null;
-  type: document_type;
+  total_amount: number | null; // double precision in DB
+  type: DocumentType;
   vat_amount: number | null;
-  vat_report_date_override: Date | null;
+  no_vat_amount: number | null;
+  serial_number: string | null;
+  is_reviewed: boolean;
+  created_at: Date;
+  modified_at: Date;
+  image_url: string | null;
+  file_url: string | null;
 }
 
-type document_type =
+type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH';
+
+type DocumentType =
   | 'CREDIT_INVOICE'
   | 'INVOICE'
   | 'INVOICE_RECEIPT'
@@ -147,7 +236,7 @@ type document_type =
   | 'UNPROCESSED';
 ```
 
-### 3.2 Key Definitions
+### 3.3 Key Definitions
 
 **Accounting Document Types:** INVOICE, CREDIT_INVOICE, RECEIPT, INVOICE_RECEIPT
 
@@ -160,6 +249,15 @@ type document_type =
 **Matched Charge:**
 
 - Has both ≥1 transactions AND ≥1 accounting documents
+
+**Important Field Notes:**
+
+- Document charge reference: use `charge_id_new` field (not `charge_id`)
+- All IDs are UUIDs
+- Amounts are stored as `numeric` or `double precision` in DB
+- Transaction amounts already have correct sign (positive/negative)
+- Document `debtor` and `creditor` text fields are deprecated, use `debtor_id` and `creditor_id`
+  UUIDs
 
 ---
 
@@ -359,57 +457,79 @@ else:
 
 ## 6. User Interface Requirements
 
-### 6.1 Single-Match Modal
+### 6.1 Single-Match Modal (React Component)
+
+**Location:** `packages/client/src/components/charges/ChargeMatchingModal.tsx`
 
 **Trigger:**
 
-- Button/action on transaction screen or document screen
+- Button/action on charge detail screen
 - Only available for unmatched charges
+- Uses GraphQL query: `findChargeMatches`
 
 **Display:**
 
-- Modal/popup overlay
+- Modal/popup overlay (using existing modal component from UI library)
 - List of up to 5 suggested matches showing:
-  - Amount
-  - Currency
+  - Amount (formatted with currency symbol)
+  - Currency code
   - Date(s) - appropriate date field for the match type
-  - Business ID
-  - Description
-  - Confidence score (formatted as percentage, e.g., "87%")
-  - Visual indicator if match is already matched to something else
+  - Business name (resolved from business_id)
+  - Description (truncated if long)
+  - Confidence score (formatted as percentage with color coding)
+  - Badge/indicator if match is already matched
 
 **Actions:**
 
-- Click match to approve → triggers charge merge selection UI
-- Dismiss/reject suggestion (no tracking)
+- Click match to approve → triggers charge merge dialog
+- Dismiss/reject suggestion (no tracking in v1)
 - Close modal without action
-- "View more details" link → opens charge screen of suggested match in new tab
+- "View details" link → navigates to charge detail page of suggested match
 
 **Merge Flow:**
 
-- On approval, output the two charge IDs to existing merge UI
-- User selects which charge to keep
-- Existing merge function handles the actual merge operation
+- On approval, opens existing merge charge dialog
+- Pre-fills with current charge and selected match
+- User selects which charge to keep (baseChargeID)
+- Calls existing `mergeCharges` mutation
+- On success, refreshes charge data and closes modal
 
-### 6.2 Auto-Match Action
+### 6.2 Auto-Match Action (React Component)
+
+**Location:** `packages/client/src/components/charges/AutoMatchButton.tsx` or integrated into
+charges list toolbar
 
 **Trigger:**
 
-- Manual button/action (e.g., "Auto-Match All" button)
+- Manual button/action in charges list view
+- Requires admin/accountant role via `@auth` directive
+- Shows confirmation dialog before execution
 
 **Behavior:**
 
-- Shows loading indicator
-- Executes auto-match function
-- Displays summary on completion:
-  - Total matches made
-  - List of merged charges with confidence scores
-  - Skipped charges (ambiguous matches)
-  - Any errors
+- Shows loading indicator/progress overlay
+- Executes `autoMatchCharges` GraphQL mutation
+- Displays summary dialog on completion:
+  - Total matches made (bold number)
+  - Expandable list of merged charges with:
+    - Original charge ID (clickable link)
+    - Target charge ID (clickable link)
+    - Confidence score (with percentage)
+  - Skipped charges section (if any):
+    - Charge IDs with "multiple high-confidence matches" warning
+  - Error section (if any):
+    - Error details with actionable messages
+
+**Post-Action:**
+
+- Refreshes charges list to reflect merged charges
+- Shows toast notification with success/partial success/failure status
+- Allows user to review merged charges
 
 **Threshold:**
 
-- Fixed at 0.95 (95% confidence)
+- Fixed at 0.95 (95% confidence) in backend
+- May be configurable via environment variable in future
 
 ---
 
@@ -417,25 +537,46 @@ else:
 
 ### 7.1 Assumptions
 
-- `userId` is available in both function contexts
-- Existing charge merge function is available: `mergeCharges(sourceChargeId, targetChargeId)`
+- User ID is extracted from GraphQL context via authentication middleware
+- Existing charge merge mutation is available in GraphQL schema:
+  ```graphql
+  mutation mergeCharges(
+    baseChargeID: UUID!
+    chargeIdsToMerge: [UUID!]!
+    fields: UpdateChargeInput
+  ): MergeChargeResult!
+  ```
 - Database queries can efficiently filter by date ranges and charge relationships
-- Transaction and document amounts are stored as numeric strings
+- Transaction amounts are stored as PostgreSQL `numeric` type
+- Document amounts are stored as PostgreSQL `double precision` type
+- The matching logic will be implemented as a new GraphQL module in
+  `packages/server/src/modules/charges-matcher/`
 
 ### 7.2 Fields Ignored
 
 - `account_id` - matching is account-agnostic
-- `counter_account` - informational only
-- `currency_rate` and `exchange_rate_override` - not used for matching
+- `source_id` - internal reference only
+- `exchange_rate_override` - not used for matching
 - `created_at`, `updated_at`, `modified_at` - not used for matching logic
+- Document legacy text fields: `debtor`, `creditor` - use UUID references instead
+- `is_reviewed`, `accountant_reviewed` - not used for matching
 - All other fields not explicitly mentioned in matching criteria
 
 ### 7.3 Performance Considerations
 
 - Single-match: 12-month window reduces search space
 - Auto-match: No time restriction - may need optimization for large datasets
-- Consider indexing on: charge_id, date fields, business_id, currency, is_fee
+- Existing database indexes are already in place:
+  - `transactions_charge_id_index` on `charge_id`
+  - `transactions_event_date_index` on `event_date`
+  - `transactions_debit_date_index` on `debit_date`
+  - `transactions_amount_index` on `amount`
+  - `documents_charge_id_new_index` on `charge_id_new`
+  - `documents_date_index` on `date`
+  - `documents_total_amount_index` on `total_amount`
+  - `documents_debtor_id_index` and `documents_creditor_id_index`
 - May want to batch database queries in auto-match function
+- Consider using GraphQL DataLoader for charge queries to prevent N+1 issues
 
 ---
 
@@ -645,21 +786,62 @@ else:
 
 ## 10. Dependencies
 
-### 10.1 Required Functions/Services
+### 10.1 Required GraphQL Modules/Services
 
-- `mergeCharges(sourceChargeId: string, targetChargeId: string): void`
-  - Existing charge merge functionality
-  - Moves all transactions/documents from source to target
-  - Deletes source charge
+- **Existing Charges Module** (`packages/server/src/modules/charges/`)
+  - Provides `mergeCharges` mutation
+  - Charge queries and resolvers
+  - Charge data providers
 
-### 10.2 Database Access
+- **Existing Transactions Module** (`packages/server/src/modules/transactions/`)
+  - Transaction queries and providers
+  - Transaction data access
 
-Functions need access to query:
+- **Existing Documents Module** (`packages/server/src/modules/documents/`)
+  - Document queries and providers
+  - Document data access
 
-- Charges (by ID, by matched/unmatched status)
-- Transactions (by charge_id, with all fields)
-- Documents (by charge_id, with all fields)
-- Efficient filtering by date ranges, currencies, business IDs
+- **New Charges Matcher Module** (to be created at `packages/server/src/modules/charges-matcher/`)
+  - Will contain matching logic
+  - GraphQL typeDefs, resolvers, providers
+  - Confidence calculation algorithms
+
+### 10.2 Database Access Patterns
+
+The matcher module will need database queries for:
+
+- Charges (by UUID, by owner_id, by matched/unmatched status)
+- Transactions (by charge_id, filtered by is_fee, with date ranges)
+- Documents (by charge_id_new, filtered by type and null checks)
+- Efficient filtering by:
+  - Date ranges (event_date, debit_date, documents.date)
+  - Currency codes
+  - Business IDs (business_id, debtor_id, creditor_id)
+  - Charge ownership (owner_id)
+
+**Query Examples:**
+
+```sql
+-- Find unmatched charges with transactions only
+SELECT c.* FROM accounter_schema.charges c
+WHERE c.owner_id = $1
+AND EXISTS (SELECT 1 FROM accounter_schema.transactions t WHERE t.charge_id = c.id)
+AND NOT EXISTS (
+  SELECT 1 FROM accounter_schema.documents d
+  WHERE d.charge_id_new = c.id
+  AND d.type IN ('INVOICE', 'CREDIT_INVOICE', 'RECEIPT', 'INVOICE_RECEIPT')
+);
+
+-- Find unmatched charges with documents only
+SELECT c.* FROM accounter_schema.charges c
+WHERE c.owner_id = $1
+AND NOT EXISTS (SELECT 1 FROM accounter_schema.transactions t WHERE t.charge_id = c.id)
+AND EXISTS (
+  SELECT 1 FROM accounter_schema.documents d
+  WHERE d.charge_id_new = c.id
+  AND d.type IN ('INVOICE', 'CREDIT_INVOICE', 'RECEIPT', 'INVOICE_RECEIPT')
+);
+```
 
 ---
 
@@ -700,3 +882,157 @@ Functions need access to query:
 - **Matched Charge:** Has both transactions and accounting documents
 - **Normalized Amount:** Document amount after applying business side and credit invoice adjustments
 - **Unmatched Charge:** Has only transactions OR only accounting documents, not both
+
+---
+
+## 13. Project-Specific Implementation Guide
+
+### 13.1 Module Structure
+
+Create new module at `packages/server/src/modules/charges-matcher/`:
+
+```
+packages/server/src/modules/charges-matcher/
+├── index.ts                          # Module exports
+├── types.ts                          # TypeScript types for matching
+├── typeDefs/
+│   └── charges-matcher.graphql.ts    # GraphQL schema definitions
+├── resolvers/
+│   ├── find-charge-matches.resolver.ts
+│   └── auto-match-charges.resolver.ts
+├── providers/
+│   ├── charges-matcher.provider.ts   # Main matching logic
+│   ├── confidence-calculator.provider.ts
+│   └── charge-aggregator.provider.ts
+└── helpers/
+    ├── amount-confidence.helper.ts
+    ├── currency-confidence.helper.ts
+    ├── business-confidence.helper.ts
+    ├── date-confidence.helper.ts
+    └── document-normalizer.helper.ts
+```
+
+### 13.2 GraphQL Type Definitions
+
+```typescript
+// typeDefs/charges-matcher.graphql.ts
+import { gql } from 'graphql-modules';
+
+export default gql`
+  extend type Query {
+    findChargeMatches(chargeId: UUID!): ChargeMatchesResult! @auth(role: ACCOUNTANT)
+  }
+
+  extend type Mutation {
+    autoMatchCharges: AutoMatchChargesResult! @auth(role: ACCOUNTANT)
+  }
+
+  type ChargeMatchesResult {
+    matches: [ChargeMatch!]!
+  }
+
+  type ChargeMatch {
+    chargeId: UUID!
+    confidenceScore: Float!
+  }
+
+  type AutoMatchChargesResult {
+    totalMatches: Int!
+    mergedCharges: [MergedCharge!]!
+    skippedCharges: [UUID!]!
+    errors: [String!]
+  }
+
+  type MergedCharge {
+    chargeId: UUID!
+    confidenceScore: Float!
+  }
+`;
+```
+
+### 13.3 Database Provider Integration
+
+Use existing providers from other modules:
+
+```typescript
+import { ChargesProvider } from '@modules/charges';
+import { TransactionsProvider } from '@modules/transactions';
+import { DocumentsProvider } from '@modules/documents';
+```
+
+### 13.4 Data Access Patterns
+
+```typescript
+// Example: Get charge with related data
+async getChargeWithRelations(chargeId: string, injector: Injector) {
+  const chargesProvider = injector.get(ChargesProvider);
+  const transactionsProvider = injector.get(TransactionsProvider);
+  const documentsProvider = injector.get(DocumentsProvider);
+
+  const charge = await chargesProvider.getChargeById(chargeId);
+  const transactions = await transactionsProvider.getTransactionsByChargeId(chargeId);
+  const documents = await documentsProvider.getDocumentsByChargeId(chargeId);
+
+  return { charge, transactions, documents };
+}
+```
+
+### 13.5 Error Handling
+
+Follow project patterns:
+
+```typescript
+import { CommonError } from '@modules/common';
+
+// In resolver
+if (!isUnmatchedCharge(charge, transactions, documents)) {
+  return {
+    __typename: 'CommonError',
+    message: 'Charge is already matched and cannot be used for matching',
+  };
+}
+```
+
+### 13.6 Testing Strategy
+
+Create tests following project structure:
+
+```
+packages/server/src/modules/charges-matcher/__tests__/
+├── confidence-calculator.spec.ts
+├── amount-confidence.spec.ts
+├── charge-aggregation.spec.ts
+├── find-matches.spec.ts
+└── auto-match.spec.ts
+```
+
+Use existing test utilities and database helpers from other modules.
+
+### 13.7 Migration Requirements
+
+No database schema changes required - all necessary tables and indexes already exist.
+
+Consider adding:
+
+- Logging/audit trail for auto-match operations
+- Performance monitoring for large-scale matching
+- Optional: `charge_match_history` table for tracking rejected matches (future enhancement)
+
+### 13.8 Integration with Existing Modules
+
+1. **Charges Module**: Use existing merge logic
+2. **Ledger Module**: Matching should respect ledger locks
+3. **Financial Entities Module**: Use for business name resolution
+4. **Tags Module**: Consider excluding charges with certain tags (e.g., "mistake")
+
+### 13.9 Client Integration
+
+Create components in `packages/client/src/components/charges/`:
+
+```typescript
+// ChargeMatchingModal.tsx - for single-match UI
+// AutoMatchButton.tsx - for auto-match trigger
+// ChargeMatchList.tsx - for displaying match results
+```
+
+Use existing UI components and patterns from the client package.
