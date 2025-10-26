@@ -461,34 +461,42 @@
 
 ## Phase 6: Auto-Match Implementation
 
-### Step 15: Auto-Match Core Function
+### Step 15: Auto-Match Core Function ✅ COMPLETED
 
-- [ ] Create `providers/auto-match.provider.ts`
-- [ ] Define `AutoMatchResult` interface
-- [ ] Implement `processChargeForAutoMatch()` function
-  - [ ] Use findMatches() with no date restriction
-  - [ ] Filter matches >= 0.95 threshold
-  - [ ] Return 'matched' if exactly one
-  - [ ] Return 'skipped' if multiple
-  - [ ] Return 'no-match' if none
-- [ ] Implement `determineMergeDirection()` function
-  - [ ] Check if either charge is matched
-  - [ ] If one matched: keep matched charge
-  - [ ] If both unmatched: check which has transactions
-  - [ ] Return [source, target] tuple
-- [ ] Create `__tests__/auto-match.test.ts`
-- [ ] Write test: single high-confidence match
-- [ ] Write test: multiple high-confidence matches (skipped)
-- [ ] Write test: no high-confidence matches (no-match)
-- [ ] Write test: match just below threshold (0.949)
-- [ ] Write test: match at threshold (0.95)
-- [ ] Write test: match above threshold (0.96)
-- [ ] Write test: merge direction - matched + unmatched
-- [ ] Write test: merge direction - two unmatched with transactions
-- [ ] Write test: merge direction - edge cases
-- [ ] Write test: various confidence levels
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement auto-match core function"
+- [x] Create `providers/auto-match.provider.ts`
+- [x] Define `ProcessChargeResult` interface
+- [x] Implement `processChargeForAutoMatch()` function
+  - [x] Use findMatches() with no date restriction (dateWindowMonths: undefined)
+  - [x] Filter matches >= 0.95 threshold
+  - [x] Return 'matched' if exactly one
+  - [x] Return 'skipped' if multiple
+  - [x] Return 'no-match' if none
+  - [x] Include helpful reason messages
+- [x] Implement `determineMergeDirection()` function
+  - [x] Check if either charge is matched
+  - [x] If one matched: keep matched charge
+  - [x] If both unmatched: check which has transactions
+  - [x] Return [source, target] tuple
+- [x] Create `__tests__/auto-match.test.ts`
+- [x] Write test: single high-confidence match (3 tests)
+- [x] Write test: multiple high-confidence matches (2 tests - skipped)
+- [x] Write test: no high-confidence matches (4 tests - including 0.949)
+- [x] Write test: match at threshold (0.95) - covered in single match test
+- [x] Write test: edge cases and validation (4 tests)
+- [x] Write test: merge direction - matched + unmatched (2 tests)
+- [x] Write test: merge direction - two unmatched with transactions (2 tests)
+- [x] Write test: merge direction - default behavior (3 tests)
+- [x] Write test: merge direction - complex scenarios (3 tests)
+- [x] Write test: various confidence levels (1 test)
+- [x] Verify all tests pass (22/22 tests passing)
+- [x] Files created:
+  - [x] providers/auto-match.provider.ts (6.3KB)
+  - [x] **tests**/auto-match.test.ts (19KB)
+- [x] Total module tests: 441 passing (419 + 22)
+- [x] Threshold: exactly 0.95 as specified
+- [x] Merge direction logic follows spec (matched > transaction > first)
+- [x] All ambiguous matches handled correctly
+- [x] Commit: "feat: implement auto-match core function"
 
 ### Step 16: Auto-Match GraphQL Integration
 
