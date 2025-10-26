@@ -302,38 +302,45 @@
 
 ## Phase 4: Candidate Management
 
-### Step 11: Candidate Filtering
+### Step 11: Candidate Filtering ✅
 
-- [ ] Create `helpers/candidate-filter.helper.ts`
-- [ ] Implement `isValidTransactionForMatching()` function
-  - [ ] Exclude if is_fee = true
-  - [ ] Include otherwise
-- [ ] Implement `isValidDocumentForMatching()` function
-  - [ ] Exclude if total_amount is null
-  - [ ] Exclude if currency_code is null
-  - [ ] Include otherwise (including zero amounts)
-- [ ] Implement `isWithinDateWindow()` function
-  - [ ] Calculate months difference accurately
-  - [ ] Default windowMonths = 12
-  - [ ] Return true if within window
-- [ ] Create `__tests__/candidate-filter.test.ts`
-- [ ] Write transaction validation tests
-  - [ ] Normal transaction: included
-  - [ ] Fee transaction: excluded
-- [ ] Write document validation tests
-  - [ ] Valid document: included
-  - [ ] Null total_amount: excluded
-  - [ ] Null currency_code: excluded
-  - [ ] Zero amount: included
-- [ ] Write date window tests
-  - [ ] Same date: included
-  - [ ] 11 months apart: included
-  - [ ] Exactly 12 months: included
-  - [ ] 12 months + 1 day: excluded
-  - [ ] Different years
-  - [ ] Month boundary edge cases
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement candidate filtering"
+- [x] Create `helpers/candidate-filter.helper.ts` (1.8KB)
+- [x] Implement `isValidTransactionForMatching()` function
+  - [x] Exclude if is_fee = true
+  - [x] Include otherwise
+- [x] Implement `isValidDocumentForMatching()` function
+  - [x] Exclude if total_amount is null
+  - [x] Exclude if currency_code is null
+  - [x] Include otherwise (including zero amounts)
+- [x] Implement `isWithinDateWindow()` function
+  - [x] Calculate months difference accurately using Date.setMonth()
+  - [x] Default windowMonths = 12
+  - [x] Return true if within window (inclusive boundaries)
+- [x] Create `__tests__/candidate-filter.test.ts` (8.1KB)
+- [x] Write transaction validation tests (3 tests)
+  - [x] Normal transaction: included
+  - [x] Fee transaction: excluded
+  - [x] Various transaction states
+- [x] Write document validation tests (7 tests)
+  - [x] Valid document: included
+  - [x] Null total_amount: excluded
+  - [x] Undefined total_amount: excluded
+  - [x] Null currency_code: excluded
+  - [x] Empty currency_code: excluded
+  - [x] Zero amount: included (valid)
+  - [x] Negative amounts: included
+- [x] Write date window tests (17 tests)
+  - [x] Same date: included
+  - [x] 11 months before/after: included
+  - [x] Exactly 12 months before/after: included
+  - [x] 12 months + 1 day before/after: excluded
+  - [x] Different years: handled correctly
+  - [x] Month boundary edge cases (end of month, leap year)
+  - [x] Custom window sizes (1, 3, 6 months)
+  - [x] Time component handling
+  - [x] Year transitions
+- [x] Verify all tests pass (27/27 passing, total 357 tests)
+- [x] Commit: "feat: implement candidate filtering"
 
 ### Step 12: Match Scoring Engine
 
