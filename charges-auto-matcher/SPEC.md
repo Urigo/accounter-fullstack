@@ -352,13 +352,17 @@ else:
 #### 4.3.2 Currency Confidence
 
 ```
-if transaction.currency = document.currency_code:
+if transaction.currency is null OR document.currency_code is null:
+  currency_conf = 0.2
+else if transaction.currency = document.currency_code:
   currency_conf = 1.0
 else:
-  currency_conf = 0.2
+  currency_conf = 0.0
 ```
 
-Note: No currency conversion - compare raw amounts even across currencies
+Note: No currency conversion - compare raw amounts even across currencies. Missing currency data
+(null/undefined) receives partial confidence (0.2) to allow potential matches when other factors are
+strong, while actual currency mismatches receive 0.0 confidence.
 
 #### 4.3.3 Business Confidence
 
@@ -597,7 +601,8 @@ charges list toolbar
 **Currency Confidence:**
 
 - Same currency → 1.0
-- Different currency → 0.2
+- One or both null → 0.2
+- Different currency → 0.0
 
 **Business Confidence:**
 
