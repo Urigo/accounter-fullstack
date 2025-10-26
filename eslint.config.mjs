@@ -103,9 +103,12 @@ export default [
           exceptions: {
             types: [
               'AccountantApproval',
+              'AutoMatchChargesResult',
               'BatchUpdateChargesSuccessfulResult',
               'BusinessTripSummary',
               'BusinessTripSummaryRow',
+              'ChargeMatch',
+              'ChargeMatchesResult',
               'ChargeMetadata',
               'ChargeSuggestions',
               'ChargesWithLedgerChangesResult',
@@ -130,6 +133,7 @@ export default [
               'LedgerValidation',
               'MergeChargeSuccessfulResult',
               'MergeChargesByTransactionReferenceResult',
+              'MergedCharge',
               'NewDocumentInfo',
               'PageInfo',
               'PaginatedCharges',
