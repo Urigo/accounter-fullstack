@@ -15,11 +15,11 @@ import {
 /**
  * Minimal document interface for aggregation
  * Based on database schema from accounter_schema.documents
- * Note: Documents use charge_id_new for the FK (not charge_id)
+ * Note: Documents use charge_id for the FK
  */
 export interface Document {
   id: string; // UUID
-  charge_id_new: string | null; // UUID (actual FK name in DB)
+  charge_id: string | null; // UUID (actual FK name in DB)
   creditor_id: string | null; // UUID
   debtor_id: string | null; // UUID
   currency_code: string | null; // Currency type
@@ -78,7 +78,7 @@ function isReceiptType(type: DocumentType): boolean {
  * 9. Concatenate serial_number or file names with line breaks
  * 10. Determine document type for result (use first after filtering)
  *
- * @param documents - Array of documents from a charge (use charge_id_new field for FK)
+ * @param documents - Array of documents from a charge (use charge_id field for FK)
  * @param userId - Current user UUID for business extraction
  * @returns Aggregated document data
  *

@@ -33,7 +33,6 @@ schema, and conventions.
 
 #### Critical Field Name Corrections
 
-- Document charge reference: `charge_id_new` (not `charge_id`)
 - All IDs are UUIDs (not strings)
 - Amount fields: `numeric` or `double precision` (not string)
 
@@ -190,7 +189,6 @@ The following core logic remains unchanged:
 
 ### Field Name Corrections
 
-- Documents use `charge_id_new` (not `charge_id`)
 - Transactions use `source_description` (not just `description`)
 - All IDs are UUIDs (string type, but semantically UUIDs)
 - Amounts are `number` type (numeric/double precision in DB)
