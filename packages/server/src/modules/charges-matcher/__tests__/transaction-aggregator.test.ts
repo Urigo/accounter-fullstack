@@ -3,7 +3,7 @@ import {
   aggregateTransactions,
   type AggregatedTransaction,
   type Transaction,
-} from '../helpers/transaction-aggregator.helper.js';
+} from '../providers/transaction-aggregator.js';
 
 describe('Transaction Aggregator', () => {
   // Helper to create test transactions
