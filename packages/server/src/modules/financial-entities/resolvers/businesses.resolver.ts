@@ -176,6 +176,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       { injector, adminContext: { defaultAdminBusinessId } },
     ) => {
       try {
+        if (!fields.country) {
+          throw new GraphQLError(`Country is required to create a new business`);
+        }
+
         let irsCode = fields.irsCode ?? null;
         if (!irsCode && fields.sortCode) {
           const sortCode = await injector
@@ -238,7 +242,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           hebrewName: fields.hebrewName,
           phoneNumber: fields.phoneNumber,
           website: fields.website,
-          optionalVat: fields.optionalVAT,
+          optionalVat: fields.optionalVAT ?? false,
           isReceiptEnough: fields.isReceiptEnough ?? false,
           isDocumentsOptional: fields.isDocumentsOptional ?? false,
           country: fields.country,
