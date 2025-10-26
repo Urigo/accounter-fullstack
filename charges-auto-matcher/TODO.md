@@ -235,28 +235,32 @@
 - [x] Verify all tests pass (42/42 passing, total 237 tests)
 - [x] Commit: "feat: implement transaction aggregator"
 
-### Step 9: Document Amount Normalization
+### Step 9: Document Amount Normalization ✅
 
-- [ ] Create `helpers/document-amount.helper.ts`
-- [ ] Implement `normalizeDocumentAmount()` function
-  - [ ] Step 1: Take absolute value of total_amount
-  - [ ] Step 2: If business is creditor, negate
-  - [ ] Step 3: If DocumentType is CREDIT_INVOICE, negate
-  - [ ] Works with numeric type (not string)
-- [ ] Create `__tests__/document-amount.test.ts`
-- [ ] Write test: INVOICE, business debtor → positive
-- [ ] Write test: INVOICE, business creditor → negative
-- [ ] Write test: CREDIT_INVOICE, business debtor → negative
-- [ ] Write test: CREDIT_INVOICE, business creditor → positive (double negation)
-- [ ] Write test: RECEIPT, both scenarios
-- [ ] Write test: INVOICE_RECEIPT, both scenarios
-- [ ] Write test: OTHER, PROFORMA, UNPROCESSED types
-- [ ] Write edge case tests
-  - [ ] Negative input amounts
-  - [ ] Zero amounts
-  - [ ] Very large amounts
-- [ ] Verify all tests pass
-- [ ] Commit: "feat: implement document amount normalization"
+- [x] Create `helpers/document-amount.helper.ts`
+- [x] Define `DocumentType` type
+- [x] Implement `normalizeDocumentAmount()` function
+  - [x] Step 1: Take absolute value of total_amount
+  - [x] Step 2: If business is creditor, negate
+  - [x] Step 3: If DocumentType is CREDIT_INVOICE, negate
+  - [x] Works with numeric type (not string)
+- [x] Create `__tests__/document-amount.test.ts`
+- [x] Write test: INVOICE, business debtor → positive (3 tests)
+- [x] Write test: INVOICE, business creditor → negative (3 tests)
+- [x] Write test: CREDIT_INVOICE, business debtor → negative (3 tests)
+- [x] Write test: CREDIT_INVOICE, business creditor → positive (3 tests - double negation)
+- [x] Write test: RECEIPT, both scenarios (4 tests)
+- [x] Write test: INVOICE_RECEIPT, both scenarios (4 tests)
+- [x] Write test: OTHER, PROFORMA, UNPROCESSED types (6 tests)
+- [x] Write edge case tests (20 tests total)
+  - [x] Negative input amounts (6 tests - absolute value first)
+  - [x] Zero amounts (4 tests - handles -0 vs +0)
+  - [x] Very large amounts (4 tests - including MAX_SAFE_INTEGER)
+  - [x] Small decimal amounts (3 tests - precision preservation)
+  - [x] All combinations summary (1 comprehensive test)
+  - [x] Real-world scenarios (6 tests)
+- [x] Verify all tests pass (50/50 passing, total 287 tests)
+- [x] Commit: "feat: implement document amount normalization"
 
 ### Step 10: Document Aggregator
 
