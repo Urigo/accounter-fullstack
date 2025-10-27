@@ -88,6 +88,10 @@ const updateContract = sql<IUpdateContractQuery>`
       ms_cloud = COALESCE(
         $ms_cloud,
         ms_cloud
+      ),
+      operations_count = COALESCE(
+        $operationsLimit,
+        operations_count
       )
       WHERE
         id = $contractId
@@ -108,7 +112,8 @@ const insertContract = sql<IInsertContractQuery>`
           product,
           plan,
           is_active,
-          ms_cloud
+          ms_cloud,
+          operations_count
         )
         VALUES ($clientId,
           $purchaseOrders,
@@ -122,7 +127,8 @@ const insertContract = sql<IInsertContractQuery>`
           $product,
           $plan,
           $isActive,
-          $msCloud)
+          $msCloud,
+          $operationsLimit)
         RETURNING *;`;
 
 @Injectable({

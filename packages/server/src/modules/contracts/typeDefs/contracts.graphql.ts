@@ -28,6 +28,7 @@ export default gql`
     product: Product
     plan: SubscriptionPlan
     msCloud: URL
+    operationsLimit: Int!
   }
 
   " contract billing cycle "
@@ -62,6 +63,7 @@ export default gql`
     plan: SubscriptionPlan
     msCloud: URL
     isActive: Boolean!
+    operationsLimit: Int
   }
 
   " input for updating a contract "
@@ -78,5 +80,6 @@ export default gql`
     plan: SubscriptionPlan
     msCloud: URL
     isActive: Boolean
+    operationsLimit: Int
   }
 `;
