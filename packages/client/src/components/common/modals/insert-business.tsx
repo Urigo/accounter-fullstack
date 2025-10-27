@@ -2,6 +2,10 @@ import { useCallback, useContext, useState } from 'react';
 import { Globe, Mail, MapPin, Phone, Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import {
+  ModifyClientDialog,
+  type ClientFormValues,
+} from '@/components/clients/modify-client-dialog.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -15,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,7 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.js';
+import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
+import { DocumentType } from '@/gql/graphql.js';
 import { pcn874RecordEnum } from '@/helpers/index.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useGetSortCodes } from '@/hooks/use-get-sort-codes.js';
@@ -48,8 +55,8 @@ const businessFormSchema = z
     localName: z.string().optional(),
     govId: z.string().optional(),
     address: z.string().optional(),
-    generalContacts: z.array(z.string().email()),
-    website: z.string().url().optional().or(z.literal('')),
+    generalContacts: z.array(z.email()),
+    website: z.url().optional().or(z.literal('')),
     phone: z.string().optional(),
     taxCategory: z.string().optional(),
     sortCode: z.string().optional(),
@@ -57,8 +64,9 @@ const businessFormSchema = z
     irsCode: z.int().optional(),
     defaultDescription: z.string().optional(),
     defaultTags: z.array(z.string()),
+    isClient: z.boolean().default(false).optional(),
     transactionPhrases: z.array(z.string()),
-    emailAddresses: z.array(z.string().email()),
+    emailAddresses: z.array(z.email()),
   })
   .refine(
     data => {
@@ -117,6 +125,7 @@ export function InsertBusiness({
   onAdd?: (businessId: string) => void;
 }) {
   const [isNewBusinessOpen, setIsNewBusinessOpen] = useState(false);
+  const [client, setClient] = useState<ClientFormValues | null>(null);
 
   const { insertBusiness, fetching: addingInProcess } = useInsertBusiness();
 
@@ -135,44 +144,68 @@ export function InsertBusiness({
     const newBusiness = await insertBusiness({
       fields: convertFormDataToInsertNewBusinessInput(data),
     });
+    if (data.isClient && newBusiness?.id) {
+      setClient({
+        businessId: newBusiness.id,
+        generatedDocumentType: DocumentType.Proforma,
+        emails: [],
+      });
+    } else {
+      onComplete(newBusiness?.id);
+    }
+  };
+
+  const onComplete = (businessId: string = '') => {
+    setClient(null);
     setIsNewBusinessOpen(false);
     form.reset();
-    onAdd?.(newBusiness?.id ?? '');
+    onAdd?.(businessId);
   };
 
   return (
-    <Dialog open={isNewBusinessOpen} onOpenChange={setIsNewBusinessOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4 mr-2" />
-          New Business
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Business</DialogTitle>
-          <DialogDescription>Add a new business to Accounter.</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <ContactInformationSection form={form} />
+    <>
+      <Dialog open={isNewBusinessOpen} onOpenChange={setIsNewBusinessOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="size-4 mr-2" />
+            New Business
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Business</DialogTitle>
+            <DialogDescription>Add a new business to Accounter.</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <ContactInformationSection form={form} />
 
-            <DefaultsSection form={form} />
+              <DefaultsSection form={form} />
 
-            <AutoMatchingSection form={form} />
+              <AutoMatchingSection form={form} />
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsNewBusinessOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={addingInProcess}>
-                Create Business
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsNewBusinessOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addingInProcess}>
+                  Create Business
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      {client?.businessId && (
+        <ModifyClientDialog
+          businessId={client.businessId}
+          client={client}
+          onDone={() => {
+            onComplete(client.businessId);
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -542,6 +575,22 @@ function DefaultsSection({ form }: SectionProps) {
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="isClient"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Client</FormLabel>
+                <FormDescription>Business is a client</FormDescription>
+              </div>
+              <FormControl>
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
             </FormItem>
           )}
         />

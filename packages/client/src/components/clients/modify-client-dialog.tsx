@@ -49,9 +49,10 @@ interface Props {
   businessId: string;
   client?: ClientFormValues | null;
   onDone?: () => void;
+  showTrigger?: boolean;
 }
 
-export function ModifyClientDialog({ client, businessId, onDone }: Props) {
+export function ModifyClientDialog({ client, businessId, onDone, showTrigger = true }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientFormValues | null>(null);
 
@@ -138,13 +139,23 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
   );
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Client
-        </Button>
-      </DialogTrigger>
+    <Dialog
+      open={isDialogOpen}
+      onOpenChange={status => {
+        setIsDialogOpen(status);
+        if (!status) {
+          onDone?.();
+        }
+      }}
+    >
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button size="sm" onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Client
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingClient ? 'Edit Client' : 'Create New Client'}</DialogTitle>
@@ -263,7 +274,14 @@ export function ModifyClientDialog({ client, businessId, onDone }: Props) {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  onDone?.();
+                }}
+              >
                 Cancel
               </Button>
               <Button type="submit">{editingClient ? 'Update Client' : 'Create Client'}</Button>
