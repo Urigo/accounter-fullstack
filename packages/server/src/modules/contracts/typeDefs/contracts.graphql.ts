@@ -17,7 +17,7 @@ export default gql`
   type Contract {
     id: UUID!
     client: Client!
-    purchaseOrder: String
+    purchaseOrders: [String!]!
     startDate: TimelessDate!
     endDate: TimelessDate!
     remarks: String
@@ -51,7 +51,7 @@ export default gql`
   " input for creating a new contract "
   input CreateContractInput {
     clientId: UUID!
-    purchaseOrder: String
+    purchaseOrders: [String!]!
     startDate: TimelessDate!
     endDate: TimelessDate!
     remarks: String
@@ -67,7 +67,7 @@ export default gql`
   " input for updating a contract "
   input UpdateContractInput {
     clientId: UUID
-    purchaseOrder: String
+    purchaseOrders: [String!]!
     startDate: TimelessDate
     endDate: TimelessDate
     remarks: String

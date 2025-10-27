@@ -392,7 +392,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           const month = format(subMonths(today, 1), 'MMMM');
 
           const documentInput: NewDocumentInfo = {
-            remarks: `${contract.purchase_order ? `PO: ${contract.purchase_order}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+            remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
             description: `GraphQL Hive Enterprise License - ${month} ${year}`,
             type: normalizeDocumentType(contract.document_type),
             date: monthStart,
@@ -468,7 +468,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const month = format(subMonths(today, 1), 'MMMM');
 
       const draft: NewDocumentInfo = {
-        remarks: `${contract.purchase_order ? `PO: ${contract.purchase_order}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+        remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
         description: `GraphQL Hive Enterprise License - ${month} ${year}`,
         type: normalizeDocumentType(contract.document_type),
         date: monthStart,
