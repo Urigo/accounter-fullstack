@@ -4,6 +4,7 @@ import { Controller, type Control } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
+import { ROUTES } from '@/router/routes.js';
 import { Select, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -14,7 +15,6 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
-import { getChargeHref } from '../../../screens/charges/charge.js';
 import { CurrencyInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -239,7 +239,7 @@ export const CoreExpenseRow = ({
           {linkedChargeIds.map(id => (
             <Link
               key={id}
-              to={getChargeHref(id)}
+              to={ROUTES.CHARGES.DETAIL(id)}
               target="_blank"
               rel="noreferrer"
               onClick={event => event.stopPropagation()}

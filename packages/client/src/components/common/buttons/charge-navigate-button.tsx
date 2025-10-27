@@ -1,8 +1,9 @@
 import type { ComponentProps, ReactElement } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
-import { getChargeHref } from '../../screens/charges/charge.js';
+import { ROUTES } from '../../../router/routes.js';
 import { Button } from '../../ui/button.js';
 
 export function ChargeNavigateButton(
@@ -10,17 +11,17 @@ export function ChargeNavigateButton(
 ): ReactElement {
   return (
     <Tooltip label="To Charge">
-      <Button
-        onClick={event => {
-          event.stopPropagation();
-          window.open(getChargeHref(props.chargeId), '_blank', 'noreferrer');
-        }}
-        {...props}
-        className={cn('size-7.5', props.className)}
-        variant="ghost"
+      <Link
+        to={ROUTES.CHARGES.DETAIL(props.chargeId)}
+        target="_blank"
+        rel="noreferrer"
+        onClick={event => event.stopPropagation()}
+        className="inline-block"
       >
-        <ExternalLink className="size-5" />
-      </Button>
+        <Button {...props} className={cn('size-7.5', props.className)} variant="ghost">
+          <ExternalLink className="size-5" />
+        </Button>
+      </Link>
     </Tooltip>
   );
 }

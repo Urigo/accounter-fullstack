@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
+import { ROUTES } from '@/router/routes.js';
 import { Mark, Table, Tooltip } from '@mantine/core';
 import {
   BusinessTransactionsInfoDocument,
@@ -12,7 +13,6 @@ import {
 } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES, formatAmountWithCurrency } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
-import { getChargeHref } from '../screens/charges/charge.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
 import { getBusinessTransactionsHref } from './index.js';
@@ -227,64 +227,68 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           </thead>
           <tbody>
             {extendedTransactions.map((row, index) => (
-              <tr
-                key={index}
-                onClick={event => {
-                  event.stopPropagation();
-                  window.open(getChargeHref(row.chargeId), '_blank', 'noreferrer');
-                }}
-              >
-                <td>
-                  <Link
-                    to={getBusinessTransactionsHref({ businessIDs: [row.business.id] })}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={event => event.stopPropagation()}
-                    className="inline-flex items-center font-semibold"
-                  >
-                    {row.business.name}
-                  </Link>
-                </td>
-                <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  {row.amount && row.amount.raw !== 0 && (
-                    <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>{row.amount.formatted}</Mark>
-                  )}
-                </td>
-                <td>
-                  {row.ilsBalance === 0 ? (
-                    formatAmountWithCurrency(row.ilsBalance, Currency.Ils)
-                  ) : (
-                    <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>
-                      {formatAmountWithCurrency(row.ilsBalance, Currency.Ils)}
-                    </Mark>
-                  )}
-                </td>
-                {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
-                {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
-                {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
-                {isCad && <CurrencyCells data={row} currency={Currency.Cad} />}
-                {isJpy && <CurrencyCells data={row} currency={Currency.Jpy} />}
-                {isAud && <CurrencyCells data={row} currency={Currency.Aud} />}
-                {isSek && <CurrencyCells data={row} currency={Currency.Sek} />}
-                <td />
-                {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
-                <td>{row.reference}</td>
-                <td>{row.details}</td>
-                <td>
-                  {row.counterAccount && (
+              <tr key={index}>
+                <Link
+                  to={ROUTES.CHARGES.DETAIL(row.chargeId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={event => event.stopPropagation()}
+                  className="contents"
+                >
+                  <td>
                     <Link
-                      to={getBusinessTransactionsHref({ businessIDs: [row.counterAccount.id] })}
+                      to={getBusinessTransactionsHref({ businessIDs: [row.business.id] })}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
                       className="inline-flex items-center font-semibold"
                     >
-                      {row.counterAccount.name}
+                      {row.business.name}
                     </Link>
-                  )}
-                </td>
-                <td />
+                  </td>
+                  <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {row.amount && row.amount.raw !== 0 && (
+                      <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>
+                        {row.amount.formatted}
+                      </Mark>
+                    )}
+                  </td>
+                  <td>
+                    {row.ilsBalance === 0 ? (
+                      formatAmountWithCurrency(row.ilsBalance, Currency.Ils)
+                    ) : (
+                      <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>
+                        {formatAmountWithCurrency(row.ilsBalance, Currency.Ils)}
+                      </Mark>
+                    )}
+                  </td>
+                  {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
+                  {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
+                  {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
+                  {isCad && <CurrencyCells data={row} currency={Currency.Cad} />}
+                  {isJpy && <CurrencyCells data={row} currency={Currency.Jpy} />}
+                  {isAud && <CurrencyCells data={row} currency={Currency.Aud} />}
+                  {isSek && <CurrencyCells data={row} currency={Currency.Sek} />}
+                  <td />
+                  {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
+                  <td>{row.reference}</td>
+                  <td>{row.details}</td>
+                  <td>
+                    {row.counterAccount && (
+                      <Link
+                        to={getBusinessTransactionsHref({ businessIDs: [row.counterAccount.id] })}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={event => event.stopPropagation()}
+                        className="inline-flex items-center font-semibold"
+                      >
+                        {row.counterAccount.name}
+                      </Link>
+                    )}
+                  </td>
+                  <td />
+                </Link>
               </tr>
             ))}
           </tbody>

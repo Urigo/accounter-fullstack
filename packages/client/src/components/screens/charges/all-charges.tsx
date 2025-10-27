@@ -5,7 +5,7 @@ import { Tooltip } from '@mantine/core';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { ChargesFilters, encodeChargesFilters } from '../../charges/charges-filters.js';
+import { ChargesFilters } from '../../charges/charges-filters.js';
 import { ChargesTable } from '../../charges/charges-table.js';
 import {
   EditChargeModal,
@@ -30,22 +30,6 @@ import { Button } from '../../ui/button.js';
     }
   }
 `;
-
-export function getAllChargesHref(filter?: ChargeFilter | null, page?: number): string {
-  const params = new URLSearchParams();
-  if (page) {
-    params.append('page', String(page));
-  }
-
-  const chargesFilters = encodeChargesFilters(filter);
-  if (chargesFilters) {
-    // Add it as a single encoded parameter
-    params.append('chargesFilters', chargesFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/charges${queryParams}`;
-}
 
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
