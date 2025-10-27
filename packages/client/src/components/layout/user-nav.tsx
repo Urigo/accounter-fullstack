@@ -1,5 +1,8 @@
-import { useState, type JSX } from 'react';
-import { CircleCheckBig, FileDown, User2Icon } from 'lucide-react';
+import { useContext, useState, type JSX } from 'react';
+import { CircleCheckBig, FileDown, Shield, User2Icon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { UserContext } from '@/providers/index.js';
+import { ROUTES } from '@/router/routes.js';
 import { Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
@@ -17,10 +20,13 @@ import {
 } from '../ui/dropdown-menu.js';
 
 export function UserNav(): JSX.Element {
+  const { userContext } = useContext(UserContext);
   const [pullDocumentsOpened, { close: closePullDocuments, open: openPullDocuments }] =
     useDisclosure(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const { executeJobs } = useCornJobs();
+
+  const userName = userContext?.username || 'User Name';
 
   return (
     <>
@@ -35,11 +41,27 @@ export function UserNav(): JSX.Element {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">User Name</p>
+              <p className="text-sm font-medium leading-none">{userName}</p>
               <p className="text-xs leading-none text-muted-foreground">Email</p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem>
+            <Link
+              to={{
+                pathname: ROUTES.BUSINESSES.DETAIL(userContext?.context.adminBusinessId || ''),
+                search: '?tab=admin',
+              }}
+            >
+              <Button
+                variant="ghost"
+                className="flex items-center gap-1 data-[state=active]:bg-background"
+              >
+                <Shield className="size-4" />
+                <span className="hidden sm:inline">Admin Configurations</span>
+              </Button>
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>
             <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
               Add Balance Charge
