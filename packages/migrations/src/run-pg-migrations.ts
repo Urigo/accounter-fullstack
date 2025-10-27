@@ -121,6 +121,7 @@ import migration_2025_09_19T10_06_24_add_documents_hash from './actions/2025-09-
 import migration_2025_10_09T15_50_45_deel_invoices_adjustments from './actions/2025-10-09T15-50-45.deel-invoices-adjustments.js';
 import migration_2025_10_20T09_04_56_link_countries_table_with_business_country from './actions/2025-10-20T09-04-56.link-countries-table-with-business-country.js';
 import migration_2025_10_21T12_45_26_add_financial_entity_activity_flag from './actions/2025-10-21T12-45-26.add-financial-entity-activity-flag.js';
+import migration_2025_10_27T17_17_23_multiple_pos_per_contract_2 from './actions/2025-10-27T17-17-23.multiple-pos-per-contract-2.js';
 import migration_2025_10_27T17_17_23_multiple_pos_per_contract from './actions/2025-10-27T17-17-23.multiple-pos-per-contract.js';
 import migration_2025_10_27T18_11_45_add_operations_count_per_contract from './actions/2025-10-27T18-11-45.add-operations-count-per-contract.js';
 import { runMigrations } from './pg-migrator.js';
@@ -253,5 +254,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_10_21T12_45_26_add_financial_entity_activity_flag,
       migration_2025_10_27T17_17_23_multiple_pos_per_contract,
       migration_2025_10_27T18_11_45_add_operations_count_per_contract,
+      migration_2025_10_27T17_17_23_multiple_pos_per_contract_2,
     ],
   });
