@@ -538,6 +538,7 @@ function DefaultsSection({ form }: SectionProps) {
                   placeholder="Select Default Tags"
                   variant="default"
                   disabled={fetchingTags}
+                  asChild
                 />
               </FormControl>
               <FormMessage />
