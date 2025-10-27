@@ -20,29 +20,29 @@ export default gql`
     name: String!
     governmentId: String!
     business: LtdFinancialEntity!
-    employerWithholdingTaxAccountNumber: String
-    taxPrepaymentId: String
-    nationalInsuranceEmployerId: String
-    advanceTaxRate: Float
+    withholdingTaxBookNumber: String
+    withholdingTaxFileNumber: String
+    socialSecurityEmployerId: String
+    taxAdvancesRate: Float
     registrationDate: TimelessDate!
   }
 
   " Input type for creating a new admin business. "
   input CreateAdminBusinessInput {
     businessId: UUID!
-    employerWithholdingTaxAccountNumber: String
-    taxPrepaymentId: String
-    nationalInsuranceEmployerId: String
-    advanceTaxRate: Float
+    withholdingTaxBookNumber: String
+    withholdingTaxFileNumber: String
+    socialSecurityEmployerId: String
+    taxAdvancesRate: Float
     registrationDate: TimelessDate!
   }
 
   " Input type for updating admin business details. "
   input UpdateAdminBusinessInput {
-    employerWithholdingTaxAccountNumber: String
-    taxPrepaymentId: String
-    nationalInsuranceEmployerId: String
-    advanceTaxRate: Float
+    withholdingTaxBookNumber: String
+    withholdingTaxFileNumber: String
+    socialSecurityEmployerId: String
+    taxAdvancesRate: Float
     registrationDate: TimelessDate
   }
 

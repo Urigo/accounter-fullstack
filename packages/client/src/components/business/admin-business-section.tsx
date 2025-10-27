@@ -46,10 +46,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
     ... on LtdFinancialEntity {
       adminInfo {
         id
-        employerWithholdingTaxAccountNumber
-        taxPrepaymentId
-        nationalInsuranceEmployerId
-        advanceTaxRate
+        withholdingTaxBookNumber
+        withholdingTaxFileNumber
+        socialSecurityEmployerId
+        taxAdvancesRate
         registrationDate
       }
     }
@@ -57,16 +57,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 `;
 
 const adminBusinessFormSchema = z.object({
-  employerWithholdingTaxAccountNumber: z.string().min(1, {
-    message: 'Employer Withholding Tax Account Number is required',
+  withholdingTaxBookNumber: z.string().min(1, {
+    message: 'Withholding Tax Book Number is required',
   }),
-  taxPrepaymentId: z.string().min(1, {
-    message: 'Tax Prepayment ID is required',
+  withholdingTaxFileNumber: z.string().min(1, {
+    message: 'Withholding Tax File Number is required',
   }),
-  nationalInsuranceEmployerId: z.string().min(1, {
+  socialSecurityEmployerId: z.string().min(1, {
     message: 'National Insurance Employer ID is required',
   }),
-  advanceTaxRate: z
+  taxAdvancesRate: z
     .number()
     .min(0, {
       message: 'Advance Tax Rate must be at least 0',
@@ -75,7 +75,7 @@ const adminBusinessFormSchema = z.object({
       message: 'Advance Tax Rate must be at most 100',
     }),
   registrationDate: z.string().min(1, {
-    message: 'Registration Date is required',
+    message: 'Business Registration Start Date is required',
   }),
 });
 
@@ -89,10 +89,10 @@ function BusinessAdminSectionFragmentToFormValues(
   }
 
   return {
-    employerWithholdingTaxAccountNumber: admin.adminInfo.employerWithholdingTaxAccountNumber ?? '',
-    taxPrepaymentId: admin.adminInfo.taxPrepaymentId ?? '',
-    nationalInsuranceEmployerId: admin.adminInfo.nationalInsuranceEmployerId ?? '',
-    advanceTaxRate: admin.adminInfo.advanceTaxRate ?? 0,
+    withholdingTaxBookNumber: admin.adminInfo.withholdingTaxBookNumber ?? '',
+    withholdingTaxFileNumber: admin.adminInfo.withholdingTaxFileNumber ?? '',
+    socialSecurityEmployerId: admin.adminInfo.socialSecurityEmployerId ?? '',
+    taxAdvancesRate: admin.adminInfo.taxAdvancesRate ?? 0,
     registrationDate: admin.adminInfo.registrationDate ?? '',
   };
 }
@@ -101,10 +101,10 @@ function convertFormDataToUpdateAdminBusinessInput(
   formData: Partial<AdminBusinessFormValues>,
 ): UpdateAdminBusinessInput {
   return {
-    employerWithholdingTaxAccountNumber: formData.employerWithholdingTaxAccountNumber,
-    taxPrepaymentId: formData.taxPrepaymentId,
-    nationalInsuranceEmployerId: formData.nationalInsuranceEmployerId,
-    advanceTaxRate: formData.advanceTaxRate,
+    withholdingTaxBookNumber: formData.withholdingTaxBookNumber,
+    withholdingTaxFileNumber: formData.withholdingTaxFileNumber,
+    socialSecurityEmployerId: formData.socialSecurityEmployerId,
+    taxAdvancesRate: formData.taxAdvancesRate,
     registrationDate: formData.registrationDate
       ? (formatTimelessDateString(new Date(formData.registrationDate)) as TimelessDateString)
       : undefined,
@@ -174,16 +174,16 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Employer Withholding Tax Account Number */}
+              {/* Withholding Tax */}
               <FormField
                 control={form.control}
-                name="employerWithholdingTaxAccountNumber"
+                name="withholdingTaxBookNumber"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Employer Withholding Tax Account Number</FormLabel>
+                    <FormLabel>Withholding Tax Book Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter account number"
+                        placeholder="Enter book number"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -193,16 +193,15 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* Tax Prepayment ID */}
               <FormField
                 control={form.control}
-                name="taxPrepaymentId"
+                name="withholdingTaxFileNumber"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Tax Prepayment ID</FormLabel>
+                    <FormLabel>Withholding Tax File Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter prepayment ID"
+                        placeholder="Enter file number"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -212,10 +211,10 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* National Insurance Employer ID */}
+              {/* Social Security Employer ID */}
               <FormField
                 control={form.control}
-                name="nationalInsuranceEmployerId"
+                name="socialSecurityEmployerId"
                 render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>National Insurance Employer ID</FormLabel>
@@ -234,10 +233,10 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
               {/* Advance Tax Rate */}
               <FormField
                 control={form.control}
-                name="advanceTaxRate"
+                name="taxAdvancesRate"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Advance Tax Rate (%)</FormLabel>
+                    <FormLabel>Tax Advances Rate (%)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -254,13 +253,13 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* Registration Date */}
+              {/* Business Registration Start Date */}
               <FormField
                 control={form.control}
                 name="registrationDate"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Registration Date</FormLabel>
+                    <FormLabel>Business Registration Start Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} className={dirtyFieldMarker(fieldState)} />
                     </FormControl>
