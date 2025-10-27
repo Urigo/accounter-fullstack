@@ -21,7 +21,7 @@ import {
   query ClientContractsSection($clientId: UUID!) {
     contractsByClient(clientId: $clientId) {
       id
-      purchaseOrder
+      purchaseOrders
       startDate
       endDate
       amount {
@@ -46,7 +46,7 @@ function convertContractDataToFormValues(
     id: contract.id,
     // TODO: activate this field later. requires additional backend support
     // operationsLimit: 0, // Placeholder, as this field is not in the query
-    po: contract.purchaseOrder ?? undefined,
+    pos: contract.purchaseOrders ?? undefined,
     startDate: contract.startDate,
     endDate: contract.endDate,
     paymentAmount: contract.amount.raw,
@@ -130,8 +130,22 @@ export function ContractsSection({ clientId }: Props) {
                 </div>
 
                 <div className="space-y-0">
-                  <p className="text-sm text-muted-foreground">PO Number</p>
-                  <p className="text-sm font-medium font-mono">{contract.purchaseOrder}</p>
+                  <p className="text-sm text-muted-foreground">PO Numbers</p>
+                  <p className="text-sm font-medium font-mono">
+                    {contract.purchaseOrders.toReversed()[0] ?? ''}
+                  </p>
+                  {contract.purchaseOrders.length > 1 && (
+                    <div className="space-x-1">
+                      {contract.purchaseOrders
+                        .toReversed()
+                        .slice(1)
+                        .map(po => (
+                          <span key={po} className="text-xs font-thin font-mono">
+                            {po}
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* TODO: activate this field later. requires additional backend support */}
