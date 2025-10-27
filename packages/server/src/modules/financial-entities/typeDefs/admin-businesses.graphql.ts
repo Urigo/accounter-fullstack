@@ -24,6 +24,7 @@ export default gql`
     withholdingTaxFileNumber: String
     socialSecurityEmployerId: String
     taxAdvancesRate: Float
+    taxAdvancesId: String
     registrationDate: TimelessDate!
   }
 
@@ -34,6 +35,7 @@ export default gql`
     withholdingTaxFileNumber: String
     socialSecurityEmployerId: String
     taxAdvancesRate: Float
+    taxAdvancesId: String
     registrationDate: TimelessDate!
   }
 
@@ -43,6 +45,7 @@ export default gql`
     withholdingTaxFileNumber: String
     socialSecurityEmployerId: String
     taxAdvancesRate: Float
+    taxAdvancesId: String
     registrationDate: TimelessDate
   }
 

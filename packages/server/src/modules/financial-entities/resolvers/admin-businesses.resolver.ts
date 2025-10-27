@@ -42,6 +42,7 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
     withholdingTaxFileNumber: admin => admin.nikuim,
     socialSecurityEmployerId: admin => admin.pinkas_social_security_2022,
     taxAdvancesRate: admin => admin.advance_tax_rate,
+    taxAdvancesId: admin => admin.tax_siduri_number_2022,
     registrationDate: admin => {
       if (!admin.registration_date) {
         throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
