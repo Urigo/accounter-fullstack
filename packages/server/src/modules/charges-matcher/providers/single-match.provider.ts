@@ -6,36 +6,10 @@
  */
 
 import { isWithinDateWindow } from '../helpers/candidate-filter.helper.js';
-import type { Document } from '../types.js';
+import type { DocumentCharge, MatchScore, TransactionCharge } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
-import { scoreMatch, type MatchScore } from './match-scorer.provider.js';
+import { scoreMatch } from './match-scorer.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
-
-/**
- * Transaction charge - contains only transactions
- */
-export interface TransactionCharge {
-  chargeId: string;
-  transactions: Array<{
-    id: string;
-    charge_id: string;
-    amount: number;
-    currency: string;
-    business_id: string | null;
-    event_date: Date;
-    debit_date: Date | null;
-    source_description: string | null;
-    is_fee: boolean | null;
-  }>;
-}
-
-/**
- * Document charge - contains only documents
- */
-export interface DocumentCharge {
-  chargeId: string;
-  documents: Document[];
-}
 
 /**
  * Match result with score and metadata
@@ -169,9 +143,8 @@ export function findMatches(
   const complementaryCandidates = candidateCharges.filter(candidate => {
     if (isSourceTransaction) {
       return isDocumentCharge(candidate);
-    } else {
-      return isTransactionCharge(candidate);
     }
+    return isTransactionCharge(candidate);
   });
 
   // Step 4: Get source date for window filtering
@@ -253,7 +226,7 @@ export function findMatches(
         _txCharge: txCharge,
         _docCharge: docCharge,
       });
-    } catch (error) {
+    } catch {
       // Skip candidates that fail scoring (e.g., mixed currencies, invalid data)
       // This is expected behavior - not all candidates will be scoreable
       continue;

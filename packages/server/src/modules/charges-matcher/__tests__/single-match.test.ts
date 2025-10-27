@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Document } from '../types.js';
+import type { Document, DocumentCharge, TransactionCharge } from '../types.js';
 import {
   findMatches,
-  type DocumentCharge,
-  type TransactionCharge,
 } from '../providers/single-match.provider.js';
 
 // Test user and business IDs

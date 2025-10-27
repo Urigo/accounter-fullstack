@@ -6,6 +6,9 @@
  * validation, amount summation, date selection, and description concatenation.
  */
 
+import type { currency } from '@modules/documents/types';
+import type { AggregatedTransaction } from '../types.js';
+
 /**
  * Minimal transaction interface for aggregation
  * Based on database schema from accounter_schema.transactions
@@ -13,24 +16,14 @@
 export interface Transaction {
   id: string; // UUID
   charge_id: string; // UUID
-  amount: number; // numeric in DB
-  currency: string; // Currency type
+  amount: string; // numeric in DB
+  currency: currency; // Currency type
   business_id: string | null; // UUID or null
   event_date: Date;
   debit_date: Date | null;
+  debit_timestamp: Date | null;
   source_description: string | null;
   is_fee: boolean | null;
-}
-
-/**
- * Aggregated transaction representation
- */
-export interface AggregatedTransaction {
-  amount: number;
-  currency: string;
-  businessId: string | null;
-  date: Date;
-  description: string;
 }
 
 /**
@@ -96,7 +89,7 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
   }
 
   // Sum amounts
-  const totalAmount = nonFeeTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const totalAmount = nonFeeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
   // Get common currency (safe since we validated single currency)
   const currency = nonFeeTransactions[0].currency;
@@ -108,6 +101,17 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
   const earliestDate = nonFeeTransactions.reduce((earliest, t) => {
     return t.event_date < earliest ? t.event_date : earliest;
   }, nonFeeTransactions[0].event_date);
+
+  // Get earliest debit_date
+  const earliestDebitDate = nonFeeTransactions.reduce(
+    (earliest, t) => {
+      const debitDate = t.debit_timestamp ?? t.debit_date;
+      if (debitDate === null) return earliest;
+      if (earliest === null) return debitDate;
+      return debitDate < earliest ? debitDate : earliest;
+    },
+    null as Date | null,
+  );
 
   // Concatenate descriptions with line breaks, filtering out nulls
   const descriptions = nonFeeTransactions
@@ -122,5 +126,6 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
     businessId,
     date: earliestDate,
     description,
+    debitDate: earliestDebitDate,
   };
 }

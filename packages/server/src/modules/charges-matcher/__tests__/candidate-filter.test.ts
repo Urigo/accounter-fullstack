@@ -89,7 +89,7 @@ describe('Candidate Filter', () => {
       const document: Partial<Document> = {
         id: 'doc-5',
         total_amount: 100,
-        currency_code: '',
+        currency_code: null,
         type: 'INVOICE',
       };
 

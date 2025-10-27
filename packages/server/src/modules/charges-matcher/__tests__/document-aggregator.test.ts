@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateDocuments,
-  type AggregatedDocument,
   type Document,
 } from '../providers/document-aggregator.js';
 import type { DocumentType } from '../helpers/document-amount.helper.js';
@@ -43,7 +42,7 @@ describe('Document Aggregator', () => {
       expect(result.currency).toBe('USD');
       expect(result.businessId).toBe('business-1');
       expect(result.date).toEqual(new Date('2024-01-15'));
-      expect(result.documentType).toBe('INVOICE');
+      expect(result.type).toBe('INVOICE');
       expect(result.description).toBe('INV-001');
     });
 
@@ -72,7 +71,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments([document], USER_ID);
 
       expect(result.amount).toBe(100); // Positive: double negation (-1 * -1)
-      expect(result.documentType).toBe('CREDIT_INVOICE');
+      expect(result.type).toBe('CREDIT_INVOICE');
     });
 
     it('should use file_url as description when serial_number is null', () => {
@@ -123,7 +122,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments(documents, USER_ID);
 
       expect(result.amount).toBe(350);
-      expect(result.documentType).toBe('INVOICE');
+      expect(result.type).toBe('INVOICE');
     });
 
     it('should handle mixed regular and credit invoices', () => {
@@ -177,7 +176,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments(documents, USER_ID);
 
       expect(result.amount).toBe(125);
-      expect(result.documentType).toBe('RECEIPT');
+      expect(result.type).toBe('RECEIPT');
     });
 
     it('should handle invoice-receipts', () => {
@@ -189,7 +188,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments(documents, USER_ID);
 
       expect(result.amount).toBe(250);
-      expect(result.documentType).toBe('INVOICE_RECEIPT');
+      expect(result.type).toBe('INVOICE_RECEIPT');
     });
   });
 
@@ -204,7 +203,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments(documents, USER_ID);
 
       expect(result.amount).toBe(150); // Only invoices: 100 + 50
-      expect(result.documentType).toBe('INVOICE');
+      expect(result.type).toBe('INVOICE');
       expect(result.description).toContain('INV-001');
       expect(result.description).toContain('INV-002');
       expect(result.description).not.toContain('REC-001'); // Receipt excluded
@@ -221,7 +220,7 @@ describe('Document Aggregator', () => {
 
       // Credit invoices with user as creditor (business debtor): negate
       expect(result.amount).toBe(-150); // -(100 + 50)
-      expect(result.documentType).toBe('CREDIT_INVOICE');
+      expect(result.type).toBe('CREDIT_INVOICE');
     });
 
     it('should use only invoices/credit-invoices when mixed with invoice-receipts', () => {
@@ -245,7 +244,7 @@ describe('Document Aggregator', () => {
       const result = aggregateDocuments(documents, USER_ID);
 
       expect(result.amount).toBe(150);
-      expect(result.documentType).toBe('RECEIPT');
+      expect(result.type).toBe('RECEIPT');
     });
   });
 
@@ -574,7 +573,7 @@ describe('Document Aggregator', () => {
       expect(result.currency).toBe('USD');
       expect(result.businessId).toBe('business-abc');
       expect(result.date).toEqual(new Date('2024-01-25')); // Latest among invoices
-      expect(result.documentType).toBe('INVOICE'); // First invoice type
+      expect(result.type).toBe('INVOICE'); // First invoice type
       expect(result.description).toContain('INV-2024-001');
       expect(result.description).toContain('CRD-2024-001');
       expect(result.description).not.toContain('REC-2024-001'); // Receipt excluded

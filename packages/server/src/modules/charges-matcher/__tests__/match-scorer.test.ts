@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Document, Transaction } from '../types.js';
+import type { Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
 import {
-  type DocumentCharge,
-  type MatchScore,
   scoreMatch,
   selectTransactionDate,
-  type TransactionCharge,
 } from '../providers/match-scorer.provider.js';
 
 // Test user ID
@@ -143,7 +140,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-2',
           transactions: [
             createTransaction({
-              amount: 200.00,
+              amount: "200.00",
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-15'),
             }),
@@ -176,7 +173,7 @@ describe('Match Scorer', () => {
       it('should handle amount mismatch', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-3',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -455,7 +452,7 @@ describe('Match Scorer', () => {
       it('should handle small amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-14',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -471,7 +468,7 @@ describe('Match Scorer', () => {
       it('should handle large amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-15',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -490,8 +487,8 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-16',
           transactions: [
-            createTransaction({ amount: 50.00, source_description: 'Part 1' }),
-            createTransaction({ amount: 50.00, source_description: 'Part 2' }),
+            createTransaction({ amount: "50.00", source_description: 'Part 1' }),
+            createTransaction({ amount: "50.00", source_description: 'Part 2' }),
           ],
         };
 
@@ -511,7 +508,7 @@ describe('Match Scorer', () => {
       it('should handle credit invoice (negative amounts)', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-17',
-          transactions: [createTransaction({ amount: -100.00 })],
+          transactions: [createTransaction({ amount: "-100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -536,7 +533,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-18',
           transactions: [
             createTransaction({
-              amount: 1234.56,
+              amount: "1234.56",
               currency: 'USD',
               event_date: new Date('2024-03-15'),
               debit_date: new Date('2024-03-17'),

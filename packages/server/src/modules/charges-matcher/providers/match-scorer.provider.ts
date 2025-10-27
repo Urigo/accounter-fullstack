@@ -8,43 +8,12 @@ import type {
   AggregatedDocument,
   AggregatedTransaction,
   ConfidenceScores,
-  Document,
-  Transaction,
+  DocumentCharge,
+  MatchScore,
+  TransactionCharge,
 } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
-
-/**
- * Match score result with confidence and components
- */
-export interface MatchScore {
-  /** Charge ID being scored */
-  chargeId: string;
-  /** Overall confidence score (0.0 - 1.0) */
-  confidenceScore: number;
-  /** Individual confidence component scores */
-  components: ConfidenceScores;
-}
-
-/**
- * Transaction charge for matching
- */
-export interface TransactionCharge {
-  /** Charge UUID */
-  chargeId: string;
-  /** Array of transactions in the charge */
-  transactions: Transaction[];
-}
-
-/**
- * Document charge for matching
- */
-export interface DocumentCharge {
-  /** Charge UUID */
-  chargeId: string;
-  /** Array of documents in the charge */
-  documents: Document[];
-}
 
 /**
  * Select appropriate transaction date based on document type
@@ -158,8 +127,8 @@ export function scoreMatch(
  * @returns Match score
  */
 function calculateScoreWithDate(
-  transaction: AggregatedTransaction,
-  document: AggregatedDocument,
+  transaction: Omit<AggregatedTransaction, 'debitDate'>,
+  document: Omit<AggregatedDocument, 'businessIsCreditor'>,
   transactionDate: Date,
   chargeId: string,
 ): MatchScore {

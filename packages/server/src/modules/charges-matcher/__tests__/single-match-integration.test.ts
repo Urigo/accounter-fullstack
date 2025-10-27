@@ -41,7 +41,7 @@ function createTransaction(overrides: Partial<any> = {}): Transaction {
   return {
     id: `tx-${Math.random()}`,
     charge_id: 'charge-tx',
-    amount: 100,
+    amount: "100",
     currency: 'USD',
     business_id: BUSINESS_A,
     event_date: new Date('2024-01-15'),
