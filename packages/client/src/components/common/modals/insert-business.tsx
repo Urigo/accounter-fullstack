@@ -137,6 +137,7 @@ export function InsertBusiness({
       defaultTags: [],
       transactionPhrases: description ? [description] : [],
       emailAddresses: [],
+      locality: 'GAB',
     },
   });
 
