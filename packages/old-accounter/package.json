@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/lodash": "4.17.20",
-    "@types/pg": "8.15.5",
+    "@types/pg": "8.15.6",
     "@types/uuid": "11.0.0"
   }
 }
