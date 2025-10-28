@@ -2497,9 +2497,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.51.0":
-  version: 0.51.0
-  resolution: "@graphql-hive/cli@npm:0.51.0"
+"@graphql-hive/cli@npm:0.52.0":
+  version: 0.52.0
+  resolution: "@graphql-hive/cli@npm:0.52.0"
   dependencies:
     "@graphql-hive/core": "npm:0.13.0"
     "@graphql-inspector/core": "npm:5.1.0-alpha-20231208113249-34700c8a"
@@ -2522,7 +2522,7 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/01cfe7d3928350ca65040aad5e7b2ea0f59af4ed300a44f78f4f48b5f325fecc7579ea01f084dae22c88ad130add0a88dec2d972bbf3f6d1d248f2a9031e79a2
+  checksum: 10c0/c69d640548bb4f930c7785d21d31b78531ca462f864edb3c03305899ee9c4d4c5f5d5668884a62e43246a001feaa49aa3cd94112642d68732f223ef0b6e61a88
   languageName: node
   linkType: hard
 
@@ -8664,7 +8664,7 @@ __metadata:
     "@graphql-codegen/typescript": "npm:5.0.2"
     "@graphql-codegen/typescript-resolvers": "npm:4.5.2"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
-    "@graphql-hive/cli": "npm:0.51.0"
+    "@graphql-hive/cli": "npm:0.52.0"
     "@graphql-inspector/cli": "npm:5.0.8"
     "@parcel/watcher": "npm:2.5.1"
     "@pgtyped/cli": "npm:2.4.3"
