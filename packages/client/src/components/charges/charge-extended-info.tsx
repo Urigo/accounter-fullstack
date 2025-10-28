@@ -4,6 +4,7 @@ import { useQuery } from 'urql';
 import { Accordion, Box, Collapse, Loader, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  ChargeLedgerRecordsTableFieldsFragmentDoc,
   ChargesTableErrorsFieldsFragmentDoc,
   ChargeTableTransactionsFieldsFragmentDoc,
   ConversionChargeInfoFragmentDoc,
@@ -12,7 +13,6 @@ import {
   ExchangeRatesInfoFragmentDoc,
   FetchChargeDocument,
   TableDocumentsFieldsFragmentDoc,
-  TableLedgerRecordsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
   type FetchChargeQuery,
@@ -55,7 +55,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
       }
       ...DocumentsGalleryFields @defer
       ...TableDocumentsFields @defer
-      ...TableLedgerRecordsFields @defer
+      ...ChargeLedgerRecordsTableFields @defer
       ...ChargeTableTransactionsFields @defer
       ...ConversionChargeInfo @defer
       ...CreditcardBankChargeInfo @defer
@@ -85,6 +85,31 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
     additionalDocuments {
       id
       ...TableDocumentsRowFields
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargeLedgerRecordsTableFields on Charge {
+    id
+    ledger {
+      __typename
+      records {
+        id
+        ...LedgerRecordsTableFields
+      }
+      ... on Ledger @defer {
+        validate {
+          ... on LedgerValidation @defer {
+            matches
+            differences {
+              id
+              ...LedgerRecordsTableFields
+            }
+          }
+        }
+      }
     }
   }
 `;
@@ -191,7 +216,7 @@ export function ChargeExtendedInfo({
 
   const ledgerRecordsAreReady = isFragmentReady(
     FetchChargeDocument,
-    TableLedgerRecordsFieldsFragmentDoc,
+    ChargeLedgerRecordsTableFieldsFragmentDoc,
     charge,
   );
 
@@ -442,7 +467,7 @@ export function ChargeExtendedInfo({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  {ledgerRecordsAreReady && <LedgerTable ledgerFragment={charge} />}
+                  {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
                 </Accordion.Panel>
               </Accordion.Item>
             )}
@@ -460,3 +485,19 @@ export function ChargeExtendedInfo({
     </div>
   );
 }
+
+type ChargeLedgerTableProps = {
+  data: FragmentType<typeof ChargeLedgerRecordsTableFieldsFragmentDoc>;
+};
+
+export const ChargeLedgerTable = ({ data }: ChargeLedgerTableProps): ReactElement => {
+  const { ledger } = getFragmentData(ChargeLedgerRecordsTableFieldsFragmentDoc, data);
+
+  return (
+    <LedgerTable
+      ledgerRecordsData={ledger.records}
+      ledgerDiffData={ledger.validate?.differences}
+      matches={ledger.validate?.matches}
+    />
+  );
+};
