@@ -59,6 +59,7 @@ const contractFormSchema = z.object({
   isActive: z.boolean(),
   defaultRemark: z.string().optional(),
   defaultDocumentType: z.enum(Object.values(DocumentType)),
+  operationsLimit: z.int().min(0, 'Operations limit must be non-negative'),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
@@ -78,6 +79,7 @@ const newContractDefaultValues: ContractFormValues = {
   isActive: true,
   defaultRemark: undefined,
   defaultDocumentType: DocumentType.Proforma,
+  operationsLimit: 0,
 };
 
 interface Props {
@@ -137,6 +139,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
         isActive: contract.isActive,
         defaultRemark: contract.defaultRemark,
         defaultDocumentType: contract.defaultDocumentType,
+        operationsLimit: contract.operationsLimit,
       });
       setIsDialogOpen(true);
     }
@@ -166,6 +169,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
             purchaseOrders: values.pos,
             remarks: values.defaultRemark,
             startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+            operationsLimit: values.operationsLimit,
           },
         });
       } else {
@@ -188,6 +192,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
             purchaseOrders: values.pos,
             remarks: values.defaultRemark,
             startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+            operationsLimit: values.operationsLimit,
           },
         });
       }
@@ -219,8 +224,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-4 md:grid-cols-2">
-                {/* TODO: activate this field later. requires additional backend support */}
-                {/* <FormField
+                <FormField
                   control={form.control}
                   name="operationsLimit"
                   render={({ field }) => (
@@ -232,8 +236,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
                       <FormMessage />
                     </FormItem>
                   )}
-                /> */}
-
+                />
                 <FormField
                   control={form.control}
                   name="pos"

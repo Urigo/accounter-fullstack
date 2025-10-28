@@ -35,6 +35,7 @@ import {
       remarks
       plan
       msCloud
+      operationsLimit
     }
   }
 `;
@@ -58,6 +59,7 @@ function convertContractDataToFormValues(
     subscriptionPlan: contract.plan ?? undefined,
     defaultRemark: contract.remarks ?? undefined,
     defaultDocumentType: contract.documentType ?? undefined,
+    operationsLimit: contract.operationsLimit,
   };
 }
 
@@ -173,6 +175,11 @@ export function ContractsSection({ clientId }: Props) {
                   <p className="text-sm font-medium">
                     {contract.plan ? standardPlan(contract.plan) : 'N/A'}
                   </p>
+                </div>
+
+                <div className="space-y-0">
+                  <p className="text-sm text-muted-foreground">Operations Limit</p>
+                  <p className="text-sm font-medium">{contract.operationsLimit.toLocaleString()}</p>
                 </div>
 
                 <div className="space-y-0">
