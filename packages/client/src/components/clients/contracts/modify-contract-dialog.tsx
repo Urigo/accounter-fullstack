@@ -100,9 +100,12 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
   });
 
   const addPO = () => {
-    if (newPO.trim()) {
+    const trimmedPO = newPO.trim();
+    if (trimmedPO) {
       const currentLinks = form.getValues('pos');
-      form.setValue('pos', [...currentLinks, newPO.trim()], { shouldDirty: true });
+      if (!currentLinks.includes(trimmedPO)) {
+        form.setValue('pos', [...currentLinks, trimmedPO], { shouldDirty: true });
+      }
       setNewPO('');
     }
   };
@@ -253,13 +256,9 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div>
+                      <div className="flex flex-wrap gap-2 mt-2">
                         {field.value?.map((link, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="gap-1 max-w-xs truncate"
-                          >
+                          <Badge key={link} variant="secondary" className="gap-1 max-w-xs truncate">
                             {link}
                             {index === field.value.length - 1 && (
                               <Button
