@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { DocumentType } from '@/gql/graphql.js';
 import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
 import { useUpdateDocument } from '@/hooks/use-update-document.js';
-import { useUrlQuery } from '@/hooks/use-url-query.js';
+import { ROUTES } from '@/router/routes.js';
 import { Indicator } from '@mantine/core';
-import { getBusinessHref } from '../../charges/helpers.js';
 import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
@@ -20,7 +19,6 @@ type Props = {
 };
 
 export const Creditor = ({ document, onChange }: Props): ReactElement => {
-  const { get } = useUrlQuery();
   const dbCreditor = 'creditor' in document ? document.creditor : undefined;
 
   const shouldHaveCreditor =
@@ -29,13 +27,6 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
     (shouldHaveCreditor && !dbCreditor?.id) || DocumentType.Unprocessed === document.documentType;
 
   const { selectableBusinesses, refresh: refreshBusinesses } = useGetBusinesses();
-
-  const encodedFilters = get('chargesFilters');
-
-  const getHref = useCallback(
-    (businessId: string) => getBusinessHref(businessId, encodedFilters as string),
-    [encodedFilters],
-  );
 
   const suggestedCreditor = useMemo(() => {
     if (dbCreditor || !('missingInfoSuggestions' in document) || !document.missingInfoSuggestions) {
@@ -106,7 +97,7 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
           {shouldHaveCreditor &&
             (id ? (
               <Link
-                to={getHref(id)}
+                to={ROUTES.BUSINESSES.DETAIL(id)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={event => event.stopPropagation()}

@@ -15,7 +15,6 @@ import { FIAT_CURRENCIES, formatAmountWithCurrency } from '../../helpers/index.j
 import { AccounterLoader } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { DownloadCSV } from './download-csv.js';
-import { getBusinessTransactionsHref } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -237,7 +236,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                 >
                   <td>
                     <Link
-                      to={getBusinessTransactionsHref({ businessIDs: [row.business.id] })}
+                      to={ROUTES.BUSINESSES.DETAIL(row.business.id)}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
@@ -277,7 +276,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
                   <td>
                     {row.counterAccount && (
                       <Link
-                        to={getBusinessTransactionsHref({ businessIDs: [row.counterAccount.id] })}
+                        to={ROUTES.BUSINESSES.DETAIL(row.counterAccount.id)}
                         target="_blank"
                         rel="noreferrer"
                         onClick={event => event.stopPropagation()}

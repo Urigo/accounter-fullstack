@@ -21,10 +21,7 @@ import { AccounterTableRow } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
-import {
-  BusinessTransactionsFilters,
-  encodeTransactionsFilters,
-} from './business-transactions-filters.js';
+import { BusinessTransactionsFilters } from './business-transactions-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -68,30 +65,6 @@ import {
     }
   }
 `;
-
-export function getBusinessTransactionsHref(filter?: BusinessTransactionsFilter | null): string {
-  const params = new URLSearchParams();
-
-  let businessId: string | undefined = undefined;
-  let adjustedFilter = filter;
-  if (filter?.businessIDs && filter.businessIDs.length === 1) {
-    const { businessIDs, ...rest } = filter;
-    businessId = businessIDs[0];
-    adjustedFilter = rest;
-  }
-
-  const transactionsFilters = encodeTransactionsFilters(adjustedFilter);
-  if (transactionsFilters) {
-    // Add it as a single encoded parameter
-    params.append('transactionsFilters', transactionsFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  if (businessId) {
-    return `/businesses/${businessId}/transactions${queryParams}`;
-  }
-  return `/businesses/transactions${queryParams}`;
-}
 
 type BusinessTransactionsSum = Extract<
   BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],

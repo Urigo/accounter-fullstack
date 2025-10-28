@@ -1,8 +1,6 @@
-import { useCallback, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import type { ChargeFilter } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { getBusinessTransactionsHref } from '../business-transactions/index.js';
+import { ROUTES } from '@/router/routes.js';
 
 type Props = {
   account?: {
@@ -16,33 +14,6 @@ type Props = {
 };
 
 export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement => {
-  const { get } = useUrlQuery();
-
-  const encodedFilters = get('chargesFilters');
-
-  const getHref = useCallback(
-    (businessID: string) => {
-      let currentFilters: ChargeFilter = {};
-      if (encodedFilters) {
-        try {
-          const decoded = decodeURIComponent(encodedFilters);
-          const parsed = JSON.parse(decoded);
-          currentFilters = parsed as ChargeFilter;
-        } catch (error) {
-          console.error('Failed to parse filters from URL:', error);
-        }
-      }
-
-      return getBusinessTransactionsHref({
-        ownerIds: currentFilters.byOwners || [],
-        businessIDs: [businessID],
-        ...(currentFilters.fromDate && { fromDate: currentFilters.fromDate }),
-        ...(currentFilters.toDate && { toDate: currentFilters.toDate }),
-      });
-    },
-    [encodedFilters],
-  );
-
   const isAccountDiff = diffAccount && diffAccount?.id !== account?.id;
 
   return (
@@ -51,7 +22,7 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
         <>
           {account && (
             <Link
-              to={getHref(account.id)}
+              to={ROUTES.BUSINESSES.DETAIL(account.id)}
               target="_blank"
               rel="noreferrer"
               onClick={event => event.stopPropagation()}
@@ -63,7 +34,7 @@ export const CounterpartyCell = ({ account, diffAccount }: Props): ReactElement 
           {isAccountDiff && diffAccount && (
             <div className="border-2 border-yellow-500 rounded-md">
               <Link
-                to={getHref(diffAccount.id)}
+                to={ROUTES.BUSINESSES.DETAIL(diffAccount.id)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={event => event.stopPropagation()}

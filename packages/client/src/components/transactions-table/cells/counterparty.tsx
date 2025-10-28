@@ -1,11 +1,9 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { ChargeFilter } from '../../../gql/graphql.js';
+import { ROUTES } from '@/router/routes.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
-import { getBusinessTransactionsHref } from '../../business-transactions/index.js';
 import { SelectWithSearch, Tooltip } from '../../common/index.js';
 import { InsertBusiness } from '../../common/modals/insert-business.jsx';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.jsx';
@@ -18,7 +16,6 @@ type Props = {
 };
 
 export function Counterparty({ transaction, onChange }: Props): ReactElement {
-  const { get } = useUrlQuery();
   const {
     id,
     counterparty,
@@ -58,24 +55,6 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
     [updateBusiness, onChange],
   );
 
-  const encodedFilters = get('chargesFilters');
-
-  const getHref = useCallback(
-    (businessID: string) => {
-      const currentFilters = encodedFilters
-        ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
-        : {};
-
-      return getBusinessTransactionsHref({
-        fromDate: currentFilters.fromDate,
-        toDate: currentFilters.toDate,
-        ownerIds: currentFilters.byOwners,
-        businessIDs: [businessID],
-      });
-    },
-    [encodedFilters],
-  );
-
   const { selectableBusinesses: selectOptions, fetching: businessesLoading } = useGetBusinesses();
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
@@ -87,7 +66,7 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
       <div className="flex flex-wrap flex-col justify-center">
         {counterparty?.id ? (
           <Link
-            to={getHref(counterparty.id)}
+            to={ROUTES.BUSINESSES.DETAIL(counterparty.id)}
             target="_blank"
             rel="noreferrer"
             onClick={event => event.stopPropagation()}
