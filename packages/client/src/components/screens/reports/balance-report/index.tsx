@@ -25,7 +25,6 @@ import {
 import {
   BALANCE_REPORT_FILTERS_QUERY_PARAM,
   BalanceReportFilters,
-  encodeBalanceReportFilters,
   Periods,
   type BalanceReportFilter,
   type Period,
@@ -59,19 +58,6 @@ import { ExtendedTransactionsCard } from './extended-transactions.jsx';
     }
   }
 `;
-
-export function getBalanceReportHref(filter?: BalanceReportFilter | null): string {
-  const params = new URLSearchParams();
-
-  const balanceReportFilters = encodeBalanceReportFilters(filter);
-  if (balanceReportFilters) {
-    // Add it as a single encoded parameter
-    params.append(BALANCE_REPORT_FILTERS_QUERY_PARAM, balanceReportFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/reports/balance${queryParams}`;
-}
 
 const chartConfig = {
   income: {

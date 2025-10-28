@@ -22,7 +22,6 @@ import { DepreciationRecordRow } from './depreciation-record-row.js';
 import {
   DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
   DepreciationReportFilters,
-  encodeDepreciationReportFilters,
 } from './depreciation-report-filters.js';
 import { DepreciationSummaryRow } from './depreciation-summary-row.js';
 
@@ -75,19 +74,6 @@ import { DepreciationSummaryRow } from './depreciation-summary-row.js';
     }
   }
 `;
-
-export function getDepreciationReportHref(filter?: DepreciationReportFilter | null): string {
-  const params = new URLSearchParams();
-
-  const depreciationReportFilters = encodeDepreciationReportFilters(filter);
-  if (depreciationReportFilters) {
-    // Add it as a single encoded parameter
-    params.append(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, depreciationReportFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/reports/depreciation${queryParams}`;
-}
 
 export const DepreciationReport = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);

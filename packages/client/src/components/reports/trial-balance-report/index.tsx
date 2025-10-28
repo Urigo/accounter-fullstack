@@ -7,10 +7,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
-import {
-  encodeTrialBalanceReportFilters,
-  TrialBalanceReportFilters,
-} from './trial-balance-report-filters.js';
+import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceTable } from './trial-balance-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -26,19 +23,6 @@ import { TrialBalanceTable } from './trial-balance-table.js';
     }
   }
 `;
-
-export function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): string {
-  const params = new URLSearchParams();
-
-  const trialBalanceReportFilters = encodeTrialBalanceReportFilters(filter);
-  if (trialBalanceReportFilters) {
-    // Add it as a single encoded parameter
-    params.append('trialBalanceReportFilters', trialBalanceReportFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/reports/trial-balance${queryParams}`;
-}
 
 export const TrialBalanceReport = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState(false);
