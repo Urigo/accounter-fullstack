@@ -1,11 +1,33 @@
+import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { BusinessExtendedInfo } from '../business-ledger/business-extended-info';
+import { BusinessTransactionsSectionDocument } from '@/gql/graphql.js';
+import { TransactionsTable } from '../transactions-table';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query BusinessTransactionsSection($businessId: UUID!) {
+    transactionsByFinancialEntity(financialEntityID: $businessId) {
+      id
+      ...TransactionForTransactionsTableFields
+    }
+  }
+`;
 interface Props {
   businessId: string;
 }
 
 export function TransactionsSection({ businessId }: Props) {
+  const [{ data, fetching }] = useQuery({
+    query: BusinessTransactionsSectionDocument,
+    variables: {
+      businessId,
+    },
+  });
+
+  if (fetching) {
+    return <div>Loading transactions...</div>;
+  }
+
   return (
     <Card>
       <CardHeader className="flex w-full justify-between items-center">
@@ -18,7 +40,7 @@ export function TransactionsSection({ businessId }: Props) {
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <BusinessExtendedInfo businessID={businessId} filter={{}} />
+          <TransactionsTable transactionsProps={data?.transactionsByFinancialEntity ?? []} />
         </div>
       </CardContent>
     </Card>
