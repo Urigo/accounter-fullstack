@@ -17,7 +17,7 @@ import { AllOpenContractsDocument, type AllOpenContractsQuery } from '../gql/gra
           name
         }
       }
-      purchaseOrder
+      purchaseOrders
       startDate
       endDate
       remarks

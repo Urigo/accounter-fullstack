@@ -41,9 +41,9 @@ const updateContract = sql<IUpdateContractQuery>`
         $client_id,
         client_id
       ),
-      purchase_order = COALESCE(
-        $purchase_order,
-        purchase_order
+      purchase_orders = COALESCE(
+        $purchase_orders,
+        purchase_orders
       ),
       start_date = COALESCE(
         $start_date,
@@ -97,7 +97,7 @@ const updateContract = sql<IUpdateContractQuery>`
 const insertContract = sql<IInsertContractQuery>`
         INSERT INTO accounter_schema.clients_contracts (
           client_id,
-          purchase_order,
+          purchase_orders,
           start_date,
           end_date,
           remarks,
@@ -111,7 +111,7 @@ const insertContract = sql<IInsertContractQuery>`
           ms_cloud
         )
         VALUES ($clientId,
-          $purchaseOrder,
+          $purchaseOrders,
           $startDate,
           $endDate,
           $remarks,

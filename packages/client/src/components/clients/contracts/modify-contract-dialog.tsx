@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -48,7 +49,7 @@ const contractFormSchema = z.object({
   // operationsLimit: z.number().optional(),
   startDate: z.iso.date('Start date is required'),
   endDate: z.iso.date('End date is required'),
-  po: z.string().optional(),
+  pos: z.array(z.string()),
   paymentAmount: z.number().min(0, 'Payment amount must be non-negative'),
   paymentCurrency: z.enum(Object.values(Currency), 'Currency is required'),
   productType: z.enum(Object.values(Product)).optional(),
@@ -67,7 +68,7 @@ const newContractDefaultValues: ContractFormValues = {
   // operationsLimit: 0,
   startDate: '',
   endDate: '',
-  po: undefined,
+  pos: [],
   paymentAmount: 0,
   paymentCurrency: Currency.Usd,
   productType: Product.Hive,
@@ -88,6 +89,7 @@ interface Props {
 export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
+  const [newPO, setNewPO] = useState('');
 
   const { updateContract, updating } = useUpdateContract();
   const { createContract, creating } = useCreateContract();
@@ -97,6 +99,26 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
     defaultValues: contract || newContractDefaultValues,
   });
 
+  const addPO = () => {
+    const trimmedPO = newPO.trim();
+    if (trimmedPO) {
+      const currentLinks = form.getValues('pos');
+      if (!currentLinks.includes(trimmedPO)) {
+        form.setValue('pos', [...currentLinks, trimmedPO], { shouldDirty: true });
+      }
+      setNewPO('');
+    }
+  };
+
+  const removePO = (index: number) => {
+    const currentLinks = form.getValues('pos');
+    form.setValue(
+      'pos',
+      currentLinks.filter((_, i) => i !== index),
+      { shouldDirty: true },
+    );
+  };
+
   useEffect(() => {
     if (contract) {
       setEditingContract(contract);
@@ -105,7 +127,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
         // operationsLimit: contract.operationsLimit,
         startDate: contract.startDate,
         endDate: contract.endDate,
-        po: contract.po,
+        pos: contract.pos,
         paymentAmount: contract.paymentAmount,
         paymentCurrency: contract.paymentCurrency,
         productType: contract.productType,
@@ -141,7 +163,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
             msCloud: values.msCloudLink,
             plan: values.subscriptionPlan,
             product: values.productType,
-            purchaseOrder: values.po,
+            purchaseOrders: values.pos,
             remarks: values.defaultRemark,
             startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
           },
@@ -163,7 +185,7 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
             msCloud: values.msCloudLink,
             plan: values.subscriptionPlan,
             product: values.productType,
-            purchaseOrder: values.po,
+            purchaseOrders: values.pos,
             remarks: values.defaultRemark,
             startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
           },
@@ -211,15 +233,46 @@ export function ModifyContractDialog({ clientId, contract, onDone }: Props) {
                     </FormItem>
                   )}
                 /> */}
+
                 <FormField
                   control={form.control}
-                  name="po"
+                  name="pos"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>PO Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="PO-2024-001" {...field} />
-                      </FormControl>
+                      <FormLabel>Purchase Orders</FormLabel>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add PO..."
+                          value={newPO}
+                          onChange={e => setNewPO(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addPO();
+                            }
+                          }}
+                        />
+                        <Button type="button" size="sm" onClick={addPO}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value?.map((link, index) => (
+                          <Badge key={link} variant="secondary" className="gap-1 max-w-xs truncate">
+                            {link}
+                            {index === field.value.length - 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="p-0 size-3"
+                                onClick={() => removePO(index)}
+                              >
+                                <X className="size-3 cursor-pointer flex-shrink-0" />
+                              </Button>
+                            )}
+                          </Badge>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

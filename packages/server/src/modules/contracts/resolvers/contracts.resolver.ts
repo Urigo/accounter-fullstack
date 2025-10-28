@@ -44,7 +44,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           msCloud: input.msCloud?.toString(),
           plan: input.plan,
           product: input.product,
-          purchaseOrder: input.purchaseOrder,
+          purchaseOrders: [...input.purchaseOrders],
           remarks: input.remarks,
           startDate: input.startDate,
         };
@@ -68,7 +68,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           ms_cloud: input.msCloud?.toString(),
           plan: input.plan,
           product: input.product,
-          purchase_order: input.purchaseOrder,
+          purchase_orders: [...input.purchaseOrders],
           remarks: input.remarks,
           start_date: input.startDate,
         };
@@ -102,7 +102,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           throw new GraphQLError('Error fetching client');
         });
     },
-    purchaseOrder: dbContract => dbContract.purchase_order, //String
+    purchaseOrders: dbContract => dbContract.purchase_orders, //String[]
     startDate: dbContract => dateToTimelessDateString(dbContract.start_date), //TimelessDate!
     endDate: dbContract => dateToTimelessDateString(dbContract.end_date), //TimelessDate!
     remarks: dbContract => dbContract.remarks, //String
