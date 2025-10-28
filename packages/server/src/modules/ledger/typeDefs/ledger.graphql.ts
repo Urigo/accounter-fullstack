@@ -6,6 +6,8 @@ export default gql`
       @auth(role: ACCOUNTANT)
     ledgerRecordsByDates(fromDate: TimelessDate!, toDate: TimelessDate!): [LedgerRecord!]!
       @auth(role: ACCOUNTANT)
+    ledgerRecordsByFinancialEntity(financialEntityId: UUID!): [LedgerRecord!]!
+      @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {

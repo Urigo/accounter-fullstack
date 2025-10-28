@@ -1,10 +1,11 @@
-import type { ReactElement } from 'react';
+import { useContext, type ReactElement } from 'react';
 import {
   ArrowLeftRight,
   Building2,
   DollarSign,
   FileCheck,
   FileText,
+  Notebook,
   Plug,
   Settings,
   Shield,
@@ -13,6 +14,7 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { FiltersContext } from '@/providers/filters-context.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
 import { AdminBusinessSection } from './admin-business-section.js';
 import { BusinessHeader } from './business-header.js';
@@ -23,6 +25,7 @@ import { ContactInfoSection } from './contact-info-section.jsx';
 import { ContractsSection } from './contracts-section.jsx';
 import { DocumentsSection } from './documents-section.jsx';
 import { IntegrationsSection } from './integrations-section.jsx';
+import { LedgerSection } from './ledger-section.js';
 import { TransactionsSection } from './transactions-section.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -53,6 +56,9 @@ interface Props {
 export default function Business({ data, refetchBusiness }: Props): ReactElement {
   const business = getFragmentData(BusinessPageFragmentDoc, data);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setFiltersContext } = useContext(FiltersContext);
+
+  setFiltersContext(null);
 
   const activeTab = searchParams.get('tab') || 'contact';
 
@@ -109,6 +115,13 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="ledger"
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <Notebook className="h-4 w-4" />
+              <span className="hidden sm:inline">Ledger</span>
+            </TabsTrigger>
             {isClient && (
               <>
                 <TabsTrigger
@@ -163,6 +176,10 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
           <TabsContent value="documents" className="mt-0">
             <DocumentsSection businessId={business.id} />
+          </TabsContent>
+
+          <TabsContent value="ledger" className="mt-0">
+            <LedgerSection businessId={business.id} />
           </TabsContent>
 
           {isClient && (
