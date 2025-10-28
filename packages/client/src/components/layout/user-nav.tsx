@@ -46,22 +46,19 @@ export function UserNav(): JSX.Element {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Link
-              to={{
-                pathname: ROUTES.BUSINESSES.DETAIL(userContext?.context.adminBusinessId || ''),
-                search: '?tab=admin',
-              }}
-            >
-              <Button
-                variant="ghost"
-                className="flex items-center gap-1 data-[state=active]:bg-background"
+          {userContext?.context.adminBusinessId && (
+            <DropdownMenuItem asChild>
+              <Link
+                to={{
+                  pathname: ROUTES.BUSINESSES.DETAIL(userContext.context.adminBusinessId),
+                  search: '?tab=admin',
+                }}
               >
                 <Shield className="size-4" />
                 <span className="hidden sm:inline">Admin Configurations</span>
-              </Button>
-            </Link>
-          </DropdownMenuItem>
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem>
             <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
               Add Balance Charge

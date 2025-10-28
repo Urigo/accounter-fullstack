@@ -137,7 +137,7 @@ export function InsertBusiness({
       defaultTags: [],
       transactionPhrases: description ? [description] : [],
       emailAddresses: [],
-      locality: 'GAB',
+      locality: 'GAB', // TODO: set default based on DB
     },
   });
 
@@ -201,6 +201,7 @@ export function InsertBusiness({
         <ModifyClientDialog
           businessId={client.businessId}
           client={client}
+          showTrigger={false}
           onDone={() => {
             onComplete(client.businessId);
           }}
