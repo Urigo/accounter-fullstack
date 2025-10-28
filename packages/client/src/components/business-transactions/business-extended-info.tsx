@@ -226,68 +226,65 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           </thead>
           <tbody>
             {extendedTransactions.map((row, index) => (
-              <tr key={index}>
-                <Link
-                  to={ROUTES.CHARGES.DETAIL(row.chargeId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={event => event.stopPropagation()}
-                  className="contents"
-                >
-                  <td>
+              <tr
+                key={index}
+                className="cursor-pointer"
+                onClick={event => {
+                  event.stopPropagation();
+                  window.open(ROUTES.CHARGES.DETAIL(row.chargeId), '_blank', 'noreferrer');
+                }}
+              >
+                <td>
+                  <Link
+                    to={ROUTES.BUSINESSES.DETAIL(row.business.id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={event => event.stopPropagation()}
+                    className="inline-flex items-center font-semibold"
+                  >
+                    {row.business.name}
+                  </Link>
+                </td>
+                <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {row.amount && row.amount.raw !== 0 && (
+                    <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>{row.amount.formatted}</Mark>
+                  )}
+                </td>
+                <td>
+                  {row.ilsBalance === 0 ? (
+                    formatAmountWithCurrency(row.ilsBalance, Currency.Ils)
+                  ) : (
+                    <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>
+                      {formatAmountWithCurrency(row.ilsBalance, Currency.Ils)}
+                    </Mark>
+                  )}
+                </td>
+                {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
+                {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
+                {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
+                {isCad && <CurrencyCells data={row} currency={Currency.Cad} />}
+                {isJpy && <CurrencyCells data={row} currency={Currency.Jpy} />}
+                {isAud && <CurrencyCells data={row} currency={Currency.Aud} />}
+                {isSek && <CurrencyCells data={row} currency={Currency.Sek} />}
+                <td />
+                {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
+                <td>{row.reference}</td>
+                <td>{row.details}</td>
+                <td>
+                  {row.counterAccount && (
                     <Link
-                      to={ROUTES.BUSINESSES.DETAIL(row.business.id)}
+                      to={ROUTES.BUSINESSES.DETAIL(row.counterAccount.id)}
                       target="_blank"
                       rel="noreferrer"
                       onClick={event => event.stopPropagation()}
                       className="inline-flex items-center font-semibold"
                     >
-                      {row.business.name}
+                      {row.counterAccount.name}
                     </Link>
-                  </td>
-                  <td>{row.invoiceDate ? format(new Date(row.invoiceDate), 'dd/MM/yy') : null}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {row.amount && row.amount.raw !== 0 && (
-                      <Mark color={row.amount.raw > 0 ? 'green' : 'red'}>
-                        {row.amount.formatted}
-                      </Mark>
-                    )}
-                  </td>
-                  <td>
-                    {row.ilsBalance === 0 ? (
-                      formatAmountWithCurrency(row.ilsBalance, Currency.Ils)
-                    ) : (
-                      <Mark color={row.ilsBalance > 0 ? 'green' : 'red'}>
-                        {formatAmountWithCurrency(row.ilsBalance, Currency.Ils)}
-                      </Mark>
-                    )}
-                  </td>
-                  {isEur && <CurrencyCells data={row} currency={Currency.Eur} />}
-                  {isUsd && <CurrencyCells data={row} currency={Currency.Usd} />}
-                  {isGbp && <CurrencyCells data={row} currency={Currency.Gbp} />}
-                  {isCad && <CurrencyCells data={row} currency={Currency.Cad} />}
-                  {isJpy && <CurrencyCells data={row} currency={Currency.Jpy} />}
-                  {isAud && <CurrencyCells data={row} currency={Currency.Aud} />}
-                  {isSek && <CurrencyCells data={row} currency={Currency.Sek} />}
-                  <td />
-                  {isExtendAllCurrencies && <ExtendedCurrencyCells data={row} />}
-                  <td>{row.reference}</td>
-                  <td>{row.details}</td>
-                  <td>
-                    {row.counterAccount && (
-                      <Link
-                        to={ROUTES.BUSINESSES.DETAIL(row.counterAccount.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={event => event.stopPropagation()}
-                        className="inline-flex items-center font-semibold"
-                      >
-                        {row.counterAccount.name}
-                      </Link>
-                    )}
-                  </td>
-                  <td />
-                </Link>
+                  )}
+                </td>
+                <td />
               </tr>
             ))}
           </tbody>
