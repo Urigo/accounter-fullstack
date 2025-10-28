@@ -7,5 +7,12 @@ ALTER TABLE
   "accounter_schema"."clients_contracts"
 ADD COLUMN
   "purchase_orders" text[] DEFAULT '{}'::TEXT[] NOT NULL;
+
+update
+  accounter_schema.clients_contracts
+set
+  purchase_orders = ARRAY[purchase_order]
+where
+  purchase_order is not null;
 `,
 } satisfies MigrationExecutor;
