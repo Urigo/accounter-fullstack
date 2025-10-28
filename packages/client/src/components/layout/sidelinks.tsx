@@ -165,9 +165,9 @@ export const sidelinks: SideLink[] = [
         icon: <Factory size={18} />,
       },
       {
-        title: 'Business Transactions',
+        title: 'Business Ledger',
         label: '',
-        href: ROUTES.BUSINESSES.TRANSACTIONS,
+        href: ROUTES.BUSINESSES.LEDGER,
         icon: <ArrowLeftRight size={18} />,
       },
       {

@@ -37,14 +37,14 @@ const Businesses = lazy(() =>
 const BusinessScreen = lazy(() =>
   import('../components/screens/businesses/business.js').then(m => ({ default: m.BusinessScreen })),
 );
-const BusinessTransactionsSummery = lazy(() =>
-  import('../components/business-transactions/index.js').then(m => ({
-    default: m.BusinessTransactionsSummery,
+const BusinessLedgerRecordsSummary = lazy(() =>
+  import('../components/business-ledger/index.js').then(m => ({
+    default: m.BusinessLedgerRecordsSummery,
   })),
 );
-const BusinessTransactionsSingle = lazy(() =>
-  import('../components/business-transactions/business-transactions-single.js').then(m => ({
-    default: m.BusinessTransactionsSingle,
+const BusinessLedgerRecordsSingle = lazy(() =>
+  import('../components/business-ledger/business-ledger-single.js').then(m => ({
+    default: m.BusinessLedgerRecordsSingle,
   })),
 );
 
@@ -264,11 +264,11 @@ export const routes: RouteObject[] = [
                 handle: { title: 'All Businesses' },
               },
               {
-                path: 'transactions',
-                element: withSuspense(BusinessTransactionsSummery, <TableSkeleton />),
+                path: 'ledger-records',
+                element: withSuspense(BusinessLedgerRecordsSummary, <TableSkeleton />),
                 handle: {
-                  title: 'Business Transactions Summary',
-                  breadcrumb: 'Transactions',
+                  title: 'Business Ledger Records Summary',
+                  breadcrumb: 'Ledger',
                 },
               },
               {
@@ -281,11 +281,11 @@ export const routes: RouteObject[] = [
                 },
               },
               {
-                path: ':businessId/transactions',
-                element: withSuspense(BusinessTransactionsSingle, <TableSkeleton />),
+                path: ':businessId/ledger',
+                element: withSuspense(BusinessLedgerRecordsSingle, <TableSkeleton />),
                 handle: {
-                  title: 'Business Transactions',
-                  breadcrumb: 'Transactions',
+                  title: 'Business Ledger',
+                  breadcrumb: 'Ledger',
                 },
               },
             ],

@@ -3,47 +3,47 @@ import { format } from 'date-fns';
 import { Currency } from '../../gql/graphql.js';
 import { currencyCodeToSymbol, type TimelessDateString } from '../../helpers/index.js';
 import { DownloadCSVButton } from '../common/index.js';
-import type { ExtendedTransaction } from './business-extended-info.js';
+import type { ExtendedLedger } from './business-extended-info.js';
 
 interface Props {
-  transactions: Array<ExtendedTransaction>;
+  ledgerRecords: Array<ExtendedLedger>;
   businessName: string;
   fromDate?: TimelessDateString;
   toDate?: TimelessDateString;
 }
 
 export const DownloadCSV = ({
-  transactions,
+  ledgerRecords,
   businessName,
   fromDate,
   toDate,
 }: Props): ReactElement => {
   const createFileVariables = useCallback(async () => {
-    const csvData = convertToCSV(transactions);
-    const fileName = `business_${businessName}_transactions${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
+    const csvData = convertToCSV(ledgerRecords);
+    const fileName = `business_${businessName}_ledger_records${fromDate ? `_${fromDate}` : ''}${toDate ? `_${toDate}` : ''}`;
     return {
       fileName,
       fileContent: csvData,
     };
-  }, [transactions, businessName, fromDate, toDate]);
+  }, [ledgerRecords, businessName, fromDate, toDate]);
 
   return <DownloadCSVButton createFileVariables={createFileVariables} />;
 };
 
-const convertToCSV = (transactions: Array<ExtendedTransaction>): string => {
+const convertToCSV = (ledgerRecords: Array<ExtendedLedger>): string => {
   let csvString = '';
 
   const currencies = Array.from(
     new Set(
-      transactions.filter(t => t.foreignAmount?.currency).map(t => t.foreignAmount!.currency),
+      ledgerRecords.filter(t => t.foreignAmount?.currency).map(t => t.foreignAmount!.currency),
     ),
   );
 
   csvString += `Sorting Date,Date,Amount,Amount Balance,${getHeadersFromForeignCurrencies(currencies)}Reference,Details,Counter Account\r\n`;
 
-  for (const transaction of transactions) {
-    const stringifiedTransaction = handleTransaction(transaction, currencies);
-    csvString += stringifiedTransaction;
+  for (const record of ledgerRecords) {
+    const stringifiedRecord = handleLedgerRecord(record, currencies);
+    csvString += stringifiedRecord;
   }
 
   return csvString;
@@ -59,13 +59,13 @@ function getHeadersFromForeignCurrencies(currencies: Array<Currency>): string {
 }
 
 function getAmountsFromForeignCurrencies(
-  transaction: ExtendedTransaction,
+  ledgerRecord: ExtendedLedger,
   currencies: Array<Currency>,
 ): string {
   let amounts = '';
   currencies.map(currency => {
-    if (transaction.foreignAmount && transaction.foreignAmount.currency === currency) {
-      amounts += `${transaction.foreignAmount.raw},${transaction[`${currency.toLowerCase()}Balance` as keyof ExtendedTransaction] ?? 0},`;
+    if (ledgerRecord.foreignAmount && ledgerRecord.foreignAmount.currency === currency) {
+      amounts += `${ledgerRecord.foreignAmount.raw},${ledgerRecord[`${currency.toLowerCase()}Balance` as keyof ExtendedLedger] ?? 0},`;
     } else {
       amounts += ',,';
     }
@@ -73,21 +73,21 @@ function getAmountsFromForeignCurrencies(
   return amounts;
 }
 
-function handleTransaction(transaction: ExtendedTransaction, currencies: Array<Currency>): string {
-  let transactionString = '';
+function handleLedgerRecord(ledgerRecord: ExtendedLedger, currencies: Array<Currency>): string {
+  let ledgerRecordString = '';
 
-  const sortingDate = transaction.invoiceDate
-    ? format(new Date(transaction.invoiceDate), 'yyy-MM-dd')
+  const sortingDate = ledgerRecord.invoiceDate
+    ? format(new Date(ledgerRecord.invoiceDate), 'yyy-MM-dd')
     : null;
-  const date = transaction.invoiceDate
-    ? format(new Date(transaction.invoiceDate), 'dd/MM/yy')
+  const date = ledgerRecord.invoiceDate
+    ? format(new Date(ledgerRecord.invoiceDate), 'dd/MM/yy')
     : null;
-  const ilsAmount = transaction.amount.raw;
-  const { ilsBalance, reference, details } = transaction;
-  const counterAccount = transaction.counterAccount?.name ?? '';
+  const ilsAmount = ledgerRecord.amount.raw;
+  const { ilsBalance, reference, details } = ledgerRecord;
+  const counterAccount = ledgerRecord.counterAccount?.name ?? '';
 
-  transactionString += `${sortingDate},${date},${ilsAmount},${ilsBalance},${getAmountsFromForeignCurrencies(transaction, currencies)}${sanitizeString(reference ?? '')},${sanitizeString(details ?? '')},${sanitizeString(counterAccount)},\r\n`;
-  return transactionString;
+  ledgerRecordString += `${sortingDate},${date},${ilsAmount},${ilsBalance},${getAmountsFromForeignCurrencies(ledgerRecord, currencies)}${sanitizeString(reference ?? '')},${sanitizeString(details ?? '')},${sanitizeString(counterAccount)},\r\n`;
+  return ledgerRecordString;
 }
 
 function sanitizeString(content: string | number): string {

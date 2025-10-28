@@ -3,31 +3,31 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
 import {
-  BusinessTransactionsSummeryDocument,
+  BusinessLedgerRecordsSummeryDocument,
   Currency,
+  type BusinessLedgerRecordsSummeryQuery,
   type BusinessTransactionsFilter,
-  type BusinessTransactionsSummeryQuery,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterLoader, AccounterTable } from '../common/index.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
-import { BusinessTransactionsFilters } from './business-transactions-filters.js';
+import { BusinessLedgerRecordsFilters } from './business-ledger-filters.js';
 
 type Props = {
   businessId?: string;
 };
 
-export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement => {
+export const BusinessLedgerRecordsSingle = ({ businessId }: Props): ReactElement => {
   const { businessId: businessIdFromUrl } = useParams<{ businessId: string }>();
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const id = businessId || businessIdFromUrl;
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
-    get('transactionsFilters')
+    get('ledgerRecordsFilters')
       ? {
           ...(JSON.parse(
-            decodeURIComponent(get('transactionsFilters') as string),
+            decodeURIComponent(get('ledgerRecordsFilters') as string),
           ) as BusinessTransactionsFilter),
           businessIDs: id ? [id] : [],
         }
@@ -36,17 +36,17 @@ export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement 
         },
   );
   const [{ data, fetching }] = useQuery({
-    query: BusinessTransactionsSummeryDocument,
+    query: BusinessLedgerRecordsSummeryDocument,
     variables: {
       filters: filter,
     },
   });
 
   useEffect(() => {
-    setFiltersContext(<BusinessTransactionsFilters filter={filter} setFilter={setFilter} />);
+    setFiltersContext(<BusinessLedgerRecordsFilters filter={filter} setFilter={setFilter} />);
   }, [data, filter, setFiltersContext, setFilter]);
 
-  const businessTransactionsSum = useMemo(() => {
+  const businessLedgerRecordsSum = useMemo(() => {
     if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
       return [];
     }
@@ -68,7 +68,7 @@ export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement 
       striped
       highlightOnHover
       stickyHeader
-      items={businessTransactionsSum}
+      items={businessLedgerRecordsSum}
       columns={[
         {
           title: 'Business Name',
@@ -106,14 +106,14 @@ export const BusinessTransactionsSingle = ({ businessId }: Props): ReactElement 
   );
 };
 
-type BusinessTransactionsSum = Extract<
-  BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
+type BusinessLedgerRecordsSum = Extract<
+  BusinessLedgerRecordsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
   { businessTransactionsSum: unknown }
 >['businessTransactionsSum'][number];
 
 type CellInfo = {
   title: ReactNode;
-  value: (data: BusinessTransactionsSum) => string | ReactNode;
+  value: (data: BusinessLedgerRecordsSum) => string | ReactNode;
   style?: React.CSSProperties;
 };
 

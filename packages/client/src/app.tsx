@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { BusinessTransactionsSingle } from './components/business-transactions/business-transactions-single.js';
-import { BusinessTransactionsSummery } from './components/business-transactions/index.js';
+import { BusinessLedgerRecordsSingle } from './components/business-ledger/business-ledger-single.js';
+import { BusinessLedgerRecordsSummery } from './components/business-ledger/index.js';
 import { BusinessTrip } from './components/business-trips/business-trip.js';
 import { BusinessTrips } from './components/business-trips/index.js';
 import { Businesses } from './components/businesses/index.js';
@@ -53,9 +53,9 @@ export function App(): ReactElement {
 
           <Route path="businesses">
             <Route path="" element={<Businesses />} />
-            <Route path="transactions" element={<BusinessTransactionsSummery />} />
+            <Route path="ledger" element={<BusinessLedgerRecordsSummery />} />
             <Route path=":businessId" element={<BusinessScreen />} />
-            <Route path=":businessId/transactions" element={<BusinessTransactionsSingle />} />
+            <Route path=":businessId/ledger" element={<BusinessLedgerRecordsSingle />} />
           </Route>
 
           <Route path="business-trips">

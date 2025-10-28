@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { BusinessExtendedInfo } from '../business-transactions/business-extended-info';
+import { BusinessExtendedInfo } from '../business-ledger/business-extended-info';
 
 interface Props {
   businessId: string;

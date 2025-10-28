@@ -13,7 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { Currency } from '../../../gql/graphql.js';
 import { getCurrencyFormatter } from '../../../helpers/index.js';
-import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
+import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import { Tooltip } from '../../common/index.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
