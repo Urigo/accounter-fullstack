@@ -1,5 +1,6 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import { ChargesTableBusinessTripFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 
@@ -30,7 +31,11 @@ export const BusinessTrip = ({ data }: Props): ReactElement => {
   return (
     <td>
       <Link
-        to={`/business-trips/${charge.businessTrip?.id}`}
+        to={
+          charge.businessTrip?.id
+            ? ROUTES.BUSINESS_TRIPS.DETAIL(charge.businessTrip?.id)
+            : ROUTES.BUSINESS_TRIPS.ROOT
+        }
         target="_blank"
         rel="noreferrer"
         onClick={event => event.stopPropagation()}
