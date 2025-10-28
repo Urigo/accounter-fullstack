@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type SortingState,
@@ -12,6 +13,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EMPTY_UUID } from '../../helpers/consts.js';
+import { Button } from '../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';
 
@@ -110,15 +112,16 @@ export const LedgerTable = ({
   ledgerDiffData,
   matches,
 }: Props): ReactElement => {
-  const records = ledgerRecordsData.map(recordData =>
-    getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
-  );
-  const differences = ledgerDiffData?.map(recordData =>
-    getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
-  );
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const data = useMemo(() => {
+    const records = ledgerRecordsData.map(recordData =>
+      getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
+    );
+    const differences = ledgerDiffData?.map(recordData =>
+      getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
+    );
+
     const currentRecords: LedgerRecordRow[] = records.map(record => {
       const diff = differences?.find(diffRecord => diffRecord.id === record.id);
       return {
@@ -137,7 +140,7 @@ export const LedgerTable = ({
         })) ?? [];
     currentRecords.push(...newRecords);
     return currentRecords;
-  }, [records, differences, matches]);
+  }, [ledgerRecordsData, ledgerDiffData, matches]);
 
   const table = useReactTable({
     data,
@@ -145,49 +148,82 @@ export const LedgerTable = ({
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
+    },
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 10,
+      },
+      sorting: [
+        {
+          id: 'invoiceDate',
+          desc: true,
+        },
+      ],
     },
   });
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map(headerGroup => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map(header => (
-              <TableHead key={header.id} colSpan={header.colSpan}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map(row => (
-            <TableRow
-              key={row.id}
-              data-state={row.getIsSelected() && 'selected'}
-              className={getRowColorByStatus(row.original.matchingStatus)}
-            >
-              {row.getVisibleCells().map(cell => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map(headerGroup => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <TableHead className="text-center" key={header.id} colSpan={header.colSpan}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map(row => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && 'selected'}
+                className={getRowColorByStatus(row.original.matchingStatus)}
+              >
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
+    </>
   );
 };
