@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { differenceInDays, format, setHours } from 'date-fns';
+import { ROUTES } from '@/router/routes.js';
 import { Grid, Text } from '@mantine/core';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
@@ -43,7 +44,7 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
           <AccountantApproval data={businessTrip} onChange={onChange} />
           <CopyToClipboardButton
             isLink
-            content={`${window.location.origin}/business-trips/${businessTrip.id}`}
+            content={`${window.location.origin}${ROUTES.BUSINESS_TRIPS.DETAIL(businessTrip.id)}`}
           />
           <BusinessTripToggleMenu businessTripId={businessTrip.id} />
         </div>

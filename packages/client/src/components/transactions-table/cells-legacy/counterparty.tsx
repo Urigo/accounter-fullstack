@@ -1,15 +1,11 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import {
-  TransactionsTableEntityFieldsFragmentDoc,
-  type ChargeFilter,
-} from '../../../gql/graphql.js';
+import { ROUTES } from '@/router/routes.js';
+import { TransactionsTableEntityFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
-import { getBusinessTransactionsHref } from '../../business-transactions/index.js';
 import { SelectWithSearch, Tooltip } from '../../common/index.js';
 import { InsertBusiness } from '../../common/modals/insert-business.js';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
@@ -40,7 +36,6 @@ type Props = {
 };
 
 export function Counterparty({ data, onChange, enableEdit }: Props): ReactElement {
-  const { get } = useUrlQuery();
   const {
     id,
     counterparty,
@@ -79,24 +74,6 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
     [updateBusiness, onChange],
   );
 
-  const encodedFilters = get('chargesFilters');
-
-  const getHref = useCallback(
-    (businessID: string) => {
-      const currentFilters = encodedFilters
-        ? (JSON.parse(decodeURIComponent(encodedFilters as string)) as ChargeFilter)
-        : {};
-
-      return getBusinessTransactionsHref({
-        fromDate: currentFilters.fromDate,
-        toDate: currentFilters.toDate,
-        ownerIds: currentFilters.byOwners,
-        businessIDs: [businessID],
-      });
-    },
-    [encodedFilters],
-  );
-
   const { selectableBusinesses: selectOptions, fetching: businessesLoading } = useGetBusinesses();
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
@@ -108,7 +85,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
       <div className="flex flex-wrap gap-1 items-center justify-center">
         {counterparty?.id ? (
           <Link
-            to={getHref(counterparty.id)}
+            to={ROUTES.BUSINESSES.DETAIL(counterparty.id)}
             target="_blank"
             rel="noreferrer"
             onClick={event => event.stopPropagation()}

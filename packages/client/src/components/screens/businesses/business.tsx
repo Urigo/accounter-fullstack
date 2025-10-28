@@ -15,10 +15,6 @@ import { AccounterLoader } from '../../common/index.js';
   }
 `;
 
-export function getBusinessHref(businessId: string): string {
-  return `/businesses/${businessId}`;
-}
-
 export const BusinessScreen = (): ReactElement => {
   const { businessId } = useParams<{ businessId: string }>();
 

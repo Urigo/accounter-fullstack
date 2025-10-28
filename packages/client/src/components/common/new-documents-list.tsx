@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import { NewFetchedDocumentFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { getChargeHref } from '../screens/charges/charge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,7 +34,7 @@ export const NewDocumentsList = ({ data }: Props): ReactElement => {
         .map(doc => (
           <Link
             key={doc.id}
-            to={getChargeHref(doc.charge!.id)}
+            to={ROUTES.CHARGES.DETAIL(doc.charge!.id)}
             target="_blank"
             rel="noreferrer"
             onClick={event => event.stopPropagation()}

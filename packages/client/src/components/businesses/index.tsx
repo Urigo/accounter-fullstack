@@ -159,12 +159,16 @@ export const Businesses = (): ReactElement => {
                   tabIndex={0}
                   className="flex-1 cursor-pointer"
                   onClick={(): void => {
-                    navigate(ROUTES.BUSINESSES.DETAIL(business.id));
+                    navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
+                      state: { from: ROUTES.BUSINESSES.ALL },
+                    });
                   }}
                   onKeyDown={(e): void => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      navigate(ROUTES.BUSINESSES.DETAIL(business.id));
+                      navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
+                        state: { from: ROUTES.BUSINESSES.ALL },
+                      });
                     }
                   }}
                 >

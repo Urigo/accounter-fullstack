@@ -90,7 +90,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
 
   useEffect(() => {
     if (!client) {
-      navigate('/login');
+      navigate(ROUTES.LOGIN, { state: { prevPath: window.location.pathname } });
     }
     return;
   }, [client, navigate]);
@@ -98,6 +98,6 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
   return client ? (
     <Provider value={client}>{children}</Provider>
   ) : (
-    <Navigate to="/login" state={{ prevPath: window.location.pathname }} />
+    <Navigate to={ROUTES.LOGIN} state={{ prevPath: window.location.pathname }} />
   );
 }

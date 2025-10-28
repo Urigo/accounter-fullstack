@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import { Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -10,7 +11,6 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
-import { getChargeHref } from '../../../screens/charges/charge.js';
 import {
   Account,
   Counterparty,
@@ -94,7 +94,7 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                 <Amount data={uncategorizedTransaction} />
                 <td>
                   <Link
-                    to={getChargeHref(uncategorizedTransaction.transaction.chargeId)}
+                    to={ROUTES.CHARGES.DETAIL(uncategorizedTransaction.transaction.chargeId)}
                     target="_blank"
                     rel="noreferrer"
                     onClick={event => event.stopPropagation()}
