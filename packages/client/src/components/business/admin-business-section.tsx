@@ -38,6 +38,7 @@ import {
 } from '@/helpers/index.js';
 import { useUpdateAdminBusiness } from '@/hooks/use-update-admin-business.js';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Separator } from '../ui/separator';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -46,10 +47,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
     ... on LtdFinancialEntity {
       adminInfo {
         id
-        employerWithholdingTaxAccountNumber
-        taxPrepaymentId
-        nationalInsuranceEmployerId
-        advanceTaxRate
+        withholdingTaxBookNumber
+        withholdingTaxFileNumber
+        socialSecurityEmployerId
+        taxAdvancesRate
+        taxAdvancesId
         registrationDate
       }
     }
@@ -57,16 +59,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 `;
 
 const adminBusinessFormSchema = z.object({
-  employerWithholdingTaxAccountNumber: z.string().min(1, {
-    message: 'Employer Withholding Tax Account Number is required',
+  withholdingTaxBookNumber: z.string().min(1, {
+    message: 'Withholding Tax Book Number is required',
   }),
-  taxPrepaymentId: z.string().min(1, {
-    message: 'Tax Prepayment ID is required',
+  withholdingTaxFileNumber: z.string().min(1, {
+    message: 'Withholding Tax File Number is required',
   }),
-  nationalInsuranceEmployerId: z.string().min(1, {
+  socialSecurityEmployerId: z.string().min(1, {
     message: 'National Insurance Employer ID is required',
   }),
-  advanceTaxRate: z
+  taxAdvancesRate: z
     .number()
     .min(0, {
       message: 'Advance Tax Rate must be at least 0',
@@ -74,8 +76,11 @@ const adminBusinessFormSchema = z.object({
     .max(100, {
       message: 'Advance Tax Rate must be at most 100',
     }),
+  taxAdvancesId: z.string().min(1, {
+    message: 'Tax Advances ID is required',
+  }),
   registrationDate: z.string().min(1, {
-    message: 'Registration Date is required',
+    message: 'Business Registration Start Date is required',
   }),
 });
 
@@ -89,10 +94,11 @@ function BusinessAdminSectionFragmentToFormValues(
   }
 
   return {
-    employerWithholdingTaxAccountNumber: admin.adminInfo.employerWithholdingTaxAccountNumber ?? '',
-    taxPrepaymentId: admin.adminInfo.taxPrepaymentId ?? '',
-    nationalInsuranceEmployerId: admin.adminInfo.nationalInsuranceEmployerId ?? '',
-    advanceTaxRate: admin.adminInfo.advanceTaxRate ?? 0,
+    withholdingTaxBookNumber: admin.adminInfo.withholdingTaxBookNumber ?? '',
+    withholdingTaxFileNumber: admin.adminInfo.withholdingTaxFileNumber ?? '',
+    socialSecurityEmployerId: admin.adminInfo.socialSecurityEmployerId ?? '',
+    taxAdvancesRate: admin.adminInfo.taxAdvancesRate ?? 0,
+    taxAdvancesId: admin.adminInfo.taxAdvancesId ?? '',
     registrationDate: admin.adminInfo.registrationDate ?? '',
   };
 }
@@ -101,10 +107,11 @@ function convertFormDataToUpdateAdminBusinessInput(
   formData: Partial<AdminBusinessFormValues>,
 ): UpdateAdminBusinessInput {
   return {
-    employerWithholdingTaxAccountNumber: formData.employerWithholdingTaxAccountNumber,
-    taxPrepaymentId: formData.taxPrepaymentId,
-    nationalInsuranceEmployerId: formData.nationalInsuranceEmployerId,
-    advanceTaxRate: formData.advanceTaxRate,
+    withholdingTaxBookNumber: formData.withholdingTaxBookNumber,
+    withholdingTaxFileNumber: formData.withholdingTaxFileNumber,
+    socialSecurityEmployerId: formData.socialSecurityEmployerId,
+    taxAdvancesRate: formData.taxAdvancesRate,
+    taxAdvancesId: formData.taxAdvancesId,
     registrationDate: formData.registrationDate
       ? (formatTimelessDateString(new Date(formData.registrationDate)) as TimelessDateString)
       : undefined,
@@ -174,16 +181,19 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Employer Withholding Tax Account Number */}
+              <h3 className="text-sm font-semibold text-foreground md:col-span-2">
+                Withholding Tax
+              </h3>
+
               <FormField
                 control={form.control}
-                name="employerWithholdingTaxAccountNumber"
+                name="withholdingTaxBookNumber"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Employer Withholding Tax Account Number</FormLabel>
+                    <FormLabel>Book Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter account number"
+                        placeholder="Enter book number"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -193,16 +203,15 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* Tax Prepayment ID */}
               <FormField
                 control={form.control}
-                name="taxPrepaymentId"
+                name="withholdingTaxFileNumber"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Tax Prepayment ID</FormLabel>
+                    <FormLabel>File Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter prepayment ID"
+                        placeholder="Enter file number"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -212,16 +221,19 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* National Insurance Employer ID */}
+              <Separator className="md:col-span-2" />
+
+              <h3 className="text-sm font-semibold text-foreground md:col-span-2">Tax Advances</h3>
+
               <FormField
                 control={form.control}
-                name="nationalInsuranceEmployerId"
+                name="taxAdvancesId"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>National Insurance Employer ID</FormLabel>
+                    <FormLabel>Identification number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter employer ID"
+                        placeholder="Enter tax advances ID"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -231,13 +243,12 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* Advance Tax Rate */}
               <FormField
                 control={form.control}
-                name="advanceTaxRate"
+                name="taxAdvancesRate"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Advance Tax Rate (%)</FormLabel>
+                    <FormLabel>Tax Rate (%)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -254,13 +265,40 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              {/* Registration Date */}
+              <Separator className="md:col-span-2" />
+
+              <h3 className="text-sm font-semibold text-foreground md:col-span-2">
+                Social Security
+              </h3>
+
+              {/* Social Security Employer ID */}
+              <FormField
+                control={form.control}
+                name="socialSecurityEmployerId"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Employer Identifier</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter employer ID"
+                        {...field}
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Separator className="md:col-span-2" />
+
+              {/* Business Registration Start Date */}
               <FormField
                 control={form.control}
                 name="registrationDate"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Registration Date</FormLabel>
+                    <FormLabel>Business Registration Start Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} className={dirtyFieldMarker(fieldState)} />
                     </FormControl>

@@ -38,10 +38,11 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       }
       return business;
     },
-    employerWithholdingTaxAccountNumber: admin => admin.tax_nikuim_pinkas_number,
-    taxPrepaymentId: admin => admin.tax_siduri_number_2022,
-    nationalInsuranceEmployerId: admin => admin.pinkas_social_security_2022,
-    advanceTaxRate: admin => admin.advance_tax_rate,
+    withholdingTaxBookNumber: admin => admin.tax_nikuim_pinkas_number,
+    withholdingTaxFileNumber: admin => admin.nikuim,
+    socialSecurityEmployerId: admin => admin.pinkas_social_security_2022,
+    taxAdvancesRate: admin => admin.advance_tax_rate,
+    taxAdvancesId: admin => admin.tax_siduri_number_2022,
     registrationDate: admin => {
       if (!admin.registration_date) {
         throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
