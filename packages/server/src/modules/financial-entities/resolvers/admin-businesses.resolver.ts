@@ -29,7 +29,8 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       try {
         await injector.get(AdminBusinessesProvider).updateAdminBusiness({
           id: businessId,
-          ...fields,
+          businessRegistrationStartDate: fields.registrationDate,
+          companyTaxId: fields.withholdingTaxCompanyId,
           taxAdvancesIds: fields.taxAdvancesAnnualIds
             ? [...fields.taxAdvancesAnnualIds]
             : undefined,

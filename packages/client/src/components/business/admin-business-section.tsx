@@ -370,7 +370,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>Rates</Label>
+                  <Label>Rates (%)</Label>
                   <Button type="button" variant="outline" size="sm" onClick={addRate}>
                     <Plus className="size-4" />
                   </Button>
