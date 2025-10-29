@@ -33,9 +33,7 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
           taxAdvancesIds: fields.taxAdvancesAnnualIds
             ? [...fields.taxAdvancesAnnualIds]
             : undefined,
-          advanceTaxRates: fields.taxAdvancesAnnualIds
-            ? [...fields.taxAdvancesAnnualIds]
-            : undefined,
+          advanceTaxRates: fields.taxAdvancesRates ? [...fields.taxAdvancesRates] : undefined,
           withholdingTaxAnnualIds: fields.withholdingTaxAnnualIds
             ? [...fields.withholdingTaxAnnualIds]
             : undefined,

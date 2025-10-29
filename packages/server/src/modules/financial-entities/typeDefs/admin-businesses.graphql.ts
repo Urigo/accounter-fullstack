@@ -67,7 +67,6 @@ export default gql`
     withholdingTaxCompanyId: String
     withholdingTaxAnnualIds: [AnnualIdInput!]
     " Social Security Info "
-    socialSecurityDeductionsId: String
     socialSecurityEmployerIds: [AnnualIdInput!]
   }
 

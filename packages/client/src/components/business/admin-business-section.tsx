@@ -137,10 +137,10 @@ function convertFormDataToUpdateAdminBusinessInput(
     withholdingTaxAnnualIds: formData.withholdingTaxAnnualIds,
     withholdingTaxCompanyId: formData.withholdingTaxCompanyId,
     socialSecurityEmployerIds: formData.socialSecurityEmployerIds,
-    socialSecurityDeductionsId: formData.socialSecurityDeductionsId,
-    taxAdvancesRates: formData.taxAdvancesRates as
-      | { date: TimelessDateString; rate: number }[]
-      | undefined,
+    taxAdvancesRates: formData.taxAdvancesRates?.map(rate => ({
+      date: rate.date,
+      rate: rate.rate / 100,
+    })) as { date: TimelessDateString; rate: number }[] | undefined,
     taxAdvancesAnnualIds: formData.taxAdvancesAnnualIds,
   };
 }
@@ -214,37 +214,20 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
     remove: removeSocialSecurity,
   } = useFieldArray({ control: form.control, name: 'socialSecurityEmployerIds' as const });
 
-  const addAnnualId = (
-    field: 'withholdingTaxAnnualIds' | 'taxAdvancesAnnualIds' | 'socialSecurityEmployerIds',
-  ) => {
-    switch (field) {
-      case 'withholdingTaxAnnualIds':
-        appendWithholdingTax({ year: new Date().getFullYear(), id: '' });
-        break;
-      case 'taxAdvancesAnnualIds':
-        appendTaxAdvances({ year: new Date().getFullYear(), id: '' });
-        break;
-      case 'socialSecurityEmployerIds':
-        appendSocialSecurity({ year: new Date().getFullYear(), id: '' });
-        break;
-    }
+  const annualIdActions = {
+    withholdingTaxAnnualIds: { append: appendWithholdingTax, remove: removeWithholdingTax },
+    taxAdvancesAnnualIds: { append: appendTaxAdvances, remove: removeTaxAdvances },
+    socialSecurityEmployerIds: { append: appendSocialSecurity, remove: removeSocialSecurity },
   };
 
-  const removeAnnualId = (
-    field: 'withholdingTaxAnnualIds' | 'taxAdvancesAnnualIds' | 'socialSecurityEmployerIds',
-    index: number,
-  ): void => {
-    switch (field) {
-      case 'withholdingTaxAnnualIds':
-        removeWithholdingTax(index);
-        break;
-      case 'taxAdvancesAnnualIds':
-        removeTaxAdvances(index);
-        break;
-      case 'socialSecurityEmployerIds':
-        removeSocialSecurity(index);
-        break;
-    }
+  type AnnualIdField = keyof typeof annualIdActions;
+
+  const addAnnualId = (field: AnnualIdField) => {
+    annualIdActions[field].append({ year: new Date().getFullYear(), id: '' });
+  };
+
+  const removeAnnualId = (field: AnnualIdField, index: number): void => {
+    annualIdActions[field].remove(index);
   };
 
   // Make taxAdvancesRates a controlled field array using RHF's useFieldArray
