@@ -1,4 +1,19 @@
 import { useMemo, useState, type ReactElement } from 'react';
+import { Pagination } from '@/components/common/index.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.js';
+import {
+  LedgerRecordsTableFieldsFragmentDoc,
+  type LedgerRecordsTableFieldsFragment,
+} from '@/gql/graphql.js';
+import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { EMPTY_UUID } from '@/helpers/consts.js';
 import {
   flexRender,
   getCoreRowModel,
@@ -7,14 +22,6 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import {
-  LedgerRecordsTableFieldsFragmentDoc,
-  type LedgerRecordsTableFieldsFragment,
-} from '../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { EMPTY_UUID } from '../../helpers/consts.js';
-import { Pagination } from '../ui/pagination.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

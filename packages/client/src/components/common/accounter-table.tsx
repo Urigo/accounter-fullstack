@@ -1,6 +1,6 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button.js';
-import { Pagination, Paper, Table, type PaginationProps } from '@mantine/core';
+import { Paper, Table } from '@mantine/core';
 
 export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;
@@ -16,7 +16,6 @@ export interface AccounterTableProps<T, U> {
   moreInfo?: (item: T) => ReactNode;
   showButton?: boolean;
   rowContext?: (item: T) => U | undefined;
-  pagination?: PaginationProps;
 }
 
 export interface AccountTableRow<T, U> {
@@ -73,7 +72,6 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
   return (
     <>
       <div className="flex flex-row justify-end w-full">
-        {props.pagination && <Pagination className="flex-auto" {...props.pagination} />}
         {props.showButton === true ? (
           <Button
             type="button"

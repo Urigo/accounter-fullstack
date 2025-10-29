@@ -1,6 +1,6 @@
 import { useEffect, useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
-import { Pagination } from '@mantine/core';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { Pagination } from '../common/index.js';
 import { Input } from '../ui/input.js';
 
 interface BusinessesFiltersProps {
@@ -45,7 +45,12 @@ export function BusinessesFilters({
 
   return (
     <div className="flex flex-row gap-5 items-center">
-      <Pagination className="flex-auto" value={activePage} onChange={setPage} total={totalPages} />
+      <Pagination
+        className="flex-fit w-fit mx-0"
+        value={activePage}
+        onChange={setPage}
+        total={totalPages}
+      />
       <Input
         className="w-72"
         placeholder="Business Name"

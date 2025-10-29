@@ -3,8 +3,8 @@ import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessChargesSectionDocument, ChargeSortByField } from '@/gql/graphql.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { Pagination } from '@mantine/core';
 import { ChargesTable } from '../charges/charges-table';
+import { Pagination } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -27,7 +27,7 @@ interface Props {
 
 export function ChargesSection({ businessId }: Props) {
   const { userContext } = useContext(UserContext);
-  const [activePage, setActivePage] = useState(1);
+  const [activePage, setActivePage] = useState(0);
 
   const [{ data, fetching }] = useQuery({
     query: BusinessChargesSectionDocument,
@@ -42,8 +42,8 @@ export function ChargesSection({ businessId }: Props) {
         },
         byBusinesses: [businessId],
       },
-      page: activePage,
-      limit: 100,
+      page: activePage - 1,
+      limit: 10,
     },
   });
 
@@ -65,7 +65,7 @@ export function ChargesSection({ businessId }: Props) {
         </div>
         {totalPages > 1 && (
           <Pagination
-            className="flex-fit"
+            className="flex-fit w-fit mx-0"
             value={activePage}
             onChange={setActivePage}
             total={totalPages}
