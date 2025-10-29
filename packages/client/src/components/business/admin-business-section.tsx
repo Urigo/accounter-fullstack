@@ -2,8 +2,9 @@
 
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { Save, Shield } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
+import { Plus, Save, Shield, X } from 'lucide-react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -38,6 +39,7 @@ import {
 } from '@/helpers/index.js';
 import { useUpdateAdminBusiness } from '@/hooks/use-update-admin-business.js';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -47,59 +49,81 @@ import { Separator } from '../ui/separator';
     ... on LtdFinancialEntity {
       adminInfo {
         id
-        withholdingTaxBookNumber
-        withholdingTaxFileNumber
-        socialSecurityEmployerId
-        taxAdvancesRate
-        taxAdvancesId
         registrationDate
+        withholdingTaxAnnualIds {
+          id
+          year
+        }
+        withholdingTaxCompanyId
+        socialSecurityEmployerIds {
+          id
+          year
+        }
+        socialSecurityDeductionsId
+        taxAdvancesAnnualIds {
+          id
+          year
+        }
+        taxAdvancesRates {
+          date
+          rate
+        }
       }
     }
   }
 `;
 
+const annualIdSchema = z.object({
+  year: z.number().min(2000).max(2100),
+  id: z.string().min(1, { message: 'ID is required' }),
+});
+
 const adminBusinessFormSchema = z.object({
-  withholdingTaxBookNumber: z.string().min(1, {
-    message: 'Withholding Tax Book Number is required',
-  }),
-  withholdingTaxFileNumber: z.string().min(1, {
-    message: 'Withholding Tax File Number is required',
-  }),
-  socialSecurityEmployerId: z.string().min(1, {
-    message: 'National Insurance Employer ID is required',
-  }),
-  taxAdvancesRate: z
-    .number()
-    .min(0, {
-      message: 'Advance Tax Rate must be at least 0',
-    })
-    .max(100, {
-      message: 'Advance Tax Rate must be at most 100',
-    }),
-  taxAdvancesId: z.string().min(1, {
-    message: 'Tax Advances ID is required',
-  }),
   registrationDate: z.string().min(1, {
     message: 'Business Registration Start Date is required',
   }),
+  withholdingTaxAnnualIds: z.array(annualIdSchema),
+  withholdingTaxCompanyId: z.string().min(1, { message: 'Withholding Tax Company ID is required' }),
+  socialSecurityEmployerIds: z.array(annualIdSchema),
+  socialSecurityDeductionsId: z
+    .string()
+    .min(1, { message: 'Social Security Deductions ID is required' }),
+  taxAdvancesAnnualIds: z.array(annualIdSchema),
+  taxAdvancesRates: z.array(
+    z.object({
+      date: z.iso.date(),
+      rate: z
+        .number()
+        .min(0, { message: 'Rate must be at least 0' })
+        .max(100, { message: 'Rate must be at most 100' }),
+    }),
+  ),
 });
 
 type AdminBusinessFormValues = z.infer<typeof adminBusinessFormSchema>;
 
 function BusinessAdminSectionFragmentToFormValues(
   admin?: BusinessAdminSectionFragment,
-): AdminBusinessFormValues {
+): Partial<AdminBusinessFormValues> {
   if (!admin || admin.__typename !== 'LtdFinancialEntity' || !admin.adminInfo) {
-    return {} as AdminBusinessFormValues;
+    return {};
   }
 
   return {
-    withholdingTaxBookNumber: admin.adminInfo.withholdingTaxBookNumber ?? '',
-    withholdingTaxFileNumber: admin.adminInfo.withholdingTaxFileNumber ?? '',
-    socialSecurityEmployerId: admin.adminInfo.socialSecurityEmployerId ?? '',
-    taxAdvancesRate: admin.adminInfo.taxAdvancesRate ?? 0,
-    taxAdvancesId: admin.adminInfo.taxAdvancesId ?? '',
-    registrationDate: admin.adminInfo.registrationDate ?? '',
+    registrationDate: admin.adminInfo.registrationDate,
+    withholdingTaxAnnualIds: admin.adminInfo.withholdingTaxAnnualIds.sort(
+      (a, b) => b.year - a.year,
+    ),
+    withholdingTaxCompanyId: admin.adminInfo.withholdingTaxCompanyId ?? undefined,
+    socialSecurityEmployerIds: admin.adminInfo.socialSecurityEmployerIds.sort(
+      (a, b) => b.year - a.year,
+    ),
+    socialSecurityDeductionsId: admin.adminInfo.socialSecurityDeductionsId ?? undefined,
+    taxAdvancesAnnualIds: admin.adminInfo.taxAdvancesAnnualIds.sort((a, b) => b.year - a.year),
+    taxAdvancesRates: admin.adminInfo.taxAdvancesRates?.map(rate => ({
+      date: rate.date,
+      rate: rate.rate * 100,
+    })),
   };
 }
 
@@ -107,14 +131,17 @@ function convertFormDataToUpdateAdminBusinessInput(
   formData: Partial<AdminBusinessFormValues>,
 ): UpdateAdminBusinessInput {
   return {
-    withholdingTaxBookNumber: formData.withholdingTaxBookNumber,
-    withholdingTaxFileNumber: formData.withholdingTaxFileNumber,
-    socialSecurityEmployerId: formData.socialSecurityEmployerId,
-    taxAdvancesRate: formData.taxAdvancesRate,
-    taxAdvancesId: formData.taxAdvancesId,
     registrationDate: formData.registrationDate
-      ? (formatTimelessDateString(new Date(formData.registrationDate)) as TimelessDateString)
+      ? formatTimelessDateString(new Date(formData.registrationDate))
       : undefined,
+    withholdingTaxAnnualIds: formData.withholdingTaxAnnualIds,
+    withholdingTaxCompanyId: formData.withholdingTaxCompanyId,
+    socialSecurityEmployerIds: formData.socialSecurityEmployerIds,
+    socialSecurityDeductionsId: formData.socialSecurityDeductionsId,
+    taxAdvancesRates: formData.taxAdvancesRates as
+      | { date: TimelessDateString; rate: number }[]
+      | undefined,
+    taxAdvancesAnnualIds: formData.taxAdvancesAnnualIds,
   };
 }
 
@@ -166,6 +193,75 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
     }
   }, [admin, form]);
 
+  // Make taxAdvancesAnnualIds a controlled field array using RHF's useFieldArray
+  const {
+    fields: taxAdvancesFields,
+    append: appendTaxAdvances,
+    remove: removeTaxAdvances,
+  } = useFieldArray({ control: form.control, name: 'taxAdvancesAnnualIds' as const });
+
+  // Make withholdingTaxAnnualIds a controlled field array using RHF's useFieldArray
+  const {
+    fields: withholdingTaxFields,
+    append: appendWithholdingTax,
+    remove: removeWithholdingTax,
+  } = useFieldArray({ control: form.control, name: 'withholdingTaxAnnualIds' as const });
+
+  // Make socialSecurityEmployerIds a controlled field array using RHF's useFieldArray
+  const {
+    fields: socialSecurityFields,
+    append: appendSocialSecurity,
+    remove: removeSocialSecurity,
+  } = useFieldArray({ control: form.control, name: 'socialSecurityEmployerIds' as const });
+
+  const addAnnualId = (
+    field: 'withholdingTaxAnnualIds' | 'taxAdvancesAnnualIds' | 'socialSecurityEmployerIds',
+  ) => {
+    switch (field) {
+      case 'withholdingTaxAnnualIds':
+        appendWithholdingTax({ year: new Date().getFullYear(), id: '' });
+        break;
+      case 'taxAdvancesAnnualIds':
+        appendTaxAdvances({ year: new Date().getFullYear(), id: '' });
+        break;
+      case 'socialSecurityEmployerIds':
+        appendSocialSecurity({ year: new Date().getFullYear(), id: '' });
+        break;
+    }
+  };
+
+  const removeAnnualId = (
+    field: 'withholdingTaxAnnualIds' | 'taxAdvancesAnnualIds' | 'socialSecurityEmployerIds',
+    index: number,
+  ): void => {
+    switch (field) {
+      case 'withholdingTaxAnnualIds':
+        removeWithholdingTax(index);
+        break;
+      case 'taxAdvancesAnnualIds':
+        removeTaxAdvances(index);
+        break;
+      case 'socialSecurityEmployerIds':
+        removeSocialSecurity(index);
+        break;
+    }
+  };
+
+  // Make taxAdvancesRates a controlled field array using RHF's useFieldArray
+  const {
+    fields: taxAdvancesRateFields,
+    append: appendTaxAdvancesRate,
+    remove: removeTaxAdvancesRate,
+  } = useFieldArray({ control: form.control, name: 'taxAdvancesRates' as const });
+
+  const addRate = () => {
+    appendTaxAdvancesRate({ date: format(new Date(), 'yyyy-MM-dd'), rate: 0 });
+  };
+
+  const removeRate = (index: number): void => {
+    removeTaxAdvancesRate(index);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -187,13 +283,13 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <FormField
                 control={form.control}
-                name="withholdingTaxBookNumber"
+                name="withholdingTaxCompanyId"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Book Number</FormLabel>
+                    <FormLabel>Company Tax ID</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter book number"
+                        placeholder="Enter company ID"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -203,67 +299,127 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="withholdingTaxFileNumber"
-                render={({ field, fieldState }) => (
-                  <FormItem>
-                    <FormLabel>File Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter file number"
-                        {...field}
-                        className={dirtyFieldMarker(fieldState)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Annual IDs</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addAnnualId('withholdingTaxAnnualIds')}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {withholdingTaxFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Year"
+                          type="number"
+                          {...form.register(`withholdingTaxAnnualIds.${index}.year`, {
+                            valueAsNumber: true,
+                          })}
+                        />
+                        <Input
+                          placeholder="ID"
+                          {...form.register(`withholdingTaxAnnualIds.${index}.id`)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAnnualId('withholdingTaxAnnualIds', index)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <Separator className="md:col-span-2" />
 
               <h3 className="text-sm font-semibold text-foreground md:col-span-2">Tax Advances</h3>
 
-              <FormField
-                control={form.control}
-                name="taxAdvancesId"
-                render={({ field, fieldState }) => (
-                  <FormItem>
-                    <FormLabel>Identification number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter tax advances ID"
-                        {...field}
-                        className={dirtyFieldMarker(fieldState)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Annual IDs</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addAnnualId('taxAdvancesAnnualIds')}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {taxAdvancesFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Year"
+                          type="number"
+                          {...form.register(`taxAdvancesAnnualIds.${index}.year`, {
+                            valueAsNumber: true,
+                          })}
+                        />
+                        <Input
+                          placeholder="ID"
+                          {...form.register(`taxAdvancesAnnualIds.${index}.id`)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAnnualId('taxAdvancesAnnualIds', index)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-              <FormField
-                control={form.control}
-                name="taxAdvancesRate"
-                render={({ field, fieldState }) => (
-                  <FormItem>
-                    <FormLabel>Tax Rate (%)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="Enter tax rate"
-                        {...field}
-                        className={dirtyFieldMarker(fieldState)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Rates</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addRate}>
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {taxAdvancesRateFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Date"
+                          type="date"
+                          {...form.register(`taxAdvancesRates.${index}.date`)}
+                        />
+                        <Input
+                          placeholder="Rate"
+                          {...form.register(`taxAdvancesRates.${index}.rate`, {
+                            valueAsNumber: true,
+                          })}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeRate(index)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <Separator className="md:col-span-2" />
 
@@ -271,16 +427,15 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                 Social Security
               </h3>
 
-              {/* Social Security Employer ID */}
               <FormField
                 control={form.control}
-                name="socialSecurityEmployerId"
+                name="socialSecurityDeductionsId"
                 render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Employer Identifier</FormLabel>
+                    <FormLabel>Deductions ID</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter employer ID"
+                        placeholder="Enter deductions ID"
                         {...field}
                         className={dirtyFieldMarker(fieldState)}
                       />
@@ -289,6 +444,47 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Annual Employer IDs</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addAnnualId('socialSecurityEmployerIds')}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {socialSecurityFields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Year"
+                          type="number"
+                          {...form.register(`socialSecurityEmployerIds.${index}.year`, {
+                            valueAsNumber: true,
+                          })}
+                        />
+                        <Input
+                          placeholder="ID"
+                          {...form.register(`socialSecurityEmployerIds.${index}.id`)}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAnnualId('socialSecurityEmployerIds', index)}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <Separator className="md:col-span-2" />
 
