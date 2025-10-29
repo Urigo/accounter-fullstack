@@ -1,4 +1,4 @@
-import { useContext, type ReactElement } from 'react';
+import { useContext, useEffect, type ReactElement } from 'react';
 import {
   ArrowLeftRight,
   Building2,
@@ -60,7 +60,9 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
   const [searchParams, setSearchParams] = useSearchParams();
   const { setFiltersContext } = useContext(FiltersContext);
 
-  setFiltersContext(null);
+  useEffect(() => {
+    setFiltersContext(null);
+  }, [setFiltersContext]);
 
   const activeTab = searchParams.get('tab') || 'contact';
 

@@ -264,7 +264,7 @@ export const routes: RouteObject[] = [
                 handle: { title: 'All Businesses' },
               },
               {
-                path: 'ledger-records',
+                path: 'ledger',
                 element: withSuspense(BusinessLedgerRecordsSummary, <TableSkeleton />),
                 handle: {
                   title: 'Business Ledger Records Summary',

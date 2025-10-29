@@ -38,7 +38,6 @@ export const TransactionsTable = ({
   }, [transactionsProps]);
 
   const data: TransactionsTableRowType[] = useMemo(() => {
-    console.log('rendering TransactionsTable data');
     return transactions.map(transaction => {
       return {
         ...transaction,
@@ -51,7 +50,6 @@ export const TransactionsTable = ({
   }, [transactions, enableEdit, enableChargeLink, onChange]);
 
   const tableColumns = useMemo(() => {
-    console.log('rendering tableColumns');
     return enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns;
   }, [enableEdit, enableChargeLink]);
 
