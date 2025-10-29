@@ -10,7 +10,7 @@ import {
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditTransactionModal } from '../common/index.js';
-import { Button } from '../ui/button.js';
+import { Pagination } from '../ui/pagination.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
@@ -119,22 +119,11 @@ export const TransactionsTable = ({
       </Table>
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-end space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+          <Pagination
+            value={table.getState().pagination.pageIndex}
+            total={table.getPageCount()}
+            onChange={page => table.setPageIndex(page)}
+          />
         </div>
       )}
       <EditTransactionModal

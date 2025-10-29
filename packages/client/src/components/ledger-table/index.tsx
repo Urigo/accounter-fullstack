@@ -13,7 +13,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EMPTY_UUID } from '../../helpers/consts.js';
-import { Button } from '../ui/button.js';
+import { Pagination } from '../ui/pagination.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';
 
@@ -207,22 +207,11 @@ export const LedgerTable = ({
         </TableBody>
       </Table>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
+        <Pagination
+          value={table.getState().pagination.pageIndex}
+          total={table.getPageCount()}
+          onChange={page => table.setPageIndex(page)}
+        />
       </div>
     </>
   );
