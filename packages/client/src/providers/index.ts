@@ -1,4 +1,4 @@
-export { AuthContext, AuthGuard, AuthProvider } from './auth-guard.jsx';
-export { UrqlProvider } from './urql.jsx';
-export { UserContext, UserProvider, type UserInfo } from './user-provider.jsx';
+export { AuthContext, AuthGuard, AuthProvider } from './auth-guard.js';
+export { UrqlProvider } from './urql.js';
+export { UserContext, UserProvider, type UserInfo } from './user-provider.js';
 export { FiltersContext } from './filters-context.js';
