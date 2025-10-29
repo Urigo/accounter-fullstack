@@ -137,7 +137,7 @@ __metadata:
     react-error-boundary: "npm:6.0.0"
     react-hook-form: "npm:7.65.0"
     react-number-format: "npm:5.4.4"
-    react-router-dom: "npm:7.9.4"
+    react-router-dom: "npm:7.9.5"
     react-to-pdf: "npm:2.0.1"
     recharts: "npm:2.15.4"
     sonner: "npm:2.0.7"
@@ -301,7 +301,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.38"
+    "@ai-sdk/anthropic": "npm:2.0.39"
     "@envelop/generic-auth": "npm:10.0.1"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -314,7 +314,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.15.6"
     "@whatwg-node/fetch": "npm:0.10.11"
-    ai: "npm:5.0.81"
+    ai: "npm:5.0.82"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -367,41 +367,41 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.38":
-  version: 2.0.38
-  resolution: "@ai-sdk/anthropic@npm:2.0.38"
+"@ai-sdk/anthropic@npm:2.0.39":
+  version: 2.0.39
+  resolution: "@ai-sdk/anthropic@npm:2.0.39"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.13"
+    "@ai-sdk/provider-utils": "npm:3.0.14"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/42e6104b6fd7c29c0427f8a08f1128468907837781e727874964fd2886fa55c08fca3cf17aec8c9fc1ccf8260be103dd978a8a15c7f22373a63bee96c69400b2
+  checksum: 10c0/3c168694765e6e076ae36d4328ad12d6dab1215ff540f5e6c8201c559c05d92f21e7bb043b992e8d65807f56cb021a08a6cd2047627363fe80879aa236bde5e7
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.2":
-  version: 2.0.2
-  resolution: "@ai-sdk/gateway@npm:2.0.2"
+"@ai-sdk/gateway@npm:2.0.3":
+  version: 2.0.3
+  resolution: "@ai-sdk/gateway@npm:2.0.3"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.13"
+    "@ai-sdk/provider-utils": "npm:3.0.14"
     "@vercel/oidc": "npm:3.0.3"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/a803d5d84cd88e777dc15d58607c957f63ba27e933e3219d175eae5b9d38f5f1b021c6a556b72358578a6b3348d4dadd0c852d8622b25d0327f340490b8a95de
+  checksum: 10c0/77cfa23dbc606b33024ebd30967845cd6715ee1fe9cfe114ea9f06df8c83a816249d4f3fe0ccece1f5058b92fdc4c8072fcacb3f7e9ecc62f564bab52b1a620b
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:3.0.13":
-  version: 3.0.13
-  resolution: "@ai-sdk/provider-utils@npm:3.0.13"
+"@ai-sdk/provider-utils@npm:3.0.14":
+  version: 3.0.14
+  resolution: "@ai-sdk/provider-utils@npm:3.0.14"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@standard-schema/spec": "npm:^1.0.0"
     eventsource-parser: "npm:^3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/881f65582fe3b456f9fccc51947c2d2330314a7b820f4c9d4f16676efc086b8585c808cb8eb63d3d8d72cf8e804bc0144f5b19078dbf5962e6bcc63e639c4642
+  checksum: 10c0/07240f06c306e1f4fb6b8782943e1bea96cce4c02810b3d56f4e0206fb7f6951cd617f8539e3f93858bab8ffac2d192301a38522bd57305846e8535ba1ef39f8
   languageName: node
   linkType: hard
 
@@ -8823,17 +8823,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.81":
-  version: 5.0.81
-  resolution: "ai@npm:5.0.81"
+"ai@npm:5.0.82":
+  version: 5.0.82
+  resolution: "ai@npm:5.0.82"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.2"
+    "@ai-sdk/gateway": "npm:2.0.3"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.13"
+    "@ai-sdk/provider-utils": "npm:3.0.14"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/69d34baa80a82a2a652349c7ac75732f17ef661d9626705f8c5e7808cfc9b4934e2feec062fccd861631a66bea7e6c49f2644843d29ce8ead58d6b4f6f8bedf1
+  checksum: 10c0/1feb8e91df8a77cadc911f5e89c76ca24fb25f6fb408700e4db395a835bfe2bb9bfaca4d0209df7830ab2af0a352aef475c2e76f07956e0f4768c6e8e97e052f
   languageName: node
   linkType: hard
 
@@ -19180,21 +19180,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.9.4":
-  version: 7.9.4
-  resolution: "react-router-dom@npm:7.9.4"
+"react-router-dom@npm:7.9.5":
+  version: 7.9.5
+  resolution: "react-router-dom@npm:7.9.5"
   dependencies:
-    react-router: "npm:7.9.4"
+    react-router: "npm:7.9.5"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/03979ef887411230188d8eb7e001379c164f28235d5e3589f9192f73edae4c6e59a155aec0bcdcb84b3fa4e72caff0c38f4709ffb2e4cdca4cb8a8ab1c60dd35
+  checksum: 10c0/e54fdfa211e356bd89e3c12b1f89537058357ef21b6a05f55456e0defaab8e77b7495e035ff6999b17a9a2e6f8204d46cf5897fe56e5d3db9458109a014efc4d
   languageName: node
   linkType: hard
 
-"react-router@npm:7.9.4":
-  version: 7.9.4
-  resolution: "react-router@npm:7.9.4"
+"react-router@npm:7.9.5":
+  version: 7.9.5
+  resolution: "react-router@npm:7.9.5"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -19204,7 +19204,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/c7556b752fa88d2bff600ce3533c962dcbe9ca9bf71f9c4b8e8a21f904856990bcb284844d53eb1dd486adaa7567c7ecf0deb3e518262269ea1ea89bea246be4
+  checksum: 10c0/e961816b4096a6ca97fc53626fc6532014c0de4c45bf6c234b8205eb4f94be8f357d67819e4f4f58507f79ef9bda4c3f70031a8dd13c7045e3ad0ecb12f819e3
   languageName: node
   linkType: hard
 
