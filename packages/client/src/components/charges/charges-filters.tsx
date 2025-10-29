@@ -11,7 +11,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Indicator, MultiSelect, Pagination, Select, SimpleGrid } from '@mantine/core';
+import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { ChargeFilterType, ChargeSortByField, type ChargeFilter } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
@@ -20,7 +20,12 @@ import { useGetFinancialEntities } from '../../hooks/use-get-financial-entities.
 import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
-import { accountantApprovalInputData, PopUpModal, SelectTagItem } from '../common/index.js';
+import {
+  accountantApprovalInputData,
+  Pagination,
+  PopUpModal,
+  SelectTagItem,
+} from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form.js';
 import { Label } from '../ui/label.js';
@@ -533,7 +538,7 @@ export function ChargesFilters({
       />
       {totalPages > 1 && (
         <Pagination
-          className="flex-auto"
+          className="flex-fit w-fit mx-0"
           value={activePage}
           onChange={setPage}
           total={totalPages}

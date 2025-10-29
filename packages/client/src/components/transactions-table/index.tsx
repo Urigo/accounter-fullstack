@@ -1,4 +1,15 @@
 import { useMemo, useState, type ReactElement } from 'react';
+import { EditTransactionModal, Pagination } from '@/components/common/index.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.js';
+import { TransactionForTransactionsTableFieldsFragmentDoc } from '@/gql/graphql.js';
+import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import {
   flexRender,
   getCoreRowModel,
@@ -7,11 +18,6 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { EditTransactionModal } from '../common/index.js';
-import { Pagination } from '../ui/pagination.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {
