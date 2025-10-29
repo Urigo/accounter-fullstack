@@ -1,5 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { dateToTimelessDateString } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
+import { taxAdvancesRatesSchema, yearlyIdsSchema } from '../helpers/admin-businesses.helper.js';
 import { AdminBusinessesProvider } from '../providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import type { FinancialEntitiesModule } from '../types.js';
@@ -22,6 +24,42 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       return adminBusinesses;
     },
   },
+  Mutation: {
+    updateAdminBusiness: async (_, { businessId, fields }, { injector }) => {
+      try {
+        await injector.get(AdminBusinessesProvider).updateAdminBusiness({
+          id: businessId,
+          ...fields,
+          taxAdvancesIds: fields.taxAdvancesAnnualIds
+            ? [...fields.taxAdvancesAnnualIds]
+            : undefined,
+          advanceTaxRates: fields.taxAdvancesAnnualIds
+            ? [...fields.taxAdvancesAnnualIds]
+            : undefined,
+          withholdingTaxAnnualIds: fields.withholdingTaxAnnualIds
+            ? [...fields.withholdingTaxAnnualIds]
+            : undefined,
+          socialSecurityEmployerIds: fields.socialSecurityEmployerIds
+            ? [...fields.socialSecurityEmployerIds]
+            : undefined,
+        });
+
+        const updatedAdminBusiness = await injector
+          .get(AdminBusinessesProvider)
+          .getAdminBusinessByIdLoader.load(businessId);
+
+        if (!updatedAdminBusiness) {
+          throw new GraphQLError(`Error updating Admin business ID="${businessId}"`);
+        }
+
+        return updatedAdminBusiness;
+      } catch (error) {
+        const message = `Error updating Admin business ID="${businessId}"`;
+        console.error(message, error);
+        throw new GraphQLError(message);
+      }
+    },
+  },
   AdminBusiness: {
     id: admin => admin.id,
     name: admin => admin.name,
@@ -31,6 +69,12 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       }
       return admin.vat_number;
     },
+    registrationDate: admin => {
+      if (!admin.registration_date) {
+        throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
+      }
+      return dateToTimelessDateString(admin.registration_date);
+    },
     business: async (admin, _, { injector }) => {
       const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(admin.id);
       if (!business) {
@@ -38,17 +82,16 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       }
       return business;
     },
-    withholdingTaxBookNumber: admin => admin.tax_nikuim_pinkas_number,
-    withholdingTaxFileNumber: admin => admin.nikuim,
-    socialSecurityEmployerId: admin => admin.pinkas_social_security_2022,
-    taxAdvancesRate: admin => admin.advance_tax_rate,
-    taxAdvancesId: admin => admin.tax_siduri_number_2022,
-    registrationDate: admin => {
-      if (!admin.registration_date) {
-        throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
-      }
-      return dateToTimelessDateString(admin.registration_date);
-    },
+    taxAdvancesAnnualIds: admin => yearlyIdsSchema.parse(admin.tax_advances_ids),
+    taxAdvancesRates: admin =>
+      taxAdvancesRatesSchema.parse(admin.advance_tax_rates) as Array<{
+        date: TimelessDateString;
+        rate: number;
+      }>,
+    withholdingTaxCompanyId: admin => admin.company_tax_id,
+    withholdingTaxAnnualIds: admin => yearlyIdsSchema.parse(admin.withholding_tax_annual_ids),
+    socialSecurityDeductionsId: admin => `${admin.company_tax_id}00`,
+    socialSecurityEmployerIds: admin => yearlyIdsSchema.parse(admin.social_security_employer_ids),
   },
   LtdFinancialEntity: {
     adminInfo: async (parentBusiness, _, { injector }) => {

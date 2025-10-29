@@ -3,10 +3,14 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
+import { adminBusinessUpdateSchema } from '../helpers/admin-businesses.helper.js';
 import type {
   IGetAdminBusinessesByIdsQuery,
   IGetAllAdminBusinessesQuery,
   IGetAllAdminBusinessesResult,
+  IUpdateAdminBusinessesParams,
+  IUpdateAdminBusinessesQuery,
+  IUpdateAdminBusinessesResult,
 } from '../types.js';
 
 const getAdminBusinessesByIds = sql<IGetAdminBusinessesByIdsQuery>`
@@ -27,6 +31,37 @@ const getAllAdminBusinesses = sql<IGetAllAdminBusinessesQuery>`
       USING (id)
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
+
+const updateAdminBusinesses = sql<IUpdateAdminBusinessesQuery>`
+    UPDATE accounter_schema.businesses_admin
+    SET
+    business_registration_start_date = COALESCE(
+      $businessRegistrationStartDate,
+      business_registration_start_date
+    ),
+    company_tax_id = COALESCE(
+      $companyTaxId,
+      company_tax_id
+    ),
+    advance_tax_rates = COALESCE(
+      $advanceTaxRates,
+      advance_tax_rates
+    ),
+    tax_advances_ids = COALESCE(
+      $taxAdvancesIds,
+      tax_advances_ids
+    ),
+    social_security_employer_ids = COALESCE(
+      $socialSecurityEmployerIds,
+      social_security_employer_ids
+    ),
+    withholding_tax_annual_ids = COALESCE(
+      $withholdingTaxAnnualIds,
+      withholding_tax_annual_ids
+    )
+    WHERE
+      id = $id
+    RETURNING *;`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -67,6 +102,15 @@ export class AdminBusinessesProvider {
       this.cache.set('all-admin-businesses', result);
       return result;
     });
+  }
+
+  public async updateAdminBusiness(
+    params: IUpdateAdminBusinessesParams,
+  ): Promise<IUpdateAdminBusinessesResult> {
+    const inputParams = adminBusinessUpdateSchema.parse(params);
+    const [result] = await updateAdminBusinesses.run(inputParams, this.dbProvider);
+    this.clearCache();
+    return result;
   }
 
   public clearCache() {
