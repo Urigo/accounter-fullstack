@@ -51,7 +51,7 @@ import {
 
 export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFragment & {
   onUpdate: () => void;
-  editTransaction: () => void;
+  editTransaction: (id: string) => void;
   enableEdit?: boolean;
   enableChargeLink?: boolean;
 };
@@ -63,7 +63,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Counterparty
           {column.getIsSorted() &&
@@ -90,7 +90,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Event Date
           {column.getIsSorted() &&
@@ -117,7 +117,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Debit Date
           {column.getIsSorted() &&
@@ -139,7 +139,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Amount
           {column.getIsSorted() &&
@@ -161,7 +161,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Account
           {column.getIsSorted() &&
@@ -183,7 +183,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Description
           {column.getIsSorted() &&
@@ -205,7 +205,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
       return (
         <Button
           variant="ghost"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Reference#
           {column.getIsSorted() &&
@@ -230,7 +230,7 @@ export const actionsColumn: ColumnDef<TransactionsTableRowType> = {
     if (row.original.enableEdit) {
       return (
         <>
-          <EditMiniButton onClick={row.original.editTransaction} />
+          <EditMiniButton onClick={() => row.original.editTransaction(row.original.id)} />
           <InsertMiscExpenseModal
             chargeId={row.original.chargeId}
             transactionId={row.original.id}
