@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { ListPlus, Loader2, Trash2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
@@ -32,7 +32,9 @@ export const TagsManager = (): ReactElement => {
   const { addTag } = useAddTag();
   const { deleteTag } = useDeleteTag();
 
-  setFiltersContext(null);
+  useEffect(() => {
+    setFiltersContext(null);
+  }, [setFiltersContext]);
 
   const allTags = sortTags(data?.allTags ?? []);
 

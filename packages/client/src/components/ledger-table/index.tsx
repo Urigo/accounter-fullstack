@@ -2,151 +2,81 @@ import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
 import {
-  TableLedgerRecordsFieldsFragmentDoc,
-  type TableLedgerRecordsFieldsFragment,
+  LedgerRecordsTableFieldsFragmentDoc,
+  type LedgerRecordsTableFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EMPTY_UUID } from '../../helpers/consts.js';
+import { Pagination } from '../ui/pagination.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment TableLedgerRecordsFields on Charge {
+  fragment LedgerRecordsTableFields on LedgerRecord {
     id
-    ledger {
+    creditAccount1 {
       __typename
-      records {
-        id
-        creditAccount1 {
-          __typename
-          id
-          name
-        }
-        creditAccount2 {
-          __typename
-          id
-          name
-        }
-        debitAccount1 {
-          __typename
-          id
-          name
-        }
-        debitAccount2 {
-          __typename
-          id
-          name
-        }
-        creditAmount1 {
-          formatted
-          currency
-        }
-        creditAmount2 {
-          formatted
-          currency
-        }
-        debitAmount1 {
-          formatted
-          currency
-        }
-        debitAmount2 {
-          formatted
-          currency
-        }
-        localCurrencyCreditAmount1 {
-          formatted
-          raw
-        }
-        localCurrencyCreditAmount2 {
-          formatted
-          raw
-        }
-        localCurrencyDebitAmount1 {
-          formatted
-          raw
-        }
-        localCurrencyDebitAmount2 {
-          formatted
-          raw
-        }
-        invoiceDate
-        valueDate
-        description
-        reference
-      }
-      ... on Ledger @defer {
-        validate {
-          ... on LedgerValidation @defer {
-            matches
-            differences {
-              id
-              creditAccount1 {
-                __typename
-                id
-                name
-              }
-              creditAccount2 {
-                __typename
-                id
-                name
-              }
-              debitAccount1 {
-                __typename
-                id
-                name
-              }
-              debitAccount2 {
-                __typename
-                id
-                name
-              }
-              creditAmount1 {
-                formatted
-                currency
-              }
-              creditAmount2 {
-                formatted
-                currency
-              }
-              debitAmount1 {
-                formatted
-                currency
-              }
-              debitAmount2 {
-                formatted
-                currency
-              }
-              localCurrencyCreditAmount1 {
-                formatted
-                raw
-              }
-              localCurrencyCreditAmount2 {
-                formatted
-                raw
-              }
-              localCurrencyDebitAmount1 {
-                formatted
-                raw
-              }
-              localCurrencyDebitAmount2 {
-                formatted
-                raw
-              }
-              invoiceDate
-              valueDate
-              description
-              reference
-            }
-          }
-        }
-      }
+      id
+      name
     }
+    creditAccount2 {
+      __typename
+      id
+      name
+    }
+    debitAccount1 {
+      __typename
+      id
+      name
+    }
+    debitAccount2 {
+      __typename
+      id
+      name
+    }
+    creditAmount1 {
+      formatted
+      currency
+    }
+    creditAmount2 {
+      formatted
+      currency
+    }
+    debitAmount1 {
+      formatted
+      currency
+    }
+    debitAmount2 {
+      formatted
+      currency
+    }
+    localCurrencyCreditAmount1 {
+      formatted
+      raw
+    }
+    localCurrencyCreditAmount2 {
+      formatted
+      raw
+    }
+    localCurrencyDebitAmount1 {
+      formatted
+      raw
+    }
+    localCurrencyDebitAmount2 {
+      formatted
+      raw
+    }
+    invoiceDate
+    valueDate
+    description
+    reference
   }
 `;
 
@@ -166,43 +96,51 @@ function getRowColorByStatus(status?: 'New' | 'Diff' | 'Deleted'): string {
   return rowStyle;
 }
 
-export type LedgerRecordRow = TableLedgerRecordsFieldsFragment['ledger']['records'][number] & {
+export type LedgerRecordRow = LedgerRecordsTableFieldsFragment & {
   matchingStatus?: 'New' | 'Diff' | 'Deleted';
-  diff?: TableLedgerRecordsFieldsFragment['ledger']['records'][number];
+  diff?: LedgerRecordsTableFieldsFragment;
 };
 
 type Props = {
-  ledgerFragment: FragmentType<typeof TableLedgerRecordsFieldsFragmentDoc>;
+  ledgerRecordsData: FragmentType<typeof LedgerRecordsTableFieldsFragmentDoc>[];
+  ledgerDiffData?: FragmentType<typeof LedgerRecordsTableFieldsFragmentDoc>[];
+  matches?: string[];
 };
 
-export const LedgerTable = ({ ledgerFragment }: Props): ReactElement => {
-  const { ledger } = getFragmentData(TableLedgerRecordsFieldsFragmentDoc, ledgerFragment);
+export const LedgerTable = ({
+  ledgerRecordsData,
+  ledgerDiffData,
+  matches,
+}: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const data = useMemo(() => {
-    const records: LedgerRecordRow[] = ledger.records.map(record => {
-      const diff = ledger.validate?.differences?.find(diffRecord => diffRecord.id === record.id);
+    const records = ledgerRecordsData.map(recordData =>
+      getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
+    );
+    const differences = ledgerDiffData?.map(recordData =>
+      getFragmentData(LedgerRecordsTableFieldsFragmentDoc, recordData),
+    );
+
+    const currentRecords: LedgerRecordRow[] = records.map(record => {
+      const diff = differences?.find(diffRecord => diffRecord.id === record.id);
       return {
         ...record,
         matchingStatus:
-          !ledger.validate?.matches || ledger.validate.matches?.includes(record.id)
-            ? undefined
-            : diff
-              ? 'Diff'
-              : 'Deleted',
+          !matches || matches?.includes(record.id) ? undefined : diff ? 'Diff' : 'Deleted',
         diff,
       };
     });
     const newRecords: LedgerRecordRow[] =
-      ledger?.validate?.differences
+      differences
         ?.filter(record => record.id === EMPTY_UUID)
         .map(record => ({
           ...record,
           matchingStatus: 'New',
         })) ?? [];
-    records.push(...newRecords);
-    return records;
-  }, [ledger]);
+    currentRecords.push(...newRecords);
+    return currentRecords;
+  }, [ledgerRecordsData, ledgerDiffData, matches]);
 
   const table = useReactTable({
     data,
@@ -210,49 +148,71 @@ export const LedgerTable = ({ ledgerFragment }: Props): ReactElement => {
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
+    },
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 10,
+      },
+      sorting: [
+        {
+          id: 'invoiceDate',
+          desc: true,
+        },
+      ],
     },
   });
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map(headerGroup => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map(header => (
-              <TableHead key={header.id} colSpan={header.colSpan}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map(row => (
-            <TableRow
-              key={row.id}
-              data-state={row.getIsSelected() && 'selected'}
-              className={getRowColorByStatus(row.original.matchingStatus)}
-            >
-              {row.getVisibleCells().map(cell => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map(headerGroup => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <TableHead className="text-center" key={header.id} colSpan={header.colSpan}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
               ))}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map(row => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && 'selected'}
+                className={getRowColorByStatus(row.original.matchingStatus)}
+              >
+                {row.getVisibleCells().map(cell => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <Pagination
+          value={table.getState().pagination.pageIndex}
+          total={table.getPageCount()}
+          onChange={page => table.setPageIndex(page)}
+        />
+      </div>
+    </>
   );
 };

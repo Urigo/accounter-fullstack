@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type SortingState,
@@ -9,6 +10,7 @@ import {
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditTransactionModal } from '../common/index.js';
+import { Pagination } from '../ui/pagination.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
@@ -21,37 +23,35 @@ type Props = {
 
 export const TransactionsTable = ({
   transactionsProps,
-  onChange = (): void => void 0,
+  onChange,
   enableEdit,
   enableChargeLink,
 }: Props): ReactElement => {
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const transactions = useMemo(
-    () =>
-      transactionsProps.map(rawTransaction =>
-        getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction),
-      ),
-    [transactionsProps],
-  );
+  const transactions = useMemo(() => {
+    console.log('rendering Transactions');
+    return transactionsProps.map(rawTransaction => {
+      return getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction);
+    });
+  }, [transactionsProps]);
 
-  const data: TransactionsTableRowType[] = useMemo(
-    () =>
-      transactions?.map(transaction => ({
+  const data: TransactionsTableRowType[] = useMemo(() => {
+    return transactions.map(transaction => {
+      return {
         ...transaction,
-        editTransaction: (): void => setEditTransactionId(transaction.id),
-        onUpdate: onChange,
+        editTransaction: setEditTransactionId,
+        onUpdate: onChange || (() => {}),
         enableEdit,
         enableChargeLink,
-      })),
-    [transactions, onChange, enableEdit, enableChargeLink],
-  );
+      };
+    });
+  }, [transactions, enableEdit, enableChargeLink, onChange]);
 
-  const tableColumns = useMemo(
-    () => (enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns),
-    [enableEdit, enableChargeLink],
-  );
+  const tableColumns = useMemo(() => {
+    return enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns;
+  }, [enableEdit, enableChargeLink]);
 
   const table = useReactTable({
     data,
@@ -59,8 +59,21 @@ export const TransactionsTable = ({
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
+    },
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 100,
+      },
+      sorting: [
+        {
+          id: 'eventDate',
+          desc: true,
+        },
+      ],
     },
   });
 
@@ -102,10 +115,19 @@ export const TransactionsTable = ({
           )}
         </TableBody>
       </Table>
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Pagination
+            value={table.getState().pagination.pageIndex}
+            total={table.getPageCount()}
+            onChange={page => table.setPageIndex(page)}
+          />
+        </div>
+      )}
       <EditTransactionModal
         transactionID={editTransactionId}
         close={() => setEditTransactionId(undefined)}
-        onChange={onChange}
+        onChange={onChange ?? (() => {})}
       />
     </>
   );

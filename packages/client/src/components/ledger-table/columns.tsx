@@ -53,7 +53,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     },
   },
   {
-    header: 'Debit Account1',
+    header: 'Debit Account (Main)',
     columns: [
       {
         accessorKey: 'debitAccount1.name',
@@ -120,7 +120,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     ],
   },
   {
-    header: 'Credit Account1',
+    header: 'Credit Account (Main)',
     columns: [
       {
         accessorKey: 'creditAccount1.name',
@@ -187,7 +187,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     ],
   },
   {
-    header: 'Debit Account2',
+    header: 'Debit Account (Secondary)',
     columns: [
       {
         accessorKey: 'debitAccount2.name',
@@ -254,7 +254,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
     ],
   },
   {
-    header: 'Credit Account2',
+    header: 'Credit Account (Secondary)',
     columns: [
       {
         accessorKey: 'creditAccount2.name',

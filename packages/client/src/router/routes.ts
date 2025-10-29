@@ -22,9 +22,9 @@ export const ROUTES = {
   BUSINESSES: {
     ROOT: '/businesses',
     ALL: '/businesses',
-    TRANSACTIONS: '/businesses/transactions',
+    LEDGER: '/businesses/ledger',
     DETAIL: (businessId: string) => `/businesses/${businessId}`,
-    DETAIL_TRANSACTIONS: (businessId: string) => `/businesses/${businessId}/transactions`,
+    DETAIL_LEDGER: (businessId: string) => `/businesses/${businessId}/ledger`,
   },
 
   BUSINESS_TRIPS: {

@@ -6,10 +6,10 @@ import { useQuery } from 'urql';
 import { ROUTES } from '@/router/routes.js';
 import { Mark, Table, Tooltip } from '@mantine/core';
 import {
-  BusinessTransactionsInfoDocument,
+  BusinessLedgerInfoDocument,
   Currency,
+  type BusinessLedgerInfoQuery,
   type BusinessTransactionsFilter,
-  type BusinessTransactionsInfoQuery,
 } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES, formatAmountWithCurrency } from '../../helpers/index.js';
 import { AccounterLoader } from '../common/index.js';
@@ -18,7 +18,7 @@ import { DownloadCSV } from './download-csv.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query BusinessTransactionsInfo($filters: BusinessTransactionsFilter) {
+  query BusinessLedgerInfo($filters: BusinessTransactionsFilter) {
     businessTransactionsFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsFromLedgerRecordsSuccessfulResult {
         businessTransactions {
@@ -54,8 +54,8 @@ import { DownloadCSV } from './download-csv.js';
   }
 `;
 
-export type ExtendedTransaction = Extract<
-  BusinessTransactionsInfoQuery['businessTransactionsFromLedgerRecords'],
+export type ExtendedLedger = Extract<
+  BusinessLedgerInfoQuery['businessTransactionsFromLedgerRecords'],
   { __typename?: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult' }
 >['businessTransactions'][number] & {
   ilsBalance: number;
@@ -71,7 +71,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const [isExtendAllCurrencies, setISExtendAllCurrencies] = useState(false);
   const { fromDate, ownerIds, toDate } = filter ?? {};
   const [{ data, fetching }] = useQuery({
-    query: BusinessTransactionsInfoDocument,
+    query: BusinessLedgerInfoDocument,
     variables: {
       filters: {
         fromDate,
@@ -82,44 +82,42 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     },
   });
 
-  const transactions =
+  const ledgerRecords =
     data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
       ? []
       : (data?.businessTransactionsFromLedgerRecords.businessTransactions.sort((a, b) =>
           a.invoiceDate > b.invoiceDate ? 1 : -1,
         ) ?? []);
 
-  const extendedTransactions: Array<ExtendedTransaction> = [];
-  for (let i = 0; i < transactions.length; i++) {
-    const { __typename, ...coreTransaction } = transactions[i];
+  const extendedLedgerRecords: Array<ExtendedLedger> = [];
+  for (let i = 0; i < ledgerRecords.length; i++) {
+    const { __typename, ...coreRecord } = ledgerRecords[i];
     const ilsBalance =
       i === 0
-        ? coreTransaction.amount.raw
-        : (extendedTransactions[i - 1].ilsBalance ?? 0) + coreTransaction.amount.raw;
+        ? coreRecord.amount.raw
+        : (extendedLedgerRecords[i - 1].ilsBalance ?? 0) + coreRecord.amount.raw;
     const foreignCurrenciesBalance: Record<string, number> = {};
     Object.values(Currency).map(currency => {
       if (currency !== Currency.Ils) {
         const key = `${currency.toLowerCase()}Balance`;
         foreignCurrenciesBalance[key] =
           i === 0
-            ? ((coreTransaction.foreignAmount?.currency === currency
-                ? coreTransaction.foreignAmount?.raw
+            ? ((coreRecord.foreignAmount?.currency === currency
+                ? coreRecord.foreignAmount?.raw
                 : 0) ?? 0)
-            : (extendedTransactions[i - 1]?.[key] ?? 0) +
-              (coreTransaction.foreignAmount?.currency === currency
-                ? coreTransaction.foreignAmount?.raw
-                : 0);
+            : (extendedLedgerRecords[i - 1]?.[key] ?? 0) +
+              (coreRecord.foreignAmount?.currency === currency ? coreRecord.foreignAmount?.raw : 0);
       }
     });
-    extendedTransactions.push({
-      ...coreTransaction,
+    extendedLedgerRecords.push({
+      ...coreRecord,
       ilsBalance,
       ...foreignCurrenciesBalance,
-    } as (typeof extendedTransactions)[number]);
+    } as (typeof extendedLedgerRecords)[number]);
   }
 
   const currencies = new Set(
-    transactions.filter(t => t.foreignAmount?.currency).map(t => t.foreignAmount!.currency),
+    ledgerRecords.filter(t => t.foreignAmount?.currency).map(t => t.foreignAmount!.currency),
   );
   const isEur = isExtendAllCurrencies || currencies.has(Currency.Eur);
   const isUsd = isExtendAllCurrencies || currencies.has(Currency.Usd);
@@ -129,7 +127,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const isAud = isExtendAllCurrencies || currencies.has(Currency.Aud);
   const isSek = isExtendAllCurrencies || currencies.has(Currency.Sek);
 
-  const businessName = transactions[0]?.business.name ?? 'unknown';
+  const businessName = ledgerRecords[0]?.business.name ?? 'unknown';
 
   return (
     <div className="flex flex-row gap-5">
@@ -216,7 +214,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
               <th>Counter Account</th>
               <th>
                 <DownloadCSV
-                  transactions={extendedTransactions}
+                  ledgerRecords={extendedLedgerRecords}
                   businessName={businessName}
                   fromDate={filter?.fromDate ?? undefined}
                   toDate={filter?.toDate ?? undefined}
@@ -225,7 +223,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
             </tr>
           </thead>
           <tbody>
-            {extendedTransactions.map((row, index) => (
+            {extendedLedgerRecords.map((row, index) => (
               <tr
                 key={index}
                 className="cursor-pointer"
@@ -299,7 +297,7 @@ export function CurrencyCells({
   data,
 }: {
   currency: Currency;
-  data: ExtendedTransaction;
+  data: ExtendedLedger;
 }): ReactElement {
   const foreignAmount =
     data.foreignAmount && data.foreignAmount.currency === currency ? data.foreignAmount : null;
@@ -329,7 +327,7 @@ const currenciesToExtend = Object.values(Currency).filter(
   currency => !FIAT_CURRENCIES.includes(currency),
 );
 
-export function ExtendedCurrencyCells({ data }: { data: ExtendedTransaction }): ReactElement {
+export function ExtendedCurrencyCells({ data }: { data: ExtendedLedger }): ReactElement {
   return (
     <>
       {currenciesToExtend.map(currency => (

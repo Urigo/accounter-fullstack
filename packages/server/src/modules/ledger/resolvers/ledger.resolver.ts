@@ -165,6 +165,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           throw new GraphQLError('Failed to fetch ledger records');
         });
     },
+    ledgerRecordsByFinancialEntity: async (_, { financialEntityId }, { injector }) => {
+      return await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByFinancialEntityIdLoader.load(financialEntityId);
+    },
   },
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {

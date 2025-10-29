@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Text, Tooltip } from '@mantine/core';
 import type { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
-import { BusinessExtendedInfo } from '../../business-transactions/business-extended-info.js';
+import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 

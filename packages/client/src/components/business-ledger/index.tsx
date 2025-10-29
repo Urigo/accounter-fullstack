@@ -9,10 +9,10 @@ import {
 import { useQuery } from 'urql';
 import { Mark, Table, Text, Tooltip } from '@mantine/core';
 import {
-  BusinessTransactionsSummeryDocument,
+  BusinessLedgerRecordsSummeryDocument,
   Currency,
+  type BusinessLedgerRecordsSummeryQuery,
   type BusinessTransactionsFilter,
-  type BusinessTransactionsSummeryQuery,
 } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -21,11 +21,11 @@ import { AccounterTableRow } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
-import { BusinessTransactionsFilters } from './business-transactions-filters.js';
+import { BusinessLedgerRecordsFilters } from './business-ledger-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query BusinessTransactionsSummery($filters: BusinessTransactionsFilter) {
+  query BusinessLedgerRecordsSummery($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
@@ -66,32 +66,32 @@ import { BusinessTransactionsFilters } from './business-transactions-filters.js'
   }
 `;
 
-type BusinessTransactionsSum = Extract<
-  BusinessTransactionsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
+type BusinessLedgerRecordsSum = Extract<
+  BusinessLedgerRecordsSummeryQuery['businessTransactionsSumFromLedgerRecords'],
   { businessTransactionsSum: unknown }
 >['businessTransactionsSum'][number];
 
 type CellInfo = {
   title: string | ReactNode;
   disabled?: boolean;
-  value: (item: BusinessTransactionsSum) => string | ReactNode;
+  value: (item: BusinessLedgerRecordsSum) => string | ReactNode;
   style?: React.CSSProperties;
 };
 
-export const BusinessTransactionsSummery = (): ReactElement => {
+export const BusinessLedgerRecordsSummery = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [isExpandedCurrencies, setIsExpandedCurrencies] = useState<boolean>(false);
   const [filter, setFilter] = useState<BusinessTransactionsFilter>(
-    get('transactionsFilters')
+    get('ledgerRecordsFilters')
       ? (JSON.parse(
-          decodeURIComponent(get('transactionsFilters') as string),
+          decodeURIComponent(get('ledgerRecordsFilters') as string),
         ) as BusinessTransactionsFilter)
       : {},
   );
   const [{ data, fetching }] = useQuery({
-    query: BusinessTransactionsSummeryDocument,
+    query: BusinessLedgerRecordsSummeryDocument,
     variables: {
       filters: filter,
     },
@@ -100,7 +100,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <BusinessTransactionsFilters filter={filter} setFilter={setFilter} />
+        <BusinessLedgerRecordsFilters filter={filter} setFilter={setFilter} />
         <Tooltip label="Expand all accounts">
           <Button
             variant="outline"
@@ -141,7 +141,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
     isExpandedCurrencies,
   ]);
 
-  const businessTransactionsSum = useMemo(() => {
+  const businessLedgerRecordsSum = useMemo(() => {
     if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
       return [];
     }
@@ -195,7 +195,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
   ];
 
   return (
-    <PageLayout title="Business Transactions" description="Business Transactions Summery">
+    <PageLayout title="Business Ledger Records" description="Business Ledger Records Summary">
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
@@ -209,7 +209,7 @@ export const BusinessTransactionsSummery = (): ReactElement => {
             </tr>
           </thead>
           <tbody>
-            {businessTransactionsSum.map((item, index) => (
+            {businessLedgerRecordsSum.map((item, index) => (
               <AccounterTableRow
                 key={index}
                 columns={columns}

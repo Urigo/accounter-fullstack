@@ -9,29 +9,29 @@ import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { UserContext } from '../../providers/user-provider.js';
+import { UserContext } from '../../providers/user-provider.jsx';
 import { PopUpModal } from '../common/index.js';
-import { Button } from '../ui/button.js';
+import { Button } from '../ui/button.jsx';
 
-export function encodeTransactionsFilters(
+export function encodeLedgerRecordsFilters(
   filter?: BusinessTransactionsFilter | null,
 ): string | null {
   return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
 }
 
-interface BusinessTransactionsFilterFormProps {
+interface BusinessLedgerRecordsFilterFormProps {
   filter: BusinessTransactionsFilter;
   setFilter: (filter: BusinessTransactionsFilter) => void;
   closeModal: () => void;
   single?: boolean;
 }
 
-function BusinessTransactionsFilterForm({
+function BusinessLedgerRecordsFilterForm({
   filter,
   setFilter,
   closeModal,
   single = false,
-}: BusinessTransactionsFilterFormProps): ReactElement {
+}: BusinessLedgerRecordsFilterFormProps): ReactElement {
   const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
@@ -199,15 +199,15 @@ function BusinessTransactionsFilterForm({
   );
 }
 
-interface BusinessTransactionsFilterProps {
+interface BusinessLedgerRecordsFilterProps {
   filter: BusinessTransactionsFilter;
   setFilter: (filter: BusinessTransactionsFilter) => void;
 }
 
-export function BusinessTransactionsFilters({
+export function BusinessLedgerRecordsFilters({
   filter,
   setFilter,
-}: BusinessTransactionsFilterProps): ReactElement {
+}: BusinessLedgerRecordsFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
@@ -232,9 +232,9 @@ export function BusinessTransactionsFilters({
   // update url on filter change
   useEffect(() => {
     const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-    const oldFilter = get('transactionsFilters');
+    const oldFilter = get('ledgerRecordsFilters');
     if (newFilter !== oldFilter) {
-      set('transactionsFilters', newFilter);
+      set('ledgerRecordsFilters', newFilter);
     }
   }, [filter, get, set]);
 
@@ -244,7 +244,7 @@ export function BusinessTransactionsFilters({
         opened={opened}
         onClose={(): void => setOpened(false)}
         content={
-          <BusinessTransactionsFilterForm
+          <BusinessLedgerRecordsFilterForm
             single
             filter={filter}
             setFilter={onSetFilter}

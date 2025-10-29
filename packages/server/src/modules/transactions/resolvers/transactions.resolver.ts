@@ -43,6 +43,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       });
       return transactionIDs;
     },
+    transactionsByFinancialEntity: async (_, { financialEntityID }, { injector, adminContext }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .getTransactionsByFilters({
+          businessIDs: [financialEntityID],
+          ownerIDs: [adminContext.defaultAdminBusinessId],
+        })
+        .then(res => res.map(t => t.id));
+      return transactions;
+    },
   },
   Mutation: {
     updateTransaction: async (_, { transactionId, fields }, { injector }) => {

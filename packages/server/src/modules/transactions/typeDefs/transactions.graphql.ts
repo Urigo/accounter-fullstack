@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]! @auth(role: ACCOUNTANT)
+    transactionsByFinancialEntity(financialEntityID: UUID!): [Transaction!]! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {

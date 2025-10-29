@@ -1,31 +1,32 @@
 import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { BusinessTransactionsSectionDocument } from '@/gql/graphql.js';
-import { TransactionsTable } from '../transactions-table';
+import { BusinessLedgerSectionDocument } from '@/gql/graphql.js';
+import { LedgerTable } from '../ledger-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query BusinessTransactionsSection($businessId: UUID!) {
-    transactionsByFinancialEntity(financialEntityID: $businessId) {
+  query BusinessLedgerSection($businessId: UUID!) {
+    ledgerRecordsByFinancialEntity(financialEntityId: $businessId) {
       id
-      ...TransactionForTransactionsTableFields
+      ...LedgerRecordsTableFields
     }
   }
 `;
+
 interface Props {
   businessId: string;
 }
 
-export function TransactionsSection({ businessId }: Props) {
+export function LedgerSection({ businessId }: Props) {
   const [{ data, fetching }] = useQuery({
-    query: BusinessTransactionsSectionDocument,
+    query: BusinessLedgerSectionDocument,
     variables: {
       businessId,
     },
   });
 
   if (fetching) {
-    return <div>Loading transactions...</div>;
+    return <div>Loading ledger records...</div>;
   }
 
   return (
@@ -33,14 +34,14 @@ export function TransactionsSection({ businessId }: Props) {
       <CardHeader className="flex w-full justify-between items-center">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Transactions</CardTitle>
-            <CardDescription>Complete transaction history for this business</CardDescription>
+            <CardTitle>Ledger Records</CardTitle>
+            <CardDescription>Complete ledger history for this business</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <TransactionsTable transactionsProps={data?.transactionsByFinancialEntity ?? []} />
+          <LedgerTable ledgerRecordsData={data?.ledgerRecordsByFinancialEntity ?? []} />
         </div>
       </CardContent>
     </Card>
