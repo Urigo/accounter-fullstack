@@ -113,7 +113,7 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
       return {
         ...field,
         ...watchFieldArray[index],
-        id: field.client?.id,
+        id: field.id,
       };
     });
   }, [fields, watchFieldArray]);
