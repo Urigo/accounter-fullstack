@@ -6,5 +6,9 @@ type Props = {
 };
 
 export const DateCell = ({ timelessDate }: Props): ReactElement => {
-  return <p className="text-sm font-medium">{new Date(timelessDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}</p>;
+  return (
+    <p className="text-sm font-medium">
+      {new Date(timelessDate).toLocaleDateString(undefined, { timeZone: 'UTC' })}
+    </p>
+  );
 };
