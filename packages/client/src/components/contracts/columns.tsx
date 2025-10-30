@@ -120,15 +120,15 @@ export const columns: ColumnDef<ContractRow>[] = [
     accessorKey: 'purchaseOrder',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Purchase Order" />,
     cell: ({ row }) => (
-      <div className="flex flex-row gap-2 items-center">
-        <span className="text-sm font-medium">{row.getValue<string>('purchaseOrder')}</span>
-        {row.getValue<string>('msCloud') && (
-          <Link to={row.getValue<string>('msCloud')} target="_blank" rel="noreferrer">
-            <Button variant="link" size="sm" className="p-0" disabled>
+      <div className="flex flex-row gap-1 items-center">
+        {row.original.msCloud && (
+          <Link to={row.original.msCloud} target="_blank" rel="noreferrer" className="size-8">
+            <Button variant="link" size="sm" disabled>
               <LinkIcon className="size-4" />
             </Button>
           </Link>
         )}
+        <span className="text-sm font-medium">{row.getValue<string>('purchaseOrder')}</span>
       </div>
     ),
   },
