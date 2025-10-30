@@ -127,8 +127,10 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
       </DialogTrigger>
       <DialogContent className="min-w-[90vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Filter Contracts</DialogTitle>
-          <DialogDescription>Filter contracts based on various criteria</DialogDescription>
+          <DialogTitle>Issue Documents for Contracts</DialogTitle>
+          <DialogDescription>
+            Review and issue monthly documents for the selected contracts
+          </DialogDescription>
         </DialogHeader>
         {fetching ? (
           <AccounterLoader />
