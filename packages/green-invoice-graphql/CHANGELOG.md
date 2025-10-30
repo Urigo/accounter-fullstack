@@ -1,5 +1,34 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.8.2
+
+### Patch Changes
+
+- [#2636](https://github.com/Urigo/accounter-fullstack/pull/2636)
+  [`1ae19c6`](https://github.com/Urigo/accounter-fullstack/commit/1ae19c6f8dabd995120862795284dab6e363dc79)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.15)
+    (from `0.108.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.14)
+    (from `0.106.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.15)
+    (from `0.109.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.14)
+    (from `0.106.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+
 ## 0.8.1
 
 ### Patch Changes
