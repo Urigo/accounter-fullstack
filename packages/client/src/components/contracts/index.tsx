@@ -163,7 +163,6 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
   });
 
   useEffect(() => {
-    console.log('Row selection changed:', rowSelection);
     const selectedIndexes = Object.entries(rowSelection)
       .filter(([, value]) => !!value)
       .map(([key]) => Number(key));
