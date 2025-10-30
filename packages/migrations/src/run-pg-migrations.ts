@@ -124,6 +124,7 @@ import migration_2025_10_21T12_45_26_add_financial_entity_activity_flag from './
 import migration_2025_10_27T17_17_23_multiple_pos_per_contract_2 from './actions/2025-10-27T17-17-23.multiple-pos-per-contract-2.js';
 import migration_2025_10_27T17_17_23_multiple_pos_per_contract from './actions/2025-10-27T17-17-23.multiple-pos-per-contract.js';
 import migration_2025_10_27T18_11_45_add_operations_count_per_contract from './actions/2025-10-27T18-11-45.add-operations-count-per-contract.js';
+import migration_2025_10_29T17_59_09_refactor_admin_business from './actions/2025-10-29T17-59-09.refactor-admin-business.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -255,5 +256,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_10_27T17_17_23_multiple_pos_per_contract,
       migration_2025_10_27T18_11_45_add_operations_count_per_contract,
       migration_2025_10_27T17_17_23_multiple_pos_per_contract_2,
+      migration_2025_10_29T17_59_09_refactor_admin_business,
     ],
   });

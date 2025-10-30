@@ -19,34 +19,67 @@ export default gql`
     id: UUID!
     name: String!
     governmentId: String!
-    business: LtdFinancialEntity!
-    withholdingTaxBookNumber: String
-    withholdingTaxFileNumber: String
-    socialSecurityEmployerId: String
-    taxAdvancesRate: Float
-    taxAdvancesId: String
     registrationDate: TimelessDate!
+    business: LtdFinancialEntity!
+    " Tax Advances Info "
+    taxAdvancesAnnualIds: [AnnualId!]!
+    taxAdvancesRates: [TaxAdvancesRate!]!
+    " Withholding Tax Info "
+    withholdingTaxCompanyId: String
+    withholdingTaxAnnualIds: [AnnualId!]!
+    " Social Security Info "
+    socialSecurityDeductionsId: String
+    socialSecurityEmployerIds: [AnnualId!]!
+  }
+
+  " Represents an annual identifier for tax purposes. "
+  type AnnualId {
+    year: Int!
+    id: String!
+  }
+
+  " Represents the tax advance rate for a specific date. "
+  type TaxAdvancesRate {
+    date: TimelessDate!
+    rate: Float!
   }
 
   " Input type for creating a new admin business. "
   input CreateAdminBusinessInput {
     businessId: UUID!
-    withholdingTaxBookNumber: String
-    withholdingTaxFileNumber: String
-    socialSecurityEmployerId: String
-    taxAdvancesRate: Float
-    taxAdvancesId: String
     registrationDate: TimelessDate!
+    companyTaxId: String!
+    taxAdvancesAnnualId: String
+    taxAdvancesRate: Float
+    withholdingTaxAnnualId: String
+    socialSecurityEmployerId: String
   }
 
   " Input type for updating admin business details. "
   input UpdateAdminBusinessInput {
-    withholdingTaxBookNumber: String
-    withholdingTaxFileNumber: String
-    socialSecurityEmployerId: String
-    taxAdvancesRate: Float
-    taxAdvancesId: String
+    name: String
+    governmentId: String
     registrationDate: TimelessDate
+    " Tax Advances Info "
+    taxAdvancesAnnualIds: [AnnualIdInput!]
+    taxAdvancesRates: [TaxAdvancesRateInput!]
+    " Withholding Tax Info "
+    withholdingTaxCompanyId: String
+    withholdingTaxAnnualIds: [AnnualIdInput!]
+    " Social Security Info "
+    socialSecurityEmployerIds: [AnnualIdInput!]
+  }
+
+  " Input type representing an annual identifier for tax purposes. "
+  input AnnualIdInput {
+    year: Int!
+    id: String!
+  }
+
+  " Input type representing the tax advance rate for a specific date. "
+  input TaxAdvancesRateInput {
+    date: TimelessDate!
+    rate: Float!
   }
 
   extend type LtdFinancialEntity {
