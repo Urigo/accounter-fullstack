@@ -122,7 +122,16 @@ type Props = {
 };
 
 export const ContractsTable = ({ data }: Props): ReactElement => {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: 'endDate',
+      desc: true,
+    },
+    {
+      id: 'amount.raw',
+      desc: true,
+    },
+  ]);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -150,14 +159,8 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 50,
       },
-      sorting: [
-        {
-          id: 'eventDate',
-          desc: true,
-        },
-      ],
     },
   });
 
