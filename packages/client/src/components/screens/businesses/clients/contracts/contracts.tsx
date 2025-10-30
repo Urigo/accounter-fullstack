@@ -30,7 +30,7 @@ export const ContractsScreen = (): ReactElement => {
   }
 
   // Only fetch if we don't have loader data
-  const [{ data, fetching }, fetchContracts] = useQuery({
+  const [{ data, fetching }] = useQuery({
     query: ContractsScreenDocument,
     pause: !adminId || !!loaderData,
     variables: {
@@ -50,7 +50,5 @@ export const ContractsScreen = (): ReactElement => {
     return <div>Contracts not found</div>;
   }
 
-  return (
-    <ContractsTable data={contractsData.contractsByAdmin} onChange={async () => fetchContracts()} />
-  );
+  return <ContractsTable data={contractsData.contractsByAdmin} />;
 };
