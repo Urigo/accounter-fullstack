@@ -6,6 +6,10 @@ export default gql`
     newDocumentInfoDraftByDocument(documentId: UUID!): NewDocumentInfo! @auth(role: ACCOUNTANT)
     clientMonthlyChargesDrafts(issueMonth: TimelessDate!): [NewDocumentInfo!]!
       @auth(role: ACCOUNTANT)
+    clientChargesDraftsByContracts(
+      issueMonth: TimelessDate!
+      contractIds: [UUID!]!
+    ): [NewDocumentInfo!]! @auth(role: ACCOUNTANT)
     clientMonthlyChargeDraft(clientId: UUID!, issueMonth: TimelessDate!): NewDocumentInfo!
       @auth(role: ACCOUNTANT)
     greenInvoiceClient(clientId: UUID!): GreenInvoiceClient! @auth(role: ACCOUNTANT)
