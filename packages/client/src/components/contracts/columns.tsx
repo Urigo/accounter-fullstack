@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff, LinkIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -119,7 +120,16 @@ export const columns: ColumnDef<ContractRow>[] = [
     accessorKey: 'purchaseOrder',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Purchase Order" />,
     cell: ({ row }) => (
-      <p className="text-sm font-medium">{row.getValue<string>('purchaseOrder')}</p>
+      <div className="flex flex-row gap-2 items-center">
+        <span className="text-sm font-medium">{row.getValue<string>('purchaseOrder')}</span>
+        {row.getValue<string>('msCloud') && (
+          <Link to={row.getValue<string>('msCloud')} target="_blank" rel="noreferrer">
+            <Button variant="link" size="sm" className="p-0" disabled>
+              <LinkIcon className="size-4" />
+            </Button>
+          </Link>
+        )}
+      </div>
     ),
   },
   {
