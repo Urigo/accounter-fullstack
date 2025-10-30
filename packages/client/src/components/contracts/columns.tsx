@@ -123,7 +123,7 @@ export const columns: ColumnDef<ContractRow>[] = [
       <div className="flex flex-row gap-1 items-center">
         {row.original.msCloud && (
           <Link to={row.original.msCloud} target="_blank" rel="noreferrer" className="size-8">
-            <Button variant="link" size="sm" disabled>
+            <Button variant="link" size="sm">
               <LinkIcon className="size-4" />
             </Button>
           </Link>
