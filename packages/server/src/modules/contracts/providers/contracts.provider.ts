@@ -251,7 +251,7 @@ export class ContractsProvider {
     if (contract) {
       this.cache.delete(`client-contracts-${contract.client_id}`);
       const business = await this.businessesProvider.getBusinessByIdLoader.load(contract.client_id);
-      if (business) {
+      if (business?.owner_id) {
         this.cache.delete(`admin-business-${business.owner_id}-contracts`);
       }
     }
