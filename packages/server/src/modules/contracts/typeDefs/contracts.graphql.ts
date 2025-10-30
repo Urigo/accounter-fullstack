@@ -4,6 +4,8 @@ export default gql`
   extend type Query {
     allOpenContracts: [Contract!]! @auth(role: ACCOUNTANT)
     contractsByClient(clientId: UUID!): [Contract!]! @auth(role: ACCOUNTANT)
+    contractsByAdmin(adminId: UUID!): [Contract!]! @auth(role: ACCOUNTANT)
+    contractsById(id: UUID!): Contract! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {

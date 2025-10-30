@@ -47,6 +47,11 @@ const BusinessLedgerRecordsSingle = lazy(() =>
     default: m.BusinessLedgerRecordsSingle,
   })),
 );
+const ContractsScreen = lazy(() =>
+  import('../components/screens/businesses/clients/contracts/contracts.js').then(m => ({
+    default: m.ContractsScreen,
+  })),
+);
 
 // Business Trips
 const BusinessTrips = lazy(() =>
@@ -286,6 +291,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Business Ledger',
                   breadcrumb: 'Ledger',
+                },
+              },
+              {
+                path: 'contracts',
+                element: withSuspense(ContractsScreen, <TableSkeleton />),
+                handle: {
+                  title: 'Clients Contracts',
+                  breadcrumb: 'Contracts',
                 },
               },
             ],

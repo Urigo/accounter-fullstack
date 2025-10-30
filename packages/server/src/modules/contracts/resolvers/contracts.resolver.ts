@@ -29,6 +29,30 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
+    contractsByAdmin: async (_, { adminId }, { injector }) => {
+      try {
+        return injector.get(ContractsProvider).getContractsByAdminBusinessIdLoader.load(adminId);
+      } catch (e) {
+        const message = 'Error fetching contracts by admin';
+        console.error(message, e);
+        throw new GraphQLError(message);
+      }
+    },
+    contractsById: async (_, { id }, { injector }) => {
+      try {
+        return injector
+          .get(ContractsProvider)
+          .getContractsByIdLoader.load(id)
+          .then(res => {
+            if (!res) throw new GraphQLError('Contract not found');
+            return res;
+          });
+      } catch (e) {
+        const message = 'Error fetching contracts by id';
+        console.error(message, e);
+        throw new GraphQLError(message);
+      }
+    },
   },
   Mutation: {
     createContract: async (_, { input }, { injector }) => {

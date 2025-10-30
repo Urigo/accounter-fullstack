@@ -23,6 +23,7 @@ export const ROUTES = {
     ROOT: '/businesses',
     ALL: '/businesses',
     LEDGER: '/businesses/ledger',
+    CONTRACTS: '/businesses/contracts',
     DETAIL: (businessId: string) => `/businesses/${businessId}`,
     DETAIL_LEDGER: (businessId: string) => `/businesses/${businessId}/ledger`,
   },
