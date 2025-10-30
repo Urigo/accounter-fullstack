@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Pagination } from '@/components/common/index.js';
 import {
@@ -22,7 +22,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
-import type { BillingCycle, Currency, Product, SubscriptionPlan } from '../../gql/graphql.js';
+import type { BillingCycle, Product, SubscriptionPlan } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -32,6 +32,7 @@ import {
 } from '../ui/dropdown-menu.js';
 import { columns } from './columns.js';
 import { ContractsFilter } from './contracts-filter.js';
+import { IssueDocumentsModal } from './issue-documents-modal.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -50,7 +51,6 @@ import { ContractsFilter } from './contracts-filter.js';
     endDate
     amount {
       raw
-      currency
       formatted
     }
     billingCycle
@@ -76,7 +76,6 @@ export interface ContractRow {
   endDate: TimelessDateString;
   amount: {
     raw: number;
-    currency: Currency;
     formatted: string;
   };
   billingCycle: BillingCycle;
@@ -105,7 +104,6 @@ function convertContractFragmentToTableRow(
     endDate: fragmentData.endDate,
     amount: {
       raw: fragmentData.amount.raw,
-      currency: fragmentData.amount.currency,
       formatted: fragmentData.amount.formatted,
     },
     billingCycle: fragmentData.billingCycle,
@@ -134,12 +132,12 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
   ]);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedContractIds, setSelectedContractIds] = useState<string[]>([]);
 
-  const contracts = useMemo(() => {
-    return data.map(rawContract => {
-      return convertContractFragmentToTableRow(rawContract);
-    });
-  }, [data]);
+  const contracts = useMemo(
+    () => data.map(rawContract => convertContractFragmentToTableRow(rawContract)),
+    [data],
+  );
 
   const table = useReactTable({
     data: contracts,
@@ -164,15 +162,29 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
     },
   });
 
-  // table.getFilteredSelectedRowModel();
+  useEffect(() => {
+    console.log('Row selection changed:', rowSelection);
+    const selectedIndexes = Object.entries(rowSelection)
+      .filter(([, value]) => !!value)
+      .map(([key]) => Number(key));
+    const newSelectedContractIds = Array.from(
+      new Set(contracts.filter((_, i) => selectedIndexes.includes(i)).map(c => c.id)),
+    );
+    if (
+      selectedContractIds.length !== newSelectedContractIds.length ||
+      !selectedContractIds.every(id => newSelectedContractIds.includes(id))
+    ) {
+      setSelectedContractIds(newSelectedContractIds);
+    }
+  }, [rowSelection, contracts, selectedContractIds, columnFilters]);
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex items-center py-4 gap-4">
         <ContractsFilter table={table} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline">
               Columns <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
@@ -194,6 +206,10 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
               })}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <div className="ml-auto">
+          <IssueDocumentsModal contractIds={selectedContractIds} className="ml-auto" />
+        </div>
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
