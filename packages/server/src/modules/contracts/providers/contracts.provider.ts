@@ -216,6 +216,16 @@ export class ContractsProvider {
   public async createContract(params: IInsertContractParams) {
     const [newContract] = await insertContract.run(params, this.dbProvider);
     this.cache.set(`contract-${newContract.id}`, newContract);
+
+    // Invalidate list caches
+    this.getContractsByClientIdLoader.clear(newContract.client_id);
+    const business = await this.businessesProvider.getBusinessByIdLoader.load(
+      newContract.client_id,
+    );
+    if (business?.owner_id) {
+      this.getContractsByAdminBusinessIdLoader.clear(business.owner_id);
+    }
+
     return newContract;
   }
 
