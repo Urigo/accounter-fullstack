@@ -3,13 +3,13 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { IGetContractsByIdsResult } from '@modules/contracts/types.js';
 import { normalizeDocumentType } from '@modules/documents/resolvers/common.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import { Currency } from '@shared/enums';
 import { NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { getClientFromGreenInvoiceClient } from './issue-document.helper';
+import { getClientFromGreenInvoiceClient } from './issue-document.helper.js';
 
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,
