@@ -24,6 +24,7 @@ import {
   RectangleEllipsis,
   Rows4,
   Scale,
+  Signature,
   Tags,
 } from 'lucide-react';
 import { ROUTES } from '../../router/routes.js';
@@ -169,6 +170,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.BUSINESSES.LEDGER,
         icon: <ArrowLeftRight size={18} />,
+      },
+      {
+        title: 'Contracts',
+        label: '',
+        href: ROUTES.BUSINESSES.CONTRACTS,
+        icon: <Signature size={18} />,
       },
       {
         title: 'Tax Categories',
