@@ -47,7 +47,7 @@ export function ContractsFilter({ table }: Props) {
               <Label>Product Type</Label>
               <Select
                 onValueChange={value =>
-                  table.getColumn('product')?.setFilterValue(value === 'NULL' ? '' : value)
+                  table.getColumn('product')?.setFilterValue(value === 'NULL' ? undefined : value)
                 }
                 value={table.getColumn('product')?.getFilterValue() as Product | ''}
               >
@@ -70,7 +70,9 @@ export function ContractsFilter({ table }: Props) {
               <Label>Billing Cycle</Label>
               <Select
                 onValueChange={value =>
-                  table.getColumn('billingCycle')?.setFilterValue(value === 'NULL' ? '' : value)
+                  table
+                    .getColumn('billingCycle')
+                    ?.setFilterValue(value === 'NULL' ? undefined : value)
                 }
                 value={table.getColumn('billingCycle')?.getFilterValue() as BillingCycle | ''}
               >
@@ -96,7 +98,7 @@ export function ContractsFilter({ table }: Props) {
               <Label>Subscription Plan</Label>
               <Select
                 onValueChange={value =>
-                  table.getColumn('plan')?.setFilterValue(value === 'NULL' ? '' : value)
+                  table.getColumn('plan')?.setFilterValue(value === 'NULL' ? undefined : value)
                 }
                 value={table.getColumn('plan')?.getFilterValue() as SubscriptionPlan | ''}
               >
@@ -122,7 +124,9 @@ export function ContractsFilter({ table }: Props) {
                 onValueChange={value =>
                   table
                     .getColumn('isActive')
-                    ?.setFilterValue(value === 'NULL' ? '' : value === 'active' ? true : false)
+                    ?.setFilterValue(
+                      value === 'NULL' ? undefined : value === 'active' ? true : false,
+                    )
                 }
                 value={convertBooleanToString(
                   table.getColumn('isActive')?.getFilterValue() as boolean | undefined,
@@ -140,11 +144,6 @@ export function ContractsFilter({ table }: Props) {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* <div>
-              <FormLabel className="text-base">Active Status</FormLabel>
-              <Switch checked={field.value} onCheckedChange={field.onChange} />
-            </div> */}
           </div>
         </div>
       </DialogContent>
