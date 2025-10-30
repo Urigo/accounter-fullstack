@@ -10,6 +10,7 @@ import type { BillingCycle, SubscriptionPlan } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
 import { cn } from '@/lib/utils.js';
 import type { Column, ColumnDef } from '@tanstack/react-table';
+import { ModifyContractDialog } from '../clients/contracts/modify-contract-dialog.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -155,5 +156,17 @@ export const columns: ColumnDef<ContractRow>[] = [
       }
       return <p className="text-sm font-medium">{operationsLimit}</p>;
     },
+  },
+  {
+    accessorKey: 'edit',
+    header: '',
+    cell: ({ row }) => (
+      <ModifyContractDialog
+        clientId={row.original.client.id}
+        contractId={row.original.id}
+        // onDone={refetch}
+      />
+    ),
+    enableSorting: false,
   },
 ];
