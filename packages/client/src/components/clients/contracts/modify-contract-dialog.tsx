@@ -130,19 +130,13 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
   const { createContract, creating } = useCreateContract();
 
   // Only fetch if we don't have loader data
-  const [{ data: fetchedContractData, fetching }, fetchContract] = useQuery({
+  const [{ data: fetchedContractData, fetching }] = useQuery({
     query: ContractsEditModalDocument,
     pause: !contractId || !isDialogOpen,
     variables: {
       contractId: contractId ?? '',
     },
   });
-
-  useEffect(() => {
-    if (isDialogOpen && contractId) {
-      fetchContract();
-    }
-  }, [isDialogOpen, contractId, fetchContract]);
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
