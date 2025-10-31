@@ -71,7 +71,7 @@
     "@types/mime-types": "3.0.1",
     "bob-the-bundler": "7.0.1",
     "mime-types": "3.0.1",
-    "rimraf": "6.0.1"
+    "rimraf": "6.1.0"
   },
   "publishConfig": {
     "directory": "dist",
