@@ -135,7 +135,7 @@ __metadata:
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.2.0"
     react-error-boundary: "npm:6.0.0"
-    react-hook-form: "npm:7.65.0"
+    react-hook-form: "npm:7.66.0"
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.9.5"
     react-to-pdf: "npm:2.0.1"
@@ -19098,12 +19098,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:7.65.0":
-  version: 7.65.0
-  resolution: "react-hook-form@npm:7.65.0"
+"react-hook-form@npm:7.66.0":
+  version: 7.66.0
+  resolution: "react-hook-form@npm:7.66.0"
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10c0/119afeaf33510d1ed6c12109f03d22d9e88f9eb01b8e4fb3cd8f40d5fc113cbcfc6154789d1d143151de8119bd08ffc7214d504e0e550ea28a9051ed6a30ae28
+  checksum: 10c0/9faeafdaedfabfcbf5f8bb1aeefb81863b8e158eef4b089e2a32180fe474aec47d05fe3ed7d4faea085ca9f689118fb1135b94cdeed2022bd7d3fa3a56530c63
   languageName: node
   linkType: hard
 
