@@ -984,7 +984,9 @@ export function greenInvoiceCountryToCountryCode(country: GreenInvoiceCountry): 
     case 'ZW':
       return CountryCode.ZWE;
     case 'XK':
-      throw new Error(`Country code XK (Kosovo) is not supported in CountryCode enum`);
+      throw new Error(
+        `GreenInvoiceCountry 'XK' (Kosovo) is not supported for conversion to CountryCode`,
+      );
     default:
       throw new Error(`Unsupported Green Invoice country: ${country}`);
   }
@@ -1133,7 +1135,7 @@ export function countryCodeToGreenInvoiceCountry(countryCode: CountryCode): Gree
     case CountryCode.EST:
       return 'EE';
     case CountryCode.SWZ:
-      throw new Error(`Country code SWZ (Eswatini) is not supported in GreenInvoiceCountry`);
+      return 'SZ';
     case CountryCode.ETH:
       return 'ET';
     case CountryCode.FLK:

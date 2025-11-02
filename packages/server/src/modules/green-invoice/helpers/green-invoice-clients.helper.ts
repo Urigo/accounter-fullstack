@@ -140,7 +140,9 @@ export async function addGreenInvoiceClient(clientId: string, injector: Injector
       greenInvoiceId: greenInvoiceClient.id,
     });
   } catch (error) {
-    console.error('Error adding Green Invoice client:', error);
+    const message = 'Error adding Green Invoice client';
+    console.error(`${message}: ${error}`);
+    throw new Error(message);
   }
 }
 
