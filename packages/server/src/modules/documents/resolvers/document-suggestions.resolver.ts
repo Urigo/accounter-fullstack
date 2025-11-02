@@ -42,13 +42,13 @@ const missingInfoSuggestions: Resolver<
     if (charge?.transactions_event_amount && charge?.transactions_currency) {
       // use transactions info, if exists
       response.amount = {
-        amount: charge.transactions_event_amount,
+        amount: Number(charge.transactions_event_amount),
         currency: formatCurrency(charge.transactions_currency),
       };
     } else if (charge?.documents_event_amount && charge?.documents_currency) {
       // Use parallel documents (if exists) as documents_event_amount is based on invoices OR receipts
       response.amount = {
-        amount: String(charge.documents_event_amount),
+        amount: charge.documents_event_amount,
         currency: formatCurrency(charge.documents_currency),
       };
     }
