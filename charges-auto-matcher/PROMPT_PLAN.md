@@ -824,7 +824,7 @@ export function selectTransactionDate(
 4. Create tests in **tests**/match-scorer.test.ts:
    - Perfect match: all fields align (should be ~1.0)
    - Partial matches: varying confidence levels
-   - Date type selection: INVOICE uses event_date, RECEIPT uses debit_date
+   - Date type selection: all uses event_date
    - PROFORMA/OTHER: tests better score selection
    - Amount differences: various levels
    - Currency mismatches: 0.2 penalty

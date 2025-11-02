@@ -297,7 +297,7 @@ When a charge contains multiple transactions or documents:
 4. Amount: sum of all amounts
 5. Currency: the common currency
 6. Business ID: the single non-null business ID (or null if all null)
-7. Date: earliest `event_date` (or `debit_date`/`debit_timestamp` for receipts)
+7. Date: earliest `event_date`
 8. Description: concatenate all `source_description` values with line breaks
 
 **Document Aggregation:**
@@ -399,14 +399,7 @@ else:  // Mismatch (both non-null but different)
 Transaction date selection:
 
 ```
-if matching against INVOICE or CREDIT_INVOICE:
-  use event_date
-else if matching against RECEIPT or INVOICE_RECEIPT:
-  use debit_timestamp (or debit_date if timestamp null)
-  if both null: fallback to event_date
-else:  // PROFORMA, OTHER, UNPROCESSED
-  calculate confidence for both event_date and debit_date
-  use the better (higher) score
+calculate confidence for event_date
 ```
 
 Document date: use `date` field
@@ -667,9 +660,9 @@ charges list toolbar
 
 - Invoice → uses event_date
 - Credit invoice → uses event_date
-- Receipt → uses debit_timestamp (fallback to debit_date, then event_date)
-- Invoice-receipt → uses debit_timestamp (fallback to debit_date, then event_date)
-- Proforma/Other/Unprocessed → uses better of event_date and debit_date scores
+- Receipt → uses event_date
+- Invoice-receipt → uses event_date
+- Proforma/Other/Unprocessed → uses event_date
 
 **Business Identification:**
 
