@@ -8,43 +8,12 @@ import type {
   AggregatedDocument,
   AggregatedTransaction,
   ConfidenceScores,
-  Document,
-  Transaction,
+  DocumentCharge,
+  MatchScore,
+  TransactionCharge,
 } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
-
-/**
- * Match score result with confidence and components
- */
-export interface MatchScore {
-  /** Charge ID being scored */
-  chargeId: string;
-  /** Overall confidence score (0.0 - 1.0) */
-  confidenceScore: number;
-  /** Individual confidence component scores */
-  components: ConfidenceScores;
-}
-
-/**
- * Transaction charge for matching
- */
-export interface TransactionCharge {
-  /** Charge UUID */
-  chargeId: string;
-  /** Array of transactions in the charge */
-  transactions: Transaction[];
-}
-
-/**
- * Document charge for matching
- */
-export interface DocumentCharge {
-  /** Charge UUID */
-  chargeId: string;
-  /** Array of documents in the charge */
-  documents: Document[];
-}
 
 /**
  * Select appropriate transaction date based on document type
@@ -64,13 +33,10 @@ export function selectTransactionDate(
   switch (documentType) {
     case 'INVOICE':
     case 'CREDIT_INVOICE':
-      // For invoices, use event_date
-      return transaction.date;
-
     case 'RECEIPT':
     case 'INVOICE_RECEIPT':
-      // For receipts, use debit_date if available, otherwise event_date
-      return transaction.debitDate ?? transaction.date;
+      // For invoices, use event_date
+      return transaction.date;
 
     case 'OTHER':
     case 'PROFORMA':
@@ -106,37 +72,37 @@ export function scoreMatch(
   // Aggregate document data (includes business extraction and amount normalization)
   const aggregatedDocument = aggregateDocuments(docCharge.documents, userId);
 
-  // For flexible document types, try both dates and use the better score
-  if (
-    aggregatedDocument.type === 'OTHER' ||
-    aggregatedDocument.type === 'PROFORMA' ||
-    aggregatedDocument.type === 'UNPROCESSED'
-  ) {
-    // Calculate score with event_date
-    const scoreWithEventDate = calculateScoreWithDate(
-      aggregatedTransaction,
-      aggregatedDocument,
-      aggregatedTransaction.date,
-      docCharge.chargeId,
-    );
+  // // For flexible document types, try both dates and use the better score
+  // if (
+  //   aggregatedDocument.type === 'OTHER' ||
+  //   aggregatedDocument.type === 'PROFORMA' ||
+  //   aggregatedDocument.type === 'UNPROCESSED'
+  // ) {
+  //   // Calculate score with event_date
+  //   const scoreWithEventDate = calculateScoreWithDate(
+  //     aggregatedTransaction,
+  //     aggregatedDocument,
+  //     aggregatedTransaction.date,
+  //     docCharge.chargeId,
+  //   );
 
-    // Calculate score with debit_date (if available)
-    if (aggregatedTransaction.debitDate) {
-      const scoreWithDebitDate = calculateScoreWithDate(
-        aggregatedTransaction,
-        aggregatedDocument,
-        aggregatedTransaction.debitDate,
-        docCharge.chargeId,
-      );
+  //   // Calculate score with debit_date (if available)
+  //   if (aggregatedTransaction.debitDate) {
+  //     const scoreWithDebitDate = calculateScoreWithDate(
+  //       aggregatedTransaction,
+  //       aggregatedDocument,
+  //       aggregatedTransaction.debitDate,
+  //       docCharge.chargeId,
+  //     );
 
-      // Return the better score
-      return scoreWithEventDate.confidenceScore > scoreWithDebitDate.confidenceScore
-        ? scoreWithEventDate
-        : scoreWithDebitDate;
-    }
+  //     // Return the better score
+  //     return scoreWithEventDate.confidenceScore > scoreWithDebitDate.confidenceScore
+  //       ? scoreWithEventDate
+  //       : scoreWithDebitDate;
+  //   }
 
-    return scoreWithEventDate;
-  }
+  //   return scoreWithEventDate;
+  // }
 
   // For specific document types, use the appropriate date
   const transactionDate = selectTransactionDate(aggregatedTransaction, aggregatedDocument.type);
@@ -158,8 +124,8 @@ export function scoreMatch(
  * @returns Match score
  */
 function calculateScoreWithDate(
-  transaction: AggregatedTransaction,
-  document: AggregatedDocument,
+  transaction: Omit<AggregatedTransaction, 'debitDate'>,
+  document: Omit<AggregatedDocument, 'businessIsCreditor'>,
   transactionDate: Date,
   chargeId: string,
 ): MatchScore {

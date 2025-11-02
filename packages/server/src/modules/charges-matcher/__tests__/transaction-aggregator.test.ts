@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateTransactions,
-  type AggregatedTransaction,
   type Transaction,
 } from '../providers/transaction-aggregator.js';
 
@@ -10,7 +9,7 @@ describe('Transaction Aggregator', () => {
   const createTransaction = (overrides: Partial<Transaction> = {}): Transaction => ({
     id: 'txn-' + Math.random().toString(36).substr(2, 9),
     charge_id: 'charge-123',
-    amount: 100,
+    amount: "100",
     currency: 'USD',
     business_id: null,
     event_date: new Date('2024-01-15'),
@@ -23,7 +22,7 @@ describe('Transaction Aggregator', () => {
   describe('Single Transaction', () => {
     it('should return single transaction as-is', () => {
       const transaction = createTransaction({
-        amount: 150.5,
+        amount: "150.5",
         currency: 'USD',
         business_id: 'business-1',
         event_date: new Date('2024-01-15'),
@@ -37,13 +36,14 @@ describe('Transaction Aggregator', () => {
         currency: 'USD',
         businessId: 'business-1',
         date: new Date('2024-01-15'),
+        debitDate: null,
         description: 'Payment from client',
       });
     });
 
     it('should handle transaction with null business_id', () => {
       const transaction = createTransaction({
-        amount: 200,
+        amount: "200",
         business_id: null,
       });
 
@@ -76,9 +76,9 @@ describe('Transaction Aggregator', () => {
   describe('Multiple Transactions - Same Currency', () => {
     it('should sum amounts correctly', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD' }),
-        createTransaction({ amount: 200, currency: 'USD' }),
-        createTransaction({ amount: 50.5, currency: 'USD' }),
+        createTransaction({ amount: "100", currency: 'USD' }),
+        createTransaction({ amount: "200", currency: 'USD' }),
+        createTransaction({ amount: "50.5", currency: 'USD' }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -89,8 +89,8 @@ describe('Transaction Aggregator', () => {
 
     it('should handle negative amounts (debits)', () => {
       const transactions = [
-        createTransaction({ amount: -100, currency: 'ILS' }),
-        createTransaction({ amount: -50, currency: 'ILS' }),
+        createTransaction({ amount: "-100", currency: 'ILS' }),
+        createTransaction({ amount: "-50", currency: 'ILS' }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -101,9 +101,9 @@ describe('Transaction Aggregator', () => {
 
     it('should handle mixed positive and negative amounts', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'EUR' }),
-        createTransaction({ amount: -30, currency: 'EUR' }),
-        createTransaction({ amount: 50, currency: 'EUR' }),
+        createTransaction({ amount: "100", currency: 'EUR' }),
+        createTransaction({ amount: "-30", currency: 'EUR' }),
+        createTransaction({ amount: "50", currency: 'EUR' }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -115,9 +115,9 @@ describe('Transaction Aggregator', () => {
   describe('Fee Transactions', () => {
     it('should exclude transactions where is_fee is true', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD', is_fee: false }),
-        createTransaction({ amount: 5, currency: 'USD', is_fee: true }), // Fee - should be excluded
-        createTransaction({ amount: 200, currency: 'USD', is_fee: false }),
+        createTransaction({ amount: "100", currency: 'USD', is_fee: false }),
+        createTransaction({ amount: "5", currency: 'USD', is_fee: true }), // Fee - should be excluded
+        createTransaction({ amount: "200", currency: 'USD', is_fee: false }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -127,8 +127,8 @@ describe('Transaction Aggregator', () => {
 
     it('should exclude transactions where is_fee is null but treated as false', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD', is_fee: null }),
-        createTransaction({ amount: 50, currency: 'USD', is_fee: false }),
+        createTransaction({ amount: "100", currency: 'USD', is_fee: null }),
+        createTransaction({ amount: "50", currency: 'USD', is_fee: false }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -138,8 +138,8 @@ describe('Transaction Aggregator', () => {
 
     it('should throw error when all transactions are fees', () => {
       const transactions = [
-        createTransaction({ amount: 5, is_fee: true }),
-        createTransaction({ amount: 3, is_fee: true }),
+        createTransaction({ amount: "5", is_fee: true }),
+        createTransaction({ amount: "3", is_fee: true }),
       ];
 
       expect(() => aggregateTransactions(transactions)).toThrow(
@@ -150,11 +150,11 @@ describe('Transaction Aggregator', () => {
     it('should not include fee descriptions in concatenation', () => {
       const transactions = [
         createTransaction({
-          amount: 100,
+          amount: "100",
           source_description: 'Main transaction',
           is_fee: false,
         }),
-        createTransaction({ amount: 5, source_description: 'Bank fee', is_fee: true }),
+        createTransaction({ amount: "5", source_description: 'Bank fee', is_fee: true }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -166,8 +166,8 @@ describe('Transaction Aggregator', () => {
   describe('Currency Validation', () => {
     it('should throw error with multiple currencies', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD' }),
-        createTransaction({ amount: 200, currency: 'EUR' }),
+        createTransaction({ amount: "100", currency: 'USD' }),
+        createTransaction({ amount: "200", currency: 'EUR' }),
       ];
 
       expect(() => aggregateTransactions(transactions)).toThrow(
@@ -177,9 +177,9 @@ describe('Transaction Aggregator', () => {
 
     it('should throw error with three different currencies', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD' }),
-        createTransaction({ amount: 200, currency: 'EUR' }),
-        createTransaction({ amount: 300, currency: 'GBP' }),
+        createTransaction({ amount: "100", currency: 'USD' }),
+        createTransaction({ amount: "200", currency: 'EUR' }),
+        createTransaction({ amount: "300", currency: 'GBP' }),
       ];
 
       expect(() => aggregateTransactions(transactions)).toThrow(/multiple currencies found/);
@@ -187,9 +187,9 @@ describe('Transaction Aggregator', () => {
 
     it('should not throw error when all have same currency', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'ILS' }),
-        createTransaction({ amount: 200, currency: 'ILS' }),
-        createTransaction({ amount: 300, currency: 'ILS' }),
+        createTransaction({ amount: "100", currency: 'ILS' }),
+        createTransaction({ amount: "200", currency: 'ILS' }),
+        createTransaction({ amount: "300", currency: 'ILS' }),
       ];
 
       expect(() => aggregateTransactions(transactions)).not.toThrow();
@@ -197,9 +197,9 @@ describe('Transaction Aggregator', () => {
 
     it('should ignore currency of fee transactions in validation', () => {
       const transactions = [
-        createTransaction({ amount: 100, currency: 'USD', is_fee: false }),
-        createTransaction({ amount: 5, currency: 'EUR', is_fee: true }), // Different currency but is fee
-        createTransaction({ amount: 200, currency: 'USD', is_fee: false }),
+        createTransaction({ amount: "100", currency: 'USD', is_fee: false }),
+        createTransaction({ amount: "5", currency: 'EUR', is_fee: true }), // Different currency but is fee
+        createTransaction({ amount: "200", currency: 'USD', is_fee: false }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -212,8 +212,8 @@ describe('Transaction Aggregator', () => {
   describe('Business ID Validation', () => {
     it('should throw error with multiple different business IDs', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: 'business-1' }),
-        createTransaction({ amount: 200, business_id: 'business-2' }),
+        createTransaction({ amount: "100", business_id: 'business-1' }),
+        createTransaction({ amount: "200", business_id: 'business-2' }),
       ];
 
       expect(() => aggregateTransactions(transactions)).toThrow(
@@ -223,9 +223,9 @@ describe('Transaction Aggregator', () => {
 
     it('should throw error with three different business IDs', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: 'business-1' }),
-        createTransaction({ amount: 200, business_id: 'business-2' }),
-        createTransaction({ amount: 300, business_id: 'business-3' }),
+        createTransaction({ amount: "100", business_id: 'business-1' }),
+        createTransaction({ amount: "200", business_id: 'business-2' }),
+        createTransaction({ amount: "300", business_id: 'business-3' }),
       ];
 
       expect(() => aggregateTransactions(transactions)).toThrow(/multiple business IDs found/);
@@ -233,9 +233,9 @@ describe('Transaction Aggregator', () => {
 
     it('should return null when all business IDs are null', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: null }),
-        createTransaction({ amount: 200, business_id: null }),
-        createTransaction({ amount: 300, business_id: null }),
+        createTransaction({ amount: "100", business_id: null }),
+        createTransaction({ amount: "200", business_id: null }),
+        createTransaction({ amount: "300", business_id: null }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -245,9 +245,9 @@ describe('Transaction Aggregator', () => {
 
     it('should return single non-null business ID', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: 'business-1' }),
-        createTransaction({ amount: 200, business_id: null }),
-        createTransaction({ amount: 300, business_id: null }),
+        createTransaction({ amount: "100", business_id: 'business-1' }),
+        createTransaction({ amount: "200", business_id: null }),
+        createTransaction({ amount: "300", business_id: null }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -257,9 +257,9 @@ describe('Transaction Aggregator', () => {
 
     it('should handle multiple nulls and one business ID', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: null }),
-        createTransaction({ amount: 200, business_id: 'business-xyz' }),
-        createTransaction({ amount: 300, business_id: null }),
+        createTransaction({ amount: "100", business_id: null }),
+        createTransaction({ amount: "200", business_id: 'business-xyz' }),
+        createTransaction({ amount: "300", business_id: null }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -269,9 +269,9 @@ describe('Transaction Aggregator', () => {
 
     it('should not throw when all have same business ID', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: 'business-1' }),
-        createTransaction({ amount: 200, business_id: 'business-1' }),
-        createTransaction({ amount: 300, business_id: 'business-1' }),
+        createTransaction({ amount: "100", business_id: 'business-1' }),
+        createTransaction({ amount: "200", business_id: 'business-1' }),
+        createTransaction({ amount: "300", business_id: 'business-1' }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -281,9 +281,9 @@ describe('Transaction Aggregator', () => {
 
     it('should ignore business ID of fee transactions in validation', () => {
       const transactions = [
-        createTransaction({ amount: 100, business_id: 'business-1', is_fee: false }),
-        createTransaction({ amount: 5, business_id: 'business-2', is_fee: true }), // Different business but is fee
-        createTransaction({ amount: 200, business_id: 'business-1', is_fee: false }),
+        createTransaction({ amount: "100", business_id: 'business-1', is_fee: false }),
+        createTransaction({ amount: "5", business_id: 'business-2', is_fee: true }), // Different business but is fee
+        createTransaction({ amount: "200", business_id: 'business-1', is_fee: false }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -437,7 +437,7 @@ describe('Transaction Aggregator', () => {
     it('should handle real-world scenario with fees, nulls, and mixed data', () => {
       const transactions = [
         createTransaction({
-          amount: 1000,
+          amount: "1000",
           currency: 'USD',
           business_id: 'client-abc',
           event_date: new Date('2024-01-15'),
@@ -445,7 +445,7 @@ describe('Transaction Aggregator', () => {
           is_fee: false,
         }),
         createTransaction({
-          amount: 2.5,
+          amount: "2.5",
           currency: 'USD',
           business_id: 'bank-xyz',
           event_date: new Date('2024-01-15'),
@@ -453,7 +453,7 @@ describe('Transaction Aggregator', () => {
           is_fee: true, // Should be excluded
         }),
         createTransaction({
-          amount: 500,
+          amount: "500",
           currency: 'USD',
           business_id: 'client-abc',
           event_date: new Date('2024-01-10'), // Earlier date
@@ -461,7 +461,7 @@ describe('Transaction Aggregator', () => {
           is_fee: false,
         }),
         createTransaction({
-          amount: 200,
+          amount: "200",
           currency: 'USD',
           business_id: null, // Null business
           event_date: new Date('2024-01-20'),
@@ -481,8 +481,8 @@ describe('Transaction Aggregator', () => {
 
     it('should handle cryptocurrency transactions', () => {
       const transactions = [
-        createTransaction({ amount: 0.5, currency: 'ETH' }),
-        createTransaction({ amount: 0.3, currency: 'ETH' }),
+        createTransaction({ amount: "0.5", currency: 'ETH' }),
+        createTransaction({ amount: "0.3", currency: 'ETH' }),
       ];
 
       const result = aggregateTransactions(transactions);
@@ -494,7 +494,7 @@ describe('Transaction Aggregator', () => {
     it('should handle large number of transactions', () => {
       const transactions = Array.from({ length: 100 }, (_, i) =>
         createTransaction({
-          amount: 10,
+          amount: "10",
           currency: 'USD',
           event_date: new Date(`2024-01-${(i % 28) + 1}`),
         }),

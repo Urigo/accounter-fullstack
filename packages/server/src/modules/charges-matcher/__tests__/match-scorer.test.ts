@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Document, Transaction } from '../types.js';
+import type { Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
 import {
-  type DocumentCharge,
-  type MatchScore,
   scoreMatch,
   selectTransactionDate,
-  type TransactionCharge,
 } from '../providers/match-scorer.provider.js';
 
 // Test user ID
@@ -67,14 +64,14 @@ describe('Match Scorer', () => {
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
-    it('should use debit_date for RECEIPT', () => {
+    it('should use event_date for RECEIPT', () => {
       const result = selectTransactionDate(transaction, 'RECEIPT');
-      expect(result).toEqual(new Date('2024-01-20'));
+      expect(result).toEqual(new Date('2024-01-15'));
     });
 
-    it('should use debit_date for INVOICE_RECEIPT', () => {
+    it('should use event_date for INVOICE_RECEIPT', () => {
       const result = selectTransactionDate(transaction, 'INVOICE_RECEIPT');
-      expect(result).toEqual(new Date('2024-01-20'));
+      expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for RECEIPT when debitDate is null', () => {
@@ -138,14 +135,15 @@ describe('Match Scorer', () => {
         expect(result.components.date).toBe(1.0);
       });
 
-      it('should handle receipt matching with debit_date', () => {
+      it('should handle receipt matching with event_date', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-2',
           transactions: [
             createTransaction({
-              amount: 200.00,
+              amount: "200.00",
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-15'),
+              debit_timestamp: null,
             }),
           ],
         };
@@ -164,10 +162,6 @@ describe('Match Scorer', () => {
         const result = scoreMatch(txCharge, docCharge, USER_ID);
 
         expect(result.confidenceScore).toBeGreaterThan(0.80);
-        // Date confidence: debit_date (2024-01-15) vs doc date (2024-01-15) = 1.0
-        // But document aggregator uses latest date which is 2024-01-15
-        // Transaction aggregator uses earliest event_date which is 2024-01-10
-        // So we're comparing 2024-01-10 vs 2024-01-15 = 5 days = 0.83 confidence
         expect(result.components.date).toBeCloseTo(0.83, 1);
       });
     });
@@ -176,7 +170,7 @@ describe('Match Scorer', () => {
       it('should handle amount mismatch', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-3',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -282,13 +276,14 @@ describe('Match Scorer', () => {
         expect(result.components.date).toBe(1.0); // Should match event_date
       });
 
-      it('should use debit_date for RECEIPT matching', () => {
+      it('should use event_date for RECEIPT matching', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-8',
           transactions: [
             createTransaction({
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-15'),
+              debit_timestamp: null,
             }),
           ],
         };
@@ -305,9 +300,6 @@ describe('Match Scorer', () => {
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
 
-        // Transaction aggregator uses earliest event_date (2024-01-10)
-        // Document aggregator uses latest date (2024-01-15)
-        // 5 days difference = 0.83 confidence
         expect(result.components.date).toBeCloseTo(0.83, 1);
       });
 
@@ -340,13 +332,14 @@ describe('Match Scorer', () => {
     });
 
     describe('Flexible Document Types (PROFORMA/OTHER/UNPROCESSED)', () => {
-      it('should try both dates for PROFORMA and use better score', () => {
+      it('should use event_date for PROFORMA and use better score', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-10',
           transactions: [
             createTransaction({
               event_date: new Date('2024-01-01'), // Far from document date
               debit_date: new Date('2024-01-15'), // Matches document date
+              debit_timestamp: null,
             }),
           ],
         };
@@ -363,8 +356,7 @@ describe('Match Scorer', () => {
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
 
-        // Should use debit_date path since it matches better, but aggregators use
-        // earliest event_date (2024-01-01) vs latest doc date (2024-01-15) = 14 days
+        // Should use event_date (2024-01-01) vs latest doc date (2024-01-15) = 14 days
         // Date confidence: 1.0 - 14/30 = 0.53
         expect(result.components.date).toBeCloseTo(0.53, 1);
       });
@@ -403,6 +395,7 @@ describe('Match Scorer', () => {
             createTransaction({
               event_date: new Date('2024-01-15'),
               debit_date: new Date('2024-01-15'),
+              debit_timestamp: null,
             }),
           ],
         };
@@ -455,7 +448,7 @@ describe('Match Scorer', () => {
       it('should handle small amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-14',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -471,7 +464,7 @@ describe('Match Scorer', () => {
       it('should handle large amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-15',
-          transactions: [createTransaction({ amount: 100.00 })],
+          transactions: [createTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -490,8 +483,8 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-16',
           transactions: [
-            createTransaction({ amount: 50.00, source_description: 'Part 1' }),
-            createTransaction({ amount: 50.00, source_description: 'Part 2' }),
+            createTransaction({ amount: "50.00", source_description: 'Part 1' }),
+            createTransaction({ amount: "50.00", source_description: 'Part 2' }),
           ],
         };
 
@@ -511,7 +504,7 @@ describe('Match Scorer', () => {
       it('should handle credit invoice (negative amounts)', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-17',
-          transactions: [createTransaction({ amount: -100.00 })],
+          transactions: [createTransaction({ amount: "-100.00" })],
         };
 
         const docCharge: DocumentCharge = {
@@ -536,7 +529,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-18',
           transactions: [
             createTransaction({
-              amount: 1234.56,
+              amount: "1234.56",
               currency: 'USD',
               event_date: new Date('2024-03-15'),
               debit_date: new Date('2024-03-17'),

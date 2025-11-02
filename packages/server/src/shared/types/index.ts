@@ -32,7 +32,7 @@ export interface DocumentSuggestionsProto {
   ownerId?: string;
   counterpartyId?: string;
   amount?: {
-    amount: string;
+    amount: number;
     currency: Currency;
   };
   isIncome?: boolean;

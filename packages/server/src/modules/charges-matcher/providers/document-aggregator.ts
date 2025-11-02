@@ -6,11 +6,10 @@
  * amount normalization, currency validation, date selection, and description concatenation.
  */
 
+import { currency } from '@modules/documents/types.js';
 import { normalizeDocumentAmount, type DocumentType } from '../helpers/document-amount.helper.js';
-import {
-  extractDocumentBusiness,
-  type DocumentBusinessInfo,
-} from '../helpers/document-business.helper.js';
+import { extractDocumentBusiness } from '../helpers/document-business.helper.js';
+import { AggregatedDocument } from '../types.js';
 
 /**
  * Minimal document interface for aggregation
@@ -22,25 +21,13 @@ export interface Document {
   charge_id: string | null; // UUID (actual FK name in DB)
   creditor_id: string | null; // UUID
   debtor_id: string | null; // UUID
-  currency_code: string | null; // Currency type
+  currency_code: currency | null; // Currency type
   date: Date | null;
   total_amount: number | null; // double precision in DB
   type: DocumentType;
   serial_number: string | null;
   image_url: string | null;
   file_url: string | null;
-}
-
-/**
- * Aggregated document representation
- */
-export interface AggregatedDocument {
-  amount: number;
-  currency: string;
-  businessId: string | null;
-  date: Date;
-  documentType: DocumentType;
-  description: string;
 }
 
 /**
@@ -79,7 +66,7 @@ function isReceiptType(type: DocumentType): boolean {
  * 10. Determine document type for result (use first after filtering)
  *
  * @param documents - Array of documents from a charge (use charge_id field for FK)
- * @param userId - Current user UUID for business extraction
+ * @param adminBusinessId - Current admin business UUID for business extraction
  * @returns Aggregated document data
  *
  * @throws {Error} If documents array is empty
@@ -95,7 +82,10 @@ function isReceiptType(type: DocumentType): boolean {
  * ], 'u1');
  * // Returns aggregated with normalized amounts summed
  */
-export function aggregateDocuments(documents: Document[], userId: string): AggregatedDocument {
+export function aggregateDocuments(
+  documents: Document[],
+  adminBusinessId: string,
+): Omit<AggregatedDocument, 'businessIsCreditor'> {
   // Validate non-empty input
   if (!documents || documents.length === 0) {
     throw new Error('Cannot aggregate documents: array is empty');
@@ -118,7 +108,7 @@ export function aggregateDocuments(documents: Document[], userId: string): Aggre
 
   // Extract business info and normalize amounts for each document
   const processedDocuments = filteredDocuments.map(doc => {
-    const businessInfo = extractDocumentBusiness(doc.creditor_id, doc.debtor_id, userId);
+    const businessInfo = extractDocumentBusiness(doc.creditor_id, doc.debtor_id, adminBusinessId);
     const normalizedAmount = normalizeDocumentAmount(
       doc.total_amount ?? 0,
       businessInfo.isBusinessCreditor,
@@ -136,7 +126,7 @@ export function aggregateDocuments(documents: Document[], userId: string): Aggre
   const currencies = new Set(
     processedDocuments
       .map(p => p.document.currency_code)
-      .filter((code): code is string => code !== null && code !== undefined),
+      .filter((code): code is currency => code !== null && code !== undefined),
   );
 
   if (currencies.size === 0) {
@@ -208,14 +198,14 @@ export function aggregateDocuments(documents: Document[], userId: string): Aggre
   const description = descriptions.length > 0 ? descriptions.join('\n') : '';
 
   // Determine document type (use first document after filtering)
-  const documentType = filteredDocuments[0].type;
+  const type = filteredDocuments[0].type;
 
   return {
     amount: totalAmount,
     currency,
     businessId,
     date: latestDate,
-    documentType,
+    type,
     description,
   };
 }

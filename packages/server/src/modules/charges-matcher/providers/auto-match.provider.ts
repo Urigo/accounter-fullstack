@@ -5,8 +5,7 @@
  * and automatically merging charges with high-confidence matches (≥0.95).
  */
 
-import type { ChargeWithData } from '../types.js';
-import { DocumentCharge, TransactionCharge } from './match-scorer.provider.js';
+import type { ChargeWithData, DocumentCharge, TransactionCharge } from '../types.js';
 import { findMatches, type MatchResult } from './single-match.provider.js';
 
 /**

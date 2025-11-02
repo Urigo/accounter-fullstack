@@ -164,3 +164,35 @@ export interface MatchCandidate {
   /** Aggregated document data (if document charge) */
   documentData?: AggregatedDocument;
 }
+
+/**
+ * Match score result with confidence and components
+ */
+export interface MatchScore {
+  /** Charge ID being scored */
+  chargeId: string;
+  /** Overall confidence score (0.0 - 1.0) */
+  confidenceScore: number;
+  /** Individual confidence component scores */
+  components: ConfidenceScores;
+}
+
+/**
+ * Transaction charge for matching
+ */
+export interface TransactionCharge {
+  /** Charge UUID */
+  chargeId: string;
+  /** Array of transactions in the charge */
+  transactions: Transaction[];
+}
+
+/**
+ * Document charge for matching
+ */
+export interface DocumentCharge {
+  /** Charge UUID */
+  chargeId: string;
+  /** Array of documents in the charge */
+  documents: Document[];
+}

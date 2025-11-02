@@ -10,14 +10,15 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '@shared/helpers';
-import type { ChargeMatchesResult, Document, Transaction } from '../types.js';
+import type {
+  ChargeMatchesResult,
+  Document,
+  DocumentCharge,
+  Transaction,
+  TransactionCharge,
+} from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
-import {
-  findMatches,
-  type DocumentCharge,
-  type MatchResult,
-  type TransactionCharge,
-} from './single-match.provider.js';
+import { findMatches, type MatchResult } from './single-match.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
 
 /**
@@ -88,9 +89,7 @@ export class ChargesMatcherProvider {
     let referenceDate: Date;
     if (hasTransactions) {
       // Use earliest transaction event_date
-      const aggregated = aggregateTransactions(
-        sourceTransactions.map(t => ({ ...t, amount: Number(t.amount) })),
-      );
+      const aggregated = aggregateTransactions(sourceTransactions);
       referenceDate = aggregated.date;
     } else {
       // Use latest document date
@@ -134,7 +133,7 @@ export class ChargesMatcherProvider {
       if (hasTxs && !hasDocs) {
         candidateChargesWithData.push({
           chargeId: candidate.id,
-          transactions: candidateTransactions.map(t => ({ ...t, amount: Number(t.amount) })), // Ensure amount is number
+          transactions: candidateTransactions,
         });
       } else if (hasDocs && !hasTxs) {
         candidateChargesWithData.push({
@@ -150,7 +149,7 @@ export class ChargesMatcherProvider {
     if (hasTransactions) {
       sourceChargeData = {
         chargeId,
-        transactions: sourceTransactions.map(t => ({ ...t, amount: Number(t.amount) })), // Ensure amount is number
+        transactions: sourceTransactions,
       };
     } else {
       sourceChargeData = {
