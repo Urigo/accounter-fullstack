@@ -1125,7 +1125,8 @@
     "ClientName": {
       "type": "string",
       "description": "The client name",
-      "examples": ["לקוח אפ3"]
+      "examples": ["לקוח אפ3"],
+      "minLength": 1
     },
     "ClientPhone": {
       "type": "string"
@@ -2139,12 +2140,14 @@
         "amount": {
           "type": "number",
           "description": "Amount",
-          "examples": [354]
+          "examples": [354],
+          "minimum": 0
         },
         "amountTotal": {
           "type": "number",
           "description": "Total amount",
-          "examples": [354]
+          "examples": [354],
+          "minimum": 0
         },
         "catalogNum": {
           "type": "string",
@@ -2160,7 +2163,8 @@
         "description": {
           "type": "string",
           "description": "Item description",
-          "examples": ["Item description"]
+          "examples": ["Item description"],
+          "minLength": 1
         },
         "itemId": {
           "type": "string",
@@ -2170,12 +2174,14 @@
         "price": {
           "type": "number",
           "description": "Item price",
-          "examples": [300]
+          "examples": [300],
+          "minimum": 0
         },
         "quantity": {
           "type": "number",
           "description": "Quantity",
-          "examples": [1]
+          "examples": [1],
+          "minimum": 0
         },
         "vat": {
           "$ref": "#/$defs/Vat"
@@ -2334,7 +2340,8 @@
         "price": {
           "type": "number",
           "description": "Sum paid",
-          "examples": [300]
+          "examples": [300],
+          "minimum": 0
         },
         "type": {
           "type": "number",
@@ -2492,12 +2499,15 @@
     },
     "CreationDate": {
       "type": "integer",
-      "description": "The creation date, in UNIX timestamp format"
+      "description": "The creation date, in UNIX timestamp format",
+      "minimum": 0
     },
     "CurrencyRate": {
       "type": "number",
       "description": "Currency rate relative to ILS",
-      "examples": [1]
+      "examples": [1],
+      "minimum": 0,
+      "exclusiveMinimum": 0
     },
     "DocumentLang": {
       "description": "Document language",
@@ -2506,7 +2516,8 @@
     },
     "DocumentDescription": {
       "description": "Document's description",
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "DocumentIncome": {
       "type": "array",
@@ -2637,42 +2648,50 @@
     "DocumentSerialNumber": {
       "description": "Document serial number",
       "type": "integer",
-      "examples": [10002]
+      "examples": [10002],
+      "minimum": 1
     },
     "DocumentAmount": {
       "description": "Total amount, in requested currency (including the VAT, Discount & Rounding)",
       "type": "number",
-      "examples": [354]
+      "examples": [354],
+      "minimum": 0
     },
     "DocumentAmountDueVat": {
       "description": "Amount due VAT - Amount before VAT, and before rounding & discount (if requested)",
       "type": "number",
-      "examples": [100]
+      "examples": [100],
+      "minimum": 0
     },
     "DocumentAmountExcludeVat": {
       "description": "Amount excluded VAT - Amount that is excluded of VAT",
       "type": "number",
-      "examples": [18]
+      "examples": [18],
+      "minimum": 0
     },
     "DocumentAmountDueVatLocal": {
       "description": "Amount due VAT - local currency",
       "type": "number",
-      "examples": [100]
+      "examples": [100],
+      "minimum": 0
     },
     "DocumentAmountExemptVat": {
       "description": "Amount exempt VAT - 0 unless there's one or more items that are excluded of VAT such as mixed documents (that have both VAT excluded & included items)",
       "type": "number",
-      "examples": [18]
+      "examples": [18],
+      "minimum": 0
     },
     "DocumentAmountLocal": {
       "description": "Amount in local currency",
       "type": "number",
-      "examples": [300]
+      "examples": [300],
+      "minimum": 0
     },
     "DocumentAmountOpened": {
       "description": "Amount that is still left to be paid, exists only in payment request documents",
       "type": "number",
-      "examples": [300]
+      "examples": [300],
+      "minimum": 0
     },
     "ExpenseDocumentType": {
       "type": "number",
@@ -2682,7 +2701,8 @@
     "Vat": {
       "description": "VAT amount",
       "type": "number",
-      "examples": [54]
+      "examples": [54],
+      "minimum": 0
     },
     "VatType": {
       "description": "VAT type",
@@ -2692,7 +2712,9 @@
     },
     "VatRate": {
       "type": "number",
-      "description": "VAT rate"
+      "description": "VAT rate",
+      "minimum": 0,
+      "maximum": 100
     }
   }
 }
