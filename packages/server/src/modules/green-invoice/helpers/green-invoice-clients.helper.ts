@@ -216,7 +216,11 @@ export async function updateGreenInvoiceClient(
     localBusinessPromise,
     localClientPromise,
   ]);
-  if (!localBusiness?.name || !localClient) {
+  if (!localBusiness?.name || !localClient?.green_invoice_id) {
+    // We cannot update a client in Green Invoice without its ID.
+    console.warn(
+      `Cannot update Green Invoice client: missing local business name or client ID for business${clientId}`,
+    );
     return;
   }
 
@@ -229,7 +233,7 @@ export async function updateGreenInvoiceClient(
   }
 
   const greenInvoiceClient = await injector.get(GreenInvoiceClientProvider).updateClient({
-    id: clientId,
+    id: localClient.green_invoice_id,
     input: fieldsToUpdate,
   });
 
