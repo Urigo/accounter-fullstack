@@ -6,17 +6,21 @@
  */
 
 import { Injectable, Injector, Scope } from 'graphql-modules';
+import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type {
+  AutoMatchChargesResult,
   ChargeMatchesResult,
+  ChargeWithData,
   Document,
   DocumentCharge,
   Transaction,
   TransactionCharge,
 } from '../types.js';
+import { determineMergeDirection, processChargeForAutoMatch } from './auto-match.provider.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import { findMatches, type MatchResult } from './single-match.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
@@ -176,5 +180,144 @@ export class ChargesMatcherProvider {
         confidenceScore: match.confidenceScore,
       })),
     };
+  }
+
+  /**
+   * Auto-match all unmatched charges
+   *
+   * Automatically merges charges that have a single high-confidence match (≥0.95).
+   * Skips charges with multiple high-confidence matches (ambiguous).
+   * Processes all unmatched charges and returns a summary of actions taken.
+   *
+   * @param injector - GraphQL modules injector for provider access
+   * @param context - GraphQL context with user information
+   * @returns Summary of matches made, skipped charges, and errors
+   */
+  async autoMatchCharges(
+    injector: Injector,
+    context: GraphQLModules.AppContext,
+  ): Promise<AutoMatchChargesResult> {
+    // Get current user ID from context
+    const adminBusinessId = context.adminContext.defaultAdminBusinessId;
+    if (!adminBusinessId) {
+      throw new Error('Admin business not found in context');
+    }
+
+    // Get providers from injector
+    const chargesProvider = injector.get(ChargesProvider);
+    const transactionsProvider = injector.get(TransactionsProvider);
+    const documentsProvider = injector.get(DocumentsProvider);
+
+    // Step 1: Load all charges for this user
+    const allCharges = await chargesProvider.getChargesByFilters({
+      ownerIds: [adminBusinessId],
+    });
+
+    // Step 2: Load transactions and documents for all charges
+    const chargesWithData: ChargeWithData[] = [];
+    const mergedChargeIds = new Set<string>(); // Track merged charges to exclude from processing
+
+    for (const charge of allCharges) {
+      const transactions = (await transactionsProvider.transactionsByChargeIDLoader.load(
+        charge.id,
+      )) as Transaction[];
+      const documents = (await documentsProvider.getDocumentsByChargeIdLoader.load(
+        charge.id,
+      )) as Document[];
+
+      chargesWithData.push({
+        chargeId: charge.id,
+        ownerId: charge.owner_id ?? adminBusinessId,
+        type: 'TRANSACTION_ONLY', // Will be determined by processChargeForAutoMatch
+        transactions: transactions || [],
+        documents: documents || [],
+      });
+    }
+
+    // Step 3: Filter to get only unmatched charges
+    const unmatchedCharges = chargesWithData.filter(charge => {
+      const hasTx = charge.transactions && charge.transactions.length > 0;
+      const hasDocs = charge.documents && charge.documents.length > 0;
+      return (hasTx && !hasDocs) || (!hasTx && hasDocs);
+    });
+
+    // Step 4: Process each unmatched charge
+    const result: AutoMatchChargesResult = {
+      totalMatches: 0,
+      mergedCharges: [],
+      skippedCharges: [],
+      errors: [],
+    };
+
+    for (const sourceCharge of unmatchedCharges) {
+      // Skip if this charge was already merged in this run
+      if (mergedChargeIds.has(sourceCharge.chargeId)) {
+        continue;
+      }
+
+      try {
+        // Get candidates (exclude already merged charges)
+        const candidates = chargesWithData.filter(
+          c => c.chargeId !== sourceCharge.chargeId && !mergedChargeIds.has(c.chargeId),
+        );
+
+        // Process this charge for auto-match
+        const processResult = processChargeForAutoMatch(sourceCharge, candidates, adminBusinessId);
+
+        if (processResult.status === 'matched' && processResult.match) {
+          // Found a single high-confidence match - execute merge
+          const matchedChargeId = processResult.match.chargeId;
+          const matchedCharge = chargesWithData.find(c => c.chargeId === matchedChargeId);
+
+          if (!matchedCharge) {
+            result.errors.push(
+              `Matched charge ${matchedChargeId} not found in charge pool for ${sourceCharge.chargeId}`,
+            );
+            continue;
+          }
+
+          // Determine merge direction
+          const [sourceToMerge, targetToKeep] = determineMergeDirection(
+            sourceCharge,
+            matchedCharge,
+          );
+
+          try {
+            // Execute merge via existing merge functionality
+            await mergeChargesExecutor([sourceToMerge.chargeId], targetToKeep.chargeId, injector);
+
+            // Track successful merge
+            result.totalMatches++;
+            result.mergedCharges.push({
+              chargeId: sourceToMerge.chargeId,
+              confidenceScore: processResult.match.confidenceScore,
+            });
+
+            // Mark both charges as processed (merged away charge and kept charge)
+            mergedChargeIds.add(sourceToMerge.chargeId);
+            mergedChargeIds.add(targetToKeep.chargeId); // Don't process the kept charge again
+          } catch (mergeError) {
+            result.errors.push(
+              `Failed to merge ${sourceToMerge.chargeId} into ${targetToKeep.chargeId}: ${
+                mergeError instanceof Error ? mergeError.message : String(mergeError)
+              }`,
+            );
+          }
+        } else if (processResult.status === 'skipped') {
+          // Multiple high-confidence matches - ambiguous
+          result.skippedCharges.push(sourceCharge.chargeId);
+        }
+        // status === 'no-match': do nothing, silently skip
+      } catch (error) {
+        // Capture error but continue processing other charges
+        result.errors.push(
+          `Error processing charge ${sourceCharge.chargeId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    return result;
   }
 }

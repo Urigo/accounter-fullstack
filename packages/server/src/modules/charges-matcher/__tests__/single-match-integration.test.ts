@@ -4,8 +4,10 @@ import type { Document, Transaction } from '../types.js';
 // Mock the module imports to avoid dependency issues
 vi.mock('graphql-modules', () => ({
   Injectable: () => (target: any) => target,
+  Inject: () => (target: any, propertyKey: string | symbol, parameterIndex: number) => {},
   Injector: class {},
   Scope: { Operation: 'Operation' },
+  CONTEXT: Symbol('CONTEXT'),
 }));
 
 vi.mock('@modules/charges/providers/charges.provider.js', () => ({
