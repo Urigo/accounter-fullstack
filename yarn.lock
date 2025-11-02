@@ -103,7 +103,7 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.10"
     "@radix-ui/react-tooltip": "npm:1.2.8"
     "@tailwindcss/vite": "npm:4.1.16"
-    "@tanstack/react-query": "npm:5.90.5"
+    "@tanstack/react-query": "npm:5.90.6"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -118,7 +118,7 @@ __metadata:
     cmdk: "npm:1.1.1"
     csv-parse: "npm:6.1.0"
     date-fns: "npm:4.1.0"
-    dayjs: "npm:1.11.18"
+    dayjs: "npm:1.11.19"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
     dotenv: "npm:17.2.3"
@@ -301,7 +301,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.39"
+    "@ai-sdk/anthropic": "npm:2.0.40"
     "@envelop/generic-auth": "npm:10.0.1"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -314,7 +314,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.15.6"
     "@whatwg-node/fetch": "npm:0.10.11"
-    ai: "npm:5.0.82"
+    ai: "npm:5.0.86"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -367,41 +367,41 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.39":
-  version: 2.0.39
-  resolution: "@ai-sdk/anthropic@npm:2.0.39"
+"@ai-sdk/anthropic@npm:2.0.40":
+  version: 2.0.40
+  resolution: "@ai-sdk/anthropic@npm:2.0.40"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.14"
+    "@ai-sdk/provider-utils": "npm:3.0.15"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/3c168694765e6e076ae36d4328ad12d6dab1215ff540f5e6c8201c559c05d92f21e7bb043b992e8d65807f56cb021a08a6cd2047627363fe80879aa236bde5e7
+  checksum: 10c0/13a5b0fde492ad4fb64487e3a054cbd7f2984e0c5c43f321e14d509237fbbacd3bef4bd785fb1e8c4715b1f2cb62f4ea77869d42af3d302e3fcc3d4e9d70df5b
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.3":
-  version: 2.0.3
-  resolution: "@ai-sdk/gateway@npm:2.0.3"
+"@ai-sdk/gateway@npm:2.0.5":
+  version: 2.0.5
+  resolution: "@ai-sdk/gateway@npm:2.0.5"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.14"
+    "@ai-sdk/provider-utils": "npm:3.0.15"
     "@vercel/oidc": "npm:3.0.3"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/77cfa23dbc606b33024ebd30967845cd6715ee1fe9cfe114ea9f06df8c83a816249d4f3fe0ccece1f5058b92fdc4c8072fcacb3f7e9ecc62f564bab52b1a620b
+  checksum: 10c0/95f2cf912a2a379dcee5a9ba96345e32a211a05f82eb36855d6ef8aeaa6054dc18f87166b11a3e908a028d394c6cd94684d8e0a6e1b95960cad6d77c18bb6395
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:3.0.14":
-  version: 3.0.14
-  resolution: "@ai-sdk/provider-utils@npm:3.0.14"
+"@ai-sdk/provider-utils@npm:3.0.15":
+  version: 3.0.15
+  resolution: "@ai-sdk/provider-utils@npm:3.0.15"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@standard-schema/spec": "npm:^1.0.0"
-    eventsource-parser: "npm:^3.0.5"
+    eventsource-parser: "npm:^3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/07240f06c306e1f4fb6b8782943e1bea96cce4c02810b3d56f4e0206fb7f6951cd617f8539e3f93858bab8ffac2d192301a38522bd57305846e8535ba1ef39f8
+  checksum: 10c0/0cb233c5b61f51961d745445b0d275de3eec3c0061b82ace90af22d0fe84d986da62d18b608c3ca2e0bb2badaeb1f81d24a225f99792af84b36f954031c3a791
   languageName: node
   linkType: hard
 
@@ -7593,21 +7593,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.90.5":
-  version: 5.90.5
-  resolution: "@tanstack/query-core@npm:5.90.5"
-  checksum: 10c0/3b9460cc10d494357a30ddd3138f2a831611d14b5b8ce3587daa17a078d63945fcdf419864d9dc8e1249aa89b512003d2f134977c64ceccdbdfdd79f1f7e0a34
+"@tanstack/query-core@npm:5.90.6":
+  version: 5.90.6
+  resolution: "@tanstack/query-core@npm:5.90.6"
+  checksum: 10c0/2523cd4d9bc4d9fc1a828b15923c44046004fb1c4322f8c211ff4c153914bc776a356a476f499127cfee3fc89b101ac64f93b352aa761bd349c3a8e0de33d792
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.90.5":
-  version: 5.90.5
-  resolution: "@tanstack/react-query@npm:5.90.5"
+"@tanstack/react-query@npm:5.90.6":
+  version: 5.90.6
+  resolution: "@tanstack/react-query@npm:5.90.6"
   dependencies:
-    "@tanstack/query-core": "npm:5.90.5"
+    "@tanstack/query-core": "npm:5.90.6"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/b2450259e40afc2aec5e455414f204c511ec98ebbbd25963316ab72b25758722ee424ed51210bd6863f78f03ae414e18571879f9d70a022e11049f3f04ef5ce2
+  checksum: 10c0/0cde819c41d3f02dccc443786c3aeb6e0a6135365ef127dd8e5bb25d65837b0b12b011c6700c14df1f866a1d65d57a6f4a00abf2ddac31543d68b4963ca80d1a
   languageName: node
   linkType: hard
 
@@ -8842,17 +8842,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.82":
-  version: 5.0.82
-  resolution: "ai@npm:5.0.82"
+"ai@npm:5.0.86":
+  version: 5.0.86
+  resolution: "ai@npm:5.0.86"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.3"
+    "@ai-sdk/gateway": "npm:2.0.5"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.14"
+    "@ai-sdk/provider-utils": "npm:3.0.15"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1feb8e91df8a77cadc911f5e89c76ca24fb25f6fb408700e4db395a835bfe2bb9bfaca4d0209df7830ab2af0a352aef475c2e76f07956e0f4768c6e8e97e052f
+  checksum: 10c0/f57f9c79df28acd3b2d4565048caa79945a53ee4f3060865ec3692623cae0e94ef66c0d8b137a290f447ee4d6c62aae1b800ce57434b91d1781bf1cdb09ffa1f
   languageName: node
   linkType: hard
 
@@ -11201,6 +11201,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dayjs@npm:1.11.19":
+  version: 1.11.19
+  resolution: "dayjs@npm:1.11.19"
+  checksum: 10c0/7d8a6074a343f821f81ea284d700bd34ea6c7abbe8d93bce7aba818948957c1b7f56131702e5e890a5622cdfc05dcebe8aed0b8313bdc6838a594d7846b0b000
+  languageName: node
+  linkType: hard
+
 "debounce@npm:^2.0.0":
   version: 2.2.0
   resolution: "debounce@npm:2.2.0"
@@ -12788,7 +12795,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventsource-parser@npm:^3.0.5":
+"eventsource-parser@npm:^3.0.6":
   version: 3.0.6
   resolution: "eventsource-parser@npm:3.0.6"
   checksum: 10c0/70b8ccec7dac767ef2eca43f355e0979e70415701691382a042a2df8d6a68da6c2fca35363669821f3da876d29c02abe9b232964637c1b6635c940df05ada78a
