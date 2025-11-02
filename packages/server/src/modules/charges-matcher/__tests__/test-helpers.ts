@@ -1,14 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import type {
   Transaction,
   Document,
   ChargeMatch,
-  ChargeMatchesResult,
-  AutoMatchChargesResult,
   AggregatedTransaction,
   AggregatedDocument,
   ConfidenceScores,
-  ChargeType,
 } from '../types.js';
 import type { currency, document_type } from '@modules/documents/types.js';
 

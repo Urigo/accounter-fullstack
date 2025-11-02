@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   extractDocumentBusiness,
-  type DocumentBusinessInfo,
 } from '../helpers/document-business.helper.js';
 
 describe('extractDocumentBusiness', () => {

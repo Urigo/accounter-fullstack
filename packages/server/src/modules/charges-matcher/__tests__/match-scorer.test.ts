@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
+import type { AggregatedTransaction, Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
 import {
   scoreMatch,
   selectTransactionDate,
@@ -16,7 +16,7 @@ function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
     charge_id: 'charge-tx',
     business_id: BUSINESS_ID,
     currency: 'USD',
-    amount: 100.00, // Use number, not string
+    amount: "100.00", // Use number, not string
     event_date: new Date('2024-01-15'),
     debit_date: new Date('2024-01-16'),
     debit_timestamp: new Date('2024-01-16T10:00:00'),
@@ -45,7 +45,7 @@ function createDocument(overrides: Partial<Document> = {}): Document {
 
 describe('Match Scorer', () => {
   describe('selectTransactionDate', () => {
-    const transaction = {
+    const transaction: AggregatedTransaction = {
       amount: 100,
       currency: 'USD' as const,
       businessId: BUSINESS_ID,

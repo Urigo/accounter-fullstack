@@ -47,7 +47,7 @@ function createTransaction(overrides: Partial<any> = {}): Transaction {
   return {
     id: `tx-${Math.random()}`,
     charge_id: 'charge-tx',
-    amount: 100,
+    amount: "100",
     currency: 'USD',
     business_id: BUSINESS_A,
     event_date: new Date('2024-01-15'),
@@ -57,10 +57,17 @@ function createTransaction(overrides: Partial<any> = {}): Transaction {
     is_fee: false,
     account_id: 'account-1',
     source_id: 'source-1',
-    source_origin: null,
-    current_balance: null,
+    currency_rate: "1",
+    current_balance: "1000.0",
+    counter_account: 'counter-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+    debit_date_override: null,
+    origin_key: 'origin-1',
+    source_origin: 'source-origin-1',
+    source_reference: 'source-ref-1',
     ...overrides,
-  } as Transaction;
+  };
 }
 
 // Helper to create document

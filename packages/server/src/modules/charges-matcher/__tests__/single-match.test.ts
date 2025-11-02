@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Document, DocumentCharge, TransactionCharge } from '../types.js';
+import type { Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
 import {
   findMatches,
 } from '../providers/single-match.provider.js';
@@ -10,17 +10,29 @@ const BUSINESS_A = 'business-a';
 const BUSINESS_B = 'business-b';
 
 // Helper to create transaction
-function createTransaction(overrides: Partial<any> = {}): any {
+function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: `tx-${Math.random()}`,
     charge_id: 'charge-tx',
-    amount: 100.0,
+    amount: "100.0",
     currency: 'USD',
     business_id: BUSINESS_A,
     event_date: new Date('2024-01-15'),
     debit_date: new Date('2024-01-16'),
     source_description: 'Test transaction',
     is_fee: false,
+    account_id: 'account-1',
+    counter_account: 'counter-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+    currency_rate: "1",
+    current_balance: "1000.0",
+    debit_date_override: null,
+    debit_timestamp: null,
+    origin_key: 'origin-1',
+    source_id: 'source-1',
+    source_origin: 'source-origin-1',
+    source_reference: 'source-ref-1',
     ...overrides,
   };
 }
@@ -46,7 +58,7 @@ function createDocument(overrides: Partial<Document> = {}): Document {
 // Helper to create transaction charge
 function createTxCharge(
   chargeId: string,
-  transactions: any[],
+  transactions: Transaction[],
 ): TransactionCharge {
   return {
     chargeId,
@@ -71,7 +83,7 @@ describe('Single-Match Provider', () => {
       it('should find matching document charges for transaction charge', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
           createTransaction({
-            amount: 100,
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -131,14 +143,14 @@ describe('Single-Match Provider', () => {
         const candidateCharges = [
           createTxCharge('tx-charge-1', [
             createTransaction({
-              amount: 100,
+              amount: "100",
               currency: 'USD',
               event_date: new Date('2024-01-15'),
             }),
           ]),
           createTxCharge('tx-charge-2', [
             createTransaction({
-              amount: 90,
+              amount: "90",
               currency: 'USD',
               event_date: new Date('2024-01-16'),
             }),
@@ -305,7 +317,7 @@ describe('Single-Match Provider', () => {
 
       it('should return top 5 when more than 5 candidates', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createTransaction({ amount: 100 }),
+          createTransaction({ amount: "100" }),
         ]);
 
         const candidateCharges = [
@@ -345,7 +357,7 @@ describe('Single-Match Provider', () => {
       it('should use date proximity as tie-breaker when confidence scores equal', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
           createTransaction({
-            amount: 100,
+            amount: "100",
             event_date: new Date('2024-01-15'),
           }),
         ]);
@@ -459,8 +471,8 @@ describe('Single-Match Provider', () => {
     describe('Fee Transactions Excluded', () => {
       it('should handle source with fee transactions via aggregator', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createTransaction({ amount: 100, is_fee: false }),
-          createTransaction({ amount: 5, is_fee: true }), // Should be excluded by aggregator
+          createTransaction({ amount: "100", is_fee: false }),
+          createTransaction({ amount: "5", is_fee: true }), // Should be excluded by aggregator
         ]);
 
         const candidateCharges = [
@@ -503,7 +515,7 @@ describe('Single-Match Provider', () => {
       it('should rank matches by confidence level correctly', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
           createTransaction({
-            amount: 100,
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
             business_id: BUSINESS_A,
@@ -583,8 +595,8 @@ describe('Single-Match Provider', () => {
     describe('Edge Cases', () => {
       it('should handle multiple transactions in source charge', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createTransaction({ amount: 50 }),
-          createTransaction({ amount: 50 }),
+          createTransaction({ amount: "50" }),
+          createTransaction({ amount: "50" }),
         ]);
 
         const candidateCharges = [
@@ -599,7 +611,7 @@ describe('Single-Match Provider', () => {
 
       it('should handle multiple documents in candidate charge', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createTransaction({ amount: 100 }),
+          createTransaction({ amount: "100" }),
         ]);
 
         const candidateCharges = [
@@ -617,7 +629,7 @@ describe('Single-Match Provider', () => {
 
       it('should handle negative amounts (credit transactions)', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createTransaction({ amount: -100 }),
+          createTransaction({ amount: "-100" }),
         ]);
 
         const candidateCharges = [

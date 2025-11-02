@@ -16,6 +16,7 @@ describe('Transaction Aggregator', () => {
     debit_date: null,
     source_description: 'Test transaction',
     is_fee: false,
+    debit_timestamp: null,
     ...overrides,
   });
 
