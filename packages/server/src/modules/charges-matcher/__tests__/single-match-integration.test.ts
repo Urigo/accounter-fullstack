@@ -463,8 +463,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
         getChargesByFilters: vi.fn(params => {
           // Verify date window parameters
-          expect(params.fromDate).toBeDefined();
-          expect(params.toDate).toBeDefined();
+          expect(params.fromAnyDate).toBeDefined();
+          expect(params.toAnyDate).toBeDefined();
           return Promise.resolve([
             createCharge(withinWindowId, ADMIN_BUSINESS_ID),
             createCharge(outsideWindowId, ADMIN_BUSINESS_ID),

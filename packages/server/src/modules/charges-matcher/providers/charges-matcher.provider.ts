@@ -127,10 +127,8 @@ export class ChargesMatcherProvider {
         candidate.id,
       )) as Document[];
 
-      const hasTxs = candidate.transactions_count && Number(candidate.transactions_count) > 0;
-      const hasDocs =
-        (candidate.invoices_count && Number(candidate.invoices_count) > 0) ||
-        (candidate.receipts_count && Number(candidate.receipts_count) > 0);
+      const hasTxs = candidateTransactions && candidateTransactions.length > 0;
+      const hasDocs = candidateDocuments && candidateDocuments.length > 0;
 
       // Only include unmatched charges (not both types)
       if (hasTxs && !hasDocs) {
