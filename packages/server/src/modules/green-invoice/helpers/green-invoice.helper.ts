@@ -21,7 +21,7 @@ import type {
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { CountryCode } from '@modules/countries/types';
+import { CountryCode } from '@modules/countries/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
