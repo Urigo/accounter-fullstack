@@ -90,7 +90,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "errorCode:": {
+        "errorCode": {
           "type": "integer"
         },
         "errorMessage": {
@@ -154,7 +154,6 @@
         },
         "labels": {
           "type": "array",
-          "additionalItems": false,
           "items": {
             "type": "string"
           }
@@ -299,7 +298,7 @@
         },
         "remarks": {
           "type": "string",
-          "string": "Remarks for the expense"
+          "description": "Remarks for the expense"
         },
         "supplier": {
           "$ref": "#/$defs/Supplier"
@@ -1100,6 +1099,7 @@
     },
     "ClientCore": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "country": {
           "$ref": "#/$defs/Country"
@@ -1128,14 +1128,17 @@
     },
     "ClientEmails": {
       "type": "array",
+      "description": "List of email addresses",
       "items": {
-        "type": "string"
+        "type": "string",
+        "format": "email"
       }
     },
     "ClientId": {
       "type": "string",
       "description": "The client ID",
-      "examples": ["8b338c95-095e-46d4-b2c6-331747508759"]
+      "examples": ["8b338c95-095e-46d4-b2c6-331747508759"],
+      "format": "uuid"
     },
     "ClientName": {
       "type": "string",
@@ -1462,6 +1465,7 @@
       "required": ["id", "lang", "number", "signed", "url"]
     },
     "Document": {
+      "type": "object",
       "description": "A Single Document",
       "additionalProperties": false,
       "properties": {
@@ -1646,6 +1650,8 @@
       ]
     },
     "DocumentInputNew": {
+      "type": "object",
+      "additionalProperties": false,
       "properties": {
         "description": {
           "$ref": "#/$defs/DocumentDescription"
@@ -1749,6 +1755,7 @@
     },
     "DocumentCore": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "amount": {
           "$ref": "#/$defs/DocumentAmount"
@@ -1943,7 +1950,7 @@
         },
         "remarks": {
           "type": "string",
-          "string": "Remarks for the expense"
+          "description": "Remarks for the expense"
         },
         "supplier": {
           "$ref": "#/$defs/Supplier"
@@ -2201,7 +2208,8 @@
           "additionalProperties": false,
           "properties": {
             "amount": {
-              "type": "number"
+              "type": "number",
+              "description": "Payment amount"
             },
             "cancellable": {
               "type": "boolean",
@@ -2209,10 +2217,12 @@
               "examples": [false]
             },
             "description": {
-              "type": "string"
+              "type": "string",
+              "description": "Payment description"
             },
             "name": {
               "type": "string",
+              "description": "Payment name",
               "examples": ["העברה בנקאית"]
             },
             "ref": {
@@ -2320,6 +2330,7 @@
     },
     "PaymentCore": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "currency": {
           "$ref": "#/$defs/Currency"
@@ -2328,7 +2339,8 @@
           "$ref": "#/$defs/CurrencyRate"
         },
         "date": {
-          "type": "string"
+          "type": "string",
+          "description": "Payment date"
         },
         "price": {
           "type": "number",
@@ -2405,7 +2417,6 @@
         },
         "labels": {
           "type": "array",
-          "additionalItems": false,
           "items": {
             "type": "string"
           }
@@ -2584,7 +2595,8 @@
     },
     "DocumentDate": {
       "description": "Document reference date",
-      "type": "string"
+      "type": "string",
+      "format": "date"
     },
     "DocumentDiscount": {
       "description": "Discount information",
