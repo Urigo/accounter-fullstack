@@ -331,12 +331,12 @@
         "fromDate": {
           "type": "string",
           "description": "Expense drafts that were created after the specified date in the format YYYY-MM-DD",
-          "format": "YYYY-MM-DD"
+          "format": "date"
         },
         "toDate": {
           "type": "string",
           "description": "Expense drafts that were created until the specified date in the format YYYY-MM-DD",
-          "format": "YYYY-MM-DD"
+          "format": "date"
         },
         "description": {
           "type": "string",
@@ -695,12 +695,12 @@
         "fromDate": {
           "type": "string",
           "description": "Documents that were created after the specified date in the format YYYY-MM-DD",
-          "format": "YYYY-MM-DD"
+          "format": "date"
         },
         "toDate": {
           "type": "string",
           "description": "Documents that were created until the specified date in the format YYYY-MM-DD",
-          "format": "YYYY-MM-DD"
+          "format": "date"
         },
         "clientId": {
           "type": "string",
