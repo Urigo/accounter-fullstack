@@ -11,14 +11,16 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '@shared/helpers';
-import type {
-  AutoMatchChargesResult,
-  ChargeMatchesResult,
-  ChargeWithData,
-  Document,
-  DocumentCharge,
-  Transaction,
-  TransactionCharge,
+import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
+import {
+  ChargeType,
+  type AutoMatchChargesResult,
+  type ChargeMatchesResult,
+  type ChargeWithData,
+  type Document,
+  type DocumentCharge,
+  type Transaction,
+  type TransactionCharge,
 } from '../types.js';
 import { determineMergeDirection, processChargeForAutoMatch } from './auto-match.provider.js';
 import { aggregateDocuments } from './document-aggregator.js';
@@ -76,21 +78,16 @@ export class ChargesMatcherProvider {
     )) as Document[];
 
     // Step 3: Validate source charge is unmatched
-    const hasTransactions = sourceTransactions && sourceTransactions.length > 0;
-    const hasDocuments = sourceDocuments && sourceDocuments.length > 0;
-
-    if (hasTransactions && hasDocuments) {
-      throw new Error(
-        `Charge ${chargeId} is already matched (contains both transactions and documents)`,
-      );
-    }
-
-    if (!hasTransactions && !hasDocuments) {
-      throw new Error(`Charge ${chargeId} has no transactions or documents`);
-    }
+    const sourceChargeWithData = {
+      ...sourceCharge,
+      transactions: sourceTransactions,
+      documents: sourceDocuments,
+    };
+    validateChargeIsUnmatched(sourceChargeWithData);
 
     // Step 4: Determine reference date and date window from source charge
     let referenceDate: Date;
+    const hasTransactions = sourceTransactions && sourceTransactions.length > 0;
     if (hasTransactions) {
       // Use earliest transaction event_date
       const aggregated = aggregateTransactions(sourceTransactions);
@@ -228,7 +225,7 @@ export class ChargesMatcherProvider {
       chargesWithData.push({
         chargeId: charge.id,
         ownerId: charge.owner_id ?? adminBusinessId,
-        type: 'TRANSACTION_ONLY', // Will be determined by processChargeForAutoMatch
+        type: ChargeType.TRANSACTION_ONLY, // Will be determined by processChargeForAutoMatch
         transactions: transactions || [],
         documents: documents || [],
       });
