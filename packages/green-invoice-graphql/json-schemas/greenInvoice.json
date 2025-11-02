@@ -1,16 +1,17 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "definitions": {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.greeninvoice.co.il/schema/v1",
+  "$defs": {
     "addExpenseRequest": {
-      "$ref": "#/definitions/Expense"
+      "$ref": "#/$defs/Expense"
     },
     "addExpenseResponse": {
       "oneOf": [
         {
-          "$ref": "#/definitions/Expense"
+          "$ref": "#/$defs/Expense"
         },
         {
-          "$ref": "#/definitions/ErrorResponse"
+          "$ref": "#/$defs/ErrorResponse"
         }
       ]
     },
@@ -18,7 +19,7 @@
       "description": "Add a document to the current business",
       "additionalProperties": false,
       "allOf": [
-        { "$ref": "#/definitions/DocumentInputNew" },
+        { "$ref": "#/$defs/DocumentInputNew" },
         {
           "properties": {
             "emailContent": {
@@ -36,10 +37,10 @@
     "addDocumentResponse": {
       "oneOf": [
         {
-          "$ref": "#/definitions/AddedDocument"
+          "$ref": "#/$defs/AddedDocument"
         },
         {
-          "$ref": "#/definitions/ErrorResponse"
+          "$ref": "#/$defs/ErrorResponse"
         }
       ]
     },
@@ -51,7 +52,7 @@
     "previewDocumentRequest": {
       "description": "Previews a document before the actual generation",
       "additionalProperties": false,
-      "$ref": "#/definitions/DocumentInputNew"
+      "$ref": "#/$defs/DocumentInputNew"
     },
     "previewDocumentResponse": {
       "oneOf": [
@@ -67,7 +68,7 @@
           "required": ["file"]
         },
         {
-          "$ref": "#/definitions/ErrorResponse"
+          "$ref": "#/$defs/ErrorResponse"
         }
       ]
     },
@@ -83,7 +84,7 @@
       }
     },
     "addExpenseDraftByFileResponse": {
-      "$ref": "#/definitions/GetExpenseDraft"
+      "$ref": "#/$defs/GetExpenseDraft"
     },
     "generalErrorResponse": {
       "type": "object",
@@ -102,10 +103,10 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "$ref": "#/definitions/ClientId"
+          "$ref": "#/$defs/ClientId"
         },
         "name": {
-          "$ref": "#/definitions/ClientName"
+          "$ref": "#/$defs/ClientName"
         },
         "active": {
           "type": "boolean",
@@ -134,10 +135,10 @@
           "description": "The supplier bank account number"
         },
         "country": {
-          "$ref": "#/definitions/Country"
+          "$ref": "#/$defs/Country"
         },
         "phone": {
-          "$ref": "#/definitions/ClientPhone"
+          "$ref": "#/$defs/ClientPhone"
         },
 
         "mobile": {
@@ -149,7 +150,7 @@
           "description": "The supplier contact person name"
         },
         "emails": {
-          "$ref": "#/definitions/ClientEmails"
+          "$ref": "#/$defs/ClientEmails"
         },
         "labels": {
           "type": "array",
@@ -159,7 +160,7 @@
           }
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
         "lastUpdateDate": {
           "type": "integer",
@@ -231,13 +232,13 @@
       }
     },
     "getExpenseResponse": {
-      "$ref": "#/definitions/GetExpense"
+      "$ref": "#/$defs/GetExpense"
     },
     "getDocumentResponse": {
-      "$ref": "#/definitions/Document"
+      "$ref": "#/$defs/Document"
     },
     "getLinkedDocumentsResponse": {
-      "$ref": "#/definitions/GetLinkedDocuments"
+      "$ref": "#/$defs/GetLinkedDocuments"
     },
     "updateExpenseRequest": {
       "type": "object",
@@ -261,13 +262,13 @@
           ]
         },
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "amount": {
           "type": "number",
@@ -286,7 +287,7 @@
           "description": "Reporting date of the expense"
         },
         "documentType": {
-          "$ref": "#/definitions/ExpenseDocumentType"
+          "$ref": "#/$defs/ExpenseDocumentType"
         },
         "number": {
           "type": "string",
@@ -301,10 +302,10 @@
           "string": "Remarks for the expense"
         },
         "supplier": {
-          "$ref": "#/definitions/Supplier"
+          "$ref": "#/$defs/Supplier"
         },
         "accountingClassification": {
-          "$ref": "#/definitions/AccountingClassification"
+          "$ref": "#/$defs/AccountingClassification"
         },
         "active": {
           "type": "boolean",
@@ -315,10 +316,10 @@
     "updateExpenseResponse": {
       "oneOf": [
         {
-          "$ref": "#/definitions/GetExpense"
+          "$ref": "#/$defs/GetExpense"
         },
         {
-          "$ref": "#/definitions/ErrorResponse"
+          "$ref": "#/$defs/ErrorResponse"
         }
       ]
     },
@@ -430,7 +431,7 @@
                 "type": "number"
               },
               "creationDate": {
-                "$ref": "#/definitions/CreationDate"
+                "$ref": "#/$defs/CreationDate"
               },
               "lastUpdateDate": {
                 "type": "number"
@@ -470,7 +471,7 @@
                 ],
                 "properties": {
                   "accountingClassification": {
-                    "$ref": "#/definitions/AccountingClassification"
+                    "$ref": "#/$defs/AccountingClassification"
                   },
                   "active": {
                     "type": "boolean",
@@ -488,10 +489,10 @@
                     "type": "boolean"
                   },
                   "currency": {
-                    "$ref": "#/definitions/Currency"
+                    "$ref": "#/$defs/Currency"
                   },
                   "currencyRate": {
-                    "$ref": "#/definitions/CurrencyRate"
+                    "$ref": "#/$defs/CurrencyRate"
                   },
                   "date": {
                     "type": "string",
@@ -502,7 +503,7 @@
                     "description": "Description for the expense"
                   },
                   "documentType": {
-                    "$ref": "#/definitions/ExpenseDocumentType"
+                    "$ref": "#/$defs/ExpenseDocumentType"
                   },
                   "fileHash": {
                     "type": "string",
@@ -540,7 +541,7 @@
                     "description": "Reporting date of the expense"
                   },
                   "supplier": {
-                    "$ref": "#/definitions/Supplier"
+                    "$ref": "#/$defs/Supplier"
                   },
                   "tags": {
                     "type": "array",
@@ -557,7 +558,7 @@
                     }
                   },
                   "vat": {
-                    "$ref": "#/definitions/Vat"
+                    "$ref": "#/$defs/Vat"
                   }
                 }
               }
@@ -649,7 +650,7 @@
           "description": "The amount of pages that exist"
         },
         "items": {
-          "$ref": "#/definitions/GetExpense"
+          "$ref": "#/$defs/GetExpense"
         }
       }
     },
@@ -666,13 +667,13 @@
           "description": "Results per page"
         },
         "number": {
-          "$ref": "#/definitions/DocumentTaxNumber"
+          "$ref": "#/$defs/DocumentTaxNumber"
         },
         "type": {
           "type": "array",
           "description": "Document type",
           "items": {
-            "$ref": "#/definitions/DocumentType"
+            "$ref": "#/$defs/DocumentType"
           }
         },
         "status": {
@@ -745,7 +746,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Document"
+            "$ref": "#/$defs/Document"
           }
         }
       },
@@ -837,7 +838,7 @@
         "results": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/BankTransaction"
+            "$ref": "#/$defs/BankTransaction"
           }
         }
       },
@@ -945,7 +946,7 @@
           "type": ["string", "null"],
           "description": "The creditor account"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "valueDate": {
           "type": "string",
           "description": "Value date of the transaction"
@@ -1070,27 +1071,27 @@
     },
     "Client": {
       "allOf": [
-        { "$ref": "#/definitions/ClientCore" },
+        { "$ref": "#/$defs/ClientCore" },
         {
           "additionalProperties": false,
           "properties": {
             "country": {
-              "$ref": "#/definitions/Country"
+              "$ref": "#/$defs/Country"
             },
             "emails": {
-              "$ref": "#/definitions/ClientEmails"
+              "$ref": "#/$defs/ClientEmails"
             },
             "id": {
-              "$ref": "#/definitions/ClientId"
+              "$ref": "#/$defs/ClientId"
             },
             "name": {
-              "$ref": "#/definitions/ClientName"
+              "$ref": "#/$defs/ClientName"
             },
             "phone": {
-              "$ref": "#/definitions/ClientPhone"
+              "$ref": "#/$defs/ClientPhone"
             },
             "self": {
-              "$ref": "#/definitions/ClientSelf"
+              "$ref": "#/$defs/ClientSelf"
             }
           },
           "required": ["country", "emails", "id", "name", "phone", "self"]
@@ -1101,19 +1102,19 @@
       "type": "object",
       "properties": {
         "country": {
-          "$ref": "#/definitions/Country"
+          "$ref": "#/$defs/Country"
         },
         "emails": {
-          "$ref": "#/definitions/ClientEmails"
+          "$ref": "#/$defs/ClientEmails"
         },
         "id": {
-          "$ref": "#/definitions/ClientId"
+          "$ref": "#/$defs/ClientId"
         },
         "name": {
-          "$ref": "#/definitions/ClientName"
+          "$ref": "#/$defs/ClientName"
         },
         "phone": {
-          "$ref": "#/definitions/ClientPhone"
+          "$ref": "#/$defs/ClientPhone"
         },
         "taxId": {
           "type": "string",
@@ -1121,7 +1122,7 @@
           "examples": ["0123456789"]
         },
         "self": {
-          "$ref": "#/definitions/ClientSelf"
+          "$ref": "#/$defs/ClientSelf"
         }
       }
     },
@@ -1443,19 +1444,19 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "$ref": "#/definitions/DocumentId"
+          "$ref": "#/$defs/DocumentId"
         },
         "lang": {
-          "$ref": "#/definitions/DocumentLang"
+          "$ref": "#/$defs/DocumentLang"
         },
         "number": {
-          "$ref": "#/definitions/DocumentSerialNumber"
+          "$ref": "#/$defs/DocumentSerialNumber"
         },
         "signed": {
-          "$ref": "#/definitions/DocumentSigned"
+          "$ref": "#/$defs/DocumentSigned"
         },
         "url": {
-          "$ref": "#/definitions/Url"
+          "$ref": "#/$defs/Url"
         }
       },
       "required": ["id", "lang", "number", "signed", "url"]
@@ -1465,28 +1466,28 @@
       "additionalProperties": false,
       "properties": {
         "amount": {
-          "$ref": "#/definitions/DocumentAmount"
+          "$ref": "#/$defs/DocumentAmount"
         },
         "amountDueVat": {
-          "$ref": "#/definitions/DocumentAmountDueVat"
+          "$ref": "#/$defs/DocumentAmountDueVat"
         },
         "amountDueVatLocal": {
-          "$ref": "#/definitions/DocumentAmountDueVatLocal"
+          "$ref": "#/$defs/DocumentAmountDueVatLocal"
         },
         "amountExcludeVat": {
-          "$ref": "#/definitions/DocumentAmountExcludeVat"
+          "$ref": "#/$defs/DocumentAmountExcludeVat"
         },
         "amountExemptVat": {
-          "$ref": "#/definitions/DocumentAmountExemptVat"
+          "$ref": "#/$defs/DocumentAmountExemptVat"
         },
         "amountLocal": {
-          "$ref": "#/definitions/DocumentAmountLocal"
+          "$ref": "#/$defs/DocumentAmountLocal"
         },
         "amountOpened": {
-          "$ref": "#/definitions/DocumentAmountOpened"
+          "$ref": "#/$defs/DocumentAmountOpened"
         },
         "business": {
-          "$ref": "#/definitions/Business"
+          "$ref": "#/$defs/Business"
         },
         "calculatedAmountLocal": {
           "type": "number"
@@ -1510,68 +1511,68 @@
           "type": "number"
         },
         "client": {
-          "$ref": "#/definitions/Client"
+          "$ref": "#/$defs/Client"
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "data": {
-          "$ref": "#/definitions/DocumentData"
+          "$ref": "#/$defs/DocumentData"
         },
         "description": {
-          "$ref": "#/definitions/DocumentDescription"
+          "$ref": "#/$defs/DocumentDescription"
         },
         "documentDate": {
-          "$ref": "#/definitions/DocumentDate"
+          "$ref": "#/$defs/DocumentDate"
         },
         "downloaded": {
           "type": "boolean"
         },
         "footer": {
-          "$ref": "#/definitions/DocumentFooter"
+          "$ref": "#/$defs/DocumentFooter"
         },
         "id": {
-          "$ref": "#/definitions/DocumentId"
+          "$ref": "#/$defs/DocumentId"
         },
         "income": {
-          "$ref": "#/definitions/DocumentIncome"
+          "$ref": "#/$defs/DocumentIncome"
         },
         "lang": {
-          "$ref": "#/definitions/DocumentLang"
+          "$ref": "#/$defs/DocumentLang"
         },
         "linkedDocuments": {
-          "$ref": "#/definitions/DocumentLinkedDocuments"
+          "$ref": "#/$defs/DocumentLinkedDocuments"
         },
         "number": {
-          "$ref": "#/definitions/DocumentTaxNumber"
+          "$ref": "#/$defs/DocumentTaxNumber"
         },
         "payment": {
-          "$ref": "#/definitions/DocumentPayment"
+          "$ref": "#/$defs/DocumentPayment"
         },
         "ref": {
-          "$ref": "#/definitions/DocumentRef"
+          "$ref": "#/$defs/DocumentRef"
         },
         "remarks": {
-          "$ref": "#/definitions/DocumentRemarks"
+          "$ref": "#/$defs/DocumentRemarks"
         },
         "reverseCharge": {
           "type": "boolean"
         },
         "rounding": {
-          "$ref": "#/definitions/DocumentRounding"
+          "$ref": "#/$defs/DocumentRounding"
         },
         "signed": {
-          "$ref": "#/definitions/DocumentSigned"
+          "$ref": "#/$defs/DocumentSigned"
         },
         "skinId": {
           "type": "number"
         },
         "status": {
-          "$ref": "#/definitions/DocumentStatus"
+          "$ref": "#/$defs/DocumentStatus"
         },
         "taxConfirmationEligible": {
           "type": "boolean"
@@ -1580,25 +1581,25 @@
           "type": "number"
         },
         "type": {
-          "$ref": "#/definitions/DocumentType"
+          "$ref": "#/$defs/DocumentType"
         },
         "url": {
-          "$ref": "#/definitions/Url"
+          "$ref": "#/$defs/Url"
         },
         "userName": {
           "type": "string"
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "vatLocal": {
           "type": "number"
         },
         "vatRate": {
-          "$ref": "#/definitions/VatRate"
+          "$ref": "#/$defs/VatRate"
         },
         "vatType": {
-          "$ref": "#/definitions/VatType"
+          "$ref": "#/$defs/VatType"
         }
       },
       "required": [
@@ -1647,16 +1648,16 @@
     "DocumentInputNew": {
       "properties": {
         "description": {
-          "$ref": "#/definitions/DocumentDescription"
+          "$ref": "#/$defs/DocumentDescription"
         },
         "remarks": {
-          "$ref": "#/definitions/DocumentRemarks"
+          "$ref": "#/$defs/DocumentRemarks"
         },
         "footer": {
-          "$ref": "#/definitions/DocumentFooter"
+          "$ref": "#/$defs/DocumentFooter"
         },
         "type": {
-          "$ref": "#/definitions/DocumentType"
+          "$ref": "#/$defs/DocumentType"
         },
         "date": {
           "description": "Document date in the format YYYY-MM-DD",
@@ -1667,20 +1668,20 @@
           "type": "string"
         },
         "lang": {
-          "$ref": "#/definitions/DocumentLang"
+          "$ref": "#/$defs/DocumentLang"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "vatType": {
-          "$ref": "#/definitions/VatType"
+          "$ref": "#/$defs/VatType"
         },
         "discount": {
-          "$ref": "#/definitions/DocumentDiscount"
+          "$ref": "#/$defs/DocumentDiscount"
         },
         "rounding": {
-          "$ref": "#/definitions/DocumentRounding"
+          "$ref": "#/$defs/DocumentRounding"
         },
         "signed": {
-          "$ref": "#/definitions/DocumentSigned"
+          "$ref": "#/$defs/DocumentSigned"
         },
         "maxPayments": {
           "description": "Max payments allowed (valid only on supported accounts)",
@@ -1688,7 +1689,7 @@
         },
         "client": {
           "allOf": [
-            { "$ref": "#/definitions/ClientCore" },
+            { "$ref": "#/$defs/ClientCore" },
             {
               "type": "object",
               "properties": {
@@ -1722,10 +1723,10 @@
           ]
         },
         "income": {
-          "$ref": "#/definitions/DocumentIncome"
+          "$ref": "#/$defs/DocumentIncome"
         },
         "payment": {
-          "$ref": "#/definitions/DocumentPayment"
+          "$ref": "#/$defs/DocumentPayment"
         },
         "linkedDocumentIds": {
           "description": "Linked document IDs. allows you to state the related / relevant documents, e.g.: when creating a receipt, attach your original invoice document ID as one of the ids in the linkedDocumentIds - this in turn will automatically close the original invoice if needed.",
@@ -1750,25 +1751,25 @@
       "type": "object",
       "properties": {
         "amount": {
-          "$ref": "#/definitions/DocumentAmount"
+          "$ref": "#/$defs/DocumentAmount"
         },
         "amountDueVat": {
-          "$ref": "#/definitions/DocumentAmountDueVat"
+          "$ref": "#/$defs/DocumentAmountDueVat"
         },
         "amountExcludeVat": {
-          "$ref": "#/definitions/DocumentAmountExcludeVat"
+          "$ref": "#/$defs/DocumentAmountExcludeVat"
         },
         "amountExemptVat": {
-          "$ref": "#/definitions/DocumentAmountExemptVat"
+          "$ref": "#/$defs/DocumentAmountExemptVat"
         },
         "amountLocal": {
-          "$ref": "#/definitions/DocumentAmountLocal"
+          "$ref": "#/$defs/DocumentAmountLocal"
         },
         "amountOpened": {
-          "$ref": "#/definitions/DocumentAmountOpened"
+          "$ref": "#/$defs/DocumentAmountOpened"
         },
         "business": {
-          "$ref": "#/definitions/Business"
+          "$ref": "#/$defs/Business"
         },
         "calculatedAmountLocal": {
           "type": "number"
@@ -1792,86 +1793,86 @@
           "type": "number"
         },
         "client": {
-          "$ref": "#/definitions/ClientCore"
+          "$ref": "#/$defs/ClientCore"
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "data": {
-          "$ref": "#/definitions/DocumentData"
+          "$ref": "#/$defs/DocumentData"
         },
         "description": {
-          "$ref": "#/definitions/DocumentDescription"
+          "$ref": "#/$defs/DocumentDescription"
         },
         "documentDate": {
-          "$ref": "#/definitions/DocumentDate"
+          "$ref": "#/$defs/DocumentDate"
         },
         "downloaded": {
           "type": "boolean"
         },
         "id": {
-          "$ref": "#/definitions/DocumentId"
+          "$ref": "#/$defs/DocumentId"
         },
         "income": {
-          "$ref": "#/definitions/DocumentIncome"
+          "$ref": "#/$defs/DocumentIncome"
         },
         "lang": {
-          "$ref": "#/definitions/DocumentLang"
+          "$ref": "#/$defs/DocumentLang"
         },
         "number": {
-          "$ref": "#/definitions/DocumentTaxNumber"
+          "$ref": "#/$defs/DocumentTaxNumber"
         },
         "payment": {
-          "$ref": "#/definitions/DocumentPayment"
+          "$ref": "#/$defs/DocumentPayment"
         },
         "ref": {
-          "$ref": "#/definitions/DocumentRef"
+          "$ref": "#/$defs/DocumentRef"
         },
         "remarks": {
-          "$ref": "#/definitions/DocumentRemarks"
+          "$ref": "#/$defs/DocumentRemarks"
         },
         "reverseCharge": {
           "type": "boolean"
         },
         "rounding": {
-          "$ref": "#/definitions/DocumentRounding"
+          "$ref": "#/$defs/DocumentRounding"
         },
         "signed": {
-          "$ref": "#/definitions/DocumentSigned"
+          "$ref": "#/$defs/DocumentSigned"
         },
         "skinId": {
           "type": "number"
         },
         "status": {
-          "$ref": "#/definitions/DocumentStatus"
+          "$ref": "#/$defs/DocumentStatus"
         },
         "templateId": {
           "type": "number"
         },
         "type": {
-          "$ref": "#/definitions/DocumentType"
+          "$ref": "#/$defs/DocumentType"
         },
         "url": {
-          "$ref": "#/definitions/Url"
+          "$ref": "#/$defs/Url"
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "vatRate": {
-          "$ref": "#/definitions/VatRate"
+          "$ref": "#/$defs/VatRate"
         },
         "vatType": {
-          "$ref": "#/definitions/VatType"
+          "$ref": "#/$defs/VatType"
         }
       }
     },
     "Expense": {
       "allOf": [
-        { "$ref": "#/definitions/ExpensePartial" },
+        { "$ref": "#/$defs/ExpensePartial" },
         {
           "required": [
             "currency",
@@ -1905,13 +1906,13 @@
           ]
         },
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "amount": {
           "type": "number",
@@ -1930,7 +1931,7 @@
           "description": "Reporting date of the expense"
         },
         "documentType": {
-          "$ref": "#/definitions/ExpenseDocumentType"
+          "$ref": "#/$defs/ExpenseDocumentType"
         },
         "number": {
           "type": ["string", "null"],
@@ -1945,10 +1946,10 @@
           "string": "Remarks for the expense"
         },
         "supplier": {
-          "$ref": "#/definitions/Supplier"
+          "$ref": "#/$defs/Supplier"
         },
         "accountingClassification": {
-          "$ref": "#/definitions/AccountingClassification"
+          "$ref": "#/$defs/AccountingClassification"
         },
         "active": {
           "type": "boolean",
@@ -1983,7 +1984,7 @@
           "enum": [1, 2, 3, 4, 5, 6]
         },
         "documentType": {
-          "$ref": "#/definitions/ExpenseDocumentType"
+          "$ref": "#/$defs/ExpenseDocumentType"
         },
         "status": {
           "type": "number",
@@ -1996,13 +1997,13 @@
           "enum": [-1, 0, 1, 2, 3, 4, 5, 10, 11]
         },
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "amount": {
           "type": "number",
@@ -2033,7 +2034,7 @@
           "description": "Remarks for the expense"
         },
         "supplier": {
-          "$ref": "#/definitions/Supplier"
+          "$ref": "#/$defs/Supplier"
         },
         "thumbnail": {
           "type": "string",
@@ -2052,7 +2053,7 @@
           "description": "Reporting date of the expense"
         },
         "accountingClassification": {
-          "$ref": "#/definitions/AccountingClassification"
+          "$ref": "#/$defs/AccountingClassification"
         },
         "amountLocal": {
           "type": "number",
@@ -2067,7 +2068,7 @@
           "description": "The vat amount of accounting"
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
         "lastUpdateDate": {
           "type": "integer",
@@ -2089,14 +2090,14 @@
           "enum": [10, 50]
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
         "lastUpdateDate": {
           "type": "integer",
           "description": "The last update date of the expense draft, in UNIX timestamp format"
         },
         "expense": {
-          "$ref": "#/definitions/ExpensePartial"
+          "$ref": "#/$defs/ExpensePartial"
         },
         "thumbnail": {
           "type": "string",
@@ -2113,26 +2114,26 @@
       "additionalProperties": false,
       "properties": {
         "amount": {
-          "$ref": "#/definitions/DocumentAmount"
+          "$ref": "#/$defs/DocumentAmount"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "documentDate": {
-          "$ref": "#/definitions/DocumentDate"
+          "$ref": "#/$defs/DocumentDate"
         },
         "id": {
-          "$ref": "#/definitions/DocumentId"
+          "$ref": "#/$defs/DocumentId"
         },
         "number": {
-          "$ref": "#/definitions/DocumentTaxNumber"
+          "$ref": "#/$defs/DocumentTaxNumber"
         },
         "status": {
-          "$ref": "#/definitions/DocumentStatus"
+          "$ref": "#/$defs/DocumentStatus"
         },
         "type": {
-          "$ref": "#/definitions/DocumentType"
+          "$ref": "#/$defs/DocumentType"
         }
       }
     },
@@ -2156,10 +2157,10 @@
           "examples": ["MXDFSDD"]
         },
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "description": {
           "type": "string",
@@ -2182,20 +2183,20 @@
           "examples": [1]
         },
         "vat": {
-          "$ref": "#/definitions/Vat"
+          "$ref": "#/$defs/Vat"
         },
         "vatRate": {
-          "$ref": "#/definitions/VatRate"
+          "$ref": "#/$defs/VatRate"
         },
         "vatType": {
-          "$ref": "#/definitions/VatType"
+          "$ref": "#/$defs/VatType"
         }
       },
       "required": ["description", "quantity", "price", "currency", "vatType"]
     },
     "Payment": {
       "allOf": [
-        { "$ref": "#/definitions/PaymentCore" },
+        { "$ref": "#/$defs/PaymentCore" },
         {
           "additionalProperties": false,
           "properties": {
@@ -2218,7 +2219,7 @@
               "type": "array",
               "description": "The referred documents types",
               "items": {
-                "$ref": "#/definitions/DocumentType"
+                "$ref": "#/$defs/DocumentType"
               }
             }
           },
@@ -2231,10 +2232,10 @@
       "additionalProperties": false,
       "properties": {
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "date": {
           "type": "string"
@@ -2321,10 +2322,10 @@
       "type": "object",
       "properties": {
         "currency": {
-          "$ref": "#/definitions/Currency"
+          "$ref": "#/$defs/Currency"
         },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "date": {
           "type": "string"
@@ -2385,7 +2386,7 @@
           "description": "The supplier bank account number"
         },
         "country": {
-          "$ref": "#/definitions/Country"
+          "$ref": "#/$defs/Country"
         },
         "phone": {
           "type": "string",
@@ -2400,7 +2401,7 @@
           "description": "The supplier contact person name"
         },
         "emails": {
-          "$ref": "#/definitions/ClientEmails"
+          "$ref": "#/$defs/ClientEmails"
         },
         "labels": {
           "type": "array",
@@ -2410,7 +2411,7 @@
           }
         },
         "creationDate": {
-          "$ref": "#/definitions/CreationDate"
+          "$ref": "#/$defs/CreationDate"
         },
         "lastUpdateDate": {
           "type": "integer",
@@ -2510,7 +2511,7 @@
     "DocumentIncome": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Income"
+        "$ref": "#/$defs/Income"
       }
     },
     "DocumentId": {
@@ -2520,7 +2521,7 @@
     "DocumentLinkedDocuments": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/DocumentLinkedDocument"
+        "$ref": "#/$defs/DocumentLinkedDocument"
       }
     },
     "DocumentLinkedDocument": {
@@ -2528,26 +2529,26 @@
       "additionalProperties": false,
       "properties": {
         "amount": {
-          "$ref": "#/definitions/DocumentAmount"
+          "$ref": "#/$defs/DocumentAmount"
         },
-        "currency": { "$ref": "#/definitions/Currency" },
+        "currency": { "$ref": "#/$defs/Currency" },
         "currencyRate": {
-          "$ref": "#/definitions/CurrencyRate"
+          "$ref": "#/$defs/CurrencyRate"
         },
         "documentDate": {
-          "$ref": "#/definitions/DocumentDate"
+          "$ref": "#/$defs/DocumentDate"
         },
         "id": {
-          "$ref": "#/definitions/DocumentId"
+          "$ref": "#/$defs/DocumentId"
         },
         "number": {
-          "$ref": "#/definitions/DocumentTaxNumber"
+          "$ref": "#/$defs/DocumentTaxNumber"
         },
         "reverseCharge": {
           "type": "boolean"
         },
         "type": {
-          "$ref": "#/definitions/DocumentType"
+          "$ref": "#/$defs/DocumentType"
         }
       },
       "required": [
@@ -2564,7 +2565,7 @@
     "DocumentPayment": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/PaymentDocument"
+        "$ref": "#/$defs/PaymentDocument"
       }
     },
     "DocumentRef": {

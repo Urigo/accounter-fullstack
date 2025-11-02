@@ -7,12 +7,41 @@ sources:
           Authorization: Bearer {context.authToken}
           Content-Type: application/json
         operations:
-          - type: Mutation
-            field: addExpense
-            path: /expenses
+          # documents #
+
+          - type: Query
+            field: getDocument
+            path: /documents/{args.id}
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getDocumentResponse
+
+          - type: Query
+            field: searchDocuments
+            path: /documents/search
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsResponse
+
+          - type: Query
+            field: previewDocument
+            path: /documents/preview
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentResponse
+
+          - type: Query
+            field: getLinkedDocuments
+            path: /documents/{args.id}/linked
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getLinkedDocumentsResponse
 
           - type: Mutation
             field: addDocument
@@ -21,12 +50,19 @@ sources:
             requestSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentRequest
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentResponse
 
-          - type: Query
-            field: previewDocument
-            path: /documents/preview
+          - type: Mutation
+            field: closeDocument
+            path: /documents/{args.id}/close
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentResponse
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/definitions/closeDocumentResponse
+
+          # expenses #
 
           - type: Query
             field: getExpense
@@ -38,13 +74,6 @@ sources:
                 nullable: false
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/getExpenseResponse
 
-          - type: Mutation
-            field: updateExpense
-            path: /expenses/{args.id}
-            method: PUT
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseResponse
-
           - type: Query
             field: searchExpenses
             path: /expenses/search
@@ -52,12 +81,19 @@ sources:
             requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesRequest
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesResponse
 
-          - type: Query
-            field: searchDocuments
-            path: /documents/search
+          - type: Mutation
+            field: addExpense
+            path: /expenses
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseResponse
+
+          - type: Mutation
+            field: updateExpense
+            path: /expenses/{args.id}
+            method: PUT
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseResponse
 
           - type: Mutation
             field: addExpenseDraftByFile
@@ -89,37 +125,7 @@ sources:
               404:
                 responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
 
-          - type: Query
-            field: getDocument
-            path: /documents/{args.id}
-            method: GET
-            argTypeMap:
-              id:
-                type: string
-                nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getDocumentResponse
-
-          - type: Query
-            field: getLinkedDocuments
-            path: /documents/{args.id}/linked
-            method: GET
-            argTypeMap:
-              id:
-                type: string
-                nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getLinkedDocumentsResponse
-
-          - type: Mutation
-            field: closeDocument
-            path: /documents/{args.id}/close
-            method: POST
-            argTypeMap:
-              id:
-                type: string
-                nullable: false
-            responseByStatusCode:
-              200:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/closeDocumentResponse
+          # clients #
 
           - type: Query
             field: getClient
@@ -130,6 +136,34 @@ sources:
                 type: string
                 nullable: false
             responseSchema: ../json-schemas/greenInvoice.json#/definitions/getClientResponse
+
+          - type: Mutation
+            field: addClient
+            path: /clients
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addClientRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addClientResponse
+
+          - type: Mutation
+            field: updateClient
+            path: /clients/{args.id}
+            method: PUT
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateClientRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateClientResponse
+
+          - type: Mutation
+            field: deleteClient
+            path: /clients/{args.id}
+            method: DELETE
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/definitions/deleteClientResponse
 
   - name: GreenInvoiceNew
     handler:
