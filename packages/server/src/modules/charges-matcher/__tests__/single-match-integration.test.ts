@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Document, Transaction } from '../types.js';
+import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
 // Mock the module imports to avoid dependency issues
 vi.mock('graphql-modules', () => ({
@@ -35,54 +35,6 @@ type Injector = {
 
 // Test constants
 const ADMIN_BUSINESS_ID = 'user-123';
-const BUSINESS_A = 'business-a';
-const BUSINESS_B = 'business-b';
-
-// Helper to create transaction
-function createTransaction(overrides: Partial<any> = {}): Transaction {
-  return {
-    id: `tx-${Math.random()}`,
-    charge_id: 'charge-tx',
-    amount: "100",
-    currency: 'USD',
-    business_id: BUSINESS_A,
-    event_date: new Date('2024-01-15'),
-    debit_date: new Date('2024-01-16'),
-    debit_timestamp: new Date('2024-01-16T10:00:00'),
-    source_description: 'Test transaction',
-    is_fee: false,
-    account_id: 'account-1',
-    source_id: 'source-1',
-    currency_rate: "1",
-    current_balance: "1000.0",
-    counter_account: 'counter-1',
-    created_at: new Date(),
-    updated_at: new Date(),
-    debit_date_override: null,
-    origin_key: 'origin-1',
-    source_origin: 'source-origin-1',
-    source_reference: 'source-ref-1',
-    ...overrides,
-  };
-}
-
-// Helper to create document
-function createDocument(overrides: Partial<Document> = {}): Document {
-  return {
-    id: `doc-${Math.random()}`,
-    charge_id: 'charge-doc',
-    creditor_id: BUSINESS_A,
-    debtor_id: ADMIN_BUSINESS_ID,
-    currency_code: 'USD',
-    total_amount: 100,
-    date: new Date('2024-01-15'),
-    serial_number: 'INV-001',
-    type: 'INVOICE',
-    image_url: null,
-    file_url: null,
-    ...overrides,
-  } as Document;
-}
 
 // Mock charge object
 function createCharge(id: string, ownerId: string) {
@@ -100,9 +52,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       // Setup mock data
       const sourceChargeId = 'tx-charge-1';
       const sourceTransactions = [
-        createTransaction({
+        createMockTransaction({
           charge_id: sourceChargeId,
-          amount: 100,
+          amount: "100",
           currency: 'USD',
           event_date: new Date('2024-01-15'),
         }),
@@ -110,7 +62,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const candidateCharge1Id = 'doc-charge-1';
       const candidateDocuments1 = [
-        createDocument({
+        createMockDocument({
           charge_id: candidateCharge1Id,
           total_amount: 100,
           currency_code: 'USD',
@@ -120,7 +72,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const candidateCharge2Id = 'doc-charge-2';
       const candidateDocuments2 = [
-        createDocument({
+        createMockDocument({
           charge_id: candidateCharge2Id,
           total_amount: 110,
           currency_code: 'USD',
@@ -191,7 +143,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       // Setup mock data
       const sourceChargeId = 'doc-charge-1';
       const sourceDocuments = [
-        createDocument({
+        createMockDocument({
           charge_id: sourceChargeId,
           total_amount: 200,
           currency_code: 'USD',
@@ -201,9 +153,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const candidateCharge1Id = 'tx-charge-1';
       const candidateTransactions1 = [
-        createTransaction({
+        createMockTransaction({
           charge_id: candidateCharge1Id,
-          amount: 200,
+          amount: "200",
           currency: 'USD',
           event_date: new Date('2024-02-15'),
         }),
@@ -211,9 +163,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const candidateCharge2Id = 'tx-charge-2';
       const candidateTransactions2 = [
-        createTransaction({
+        createMockTransaction({
           charge_id: candidateCharge2Id,
-          amount: 195,
+          amount: "195",
           currency: 'USD',
           event_date: new Date('2024-02-16'),
         }),
@@ -305,13 +257,13 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockTransactionsProvider = {
         transactionsByChargeIDLoader: {
-          load: vi.fn(() => Promise.resolve([createTransaction()])),
+          load: vi.fn(() => Promise.resolve([createMockTransaction()])),
         },
       };
 
       const mockDocumentsProvider = {
         getDocumentsByChargeIdLoader: {
-          load: vi.fn(() => Promise.resolve([createDocument()])),
+          load: vi.fn(() => Promise.resolve([createMockDocument()])),
         },
       };
 
@@ -380,7 +332,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const mockTransactionsProvider = {
         transactionsByChargeIDLoader: {
-          load: vi.fn(() => Promise.resolve([createTransaction()])),
+          load: vi.fn(() => Promise.resolve([createMockTransaction()])),
         },
       };
 
@@ -425,8 +377,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const mockTransactionsProvider = {
         transactionsByChargeIDLoader: {
           load: vi.fn((id: string) => {
-            if (id === sourceChargeId) return Promise.resolve([createTransaction()]);
-            if (id === matchedCandidateId) return Promise.resolve([createTransaction()]); // Has transactions
+            if (id === sourceChargeId) return Promise.resolve([createMockTransaction()]);
+            if (id === matchedCandidateId) return Promise.resolve([createMockTransaction()]); // Has transactions
             return Promise.resolve([]);
           }),
         },
@@ -435,8 +387,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const mockDocumentsProvider = {
         getDocumentsByChargeIdLoader: {
           load: vi.fn((id: string) => {
-            if (id === matchedCandidateId) return Promise.resolve([createDocument()]); // Also has documents - MATCHED
-            if (id === validCandidateId) return Promise.resolve([createDocument()]); // Only documents - VALID
+            if (id === matchedCandidateId) return Promise.resolve([createMockDocument()]); // Also has documents - MATCHED
+            if (id === validCandidateId) return Promise.resolve([createMockDocument()]); // Only documents - VALID
             return Promise.resolve([]);
           }),
         },
@@ -485,7 +437,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         transactionsByChargeIDLoader: {
           load: vi.fn((id: string) => {
             if (id === sourceChargeId) {
-              return Promise.resolve([createTransaction({ event_date: sourceDate })]);
+              return Promise.resolve([createMockTransaction({ event_date: sourceDate })]);
             }
             return Promise.resolve([]);
           }),
@@ -499,13 +451,13 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
             if (id === withinWindowId) {
               // Within 12-month window
               return Promise.resolve([
-                createDocument({ date: new Date('2024-06-20') }),
+                createMockDocument({ date: new Date('2024-06-20') }),
               ]);
             }
             if (id === outsideWindowId) {
               // Outside 12-month window
               return Promise.resolve([
-                createDocument({ date: new Date('2025-07-15') }),
+                createMockDocument({ date: new Date('2025-07-15') }),
               ]);
             }
             return Promise.resolve([]);
@@ -561,7 +513,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         transactionsByChargeIDLoader: {
           load: vi.fn((id: string) => {
             if (id === sourceChargeId) {
-              return Promise.resolve([createTransaction({ amount: 100 })]);
+              return Promise.resolve([createMockTransaction({ amount: "100" })]);
             }
             return Promise.resolve([]);
           }),
@@ -574,7 +526,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
             if (id === sourceChargeId) return Promise.resolve([]);
             // Create documents with varying amounts for different confidence scores
             const index = parseInt(id.split('-')[2]);
-            return Promise.resolve([createDocument({ total_amount: 100 + index })]);
+            return Promise.resolve([createMockDocument({ total_amount: 100 + index })]);
           }),
         },
       };

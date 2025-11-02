@@ -20,7 +20,7 @@ describe('Charges Matcher - Test Infrastructure', () => {
       expect(transaction.id).toBeDefined();
       expect(transaction.charge_id).toBeDefined();
       expect(transaction.amount).toBe('100.00');
-      expect(transaction.currency).toBe('ILS');
+      expect(transaction.currency).toBe('USD');
       expect(transaction.is_fee).toBe(false);
     });
 
@@ -42,7 +42,7 @@ describe('Charges Matcher - Test Infrastructure', () => {
       expect(document.id).toBeDefined();
       expect(document.charge_id).toBeDefined();
       expect(document.total_amount).toBe(100.0);
-      expect(document.currency_code).toBe('ILS');
+      expect(document.currency_code).toBe('USD');
       expect(document.type).toBe('INVOICE');
     });
 

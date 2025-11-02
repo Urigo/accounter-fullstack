@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { Document, Transaction } from '../types.js';
+import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
 // Mock the module imports
 vi.mock('graphql-modules', () => ({
@@ -39,54 +39,8 @@ type Injector = {
 };
 
 // Test constants
-const ADMIN_BUSINESS_ID = 'admin-123';
+const ADMIN_BUSINESS_ID = 'user-123';
 const BUSINESS_A = 'business-a';
-
-// Helper to create transaction
-function createTransaction(overrides: Partial<any> = {}): Transaction {
-  return {
-    id: `tx-${Math.random()}`,
-    charge_id: 'charge-tx',
-    amount: "100",
-    currency: 'USD',
-    business_id: BUSINESS_A,
-    event_date: new Date('2024-01-15'),
-    debit_date: new Date('2024-01-16'),
-    debit_timestamp: new Date('2024-01-16T10:00:00'),
-    source_description: 'Test transaction',
-    is_fee: false,
-    account_id: 'account-1',
-    source_id: 'source-1',
-    currency_rate: "1",
-    current_balance: "1000.0",
-    counter_account: 'counter-1',
-    created_at: new Date(),
-    updated_at: new Date(),
-    debit_date_override: null,
-    origin_key: 'origin-1',
-    source_origin: 'source-origin-1',
-    source_reference: 'source-ref-1',
-    ...overrides,
-  };
-}
-
-// Helper to create document
-function createDocument(overrides: Partial<Document> = {}): Document {
-  return {
-    id: `doc-${Math.random()}`,
-    charge_id: 'charge-doc',
-    creditor_id: BUSINESS_A,
-    debtor_id: ADMIN_BUSINESS_ID,
-    currency_code: 'USD',
-    total_amount: 100,
-    date: new Date('2024-01-15'),
-    serial_number: 'INV-001',
-    type: 'INVOICE',
-    image_url: null,
-    file_url: null,
-    ...overrides,
-  } as Document;
-}
 
 // Helper to create charge
 function createCharge(id: string, ownerId: string) {
@@ -151,13 +105,13 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
 
       const mockTransactionsProvider = {
         transactionsByChargeIDLoader: {
-          load: vi.fn(() => Promise.resolve([createTransaction()])),
+          load: vi.fn(() => Promise.resolve([createMockTransaction()])),
         },
       };
 
       const mockDocumentsProvider = {
         getDocumentsByChargeIdLoader: {
-          load: vi.fn(() => Promise.resolve([createDocument()])),
+          load: vi.fn(() => Promise.resolve([createMockDocument()])),
         },
       };
 
@@ -199,9 +153,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === txChargeId) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: txChargeId,
-                  amount: 100,
+                  amount: "100",
                   currency: 'USD',
                   event_date: new Date('2024-01-15'),
                 }),
@@ -217,7 +171,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === docChargeId) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: docChargeId,
                   total_amount: 100,
                   currency_code: 'USD',
@@ -275,9 +229,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === txChargeId) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: txChargeId,
-                  amount: 100,
+                  amount: "100",
                   currency: 'USD',
                   event_date: new Date('2024-01-15'),
                 }),
@@ -293,7 +247,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === docCharge1Id) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: docCharge1Id,
                   total_amount: 100,
                   currency_code: 'USD',
@@ -303,7 +257,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === docCharge2Id) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: docCharge2Id,
                   total_amount: 100,
                   currency_code: 'USD',
@@ -363,12 +317,12 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === tx1Id) {
               return Promise.resolve([
-                createTransaction({ charge_id: tx1Id, amount: 100, currency: 'USD' }),
+                createMockTransaction({ charge_id: tx1Id, amount: "100", currency: 'USD' }),
               ]);
             }
             if (id === tx2Id) {
               return Promise.resolve([
-                createTransaction({ charge_id: tx2Id, amount: 200, currency: 'EUR' }),
+                createMockTransaction({ charge_id: tx2Id, amount: "200", currency: 'EUR' }),
               ]);
             }
             return Promise.resolve([]);
@@ -381,12 +335,12 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === doc1Id) {
               return Promise.resolve([
-                createDocument({ charge_id: doc1Id, total_amount: 100, currency_code: 'USD' }),
+                createMockDocument({ charge_id: doc1Id, total_amount: 100, currency_code: 'USD' }),
               ]);
             }
             if (id === doc2Id) {
               return Promise.resolve([
-                createDocument({ charge_id: doc2Id, total_amount: 200, currency_code: 'EUR' }),
+                createMockDocument({ charge_id: doc2Id, total_amount: 200, currency_code: 'EUR' }),
               ]);
             }
             return Promise.resolve([]);
@@ -434,9 +388,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === tx1Id) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: id,
-                  amount: 100,
+                  amount: "100",
                   currency: 'USD',
                   event_date: new Date('2024-01-15'),
                 }),
@@ -444,9 +398,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === tx2Id) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: id,
-                  amount: 999,
+                  amount: "999",
                   currency: 'GBP',
                   event_date: new Date('2024-03-15'),
                 }),
@@ -462,7 +416,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === doc1Id) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: id,
                   total_amount: 100,
                   currency_code: 'USD',
@@ -522,7 +476,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         transactionsByChargeIDLoader: {
           load: vi.fn((id: string) => {
             if (id === txChargeId) {
-              return Promise.resolve([createTransaction({ charge_id: txChargeId })]);
+              return Promise.resolve([createMockTransaction({ charge_id: txChargeId })]);
             }
             return Promise.resolve([]);
           }),
@@ -533,7 +487,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         getDocumentsByChargeIdLoader: {
           load: vi.fn((id: string) => {
             if (id === docChargeId) {
-              return Promise.resolve([createDocument({ charge_id: docChargeId })]);
+              return Promise.resolve([createMockDocument({ charge_id: docChargeId })]);
             }
             return Promise.resolve([]);
           }),
@@ -578,7 +532,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         transactionsByChargeIDLoader: {
           load: vi.fn((id: string) => {
             if (id === tx1Id || id === tx2Id) {
-              return Promise.resolve([createTransaction({ charge_id: id, amount: 100 })]);
+              return Promise.resolve([createMockTransaction({ charge_id: id, amount: "100" })]);
             }
             return Promise.resolve([]);
           }),
@@ -589,7 +543,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         getDocumentsByChargeIdLoader: {
           load: vi.fn((id: string) => {
             if (id === doc1Id) {
-              return Promise.resolve([createDocument({ charge_id: doc1Id, total_amount: 100 })]);
+              return Promise.resolve([createMockDocument({ charge_id: doc1Id, total_amount: 100 })]);
             }
             return Promise.resolve([]);
           }),
@@ -642,9 +596,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === perfectMatchTx) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: id,
-                  amount: 100,
+                  amount: "100",
                   currency: 'USD',
                   event_date: new Date('2024-01-15'),
                 }),
@@ -652,9 +606,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === ambiguousTx) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: id,
-                  amount: 200,
+                  amount: "200",
                   currency: 'EUR',
                   event_date: new Date('2024-02-15'),
                 }),
@@ -662,9 +616,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === noMatchTx) {
               return Promise.resolve([
-                createTransaction({
+                createMockTransaction({
                   charge_id: id,
-                  amount: 500,
+                  amount: "500",
                   currency: 'GBP',
                   event_date: new Date('2024-03-15'),
                 }),
@@ -680,7 +634,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
           load: vi.fn((id: string) => {
             if (id === perfectMatchDoc) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: id,
                   total_amount: 100,
                   currency_code: 'USD',
@@ -690,7 +644,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === ambiguousDoc1) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: id,
                   total_amount: 200,
                   currency_code: 'EUR',
@@ -701,7 +655,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
             }
             if (id === ambiguousDoc2) {
               return Promise.resolve([
-                createDocument({
+                createMockDocument({
                   charge_id: id,
                   total_amount: 200,
                   currency_code: 'EUR',

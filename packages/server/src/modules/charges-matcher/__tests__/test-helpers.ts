@@ -13,23 +13,23 @@ import type { currency, document_type } from '@modules/documents/types.js';
  */
 export function createMockTransaction(overrides: Partial<Transaction> = {}): Transaction {
   const defaultTransaction: Transaction = {
-    id: '00000000-0000-0000-0000-000000000001',
-    account_id: '00000000-0000-0000-0000-000000000010',
-    charge_id: '00000000-0000-0000-0000-000000000020',
-    source_id: '00000000-0000-0000-0000-000000000030',
+    id: `tx-${Math.random()}`,
+    account_id: 'account-1',
+    charge_id: 'charge-1',
+    source_id: 'source-1',
     source_description: 'Test transaction',
-    currency: 'ILS' as currency,
+    currency: 'USD' as currency,
     event_date: new Date('2024-01-15'),
     debit_date: new Date('2024-01-16'),
     debit_date_override: null,
     debit_timestamp: new Date('2024-01-16T10:00:00Z'),
     amount: '100.00',
     current_balance: '1000.00',
-    business_id: '00000000-0000-0000-0000-000000000040',
+    business_id: 'business-a',
     created_at: new Date('2024-01-15T08:00:00Z'),
     updated_at: new Date('2024-01-15T08:00:00Z'),
     is_fee: false,
-    counter_account: null,
+    counter_account: 'counter-1',
     currency_rate: '1.0',
     origin_key: 'test-origin',
     source_origin: 'test-bank',
@@ -44,11 +44,11 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
  */
 export function createMockDocument(overrides: Partial<Document> = {}): Document {
   const defaultDocument: Document = {
-    id: '00000000-0000-0000-0000-000000000002',
-    charge_id: '00000000-0000-0000-0000-000000000020',
-    creditor_id: '00000000-0000-0000-0000-000000000040',
-    debtor_id: '00000000-0000-0000-0000-000000000050',
-    currency_code: 'ILS' as currency,
+    id: `doc-${Math.random()}`,
+    charge_id: 'charge-1',
+    creditor_id: 'business-a',
+    debtor_id: 'user-123',
+    currency_code: 'USD' as currency,
     date: new Date('2024-01-14'),
     total_amount: 100.0,
     type: 'INVOICE' as document_type,
@@ -77,8 +77,8 @@ export function createMockAggregatedTransaction(
 ): AggregatedTransaction {
   const defaultAggregated: AggregatedTransaction = {
     amount: 100.0,
-    currency: 'ILS' as currency,
-    businessId: '00000000-0000-0000-0000-000000000040',
+    currency: 'USD' as currency,
+    businessId: 'business-a',
     date: new Date('2024-01-15'),
     debitDate: new Date('2024-01-16'),
     description: 'Test transaction',
@@ -95,8 +95,8 @@ export function createMockAggregatedDocument(
 ): AggregatedDocument {
   const defaultAggregated: AggregatedDocument = {
     amount: 100.0,
-    currency: 'ILS' as currency,
-    businessId: '00000000-0000-0000-0000-000000000040',
+    currency: 'USD' as currency,
+    businessId: 'business-a',
     date: new Date('2024-01-14'),
     description: 'INV-001',
     type: 'INVOICE' as document_type,

@@ -4,49 +4,11 @@ import {
   determineMergeDirection,
   processChargeForAutoMatch,
 } from '../providers/auto-match.provider.js';
+import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
 // Test constants
 const USER_ID = 'user-123';
 const BUSINESS_A = 'business-a';
-
-// Helper to create a transaction
-function createTransaction(overrides: any = {}) {
-  return {
-    id: `tx-${Math.random()}`,
-    charge_id: 'charge-1',
-    amount: 100,
-    currency: 'USD' as const,
-    business_id: BUSINESS_A,
-    event_date: new Date('2024-01-15'),
-    debit_date: new Date('2024-01-16'),
-    debit_timestamp: new Date('2024-01-16T10:00:00'),
-    source_description: 'Test transaction',
-    is_fee: false,
-    account_id: 'account-1',
-    source_id: 'source-1',
-    source_origin: null,
-    current_balance: null,
-    ...overrides,
-  };
-}
-
-// Helper to create a document
-function createDocument(overrides: any = {}) {
-  return {
-    id: `doc-${Math.random()}`,
-    charge_id: 'charge-1',
-    creditor_id: BUSINESS_A,
-    debtor_id: USER_ID,
-    currency_code: 'USD' as const,
-    total_amount: 100,
-    date: new Date('2024-01-15'),
-    serial_number: 'INV-001',
-    type: 'INVOICE' as const,
-    image_url: null,
-    file_url: null,
-    ...overrides,
-  };
-}
 
 // Helper to create a charge with data
 function createCharge(overrides: Partial<ChargeWithData> = {}): ChargeWithData {
@@ -66,11 +28,12 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: '100',
             currency: 'USD',
             event_date: new Date('2024-01-15'),
+            business_id: BUSINESS_A,
           }),
         ],
         documents: [],
@@ -80,11 +43,13 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
             date: new Date('2024-01-15'),
+            creditor_id: BUSINESS_A,
+            debtor_id: USER_ID,
           }),
         ],
       });
@@ -101,9 +66,9 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: '100',
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -117,7 +82,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
@@ -138,7 +103,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 200,
             currency_code: 'EUR',
@@ -150,9 +115,9 @@ describe('processChargeForAutoMatch', () => {
       const perfectMatch = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 200,
+            amount: '200',
             currency: 'EUR',
             event_date: new Date('2024-02-10'),
           }),
@@ -173,9 +138,9 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -187,7 +152,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
@@ -200,7 +165,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-2',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-2',
             total_amount: 100,
             currency_code: 'USD',
@@ -220,9 +185,9 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: "100",
           }),
         ],
         documents: [],
@@ -232,7 +197,7 @@ describe('processChargeForAutoMatch', () => {
         createCharge({
           chargeId: `doc-charge-${i}`,
           transactions: [],
-          documents: [createDocument({ charge_id: `doc-charge-${i}`, total_amount: 100 })],
+          documents: [createMockDocument({ charge_id: `doc-charge-${i}`, total_amount: 100 })],
         }),
       );
 
@@ -248,9 +213,9 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -263,7 +228,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 500, // Very different amount
             currency_code: 'EUR', // Different currency
@@ -282,7 +247,7 @@ describe('processChargeForAutoMatch', () => {
     it('should return no-match when no candidates exist', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
@@ -297,9 +262,9 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
+          createMockTransaction({
             charge_id: 'tx-charge-1',
-            amount: 100,
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -312,7 +277,7 @@ describe('processChargeForAutoMatch', () => {
         chargeId: 'doc-charge-1',
         transactions: [],
         documents: [
-          createDocument({
+          createMockDocument({
             charge_id: 'doc-charge-1',
             total_amount: 105, // Small difference
             currency_code: 'USD',
@@ -333,8 +298,8 @@ describe('processChargeForAutoMatch', () => {
     it('should throw error if source charge is already matched', () => {
       const matchedCharge = createCharge({
         chargeId: 'matched-charge',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       expect(() => {
@@ -357,7 +322,7 @@ describe('processChargeForAutoMatch', () => {
     it('should filter candidates to complementary type only', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
-        transactions: [createTransaction({ amount: 100 })],
+        transactions: [createMockTransaction({ amount: "100" })],
         documents: [],
       });
 
@@ -366,17 +331,17 @@ describe('processChargeForAutoMatch', () => {
         createCharge({
           chargeId: 'doc-charge-1',
           transactions: [],
-          documents: [createDocument({ total_amount: 100 })],
+          documents: [createMockDocument({ total_amount: 100 })],
         }),
         createCharge({
           chargeId: 'tx-charge-2',
-          transactions: [createTransaction({ amount: 100 })], // Should be filtered out
+          transactions: [createMockTransaction({ amount: "100" })], // Should be filtered out
           documents: [],
         }),
         createCharge({
           chargeId: 'doc-charge-2',
           transactions: [],
-          documents: [createDocument({ total_amount: 100 })],
+          documents: [createMockDocument({ total_amount: 100 })],
         }),
       ];
 
@@ -391,8 +356,8 @@ describe('processChargeForAutoMatch', () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
-          createTransaction({
-            amount: 100,
+          createMockTransaction({
+            amount: "100",
             currency: 'USD',
             event_date: new Date('2024-01-15'),
           }),
@@ -406,7 +371,7 @@ describe('processChargeForAutoMatch', () => {
           chargeId: 'doc-charge-perfect',
           transactions: [],
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
               date: new Date('2024-01-15'),
@@ -418,7 +383,7 @@ describe('processChargeForAutoMatch', () => {
           chargeId: 'doc-charge-good',
           transactions: [],
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 110,
               currency_code: 'USD',
               date: new Date('2024-01-20'),
@@ -430,7 +395,7 @@ describe('processChargeForAutoMatch', () => {
           chargeId: 'doc-charge-poor',
           transactions: [],
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 200,
               currency_code: 'EUR',
               date: new Date('2024-02-15'),
@@ -453,13 +418,13 @@ describe('determineMergeDirection', () => {
     it('should keep matched charge when one is matched and one is unmatched', () => {
       const matchedCharge = createCharge({
         chargeId: 'matched-1',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       const unmatchedCharge = createCharge({
         chargeId: 'unmatched-1',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
@@ -472,14 +437,14 @@ describe('determineMergeDirection', () => {
     it('should keep matched charge regardless of order', () => {
       const matchedCharge = createCharge({
         chargeId: 'matched-1',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       const unmatchedCharge = createCharge({
         chargeId: 'unmatched-1',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(unmatchedCharge, matchedCharge);
@@ -493,14 +458,14 @@ describe('determineMergeDirection', () => {
     it('should keep transaction charge when both are unmatched', () => {
       const transactionCharge = createCharge({
         chargeId: 'tx-charge-1',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
       const documentCharge = createCharge({
         chargeId: 'doc-charge-1',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(transactionCharge, documentCharge);
@@ -512,14 +477,14 @@ describe('determineMergeDirection', () => {
     it('should keep transaction charge regardless of order', () => {
       const transactionCharge = createCharge({
         chargeId: 'tx-charge-1',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
       const documentCharge = createCharge({
         chargeId: 'doc-charge-1',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(documentCharge, transactionCharge);
@@ -534,13 +499,13 @@ describe('determineMergeDirection', () => {
       const docCharge1 = createCharge({
         chargeId: 'doc-charge-1',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const docCharge2 = createCharge({
         chargeId: 'doc-charge-2',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(docCharge1, docCharge2);
@@ -552,13 +517,13 @@ describe('determineMergeDirection', () => {
     it('should keep first charge when both are transaction-only', () => {
       const txCharge1 = createCharge({
         chargeId: 'tx-charge-1',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
       const txCharge2 = createCharge({
         chargeId: 'tx-charge-2',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
@@ -571,14 +536,14 @@ describe('determineMergeDirection', () => {
     it('should keep first charge when both are matched', () => {
       const matched1 = createCharge({
         chargeId: 'matched-1',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       const matched2 = createCharge({
         chargeId: 'matched-2',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(matched1, matched2);
@@ -593,8 +558,8 @@ describe('determineMergeDirection', () => {
       const multiTxCharge = createCharge({
         chargeId: 'multi-tx',
         transactions: [
-          createTransaction({ amount: 50 }),
-          createTransaction({ amount: 50 }),
+          createMockTransaction({ amount: "50" }),
+          createMockTransaction({ amount: "50" }),
         ],
         documents: [],
       });
@@ -602,7 +567,7 @@ describe('determineMergeDirection', () => {
       const singleDocCharge = createCharge({
         chargeId: 'single-doc',
         transactions: [],
-        documents: [createDocument()],
+        documents: [createMockDocument()],
       });
 
       const [source, target] = determineMergeDirection(multiTxCharge, singleDocCharge);
@@ -614,7 +579,7 @@ describe('determineMergeDirection', () => {
     it('should handle charge with multiple documents', () => {
       const txCharge = createCharge({
         chargeId: 'tx-charge',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 
@@ -622,8 +587,8 @@ describe('determineMergeDirection', () => {
         chargeId: 'multi-doc',
         transactions: [],
         documents: [
-          createDocument({ serial_number: 'INV-001' }),
-          createDocument({ serial_number: 'INV-002' }),
+          createMockDocument({ serial_number: 'INV-001' }),
+          createMockDocument({ serial_number: 'INV-002' }),
         ],
       });
 
@@ -636,13 +601,13 @@ describe('determineMergeDirection', () => {
     it('should prioritize matched over transaction when choosing', () => {
       const matched = createCharge({
         chargeId: 'matched',
-        transactions: [createTransaction()],
-        documents: [createDocument()],
+        transactions: [createMockTransaction()],
+        documents: [createMockDocument()],
       });
 
       const txOnly = createCharge({
         chargeId: 'tx-only',
-        transactions: [createTransaction()],
+        transactions: [createMockTransaction()],
         documents: [],
       });
 

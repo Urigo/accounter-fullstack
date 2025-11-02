@@ -1,47 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import type { AggregatedTransaction, Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
+import type { AggregatedTransaction, DocumentCharge, TransactionCharge } from '../types.js';
 import {
   scoreMatch,
   selectTransactionDate,
 } from '../providers/match-scorer.provider.js';
+import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
 // Test user ID
 const USER_ID = 'user-123';
 const BUSINESS_ID = 'business-abc';
-
-// Helper to create transaction
-function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'tx-1',
-    charge_id: 'charge-tx',
-    business_id: BUSINESS_ID,
-    currency: 'USD',
-    amount: "100.00", // Use number, not string
-    event_date: new Date('2024-01-15'),
-    debit_date: new Date('2024-01-16'),
-    debit_timestamp: new Date('2024-01-16T10:00:00'),
-    source_description: 'Test transaction',
-    is_fee: false,
-    account_id: 'account-1',
-    ...overrides,
-  } as Transaction;
-}
-
-// Helper to create document
-function createDocument(overrides: Partial<Document> = {}): Document {
-  return {
-    id: 'doc-1',
-    charge_id: 'charge-doc', // Use correct field name
-    creditor_id: BUSINESS_ID,
-    debtor_id: USER_ID,
-    currency_code: 'USD',
-    total_amount: 100,
-    date: new Date('2024-01-15'),
-    serial_number: 'INV-001',
-    type: 'INVOICE',
-    ...overrides,
-  } as Document;
-}
 
 describe('Match Scorer', () => {
   describe('selectTransactionDate', () => {
@@ -102,7 +69,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-1',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               amount: '100.00',
               currency: 'USD',
               event_date: new Date('2024-01-15'),
@@ -114,7 +81,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-1',
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
               date: new Date('2024-01-15'),
@@ -139,7 +106,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-2',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               amount: "200.00",
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-15'),
@@ -151,7 +118,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-2',
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 200,
               date: new Date('2024-01-15'),
               type: 'RECEIPT',
@@ -170,12 +137,12 @@ describe('Match Scorer', () => {
       it('should handle amount mismatch', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-3',
-          transactions: [createTransaction({ amount: "100.00" })],
+          transactions: [createMockTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-3',
-          documents: [createDocument({ total_amount: 110 })], // 10% difference
+          documents: [createMockDocument({ total_amount: 110 })], // 10% difference
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
@@ -188,12 +155,12 @@ describe('Match Scorer', () => {
       it('should handle currency mismatch', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-4',
-          transactions: [createTransaction({ currency: 'USD' })],
+          transactions: [createMockTransaction({ currency: 'USD' })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-4',
-          documents: [createDocument({ currency_code: 'EUR' })],
+          documents: [createMockDocument({ currency_code: 'EUR' })],
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
@@ -206,13 +173,13 @@ describe('Match Scorer', () => {
       it('should handle business mismatch', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-5',
-          transactions: [createTransaction({ business_id: 'business-1' })],
+          transactions: [createMockTransaction({ business_id: 'business-1' })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-5',
           documents: [
-            createDocument({
+            createMockDocument({
               creditor_id: 'business-2',
               debtor_id: USER_ID,
             }),
@@ -228,7 +195,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-6',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-01'),
             }),
           ],
@@ -237,7 +204,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-6',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-16'), // 15 days difference
             }),
           ],
@@ -254,7 +221,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-7',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-15'),
               debit_date: new Date('2024-01-20'), // Different date
             }),
@@ -264,7 +231,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-7',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'), // Matches event_date
               type: 'INVOICE',
             }),
@@ -280,7 +247,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-8',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-15'),
               debit_timestamp: null,
@@ -291,7 +258,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-8',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'), // Matches debit_date
               type: 'RECEIPT',
             }),
@@ -307,7 +274,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-9',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-15'),
               debit_date: null,
               debit_timestamp: null,
@@ -318,7 +285,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-9',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'),
               type: 'RECEIPT',
             }),
@@ -336,7 +303,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-10',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-01'), // Far from document date
               debit_date: new Date('2024-01-15'), // Matches document date
               debit_timestamp: null,
@@ -347,7 +314,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-10',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'),
               type: 'PROFORMA',
             }),
@@ -365,7 +332,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-11',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-10'),
               debit_date: new Date('2024-01-25'), // Far from document
             }),
@@ -375,7 +342,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-11',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-10'), // Matches event_date
               type: 'OTHER',
             }),
@@ -392,7 +359,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-12',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-15'),
               debit_date: new Date('2024-01-15'),
               debit_timestamp: null,
@@ -403,7 +370,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-12',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'),
               type: 'UNPROCESSED',
             }),
@@ -419,7 +386,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-13',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               event_date: new Date('2024-01-15'),
               debit_date: null,
               debit_timestamp: null,
@@ -430,7 +397,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-13',
           documents: [
-            createDocument({
+            createMockDocument({
               date: new Date('2024-01-15'),
               type: 'OTHER',
             }),
@@ -448,12 +415,12 @@ describe('Match Scorer', () => {
       it('should handle small amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-14',
-          transactions: [createTransaction({ amount: "100.00" })],
+          transactions: [createMockTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-14',
-          documents: [createDocument({ total_amount: 100.5 })], // 0.5 difference
+          documents: [createMockDocument({ total_amount: 100.5 })], // 0.5 difference
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
@@ -464,12 +431,12 @@ describe('Match Scorer', () => {
       it('should handle large amount differences', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-15',
-          transactions: [createTransaction({ amount: "100.00" })],
+          transactions: [createMockTransaction({ amount: "100.00" })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-15',
-          documents: [createDocument({ total_amount: 150 })], // 50% difference
+          documents: [createMockDocument({ total_amount: 150 })], // 50% difference
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
@@ -483,15 +450,15 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-16',
           transactions: [
-            createTransaction({ amount: "50.00", source_description: 'Part 1' }),
-            createTransaction({ amount: "50.00", source_description: 'Part 2' }),
+            createMockTransaction({ amount: "50.00", source_description: 'Part 1' }),
+            createMockTransaction({ amount: "50.00", source_description: 'Part 2' }),
           ],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-16',
           documents: [
-            createDocument({ total_amount: 100, serial_number: 'INV-001' }),
+            createMockDocument({ total_amount: 100, serial_number: 'INV-001' }),
           ],
         };
 
@@ -504,13 +471,13 @@ describe('Match Scorer', () => {
       it('should handle credit invoice (negative amounts)', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-17',
-          transactions: [createTransaction({ amount: "-100.00" })],
+          transactions: [createMockTransaction({ amount: "-100.00" })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-17',
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 100,
               type: 'CREDIT_INVOICE',
               creditor_id: USER_ID, // Business is debtor
@@ -528,7 +495,7 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-18',
           transactions: [
-            createTransaction({
+            createMockTransaction({
               amount: "1234.56",
               currency: 'USD',
               event_date: new Date('2024-03-15'),
@@ -541,7 +508,7 @@ describe('Match Scorer', () => {
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-18',
           documents: [
-            createDocument({
+            createMockDocument({
               total_amount: 1234.5,
               currency_code: 'USD',
               date: new Date('2024-03-16'), // 1 day difference from tx event_date
@@ -567,14 +534,14 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-19',
           transactions: [
-            createTransaction({ currency: 'USD' }),
-            createTransaction({ currency: 'EUR' }),
+            createMockTransaction({ currency: 'USD' }),
+            createMockTransaction({ currency: 'EUR' }),
           ],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-19',
-          documents: [createDocument()],
+          documents: [createMockDocument()],
         };
 
         expect(() => scoreMatch(txCharge, docCharge, USER_ID)).toThrow(/multiple currencies/);
@@ -583,14 +550,14 @@ describe('Match Scorer', () => {
       it('should throw error for mixed currencies in documents', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-20',
-          transactions: [createTransaction()],
+          transactions: [createMockTransaction()],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-20',
           documents: [
-            createDocument({ currency_code: 'USD' }),
-            createDocument({ currency_code: 'EUR' }),
+            createMockDocument({ currency_code: 'USD' }),
+            createMockDocument({ currency_code: 'EUR' }),
           ],
         };
 
@@ -601,14 +568,14 @@ describe('Match Scorer', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-21',
           transactions: [
-            createTransaction({ business_id: 'business-1' }),
-            createTransaction({ business_id: 'business-2' }),
+            createMockTransaction({ business_id: 'business-1' }),
+            createMockTransaction({ business_id: 'business-2' }),
           ],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-21',
-          documents: [createDocument()],
+          documents: [createMockDocument()],
         };
 
         expect(() => scoreMatch(txCharge, docCharge, USER_ID)).toThrow(/multiple business/);
@@ -617,13 +584,13 @@ describe('Match Scorer', () => {
       it('should throw error for invalid document business extraction', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-22',
-          transactions: [createTransaction()],
+          transactions: [createMockTransaction()],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-22',
           documents: [
-            createDocument({
+            createMockDocument({
               creditor_id: 'other-user',
               debtor_id: 'another-user',
             }),
@@ -638,13 +605,13 @@ describe('Match Scorer', () => {
       it('should handle null business IDs', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-23',
-          transactions: [createTransaction({ business_id: null })],
+          transactions: [createMockTransaction({ business_id: null })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-23',
           documents: [
-            createDocument({
+            createMockDocument({
               creditor_id: USER_ID,
               debtor_id: null,
             }),
@@ -659,12 +626,12 @@ describe('Match Scorer', () => {
       it('should handle zero amounts', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-24',
-          transactions: [createTransaction({ amount: '0.00' })],
+          transactions: [createMockTransaction({ amount: '0.00' })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-24',
-          documents: [createDocument({ total_amount: 0 })],
+          documents: [createMockDocument({ total_amount: 0 })],
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
@@ -675,12 +642,12 @@ describe('Match Scorer', () => {
       it('should handle very large amounts', () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-25',
-          transactions: [createTransaction({ amount: '1000000.00' })],
+          transactions: [createMockTransaction({ amount: '1000000.00' })],
         };
 
         const docCharge: DocumentCharge = {
           chargeId: 'charge-doc-25',
-          documents: [createDocument({ total_amount: 1000000 })],
+          documents: [createMockDocument({ total_amount: 1000000 })],
         };
 
         const result = scoreMatch(txCharge, docCharge, USER_ID);
