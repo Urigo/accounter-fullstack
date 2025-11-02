@@ -20,6 +20,7 @@ import { GmailServiceProvider } from './modules/app-providers/gmail-listener/gma
 import { PubsubServiceProvider } from './modules/app-providers/gmail-listener/pubsub-service.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
+import { chargesMatcherModule } from './modules/charges-matcher/index.js';
 import { chargesModule } from './modules/charges/index.js';
 import { chartsModule } from './modules/charts/index.js';
 import { commonModule } from './modules/common/index.js';
@@ -61,6 +62,7 @@ export async function createGraphQLApp(env: Environment) {
       accountantApprovalModule,
       businessTripsModule,
       chargesModule,
+      chargesMatcherModule,
       cornJobsModule,
       depreciationModule,
       documentsModule,
