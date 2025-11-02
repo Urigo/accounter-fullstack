@@ -100,125 +100,86 @@
       }
     },
     "getClientResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/ClientId"
-        },
-        "name": {
-          "$ref": "#/$defs/ClientName"
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Is the client currently active or not"
-        },
-        "taxId": {
-          "type": "string",
-          "description": "The client tax ID",
-          "examples": ["0123456789"]
-        },
-        "paymentTerms": {
-          "type": "integer",
-          "description": "The client payment term, default is 0",
-          "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
-        },
-        "bankName": {
-          "type": "string",
-          "description": "The client bank name"
-        },
-        "bankBranch": {
-          "type": "string",
-          "description": "The client bank branch"
-        },
-        "bankAccount": {
-          "type": "string",
-          "description": "The supplier bank account number"
-        },
-        "country": {
-          "$ref": "#/$defs/Country"
-        },
-        "phone": {
-          "$ref": "#/$defs/ClientPhone"
-        },
-
-        "mobile": {
-          "type": "string",
-          "description": "The supplier mobile number"
-        },
-        "contactPerson": {
-          "type": "string",
-          "description": "The supplier contact person name"
-        },
-        "emails": {
-          "$ref": "#/$defs/ClientEmails"
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "type": "string"
+      "allOf": [
+        { "$ref": "#/$defs/ContactInfo" },
+        { "$ref": "#/$defs/Address" },
+        { "$ref": "#/$defs/BankingInfo" },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/ClientId"
+            },
+            "name": {
+              "$ref": "#/$defs/ClientName"
+            },
+            "active": {
+              "type": "boolean",
+              "description": "Is the client currently active or not"
+            },
+            "taxId": {
+              "type": "string",
+              "description": "The client tax ID",
+              "examples": ["0123456789"]
+            },
+            "paymentTerms": {
+              "type": "integer",
+              "description": "The client payment term, default is 0",
+              "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "creationDate": {
+              "$ref": "#/$defs/CreationDate"
+            },
+            "lastUpdateDate": {
+              "type": "integer",
+              "description": "The last update date of the supplier, in UNIX timestamp format"
+            },
+            "send": {
+              "type": "boolean",
+              "description": "Whether to send emails to the user automatically when assigning him to an invoice or not"
+            },
+            "department": {
+              "type": "string",
+              "description": "The supplier department"
+            },
+            "accountingKey": {
+              "type": "string",
+              "description": "The supplier accounting key"
+            },
+            "category": {
+              "type": "integer",
+              "description": "The category this client is related to"
+            },
+            "subCategory": {
+              "type": "integer",
+              "description": "The sub category this client is related to"
+            },
+            "remarks": {
+              "type": "string",
+              "description": "Client remarks for self use",
+              "example": "Customer approved 2016 sales"
+            },
+            "incomeAmount": {
+              "type": "number",
+              "description": "The amount of incomes from the customer"
+            },
+            "paymentAmount": {
+              "type": "number"
+            },
+            "balanceAmount": {
+              "type": "number",
+              "description": "The balance amount of the client"
+            }
           }
-        },
-        "creationDate": {
-          "$ref": "#/$defs/CreationDate"
-        },
-        "lastUpdateDate": {
-          "type": "integer",
-          "description": "The last update date of the supplier, in UNIX timestamp format"
-        },
-        "send": {
-          "type": "boolean",
-          "description": "Whether to send emails to the user automatically when assigning him to an invoice or not"
-        },
-        "department": {
-          "type": "string",
-          "description": "The supplier department"
-        },
-        "accountingKey": {
-          "type": "string",
-          "description": "The supplier accounting key"
-        },
-        "address": {
-          "type": "string",
-          "description": "The supplier address"
-        },
-        "city": {
-          "type": "string",
-          "description": "The supplier city"
-        },
-        "zip": {
-          "type": "string",
-          "description": "The supplier zip code"
-        },
-        "category": {
-          "type": "integer",
-          "description": "The category this client is related to"
-        },
-        "subCategory": {
-          "type": "integer",
-          "description": "The sub category this client is related to"
-        },
-        "fax": {
-          "type": "string",
-          "description": "Client fax"
-        },
-        "remarks": {
-          "type": "string",
-          "description": "Client remarks for self use",
-          "example": "Customer approved 2016 sales"
-        },
-        "incomeAmount": {
-          "type": "number",
-          "description": "The amount of incomes from the customer"
-        },
-        "paymentAmount": {
-          "type": "number"
-        },
-        "balanceAmount": {
-          "type": "number",
-          "description": "The balance amount of the client"
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "getExpenseRequest": {
       "type": "object",
@@ -361,211 +322,190 @@
       }
     },
     "searchExpenseDraftsResponse": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["page", "pageSize", "total", "pages", "items", "aggregations"],
-      "properties": {
-        "total": {
-          "type": "number",
-          "description": "The total length of the items that were retrieved"
-        },
-        "from": {
-          "type": "number"
-        },
-        "to": {
-          "type": "number"
-        },
-        "page": {
-          "type": "number",
-          "description": "The page that was requested to retrieve"
-        },
-        "pageSize": {
-          "type": "number",
-          "description": "The page size that was requested"
-        },
-        "pages": {
-          "type": "number",
-          "description": "The amount of pages that exist"
-        },
-        "aggregations": {
+      "allOf": [
+        { "$ref": "#/$defs/PaginationMeta" },
+        {
           "type": "object",
-          "additionalProperties": false,
-          "required": ["totalAmount"],
           "properties": {
-            "totalAmount": {
+            "aggregations": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["value"],
+              "required": ["totalAmount"],
               "properties": {
-                "value": {
-                  "type": "number"
+                "totalAmount": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["value"],
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    }
+                  }
                 }
               }
-            }
-          }
-        },
-        "items": {
-          "type": "array",
-          "additionalItems": false,
-          "description": "The expense drafts that were found",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "description": "Partial Expense",
-            "required": [
-              "id",
-              "status",
-              "creationDate",
-              "lastUpdateDate",
-              "reportingPeriod",
-              "hasDefaultValues",
-              "url",
-              "thumbnail",
-              "expense"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "status": {
-                "type": "number"
-              },
-              "creationDate": {
-                "$ref": "#/$defs/CreationDate"
-              },
-              "lastUpdateDate": {
-                "type": "number"
-              },
-              "reportingPeriod": {
-                "type": "string"
-              },
-              "hasDefaultValues": {
-                "type": "boolean"
-              },
-              "url": {
-                "type": "string"
-              },
-              "thumbnail": {
-                "type": "string"
-              },
-              "expense": {
+            },
+            "items": {
+              "type": "array",
+              "description": "The expense drafts that were found",
+              "items": {
                 "type": "object",
                 "additionalProperties": false,
+                "description": "Partial Expense",
                 "required": [
-                  "accountingClassification",
-                  "active",
-                  "addRecipient",
-                  "confirmFromEdit",
-                  "currency",
-                  "currencyRate",
-                  "description",
-                  "documentType",
-                  "fileHash",
-                  "fileKey",
-                  "labels",
-                  "reportingDate",
-                  "supplier",
-                  "tags",
-                  "texts",
-                  "vat"
+                  "id",
+                  "status",
+                  "creationDate",
+                  "lastUpdateDate",
+                  "reportingPeriod",
+                  "hasDefaultValues",
+                  "url",
+                  "thumbnail",
+                  "expense"
                 ],
                 "properties": {
-                  "accountingClassification": {
-                    "$ref": "#/$defs/AccountingClassification"
+                  "id": {
+                    "type": "string"
                   },
-                  "active": {
-                    "type": "boolean",
-                    "description": "Is the expense active or not"
+                  "status": {
+                    "type": "number"
                   },
-                  "addRecipient": {
-                    "type": "boolean",
-                    "description": "Should we save the supplier or not (by setting this to true you are required to add a supplier)"
+                  "creationDate": {
+                    "$ref": "#/$defs/CreationDate"
                   },
-                  "amount": {
-                    "type": "number",
-                    "description": "The total amount of the expense"
+                  "lastUpdateDate": {
+                    "type": "number"
                   },
-                  "confirmFromEdit": {
+                  "reportingPeriod": {
+                    "type": "string"
+                  },
+                  "hasDefaultValues": {
                     "type": "boolean"
                   },
-                  "currency": {
-                    "$ref": "#/$defs/Currency"
+                  "url": {
+                    "type": "string"
                   },
-                  "currencyRate": {
-                    "$ref": "#/$defs/CurrencyRate"
+                  "thumbnail": {
+                    "type": "string"
                   },
-                  "date": {
-                    "type": "string",
-                    "description": "Date of the expense"
-                  },
-                  "description": {
-                    "type": "string",
-                    "description": "Description for the expense"
-                  },
-                  "documentType": {
-                    "$ref": "#/$defs/ExpenseDocumentType"
-                  },
-                  "fileHash": {
-                    "type": "string",
-                    "description": "File hash"
-                  },
-                  "fileKey": {
-                    "type": "string",
-                    "description": "Key of the file location"
-                  },
-                  "labels": {
-                    "type": "array",
-                    "additionalItems": false,
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "number": {
-                    "type": ["string", "null"],
-                    "description": "Number of the expense"
-                  },
-                  "paymentType": {
-                    "description": "Payment method",
-                    "oneOf": [
-                      {
+                  "expense": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "accountingClassification",
+                      "active",
+                      "addRecipient",
+                      "confirmFromEdit",
+                      "currency",
+                      "currencyRate",
+                      "description",
+                      "documentType",
+                      "fileHash",
+                      "fileKey",
+                      "labels",
+                      "reportingDate",
+                      "supplier",
+                      "tags",
+                      "texts",
+                      "vat"
+                    ],
+                    "properties": {
+                      "accountingClassification": {
+                        "$ref": "#/$defs/AccountingClassification"
+                      },
+                      "active": {
+                        "type": "boolean",
+                        "description": "Is the expense active or not"
+                      },
+                      "addRecipient": {
+                        "type": "boolean",
+                        "description": "Should we save the supplier or not (by setting this to true you are required to add a supplier)"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "The total amount of the expense"
+                      },
+                      "confirmFromEdit": {
                         "type": "boolean"
                       },
-                      {
-                        "type": ["string", "number"],
-                        "enum": ["1", "2", "3", "4", "5", "10", "11", 1, 2, 3, 4, 5, 10, 11]
+                      "currency": {
+                        "$ref": "#/$defs/Currency"
+                      },
+                      "currencyRate": {
+                        "$ref": "#/$defs/CurrencyRate"
+                      },
+                      "date": {
+                        "type": "string",
+                        "description": "Date of the expense"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Description for the expense"
+                      },
+                      "documentType": {
+                        "$ref": "#/$defs/ExpenseDocumentType"
+                      },
+                      "fileHash": {
+                        "type": "string",
+                        "description": "File hash"
+                      },
+                      "fileKey": {
+                        "type": "string",
+                        "description": "Key of the file location"
+                      },
+                      "labels": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "number": {
+                        "type": ["string", "null"],
+                        "description": "Number of the expense"
+                      },
+                      "paymentType": {
+                        "description": "Payment method",
+                        "oneOf": [
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": ["string", "number"],
+                            "enum": ["1", "2", "3", "4", "5", "10", "11", 1, 2, 3, 4, 5, 10, 11]
+                          }
+                        ]
+                      },
+                      "reportingDate": {
+                        "type": "string",
+                        "description": "Reporting date of the expense"
+                      },
+                      "supplier": {
+                        "$ref": "#/$defs/Supplier"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "texts": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "vat": {
+                        "$ref": "#/$defs/Vat"
                       }
-                    ]
-                  },
-                  "reportingDate": {
-                    "type": "string",
-                    "description": "Reporting date of the expense"
-                  },
-                  "supplier": {
-                    "$ref": "#/$defs/Supplier"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "additionalItems": false,
-                    "items": {
-                      "type": "string"
                     }
-                  },
-                  "texts": {
-                    "type": "array",
-                    "additionalItems": false,
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "vat": {
-                    "$ref": "#/$defs/Vat"
                   }
                 }
               }
             }
-          }
+          },
+          "required": ["aggregations", "items"]
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "searchExpensesRequest": {
       "type": "object",
@@ -631,28 +571,18 @@
       "required": ["minAmount", "maxAmount", "page", "pageSize"]
     },
     "searchExpensesResponse": {
-      "type": "object",
-      "properties": {
-        "total": {
-          "type": "number",
-          "description": "The total length of the items that were retrieved"
-        },
-        "page": {
-          "type": "number",
-          "description": "The page that was requested to retrieve"
-        },
-        "pageSize": {
-          "type": "number",
-          "description": "The page size that was requested"
-        },
-        "pages": {
-          "type": "number",
-          "description": "The amount of pages that exist"
-        },
-        "items": {
-          "$ref": "#/$defs/GetExpense"
+      "allOf": [
+        { "$ref": "#/$defs/PaginationMeta" },
+        {
+          "type": "object",
+          "properties": {
+            "items": {
+              "$ref": "#/$defs/GetExpense"
+            }
+          }
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "searchDocumentsRequest": {
       "type": "object",
@@ -725,32 +655,22 @@
       "required": []
     },
     "searchDocumentsResponse": {
-      "type": "object",
-      "properties": {
-        "total": {
-          "type": "number",
-          "description": "The total length of the items that were retrieved"
-        },
-        "page": {
-          "type": "number",
-          "description": "The page that was requested to retrieve"
-        },
-        "pageSize": {
-          "type": "number",
-          "description": "The page size that was requested"
-        },
-        "pages": {
-          "type": "number",
-          "description": "The amount of pages that exist"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Document"
-          }
+      "allOf": [
+        { "$ref": "#/$defs/PaginationMeta" },
+        {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Document"
+              }
+            }
+          },
+          "required": ["items"]
         }
-      },
-      "required": ["total", "page", "pageSize", "pages", "items"]
+      ],
+      "unevaluatedProperties": false
     },
     "getFileUploadUrlResponse": {
       "type": "object",
@@ -886,6 +806,47 @@
         "vat": {
           "type": "number",
           "description": "The classification VAT"
+        }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "description": "Physical address information",
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Street address"
+        },
+        "city": {
+          "type": "string",
+          "description": "City name"
+        },
+        "zip": {
+          "type": "string",
+          "description": "Zip/postal code"
+        },
+        "country": {
+          "$ref": "#/$defs/Country"
+        }
+      }
+    },
+    "BankingInfo": {
+      "type": "object",
+      "description": "Banking information",
+      "additionalProperties": false,
+      "properties": {
+        "bankName": {
+          "type": "string",
+          "description": "Bank name"
+        },
+        "bankBranch": {
+          "type": "string",
+          "description": "Bank branch number"
+        },
+        "bankAccount": {
+          "type": "string",
+          "description": "Bank account number"
         }
       }
     },
@@ -1135,6 +1096,37 @@
       "type": "boolean",
       "description": "Whether the client is self",
       "examples": [false]
+    },
+    "ContactInfo": {
+      "type": "object",
+      "description": "Contact information for clients and suppliers",
+      "additionalProperties": false,
+      "properties": {
+        "phone": {
+          "type": "string",
+          "description": "Phone number"
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Mobile number"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "description": "Email addresses"
+        },
+        "fax": {
+          "type": "string",
+          "description": "Fax number"
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Contact person name"
+        }
+      }
     },
     "Country": {
       "type": "string",
@@ -2195,6 +2187,44 @@
       },
       "required": ["description", "quantity", "price", "currency", "vatType"]
     },
+    "PaginationMeta": {
+      "type": "object",
+      "description": "Pagination metadata for list responses",
+      "additionalProperties": false,
+      "required": ["total", "page", "pageSize", "pages"],
+      "properties": {
+        "total": {
+          "type": "number",
+          "description": "Total number of items",
+          "minimum": 0
+        },
+        "page": {
+          "type": "number",
+          "description": "Current page number",
+          "minimum": 1
+        },
+        "pageSize": {
+          "type": "number",
+          "description": "Number of items per page",
+          "minimum": 1
+        },
+        "pages": {
+          "type": "number",
+          "description": "Total number of pages",
+          "minimum": 0
+        },
+        "from": {
+          "type": "number",
+          "description": "Starting index",
+          "minimum": 0
+        },
+        "to": {
+          "type": "number",
+          "description": "Ending index",
+          "minimum": 0
+        }
+      }
+    },
     "Payment": {
       "allOf": [
         { "$ref": "#/$defs/PaymentCore" },
@@ -2356,114 +2386,75 @@
       }
     },
     "Supplier": {
-      "type": "object",
-      "additionalProperties": false,
-      "description": "Supplier of the expense",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "The supplier ID"
-        },
-        "name": {
-          "type": "string",
-          "description": "The supplier name"
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Is the supplier active or not"
-        },
-        "taxId": {
-          "type": "string",
-          "description": "The supplier tax ID"
-        },
-        "paymentTerms": {
-          "type": "number",
-          "description": "The supplier payment term, default is 0",
-          "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
-        },
-        "bankName": {
-          "type": "string",
-          "description": "The supplier bank name"
-        },
-        "bankBranch": {
-          "type": "string",
-          "description": "The supplier bank branch number"
-        },
-        "bankAccount": {
-          "type": "string",
-          "description": "The supplier bank account number"
-        },
-        "country": {
-          "$ref": "#/$defs/Country"
-        },
-        "phone": {
-          "type": "string",
-          "description": "The supplier phone number"
-        },
-        "mobile": {
-          "type": "string",
-          "description": "The supplier mobile number"
-        },
-        "contactPerson": {
-          "type": "string",
-          "description": "The supplier contact person name"
-        },
-        "emails": {
-          "$ref": "#/$defs/ClientEmails"
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "type": "string"
+      "allOf": [
+        { "$ref": "#/$defs/ContactInfo" },
+        { "$ref": "#/$defs/Address" },
+        { "$ref": "#/$defs/BankingInfo" },
+        {
+          "type": "object",
+          "description": "Supplier of the expense",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "The supplier ID"
+            },
+            "name": {
+              "type": "string",
+              "description": "The supplier name"
+            },
+            "active": {
+              "type": "boolean",
+              "description": "Is the supplier active or not"
+            },
+            "taxId": {
+              "type": "string",
+              "description": "The supplier tax ID"
+            },
+            "paymentTerms": {
+              "type": "number",
+              "description": "The supplier payment term, default is 0",
+              "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "creationDate": {
+              "$ref": "#/$defs/CreationDate"
+            },
+            "lastUpdateDate": {
+              "type": "integer",
+              "description": "The last update date of the supplier, in UNIX timestamp format"
+            },
+            "department": {
+              "type": "string",
+              "description": "The supplier department"
+            },
+            "accountingKey": {
+              "type": "string",
+              "description": "The supplier accounting key"
+            },
+            "remarks": {
+              "type": "string",
+              "description": "The Supplier remarks for self use"
+            },
+            "incomeAmount": {
+              "type": "number",
+              "description": "The amount of incomes from the customer"
+            },
+            "paymentAmount": {
+              "type": "number"
+            },
+            "balanceAmount": {
+              "type": "number",
+              "description": "The balance amount of the supplier"
+            }
           }
-        },
-        "creationDate": {
-          "$ref": "#/$defs/CreationDate"
-        },
-        "lastUpdateDate": {
-          "type": "integer",
-          "description": "The last update date of the supplier, in UNIX timestamp format"
-        },
-        "department": {
-          "type": "string",
-          "description": "The supplier department"
-        },
-        "accountingKey": {
-          "type": "string",
-          "description": "The supplier accounting key"
-        },
-        "address": {
-          "type": "string",
-          "description": "The supplier address"
-        },
-        "city": {
-          "type": "string",
-          "description": "The supplier city"
-        },
-        "zip": {
-          "type": "string",
-          "description": "The supplier zip code"
-        },
-        "fax": {
-          "type": "string",
-          "description": "The supplier fax number"
-        },
-        "remarks": {
-          "type": "string",
-          "description": "The Supplier remarks for self use"
-        },
-        "incomeAmount": {
-          "type": "number",
-          "description": "The amount of incomes from the customer"
-        },
-        "paymentAmount": {
-          "type": "number"
-        },
-        "balanceAmount": {
-          "type": "number",
-          "description": "The balance amount of the supplier"
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "ErrorResponse": {
       "type": "object",
