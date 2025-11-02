@@ -1,5 +1,8 @@
 import { Injector } from 'graphql-modules';
-import { _DOLLAR_defs_addClientRequest_Input } from '@accounter/green-invoice-graphql';
+import {
+  _DOLLAR_defs_addClientRequest_Input,
+  _DOLLAR_defs_updateClientRequest_Input,
+} from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { CountryCode } from '@modules/countries/types.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -8,7 +11,7 @@ import {
   IGetBusinessesByIdsResult,
   IGetClientsByIdsResult,
 } from '@modules/financial-entities/types.js';
-import { GreenInvoiceClient } from '@shared/gql-types';
+import { ClientUpdateInput, GreenInvoiceClient, UpdateBusinessInput } from '@shared/gql-types';
 import { countryCodeToGreenInvoiceCountry } from './green-invoice.helper.js';
 
 export async function getClientFromGreenInvoiceClient(
@@ -98,7 +101,7 @@ function convertLocalClientToGreenInvoiceCreateClientInput(
   };
 }
 
-export async function addGreenInvoiceClient(clientId: string, injector: Injector) {
+export async function addGreenInvoiceClient(clientId: string, injector: Injector): Promise<void> {
   try {
     // validate local client
     const localBusinessPromise = injector
@@ -141,38 +144,96 @@ export async function addGreenInvoiceClient(clientId: string, injector: Injector
   }
 }
 
-export async function updateGreenInvoiceClient(
-  injector: Injector,
-  businessId: string,
-  useGreenInvoiceId = false,
-): Promise<GreenInvoiceClient | undefined> {
-  const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
-  if (!client) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
-  }
-
-  const greenInvoiceClient = await injector
-    .get(GreenInvoiceClientProvider)
-    .clientLoader.load(client.green_invoice_id);
-
-  if (!greenInvoiceClient) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
-  }
-
-  return {
-    id: useGreenInvoiceId && greenInvoiceClient.id ? greenInvoiceClient.id : businessId,
-    country: greenInvoiceClient.country,
-    emails: [
-      ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
-      'ap@the-guild.dev',
-    ],
-    name: greenInvoiceClient.name,
-    phone: greenInvoiceClient.phone,
-    taxId: greenInvoiceClient.taxId,
-    address: greenInvoiceClient.address,
-    city: greenInvoiceClient.city,
-    zip: greenInvoiceClient.zip,
-    fax: greenInvoiceClient.fax,
-    mobile: greenInvoiceClient.mobile,
+function pickGreenInvoiceClientFields(
+  businessFields: Omit<UpdateBusinessInput, 'id'> & { name: string },
+  clientFields: ClientUpdateInput,
+): _DOLLAR_defs_updateClientRequest_Input {
+  const fieldsToUpdate: _DOLLAR_defs_updateClientRequest_Input = {
+    /** Phone number */
+    phone: businessFields.phoneNumber,
+    /** Mobile number */
+    // mobile: businessFields.mobile_number,
+    /** Email addresses */
+    emails: clientFields.emails ? [...clientFields.emails] : undefined,
+    /** Fax number */
+    // fax: businessFields.fax_number,
+    /** Contact person name */
+    //   contactPerson: businessFields.contact_person,
+    /** Street address */
+    address: businessFields.address ?? undefined,
+    /** City name */
+    //   city: businessFields.city,
+    /** Zip/postal code */
+    //   zip: businessFields.zip_code,
+    country: businessFields.country
+      ? countryCodeToGreenInvoiceCountry(businessFields.country as CountryCode)
+      : undefined,
+    /** Bank name */
+    //   bankName: businessFields.bank_name,
+    /** Bank branch number */
+    //   bankBranch: businessFields.bank_branch_number,
+    /** Bank account number */
+    //   bankAccount: businessFields.bank_account_number,
+    /** The client name */
+    name: businessFields.name ?? undefined,
+    /** Is the client currently active or not */
+    active: businessFields.isActive,
+    /** The client tax ID */
+    //   taxId: businessFields.tax_id
+    //   paymentTerms: clientFields.payment_terms,
+    //   labels: clientFields.labels,
+    /** Whether to send emails to the user automatically when assigning him to an invoice or not */
+    //   send: clientFields.send,
+    /** The client department */
+    //   department: clientFields.department,
+    /** The client accounting key */
+    accountingKey: businessFields.sortCode?.toString(),
+    /** The category this client is related to */
+    //   category: clientFields.category,
+    /** The sub category this client is related to */
+    //   subCategory: clientFields.sub_category,
+    /** Client remarks for self use */
+    //   remarks: clientFields.remarks,
   };
+
+  return fieldsToUpdate;
+}
+
+export async function updateGreenInvoiceClient(
+  clientId: string,
+  injector: Injector,
+  businessFields: UpdateBusinessInput = {},
+  clientFields: ClientUpdateInput = {},
+): Promise<void> {
+  // validate local client
+  const localBusinessPromise = injector
+    .get(BusinessesProvider)
+    .getBusinessByIdLoader.load(clientId);
+  const localClientPromise = injector.get(ClientsProvider).getClientByIdLoader.load(clientId);
+  const [localBusiness, localClient] = await Promise.all([
+    localBusinessPromise,
+    localClientPromise,
+  ]);
+  if (!localBusiness?.name || !localClient) {
+    return;
+  }
+
+  const fieldsToUpdate = pickGreenInvoiceClientFields(
+    { ...businessFields, name: localBusiness.name },
+    clientFields,
+  );
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return;
+  }
+
+  const greenInvoiceClient = await injector.get(GreenInvoiceClientProvider).updateClient({
+    id: clientId,
+    input: fieldsToUpdate,
+  });
+
+  if (!greenInvoiceClient?.id) {
+    throw new Error('Failed to create Green Invoice client');
+  }
+
+  return;
 }
