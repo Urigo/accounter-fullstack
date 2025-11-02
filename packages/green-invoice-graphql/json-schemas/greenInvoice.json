@@ -578,6 +578,206 @@
     "addExpenseDraftByFileResponse": {
       "$ref": "#/$defs/GetExpenseDraft"
     },
+    "addClientRequest": {
+      "description": "Add a new client to the current business",
+      "allOf": [
+        { "$ref": "#/$defs/ContactInfo" },
+        { "$ref": "#/$defs/Address" },
+        { "$ref": "#/$defs/BankingInfo" },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/ClientName"
+            },
+            "active": {
+              "type": "boolean",
+              "description": "Is the client currently active or not"
+            },
+            "taxId": {
+              "type": "string",
+              "description": "The client tax ID",
+              "examples": ["0123456789"]
+            },
+            "paymentTerms": {
+              "type": "integer",
+              "description": "The client payment term, default is 0",
+              "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "send": {
+              "type": "boolean",
+              "description": "Whether to send emails to the user automatically when assigning him to an invoice or not"
+            },
+            "department": {
+              "type": "string",
+              "description": "The client department"
+            },
+            "accountingKey": {
+              "type": "string",
+              "description": "The client accounting key"
+            },
+            "category": {
+              "type": "integer",
+              "description": "The category this client is related to"
+            },
+            "subCategory": {
+              "type": "integer",
+              "description": "The sub category this client is related to"
+            },
+            "remarks": {
+              "type": "string",
+              "description": "Client remarks for self use",
+              "example": "Customer approved 2016 sales"
+            }
+          },
+          "required": ["name"]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "addClientResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/getClientResponse"
+        },
+        {
+          "$ref": "#/$defs/ErrorResponse"
+        }
+      ]
+    },
+    "updateClientRequest": {
+      "description": "Update an existing client",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/ClientName"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Is the client currently active or not"
+        },
+        "taxId": {
+          "type": "string",
+          "description": "The client tax ID",
+          "examples": ["0123456789"]
+        },
+        "paymentTerms": {
+          "type": "integer",
+          "description": "The client payment term, default is 0",
+          "enum": [-1, 0, 10, 15, 30, 45, 60, 75, 90, 120]
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "send": {
+          "type": "boolean",
+          "description": "Whether to send emails to the user automatically when assigning him to an invoice or not"
+        },
+        "department": {
+          "type": "string",
+          "description": "The client department"
+        },
+        "accountingKey": {
+          "type": "string",
+          "description": "The client accounting key"
+        },
+        "category": {
+          "type": "integer",
+          "description": "The category this client is related to"
+        },
+        "subCategory": {
+          "type": "integer",
+          "description": "The sub category this client is related to"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Client remarks for self use",
+          "example": "Customer approved 2016 sales"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number"
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Mobile number"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "description": "Email addresses"
+        },
+        "fax": {
+          "type": "string",
+          "description": "Fax number"
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Contact person name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Street address"
+        },
+        "city": {
+          "type": "string",
+          "description": "City name"
+        },
+        "zip": {
+          "type": "string",
+          "description": "Zip/postal code"
+        },
+        "country": {
+          "$ref": "#/$defs/Country"
+        },
+        "bankName": {
+          "type": "string",
+          "description": "Bank name"
+        },
+        "bankBranch": {
+          "type": "string",
+          "description": "Bank branch number"
+        },
+        "bankAccount": {
+          "type": "string",
+          "description": "Bank account number"
+        }
+      }
+    },
+    "updateClientResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/getClientResponse"
+        },
+        {
+          "$ref": "#/$defs/ErrorResponse"
+        }
+      ]
+    },
+    "deleteClientResponse": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/getClientResponse"
+        },
+        {
+          "$ref": "#/$defs/ErrorResponse"
+        }
+      ]
+    },
     "getClientResponse": {
       "allOf": [
         { "$ref": "#/$defs/ContactInfo" },

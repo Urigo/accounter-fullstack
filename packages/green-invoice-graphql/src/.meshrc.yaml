@@ -17,21 +17,21 @@ sources:
               id:
                 type: string
                 nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getDocumentResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getDocumentResponse
 
           - type: Query
             field: searchDocuments
             path: /documents/search
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchDocumentsResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/searchDocumentsRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/searchDocumentsResponse
 
           - type: Query
             field: previewDocument
             path: /documents/preview
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/previewDocumentResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/previewDocumentRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/previewDocumentResponse
 
           - type: Query
             field: getLinkedDocuments
@@ -41,14 +41,14 @@ sources:
               id:
                 type: string
                 nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getLinkedDocumentsResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getLinkedDocumentsResponse
 
           - type: Mutation
             field: addDocument
             path: /documents
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addDocumentResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/addDocumentRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/addDocumentResponse
 
           - type: Mutation
             field: closeDocument
@@ -60,7 +60,7 @@ sources:
                 nullable: false
             responseByStatusCode:
               200:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/closeDocumentResponse
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/closeDocumentResponse
 
           # expenses #
 
@@ -72,58 +72,60 @@ sources:
               id:
                 type: string
                 nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getExpenseResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getExpenseResponse
 
           - type: Query
             field: searchExpenses
             path: /expenses/search
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpensesResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/searchExpensesRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/searchExpensesResponse
 
           - type: Mutation
             field: addExpense
             path: /expenses
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/addExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/addExpenseResponse
 
           - type: Mutation
             field: updateExpense
             path: /expenses/{args.id}
             method: PUT
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateExpenseResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/updateExpenseRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/updateExpenseResponse
 
-          - type: Mutation
-            field: addExpenseDraftByFile
-            path: /expenses/file
-            method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileRequest
-            responseByStatusCode:
-              200:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
-              201:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/addExpenseDraftByFileResponse
-              400:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
-              404:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
-              405:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+          # expense drafts #
 
           - type: Query
             field: searchExpenseDrafts
             path: /expenses/drafts/search
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsRequest
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/searchExpenseDraftsRequest
             responseByStatusCode:
               200:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsResponse
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/searchExpenseDraftsResponse
               201:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/searchExpenseDraftsResponse
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/searchExpenseDraftsResponse
               404:
-                responseSchema: ../json-schemas/greenInvoice.json#/definitions/generalErrorResponse
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/generalErrorResponse
+
+          - type: Mutation
+            field: addExpenseDraftByFile
+            path: /expenses/file
+            method: POST
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/addExpenseDraftByFileRequest
+            responseByStatusCode:
+              200:
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/addExpenseDraftByFileResponse
+              201:
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/addExpenseDraftByFileResponse
+              400:
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/generalErrorResponse
+              404:
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/generalErrorResponse
+              405:
+                responseSchema: ../json-schemas/greenInvoice.json#/$defs/generalErrorResponse
 
           # clients #
 
@@ -135,14 +137,14 @@ sources:
               id:
                 type: string
                 nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getClientResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getClientResponse
 
           - type: Mutation
             field: addClient
             path: /clients
             method: POST
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/addClientRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/addClientResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/addClientRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/addClientResponse
 
           - type: Mutation
             field: updateClient
@@ -152,8 +154,8 @@ sources:
               id:
                 type: string
                 nullable: false
-            requestSchema: ../json-schemas/greenInvoice.json#/definitions/updateClientRequest
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/updateClientResponse
+            requestSchema: ../json-schemas/greenInvoice.json#/$defs/updateClientRequest
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/updateClientResponse
 
           - type: Mutation
             field: deleteClient
@@ -163,7 +165,7 @@ sources:
               id:
                 type: string
                 nullable: false
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/deleteClientResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/deleteClientResponse
 
   - name: GreenInvoiceNew
     handler:
@@ -196,7 +198,7 @@ sources:
             queryParamArgMap:
               context: context
               data: data
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getFileUploadUrlResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getFileUploadUrlResponse
 
           - type: Query
             field: getBankTransactions
@@ -227,7 +229,7 @@ sources:
               from: from
               size: size
               bookingStatus: bookingStatus
-            responseSchema: ../json-schemas/greenInvoice.json#/definitions/getBankTransactionsResponse
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getBankTransactionsResponse
 codegen:
   ignoreEnumValuesFromSchema: false
 
