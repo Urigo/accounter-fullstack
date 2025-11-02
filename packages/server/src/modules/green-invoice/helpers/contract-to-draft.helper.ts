@@ -9,7 +9,7 @@ import { Currency } from '@shared/enums';
 import { NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
-import { getClientFromGreenInvoiceClient } from './issue-document.helper.js';
+import { getClientFromGreenInvoiceClient } from './green-invoice-clients.helper';
 
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,

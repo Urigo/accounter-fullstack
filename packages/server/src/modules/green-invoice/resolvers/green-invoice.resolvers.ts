@@ -1,6 +1,6 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import type { Document } from '@accounter/green-invoice-graphql';
+import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ContractsProvider } from '@modules/contracts/providers/contracts.provider.js';
@@ -30,11 +30,11 @@ import { Currency, DocumentType } from '@shared/enums';
 import { NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
+import { getClientFromGreenInvoiceClient } from '../helpers/green-invoice-clients.helper.js';
 import {
   deduceVatTypeFromBusiness,
   executeDocumentIssue,
   filterAndHandleSwiftTransactions,
-  getClientFromGreenInvoiceClient,
   getDocumentDateOutOfTransactions,
   getIncomeFromDocuments,
   getLinkedDocumentsAttributes,
@@ -134,7 +134,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
               return res;
             }),
         ),
-      ).then(res => res.filter(Boolean) as Document[]);
+      ).then(res => res.filter(Boolean) as _DOLLAR_defs_Document[]);
 
       const income = getIncomeFromDocuments(
         openIssuedDocuments.map(doc => ({
@@ -268,7 +268,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(`Document with ID "${document.id}" is closed`);
       }
 
-      const greenInvoiceDocumentPromise: Promise<Document | null> = injector
+      const greenInvoiceDocumentPromise: Promise<_DOLLAR_defs_Document | null> = injector
         .get(GreenInvoiceClientProvider)
         .documentLoader.load(openIssuedDocument.external_id)
         .then(res => {
@@ -479,10 +479,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const issuedDocuments = await injector.get(IssuedDocumentsProvider).getAllIssuedDocuments();
 
       // check for new or updated documents
-      const newDocuments: Document[] = [];
+      const newDocuments: _DOLLAR_defs_Document[] = [];
       const documentToUpdate: {
         localDoc: IGetAllIssuedDocumentsResult;
-        externalDoc: Document;
+        externalDoc: _DOLLAR_defs_Document;
       }[] = [];
       await Promise.all(
         greenInvoiceDocuments.map(async item => {

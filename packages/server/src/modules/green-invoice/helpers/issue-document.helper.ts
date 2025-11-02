@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import type { Document } from '@accounter/green-invoice-graphql';
+import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
@@ -10,12 +10,10 @@ import {
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
 import {
   Currency,
-  GreenInvoiceClient,
   GreenInvoiceIncome,
   GreenInvoiceLinkType,
   GreenInvoicePayment,
@@ -129,7 +127,7 @@ export function getIncomeFromDocuments(
   documents: {
     document: IGetDocumentsByChargeIdResult;
     issuedDocument: IGetIssuedDocumentsByIdsResult;
-    greenInvoiceDocument: Document;
+    greenInvoiceDocument: _DOLLAR_defs_Document;
   }[],
 ): GreenInvoiceIncome[] {
   const incomes = documents
@@ -156,7 +154,7 @@ export function getIncomeFromDocuments(
 }
 
 export function getTypeFromDocumentsAndTransactions(
-  greenInvoiceDocuments: Document[],
+  greenInvoiceDocuments: _DOLLAR_defs_Document[],
   transactions: IGetTransactionsByChargeIdsResult[],
 ): DocumentType {
   if (!greenInvoiceDocuments.length) {
@@ -249,42 +247,6 @@ export function getDocumentDateOutOfTransactions(
 
   // Return the date in the required format
   return dateToTimelessDateString(firstDate);
-}
-
-export async function getClientFromGreenInvoiceClient(
-  injector: Injector,
-  businessId: string,
-  useGreenInvoiceId = false,
-): Promise<GreenInvoiceClient | undefined> {
-  const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
-  if (!client) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
-  }
-
-  const greenInvoiceClient = await injector
-    .get(GreenInvoiceClientProvider)
-    .clientLoader.load(client.green_invoice_id);
-
-  if (!greenInvoiceClient) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
-  }
-
-  return {
-    id: useGreenInvoiceId && greenInvoiceClient.id ? greenInvoiceClient.id : businessId,
-    country: greenInvoiceClient.country,
-    emails: [
-      ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
-      'ap@the-guild.dev',
-    ],
-    name: greenInvoiceClient.name,
-    phone: greenInvoiceClient.phone,
-    taxId: greenInvoiceClient.taxId,
-    address: greenInvoiceClient.address,
-    city: greenInvoiceClient.city,
-    zip: greenInvoiceClient.zip,
-    fax: greenInvoiceClient.fax,
-    mobile: greenInvoiceClient.mobile,
-  };
 }
 
 export async function deduceVatTypeFromBusiness(

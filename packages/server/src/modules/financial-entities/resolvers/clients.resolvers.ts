@@ -1,6 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import {
+  addGreenInvoiceClient,
+  updateGreenInvoiceClient,
+} from '@modules/green-invoice/helpers/green-invoice-clients.helper.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
   FinancialEntitiesModule,
@@ -58,6 +62,10 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
             }
             throw new Error(message);
           });
+
+        // update green invoice client if needed
+        await updateGreenInvoiceClient(businessId, injector, undefined, fields);
+
         return updatedClient;
       } catch (e) {
         return {
@@ -79,6 +87,9 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
         if (!insertClient) {
           throw new Error(`No client returned after insertion`);
         }
+
+        // create green invoice client record
+        await addGreenInvoiceClient(insertClient.business_id, injector);
 
         return insertClient;
       } catch (e) {

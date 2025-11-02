@@ -3,6 +3,7 @@ import {
   SuggestionData,
   suggestionDataSchema,
 } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { updateGreenInvoiceClient } from '@modules/green-invoice/helpers/green-invoice-clients.helper.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -109,6 +110,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         suggestionData,
         pcn874RecordTypeOverride: fields.pcn874RecordType,
       };
+
+      let updatedBusiness: IGetBusinessesByIdsResult | undefined = undefined;
+
       try {
         if (
           fields.hebrewName ||
@@ -156,19 +160,23 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           }
         }
 
-        const updatedBusiness = await injector
+        updatedBusiness = await injector
           .get(BusinessesProvider)
           .getBusinessByIdLoader.load(businessId);
         if (!updatedBusiness) {
           throw new Error(`Updated business not found`);
         }
-        return updatedBusiness;
       } catch (e) {
         return {
           __typename: 'CommonError',
           message: `Failed to update business ID="${businessId}": ${(e as Error).message}`,
         };
       }
+
+      // update green invoice client if needed
+      await updateGreenInvoiceClient(businessId, injector, fields);
+
+      return updatedBusiness;
     },
     insertNewBusiness: async (
       _,
