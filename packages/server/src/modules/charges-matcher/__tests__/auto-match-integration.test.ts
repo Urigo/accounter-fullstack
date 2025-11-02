@@ -122,8 +122,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       expect(result.totalMatches).toBe(0);
@@ -163,8 +164,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       expect(result.totalMatches).toBe(0);
@@ -231,8 +233,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       expect(result.totalMatches).toBe(1);
@@ -316,8 +319,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges( {
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       // The transaction charge should find 2 identical doc matches and skip (ambiguous)
@@ -393,8 +397,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       expect(result.totalMatches).toBe(2);
@@ -479,8 +484,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges( {
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       // tx1 finds doc1, merge fails → error captured, charges not marked as merged
@@ -537,8 +543,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      await provider.autoMatchCharges(mockInjector, {
+      await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       // Verify merge was called with doc charge being merged into tx charge
@@ -592,8 +599,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       // Should only merge tx1 with doc1, tx2 should have no match
@@ -712,8 +720,9 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       (mergeChargesExecutor as any).mockImplementation(() => Promise.resolve());
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges(mockInjector, {
+      const result = await provider.autoMatchCharges({
         adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
+        injector: mockInjector,
       } as any);
 
       // Expected results:
@@ -735,7 +744,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       const provider = new ChargesMatcherProvider();
 
       await expect(
-        provider.autoMatchCharges({} as any, {
+        provider.autoMatchCharges({
           adminContext: { defaultAdminBusinessId: null },
         } as any),
       ).rejects.toThrow(/Admin business not found/);

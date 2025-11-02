@@ -5,7 +5,7 @@
  * Integrates with existing modules: charges, transactions, and documents.
  */
 
-import { Injectable, Injector, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
@@ -49,11 +49,13 @@ export class ChargesMatcherProvider {
    */
   async findMatchesForCharge(
     chargeId: string,
-    injector: Injector,
     context: GraphQLModules.AppContext,
   ): Promise<ChargeMatchesResult> {
+    const {
+      adminContext: { defaultAdminBusinessId: adminBusinessId },
+      injector,
+    } = context;
     // Get current user ID from context
-    const adminBusinessId = context.adminContext.defaultAdminBusinessId;
     if (!adminBusinessId) {
       throw new Error('Admin business not found in context');
     }
@@ -190,12 +192,12 @@ export class ChargesMatcherProvider {
    * @param context - GraphQL context with user information
    * @returns Summary of matches made, skipped charges, and errors
    */
-  async autoMatchCharges(
-    injector: Injector,
-    context: GraphQLModules.AppContext,
-  ): Promise<AutoMatchChargesResult> {
+  async autoMatchCharges(context: GraphQLModules.AppContext): Promise<AutoMatchChargesResult> {
+    const {
+      adminContext: { defaultAdminBusinessId: adminBusinessId },
+      injector,
+    } = context;
     // Get current user ID from context
-    const adminBusinessId = context.adminContext.defaultAdminBusinessId;
     if (!adminBusinessId) {
       throw new Error('Admin business not found in context');
     }

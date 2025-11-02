@@ -170,7 +170,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       // Execute
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -258,7 +258,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       // Execute
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -283,7 +283,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       const provider = new ChargesMatcherProvider();
 
       await expect(
-        provider.findMatchesForCharge('non-existent', mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any),
+        provider.findMatchesForCharge('non-existent', { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any),
       ).rejects.toThrow(/Source charge not found/);
     });
 
@@ -319,7 +319,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge(chargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge(chargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any)).rejects.toThrow(
         /already matched/,
       );
     });
@@ -356,7 +356,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge(chargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge(chargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any)).rejects.toThrow(
         /no transactions or documents/,
       );
     });
@@ -393,7 +393,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       expect(result.matches).toEqual([]);
     });
@@ -445,7 +445,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       // Should only include validCandidateId, not matchedCandidateId
       expect(result.matches).toHaveLength(1);
@@ -516,7 +516,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       // Should only include candidate within window
       expect(result.matches).toHaveLength(1);
@@ -530,7 +530,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
       const provider = new ChargesMatcherProvider();
 
-      await expect(provider.findMatchesForCharge('any-id', mockInjector, { adminContext: { defaultAdminBusinessId: null } } as any)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge('any-id', { adminContext: { defaultAdminBusinessId: null }, injector: mockInjector } as any)).rejects.toThrow(
         /Admin business not found in context/,
       );
     });
@@ -582,7 +582,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
       } as unknown as Injector;
 
       const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, mockInjector, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID } } as any);
+      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
 
       // Should return maximum of 5 matches
       expect(result.matches).toHaveLength(5);

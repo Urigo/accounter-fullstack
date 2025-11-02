@@ -1,6 +1,8 @@
 import type { currency, document_type, IGetAllDocumentsResult } from '@modules/documents/types.js';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 
+export * from './__generated__/types.js';
+
 /**
  * Re-export shared types from other modules
  */
