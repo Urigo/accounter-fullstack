@@ -17,10 +17,10 @@
     },
     "addDocumentRequest": {
       "description": "Add a document to the current business",
-      "additionalProperties": false,
       "allOf": [
         { "$ref": "#/$defs/DocumentInputNew" },
         {
+          "type": "object",
           "properties": {
             "emailContent": {
               "type": "string",
@@ -32,7 +32,8 @@
             }
           }
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "addDocumentResponse": {
       "oneOf": [
@@ -1072,30 +1073,11 @@
       "allOf": [
         { "$ref": "#/$defs/ClientCore" },
         {
-          "additionalProperties": false,
-          "properties": {
-            "country": {
-              "$ref": "#/$defs/Country"
-            },
-            "emails": {
-              "$ref": "#/$defs/ClientEmails"
-            },
-            "id": {
-              "$ref": "#/$defs/ClientId"
-            },
-            "name": {
-              "$ref": "#/$defs/ClientName"
-            },
-            "phone": {
-              "$ref": "#/$defs/ClientPhone"
-            },
-            "self": {
-              "$ref": "#/$defs/ClientSelf"
-            }
-          },
+          "type": "object",
           "required": ["country", "emails", "id", "name", "phone", "self"]
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "ClientCore": {
       "type": "object",
@@ -1725,8 +1707,12 @@
                 }
               }
             },
-            { "required": ["id"] }
-          ]
+            {
+              "type": "object",
+              "required": ["id"]
+            }
+          ],
+          "unevaluatedProperties": false
         },
         "income": {
           "$ref": "#/$defs/DocumentIncome"
@@ -1881,6 +1867,7 @@
       "allOf": [
         { "$ref": "#/$defs/ExpensePartial" },
         {
+          "type": "object",
           "required": [
             "currency",
             "vat",
@@ -1893,7 +1880,8 @@
             "accountingClassification"
           ]
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "ExpensePartial": {
       "type": "object",
@@ -2205,7 +2193,7 @@
       "allOf": [
         { "$ref": "#/$defs/PaymentCore" },
         {
-          "additionalProperties": false,
+          "type": "object",
           "properties": {
             "amount": {
               "type": "number",
@@ -2235,7 +2223,8 @@
           },
           "required": ["type", "price"]
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "PaymentDocument": {
       "type": "object",
