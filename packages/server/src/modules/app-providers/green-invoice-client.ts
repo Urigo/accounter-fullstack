@@ -1,6 +1,13 @@
 import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
-import { init, type Sdk } from '@accounter/green-invoice-graphql';
+import {
+  _DOLLAR_defs_addClientRequest_Input,
+  _DOLLAR_defs_getClientResponse,
+  _DOLLAR_defs_updateClientRequest_Input,
+  init,
+  updateClient_mutationMutationVariables,
+  type Sdk,
+} from '@accounter/green-invoice-graphql';
 import type { Currency } from '@shared/enums';
 import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
@@ -262,4 +269,78 @@ export class GreenInvoiceClientProvider {
     cacheKeyFn: id => `client-${id}`,
     cacheMap: this.cache,
   });
+
+  public async createClient(
+    input: _DOLLAR_defs_addClientRequest_Input,
+  ): Promise<_DOLLAR_defs_getClientResponse> {
+    try {
+      const sdk = await this.getSDK();
+      const client = await sdk.addClient_mutation({ input }).then(res => res.addClient);
+      if (!client) {
+        throw new Error('Failed to create Green Invoice client');
+      }
+      if ('errorMessage' in client) {
+        throw new Error(`Failed to create Green Invoice client: ${client.errorMessage}`);
+      }
+
+      const { id } = client as _DOLLAR_defs_getClientResponse;
+      this.cache.set(`client-${id}`, client);
+      return client as _DOLLAR_defs_getClientResponse;
+    } catch (error) {
+      const message = 'Green Invoice Create Client error';
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
+    }
+  }
+
+  public async updateClient(
+    args: updateClient_mutationMutationVariables,
+  ): Promise<_DOLLAR_defs_getClientResponse> {
+    try {
+      const sdk = await this.getSDK();
+      const client = await sdk.updateClient_mutation(args).then(res => res.updateClient);
+      if (!client) {
+        throw new Error('Failed to update Green Invoice client');
+      }
+      if ('errorMessage' in client) {
+        throw new Error(`Failed to update Green Invoice client: ${client.errorMessage}`);
+      }
+
+      const { id } = client as _DOLLAR_defs_getClientResponse;
+      this.cache.set(`client-${id}`, client);
+      return client as _DOLLAR_defs_getClientResponse;
+    } catch (error) {
+      this.invalidateClient(args.id);
+      const message = 'Green Invoice Update Client error';
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
+    }
+  }
+
+  public async deleteClient(clientId: string): Promise<_DOLLAR_defs_getClientResponse> {
+    try {
+      const sdk = await this.getSDK();
+      const client = await sdk
+        .deleteClient_mutation({ id: clientId })
+        .then(res => res.deleteClient);
+      if (!client) {
+        throw new Error('Failed to delete Green Invoice client');
+      }
+      if ('errorMessage' in client) {
+        throw new Error(`Failed to delete Green Invoice client: ${client.errorMessage}`);
+      }
+
+      this.invalidateClient(clientId);
+      return client as _DOLLAR_defs_getClientResponse;
+    } catch (error) {
+      this.invalidateClient(clientId);
+      const message = 'Green Invoice Delete Client error';
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
+    }
+  }
+
+  public invalidateClient(clientId: string) {
+    this.cache.delete(`client-${clientId}`);
+  }
 }
