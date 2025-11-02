@@ -1,22 +1,22 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type {
-  Document,
-  DocumentInputNew_Input,
-  DocumentLang,
-  DocumentLinkedDocument,
-  ExpenseDocumentType,
-  Currency as GreenInvoiceCurrency,
-  DocumentType as GreenInvoiceDocumentType,
-  mutationInput_addDocument_input_allOf_0_client_Input,
-  mutationInput_addDocument_input_allOf_0_discount_type,
-  mutationInput_addDocument_input_allOf_0_linkType,
-  mutationInput_addDocument_input_allOf_0_payment_items_appType,
-  mutationInput_addDocument_input_allOf_0_payment_items_cardType,
-  mutationInput_addDocument_input_allOf_0_payment_items_dealType,
-  mutationInput_addDocument_input_allOf_0_payment_items_subType,
-  mutationInput_addDocument_input_allOf_0_payment_items_type,
-  VatType,
+  _DOLLAR_defs_addDocumentRequest_Input,
+  _DOLLAR_defs_Document,
+  _DOLLAR_defs_DocumentInputNew_Input,
+  _DOLLAR_defs_DocumentLang,
+  _DOLLAR_defs_DocumentLinkedDocument,
+  _DOLLAR_defs_ExpenseDocumentType,
+  _DOLLAR_defs_VatType,
+  _DOLLAR_defs_Currency as GreenInvoiceCurrency,
+  _DOLLAR_defs_DocumentType as GreenInvoiceDocumentType,
+  query_getDocument_payment_items_appType,
+  query_getDocument_payment_items_cardType,
+  query_getDocument_payment_items_dealType,
+  query_getDocument_payment_items_subType,
+  query_getDocument_payment_items_type,
+  queryInput_previewDocument_input_discount_type,
+  queryInput_previewDocument_input_linkType,
 } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
@@ -43,7 +43,7 @@ import {
 import { formatCurrency, hashStringToInt } from '@shared/helpers';
 
 export function normalizeDocumentType(
-  rawType?: GreenInvoiceDocumentType | ExpenseDocumentType | number | null,
+  rawType?: GreenInvoiceDocumentType | _DOLLAR_defs_ExpenseDocumentType | number | null,
 ): DocumentType {
   if (!rawType) {
     return DocumentType.Unprocessed;
@@ -144,7 +144,9 @@ export function getGreenInvoiceDocumentNameFromType(
   }
 }
 
-export function getGreenInvoiceDocumentLanguage(lang: GreenInvoiceDocumentLang): DocumentLang {
+export function getGreenInvoiceDocumentLanguage(
+  lang: GreenInvoiceDocumentLang,
+): _DOLLAR_defs_DocumentLang {
   switch (lang) {
     case 'HEBREW':
       return 'he';
@@ -155,7 +157,9 @@ export function getGreenInvoiceDocumentLanguage(lang: GreenInvoiceDocumentLang):
   }
 }
 
-export function getLanguageFromGreenInvoiceDocument(lang: DocumentLang): GreenInvoiceDocumentLang {
+export function getLanguageFromGreenInvoiceDocument(
+  lang: _DOLLAR_defs_DocumentLang,
+): GreenInvoiceDocumentLang {
   switch (lang) {
     case 'he':
       return 'HEBREW';
@@ -166,7 +170,7 @@ export function getLanguageFromGreenInvoiceDocument(lang: DocumentLang): GreenIn
   }
 }
 
-export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): VatType {
+export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): _DOLLAR_defs_VatType {
   switch (vatType) {
     case 'DEFAULT':
       return '_0';
@@ -179,7 +183,9 @@ export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): Va
   }
 }
 
-export function getVatTypeFromGreenInvoiceDocument(vatType: VatType): GreenInvoiceVatType {
+export function getVatTypeFromGreenInvoiceDocument(
+  vatType: _DOLLAR_defs_VatType,
+): GreenInvoiceVatType {
   switch (vatType) {
     case '_0':
       return 'DEFAULT';
@@ -194,7 +200,7 @@ export function getVatTypeFromGreenInvoiceDocument(vatType: VatType): GreenInvoi
 
 export function getGreenInvoiceDocumentDiscountType(
   discountType: GreenInvoiceDiscountType,
-): mutationInput_addDocument_input_allOf_0_discount_type {
+): queryInput_previewDocument_input_discount_type {
   switch (discountType) {
     case 'PERCENTAGE':
       return 'percentage';
@@ -207,7 +213,7 @@ export function getGreenInvoiceDocumentDiscountType(
 
 export function getGreenInvoiceDocumentPaymentType(
   type: GreenInvoicePaymentType,
-): mutationInput_addDocument_input_allOf_0_payment_items_type {
+): query_getDocument_payment_items_type {
   switch (type) {
     case 'TAX_DEDUCTION':
       return 'NEGATIVE_1';
@@ -233,7 +239,7 @@ export function getGreenInvoiceDocumentPaymentType(
 }
 
 export function getTypeFromGreenInvoiceDocumentPayment(
-  type: mutationInput_addDocument_input_allOf_0_payment_items_type,
+  type: query_getDocument_payment_items_type,
 ): GreenInvoicePaymentType {
   switch (type) {
     case 'NEGATIVE_1':
@@ -261,7 +267,7 @@ export function getTypeFromGreenInvoiceDocumentPayment(
 
 export function getGreenInvoiceDocumentPaymentSubType(
   subType: GreenInvoicePaymentSubType,
-): mutationInput_addDocument_input_allOf_0_payment_items_subType {
+): query_getDocument_payment_items_subType {
   switch (subType) {
     case 'BITCOIN':
       return '_1';
@@ -285,7 +291,7 @@ export function getGreenInvoiceDocumentPaymentSubType(
 }
 
 export function getSubTypeFromGreenInvoiceDocumentPayment(
-  subType: mutationInput_addDocument_input_allOf_0_payment_items_subType,
+  subType: query_getDocument_payment_items_subType,
 ): GreenInvoicePaymentSubType {
   switch (subType) {
     case '_1':
@@ -311,7 +317,7 @@ export function getSubTypeFromGreenInvoiceDocumentPayment(
 
 export function getGreenInvoiceDocumentPaymentAppType(
   appType: GreenInvoicePaymentAppType,
-): mutationInput_addDocument_input_allOf_0_payment_items_appType {
+): query_getDocument_payment_items_appType {
   switch (appType) {
     case 'APPLE_PAY':
       return '_6';
@@ -331,7 +337,7 @@ export function getGreenInvoiceDocumentPaymentAppType(
 }
 
 export function getPaymentAppTypeFromGreenInvoiceDocument(
-  appType: mutationInput_addDocument_input_allOf_0_payment_items_appType,
+  appType: query_getDocument_payment_items_appType,
 ): GreenInvoicePaymentAppType {
   switch (appType) {
     case '_6':
@@ -353,7 +359,7 @@ export function getPaymentAppTypeFromGreenInvoiceDocument(
 
 export function getGreenInvoiceDocumentPaymentCardType(
   cardType: GreenInvoicePaymentCardType,
-): mutationInput_addDocument_input_allOf_0_payment_items_cardType {
+): query_getDocument_payment_items_cardType {
   switch (cardType) {
     case 'AMERICAN_EXPRESS':
       return '_4';
@@ -373,7 +379,7 @@ export function getGreenInvoiceDocumentPaymentCardType(
 }
 
 export function getCardTypeFromGreenInvoiceDocumentPayment(
-  cardType: mutationInput_addDocument_input_allOf_0_payment_items_cardType,
+  cardType: query_getDocument_payment_items_cardType,
 ): GreenInvoicePaymentCardType {
   switch (cardType) {
     case '_4':
@@ -395,7 +401,7 @@ export function getCardTypeFromGreenInvoiceDocumentPayment(
 
 export function getGreenInvoiceDocumentPaymentDealType(
   dealType: GreenInvoicePaymentDealType,
-): mutationInput_addDocument_input_allOf_0_payment_items_dealType {
+): query_getDocument_payment_items_dealType {
   switch (dealType) {
     case 'CREDIT':
       return '_3';
@@ -415,7 +421,7 @@ export function getGreenInvoiceDocumentPaymentDealType(
 }
 
 export function getDealTypeFromGreenInvoiceDocumentPayment(
-  dealType: mutationInput_addDocument_input_allOf_0_payment_items_dealType,
+  dealType: query_getDocument_payment_items_dealType,
 ): GreenInvoicePaymentDealType {
   switch (dealType) {
     case '_3':
@@ -437,7 +443,7 @@ export function getDealTypeFromGreenInvoiceDocumentPayment(
 
 export function getGreenInvoiceDocumentLinkType(
   linkType: GreenInvoiceLinkType,
-): mutationInput_addDocument_input_allOf_0_linkType {
+): queryInput_previewDocument_input_linkType {
   switch (linkType) {
     case 'CANCEL':
       return 'CANCEL';
@@ -505,7 +511,7 @@ export async function getLinkedDocuments(
 
   const linkedDocuments = greenInvoiceDocument.linkedDocuments.filter(
     Boolean,
-  ) as DocumentLinkedDocument[];
+  ) as _DOLLAR_defs_DocumentLinkedDocument[];
   if (!linkedDocuments.length) {
     return null;
   }
@@ -532,7 +538,7 @@ export async function getLinkedDocuments(
 
 export async function insertNewDocumentFromGreenInvoice(
   injector: Injector,
-  greenInvoiceDoc: Document,
+  greenInvoiceDoc: _DOLLAR_defs_Document,
   ownerId: string,
   preDictatedChargeId?: string | null,
 ) {
@@ -546,9 +552,11 @@ export async function insertNewDocumentFromGreenInvoice(
       .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
 
     // Get matching business
-    const clientPromise = injector
-      .get(ClientsProvider)
-      .getClientByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id);
+    const clientPromise = greenInvoiceDoc.client.id
+      ? injector
+          .get(ClientsProvider)
+          .getClientByGreenInvoiceIdLoader.load(greenInvoiceDoc.client.id)
+      : Promise.resolve(null);
 
     const linkedDocumentsPromise = getLinkedDocuments(injector, greenInvoiceDoc.id);
 
@@ -673,7 +681,7 @@ export async function insertNewDocumentFromGreenInvoice(
 }
 
 export async function getGreenInvoiceDocuments(injector: Injector, recursive: boolean = false) {
-  const documents: Document[] = [];
+  const documents: _DOLLAR_defs_Document[] = [];
   async function getDocuments(page: number = 1) {
     const data = await injector.get(GreenInvoiceClientProvider).searchDocuments({
       input: { pageSize: 100, sort: 'creationDate', page },
@@ -704,8 +712,8 @@ export async function getGreenInvoiceDocuments(injector: Injector, recursive: bo
 export async function convertDocumentInputIntoGreenInvoiceInput(
   initialInput: NewDocumentInput,
   injector: Injector,
-): Promise<DocumentInputNew_Input> {
-  let client: mutationInput_addDocument_input_allOf_0_client_Input | undefined = undefined;
+): Promise<_DOLLAR_defs_DocumentInputNew_Input> {
+  let client: _DOLLAR_defs_addDocumentRequest_Input['client'] | undefined = undefined;
   if (initialInput.client) {
     const clientInfo = await injector
       .get(ClientsProvider)
@@ -785,13 +793,14 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
 }
 
 export function convertGreenInvoiceDocumentToLocalDocumentInfo(
-  greenInvoiceDocument: Document,
+  greenInvoiceDocument: _DOLLAR_defs_Document,
 ): NewDocumentInfo {
   return {
     ...greenInvoiceDocument,
-    client: greenInvoiceDocument.client
+    client: greenInvoiceDocument.client?.id
       ? {
           ...greenInvoiceDocument.client,
+          id: greenInvoiceDocument.client.id,
           emails: greenInvoiceDocument.client.emails
             ? (greenInvoiceDocument.client.emails.filter(Boolean) as string[])
             : [],
