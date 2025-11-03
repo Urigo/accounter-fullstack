@@ -2,6 +2,7 @@ export * from './accounter-table.js';
 export * from './business-trip-report/business-trip-summarized-report.js';
 export * from './buttons/index.js';
 export * from './common-wrappers.js';
+export * from './data-table-column-header.js';
 export * from './data-table-pagination.js';
 export * from './divider.js';
 export * from './footer.js';
