@@ -145,7 +145,6 @@ export const ChargeMatchesTable = ({
     { id: originChargeId, onChange },
   ]);
 
-  console.log('Updating merge selected charges:', mergeSelected);
   useEffect(() => {
     setMergeSelected(
       [originChargeId, ...(selectedChargeId ? [selectedChargeId] : [])].map(id => ({
