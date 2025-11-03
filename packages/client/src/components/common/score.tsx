@@ -67,7 +67,7 @@ export const Score = ({ value, size = 'xl' }: ScoreProps): ReactElement => {
           strokeWidth="1"
           strokeDasharray="75 100"
           strokeLinecap="round"
-        ></circle>
+        />
 
         <circle
           cx="18"
@@ -78,12 +78,12 @@ export const Score = ({ value, size = 'xl' }: ScoreProps): ReactElement => {
           strokeWidth="2"
           strokeDasharray={`${percentage} 100`}
           strokeLinecap="round"
-        ></circle>
+        />
       </svg>
 
       <div className="absolute top-1/2 start-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
         <span className={'font-bold ' + getTextClasses(size)} style={{ color }}>
-          {value}
+          {value.toFixed(0)}
         </span>
       </div>
     </div>
