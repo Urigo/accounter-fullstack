@@ -126,7 +126,7 @@ type Props = {
 
 export const ChargeMatchesTable = ({
   originChargeId,
-  chargesProps = [],
+  chargesProps,
   onChange,
 }: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([
@@ -158,10 +158,10 @@ export const ChargeMatchesTable = ({
   const charges = useMemo(
     () =>
       chargesProps
-        .map(rawCharge =>
+        ?.map(rawCharge =>
           convertChargeMatchFragmentToTableRow(rawCharge, setSelectedChargeId, selectedChargeId),
         )
-        .sort((a, b) => b.confidenceScore - a.confidenceScore),
+        .sort((a, b) => b.confidenceScore - a.confidenceScore) ?? [],
     [chargesProps, selectedChargeId],
   );
 
