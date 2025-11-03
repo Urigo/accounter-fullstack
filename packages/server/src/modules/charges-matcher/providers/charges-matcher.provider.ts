@@ -305,7 +305,7 @@ export class ChargesMatcherProvider {
             // Track successful merge
             result.totalMatches++;
             result.mergedCharges.push({
-              chargeId: sourceToMerge.chargeId,
+              chargeId: targetToKeep.chargeId,
               confidenceScore: processResult.match.confidenceScore,
             });
 
