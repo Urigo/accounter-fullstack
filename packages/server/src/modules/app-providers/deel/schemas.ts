@@ -187,6 +187,14 @@ export const paymentReceiptsSchema = z
       .enum(['paid']) // NOTE: by docs, optional
       .describe("Status of the payment. Either 'paid' or 'processing'."),
     workers: z.array(workerSchema).optional(),
+    invoices: z.array(
+      z
+        .object({
+          id: z.string().describe('Unique identifier for the invoice.'),
+        })
+        .strict(),
+    ),
+    timezone: z.string(),
   })
   .strict();
 
@@ -240,7 +248,7 @@ const paymentBreakdownRecordSchema = z
     //   .string()
     //   .optional()
     //   .describe('Invoice number associated with the payment.'),
-    others: z.literal('0.00').describe('Other payment amounts.'),
+    others: z.string().describe('Other payment amounts.'),
     overtime: z.literal('0.00').describe('Overtime payment amount.'),
     payment_currency: z.string().describe('Currency in which the payment was made.'),
     payment_date: z.iso.datetime().describe('The date the payment was made.'),

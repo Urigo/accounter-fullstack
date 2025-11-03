@@ -112,7 +112,7 @@ export class DeelClientProvider {
         limit?: number;
         offset?: number;
       } = {
-        limit: 99,
+        limit: 50,
         offset: 0,
         issued_from_date: dateToTimelessDateString(subYears(new Date(), 1)),
       };
