@@ -47,6 +47,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         transactionsCount
         documentsCount
         receiptsCount
+        invoicesCount
         ledgerCount
         isLedgerLocked
         openDocuments
@@ -167,10 +168,13 @@ export function ChargeExtendedInfo({
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const hasReceipts = !!charge?.metadata?.receiptsCount;
+  const hasInvoices = !!charge?.metadata?.invoicesCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
   const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
+  const hasAccountingDocs = hasInvoices || hasReceipts;
+  const missingMatches = !hasAccountingDocs || !hasTransactions;
 
   useEffect(() => {
     const tabs = [];
@@ -473,12 +477,14 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            <ChargeMatches
-              chargeId={charge.id}
-              onChange={onExtendedChange}
-              toggleAccordionItem={toggleAccordionItem}
-              isOpened={accordionItems.includes('charges-matches')}
-            />
+            {missingMatches && (
+              <ChargeMatches
+                chargeId={charge.id}
+                onChange={onExtendedChange}
+                toggleAccordionItem={toggleAccordionItem}
+                isOpened={accordionItems.includes('charges-matches')}
+              />
+            )}
           </Accordion>
           {galleryIsReady && (
             <Box maw="1/6">
