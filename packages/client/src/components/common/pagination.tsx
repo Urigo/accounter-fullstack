@@ -37,12 +37,11 @@ const usePagination = (totalPages: number, currentPage: number): Array<'...' | n
 interface PaginationProps extends Omit<React.ComponentProps<'nav'>, 'onChange' | 'value'> {
   onChange: (page: number) => void;
   total: number;
-  value: number;
+  currentPage: number;
 }
 
-export const Pagination = ({ onChange, total, value, ...props }: PaginationProps) => {
-  const currentPage = value + 1;
-  const pages = usePagination(total, currentPage);
+export const Pagination = ({ onChange, total, currentPage, ...props }: PaginationProps) => {
+  const pages = usePagination(total - 1, currentPage);
 
   if (!pages.length) {
     return null;
@@ -53,7 +52,10 @@ export const Pagination = ({ onChange, total, value, ...props }: PaginationProps
       <PaginationContent>
         {/* previous button */}
         <PaginationItem>
-          <PaginationPrevious disabled={currentPage <= 1} onClick={() => onChange(value - 1)} />
+          <PaginationPrevious
+            disabled={currentPage <= 1}
+            onClick={() => onChange(currentPage - 1)}
+          />
         </PaginationItem>
         {/* page numbers */}
         {pages.map((page, index) => {
@@ -67,7 +69,7 @@ export const Pagination = ({ onChange, total, value, ...props }: PaginationProps
           const isActive = page === currentPage;
           return (
             <PaginationItem key={`page-${page}`}>
-              <PaginationLink onClick={() => onChange(page - 1)} isActive={isActive}>
+              <PaginationLink onClick={() => onChange(page)} isActive={isActive}>
                 {page}
               </PaginationLink>
             </PaginationItem>
@@ -75,7 +77,10 @@ export const Pagination = ({ onChange, total, value, ...props }: PaginationProps
         })}
         {/* next button */}
         <PaginationItem>
-          <PaginationNext disabled={currentPage >= total} onClick={() => onChange(value + 1)} />
+          <PaginationNext
+            disabled={currentPage >= total - 1}
+            onClick={() => onChange(currentPage + 1)}
+          />
         </PaginationItem>
       </PaginationContent>
     </PaginationWrapper>

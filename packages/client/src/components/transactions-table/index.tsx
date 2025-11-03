@@ -71,8 +71,8 @@ export const TransactionsTable = ({
     },
     initialState: {
       pagination: {
-        pageIndex: 0,
-        pageSize: 100,
+        pageIndex: 1,
+        pageSize: 10,
       },
       sorting: [
         {
@@ -124,7 +124,7 @@ export const TransactionsTable = ({
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-end space-x-2 py-4">
           <Pagination
-            value={table.getState().pagination.pageIndex}
+            currentPage={table.getState().pagination.pageIndex}
             total={table.getPageCount()}
             onChange={page => table.setPageIndex(page)}
           />

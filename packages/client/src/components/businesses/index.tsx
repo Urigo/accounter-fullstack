@@ -40,7 +40,7 @@ export const Businesses = (): ReactElement => {
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
   const [businessName, setBusinessName] = useState(
-    get('name') ? (get('page') as string) : undefined,
+    get('name') ? (get('name') as string) : undefined,
   );
   const { setFiltersContext } = useContext(FiltersContext);
 
