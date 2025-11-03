@@ -37,7 +37,6 @@ export const TransactionsTable = ({
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const transactions = useMemo(() => {
-    console.log('rendering Transactions');
     return transactionsProps.map(rawTransaction => {
       return getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, rawTransaction);
     });
