@@ -13,7 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 
-type ChargeType =
+export type ChargeType =
   | 'CommonCharge'
   | 'BusinessTripCharge'
   | 'DividendCharge'

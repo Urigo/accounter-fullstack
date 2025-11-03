@@ -30,6 +30,7 @@ import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
 import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
+import { ChargeMatches } from './extended-info/charge-matches.js';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
 import { ExchangeRates } from './extended-info/exchange-rates.js';
@@ -471,6 +472,13 @@ export function ChargeExtendedInfo({
                 </Accordion.Panel>
               </Accordion.Item>
             )}
+
+            <ChargeMatches
+              chargeId={charge.id}
+              onChange={onExtendedChange}
+              toggleAccordionItem={toggleAccordionItem}
+              isOpened={accordionItems.includes('charges-matches')}
+            />
           </Accordion>
           {galleryIsReady && (
             <Box maw="1/6">
