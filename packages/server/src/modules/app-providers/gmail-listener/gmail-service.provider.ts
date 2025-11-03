@@ -1,7 +1,7 @@
 import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
-import puppeteer from 'puppeteer';
+import { Browser, chromium } from 'playwright';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import {
   getDocumentFromUrlsAndOcrData,
@@ -275,16 +275,18 @@ export class GmailServiceProvider {
   }
 
   private async convertHtmlToPdf(rawHtml: string): Promise<Required<EmailDocument>> {
+    let browser: Browser | null = null;
     try {
-      const browser = await puppeteer
+      browser = await chromium
         .launch({
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         })
         .catch(e => {
-          throw new Error(`Error launching Puppeteer: ${e.message}`);
+          throw new Error(`Error launching browser: ${e.message}`);
         });
+
       const page = await browser.newPage().catch(e => {
-        throw new Error(`Error creating new page in Puppeteer: ${e.message}`);
+        throw new Error(`Error creating new page: ${e.message}`);
       });
 
       const html = await inlineCss(rawHtml, { url: '/' }).catch(e => {
@@ -293,7 +295,7 @@ export class GmailServiceProvider {
 
       await page
         .setContent(html, {
-          waitUntil: 'networkidle0', // Wait until all network requests are done
+          waitUntil: 'networkidle', // Wait until all network requests are done
         })
         .catch(e => {
           throw new Error(`Error setting page content: ${e.message}`);
@@ -313,9 +315,12 @@ export class GmailServiceProvider {
         mimeType: 'application/pdf',
       };
     } catch (error) {
-      const message = `Error converting HTML to image`;
+      const message = `Error converting HTML to PDF`;
       console.error(`${message}: ${error}`);
       throw new Error(message);
+    } finally {
+      // Ensure browser is closed in case of error
+      await browser?.close();
     }
   }
 

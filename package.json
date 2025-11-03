@@ -87,8 +87,5 @@
   },
   "lint-staged": {
     "*.--write": "prettier --write"
-  },
-  "puppeteer": {
-    "skipDownload": true
   }
 }

@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "./src/index.mts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "npx playwright install && tsc && tsc-alias",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
@@ -48,7 +48,7 @@
     "node-cache": "5.1.2",
     "node-xlsx": "0.24.0",
     "pg": "8.16.3",
-    "puppeteer": "24.28.0",
+    "playwright": "1.56.1",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
     "zod": "4.1.12"
@@ -67,8 +67,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
-  },
-  "puppeteer": {
-    "skipDownload": true
   }
 }
