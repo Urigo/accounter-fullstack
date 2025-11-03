@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "./src/index.mts",
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "build": "npx playwright install && tsc && tsc-alias",
     "dev": "nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
