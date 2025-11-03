@@ -30,7 +30,7 @@ export const columns: ColumnDef<ChargeMatchRow>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
     cell: ({ row }) => {
       const confidenceScore = row.getValue<number>('confidenceScore');
-      return <Score value={confidenceScore * 100} />;
+      return <Score value={confidenceScore * 100} size="sm" />;
     },
   },
   {

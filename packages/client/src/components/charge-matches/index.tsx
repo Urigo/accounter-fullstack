@@ -1,5 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
-import { se } from 'date-fns/locale';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { ChargeType } from '@/helpers/charges.js';
 import {
@@ -13,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { ChargeMatchesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
+import { MergeChargesButton } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -119,23 +119,41 @@ function convertChargeMatchFragmentToTableRow(
 }
 
 type Props = {
+  originChargeId: string;
   chargesProps?: FragmentType<typeof ChargeMatchesTableFieldsFragmentDoc>[];
   onChange: () => void;
 };
 
-export const ChargeMatchesTable = ({ chargesProps = [], onChange }: Props): ReactElement => {
+export const ChargeMatchesTable = ({
+  originChargeId,
+  chargesProps = [],
+  onChange,
+}: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([
     {
       id: 'confidenceScore',
       desc: true,
     },
     {
-      id: 'amount.raw',
+      id: 'amountRaw',
       desc: true,
     },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [selectedChargeId, setSelectedChargeId] = useState<string | null>(null);
+  const [mergeSelected, setMergeSelected] = useState<Array<{ id: string; onChange: () => void }>>([
+    { id: originChargeId, onChange },
+  ]);
+
+  console.log('Updating merge selected charges:', mergeSelected);
+  useEffect(() => {
+    setMergeSelected(
+      [originChargeId, ...(selectedChargeId ? [selectedChargeId] : [])].map(id => ({
+        id,
+        onChange,
+      })),
+    );
+  }, [selectedChargeId, onChange, originChargeId]);
 
   const charges = useMemo(
     () =>
@@ -164,6 +182,7 @@ export const ChargeMatchesTable = ({ chargesProps = [], onChange }: Props): Reac
   return (
     <div className="max-w-[90vw]">
       <div className="flex items-center py-4 gap-4">
+        <MergeChargesButton selected={mergeSelected} resetMerge={() => setSelectedChargeId(null)} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild className="ml-auto">
             <Button variant="outline">

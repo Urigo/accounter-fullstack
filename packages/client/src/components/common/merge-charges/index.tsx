@@ -13,7 +13,7 @@ export function MergeChargesButton(props: {
   const [opened, { close, open }] = useDisclosure(false);
   const { selected, resetMerge } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
-  const isMergeable = distinctIDs.size >= 1;
+  const isMergeable = distinctIDs.size > 1;
 
   const [variant, setVariant] = useState<'outline' | 'default'>(
     isMergeable ? 'default' : 'outline',

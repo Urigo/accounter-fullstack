@@ -47,7 +47,11 @@ export const ChargeMatches = ({
         {fetching ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
-          <ChargeMatchesTable chargesProps={data?.findChargeMatches.matches} onChange={onChange} />
+          <ChargeMatchesTable
+            originChargeId={chargeId}
+            chargesProps={data?.findChargeMatches.matches}
+            onChange={onChange}
+          />
         )}
       </Accordion.Panel>
     </Accordion.Item>
