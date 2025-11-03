@@ -18,4 +18,5 @@ export * from './merge-businesses/index.js';
 export * from './modals/index.js';
 export * from './pagination.js';
 export * from './simple-grid.js';
+export * from './score.js';
 export * from './tooltip.js';
