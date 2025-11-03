@@ -21,6 +21,7 @@ export default gql`
   type ChargeMatch {
     " UUID of the matched charge "
     chargeId: UUID!
+    charge: Charge!
     " Confidence score between 0.00 and 1.00 "
     confidenceScore: Float!
   }

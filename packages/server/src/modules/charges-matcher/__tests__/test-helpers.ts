@@ -1,7 +1,7 @@
 import type {
   Transaction,
   Document,
-  ChargeMatch,
+  ChargeMatchProto,
   AggregatedTransaction,
   AggregatedDocument,
   ConfidenceScores,
@@ -125,8 +125,8 @@ export function createMockConfidenceScores(
 /**
  * Factory for creating mock charge matches
  */
-export function createMockChargeMatch(overrides: Partial<ChargeMatch> = {}): ChargeMatch {
-  const defaultMatch: ChargeMatch = {
+export function createMockChargeMatch(overrides: Partial<ChargeMatchProto> = {}): ChargeMatchProto {
+  const defaultMatch: ChargeMatchProto = {
     chargeId: '00000000-0000-0000-0000-000000000099',
     confidenceScore: 0.95,
   };

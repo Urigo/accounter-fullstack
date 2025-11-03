@@ -78,6 +78,7 @@ const config: CodegenConfig = {
             '@modules/business-trips/types.js#IGetBusinessTripsCarRentalExpensesByIdsResult',
           CardFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
+          ChargeMatch: '@modules/charges-matcher/types.js#ChargeMatchProto',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
           Client: '@modules/financial-entities/types.js#IGetAllClientsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
