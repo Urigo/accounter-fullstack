@@ -5,6 +5,7 @@
  * Integrates with existing modules: charges, transactions, and documents.
  */
 
+import { subYears } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -116,36 +117,42 @@ export class ChargesMatcherProvider {
     // Step 6: Load transactions and documents for all candidate charges
     const candidateChargesWithData: Array<TransactionCharge | DocumentCharge> = [];
 
-    for (const candidate of candidateCharges) {
-      // Skip the source charge itself
-      if (candidate.id === chargeId) {
-        continue;
-      }
+    await Promise.all(
+      candidateCharges.map(async candidate => {
+        // Skip the source charge itself
+        if (candidate.id === chargeId) {
+          return;
+        }
 
-      const candidateTransactions = (await transactionsProvider.transactionsByChargeIDLoader.load(
-        candidate.id,
-      )) as Transaction[];
-      const candidateDocuments = (await documentsProvider.getDocumentsByChargeIdLoader.load(
-        candidate.id,
-      )) as Document[];
+        const candidateTransactionsPromise = transactionsProvider.transactionsByChargeIDLoader.load(
+          candidate.id,
+        ) as Promise<Transaction[]>;
+        const candidateDocumentsPromise = documentsProvider.getDocumentsByChargeIdLoader.load(
+          candidate.id,
+        ) as Promise<Document[]>;
+        const [candidateTransactions, candidateDocuments] = await Promise.all([
+          candidateTransactionsPromise,
+          candidateDocumentsPromise,
+        ]);
 
-      const hasTxs = candidateTransactions && candidateTransactions.length > 0;
-      const hasDocs = candidateDocuments && candidateDocuments.length > 0;
+        const hasTxs = candidateTransactions && candidateTransactions.length > 0;
+        const hasDocs = candidateDocuments && candidateDocuments.length > 0;
 
-      // Only include unmatched charges (not both types)
-      if (hasTxs && !hasDocs) {
-        candidateChargesWithData.push({
-          chargeId: candidate.id,
-          transactions: candidateTransactions,
-        });
-      } else if (hasDocs && !hasTxs) {
-        candidateChargesWithData.push({
-          chargeId: candidate.id,
-          documents: candidateDocuments,
-        });
-      }
-      // Skip matched charges (have both) and empty charges (have neither)
-    }
+        // Only include unmatched charges (not both types)
+        if (hasTxs && !hasDocs) {
+          candidateChargesWithData.push({
+            chargeId: candidate.id,
+            transactions: candidateTransactions,
+          });
+        } else if (hasDocs && !hasTxs) {
+          candidateChargesWithData.push({
+            chargeId: candidate.id,
+            documents: candidateDocuments,
+          });
+        }
+        // Skip matched charges (have both) and empty charges (have neither)
+      }),
+    );
 
     // Step 7: Build source charge object for findMatches
     let sourceChargeData: TransactionCharge | DocumentCharge;
@@ -208,30 +215,40 @@ export class ChargesMatcherProvider {
     const documentsProvider = injector.get(DocumentsProvider);
 
     // Step 1: Load all charges for this user
+    const prevYear = dateToTimelessDateString(subYears(new Date(), 1));
     const allCharges = await chargesProvider.getChargesByFilters({
       ownerIds: [adminBusinessId],
+      fromAnyDate: prevYear,
     });
 
     // Step 2: Load transactions and documents for all charges
     const chargesWithData: ChargeWithData[] = [];
     const mergedChargeIds = new Set<string>(); // Track merged charges to exclude from processing
 
-    for (const charge of allCharges) {
-      const transactions = (await transactionsProvider.transactionsByChargeIDLoader.load(
-        charge.id,
-      )) as Transaction[];
-      const documents = (await documentsProvider.getDocumentsByChargeIdLoader.load(
-        charge.id,
-      )) as Document[];
+    await Promise.all(
+      allCharges.map(async charge => {
+        const transactionsPromise = transactionsProvider.transactionsByChargeIDLoader.load(
+          charge.id,
+        ) as Promise<Transaction[]>;
+        const documentsPromise = documentsProvider.getDocumentsByChargeIdLoader.load(
+          charge.id,
+        ) as Promise<Document[]>;
 
-      chargesWithData.push({
-        chargeId: charge.id,
-        ownerId: charge.owner_id ?? adminBusinessId,
-        type: ChargeType.TRANSACTION_ONLY, // Will be determined by processChargeForAutoMatch
-        transactions: transactions || [],
-        documents: documents || [],
-      });
-    }
+        const [transactions, documents] = await Promise.all([
+          transactionsPromise,
+          documentsPromise,
+        ]);
+
+        chargesWithData.push({
+          chargeId: charge.id,
+          ownerId: charge.owner_id ?? adminBusinessId,
+          type: ChargeType.TRANSACTION_ONLY, // Will be determined by processChargeForAutoMatch
+          description: charge.user_description ?? undefined,
+          transactions: transactions || [],
+          documents: documents || [],
+        });
+      }),
+    );
 
     // Step 3: Filter to get only unmatched charges
     const unmatchedCharges = chargesWithData.filter(charge => {

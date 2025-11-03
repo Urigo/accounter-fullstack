@@ -146,8 +146,10 @@ export function determineMergeDirection(
   charge1: ChargeWithData,
   charge2: ChargeWithData,
 ): [ChargeWithData, ChargeWithData] {
+  const charge1HasDescription = charge1.description && charge1.description.length > 0;
   const charge1HasTransactions = charge1.transactions && charge1.transactions.length > 0;
   const charge1HasDocuments = charge1.documents && charge1.documents.length > 0;
+  const charge2HasDescription = charge2.description && charge2.description.length > 0;
   const charge2HasTransactions = charge2.transactions && charge2.transactions.length > 0;
   const charge2HasDocuments = charge2.documents && charge2.documents.length > 0;
 
@@ -162,7 +164,15 @@ export function determineMergeDirection(
     return [charge1, charge2]; // Merge charge1 INTO charge2 (keep charge2)
   }
 
-  // Rule 2: Both unmatched - keep the one with transactions
+  // Rule 2: Both unmatched - keep the one with description
+  if (charge1HasDescription && !charge2HasDescription) {
+    return [charge2, charge1]; // Merge charge2 INTO charge1 (keep description charge)
+  }
+  if (charge2HasDescription && !charge1HasDescription) {
+    return [charge1, charge2]; // Merge charge1 INTO charge2 (keep description charge)
+  }
+
+  // Rule 3: Neither has description or both have description - keep the one with transactions
   if (charge1HasTransactions && !charge2HasTransactions) {
     return [charge2, charge1]; // Merge charge2 INTO charge1 (keep transaction charge)
   }

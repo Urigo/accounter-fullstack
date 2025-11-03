@@ -147,6 +147,8 @@ export interface ChargeWithData {
   ownerId: string;
   /** Charge classification */
   type: ChargeType;
+  /** Charge description */
+  description?: string;
   /** Associated transactions (if any) */
   transactions: Transaction[];
   /** Associated documents (if any) */

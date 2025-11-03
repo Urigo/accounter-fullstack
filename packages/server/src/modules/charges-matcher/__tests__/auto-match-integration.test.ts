@@ -40,7 +40,6 @@ type Injector = {
 
 // Test constants
 const ADMIN_BUSINESS_ID = 'user-123';
-const BUSINESS_A = 'business-a';
 
 // Helper to create charge
 function createCharge(id: string, ownerId: string) {
