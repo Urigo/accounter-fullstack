@@ -72,7 +72,7 @@ export const TransactionsTable = ({
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 100,
       },
       sorting: [
         {
