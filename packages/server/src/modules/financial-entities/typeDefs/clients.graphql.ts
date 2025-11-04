@@ -16,11 +16,11 @@ export default gql`
   type Client {
     id: UUID!
     originalBusiness: LtdFinancialEntity!
-    greenInvoiceId: UUID!
+    greenInvoiceId: UUID
     hiveId: String
     emails: [String!]!
     generatedDocumentType: DocumentType!
-    greenInvoiceInfo: GreenInvoiceClient!
+    greenInvoiceInfo: GreenInvoiceClient
   }
 
   " fields for inserting a new client "

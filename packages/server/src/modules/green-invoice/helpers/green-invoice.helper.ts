@@ -1245,6 +1245,9 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       .get(ClientsProvider)
       .getClientByIdLoader.load(initialInput.client.id);
     if (!clientInfo) {
+      throw new GraphQLError(`Client with ID ${initialInput.client.id} not found`);
+    }
+    if (!clientInfo.green_invoice_id) {
       throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
     }
     const greenInvoiceClient = await injector
