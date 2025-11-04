@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { ChargeMatchesRow } from './charge-matches-row.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -219,20 +220,13 @@ export const ChargeMatchesTable = ({
                       : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
+                <TableHead />
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map(row => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map(row => <ChargeMatchesRow key={row.id} row={row} />)
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
