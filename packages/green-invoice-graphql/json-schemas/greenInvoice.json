@@ -2700,8 +2700,7 @@
     },
     "DocumentDescription": {
       "description": "Document's description",
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "DocumentIncome": {
       "type": "array",
