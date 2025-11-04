@@ -23,9 +23,9 @@ export function BusinessesFilters({
 
   // update url on page change
   useEffect(() => {
-    const newPage = activePage > 1 ? activePage.toFixed(0) : undefined;
+    const newPage = activePage > 0 ? activePage.toFixed(0) : undefined;
     const oldPage = get('page');
-    if (newPage !== oldPage && newPage !== '1') {
+    if (newPage !== oldPage && newPage !== '0') {
       set('page', newPage);
     }
   }, [activePage, get, set]);
@@ -47,9 +47,9 @@ export function BusinessesFilters({
     <div className="flex flex-row gap-5 items-center">
       <Pagination
         className="flex-fit w-fit mx-0"
-        value={activePage}
+        currentPageIndex={activePage}
         onChange={setPage}
-        total={totalPages}
+        totalPages={totalPages}
       />
       <Input
         className="w-72"

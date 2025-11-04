@@ -253,8 +253,8 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
         </div>
         <Pagination
           className="w-fit mx-0"
-          value={table.getState().pagination.pageIndex}
-          total={table.getPageCount()}
+          currentPageIndex={table.getState().pagination.pageIndex}
+          totalPages={table.getPageCount()}
           onChange={page => table.setPageIndex(page)}
         />
       </div>

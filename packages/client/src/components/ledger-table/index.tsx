@@ -162,7 +162,7 @@ export const LedgerTable = ({
     initialState: {
       pagination: {
         pageIndex: 0,
-        pageSize: 10,
+        pageSize: 100,
       },
       sorting: [
         {
@@ -215,8 +215,8 @@ export const LedgerTable = ({
       </Table>
       <div className="flex items-center justify-end space-x-2 py-4">
         <Pagination
-          value={table.getState().pagination.pageIndex}
-          total={table.getPageCount()}
+          currentPageIndex={table.getState().pagination.pageIndex}
+          totalPages={table.getPageCount()}
           onChange={page => table.setPageIndex(page)}
         />
       </div>
