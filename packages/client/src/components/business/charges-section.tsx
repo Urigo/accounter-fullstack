@@ -27,7 +27,7 @@ interface Props {
 
 export function ChargesSection({ businessId }: Props) {
   const { userContext } = useContext(UserContext);
-  const [activePage, setActivePage] = useState(1);
+  const [activePageIndex, setActivePageIndex] = useState(0);
 
   const [{ data, fetching }] = useQuery({
     query: BusinessChargesSectionDocument,
@@ -42,7 +42,7 @@ export function ChargesSection({ businessId }: Props) {
         },
         byBusinesses: [businessId],
       },
-      page: activePage,
+      page: activePageIndex,
       limit: 10,
     },
   });
@@ -66,9 +66,9 @@ export function ChargesSection({ businessId }: Props) {
         {totalPages > 1 && (
           <Pagination
             className="flex-fit w-fit mx-0"
-            currentPage={activePage}
-            onChange={setActivePage}
-            total={totalPages}
+            currentPage={activePageIndex}
+            onChange={setActivePageIndex}
+            totalPages={totalPages}
           />
         )}
       </CardHeader>
