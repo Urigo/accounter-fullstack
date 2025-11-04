@@ -484,1016 +484,527 @@ export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceC
 }
 
 export function greenInvoiceCountryToCountryCode(country: GreenInvoiceCountry): CountryCode {
-  switch (country) {
-    case 'AD':
-      return CountryCode.Andorra;
-    case 'AE':
-      return CountryCode['United Arab Emirates (the)'];
-    case 'AF':
-      return CountryCode.Afghanistan;
-    case 'AG':
-      return CountryCode['Antigua and Barbuda'];
-    case 'AI':
-      return CountryCode.Anguilla;
-    case 'AL':
-      return CountryCode.Albania;
-    case 'AM':
-      return CountryCode.Armenia;
-    case 'AO':
-      return CountryCode.Angola;
-    case 'AQ':
-      return CountryCode.Antarctica;
-    case 'AR':
-      return CountryCode.Argentina;
-    case 'AS':
-      return CountryCode['American Samoa'];
-    case 'AT':
-      return CountryCode.Austria;
-    case 'AU':
-      return CountryCode.Australia;
-    case 'AW':
-      return CountryCode.Aruba;
-    case 'AX':
-      return CountryCode['Åland Islands'];
-    case 'AZ':
-      return CountryCode.Azerbaijan;
-    case 'BA':
-      return CountryCode['Bosnia and Herzegovina'];
-    case 'BB':
-      return CountryCode.Barbados;
-    case 'BD':
-      return CountryCode.Bangladesh;
-    case 'BE':
-      return CountryCode.Belgium;
-    case 'BF':
-      return CountryCode['Burkina Faso'];
-    case 'BG':
-      return CountryCode.Bulgaria;
-    case 'BH':
-      return CountryCode.Bahrain;
-    case 'BI':
-      return CountryCode.Burundi;
-    case 'BJ':
-      return CountryCode.Benin;
-    case 'BL':
-      return CountryCode['Saint Barthélemy'];
-    case 'BM':
-      return CountryCode.Bermuda;
-    case 'BN':
-      return CountryCode['Brunei Darussalam'];
-    case 'BO':
-      return CountryCode['Bolivia (Plurinational State of)'];
-    case 'BQ':
-      return CountryCode['Bonaire, Sint Eustatius and Saba'];
-    case 'BR':
-      return CountryCode.Brazil;
-    case 'BS':
-      return CountryCode['Bahamas (the)'];
-    case 'BT':
-      return CountryCode.Bhutan;
-    case 'BV':
-      return CountryCode['Bouvet Island'];
-    case 'BW':
-      return CountryCode.Botswana;
-    case 'BY':
-      return CountryCode.Belarus;
-    case 'BZ':
-      return CountryCode.Belize;
-    case 'CA':
-      return CountryCode.Canada;
-    case 'CC':
-      return CountryCode['Cocos (Keeling) Islands (the)'];
-    case 'CD':
-      return CountryCode['Congo (the Democratic Republic of the)'];
-    case 'CF':
-      return CountryCode['Central African Republic (the)'];
-    case 'CG':
-      return CountryCode['Congo (the)'];
-    case 'CH':
-      return CountryCode.Switzerland;
-    case 'CI':
-      return CountryCode["Côte d'Ivoire"];
-    case 'CK':
-      return CountryCode['Cook Islands (the)'];
-    case 'CL':
-      return CountryCode.Chile;
-    case 'CM':
-      return CountryCode.Cameroon;
-    case 'CN':
-      return CountryCode.China;
-    case 'CO':
-      return CountryCode.Colombia;
-    case 'CR':
-      return CountryCode['Costa Rica'];
-    case 'CU':
-      return CountryCode.Cuba;
-    case 'CV':
-      return CountryCode['Cabo Verde'];
-    case 'CW':
-      return CountryCode.Curaçao;
-    case 'CX':
-      return CountryCode['Christmas Island'];
-    case 'CY':
-      return CountryCode.Cyprus;
-    case 'CZ':
-      return CountryCode.Czechia;
-    case 'DE':
-      return CountryCode.Germany;
-    case 'DJ':
-      return CountryCode.Djibouti;
-    case 'DK':
-      return CountryCode.Denmark;
-    case 'DM':
-      return CountryCode.Dominica;
-    case 'DO':
-      return CountryCode['Dominican Republic (the)'];
-    case 'DZ':
-      return CountryCode.Algeria;
-    case 'EC':
-      return CountryCode.Ecuador;
-    case 'EE':
-      return CountryCode.Estonia;
-    case 'EG':
-      return CountryCode.Egypt;
-    case 'EH':
-      return CountryCode['Western Sahara'];
-    case 'ER':
-      return CountryCode.Eritrea;
-    case 'ES':
-      return CountryCode.Spain;
-    case 'ET':
-      return CountryCode.Ethiopia;
-    case 'FI':
-      return CountryCode.Finland;
-    case 'FJ':
-      return CountryCode.Fiji;
-    case 'FK':
-      return CountryCode['Falkland Islands (the) [Malvinas]'];
-    case 'FM':
-      return CountryCode['Micronesia (Federated States of)'];
-    case 'FO':
-      return CountryCode['Faroe Islands (the)'];
-    case 'FR':
-      return CountryCode.France;
-    case 'GA':
-      return CountryCode.Gabon;
-    case 'GB':
-      return CountryCode['United Kingdom of Great Britain and Northern Ireland (the)'];
-    case 'GD':
-      return CountryCode.Grenada;
-    case 'GE':
-      return CountryCode.Georgia;
-    case 'GF':
-      return CountryCode['French Guiana'];
-    case 'GG':
-      return CountryCode.Guernsey;
-    case 'GH':
-      return CountryCode.Ghana;
-    case 'GI':
-      return CountryCode.Gibraltar;
-    case 'GL':
-      return CountryCode.Greenland;
-    case 'GM':
-      return CountryCode['Gambia (the)'];
-    case 'GN':
-      return CountryCode.Guinea;
-    case 'GP':
-      return CountryCode.Guadeloupe;
-    case 'GQ':
-      return CountryCode['Equatorial Guinea'];
-    case 'GR':
-      return CountryCode.Greece;
-    case 'GS':
-      return CountryCode['South Georgia and the South Sandwich Islands'];
-    case 'GT':
-      return CountryCode.Guatemala;
-    case 'GU':
-      return CountryCode.Guam;
-    case 'GW':
-      return CountryCode['Guinea-Bissau'];
-    case 'GY':
-      return CountryCode.Guyana;
-    case 'HK':
-      return CountryCode['Hong Kong'];
-    case 'HM':
-      return CountryCode['Heard Island and McDonald Islands'];
-    case 'HN':
-      return CountryCode.Honduras;
-    case 'HR':
-      return CountryCode.Croatia;
-    case 'HT':
-      return CountryCode.Haiti;
-    case 'HU':
-      return CountryCode.Hungary;
-    case 'ID':
-      return CountryCode.Indonesia;
-    case 'IE':
-      return CountryCode.Ireland;
-    case 'IL':
-      return CountryCode.Israel;
-    case 'IM':
-      return CountryCode['Isle of Man'];
-    case 'IN':
-      return CountryCode.India;
-    case 'IO':
-      return CountryCode['British Indian Ocean Territory (the)'];
-    case 'IQ':
-      return CountryCode.Iraq;
-    case 'IR':
-      return CountryCode['Iran (Islamic Republic of)'];
-    case 'IS':
-      return CountryCode.Iceland;
-    case 'IT':
-      return CountryCode.Italy;
-    case 'JE':
-      return CountryCode.Jersey;
-    case 'JM':
-      return CountryCode.Jamaica;
-    case 'JO':
-      return CountryCode.Jordan;
-    case 'JP':
-      return CountryCode.Japan;
-    case 'KE':
-      return CountryCode.Kenya;
-    case 'KG':
-      return CountryCode.Kyrgyzstan;
-    case 'KH':
-      return CountryCode.Cambodia;
-    case 'KI':
-      return CountryCode.Kiribati;
-    case 'KM':
-      return CountryCode['Comoros (the)'];
-    case 'KN':
-      return CountryCode['Saint Kitts and Nevis'];
-    case 'KP':
-      return CountryCode["Korea (the Democratic People's Republic of)"];
-    case 'KR':
-      return CountryCode['Korea (the Republic of)'];
-    case 'KW':
-      return CountryCode.Kuwait;
-    case 'KY':
-      return CountryCode['Cayman Islands (the)'];
-    case 'KZ':
-      return CountryCode.Kazakhstan;
-    case 'LA':
-      return CountryCode["Lao People's Democratic Republic (the)"];
-    case 'LB':
-      return CountryCode.Lebanon;
-    case 'LC':
-      return CountryCode['Saint Lucia'];
-    case 'LI':
-      return CountryCode.Liechtenstein;
-    case 'LK':
-      return CountryCode['Sri Lanka'];
-    case 'LR':
-      return CountryCode.Liberia;
-    case 'LS':
-      return CountryCode.Lesotho;
-    case 'LT':
-      return CountryCode.Lithuania;
-    case 'LU':
-      return CountryCode.Luxembourg;
-    case 'LV':
-      return CountryCode.Latvia;
-    case 'LY':
-      return CountryCode.Libya;
-    case 'MA':
-      return CountryCode.Morocco;
-    case 'MC':
-      return CountryCode.Monaco;
-    case 'MD':
-      return CountryCode['Moldova (the Republic of)'];
-    case 'ME':
-      return CountryCode.Montenegro;
-    case 'MF':
-      return CountryCode['Saint Martin (French part)'];
-    case 'MG':
-      return CountryCode.Madagascar;
-    case 'MH':
-      return CountryCode['Marshall Islands (the)'];
-    case 'MK':
-      return CountryCode['Republic of North Macedonia'];
-    case 'ML':
-      return CountryCode.Mali;
-    case 'MM':
-      return CountryCode.Myanmar;
-    case 'MN':
-      return CountryCode.Mongolia;
-    case 'MO':
-      return CountryCode.Macao;
-    case 'MP':
-      return CountryCode['Northern Mariana Islands (the)'];
-    case 'MQ':
-      return CountryCode.Martinique;
-    case 'MR':
-      return CountryCode.Mauritania;
-    case 'MS':
-      return CountryCode.Montserrat;
-    case 'MT':
-      return CountryCode.Malta;
-    case 'MU':
-      return CountryCode.Mauritius;
-    case 'MV':
-      return CountryCode.Maldives;
-    case 'MW':
-      return CountryCode.Malawi;
-    case 'MX':
-      return CountryCode.Mexico;
-    case 'MY':
-      return CountryCode.Malaysia;
-    case 'MZ':
-      return CountryCode.Mozambique;
-    case 'NA':
-      return CountryCode.Namibia;
-    case 'NC':
-      return CountryCode['New Caledonia'];
-    case 'NE':
-      return CountryCode['Niger (the)'];
-    case 'NF':
-      return CountryCode['Norfolk Island'];
-    case 'NG':
-      return CountryCode.Nigeria;
-    case 'NI':
-      return CountryCode.Nicaragua;
-    case 'NL':
-      return CountryCode['Netherlands (the)'];
-    case 'NO':
-      return CountryCode.Norway;
-    case 'NP':
-      return CountryCode.Nepal;
-    case 'NR':
-      return CountryCode.Nauru;
-    case 'NU':
-      return CountryCode.Niue;
-    case 'NZ':
-      return CountryCode['New Zealand'];
-    case 'OM':
-      return CountryCode.Oman;
-    case 'PA':
-      return CountryCode.Panama;
-    case 'PE':
-      return CountryCode.Peru;
-    case 'PF':
-      return CountryCode['French Polynesia'];
-    case 'PG':
-      return CountryCode['Papua New Guinea'];
-    case 'PH':
-      return CountryCode['Philippines (the)'];
-    case 'PK':
-      return CountryCode.Pakistan;
-    case 'PL':
-      return CountryCode.Poland;
-    case 'PM':
-      return CountryCode['Saint Pierre and Miquelon'];
-    case 'PN':
-      return CountryCode.Pitcairn;
-    case 'PR':
-      return CountryCode['Puerto Rico'];
-    case 'PS':
-      return CountryCode['Palestine, State of'];
-    case 'PT':
-      return CountryCode.Portugal;
-    case 'PW':
-      return CountryCode.Palau;
-    case 'PY':
-      return CountryCode.Paraguay;
-    case 'QA':
-      return CountryCode.Qatar;
-    case 'RE':
-      return CountryCode.Réunion;
-    case 'RO':
-      return CountryCode.Romania;
-    case 'RS':
-      return CountryCode.Serbia;
-    case 'RU':
-      return CountryCode['Russian Federation (the)'];
-    case 'RW':
-      return CountryCode.Rwanda;
-    case 'SA':
-      return CountryCode['Saudi Arabia'];
-    case 'SB':
-      return CountryCode['Solomon Islands'];
-    case 'SC':
-      return CountryCode.Seychelles;
-    case 'SD':
-      return CountryCode['Sudan (the)'];
-    case 'SE':
-      return CountryCode.Sweden;
-    case 'SG':
-      return CountryCode.Singapore;
-    case 'SH':
-      return CountryCode['Saint Helena, Ascension and Tristan da Cunha'];
-    case 'SI':
-      return CountryCode.Slovenia;
-    case 'SJ':
-      return CountryCode['Svalbard and Jan Mayen'];
-    case 'SK':
-      return CountryCode.Slovakia;
-    case 'SL':
-      return CountryCode['Sierra Leone'];
-    case 'SM':
-      return CountryCode['San Marino'];
-    case 'SN':
-      return CountryCode.Senegal;
-    case 'SO':
-      return CountryCode.Somalia;
-    case 'SR':
-      return CountryCode.Suriname;
-    case 'SS':
-      return CountryCode['South Sudan'];
-    case 'ST':
-      return CountryCode['Sao Tome and Principe'];
-    case 'SV':
-      return CountryCode['El Salvador'];
-    case 'SX':
-      return CountryCode['Sint Maarten (Dutch part)'];
-    case 'SY':
-      return CountryCode['Syrian Arab Republic'];
-    case 'SZ':
-      return CountryCode.Eswatini;
-    case 'TC':
-      return CountryCode['Turks and Caicos Islands (the)'];
-    case 'TD':
-      return CountryCode.Chad;
-    case 'TF':
-      return CountryCode['French Southern Territories (the)'];
-    case 'TG':
-      return CountryCode.Togo;
-    case 'TH':
-      return CountryCode.Thailand;
-    case 'TJ':
-      return CountryCode.Tajikistan;
-    case 'TK':
-      return CountryCode.Tokelau;
-    case 'TL':
-      return CountryCode['Timor-Leste'];
-    case 'TM':
-      return CountryCode.Turkmenistan;
-    case 'TN':
-      return CountryCode.Tunisia;
-    case 'TO':
-      return CountryCode.Tonga;
-    case 'TR':
-      return CountryCode.Turkey;
-    case 'TT':
-      return CountryCode['Trinidad and Tobago'];
-    case 'TV':
-      return CountryCode.Tuvalu;
-    case 'TW':
-      return CountryCode['Taiwan (Province of China)'];
-    case 'TZ':
-      return CountryCode['Tanzania, United Republic of'];
-    case 'UA':
-      return CountryCode.Ukraine;
-    case 'UG':
-      return CountryCode.Uganda;
-    case 'UM':
-      return CountryCode['United States Minor Outlying Islands (the)'];
-    case 'US':
-      return CountryCode['United States of America (the)'];
-    case 'UY':
-      return CountryCode.Uruguay;
-    case 'UZ':
-      return CountryCode.Uzbekistan;
-    case 'VA':
-      return CountryCode['Holy See (the)'];
-    case 'VC':
-      return CountryCode['Saint Vincent and the Grenadines'];
-    case 'VE':
-      return CountryCode['Venezuela (Bolivarian Republic of)'];
-    case 'VG':
-      return CountryCode['Virgin Islands (British)'];
-    case 'VI':
-      return CountryCode['Virgin Islands (U.S.)'];
-    case 'VN':
-      return CountryCode['Viet Nam'];
-    case 'VU':
-      return CountryCode.Vanuatu;
-    case 'WF':
-      return CountryCode['Wallis and Futuna'];
-    case 'WS':
-      return CountryCode.Samoa;
-    case 'YE':
-      return CountryCode.Yemen;
-    case 'YT':
-      return CountryCode.Mayotte;
-    case 'ZA':
-      return CountryCode['South Africa'];
-    case 'ZM':
-      return CountryCode.Zambia;
-    case 'ZW':
-      return CountryCode.Zimbabwe;
-    case 'XK':
-      // TODO: remove this once green invoice adds Kosovo to their list
-      return CountryCode.Serbia;
-    default:
-      throw new Error(`Unsupported Green Invoice country: ${country}`);
+  const greenInvoiceToCountryCodeMap: Partial<Record<GreenInvoiceCountry, CountryCode>> = {
+    AD: CountryCode.Andorra,
+    AE: CountryCode['United Arab Emirates (the)'],
+    AF: CountryCode.Afghanistan,
+    AG: CountryCode['Antigua and Barbuda'],
+    AI: CountryCode.Anguilla,
+    AL: CountryCode.Albania,
+    AM: CountryCode.Armenia,
+    AO: CountryCode.Angola,
+    AQ: CountryCode.Antarctica,
+    AR: CountryCode.Argentina,
+    AS: CountryCode['American Samoa'],
+    AT: CountryCode.Austria,
+    AU: CountryCode.Australia,
+    AW: CountryCode.Aruba,
+    AX: CountryCode['Åland Islands'],
+    AZ: CountryCode.Azerbaijan,
+    BA: CountryCode['Bosnia and Herzegovina'],
+    BB: CountryCode.Barbados,
+    BD: CountryCode.Bangladesh,
+    BE: CountryCode.Belgium,
+    BF: CountryCode['Burkina Faso'],
+    BG: CountryCode.Bulgaria,
+    BH: CountryCode.Bahrain,
+    BI: CountryCode.Burundi,
+    BJ: CountryCode.Benin,
+    BL: CountryCode['Saint Barthélemy'],
+    BM: CountryCode.Bermuda,
+    BN: CountryCode['Brunei Darussalam'],
+    BO: CountryCode['Bolivia (Plurinational State of)'],
+    BQ: CountryCode['Bonaire, Sint Eustatius and Saba'],
+    BR: CountryCode.Brazil,
+    BS: CountryCode['Bahamas (the)'],
+    BT: CountryCode.Bhutan,
+    BV: CountryCode['Bouvet Island'],
+    BW: CountryCode.Botswana,
+    BY: CountryCode.Belarus,
+    BZ: CountryCode.Belize,
+    CA: CountryCode.Canada,
+    CC: CountryCode['Cocos (Keeling) Islands (the)'],
+    CD: CountryCode['Congo (the Democratic Republic of the)'],
+    CF: CountryCode['Central African Republic (the)'],
+    CG: CountryCode['Congo (the)'],
+    CH: CountryCode.Switzerland,
+    CI: CountryCode["Côte d'Ivoire"],
+    CK: CountryCode['Cook Islands (the)'],
+    CL: CountryCode.Chile,
+    CM: CountryCode.Cameroon,
+    CN: CountryCode.China,
+    CO: CountryCode.Colombia,
+    CR: CountryCode['Costa Rica'],
+    CU: CountryCode.Cuba,
+    CV: CountryCode['Cabo Verde'],
+    CW: CountryCode.Curaçao,
+    CX: CountryCode['Christmas Island'],
+    CY: CountryCode.Cyprus,
+    CZ: CountryCode.Czechia,
+    DE: CountryCode.Germany,
+    DJ: CountryCode.Djibouti,
+    DK: CountryCode.Denmark,
+    DM: CountryCode.Dominica,
+    DO: CountryCode['Dominican Republic (the)'],
+    DZ: CountryCode.Algeria,
+    EC: CountryCode.Ecuador,
+    EE: CountryCode.Estonia,
+    EG: CountryCode.Egypt,
+    EH: CountryCode['Western Sahara'],
+    ER: CountryCode.Eritrea,
+    ES: CountryCode.Spain,
+    ET: CountryCode.Ethiopia,
+    FI: CountryCode.Finland,
+    FJ: CountryCode.Fiji,
+    FK: CountryCode['Falkland Islands (the) [Malvinas]'],
+    FM: CountryCode['Micronesia (Federated States of)'],
+    FO: CountryCode['Faroe Islands (the)'],
+    FR: CountryCode.France,
+    GA: CountryCode.Gabon,
+    GB: CountryCode['United Kingdom of Great Britain and Northern Ireland (the)'],
+    GD: CountryCode.Grenada,
+    GE: CountryCode.Georgia,
+    GF: CountryCode['French Guiana'],
+    GG: CountryCode.Guernsey,
+    GH: CountryCode.Ghana,
+    GI: CountryCode.Gibraltar,
+    GL: CountryCode.Greenland,
+    GM: CountryCode['Gambia (the)'],
+    GN: CountryCode.Guinea,
+    GP: CountryCode.Guadeloupe,
+    GQ: CountryCode['Equatorial Guinea'],
+    GR: CountryCode.Greece,
+    GS: CountryCode['South Georgia and the South Sandwich Islands'],
+    GT: CountryCode.Guatemala,
+    GU: CountryCode.Guam,
+    GW: CountryCode['Guinea-Bissau'],
+    GY: CountryCode.Guyana,
+    HK: CountryCode['Hong Kong'],
+    HM: CountryCode['Heard Island and McDonald Islands'],
+    HN: CountryCode.Honduras,
+    HR: CountryCode.Croatia,
+    HT: CountryCode.Haiti,
+    HU: CountryCode.Hungary,
+    ID: CountryCode.Indonesia,
+    IE: CountryCode.Ireland,
+    IL: CountryCode.Israel,
+    IM: CountryCode['Isle of Man'],
+    IN: CountryCode.India,
+    IO: CountryCode['British Indian Ocean Territory (the)'],
+    IQ: CountryCode.Iraq,
+    IR: CountryCode['Iran (Islamic Republic of)'],
+    IS: CountryCode.Iceland,
+    IT: CountryCode.Italy,
+    JE: CountryCode.Jersey,
+    JM: CountryCode.Jamaica,
+    JO: CountryCode.Jordan,
+    JP: CountryCode.Japan,
+    KE: CountryCode.Kenya,
+    KG: CountryCode.Kyrgyzstan,
+    KH: CountryCode.Cambodia,
+    KI: CountryCode.Kiribati,
+    KM: CountryCode['Comoros (the)'],
+    KN: CountryCode['Saint Kitts and Nevis'],
+    KP: CountryCode["Korea (the Democratic People's Republic of)"],
+    KR: CountryCode['Korea (the Republic of)'],
+    KW: CountryCode.Kuwait,
+    KY: CountryCode['Cayman Islands (the)'],
+    KZ: CountryCode.Kazakhstan,
+    LA: CountryCode["Lao People's Democratic Republic (the)"],
+    LB: CountryCode.Lebanon,
+    LC: CountryCode['Saint Lucia'],
+    LI: CountryCode.Liechtenstein,
+    LK: CountryCode['Sri Lanka'],
+    LR: CountryCode.Liberia,
+    LS: CountryCode.Lesotho,
+    LT: CountryCode.Lithuania,
+    LU: CountryCode.Luxembourg,
+    LV: CountryCode.Latvia,
+    LY: CountryCode.Libya,
+    MA: CountryCode.Morocco,
+    MC: CountryCode.Monaco,
+    MD: CountryCode['Moldova (the Republic of)'],
+    ME: CountryCode.Montenegro,
+    MF: CountryCode['Saint Martin (French part)'],
+    MG: CountryCode.Madagascar,
+    MH: CountryCode['Marshall Islands (the)'],
+    MK: CountryCode['Republic of North Macedonia'],
+    ML: CountryCode.Mali,
+    MM: CountryCode.Myanmar,
+    MN: CountryCode.Mongolia,
+    MO: CountryCode.Macao,
+    MP: CountryCode['Northern Mariana Islands (the)'],
+    MQ: CountryCode.Martinique,
+    MR: CountryCode.Mauritania,
+    MS: CountryCode.Montserrat,
+    MT: CountryCode.Malta,
+    MU: CountryCode.Mauritius,
+    MV: CountryCode.Maldives,
+    MW: CountryCode.Malawi,
+    MX: CountryCode.Mexico,
+    MY: CountryCode.Malaysia,
+    MZ: CountryCode.Mozambique,
+    NA: CountryCode.Namibia,
+    NC: CountryCode['New Caledonia'],
+    NE: CountryCode['Niger (the)'],
+    NF: CountryCode['Norfolk Island'],
+    NG: CountryCode.Nigeria,
+    NI: CountryCode.Nicaragua,
+    NL: CountryCode['Netherlands (the)'],
+    NO: CountryCode.Norway,
+    NP: CountryCode.Nepal,
+    NR: CountryCode.Nauru,
+    NU: CountryCode.Niue,
+    NZ: CountryCode['New Zealand'],
+    OM: CountryCode.Oman,
+    PA: CountryCode.Panama,
+    PE: CountryCode.Peru,
+    PF: CountryCode['French Polynesia'],
+    PG: CountryCode['Papua New Guinea'],
+    PH: CountryCode['Philippines (the)'],
+    PK: CountryCode.Pakistan,
+    PL: CountryCode.Poland,
+    PM: CountryCode['Saint Pierre and Miquelon'],
+    PN: CountryCode.Pitcairn,
+    PR: CountryCode['Puerto Rico'],
+    PS: CountryCode['Palestine, State of'],
+    PT: CountryCode.Portugal,
+    PW: CountryCode.Palau,
+    PY: CountryCode.Paraguay,
+    QA: CountryCode.Qatar,
+    RE: CountryCode.Réunion,
+    RO: CountryCode.Romania,
+    RS: CountryCode.Serbia,
+    RU: CountryCode['Russian Federation (the)'],
+    RW: CountryCode.Rwanda,
+    SA: CountryCode['Saudi Arabia'],
+    SB: CountryCode['Solomon Islands'],
+    SC: CountryCode.Seychelles,
+    SD: CountryCode['Sudan (the)'],
+    SE: CountryCode.Sweden,
+    SG: CountryCode.Singapore,
+    SH: CountryCode['Saint Helena, Ascension and Tristan da Cunha'],
+    SI: CountryCode.Slovenia,
+    SJ: CountryCode['Svalbard and Jan Mayen'],
+    SK: CountryCode.Slovakia,
+    SL: CountryCode['Sierra Leone'],
+    SM: CountryCode['San Marino'],
+    SN: CountryCode.Senegal,
+    SO: CountryCode.Somalia,
+    SR: CountryCode.Suriname,
+    SS: CountryCode['South Sudan'],
+    ST: CountryCode['Sao Tome and Principe'],
+    SV: CountryCode['El Salvador'],
+    SX: CountryCode['Sint Maarten (Dutch part)'],
+    SY: CountryCode['Syrian Arab Republic'],
+    SZ: CountryCode.Eswatini,
+    TC: CountryCode['Turks and Caicos Islands (the)'],
+    TD: CountryCode.Chad,
+    TF: CountryCode['French Southern Territories (the)'],
+    TG: CountryCode.Togo,
+    TH: CountryCode.Thailand,
+    TJ: CountryCode.Tajikistan,
+    TK: CountryCode.Tokelau,
+    TL: CountryCode['Timor-Leste'],
+    TM: CountryCode.Turkmenistan,
+    TN: CountryCode.Tunisia,
+    TO: CountryCode.Tonga,
+    TR: CountryCode.Turkey,
+    TT: CountryCode['Trinidad and Tobago'],
+    TV: CountryCode.Tuvalu,
+    TW: CountryCode['Taiwan (Province of China)'],
+    TZ: CountryCode['Tanzania, United Republic of'],
+    UA: CountryCode.Ukraine,
+    UG: CountryCode.Uganda,
+    UM: CountryCode['United States Minor Outlying Islands (the)'],
+    US: CountryCode['United States of America (the)'],
+    UY: CountryCode.Uruguay,
+    UZ: CountryCode.Uzbekistan,
+    VA: CountryCode['Holy See (the)'],
+    VC: CountryCode['Saint Vincent and the Grenadines'],
+    VE: CountryCode['Venezuela (Bolivarian Republic of)'],
+    VG: CountryCode['Virgin Islands (British)'],
+    VI: CountryCode['Virgin Islands (U.S.)'],
+    VN: CountryCode['Viet Nam'],
+    VU: CountryCode.Vanuatu,
+    WF: CountryCode['Wallis and Futuna'],
+    WS: CountryCode.Samoa,
+    YE: CountryCode.Yemen,
+    YT: CountryCode.Mayotte,
+    ZA: CountryCode['South Africa'],
+    ZM: CountryCode.Zambia,
+    ZW: CountryCode.Zimbabwe,
+  };
+
+  if (country === 'XK') {
+    // TODO: remove this once green invoice adds Kosovo to their list
+    return CountryCode.Serbia;
   }
+  const code = greenInvoiceToCountryCodeMap[country];
+  if (code) {
+    return code;
+  }
+  throw new Error(`Unsupported Green Invoice country: ${country}`);
 }
 
 export function countryCodeToGreenInvoiceCountry(countryCode: CountryCode): GreenInvoiceCountry {
-  switch (countryCode) {
-    case CountryCode.Afghanistan:
-      return 'AF';
-    case CountryCode['Åland Islands']:
-      return 'AX';
-    case CountryCode.Albania:
-      return 'AL';
-    case CountryCode.Algeria:
-      return 'DZ';
-    case CountryCode['American Samoa']:
-      return 'AS';
-    case CountryCode.Andorra:
-      return 'AD';
-    case CountryCode.Angola:
-      return 'AO';
-    case CountryCode.Anguilla:
-      return 'AI';
-    case CountryCode.Antarctica:
-      return 'AQ';
-    case CountryCode['Antigua and Barbuda']:
-      return 'AG';
-    case CountryCode.Argentina:
-      return 'AR';
-    case CountryCode.Armenia:
-      return 'AM';
-    case CountryCode.Aruba:
-      return 'AW';
-    case CountryCode.Australia:
-      return 'AU';
-    case CountryCode.Austria:
-      return 'AT';
-    case CountryCode.Azerbaijan:
-      return 'AZ';
-    case CountryCode['Bahamas (the)']:
-      return 'BS';
-    case CountryCode.Bahrain:
-      return 'BH';
-    case CountryCode.Bangladesh:
-      return 'BD';
-    case CountryCode.Barbados:
-      return 'BB';
-    case CountryCode.Belarus:
-      return 'BY';
-    case CountryCode.Belgium:
-      return 'BE';
-    case CountryCode.Belize:
-      return 'BZ';
-    case CountryCode.Benin:
-      return 'BJ';
-    case CountryCode.Bermuda:
-      return 'BM';
-    case CountryCode.Bhutan:
-      return 'BT';
-    case CountryCode['Bolivia (Plurinational State of)']:
-      return 'BO';
-    case CountryCode['Bonaire, Sint Eustatius and Saba']:
-      return 'BQ';
-    case CountryCode['Bosnia and Herzegovina']:
-      return 'BA';
-    case CountryCode.Botswana:
-      return 'BW';
-    case CountryCode['Bouvet Island']:
-      return 'BV';
-    case CountryCode.Brazil:
-      return 'BR';
-    case CountryCode['British Indian Ocean Territory (the)']:
-      return 'IO';
-    case CountryCode['Brunei Darussalam']:
-      return 'BN';
-    case CountryCode.Bulgaria:
-      return 'BG';
-    case CountryCode['Burkina Faso']:
-      return 'BF';
-    case CountryCode.Burundi:
-      return 'BI';
-    case CountryCode['Cabo Verde']:
-      return 'CV';
-    case CountryCode.Cambodia:
-      return 'KH';
-    case CountryCode.Cameroon:
-      return 'CM';
-    case CountryCode.Canada:
-      return 'CA';
-    case CountryCode['Cayman Islands (the)']:
-      return 'KY';
-    case CountryCode['Central African Republic (the)']:
-      return 'CF';
-    case CountryCode.Chad:
-      return 'TD';
-    case CountryCode.Chile:
-      return 'CL';
-    case CountryCode.China:
-      return 'CN';
-    case CountryCode['Christmas Island']:
-      return 'CX';
-    case CountryCode['Cocos (Keeling) Islands (the)']:
-      return 'CC';
-    case CountryCode.Colombia:
-      return 'CO';
-    case CountryCode['Comoros (the)']:
-      return 'KM';
-    case CountryCode['Congo (the Democratic Republic of the)']:
-      return 'CD';
-    case CountryCode['Congo (the)']:
-      return 'CG';
-    case CountryCode['Cook Islands (the)']:
-      return 'CK';
-    case CountryCode['Costa Rica']:
-      return 'CR';
-    case CountryCode.Croatia:
-      return 'HR';
-    case CountryCode.Cuba:
-      return 'CU';
-    case CountryCode.Curaçao:
-      return 'CW';
-    case CountryCode.Cyprus:
-      return 'CY';
-    case CountryCode.Czechia:
-      return 'CZ';
-    case CountryCode["Côte d'Ivoire"]:
-      return 'CI';
-    case CountryCode.Denmark:
-      return 'DK';
-    case CountryCode.Djibouti:
-      return 'DJ';
-    case CountryCode.Dominica:
-      return 'DM';
-    case CountryCode['Dominican Republic (the)']:
-      return 'DO';
-    case CountryCode.Ecuador:
-      return 'EC';
-    case CountryCode.Egypt:
-      return 'EG';
-    case CountryCode['El Salvador']:
-      return 'SV';
-    case CountryCode['Equatorial Guinea']:
-      return 'GQ';
-    case CountryCode.Eritrea:
-      return 'ER';
-    case CountryCode.Estonia:
-      return 'EE';
-    case CountryCode.Eswatini:
-      return 'SZ';
-    case CountryCode.Ethiopia:
-      return 'ET';
-    case CountryCode['Falkland Islands (the) [Malvinas]']:
-      return 'FK';
-    case CountryCode['Faroe Islands (the)']:
-      return 'FO';
-    case CountryCode.Fiji:
-      return 'FJ';
-    case CountryCode.Finland:
-      return 'FI';
-    case CountryCode.France:
-      return 'FR';
-    case CountryCode['French Guiana']:
-      return 'GF';
-    case CountryCode['French Polynesia']:
-      return 'PF';
-    case CountryCode['French Southern Territories (the)']:
-      return 'TF';
-    case CountryCode.Gabon:
-      return 'GA';
-    case CountryCode['Gambia (the)']:
-      return 'GM';
-    case CountryCode.Georgia:
-      return 'GE';
-    case CountryCode.Germany:
-      return 'DE';
-    case CountryCode.Ghana:
-      return 'GH';
-    case CountryCode.Gibraltar:
-      return 'GI';
-    case CountryCode.Greece:
-      return 'GR';
-    case CountryCode.Greenland:
-      return 'GL';
-    case CountryCode.Grenada:
-      return 'GD';
-    case CountryCode.Guadeloupe:
-      return 'GP';
-    case CountryCode.Guam:
-      return 'GU';
-    case CountryCode.Guatemala:
-      return 'GT';
-    case CountryCode.Guernsey:
-      return 'GG';
-    case CountryCode.Guinea:
-      return 'GN';
-    case CountryCode['Guinea-Bissau']:
-      return 'GW';
-    case CountryCode.Guyana:
-      return 'GY';
-    case CountryCode.Haiti:
-      return 'HT';
-    case CountryCode['Heard Island and McDonald Islands']:
-      return 'HM';
-    case CountryCode['Holy See (the)']:
-      return 'VA';
-    case CountryCode.Honduras:
-      return 'HN';
-    case CountryCode['Hong Kong']:
-      return 'HK';
-    case CountryCode.Hungary:
-      return 'HU';
-    case CountryCode.Iceland:
-      return 'IS';
-    case CountryCode.India:
-      return 'IN';
-    case CountryCode.Indonesia:
-      return 'ID';
-    case CountryCode['Iran (Islamic Republic of)']:
-      return 'IR';
-    case CountryCode.Iraq:
-      return 'IQ';
-    case CountryCode.Ireland:
-      return 'IE';
-    case CountryCode['Isle of Man']:
-      return 'IM';
-    case CountryCode.Israel:
-      return 'IL';
-    case CountryCode.Italy:
-      return 'IT';
-    case CountryCode.Jamaica:
-      return 'JM';
-    case CountryCode.Japan:
-      return 'JP';
-    case CountryCode.Jersey:
-      return 'JE';
-    case CountryCode.Jordan:
-      return 'JO';
-    case CountryCode.Kazakhstan:
-      return 'KZ';
-    case CountryCode.Kenya:
-      return 'KE';
-    case CountryCode.Kiribati:
-      return 'KI';
-    case CountryCode["Korea (the Democratic People's Republic of)"]:
-      return 'KP';
-    case CountryCode['Korea (the Republic of)']:
-      return 'KR';
-    case CountryCode.Kuwait:
-      return 'KW';
-    case CountryCode.Kyrgyzstan:
-      return 'KG';
-    case CountryCode["Lao People's Democratic Republic (the)"]:
-      return 'LA';
-    case CountryCode.Latvia:
-      return 'LV';
-    case CountryCode.Lebanon:
-      return 'LB';
-    case CountryCode.Lesotho:
-      return 'LS';
-    case CountryCode.Liberia:
-      return 'LR';
-    case CountryCode.Libya:
-      return 'LY';
-    case CountryCode.Liechtenstein:
-      return 'LI';
-    case CountryCode.Lithuania:
-      return 'LT';
-    case CountryCode.Luxembourg:
-      return 'LU';
-    case CountryCode.Macao:
-      return 'MO';
-    case CountryCode.Madagascar:
-      return 'MG';
-    case CountryCode.Malawi:
-      return 'MW';
-    case CountryCode.Malaysia:
-      return 'MY';
-    case CountryCode.Maldives:
-      return 'MV';
-    case CountryCode.Mali:
-      return 'ML';
-    case CountryCode.Malta:
-      return 'MT';
-    case CountryCode['Marshall Islands (the)']:
-      return 'MH';
-    case CountryCode.Martinique:
-      return 'MQ';
-    case CountryCode.Mauritania:
-      return 'MR';
-    case CountryCode.Mauritius:
-      return 'MU';
-    case CountryCode.Mayotte:
-      return 'YT';
-    case CountryCode.Mexico:
-      return 'MX';
-    case CountryCode['Micronesia (Federated States of)']:
-      return 'FM';
-    case CountryCode['Moldova (the Republic of)']:
-      return 'MD';
-    case CountryCode.Monaco:
-      return 'MC';
-    case CountryCode.Mongolia:
-      return 'MN';
-    case CountryCode.Montenegro:
-      return 'ME';
-    case CountryCode.Montserrat:
-      return 'MS';
-    case CountryCode.Morocco:
-      return 'MA';
-    case CountryCode.Mozambique:
-      return 'MZ';
-    case CountryCode.Myanmar:
-      return 'MM';
-    case CountryCode.Namibia:
-      return 'NA';
-    case CountryCode.Nauru:
-      return 'NR';
-    case CountryCode.Nepal:
-      return 'NP';
-    case CountryCode['Netherlands (the)']:
-      return 'NL';
-    case CountryCode['New Caledonia']:
-      return 'NC';
-    case CountryCode['New Zealand']:
-      return 'NZ';
-    case CountryCode.Nicaragua:
-      return 'NI';
-    case CountryCode['Niger (the)']:
-      return 'NE';
-    case CountryCode.Nigeria:
-      return 'NG';
-    case CountryCode.Niue:
-      return 'NU';
-    case CountryCode['Norfolk Island']:
-      return 'NF';
-    case CountryCode['Northern Mariana Islands (the)']:
-      return 'MP';
-    case CountryCode.Norway:
-      return 'NO';
-    case CountryCode.Oman:
-      return 'OM';
-    case CountryCode.Pakistan:
-      return 'PK';
-    case CountryCode.Palau:
-      return 'PW';
-    case CountryCode['Palestine, State of']:
-      return 'PS';
-    case CountryCode.Panama:
-      return 'PA';
-    case CountryCode['Papua New Guinea']:
-      return 'PG';
-    case CountryCode.Paraguay:
-      return 'PY';
-    case CountryCode.Peru:
-      return 'PE';
-    case CountryCode['Philippines (the)']:
-      return 'PH';
-    case CountryCode.Pitcairn:
-      return 'PN';
-    case CountryCode.Poland:
-      return 'PL';
-    case CountryCode.Portugal:
-      return 'PT';
-    case CountryCode['Puerto Rico']:
-      return 'PR';
-    case CountryCode.Qatar:
-      return 'QA';
-    case CountryCode['Republic of North Macedonia']:
-      return 'MK';
-    case CountryCode.Romania:
-      return 'RO';
-    case CountryCode['Russian Federation (the)']:
-      return 'RU';
-    case CountryCode.Rwanda:
-      return 'RW';
-    case CountryCode.Réunion:
-      return 'RE';
-    case CountryCode['Saint Barthélemy']:
-      return 'BL';
-    case CountryCode['Saint Helena, Ascension and Tristan da Cunha']:
-      return 'SH';
-    case CountryCode['Saint Kitts and Nevis']:
-      return 'KN';
-    case CountryCode['Saint Lucia']:
-      return 'LC';
-    case CountryCode['Saint Martin (French part)']:
-      return 'MF';
-    case CountryCode['Saint Pierre and Miquelon']:
-      return 'PM';
-    case CountryCode['Saint Vincent and the Grenadines']:
-      return 'VC';
-    case CountryCode.Samoa:
-      return 'WS';
-    case CountryCode['San Marino']:
-      return 'SM';
-    case CountryCode['Sao Tome and Principe']:
-      return 'ST';
-    case CountryCode['Saudi Arabia']:
-      return 'SA';
-    case CountryCode.Senegal:
-      return 'SN';
-    case CountryCode.Serbia:
-      return 'RS';
-    case CountryCode.Seychelles:
-      return 'SC';
-    case CountryCode['Sierra Leone']:
-      return 'SL';
-    case CountryCode.Singapore:
-      return 'SG';
-    case CountryCode['Sint Maarten (Dutch part)']:
-      return 'SX';
-    case CountryCode.Slovakia:
-      return 'SK';
-    case CountryCode.Slovenia:
-      return 'SI';
-    case CountryCode['Solomon Islands']:
-      return 'SB';
-    case CountryCode.Somalia:
-      return 'SO';
-    case CountryCode['South Africa']:
-      return 'ZA';
-    case CountryCode['South Georgia and the South Sandwich Islands']:
-      return 'GS';
-    case CountryCode['South Sudan']:
-      return 'SS';
-    case CountryCode.Spain:
-      return 'ES';
-    case CountryCode['Sri Lanka']:
-      return 'LK';
-    case CountryCode['Sudan (the)']:
-      return 'SD';
-    case CountryCode.Suriname:
-      return 'SR';
-    case CountryCode['Svalbard and Jan Mayen']:
-      return 'SJ';
-    case CountryCode.Sweden:
-      return 'SE';
-    case CountryCode.Switzerland:
-      return 'CH';
-    case CountryCode['Syrian Arab Republic']:
-      return 'SY';
-    case CountryCode['Taiwan (Province of China)']:
-      return 'TW';
-    case CountryCode.Tajikistan:
-      return 'TJ';
-    case CountryCode['Tanzania, United Republic of']:
-      return 'TZ';
-    case CountryCode.Thailand:
-      return 'TH';
-    case CountryCode['Timor-Leste']:
-      return 'TL';
-    case CountryCode.Togo:
-      return 'TG';
-    case CountryCode.Tokelau:
-      return 'TK';
-    case CountryCode.Tonga:
-      return 'TO';
-    case CountryCode['Trinidad and Tobago']:
-      return 'TT';
-    case CountryCode.Tunisia:
-      return 'TN';
-    case CountryCode.Turkey:
-      return 'TR';
-    case CountryCode.Turkmenistan:
-      return 'TM';
-    case CountryCode['Turks and Caicos Islands (the)']:
-      return 'TC';
-    case CountryCode.Tuvalu:
-      return 'TV';
-    case CountryCode.Uganda:
-      return 'UG';
-    case CountryCode.Ukraine:
-      return 'UA';
-    case CountryCode['United Arab Emirates (the)']:
-      return 'AE';
-    case CountryCode['United Kingdom of Great Britain and Northern Ireland (the)']:
-      return 'GB';
-    case CountryCode['United States Minor Outlying Islands (the)']:
-      return 'UM';
-    case CountryCode['United States of America (the)']:
-      return 'US';
-    case CountryCode.Uruguay:
-      return 'UY';
-    case CountryCode.Uzbekistan:
-      return 'UZ';
-    case CountryCode.Vanuatu:
-      return 'VU';
-    case CountryCode['Venezuela (Bolivarian Republic of)']:
-      return 'VE';
-    case CountryCode['Viet Nam']:
-      return 'VN';
-    case CountryCode['Virgin Islands (British)']:
-      return 'VG';
-    case CountryCode['Virgin Islands (U.S.)']:
-      return 'VI';
-    case CountryCode['Wallis and Futuna']:
-      return 'WF';
-    case CountryCode['Western Sahara']:
-      return 'EH';
-    case CountryCode.Yemen:
-      return 'YE';
-    case CountryCode.Zambia:
-      return 'ZM';
-    case CountryCode.Zimbabwe:
-      return 'ZW';
-    default:
-      throw new Error(`Unsupported country code: ${countryCode}`);
+  const countryCodeToGreenInvoiceMap: Partial<Record<CountryCode, GreenInvoiceCountry>> = {
+    [CountryCode.Afghanistan]: 'AF',
+    [CountryCode['Åland Islands']]: 'AX',
+    [CountryCode.Albania]: 'AL',
+    [CountryCode.Algeria]: 'DZ',
+    [CountryCode['American Samoa']]: 'AS',
+    [CountryCode.Andorra]: 'AD',
+    [CountryCode.Angola]: 'AO',
+    [CountryCode.Anguilla]: 'AI',
+    [CountryCode.Antarctica]: 'AQ',
+    [CountryCode['Antigua and Barbuda']]: 'AG',
+    [CountryCode.Argentina]: 'AR',
+    [CountryCode.Armenia]: 'AM',
+    [CountryCode.Aruba]: 'AW',
+    [CountryCode.Australia]: 'AU',
+    [CountryCode.Austria]: 'AT',
+    [CountryCode.Azerbaijan]: 'AZ',
+    [CountryCode['Bahamas (the)']]: 'BS',
+    [CountryCode.Bahrain]: 'BH',
+    [CountryCode.Bangladesh]: 'BD',
+    [CountryCode.Barbados]: 'BB',
+    [CountryCode.Belarus]: 'BY',
+    [CountryCode.Belgium]: 'BE',
+    [CountryCode.Belize]: 'BZ',
+    [CountryCode.Benin]: 'BJ',
+    [CountryCode.Bermuda]: 'BM',
+    [CountryCode.Bhutan]: 'BT',
+    [CountryCode['Bolivia (Plurinational State of)']]: 'BO',
+    [CountryCode['Bonaire, Sint Eustatius and Saba']]: 'BQ',
+    [CountryCode['Bosnia and Herzegovina']]: 'BA',
+    [CountryCode.Botswana]: 'BW',
+    [CountryCode['Bouvet Island']]: 'BV',
+    [CountryCode.Brazil]: 'BR',
+    [CountryCode['British Indian Ocean Territory (the)']]: 'IO',
+    [CountryCode['Brunei Darussalam']]: 'BN',
+    [CountryCode.Bulgaria]: 'BG',
+    [CountryCode['Burkina Faso']]: 'BF',
+    [CountryCode.Burundi]: 'BI',
+    [CountryCode['Cabo Verde']]: 'CV',
+    [CountryCode.Cambodia]: 'KH',
+    [CountryCode.Cameroon]: 'CM',
+    [CountryCode.Canada]: 'CA',
+    [CountryCode['Cayman Islands (the)']]: 'KY',
+    [CountryCode['Central African Republic (the)']]: 'CF',
+    [CountryCode.Chad]: 'TD',
+    [CountryCode.Chile]: 'CL',
+    [CountryCode.China]: 'CN',
+    [CountryCode['Christmas Island']]: 'CX',
+    [CountryCode['Cocos (Keeling) Islands (the)']]: 'CC',
+    [CountryCode.Colombia]: 'CO',
+    [CountryCode['Comoros (the)']]: 'KM',
+    [CountryCode['Congo (the Democratic Republic of the)']]: 'CD',
+    [CountryCode['Congo (the)']]: 'CG',
+    [CountryCode['Cook Islands (the)']]: 'CK',
+    [CountryCode['Costa Rica']]: 'CR',
+    [CountryCode.Croatia]: 'HR',
+    [CountryCode.Cuba]: 'CU',
+    [CountryCode.Curaçao]: 'CW',
+    [CountryCode.Cyprus]: 'CY',
+    [CountryCode.Czechia]: 'CZ',
+    [CountryCode["Côte d'Ivoire"]]: 'CI',
+    [CountryCode.Denmark]: 'DK',
+    [CountryCode.Djibouti]: 'DJ',
+    [CountryCode.Dominica]: 'DM',
+    [CountryCode['Dominican Republic (the)']]: 'DO',
+    [CountryCode.Ecuador]: 'EC',
+    [CountryCode.Egypt]: 'EG',
+    [CountryCode['El Salvador']]: 'SV',
+    [CountryCode['Equatorial Guinea']]: 'GQ',
+    [CountryCode.Eritrea]: 'ER',
+    [CountryCode.Estonia]: 'EE',
+    [CountryCode.Eswatini]: 'SZ',
+    [CountryCode.Ethiopia]: 'ET',
+    [CountryCode['Falkland Islands (the) [Malvinas]']]: 'FK',
+    [CountryCode['Faroe Islands (the)']]: 'FO',
+    [CountryCode.Fiji]: 'FJ',
+    [CountryCode.Finland]: 'FI',
+    [CountryCode.France]: 'FR',
+    [CountryCode['French Guiana']]: 'GF',
+    [CountryCode['French Polynesia']]: 'PF',
+    [CountryCode['French Southern Territories (the)']]: 'TF',
+    [CountryCode.Gabon]: 'GA',
+    [CountryCode['Gambia (the)']]: 'GM',
+    [CountryCode.Georgia]: 'GE',
+    [CountryCode.Germany]: 'DE',
+    [CountryCode.Ghana]: 'GH',
+    [CountryCode.Gibraltar]: 'GI',
+    [CountryCode.Greece]: 'GR',
+    [CountryCode.Greenland]: 'GL',
+    [CountryCode.Grenada]: 'GD',
+    [CountryCode.Guadeloupe]: 'GP',
+    [CountryCode.Guam]: 'GU',
+    [CountryCode.Guatemala]: 'GT',
+    [CountryCode.Guernsey]: 'GG',
+    [CountryCode.Guinea]: 'GN',
+    [CountryCode['Guinea-Bissau']]: 'GW',
+    [CountryCode.Guyana]: 'GY',
+    [CountryCode.Haiti]: 'HT',
+    [CountryCode['Heard Island and McDonald Islands']]: 'HM',
+    [CountryCode['Holy See (the)']]: 'VA',
+    [CountryCode.Honduras]: 'HN',
+    [CountryCode['Hong Kong']]: 'HK',
+    [CountryCode.Hungary]: 'HU',
+    [CountryCode.Iceland]: 'IS',
+    [CountryCode.India]: 'IN',
+    [CountryCode.Indonesia]: 'ID',
+    [CountryCode['Iran (Islamic Republic of)']]: 'IR',
+    [CountryCode.Iraq]: 'IQ',
+    [CountryCode.Ireland]: 'IE',
+    [CountryCode['Isle of Man']]: 'IM',
+    [CountryCode.Israel]: 'IL',
+    [CountryCode.Italy]: 'IT',
+    [CountryCode.Jamaica]: 'JM',
+    [CountryCode.Japan]: 'JP',
+    [CountryCode.Jersey]: 'JE',
+    [CountryCode.Jordan]: 'JO',
+    [CountryCode.Kazakhstan]: 'KZ',
+    [CountryCode.Kenya]: 'KE',
+    [CountryCode.Kiribati]: 'KI',
+    [CountryCode["Korea (the Democratic People's Republic of)"]]: 'KP',
+    [CountryCode['Korea (the Republic of)']]: 'KR',
+    [CountryCode.Kuwait]: 'KW',
+    [CountryCode.Kyrgyzstan]: 'KG',
+    [CountryCode["Lao People's Democratic Republic (the)"]]: 'LA',
+    [CountryCode.Latvia]: 'LV',
+    [CountryCode.Lebanon]: 'LB',
+    [CountryCode.Lesotho]: 'LS',
+    [CountryCode.Liberia]: 'LR',
+    [CountryCode.Libya]: 'LY',
+    [CountryCode.Liechtenstein]: 'LI',
+    [CountryCode.Lithuania]: 'LT',
+    [CountryCode.Luxembourg]: 'LU',
+    [CountryCode.Macao]: 'MO',
+    [CountryCode.Madagascar]: 'MG',
+    [CountryCode.Malawi]: 'MW',
+    [CountryCode.Malaysia]: 'MY',
+    [CountryCode.Maldives]: 'MV',
+    [CountryCode.Mali]: 'ML',
+    [CountryCode.Malta]: 'MT',
+    [CountryCode['Marshall Islands (the)']]: 'MH',
+    [CountryCode.Martinique]: 'MQ',
+    [CountryCode.Mauritania]: 'MR',
+    [CountryCode.Mauritius]: 'MU',
+    [CountryCode.Mayotte]: 'YT',
+    [CountryCode.Mexico]: 'MX',
+    [CountryCode['Micronesia (Federated States of)']]: 'FM',
+    [CountryCode['Moldova (the Republic of)']]: 'MD',
+    [CountryCode.Monaco]: 'MC',
+    [CountryCode.Mongolia]: 'MN',
+    [CountryCode.Montenegro]: 'ME',
+    [CountryCode.Montserrat]: 'MS',
+    [CountryCode.Morocco]: 'MA',
+    [CountryCode.Mozambique]: 'MZ',
+    [CountryCode.Myanmar]: 'MM',
+    [CountryCode.Namibia]: 'NA',
+    [CountryCode.Nauru]: 'NR',
+    [CountryCode.Nepal]: 'NP',
+    [CountryCode['Netherlands (the)']]: 'NL',
+    [CountryCode['New Caledonia']]: 'NC',
+    [CountryCode['New Zealand']]: 'NZ',
+    [CountryCode.Nicaragua]: 'NI',
+    [CountryCode['Niger (the)']]: 'NE',
+    [CountryCode.Nigeria]: 'NG',
+    [CountryCode.Niue]: 'NU',
+    [CountryCode['Norfolk Island']]: 'NF',
+    [CountryCode['Northern Mariana Islands (the)']]: 'MP',
+    [CountryCode.Norway]: 'NO',
+    [CountryCode.Oman]: 'OM',
+    [CountryCode.Pakistan]: 'PK',
+    [CountryCode.Palau]: 'PW',
+    [CountryCode['Palestine, State of']]: 'PS',
+    [CountryCode.Panama]: 'PA',
+    [CountryCode['Papua New Guinea']]: 'PG',
+    [CountryCode.Paraguay]: 'PY',
+    [CountryCode.Peru]: 'PE',
+    [CountryCode['Philippines (the)']]: 'PH',
+    [CountryCode.Pitcairn]: 'PN',
+    [CountryCode.Poland]: 'PL',
+    [CountryCode.Portugal]: 'PT',
+    [CountryCode['Puerto Rico']]: 'PR',
+    [CountryCode.Qatar]: 'QA',
+    [CountryCode['Republic of North Macedonia']]: 'MK',
+    [CountryCode.Romania]: 'RO',
+    [CountryCode['Russian Federation (the)']]: 'RU',
+    [CountryCode.Rwanda]: 'RW',
+    [CountryCode.Réunion]: 'RE',
+    [CountryCode['Saint Barthélemy']]: 'BL',
+    [CountryCode['Saint Helena, Ascension and Tristan da Cunha']]: 'SH',
+    [CountryCode['Saint Kitts and Nevis']]: 'KN',
+    [CountryCode['Saint Lucia']]: 'LC',
+    [CountryCode['Saint Martin (French part)']]: 'MF',
+    [CountryCode['Saint Pierre and Miquelon']]: 'PM',
+    [CountryCode['Saint Vincent and the Grenadines']]: 'VC',
+    [CountryCode.Samoa]: 'WS',
+    [CountryCode['San Marino']]: 'SM',
+    [CountryCode['Sao Tome and Principe']]: 'ST',
+    [CountryCode['Saudi Arabia']]: 'SA',
+    [CountryCode.Senegal]: 'SN',
+    [CountryCode.Serbia]: 'RS',
+    [CountryCode.Seychelles]: 'SC',
+    [CountryCode['Sierra Leone']]: 'SL',
+    [CountryCode.Singapore]: 'SG',
+    [CountryCode['Sint Maarten (Dutch part)']]: 'SX',
+    [CountryCode.Slovakia]: 'SK',
+    [CountryCode.Slovenia]: 'SI',
+    [CountryCode['Solomon Islands']]: 'SB',
+    [CountryCode.Somalia]: 'SO',
+    [CountryCode['South Africa']]: 'ZA',
+    [CountryCode['South Georgia and the South Sandwich Islands']]: 'GS',
+    [CountryCode['South Sudan']]: 'SS',
+    [CountryCode.Spain]: 'ES',
+    [CountryCode['Sri Lanka']]: 'LK',
+    [CountryCode['Sudan (the)']]: 'SD',
+    [CountryCode.Suriname]: 'SR',
+    [CountryCode['Svalbard and Jan Mayen']]: 'SJ',
+    [CountryCode.Sweden]: 'SE',
+    [CountryCode.Switzerland]: 'CH',
+    [CountryCode['Syrian Arab Republic']]: 'SY',
+    [CountryCode['Taiwan (Province of China)']]: 'TW',
+    [CountryCode.Tajikistan]: 'TJ',
+    [CountryCode['Tanzania, United Republic of']]: 'TZ',
+    [CountryCode.Thailand]: 'TH',
+    [CountryCode['Timor-Leste']]: 'TL',
+    [CountryCode.Togo]: 'TG',
+    [CountryCode.Tokelau]: 'TK',
+    [CountryCode.Tonga]: 'TO',
+    [CountryCode['Trinidad and Tobago']]: 'TT',
+    [CountryCode.Tunisia]: 'TN',
+    [CountryCode.Turkey]: 'TR',
+    [CountryCode.Turkmenistan]: 'TM',
+    [CountryCode['Turks and Caicos Islands (the)']]: 'TC',
+    [CountryCode.Tuvalu]: 'TV',
+    [CountryCode.Uganda]: 'UG',
+    [CountryCode.Ukraine]: 'UA',
+    [CountryCode['United Arab Emirates (the)']]: 'AE',
+    [CountryCode['United Kingdom of Great Britain and Northern Ireland (the)']]: 'GB',
+    [CountryCode['United States Minor Outlying Islands (the)']]: 'UM',
+    [CountryCode['United States of America (the)']]: 'US',
+    [CountryCode.Uruguay]: 'UY',
+    [CountryCode.Uzbekistan]: 'UZ',
+    [CountryCode.Vanuatu]: 'VU',
+    [CountryCode['Venezuela (Bolivarian Republic of)']]: 'VE',
+    [CountryCode['Viet Nam']]: 'VN',
+    [CountryCode['Virgin Islands (British)']]: 'VG',
+    [CountryCode['Virgin Islands (U.S.)']]: 'VI',
+    [CountryCode['Wallis and Futuna']]: 'WF',
+    [CountryCode['Western Sahara']]: 'EH',
+    [CountryCode.Yemen]: 'YE',
+    [CountryCode.Zambia]: 'ZM',
+    [CountryCode.Zimbabwe]: 'ZW',
+  };
+
+  const greenInvoiceCountry = countryCodeToGreenInvoiceMap[countryCode];
+  if (greenInvoiceCountry) {
+    return greenInvoiceCountry;
   }
+  throw new Error(`Unsupported country code: ${countryCode}`);
 }
 
 export function greenInvoiceToDocumentStatus(greenInvoiceStatus: number): document_status {
