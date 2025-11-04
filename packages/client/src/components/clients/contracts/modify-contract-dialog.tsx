@@ -308,7 +308,16 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                       <FormItem>
                         <FormLabel>Operations Limit</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="500" {...field} />
+                          <Input
+                            type="number"
+                            placeholder="500"
+                            {...field}
+                            onChange={event => {
+                              field.onChange(
+                                event?.target.value ? Number(event?.target.value) : undefined,
+                              );
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
