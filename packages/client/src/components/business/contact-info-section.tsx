@@ -205,23 +205,28 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
     const updateBusinessInput = convertFormDataToUpdateBusinessInput(dataToUpdate);
 
+    const promises = [];
     if (Object.values(updateBusinessInput).some(value => value != null)) {
-      await updateDbBusiness({
-        businessId: business.id,
-        ownerId: userContext.context.adminBusinessId,
-        fields: updateBusinessInput,
-      });
+      promises.push(
+        updateDbBusiness({
+          businessId: business.id,
+          ownerId: userContext.context.adminBusinessId,
+          fields: updateBusinessInput,
+        }),
+      );
     }
 
     if (isClient && dataToUpdate.billingEmails) {
-      updateDbClient({
-        businessId: business.id,
-        fields: {
-          emails: dataToUpdate.billingEmails,
-        },
-      });
+      promises.push(
+        updateDbClient({
+          businessId: business.id,
+          fields: {
+            emails: dataToUpdate.billingEmails,
+          },
+        }),
+      );
     }
-
+    await Promise.all(promises);
     refetchBusiness?.();
   };
 
