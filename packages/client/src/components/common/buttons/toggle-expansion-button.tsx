@@ -13,7 +13,7 @@ export function ToggleExpansionButton(props: {
   return (
     <Tooltip label="Expand info">
       <Button
-        variant="default"
+        variant={isExpanded ? 'default' : 'outline'}
         onClick={event => {
           event.stopPropagation();
           toggleExpansion(i => {
