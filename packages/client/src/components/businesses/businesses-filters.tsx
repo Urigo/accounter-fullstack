@@ -47,7 +47,7 @@ export function BusinessesFilters({
     <div className="flex flex-row gap-5 items-center">
       <Pagination
         className="flex-fit w-fit mx-0"
-        currentPage={activePage}
+        currentPageIndex={activePage}
         onChange={setPage}
         totalPages={totalPages}
       />

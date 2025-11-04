@@ -539,7 +539,7 @@ export function ChargesFilters({
       {totalPages > 1 && (
         <Pagination
           className="flex-fit w-fit mx-0"
-          currentPage={activePage}
+          currentPageIndex={activePage}
           onChange={setPage}
           totalPages={totalPages}
         />

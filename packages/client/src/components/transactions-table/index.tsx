@@ -124,7 +124,7 @@ export const TransactionsTable = ({
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-end space-x-2 py-4">
           <Pagination
-            currentPage={table.getState().pagination.pageIndex}
+            currentPageIndex={table.getState().pagination.pageIndex}
             totalPages={table.getPageCount()}
             onChange={page => table.setPageIndex(page)}
           />

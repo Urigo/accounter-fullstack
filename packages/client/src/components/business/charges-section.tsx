@@ -66,7 +66,7 @@ export function ChargesSection({ businessId }: Props) {
         {totalPages > 1 && (
           <Pagination
             className="flex-fit w-fit mx-0"
-            currentPage={activePageIndex}
+            currentPageIndex={activePageIndex}
             onChange={setActivePageIndex}
             totalPages={totalPages}
           />

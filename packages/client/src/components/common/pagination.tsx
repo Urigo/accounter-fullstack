@@ -38,11 +38,16 @@ const usePagination = (totalPages: number, pageIndex: number): Array<'...' | num
 interface PaginationProps extends Omit<React.ComponentProps<'nav'>, 'onChange' | 'value'> {
   onChange: (page: number) => void;
   totalPages: number;
-  currentPage: number;
+  currentPageIndex: number;
 }
 
-export const Pagination = ({ onChange, totalPages, currentPage, ...props }: PaginationProps) => {
-  const pages = usePagination(totalPages, currentPage);
+export const Pagination = ({
+  onChange,
+  totalPages,
+  currentPageIndex,
+  ...props
+}: PaginationProps) => {
+  const pages = usePagination(totalPages, currentPageIndex);
 
   if (!pages.length) {
     return null;
@@ -54,8 +59,8 @@ export const Pagination = ({ onChange, totalPages, currentPage, ...props }: Pagi
         {/* previous button */}
         <PaginationItem>
           <PaginationPrevious
-            disabled={currentPage < 1}
-            onClick={() => onChange(currentPage - 1)}
+            disabled={currentPageIndex < 1}
+            onClick={() => onChange(currentPageIndex - 1)}
           />
         </PaginationItem>
         {/* page numbers */}
@@ -67,7 +72,7 @@ export const Pagination = ({ onChange, totalPages, currentPage, ...props }: Pagi
               </PaginationItem>
             );
           }
-          const isActive = page === currentPage;
+          const isActive = page === currentPageIndex;
           return (
             <PaginationItem key={`page-${page}`}>
               <PaginationLink onClick={() => onChange(page)} isActive={isActive}>
@@ -79,8 +84,8 @@ export const Pagination = ({ onChange, totalPages, currentPage, ...props }: Pagi
         {/* next button */}
         <PaginationItem>
           <PaginationNext
-            disabled={currentPage >= totalPages - 1}
-            onClick={() => onChange(currentPage + 1)}
+            disabled={currentPageIndex >= totalPages - 1}
+            onClick={() => onChange(currentPageIndex + 1)}
           />
         </PaginationItem>
       </PaginationContent>
