@@ -31,7 +31,7 @@ import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
-import { useUpdateClient } from '@/hooks/use-update-client';
+import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ComboBox } from '../common';
