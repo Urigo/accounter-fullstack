@@ -1,69 +1,15 @@
-import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff, LinkIcon } from 'lucide-react';
+import { LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.js';
 import type { BillingCycle, SubscriptionPlan } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
-import { cn } from '@/lib/utils.js';
-import type { Column, ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import { ModifyContractDialog } from '../clients/contracts/modify-contract-dialog.js';
+import { DataTableColumnHeader } from '../common/index.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { Client, DateCell } from './cells/index.js';
 import type { ContractRow } from './index.js';
-
-interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement> {
-  column: Column<TData, TValue>;
-  title: string;
-}
-export function DataTableColumnHeader<TData, TValue>({
-  column,
-  title,
-  className,
-}: DataTableColumnHeaderProps<TData, TValue>) {
-  if (!column.getCanSort()) {
-    return <div className={cn(className)}>{title}</div>;
-  }
-  return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8">
-            <span>{title}</span>
-            {column.getIsSorted() === 'desc' ? (
-              <ArrowDown />
-            ) : column.getIsSorted() === 'asc' ? (
-              <ArrowUp />
-            ) : (
-              <ChevronsUpDown />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-            <ArrowUp />
-            Asc
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-            <ArrowDown />
-            Desc
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-            <EyeOff />
-            Hide
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
 
 export const columns: ColumnDef<ContractRow>[] = [
   {

@@ -220,7 +220,7 @@ export function PreviewDocumentModal({
   const [{ data: dataByCharge, fetching: fetchingByCharge, error: errorByCharge }, fetchByCharge] =
     useQuery({
       query: NewDocumentDraftByChargeDocument,
-      pause: !chargeId,
+      pause: !chargeId || !open,
       variables: {
         chargeId: chargeId || '',
       },
@@ -231,17 +231,19 @@ export function PreviewDocumentModal({
     fetchByDocument,
   ] = useQuery({
     query: NewDocumentDraftByDocumentDocument,
-    pause: !documentId,
+    pause: !documentId || !open,
     variables: {
       documentId: documentId || '',
     },
   });
 
   useEffect(() => {
-    if (chargeId && !dataByCharge && !fetchingByCharge && !errorByCharge) {
-      fetchByCharge();
-    } else if (documentId && !dataByDocument && !fetchingByDocument && !errorByDocument) {
-      fetchByDocument();
+    if (open) {
+      if (chargeId && !dataByCharge && !fetchingByCharge && !errorByCharge) {
+        fetchByCharge();
+      } else if (documentId && !dataByDocument && !fetchingByDocument && !errorByDocument) {
+        fetchByDocument();
+      }
     }
   }, [
     chargeId,

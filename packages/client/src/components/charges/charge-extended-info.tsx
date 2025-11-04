@@ -30,6 +30,7 @@ import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.jsx';
 import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
 import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
+import { ChargeMatches } from './extended-info/charge-matches.js';
 import { ConversionInfo } from './extended-info/conversion-info.jsx';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
 import { ExchangeRates } from './extended-info/exchange-rates.js';
@@ -46,6 +47,7 @@ import { SalariesTable } from './extended-info/salaries-info.jsx';
         transactionsCount
         documentsCount
         receiptsCount
+        invoicesCount
         ledgerCount
         isLedgerLocked
         openDocuments
@@ -166,10 +168,13 @@ export function ChargeExtendedInfo({
   const hasTransactions = !!charge?.metadata?.transactionsCount;
   const hasDocs = !!charge?.metadata?.documentsCount;
   const hasReceipts = !!charge?.metadata?.receiptsCount;
+  const hasInvoices = !!charge?.metadata?.invoicesCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.miscExpenses?.length;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
   const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
+  const hasAccountingDocs = hasInvoices || hasReceipts;
+  const missingMatches = !hasAccountingDocs || !hasTransactions;
 
   useEffect(() => {
     const tabs = [];
@@ -470,6 +475,15 @@ export function ChargeExtendedInfo({
                   {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
                 </Accordion.Panel>
               </Accordion.Item>
+            )}
+
+            {missingMatches && (
+              <ChargeMatches
+                chargeId={charge.id}
+                onChange={onExtendedChange}
+                toggleAccordionItem={toggleAccordionItem}
+                isOpened={accordionItems.includes('charges-matches')}
+              />
             )}
           </Accordion>
           {galleryIsReady && (

@@ -1,8 +1,6 @@
 import type { currency, document_type, IGetAllDocumentsResult } from '@modules/documents/types.js';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 
-export * from './__generated__/types.js';
-
 /**
  * Re-export shared types from other modules
  */
@@ -26,7 +24,7 @@ export type Document = IGetAllDocumentsResult;
 /**
  * Represents a single charge match with its confidence score
  */
-export interface ChargeMatch {
+export interface ChargeMatchProto {
   /** UUID of the matched charge */
   chargeId: string;
   /** Confidence score between 0.00 and 1.00 (two decimal precision) */
@@ -38,7 +36,7 @@ export interface ChargeMatch {
  */
 export interface ChargeMatchesResult {
   /** Array of up to 5 matches, ordered by confidence score (highest first) */
-  matches: ChargeMatch[];
+  matches: ChargeMatchProto[];
 }
 
 /**
@@ -149,6 +147,8 @@ export interface ChargeWithData {
   ownerId: string;
   /** Charge classification */
   type: ChargeType;
+  /** Charge description */
+  description?: string;
   /** Associated transactions (if any) */
   transactions: Transaction[];
   /** Associated documents (if any) */
@@ -198,3 +198,5 @@ export interface DocumentCharge {
   /** Array of documents in the charge */
   documents: Document[];
 }
+
+export * from './__generated__/types.js';

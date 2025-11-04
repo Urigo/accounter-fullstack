@@ -11,7 +11,7 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import {
   Dialog,
   DialogContent,
@@ -20,9 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+} from '../ui/dialog.js';
+import { Input } from '../ui/input.js';
+import { Label } from '../ui/label.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -15,7 +15,7 @@ import { columns, type DocumentsTableRowType } from './columns.js';
 
 type Props = {
   documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];
-  onChange: () => void;
+  onChange?: () => void;
   limited?: boolean;
 };
 
@@ -34,7 +34,7 @@ export const DocumentsTable = ({
         return {
           ...document,
           editDocument: (): void => setEditDocumentId(document.id),
-          onUpdate: onChange,
+          onUpdate: onChange ?? (() => {}),
         };
       }),
     [documentsProps, onChange],
@@ -95,7 +95,7 @@ export const DocumentsTable = ({
       <EditDocumentModal
         documentId={editDocumentId}
         onDone={(): void => setEditDocumentId(undefined)}
-        onChange={onChange}
+        onChange={() => onChange?.()}
       />
     </>
   );
