@@ -4,7 +4,7 @@ import { useQuery } from 'urql';
 import { MonthlyDocumentsDraftsDocument } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
-import { AccounterLoader } from '../../../common/loader.js';
+import { AccounterLoader } from '../../../common/loaders/loader.js';
 import { IssueDocumentsTable } from './issue-documents-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

@@ -10,7 +10,7 @@ import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { AccounterLoader } from '@/components/common/loader.js';
+import { AccounterLoader } from '@/components/common/index.js';
 import {
   ContractBasedDocumentDraftsDocument,
   NewDocumentInfoFragmentDoc,

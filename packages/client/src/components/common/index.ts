@@ -12,7 +12,7 @@ export * from './icon.js';
 export * from './image-magnifier.js';
 export * from './inputs/index.js';
 export * from './list-capsule.js';
-export * from './loader.js';
+export * from './loaders/index.js';
 export * from './merge-charges/index.js';
 export * from './merge-businesses/index.js';
 export * from './modals/index.js';
