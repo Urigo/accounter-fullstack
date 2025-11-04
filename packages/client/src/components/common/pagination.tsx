@@ -8,40 +8,41 @@ import {
   Pagination as PaginationWrapper,
 } from '@/components/ui/pagination.js';
 
-const usePagination = (totalPages: number, currentPage: number): Array<'...' | number> => {
-  if (totalPages <= 1) {
+const usePagination = (totalPages: number, pageIndex: number): Array<'...' | number> => {
+  const maxPageIndex = totalPages - 1;
+  if (maxPageIndex <= 0) {
     return [];
   }
 
   const pages: Array<'...' | number> = [];
-  pages.push(1);
-  if (currentPage > 3) {
+  pages.push(0);
+  if (pageIndex > 2) {
     pages.push('...');
   }
-  if (currentPage > 2) {
-    pages.push(currentPage - 1);
+  if (pageIndex > 1) {
+    pages.push(pageIndex - 1);
   }
-  if (currentPage !== 1 && currentPage !== totalPages) {
-    pages.push(currentPage);
+  if (pageIndex > 0 && pageIndex < maxPageIndex) {
+    pages.push(pageIndex);
   }
-  if (currentPage < totalPages - 1) {
-    pages.push(currentPage + 1);
+  if (pageIndex < maxPageIndex - 1) {
+    pages.push(pageIndex + 1);
   }
-  if (currentPage < totalPages - 2) {
+  if (pageIndex < maxPageIndex - 2) {
     pages.push('...');
   }
-  pages.push(totalPages);
+  pages.push(maxPageIndex);
   return pages;
 };
 
 interface PaginationProps extends Omit<React.ComponentProps<'nav'>, 'onChange' | 'value'> {
   onChange: (page: number) => void;
-  total: number;
+  totalPages: number;
   currentPage: number;
 }
 
-export const Pagination = ({ onChange, total, currentPage, ...props }: PaginationProps) => {
-  const pages = usePagination(total - 1, currentPage);
+export const Pagination = ({ onChange, totalPages, currentPage, ...props }: PaginationProps) => {
+  const pages = usePagination(totalPages, currentPage);
 
   if (!pages.length) {
     return null;
@@ -53,7 +54,7 @@ export const Pagination = ({ onChange, total, currentPage, ...props }: Paginatio
         {/* previous button */}
         <PaginationItem>
           <PaginationPrevious
-            disabled={currentPage <= 1}
+            disabled={currentPage < 1}
             onClick={() => onChange(currentPage - 1)}
           />
         </PaginationItem>
@@ -70,7 +71,7 @@ export const Pagination = ({ onChange, total, currentPage, ...props }: Paginatio
           return (
             <PaginationItem key={`page-${page}`}>
               <PaginationLink onClick={() => onChange(page)} isActive={isActive}>
-                {page}
+                {page + 1}
               </PaginationLink>
             </PaginationItem>
           );
@@ -78,7 +79,7 @@ export const Pagination = ({ onChange, total, currentPage, ...props }: Paginatio
         {/* next button */}
         <PaginationItem>
           <PaginationNext
-            disabled={currentPage >= total - 1}
+            disabled={currentPage >= totalPages - 1}
             onClick={() => onChange(currentPage + 1)}
           />
         </PaginationItem>

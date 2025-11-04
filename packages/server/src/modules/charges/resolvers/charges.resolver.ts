@@ -111,7 +111,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw new GraphQLError(message);
         });
 
-      const pageCharges = charges.slice(page * limit - limit, page * limit);
+      const pageCharges = charges.slice(page * limit, (page + 1) * limit);
 
       return {
         __typename: 'PaginatedCharges',

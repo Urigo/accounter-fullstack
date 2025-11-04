@@ -49,14 +49,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         filterBusinessByName(business, name),
       );
 
-      page ??= 1;
+      page ??= 0;
       let pageBusinesses = filteredBusinesses.sort((a, b) =>
         a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
       );
 
       // handle pagination
       if (limit) {
-        pageBusinesses = filteredBusinesses.slice(page * limit - limit, page * limit);
+        pageBusinesses = filteredBusinesses.slice(page * limit, (page + 1) * limit);
       }
 
       return {
@@ -65,7 +65,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         pageInfo: {
           totalPages: limit ? Math.ceil(filteredBusinesses.length / limit) : 1,
           totalRecords: filteredBusinesses.length,
-          currentPage: page + 1,
+          currentPage: page,
           pageSize: limit,
         },
       };

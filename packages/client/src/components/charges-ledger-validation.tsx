@@ -117,7 +117,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
         <ChargesFilters
           filter={filter}
           setFilter={onFilterChange}
-          activePage={1}
+          activePage={0}
           setPage={() => {}}
           initiallyOpened
         />

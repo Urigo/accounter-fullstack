@@ -493,7 +493,7 @@ export function ChargesFilters({
 
   // update url on page change
   useEffect(() => {
-    const newPage = activePage > 1 ? activePage.toFixed(0) : null;
+    const newPage = activePage > 0 ? activePage.toFixed(0) : null;
     const oldPage = get('page');
     if (newPage !== oldPage) {
       set('page', newPage);
@@ -507,7 +507,7 @@ export function ChargesFilters({
     if (newFilter !== oldFilter) {
       set('chargesFilters', newFilter);
       set('page');
-      setPage(1);
+      setPage(0);
     }
   }, [filter, get, set, setPage]);
 
@@ -541,7 +541,7 @@ export function ChargesFilters({
           className="flex-fit w-fit mx-0"
           currentPage={activePage}
           onChange={setPage}
-          total={totalPages}
+          totalPages={totalPages}
         />
       )}
       <Indicator inline size={16} disabled={!isFiltered}>

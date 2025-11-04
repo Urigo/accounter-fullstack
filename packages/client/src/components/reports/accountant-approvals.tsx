@@ -81,7 +81,7 @@ export const AccountantApprovals = (): ReactElement => {
         <ChargesFilters
           filter={filter}
           setFilter={setFilter}
-          activePage={1}
+          activePage={0}
           setPage={() => {}}
           totalPages={1}
         />

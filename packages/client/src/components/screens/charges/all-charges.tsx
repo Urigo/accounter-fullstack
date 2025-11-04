@@ -47,7 +47,7 @@ export const AllCharges = (): ReactElement => {
     Array<{ id: string; onChange: () => void }>
   >([]);
   const { get } = useUrlQuery();
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
+  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const uriFilters = get('chargesFilters');
   const initialFilters = useMemo(() => {
     if (uriFilters) {

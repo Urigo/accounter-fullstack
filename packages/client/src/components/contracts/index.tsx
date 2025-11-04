@@ -156,7 +156,7 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
     },
     initialState: {
       pagination: {
-        pageIndex: 1,
+        pageIndex: 0,
         pageSize: 50,
       },
     },
@@ -254,7 +254,7 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
         <Pagination
           className="w-fit mx-0"
           currentPage={table.getState().pagination.pageIndex}
-          total={table.getPageCount()}
+          totalPages={table.getPageCount()}
           onChange={page => table.setPageIndex(page)}
         />
       </div>

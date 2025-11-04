@@ -38,7 +38,7 @@ import { BusinessesFilters } from './businesses-filters.js';
 export const Businesses = (): ReactElement => {
   const { get } = useUrlQuery();
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
+  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const [businessName, setBusinessName] = useState(
     get('name') ? (get('name') as string) : undefined,
   );
