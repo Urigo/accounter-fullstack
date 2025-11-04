@@ -31,6 +31,7 @@ import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
+import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ComboBox } from '../common';
@@ -124,6 +125,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
   const { userContext } = useContext(UserContext);
 
   const { updateBusiness: updateDbBusiness, fetching: isBusinessUpdating } = useUpdateBusiness();
+  const { updateClient: updateDbClient, fetching: isClientUpdating } = useUpdateClient();
 
   const form = useForm<ContactInfoFormValues>({
     resolver: zodResolver(contactInfoSchema),
@@ -203,12 +205,28 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
     const updateBusinessInput = convertFormDataToUpdateBusinessInput(dataToUpdate);
 
-    await updateDbBusiness({
-      businessId: business.id,
-      ownerId: userContext.context.adminBusinessId,
-      fields: updateBusinessInput,
-    });
+    const promises = [];
+    if (Object.values(updateBusinessInput).some(value => value != null)) {
+      promises.push(
+        updateDbBusiness({
+          businessId: business.id,
+          ownerId: userContext.context.adminBusinessId,
+          fields: updateBusinessInput,
+        }),
+      );
+    }
 
+    if (isClient && dataToUpdate.billingEmails) {
+      promises.push(
+        updateDbClient({
+          businessId: business.id,
+          fields: {
+            emails: dataToUpdate.billingEmails,
+          },
+        }),
+      );
+    }
+    await Promise.all(promises);
     refetchBusiness?.();
   };
 
@@ -523,7 +541,11 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
           <CardFooter className="flex justify-end border-t mt-4 pt-6">
             <Button
               type="submit"
-              disabled={isBusinessUpdating || Object.keys(form.formState.dirtyFields).length === 0}
+              disabled={
+                isBusinessUpdating ||
+                isClientUpdating ||
+                Object.keys(form.formState.dirtyFields).length === 0
+              }
             >
               <Save className="h-4 w-4 mr-2" />
               Save Changes

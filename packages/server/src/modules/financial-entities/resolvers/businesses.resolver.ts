@@ -114,18 +114,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       let updatedBusiness: IGetBusinessesByIdsResult | undefined = undefined;
 
       try {
-        if (
-          fields.hebrewName ||
-          fields.address ||
-          fields.email ||
-          fields.governmentId ||
-          fields.phoneNumber ||
-          fields.website ||
-          fields.exemptDealer != null ||
-          fields.suggestions ||
-          fields.optionalVAT != null ||
-          fields.pcn874RecordType
-        ) {
+        if (Object.values(adjustedFields).some(field => field != null)) {
           await injector
             .get(BusinessesProvider)
             .updateBusiness({ ...adjustedFields, businessId })
