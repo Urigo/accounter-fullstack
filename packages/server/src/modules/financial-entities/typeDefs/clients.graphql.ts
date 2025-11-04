@@ -26,7 +26,7 @@ export default gql`
   " fields for inserting a new client "
   input ClientInsertInput {
     businessId: UUID!
-    greenInvoiceId: UUID!
+    greenInvoiceId: UUID
     hiveId: String
     emails: [String!]
     generatedDocumentType: DocumentType!

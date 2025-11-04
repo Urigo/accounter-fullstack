@@ -118,10 +118,6 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
           fields: values,
         });
       } else {
-        if (!values.greenInvoiceId) {
-          form.setError('greenInvoiceId', { message: 'Green Invoice ID is required' });
-          return;
-        }
         // Handle new client creation
         insertClient({
           fields: {
@@ -241,12 +237,7 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
                     <FormItem>
                       <FormLabel>Green Invoice ID</FormLabel>
                       <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter Green Invoice ID"
-                          {...field}
-                          required={!editingClient}
-                        />
+                        <Input type="text" placeholder="Enter Green Invoice ID" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -260,12 +251,7 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
                     <FormItem>
                       <FormLabel>Hive ID</FormLabel>
                       <FormControl>
-                        <Input
-                          type="text"
-                          placeholder="Enter Hive ID"
-                          {...field}
-                          required={!editingClient}
-                        />
+                        <Input type="text" placeholder="Enter Hive ID" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
