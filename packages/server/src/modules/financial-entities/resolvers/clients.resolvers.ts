@@ -5,6 +5,7 @@ import {
   addGreenInvoiceClient,
   updateGreenInvoiceClient,
 } from '@modules/green-invoice/helpers/green-invoice-clients.helper.js';
+import { Resolvers } from '@shared/gql-types';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
   FinancialEntitiesModule,
@@ -12,7 +13,8 @@ import type {
   IUpdateClientParams,
 } from '../types.js';
 
-export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
+export const clientsResolvers: FinancialEntitiesModule.Resolvers &
+  Pick<Resolvers, 'UpdateClientResponse'> = {
   Query: {
     client: async (_, { businessId }, { injector }) => {
       try {
@@ -139,6 +141,12 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers = {
       const client = await injector.get(ClientsProvider).getClientByIdLoader.load(business.id);
 
       return client || null;
+    },
+  },
+  UpdateClientResponse: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'Client';
     },
   },
 };
