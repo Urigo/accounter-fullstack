@@ -30,7 +30,7 @@ interface Props {
 }
 
 export function ChargeMatchesRowExtensions({ row }: Props) {
-  const [openSections, setOpenSections] = useState<string[]>([]);
+  const [openSections, setOpenSections] = useState<string[]>(['transactions', 'documents']);
 
   const [{ data: chargeData, fetching: fetchingData }] = useQuery({
     query: ChargeExtendedInfoForChargeMatchesDocument,
@@ -41,7 +41,9 @@ export function ChargeMatchesRowExtensions({ row }: Props) {
   });
 
   const transactions = chargeData?.charge.transactions;
+  const hasTransactions = !!transactions && transactions.length > 0;
   const documents = chargeData?.charge.additionalDocuments;
+  const hasDocuments = !!documents && documents.length > 0;
 
   return (
     <Accordion
@@ -51,52 +53,56 @@ export function ChargeMatchesRowExtensions({ row }: Props) {
       className="space-y-4"
     >
       {/* Transactions */}
-      <AccordionItem value="transactions" className="rounded-lg border-2">
-        <div className="px-2 bg-gray-600/10 rounded-t-lg">
-          <AccordionTrigger className="hover:no-underline p-2">
-            <h3 className="font-semibold text-lg">Transactions</h3>
-          </AccordionTrigger>
-        </div>
-        {fetchingData ? (
-          <AccordionContent>
-            <div className="p-2">
-              <TableSkeleton />
-            </div>
-          </AccordionContent>
-        ) : (
-          <AccordionContent>
-            {transactions && (
+      {hasTransactions && (
+        <AccordionItem value="transactions" className="rounded-lg border-2">
+          <div className="px-2 bg-gray-600/10 rounded-t-lg">
+            <AccordionTrigger className="hover:no-underline p-2" disabled={!hasTransactions}>
+              <h3 className="font-semibold text-lg">Transactions</h3>
+            </AccordionTrigger>
+          </div>
+          {fetchingData ? (
+            <AccordionContent>
               <div className="p-2">
-                <TransactionsTable transactionsProps={transactions} />
+                <TableSkeleton />
               </div>
-            )}
-          </AccordionContent>
-        )}
-      </AccordionItem>
+            </AccordionContent>
+          ) : (
+            <AccordionContent>
+              {transactions && (
+                <div className="p-2">
+                  <TransactionsTable transactionsProps={transactions} />
+                </div>
+              )}
+            </AccordionContent>
+          )}
+        </AccordionItem>
+      )}
 
       {/* Documents */}
-      <AccordionItem value="documents" className="rounded-lg border-2">
-        <div className="px-2 bg-gray-600/10 rounded-t-lg">
-          <AccordionTrigger className="hover:no-underline p-2">
-            <h3 className="font-semibold text-lg">Documents</h3>
-          </AccordionTrigger>
-        </div>
-        {fetchingData ? (
-          <AccordionContent>
-            <div className="p-2">
-              <TableSkeleton />
-            </div>
-          </AccordionContent>
-        ) : (
-          <AccordionContent>
-            {documents && (
+      {hasDocuments && (
+        <AccordionItem value="documents" className="rounded-lg border-2">
+          <div className="px-2 bg-gray-600/10 rounded-t-lg">
+            <AccordionTrigger className="hover:no-underline p-2" disabled={!hasDocuments}>
+              <h3 className="font-semibold text-lg">Documents</h3>
+            </AccordionTrigger>
+          </div>
+          {fetchingData ? (
+            <AccordionContent>
               <div className="p-2">
-                <DocumentsTable documentsProps={documents} />
+                <TableSkeleton />
               </div>
-            )}
-          </AccordionContent>
-        )}
-      </AccordionItem>
+            </AccordionContent>
+          ) : (
+            <AccordionContent>
+              {documents && (
+                <div className="p-2">
+                  <DocumentsTable documentsProps={documents} />
+                </div>
+              )}
+            </AccordionContent>
+          )}
+        </AccordionItem>
+      )}
     </Accordion>
   );
 }
