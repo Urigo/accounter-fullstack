@@ -16,7 +16,7 @@ export const columns: ColumnDef<ChargeMatchRow>[] = [
       <Checkbox
         checked={row.original.isSelected}
         onCheckedChange={value => {
-          row.original.selectCharge(!!value ? row.original.id : null);
+          row.original.selectCharge(value ? row.original.id : null);
           return value;
         }}
         aria-label="Select charge"

@@ -29,43 +29,41 @@ export function MergeChargesButton(props: {
   }, [isMergeable]);
 
   const onDone = useCallback(() => {
-    close();
+    setOpen(false);
     selected.map(({ onChange }) => onChange());
-  }, [selected, close]);
+  }, [selected]);
 
   const tooltip = useMemo(() => {
     if (!isMergeable) {
       return 'Select at least two different charges to merge';
     }
     return `Merge ${distinctIDs.size} selected charges`;
-  }, [isMergeable]);
+  }, [isMergeable, distinctIDs.size]);
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger disabled={!isMergeable}>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button disabled={!isMergeable} variant={variant} className="size-7.5">
-                <Merge className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-        </DialogTrigger>
-        <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Issue New Document</DialogTitle>
-          </DialogHeader>
-          <MergeChargesSelectionForm
-            chargeIds={Array.from(distinctIDs)}
-            onDone={onDone}
-            resetMerge={resetMerge}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger disabled={!isMergeable}>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button disabled={!isMergeable} variant={variant} className="size-7.5">
+              <Merge className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </DialogTrigger>
+      <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Issue New Document</DialogTitle>
+        </DialogHeader>
+        <MergeChargesSelectionForm
+          chargeIds={Array.from(distinctIDs)}
+          onDone={onDone}
+          resetMerge={resetMerge}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
