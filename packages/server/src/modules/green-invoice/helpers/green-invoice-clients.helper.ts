@@ -12,38 +12,8 @@ import {
   IGetBusinessesByIdsResult,
   IGetClientsByIdsResult,
 } from '@modules/financial-entities/types.js';
-import { ClientUpdateInput, GreenInvoiceClient, UpdateBusinessInput } from '@shared/gql-types';
+import { ClientUpdateInput, UpdateBusinessInput } from '@shared/gql-types';
 import { countryCodeToGreenInvoiceCountry } from './green-invoice.helper.js';
-
-export async function getGreenInvoiceClientFromId(
-  injector: Injector,
-  greenInvoiceClientId: string,
-): Promise<GreenInvoiceClient | undefined> {
-  const greenInvoiceClient = await injector
-    .get(GreenInvoiceClientProvider)
-    .clientLoader.load(greenInvoiceClientId);
-
-  if (!greenInvoiceClient?.id) {
-    return undefined;
-  }
-
-  return {
-    id: greenInvoiceClient.id,
-    country: greenInvoiceClient.country,
-    emails: [
-      ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
-      'ap@the-guild.dev',
-    ],
-    name: greenInvoiceClient.name,
-    phone: greenInvoiceClient.phone,
-    taxId: greenInvoiceClient.taxId,
-    address: greenInvoiceClient.address,
-    city: greenInvoiceClient.city,
-    zip: greenInvoiceClient.zip,
-    fax: greenInvoiceClient.fax,
-    mobile: greenInvoiceClient.mobile,
-  };
-}
 
 function convertLocalClientToGreenInvoiceCreateClientInput(
   localClient: IGetClientsByIdsResult,
@@ -216,7 +186,16 @@ export async function updateGreenInvoiceClient(
     localBusinessPromise,
     localClientPromise,
   ]);
-  if (!localBusiness?.name || !localClient?.green_invoice_id) {
+
+  let greenInvoiceId: string | undefined = undefined;
+  try {
+    greenInvoiceId =
+      validateClientIntegrations(localClient?.integrations ?? {}).greenInvoiceId ?? undefined;
+  } catch {
+    // swallow errors
+    return;
+  }
+  if (!localBusiness?.name || !greenInvoiceId) {
     // We cannot update a client in Green Invoice without its ID.
     console.warn(
       `Cannot update Green Invoice client: missing local business name or client ID for business${clientId}`,
@@ -233,7 +212,7 @@ export async function updateGreenInvoiceClient(
   }
 
   const greenInvoiceClient = await injector.get(GreenInvoiceClientProvider).updateClient({
-    id: localClient.green_invoice_id,
+    id: greenInvoiceId,
     input: fieldsToUpdate,
   });
 
