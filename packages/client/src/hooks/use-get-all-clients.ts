@@ -8,8 +8,6 @@ import { AllClientsDocument, type AllClientsQuery } from '../gql/graphql.js';
   query AllClients {
     allClients {
       id
-      greenInvoiceId
-      emails
       originalBusiness {
         id
         name

@@ -3,39 +3,6 @@ import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllOpenContractsDocument, type AllOpenContractsQuery } from '../gql/graphql.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AllOpenContracts {
-    allOpenContracts {
-      id
-      client {
-        id
-        greenInvoiceId
-        emails
-        originalBusiness {
-          id
-          name
-        }
-      }
-      purchaseOrders
-      startDate
-      endDate
-      remarks
-      amount {
-        raw
-        currency
-        formatted
-      }
-      documentType
-      billingCycle
-      isActive
-      product
-      plan
-      msCloud
-    }
-  }
-`;
-
 export type AllOpenContracts = Array<
   NonNullable<AllOpenContractsQuery['allOpenContracts']>[number]
 >;

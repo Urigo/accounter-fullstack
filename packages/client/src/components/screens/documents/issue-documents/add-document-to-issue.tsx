@@ -8,7 +8,6 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
-import type { AllOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { Button } from '../../../ui/button';
 import {
   Dialog,
@@ -37,11 +36,11 @@ import type { IssueDocumentsVariables } from './issue-documents-table.js';
 
 export function AddDocumentToIssue({
   issueMonth,
-  contracts,
+  clients,
   onAdd,
 }: {
   issueMonth: TimelessDateString;
-  contracts: AllOpenContracts;
+  clients: { id: string; name: string }[];
   onAdd: UseFieldArrayAppend<IssueDocumentsVariables, 'generateDocumentsInfo'>;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -87,12 +86,9 @@ export function AddDocumentToIssue({
             <SelectValue placeholder="Recipient" />
           </SelectTrigger>
           <SelectContent>
-            {contracts.map(contract => (
-              <SelectItem
-                key={contract.client.originalBusiness.id}
-                value={contract.client.originalBusiness.id}
-              >
-                {contract.client.originalBusiness.name}
+            {clients.map(client => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
               </SelectItem>
             ))}
           </SelectContent>

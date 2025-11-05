@@ -6,6 +6,7 @@ import { useQuery } from 'urql';
 import { MonthPickerInput } from '@mantine/dates';
 import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import {
+  AllOpenContractsDocument,
   BillingCycle,
   MonthlyDocumentsDraftsDocument,
   NewDocumentInfoFragmentDoc,
@@ -14,7 +15,6 @@ import {
   type NewDocumentInput,
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
-import { useGetOpenContracts } from '../../../../hooks/use-get-all-contracts.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
 import { ConfirmationModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
@@ -31,6 +31,23 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../ui/tooltip.js';
 import { AddDocumentToIssue } from './add-document-to-issue.js';
 import { EditIssueDocumentModal } from './edit-issue-document-modal.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query AllOpenContracts {
+    allOpenContracts {
+      id
+      client {
+        id
+        originalBusiness {
+          id
+          name
+        }
+      }
+      billingCycle
+    }
+  }
+`;
 
 export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
@@ -87,7 +104,10 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
     },
   });
   const { issueDocuments } = useIssueMonthlyDocuments();
-  const { openContracts } = useGetOpenContracts();
+
+  const [{ data: openContractsData }] = useQuery({
+    query: AllOpenContractsDocument,
+  });
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -114,7 +134,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
 
   const unusedContracts = useMemo(
     () =>
-      openContracts.filter(
+      openContractsData?.allOpenContracts.filter(
         openContract =>
           openContract.billingCycle === BillingCycle.Monthly &&
           !controlledFields.some(
@@ -122,7 +142,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
           ),
       ),
     // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
-    [controlledFields, openContracts],
+    [controlledFields, openContractsData],
   );
 
   return (
@@ -213,7 +233,12 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
           </Table>
           <div className="flex justify-between items-center mt-4">
             <AddDocumentToIssue
-              contracts={unusedContracts}
+              clients={
+                unusedContracts?.map(contract => ({
+                  id: contract.client.originalBusiness.id,
+                  name: contract.client.originalBusiness.name,
+                })) ?? []
+              }
               onAdd={append}
               issueMonth={issueMonth}
             />

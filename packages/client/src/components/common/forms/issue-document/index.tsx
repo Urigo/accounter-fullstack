@@ -44,9 +44,12 @@ export * from './types/document.js';
   query ClientInfoForDocumentIssuing($businessId: UUID!) {
     client(businessId: $businessId) {
       id
-      greenInvoiceInfo {
+      integrations {
         id
-        ...IssueDocumentClientFields
+        greenInvoiceInfo {
+          id
+          ...IssueDocumentClientFields
+        }
       }
     }
   }

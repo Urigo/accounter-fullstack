@@ -30,8 +30,12 @@ import { Label } from '../ui/label.js';
     id
     clientInfo {
       id
-      greenInvoiceId
-      hiveId
+      integrations {
+        greenInvoiceInfo {
+          id
+        }
+        hiveId
+      }
     }
   }
 `;
