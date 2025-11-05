@@ -60,7 +60,6 @@ import { IssueDocumentsModal } from './issue-documents-modal.js';
     msCloud
     # documentType
     # remarks
-    # operationsLimit
   }
 `;
 
@@ -81,11 +80,10 @@ export interface ContractRow {
   billingCycle: BillingCycle;
   product?: Product;
   plan?: SubscriptionPlan;
-  operationsLimit?: number;
+  operationsLimit?: bigint;
   msCloud?: string;
   // documentType
   // remarks
-  // operationsLimit
 }
 
 function convertContractFragmentToTableRow(

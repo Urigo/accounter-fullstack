@@ -42,6 +42,8 @@ export default gql`
   scalar FileScalar
   " UUID "
   scalar UUID
+  " BigInt "
+  scalar BigInt
 
   # Common Types
 

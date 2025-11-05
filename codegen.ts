@@ -44,6 +44,10 @@ const config: CodegenConfig = {
             input: 'Date',
             output: 'Date',
           },
+          BigInt: {
+            input: 'bigint',
+            output: 'bigint',
+          },
         },
         enumValues: {
           ChargeSortByField: '@shared/enums#ChargeSortByField',
@@ -161,6 +165,10 @@ const config: CodegenConfig = {
           DateTime: {
             input: 'Date',
             output: 'Date',
+          },
+          BigInt: {
+            input: 'bigint',
+            output: 'bigint',
           },
         },
       },

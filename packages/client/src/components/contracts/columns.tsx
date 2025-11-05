@@ -106,11 +106,11 @@ export const columns: ColumnDef<ContractRow>[] = [
     accessorKey: 'operationsLimit',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Operations Limit" />,
     cell: ({ row }) => {
-      const operationsLimit = row.getValue<number>('operationsLimit');
+      const operationsLimit = row.getValue<bigint>('operationsLimit');
       if (!operationsLimit) {
         return null;
       }
-      return <p className="text-sm font-medium">{operationsLimit}</p>;
+      return <p className="text-sm font-medium">{operationsLimit.toString()}</p>;
     },
   },
   {
