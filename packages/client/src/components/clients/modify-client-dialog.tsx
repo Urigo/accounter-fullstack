@@ -39,8 +39,6 @@ const clientFormSchema = z.object({
   businessId: z.uuid().optional(),
   emails: z.array(z.email()).optional(),
   generatedDocumentType: z.enum(Object.values(DocumentType)),
-  greenInvoiceId: z.uuid().optional(),
-  hiveId: z.string().optional(),
 });
 
 export type ClientFormValues = z.infer<typeof clientFormSchema>;
@@ -77,8 +75,6 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
       setEditingClient(client);
       form.reset({
         emails: client.emails,
-        greenInvoiceId: client.greenInvoiceId,
-        hiveId: client.hiveId,
         generatedDocumentType: client.generatedDocumentType,
         businessId: client.businessId,
       });
@@ -122,7 +118,6 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
         insertClient({
           fields: {
             ...values,
-            greenInvoiceId: values.greenInvoiceId!,
             businessId,
           },
         });
@@ -131,7 +126,7 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
       setEditingClient(null);
       onDone?.();
     },
-    [editingClient, onDone, updateClient, businessId, insertClient, form],
+    [editingClient, onDone, updateClient, businessId, insertClient],
   );
 
   return (
@@ -229,38 +224,6 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
                     </FormItem>
                   )}
                 />
-
-                {!!editingClient && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="greenInvoiceId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Green Invoice ID</FormLabel>
-                          <FormControl>
-                            <Input type="text" placeholder="Enter Green Invoice ID" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="hiveId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hive ID</FormLabel>
-                          <FormControl>
-                            <Input type="text" placeholder="Enter Hive ID" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
               </div>
             </div>
             <DialogFooter>
