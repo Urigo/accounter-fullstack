@@ -54,6 +54,10 @@
   "dependencies": {
     "zod": "4.1.12"
   },
+  "devDependencies": {
+    "bob-the-bundler": "7.0.1",
+    "eslint": "9.39.0"
+  },
   "publishConfig": {
     "directory": "dist",
     "access": "public"

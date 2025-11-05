@@ -290,6 +290,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
+    bob-the-bundler: "npm:7.0.1"
+    eslint: "npm:9.39.0"
     zod: "npm:4.1.12"
   languageName: unknown
   linkType: soft
