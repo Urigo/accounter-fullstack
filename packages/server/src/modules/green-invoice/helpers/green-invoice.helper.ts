@@ -1075,7 +1075,7 @@ export async function insertNewDocumentFromGreenInvoice(
     // generate preview image via cloudinary
     const imagePromise = injector
       .get(CloudinaryProvider)
-      .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
+      .uploadInvoiceToCloudinary(greenInvoiceDoc.url.en ?? greenInvoiceDoc.url.origin);
 
     // Get matching business
     const clientPromise = greenInvoiceDoc.client.id

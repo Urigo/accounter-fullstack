@@ -9,6 +9,7 @@ import {
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { AccounterLoader } from '@/components/common/index.js';
 import {
@@ -19,6 +20,7 @@ import {
 import { getFragmentData } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
 import { useIssueMonthlyDocuments } from '@/hooks/use-issue-monthly-documents.js';
+import { ROUTES } from '@/router/routes.js';
 import { MonthPickerInput } from '@mantine/dates';
 import { ConfirmationModal } from '../common/index.js';
 import { EditIssueDocumentModal } from '../screens/documents/issue-documents/edit-issue-document-modal.js';
@@ -164,7 +166,21 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                   {controlledFields.map(({ id, ...row }, index) => {
                     return (
                       <TableRow key={id}>
-                        <TableCell>{row.client?.name}</TableCell>
+                        <TableCell>
+                          <Link
+                            to={
+                              row.client?.id
+                                ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
+                                : ROUTES.BUSINESSES.ALL
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={event => event.stopPropagation()}
+                            className="inline-flex items-center font-semibold"
+                          >
+                            {row.client?.name}
+                          </Link>
+                        </TableCell>
                         <TableCell>{row.type}</TableCell>
                         <TableCell>
                           {row.income?.[0]?.price} {row.income?.[0]?.currency}

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from 're
 import { format, subMonths } from 'date-fns';
 import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
+import { ROUTES } from '@/router/routes.js';
 import { MonthPickerInput } from '@mantine/dates';
 import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import {
@@ -156,7 +158,21 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
               {controlledFields.map(({ id, ...row }, index) => {
                 return (
                   <TableRow key={id}>
-                    <TableCell>{row.client?.name}</TableCell>
+                    <TableCell>
+                      <Link
+                        to={
+                          row.client?.id
+                            ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
+                            : ROUTES.BUSINESSES.ALL
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={event => event.stopPropagation()}
+                        className="inline-flex items-center font-semibold"
+                      >
+                        {row.client?.name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{row.type}</TableCell>
                     <TableCell>
                       {row.income?.[0]?.price} {row.income?.[0]?.currency}
