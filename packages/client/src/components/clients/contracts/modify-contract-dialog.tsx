@@ -181,7 +181,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         isActive: contract.isActive,
         defaultRemark: contract.defaultRemark,
         defaultDocumentType: contract.defaultDocumentType,
-        operationsLimit: contract.operationsLimit,
+        operationsLimit: BigInt(contract.operationsLimit),
       });
       setIsDialogOpen(true);
     }
@@ -203,7 +203,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         isActive: fetchedContract.isActive,
         defaultRemark: fetchedContract.remarks ?? undefined,
         defaultDocumentType: fetchedContract.documentType,
-        operationsLimit: fetchedContract.operationsLimit,
+        operationsLimit: BigInt(fetchedContract.operationsLimit),
       };
       setEditingContract({
         id: fetchedContract.id,
