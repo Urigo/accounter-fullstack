@@ -228,7 +228,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.17.1"
     pino-pretty: "npm:13.1.2"
-    puppeteer: "npm:24.28.0"
+    puppeteer: "npm:24.29.0"
   languageName: unknown
   linkType: soft
 
@@ -260,7 +260,7 @@ __metadata:
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.10"
-    puppeteer: "npm:24.28.0"
+    puppeteer: "npm:24.29.0"
     typescript: "npm:5.9.3"
     uuid: "npm:13.0.0"
     zod: "npm:4.1.12"
@@ -19027,9 +19027,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:24.28.0":
-  version: 24.28.0
-  resolution: "puppeteer-core@npm:24.28.0"
+"puppeteer-core@npm:24.29.0":
+  version: 24.29.0
+  resolution: "puppeteer-core@npm:24.29.0"
   dependencies:
     "@puppeteer/browsers": "npm:2.10.13"
     chromium-bidi: "npm:10.5.1"
@@ -19038,7 +19038,7 @@ __metadata:
     typed-query-selector: "npm:^2.12.0"
     webdriver-bidi-protocol: "npm:0.3.8"
     ws: "npm:^8.18.3"
-  checksum: 10c0/1e2f526fcb49268c60712c4b476d6429bb54dd124385f16b03775dceede8dbc1cc8adb2c7ccdf528d4dffbe5e6473d965552c930cb3aa82957ef47ba8e65f659
+  checksum: 10c0/4e7abb5b0f044f5ecb503498d69d3c515a6d8201ba7ac57feca1d446b8ddb64e79dd554918cc581f6c238ed80f165ff2694b7cb401fe975aa4ec182431d9b925
   languageName: node
   linkType: hard
 
@@ -19058,19 +19058,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:24.28.0":
-  version: 24.28.0
-  resolution: "puppeteer@npm:24.28.0"
+"puppeteer@npm:24.29.0":
+  version: 24.29.0
+  resolution: "puppeteer@npm:24.29.0"
   dependencies:
     "@puppeteer/browsers": "npm:2.10.13"
     chromium-bidi: "npm:10.5.1"
     cosmiconfig: "npm:^9.0.0"
     devtools-protocol: "npm:0.0.1521046"
-    puppeteer-core: "npm:24.28.0"
+    puppeteer-core: "npm:24.29.0"
     typed-query-selector: "npm:^2.12.0"
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
-  checksum: 10c0/1f97684f8a0376597ce5de21506e33858439e620f7a4c3aae202e534b5bddb028f537df7d0d5bbb130d4c003d97c595ade4c483cd0fe6c7f7d52f0dd1b1c2980
+  checksum: 10c0/003cebca8daefc1ac4bae832c79d4cff5796b6aaaac0c57971ce0ccd562d94dae5551ae171b0dd4a05f8ca4d85cb457c2a2d2c0867d006e8ef5940a5fd0c04a3
   languageName: node
   linkType: hard
 
