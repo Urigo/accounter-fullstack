@@ -9,7 +9,7 @@ export const ClientIntegrationsSchema = z
     linearId: z.string().optional().nullable(),
     slackChannelKey: z.string().optional().nullable(),
     notionId: z.string().optional().nullable(),
-    workflowyUrl: z.url().optional().nullable(),
+    workflowyUrl: z.string().optional().nullable(),
   })
   .strict();
 
