@@ -53,6 +53,7 @@ export function AddDocumentToIssue({
       issueMonth,
       clientId,
     },
+    pause: !open,
   });
 
   const onSelect = useCallback(
