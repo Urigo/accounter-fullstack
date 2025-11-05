@@ -5,7 +5,8 @@ import {
   addGreenInvoiceClient,
   updateGreenInvoiceClient,
 } from '@modules/green-invoice/helpers/green-invoice-clients.helper.js';
-import { Resolvers } from '@shared/gql-types';
+import { ClientIntegrationsInput, Resolvers } from '@shared/gql-types';
+import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
   FinancialEntitiesModule,
@@ -45,12 +46,26 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
   },
   Mutation: {
     updateClient: async (_, { businessId, fields }, { injector }) => {
+      let updatedIntegrations: ClientIntegrationsInput | undefined =
+        fields.integrations ?? undefined;
+      if (updatedIntegrations) {
+        const currentClient = await injector
+          .get(ClientsProvider)
+          .getClientByIdLoader.load(businessId);
+        if (!currentClient) {
+          throw new GraphQLError(`Client with ID="${businessId}" not found`);
+        }
+        const currentIntegrations = validateClientIntegrations(currentClient.integrations);
+        updatedIntegrations = {
+          ...currentIntegrations,
+          ...updatedIntegrations,
+        };
+      }
       const adjustedFields: IUpdateClientParams = {
         businessId,
         emails: fields.emails ? [...fields.emails] : undefined,
-        greenInvoiceId: fields.greenInvoiceId,
-        hiveId: fields.hiveId,
         newBusinessId: fields.newBusinessId,
+        integrations: updatedIntegrations,
       };
       try {
         const [updatedClient] = await injector
@@ -81,8 +96,6 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         const newClient: IInsertClientParams = {
           businessId: fields.businessId,
           emails: fields.emails ? [...fields.emails] : [],
-          greenInvoiceId: fields.greenInvoiceId,
-          hiveId: fields.hiveId,
         };
         const [insertClient] = await injector.get(ClientsProvider).insertClient(newClient);
 
@@ -116,28 +129,18 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
 
       return businessMatch;
     },
-    greenInvoiceId: business => business.green_invoice_id,
-    hiveId: business => business.hive_id,
     emails: business => business.emails ?? [],
-    greenInvoiceInfo: async (business, _, { injector }) => {
-      if (!business.green_invoice_id) {
-        return null;
-      }
-      const client = await injector
-        .get(GreenInvoiceClientProvider)
-        .clientLoader.load(business.green_invoice_id);
-      if (!client) {
-        throw new GraphQLError(
-          `Green Invoice client with ID "${business.green_invoice_id}" not found`,
-        );
-      }
-      const emails = client.emails ? (client.emails.filter(Boolean) as string[]) : [];
-      return {
-        ...client,
-        emails,
-        id: business.green_invoice_id,
-      };
-    },
+    integrations: business => business,
+  },
+  ClientIntegrations: {
+    id: business => `${business.business_id}-integrations`,
+    hiveId: business => validateClientIntegrations(business.integrations).hiveId ?? null,
+    linearId: business => validateClientIntegrations(business.integrations).linearId ?? null,
+    slackChannelKey: business =>
+      validateClientIntegrations(business.integrations).slackChannelKey ?? null,
+    notionId: business => validateClientIntegrations(business.integrations).notionId ?? null,
+    workflowyUrl: business =>
+      validateClientIntegrations(business.integrations).workflowyUrl ?? null,
   },
   LtdFinancialEntity: {
     clientInfo: async (business, _, { injector }) => {

@@ -29,17 +29,12 @@ const getClientsByIds = sql<IGetClientsByIdsQuery>`
 const getClientsByGreenInvoiceIds = sql<IGetClientsByGreenInvoiceIdsQuery>`
   SELECT *
   FROM accounter_schema.clients
-  WHERE green_invoice_id IN $$greenInvoiceBusinessIds;
+  WHERE integrations->'greenInvoiceId' ? $$greenInvoiceBusinessIds;
 `;
 
 const updateClient = sql<IUpdateClientQuery>`
   UPDATE accounter_schema.clients
   SET
-  green_invoice_id = COALESCE(
-    $greenInvoiceId,
-    green_invoice_id,
-    NULL
-  ),
   hive_id = COALESCE(
     $hiveId,
     hive_id,
@@ -54,6 +49,11 @@ const updateClient = sql<IUpdateClientQuery>`
     $newBusinessId,
     business_id,
     NULL
+  ),
+  integrations = COALESCE(
+    $integrations,
+    integrations,
+    NULL
   )
   WHERE
     business_id = $businessId
@@ -67,8 +67,8 @@ const deleteClient = sql<IDeleteClientQuery>`
 `;
 
 const insertClient = sql<IInsertClientQuery>`
-    INSERT INTO accounter_schema.clients (business_id, green_invoice_id, hive_id, emails)
-    VALUES ($businessId, $greenInvoiceId, $hiveId, $emails)
+    INSERT INTO accounter_schema.clients (business_id, hive_id, emails, integrations)
+    VALUES ($businessId, $hiveId, $emails, $integrations)
     RETURNING *;`;
 
 @Injectable({

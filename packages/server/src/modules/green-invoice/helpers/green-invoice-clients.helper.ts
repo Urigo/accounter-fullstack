@@ -5,6 +5,7 @@ import {
 } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { CountryCode } from '@modules/countries/types.js';
+import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
@@ -14,26 +15,20 @@ import {
 import { ClientUpdateInput, GreenInvoiceClient, UpdateBusinessInput } from '@shared/gql-types';
 import { countryCodeToGreenInvoiceCountry } from './green-invoice.helper.js';
 
-export async function getClientFromGreenInvoiceClient(
+export async function getGreenInvoiceClientFromId(
   injector: Injector,
-  businessId: string,
-  useGreenInvoiceId = false,
+  greenInvoiceClientId: string,
 ): Promise<GreenInvoiceClient | undefined> {
-  const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
-  if (!client?.green_invoice_id) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
-  }
-
   const greenInvoiceClient = await injector
     .get(GreenInvoiceClientProvider)
-    .clientLoader.load(client.green_invoice_id);
+    .clientLoader.load(greenInvoiceClientId);
 
-  if (!greenInvoiceClient) {
-    return useGreenInvoiceId ? undefined : { id: businessId };
+  if (!greenInvoiceClient?.id) {
+    return undefined;
   }
 
   return {
-    id: useGreenInvoiceId && greenInvoiceClient.id ? greenInvoiceClient.id : businessId,
+    id: greenInvoiceClient.id,
     country: greenInvoiceClient.country,
     emails: [
       ...((greenInvoiceClient.emails?.filter(Boolean) as string[]) ?? []),
@@ -134,10 +129,15 @@ export async function addGreenInvoiceClient(clientId: string, injector: Injector
       throw new Error('Failed to create Green Invoice client');
     }
 
+    const integrations = validateClientIntegrations(localClient.integrations);
+
     // add green invoice id to local client
     await injector.get(ClientsProvider).updateClient({
       businessId: clientId,
-      greenInvoiceId: greenInvoiceClient.id,
+      integrations: {
+        ...integrations,
+        greenInvoiceId: greenInvoiceClient.id,
+      },
     });
   } catch (error) {
     const message = 'Error adding Green Invoice client';

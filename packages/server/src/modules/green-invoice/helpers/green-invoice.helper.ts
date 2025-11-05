@@ -33,6 +33,7 @@ import {
   GreenInvoicePaymentType,
   NewDocumentInfo,
   NewDocumentInput,
+  ResolversTypes,
   type GreenInvoiceDiscountType,
   type GreenInvoiceDocumentLang,
   type GreenInvoiceLinkType,
@@ -1323,18 +1324,10 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
 
 export function convertGreenInvoiceDocumentToLocalDocumentInfo(
   greenInvoiceDocument: _DOLLAR_defs_Document,
-): NewDocumentInfo {
+): ResolversTypes['NewDocumentInfo'] {
   return {
     ...greenInvoiceDocument,
-    client: greenInvoiceDocument.client?.id
-      ? {
-          ...greenInvoiceDocument.client,
-          id: greenInvoiceDocument.client.id,
-          emails: greenInvoiceDocument.client.emails
-            ? (greenInvoiceDocument.client.emails.filter(Boolean) as string[])
-            : [],
-        }
-      : undefined,
+    client: greenInvoiceDocument.client?.id,
     currency: greenInvoiceDocument.currency as Currency,
     income: greenInvoiceDocument.income?.filter(Boolean).map(income => ({
       ...income!,
