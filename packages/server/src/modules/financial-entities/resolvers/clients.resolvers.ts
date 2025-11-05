@@ -96,6 +96,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         const newClient: IInsertClientParams = {
           businessId: fields.businessId,
           emails: fields.emails ? [...fields.emails] : [],
+          integrations: fields.integrations,
         };
         const [insertClient] = await injector.get(ClientsProvider).insertClient(newClient);
 
