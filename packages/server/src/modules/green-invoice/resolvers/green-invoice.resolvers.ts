@@ -27,7 +27,7 @@ import {
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
-import { NewDocumentInfo } from '@shared/gql-types';
+import { BillingCycle, NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
 import { getClientFromGreenInvoiceClient } from '../helpers/green-invoice-clients.helper.js';
@@ -352,8 +352,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     },
     clientMonthlyChargesDrafts: async (_, { issueMonth }, { injector }) => {
       const openContracts = await injector.get(ContractsProvider).getAllOpenContracts();
+      const monthlyBillingCycle: BillingCycle = 'MONTHLY';
       const monthlyContracts = openContracts.filter(
-        contract => contract.billing_cycle === 'monthly',
+        contract => contract.billing_cycle.toLocaleUpperCase() === monthlyBillingCycle,
       );
       const drafts = await Promise.all(
         monthlyContracts.map(async contract =>
