@@ -1265,7 +1265,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     if (!greenInvoiceClient) {
       throw new GraphQLError(`Green Invoice client with ID ${greenInvoiceId} not found`);
     }
-    const emails: (string | null)[] = ['ap@the-guild.dev'];
+    const emails: (string | null)[] = ['ap@the-guild.dev']; // TODO: remove hardcoded email
     const inputEmails = initialInput.client?.emails?.filter(Boolean) ?? [];
     if (inputEmails.length) {
       emails.push(...inputEmails);

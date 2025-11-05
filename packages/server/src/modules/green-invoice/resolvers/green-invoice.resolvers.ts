@@ -673,7 +673,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .clientLoader.load(clientId)
         .then(client => client?.emails);
 
-      return [...((emails?.filter(Boolean) as string[]) ?? []), 'ap@the-guild.dev'];
+      return [...((emails?.filter(Boolean) as string[]) ?? []), 'ap@the-guild.dev']; // TODO: remove hardcoded email
     },
     name: async (clientId, _, { injector }) => {
       return injector
