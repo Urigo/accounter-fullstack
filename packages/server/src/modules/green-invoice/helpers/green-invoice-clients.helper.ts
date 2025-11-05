@@ -20,7 +20,7 @@ export async function getClientFromGreenInvoiceClient(
   useGreenInvoiceId = false,
 ): Promise<GreenInvoiceClient | undefined> {
   const client = await injector.get(ClientsProvider).getClientByIdLoader.load(businessId);
-  if (!client) {
+  if (!client?.green_invoice_id) {
     return useGreenInvoiceId ? undefined : { id: businessId };
   }
 

@@ -104,7 +104,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   Client: {
-    id: business => business.green_invoice_id,
+    id: business => business.business_id,
     originalBusiness: async (business, _, { injector }) => {
       const businessMatch = await injector
         .get(BusinessesProvider)
@@ -120,6 +120,9 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
     hiveId: business => business.hive_id,
     emails: business => business.emails ?? [],
     greenInvoiceInfo: async (business, _, { injector }) => {
+      if (!business.green_invoice_id) {
+        return null;
+      }
       const client = await injector
         .get(GreenInvoiceClientProvider)
         .clientLoader.load(business.green_invoice_id);

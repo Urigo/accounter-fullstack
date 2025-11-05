@@ -266,7 +266,7 @@ export function IntegrationsSection({ data }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     <UpdateIntegrationConfigDialog
-                      id={business?.clientInfo?.greenInvoiceId}
+                      id={business?.clientInfo?.greenInvoiceId ?? undefined}
                       provider="Green Invoice"
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
