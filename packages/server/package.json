@@ -7,7 +7,7 @@
   "main": "./src/index.mts",
   "scripts": {
     "build": "npx playwright install && tsc && tsc-alias",
-    "dev": "yarn build && nodemon --exec \"yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
     "generate:sql:watch": "dotenv -e ../../.env yarn pgtyped:watch",
