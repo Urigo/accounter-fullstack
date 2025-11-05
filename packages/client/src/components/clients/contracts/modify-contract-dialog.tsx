@@ -313,9 +313,8 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                             {...field}
                             value={field.value.toLocaleString()}
                             onChange={event => {
-                              field.onChange(
-                                event?.target.value ? BigInt(event?.target.value) : undefined,
-                              );
+                              const rawValue = event.target.value.replace(/[^0-9]/g, '');
+                              field.onChange(rawValue ? BigInt(rawValue) : BigInt(0));
                             }}
                           />
                         </FormControl>
