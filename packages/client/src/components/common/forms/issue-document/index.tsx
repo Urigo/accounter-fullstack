@@ -104,14 +104,14 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
 
   // on client info data change, update form client
   useEffect(() => {
-    if (clientInfoData?.client?.greenInvoiceInfo) {
+    if (clientInfoData?.client?.integrations.greenInvoiceInfo) {
       const clientInfo = getFragmentData(
         IssueDocumentClientFieldsFragmentDoc,
-        clientInfoData.client.greenInvoiceInfo,
+        clientInfoData.client.integrations.greenInvoiceInfo,
       );
       updateClient({ ...clientInfo, id: selectedClientId });
     }
-  }, [clientInfoData?.client?.greenInvoiceInfo, updateClient, selectedClientId]);
+  }, [clientInfoData?.client?.integrations.greenInvoiceInfo, updateClient, selectedClientId]);
 
   // const updateDiscount = <T extends keyof Discount>(field: T, value: Discount[T]) => {
   //   setFormData(prev => ({
