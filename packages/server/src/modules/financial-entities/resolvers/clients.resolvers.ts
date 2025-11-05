@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   addGreenInvoiceClient,
