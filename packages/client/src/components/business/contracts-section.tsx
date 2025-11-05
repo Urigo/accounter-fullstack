@@ -150,12 +150,6 @@ export function ContractsSection({ clientId }: Props) {
                   )}
                 </div>
 
-                {/* TODO: activate this field later. requires additional backend support */}
-                {/* <div className="space-y-0">
-                  <p className="text-sm text-muted-foreground">Operations Limit</p>
-                  <p className="text-sm font-medium">{contract.operationsLimit.toLocaleString()}</p>
-                </div> */}
-
                 <div className="space-y-0">
                   <p className="text-sm text-muted-foreground">Payment</p>
                   <p className="text-sm font-medium">

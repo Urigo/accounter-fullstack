@@ -127,6 +127,7 @@ __metadata:
     graphql: "npm:16.12.0"
     html2canvas-pro: "npm:1.5.12"
     iconv-lite: "npm:0.7.0"
+    json-bigint-patch: "npm:0.0.8"
     lucide-react: "npm:0.552.0"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:5.4.296"
@@ -328,6 +329,7 @@ __metadata:
     graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.16.0"
     inline-css: "npm:4.0.3"
+    json-bigint-patch: "npm:0.0.8"
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.10"
@@ -15446,7 +15448,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json-bigint-patch@npm:^0.0.8":
+"json-bigint-patch@npm:0.0.8, json-bigint-patch@npm:^0.0.8":
   version: 0.0.8
   resolution: "json-bigint-patch@npm:0.0.8"
   checksum: 10c0/f2ee19607c4927d1b0f1fda2f3c3cdba1162d1a7f6a40ae5e3e034363cddd437a0ef48d975e1e572dc514a7396ab2247b443113444004f1e64af47ba298687b9

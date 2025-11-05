@@ -71,7 +71,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           purchaseOrders: [...input.purchaseOrders],
           remarks: input.remarks,
           startDate: input.startDate,
-          operationsLimit: input.operationsLimit,
+          operationsLimit: input.operationsLimit?.toString(),
         };
         return injector.get(ContractsProvider).createContract(params);
       } catch (e) {
@@ -96,7 +96,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           purchase_orders: [...input.purchaseOrders],
           remarks: input.remarks,
           start_date: input.startDate,
-          operationsLimit: input.operationsLimit,
+          operationsLimit: input.operationsLimit?.toString(),
         };
         return injector.get(ContractsProvider).updateContract(params);
       } catch (e) {
@@ -139,6 +139,6 @@ export const contractsResolvers: ContractsModule.Resolvers = {
     product: dbContract => normalizeProduct(dbContract.product), //Product!
     plan: dbContract => normalizeSubscriptionPlan(dbContract.plan), //SubscriptionPlan!
     msCloud: dbContract => dbContract.ms_cloud, //URL
-    operationsLimit: dbContract => Number(dbContract.operations_count), //Int
+    operationsLimit: dbContract => BigInt(dbContract.operations_count), //Int
   },
 };

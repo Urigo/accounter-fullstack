@@ -91,7 +91,7 @@ const contractFormSchema = z.object({
   isActive: z.boolean(),
   defaultRemark: z.string().optional(),
   defaultDocumentType: z.enum(Object.values(DocumentType)),
-  operationsLimit: z.int().min(0, 'Operations limit must be non-negative'),
+  operationsLimit: z.bigint().min(BigInt(0), 'Operations limit must be non-negative'),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
@@ -111,7 +111,7 @@ const newContractDefaultValues: ContractFormValues = {
   isActive: true,
   defaultRemark: undefined,
   defaultDocumentType: DocumentType.Proforma,
-  operationsLimit: 0,
+  operationsLimit: BigInt(0),
 };
 
 interface Props {
@@ -309,12 +309,12 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                         <FormLabel>Operations Limit</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
                             placeholder="500"
                             {...field}
+                            value={field.value.toLocaleString()}
                             onChange={event => {
                               field.onChange(
-                                event?.target.value ? Number(event?.target.value) : undefined,
+                                event?.target.value ? BigInt(event?.target.value) : undefined,
                               );
                             }}
                           />
