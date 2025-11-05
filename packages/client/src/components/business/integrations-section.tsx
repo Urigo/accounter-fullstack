@@ -6,7 +6,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  Plus,
   Settings,
   Unlink,
 } from 'lucide-react';
@@ -47,6 +46,10 @@ import { Label } from '../ui/label.js';
           id
         }
         hiveId
+        linearId
+        slackChannelKey
+        notionId
+        workflowyUrl
       }
     }
   }
@@ -77,6 +80,7 @@ const generalIntegrations: Array<{
   description: string;
   keyType?: string;
   url: string;
+  color?: string;
 }> = [
   {
     id: 'hiveId',
@@ -90,6 +94,7 @@ const generalIntegrations: Array<{
     name: 'Linear',
     description: 'Issue tracking and project management',
     url: 'https://linear.app/the-guild/customer/[ID]',
+    color: 'indigo-500',
   },
   {
     id: 'slackChannelKey',
@@ -118,18 +123,20 @@ interface Props {
 }
 
 export function IntegrationsSection({ data }: Props) {
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const business = getFragmentData(ClientIntegrationsSectionFragmentDoc, data);
   const integrations = business?.clientInfo?.integrations;
+  const { updateClient } = useUpdateClient();
 
   const [{ data: greenInvoiceData, fetching: fetchingGreenInvoice }, fetchGreenInvoice] = useQuery({
     query: ClientIntegrationsSectionGreenInvoiceDocument,
     variables: {
       clientId: business?.id ?? '',
     },
-    pause: !integrations?.greenInvoiceInfo || !business?.id,
+    pause:
+      !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
   });
-
-  const { updateClient } = useUpdateClient();
+  const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
 
   const updateIdByAttribute = useCallback(
     (
@@ -152,12 +159,14 @@ export function IntegrationsSection({ data }: Props) {
   );
 
   useEffect(() => {
-    if (integrations?.greenInvoiceInfo?.id && business?.id) {
+    if (
+      integrations?.greenInvoiceInfo?.id &&
+      business?.id &&
+      openSections.includes('green-invoice')
+    ) {
       fetchGreenInvoice();
     }
-  }, [integrations?.greenInvoiceInfo?.id, business?.id, fetchGreenInvoice]);
-
-  const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
+  }, [integrations?.greenInvoiceInfo?.id, business?.id, fetchGreenInvoice, openSections]);
 
   return (
     <Card>
@@ -167,14 +176,15 @@ export function IntegrationsSection({ data }: Props) {
             <CardTitle>Integrations</CardTitle>
             <CardDescription>Connected external services and providers</CardDescription>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Integration
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Accordion type="multiple" defaultValue={['green-invoice']} className="space-y-4">
+        <Accordion
+          type="multiple"
+          value={openSections}
+          onValueChange={setOpenSections}
+          className="space-y-4"
+        >
           {/* Green Invoice Integration */}
           {fetchingGreenInvoice ? (
             <AccordionItem
@@ -407,9 +417,9 @@ export function IntegrationsSection({ data }: Props) {
             <AccordionItem
               key={integration.id}
               value={integration.id}
-              className="rounded-lg border"
+              className="rounded-lg border-2 border-gray-500/20 bg-gray-500/5"
             >
-              <div className="px-4 py-3 bg-gray-600/10 rounded-t-lg">
+              <div className="px-4 py-3 bg-gray-500/10 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
                     {integrations?.[integration.id as keyof typeof integrations] ? (
@@ -424,12 +434,12 @@ export function IntegrationsSection({ data }: Props) {
                         onClick={event => event.stopPropagation()}
                         className="inline-flex items-center font-semibold"
                       >
-                        <div className="h-10 w-10 rounded-lg bg-gray-600 flex items-center justify-center text-white font-bold">
+                        <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold">
                           <LinkIcon />
                         </div>
                       </Link>
                     ) : (
-                      <div className="h-10 w-10 rounded-lg bg-gray-600 flex items-center justify-center text-white font-bold">
+                      <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold">
                         <Unlink />
                       </div>
                     )}
