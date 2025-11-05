@@ -6,7 +6,7 @@ import './index.css';
 
 declare global {
   interface BigInt {
-    toJSON(): Number;
+    toJSON(): number;
   }
 }
 
