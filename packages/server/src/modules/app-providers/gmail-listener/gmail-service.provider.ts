@@ -535,7 +535,7 @@ export class GmailServiceProvider {
       const headers = message.payload?.headers || [];
       let from = headers.find(h => h.name === 'From')?.value || '';
 
-      if (from === 'SOFTWARE PRODUCTS GUILDA  LTD <notify@morning.co>') {
+      if (from.includes("'SOFTWARE PRODUCTS GUILDA  LTD'")) {
         // skip self-issued-documents emails
         await this.labelMessageAsProcessed(messageId);
         return null;
