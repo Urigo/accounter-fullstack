@@ -1071,11 +1071,11 @@ export async function insertNewDocumentFromGreenInvoice(
   const documentType = normalizeDocumentType(greenInvoiceDoc.type);
   const isOwnerCreditor = greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
 
+  const fileUrl = greenInvoiceDoc.url.en ?? greenInvoiceDoc.url.origin;
+
   try {
     // generate preview image via cloudinary
-    const imagePromise = injector
-      .get(CloudinaryProvider)
-      .uploadInvoiceToCloudinary(greenInvoiceDoc.url.origin);
+    const imagePromise = injector.get(CloudinaryProvider).uploadInvoiceToCloudinary(fileUrl);
 
     // Get matching business
     const clientPromise = greenInvoiceDoc.client.id
@@ -1089,10 +1089,10 @@ export async function insertNewDocumentFromGreenInvoice(
     const fileHashPromise = async () => {
       try {
         // Before creating rawDocument
-        const fileResponse = await fetch(greenInvoiceDoc.url.origin);
+        const fileResponse = await fetch(fileUrl);
         if (!fileResponse.ok) {
           // Handle error, maybe log and continue with null hash
-          throw new Error(`Failed to fetch file from GreenInvoice: ${greenInvoiceDoc.url.origin}`);
+          throw new Error(`Failed to fetch file from GreenInvoice: ${fileUrl}`);
         }
         const fileContent = await fileResponse.text();
         const fileHash = hashStringToInt(fileContent).toString();
