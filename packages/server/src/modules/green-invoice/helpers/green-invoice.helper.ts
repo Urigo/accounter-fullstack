@@ -25,14 +25,15 @@ import { CountryCode } from '@modules/countries/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
+import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
   Currency,
   DocumentType,
   GreenInvoiceCountry,
   GreenInvoicePaymentType,
-  NewDocumentInfo,
   NewDocumentInput,
+  ResolversTypes,
   type GreenInvoiceDiscountType,
   type GreenInvoiceDocumentLang,
   type GreenInvoiceLinkType,
@@ -1247,18 +1248,24 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     if (!clientInfo) {
       throw new GraphQLError(`Client with ID ${initialInput.client.id} not found`);
     }
-    if (!clientInfo.green_invoice_id) {
+    let greenInvoiceId: string | null = null;
+    try {
+      greenInvoiceId =
+        validateClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;
+    } catch (error) {
+      console.error('Failed to validate client integrations', error);
+      throw new GraphQLError(`Client with ID ${initialInput.client.id} has invalid integrations`);
+    }
+    if (!greenInvoiceId) {
       throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
     }
     const greenInvoiceClient = await injector
       .get(GreenInvoiceClientProvider)
-      .clientLoader.load(clientInfo.green_invoice_id);
+      .clientLoader.load(greenInvoiceId);
     if (!greenInvoiceClient) {
-      throw new GraphQLError(
-        `Green Invoice client with ID ${clientInfo.green_invoice_id} not found`,
-      );
+      throw new GraphQLError(`Green Invoice client with ID ${greenInvoiceId} not found`);
     }
-    const emails: (string | null)[] = ['ap@the-guild.dev'];
+    const emails: (string | null)[] = ['ap@the-guild.dev']; // TODO: remove hardcoded email
     const inputEmails = initialInput.client?.emails?.filter(Boolean) ?? [];
     if (inputEmails.length) {
       emails.push(...inputEmails);
@@ -1266,7 +1273,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       emails.push(...(greenInvoiceClient.emails ?? []));
     }
     client = {
-      id: clientInfo.green_invoice_id,
+      id: greenInvoiceClient.id,
       country: greenInvoiceClient.country,
       name: greenInvoiceClient.name,
       phone: greenInvoiceClient.phone,
@@ -1323,18 +1330,10 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
 
 export function convertGreenInvoiceDocumentToLocalDocumentInfo(
   greenInvoiceDocument: _DOLLAR_defs_Document,
-): NewDocumentInfo {
+): ResolversTypes['NewDocumentInfo'] {
   return {
     ...greenInvoiceDocument,
-    client: greenInvoiceDocument.client?.id
-      ? {
-          ...greenInvoiceDocument.client,
-          id: greenInvoiceDocument.client.id,
-          emails: greenInvoiceDocument.client.emails
-            ? (greenInvoiceDocument.client.emails.filter(Boolean) as string[])
-            : [],
-        }
-      : undefined,
+    client: greenInvoiceDocument.client?.id,
     currency: greenInvoiceDocument.currency as Currency,
     income: greenInvoiceDocument.income?.filter(Boolean).map(income => ({
       ...income!,

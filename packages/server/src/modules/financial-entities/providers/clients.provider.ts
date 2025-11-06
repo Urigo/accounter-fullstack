@@ -3,6 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
+import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
   IDeleteClientQuery,
   IGetAllClientsQuery,
@@ -27,24 +28,14 @@ const getClientsByIds = sql<IGetClientsByIdsQuery>`
 `;
 
 const getClientsByGreenInvoiceIds = sql<IGetClientsByGreenInvoiceIdsQuery>`
-  SELECT *
+  SELECT *, (integrations->>'greenInvoiceId')::uuid as green_invoice_business_id
   FROM accounter_schema.clients
-  WHERE green_invoice_id IN $$greenInvoiceBusinessIds;
+  WHERE (integrations->>'greenInvoiceId')::uuid in $$greenInvoiceBusinessIds;
 `;
 
 const updateClient = sql<IUpdateClientQuery>`
   UPDATE accounter_schema.clients
   SET
-  green_invoice_id = COALESCE(
-    $greenInvoiceId,
-    green_invoice_id,
-    NULL
-  ),
-  hive_id = COALESCE(
-    $hiveId,
-    hive_id,
-    NULL
-  ),
   emails = COALESCE(
     $emails,
     emails,
@@ -53,6 +44,11 @@ const updateClient = sql<IUpdateClientQuery>`
   business_id = COALESCE(
     $newBusinessId,
     business_id,
+    NULL
+  ),
+  integrations = COALESCE(
+    $integrations,
+    integrations,
     NULL
   )
   WHERE
@@ -67,8 +63,8 @@ const deleteClient = sql<IDeleteClientQuery>`
 `;
 
 const insertClient = sql<IInsertClientQuery>`
-    INSERT INTO accounter_schema.clients (business_id, green_invoice_id, hive_id, emails)
-    VALUES ($businessId, $greenInvoiceId, $hiveId, $emails)
+    INSERT INTO accounter_schema.clients (business_id, emails, integrations)
+    VALUES ($businessId, $emails, $integrations)
     RETURNING *;`;
 
 @Injectable({
@@ -91,7 +87,12 @@ export class ClientsProvider {
       this.cache.set('all-clients', data);
       data.map(client => {
         this.cache.set(`client-id-${client.business_id}`, client);
-        this.cache.set(`client-green-invoice-id-${client.green_invoice_id}`, client);
+        try {
+          const { greenInvoiceId } = validateClientIntegrations(client.integrations ?? {});
+          this.cache.set(`client-green-invoice-id-${greenInvoiceId}`, client);
+        } catch {
+          // swallow errors
+        }
       });
       return data;
     });
@@ -123,7 +124,9 @@ export class ClientsProvider {
         this.dbProvider,
       );
 
-      return greenInvoiceIds.map(id => matches.find(match => match.green_invoice_id === id));
+      return greenInvoiceIds.map(id =>
+        matches.find(match => match.green_invoice_business_id === id),
+      );
     } catch (e) {
       console.error(e);
       return greenInvoiceIds.map(() => undefined);

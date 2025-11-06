@@ -85,6 +85,7 @@ const config: CodegenConfig = {
           ChargeMatch: '@modules/charges-matcher/types.js#ChargeMatchProto',
           ChargeMetadata: '@modules/charges/types.js#IGetChargesByIdsResult',
           Client: '@modules/financial-entities/types.js#IGetAllClientsResult',
+          ClientIntegrations: '@modules/financial-entities/types.js#IGetAllClientsResult',
           CommonCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           CommonTransaction: 'string',
           ConversionCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
@@ -109,6 +110,7 @@ const config: CodegenConfig = {
           ForeignSecuritiesCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           ForeignSecuritiesFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
+          GreenInvoiceClient: 'string',
           IncomeExpenseChartMonthData: '@modules/charts/types.js#MonthDataProto',
           InternalTransferCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           Invoice: '@modules/documents/types.js#IGetAllDocumentsResult',

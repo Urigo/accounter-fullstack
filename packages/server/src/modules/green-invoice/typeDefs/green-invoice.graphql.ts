@@ -33,6 +33,10 @@ export default gql`
     originalDocument: NewDocumentInfo
   }
 
+  extend type ClientIntegrations {
+    greenInvoiceInfo: GreenInvoiceClient
+  }
+
   " result type for generateMonthlyClientDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type GenerateMonthlyClientDocumentsResult {
     success: Boolean!

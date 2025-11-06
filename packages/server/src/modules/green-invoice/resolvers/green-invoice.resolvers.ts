@@ -14,6 +14,7 @@ import type {
   IInsertDocumentsResult,
   IUpdateIssuedDocumentParams,
 } from '@modules/documents/types.js';
+import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
@@ -27,10 +28,9 @@ import {
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
-import { BillingCycle, NewDocumentInfo } from '@shared/gql-types';
+import { BillingCycle, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
-import { getClientFromGreenInvoiceClient } from '../helpers/green-invoice-clients.helper.js';
 import {
   deduceVatTypeFromBusiness,
   executeDocumentIssue,
@@ -105,18 +105,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             }) as IGetIssuedDocumentsByIdsResult[],
         );
 
-      const clientPromise = charge.business_id
-        ? getClientFromGreenInvoiceClient(injector, charge.business_id)
-        : Promise.resolve(undefined);
-
       const paymentPromise = getPaymentsFromTransactions(injector, transactions);
 
       const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, charge.business_id);
 
-      const [businessMatch, openIssuedDocuments, client, payment, vatType] = await Promise.all([
+      const [businessMatch, openIssuedDocuments, payment, vatType] = await Promise.all([
         businessMatchPromise,
         openIssuedDocumentsPromise,
-        clientPromise,
         paymentPromise,
         vatTypePromise,
       ]);
@@ -135,6 +130,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             }),
         ),
       ).then(res => res.filter(Boolean) as _DOLLAR_defs_Document[]);
+
+      const greenInvoiceClientId = validateClientIntegrations(
+        businessMatch?.integrations ?? {},
+      ).greenInvoiceId;
 
       const income = getIncomeFromDocuments(
         openIssuedDocuments.map(doc => ({
@@ -193,7 +192,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client,
+        client: greenInvoiceClientId,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -284,14 +283,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const paymentPromise = getPaymentsFromTransactions(injector, transactions ?? []);
 
-      const clientPromise = charge.business_id
-        ? getClientFromGreenInvoiceClient(injector, charge.business_id)
-        : Promise.resolve(undefined);
+      const greenInvoiceClientId = validateClientIntegrations(
+        businessMatch?.integrations ?? {},
+      ).greenInvoiceId;
 
-      const [greenInvoiceDocument, payment, client] = await Promise.all([
+      const [greenInvoiceDocument, payment] = await Promise.all([
         greenInvoiceDocumentPromise,
         paymentPromise,
-        clientPromise,
       ]);
 
       if (!greenInvoiceDocument) {
@@ -341,7 +339,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client,
+        client: greenInvoiceClientId,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -390,15 +388,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const clientPromise = injector
         .get(ClientsProvider)
         .getClientByIdLoader.load(contract.client_id);
-      const greenInvoiceClientPromise = getClientFromGreenInvoiceClient(
-        injector,
-        contract.client_id,
-      );
-      const [business, client, greenInvoiceClient] = await Promise.all([
-        businessPromise,
-        clientPromise,
-        greenInvoiceClientPromise,
-      ]);
+      const [business, client] = await Promise.all([businessPromise, clientPromise]);
 
       if (!business) {
         throw new GraphQLError(`Business ID="${contract.client_id}" not found`);
@@ -408,7 +398,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         throw new GraphQLError(`Client not found for business ID="${contract.client_id}"`);
       }
 
-      if (!greenInvoiceClient) {
+      const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+
+      if (!greenInvoiceId) {
         throw new GraphQLError(
           `Green invoice match not found for business ID="${contract.client_id}"`,
         );
@@ -420,7 +412,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
       const month = format(subMonths(today, 1), 'MMMM');
 
-      const draft: NewDocumentInfo = {
+      const draft: ResolversTypes['NewDocumentInfo'] = {
         remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
         description: `GraphQL Hive Enterprise License - ${month} ${year}`,
         type: normalizeDocumentType(contract.document_type),
@@ -431,10 +423,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType: 'EXEMPT',
         rounding: false,
         signed: true,
-        client: {
-          ...greenInvoiceClient,
-          emails: [...((client.emails?.filter(Boolean) as string[]) ?? [])],
-        },
+        client: greenInvoiceId,
         income: [
           {
             description: `GraphQL Hive Enterprise License - ${month} ${year}`,
@@ -455,12 +444,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           throw new GraphQLError(`Client not found for ID="${clientId}"`);
         }
 
-        const greenInvoiceClient = await getClientFromGreenInvoiceClient(injector, clientId);
-        if (!greenInvoiceClient) {
-          throw new GraphQLError(`Green invoice match not found for client ID="${clientId}"`);
+        const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+        if (!greenInvoiceId) {
+          throw new GraphQLError(`Client ID="${clientId}" is missing Green Invoice integration`);
         }
 
-        return greenInvoiceClient;
+        return greenInvoiceId;
       } catch (error) {
         const message = 'Failed to fetch Green Invoice client';
         console.error(message, error);
@@ -657,6 +646,82 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         console.error('Error fetching original document:', error);
         throw new GraphQLError('Error fetching original document');
       }
+    },
+  },
+  ClientIntegrations: {
+    greenInvoiceInfo: business =>
+      validateClientIntegrations(business.integrations).greenInvoiceId ?? null,
+  },
+  GreenInvoiceClient: {
+    id: clientId => clientId,
+    country: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => {
+          if (client?.country) {
+            // TODO: use Country for server responses
+            // greenInvoiceCountryToCountryCode(client.country)
+            return client.country;
+          }
+          return null;
+        });
+    },
+    emails: async (clientId, _, { injector }) => {
+      const emails = await injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.emails);
+
+      return [...((emails?.filter(Boolean) as string[]) ?? []), 'ap@the-guild.dev']; // TODO: remove hardcoded email
+    },
+    name: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.name ?? null);
+    },
+    phone: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.phone ?? null);
+    },
+    taxId: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.taxId ?? null);
+    },
+    address: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.address ?? null);
+    },
+    city: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.city ?? null);
+    },
+    zip: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.zip ?? null);
+    },
+    fax: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.fax ?? null);
+    },
+    mobile: async (clientId, _, { injector }) => {
+      return injector
+        .get(GreenInvoiceClientProvider)
+        .clientLoader.load(clientId)
+        .then(client => client?.mobile ?? null);
     },
   },
 };

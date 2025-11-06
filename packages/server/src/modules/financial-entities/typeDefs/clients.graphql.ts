@@ -16,29 +16,45 @@ export default gql`
   type Client {
     id: UUID!
     originalBusiness: LtdFinancialEntity!
-    greenInvoiceId: UUID
-    hiveId: String
     emails: [String!]!
     generatedDocumentType: DocumentType!
-    greenInvoiceInfo: GreenInvoiceClient
+    integrations: ClientIntegrations!
+  }
+
+  " integrations associated with a client "
+  type ClientIntegrations {
+    id: ID!
+    hiveId: String
+    linearId: String
+    slackChannelKey: String
+    notionId: String
+    workflowyUrl: String
   }
 
   " fields for inserting a new client "
   input ClientInsertInput {
     businessId: UUID!
-    greenInvoiceId: UUID
-    hiveId: String
     emails: [String!]
     generatedDocumentType: DocumentType!
+    integrations: ClientIntegrationsInput
   }
 
   " fields for updating an existing client "
   input ClientUpdateInput {
-    greenInvoiceId: UUID
-    hiveId: String
+    newBusinessId: UUID
     emails: [String!]
     generatedDocumentType: DocumentType
-    newBusinessId: UUID
+    integrations: ClientIntegrationsInput
+  }
+
+  " integrations input for client insert/update "
+  input ClientIntegrationsInput {
+    greenInvoiceId: UUID
+    hiveId: String
+    linearId: String
+    slackChannelKey: String
+    notionId: String
+    workflowyUrl: String
   }
 
   " result type for updateClient "

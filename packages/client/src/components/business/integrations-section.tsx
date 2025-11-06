@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Mail, MapPin, Phone, Plus, Settings, XCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleSlash,
+  LinkIcon,
+  Mail,
+  MapPin,
+  Phone,
+  Settings,
+  Unlink,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
@@ -7,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton.js';
 import {
   ClientIntegrationsSectionFragmentDoc,
   ClientIntegrationsSectionGreenInvoiceDocument,
-  type ClientUpdateInput,
+  type ClientIntegrationsInput,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
@@ -30,8 +40,17 @@ import { Label } from '../ui/label.js';
     id
     clientInfo {
       id
-      greenInvoiceId
-      hiveId
+      integrations {
+        id
+        greenInvoiceInfo {
+          id
+        }
+        hiveId
+        linearId
+        slackChannelKey
+        notionId
+        workflowyUrl
+      }
     }
   }
 `;
@@ -55,42 +74,47 @@ import { Label } from '../ui/label.js';
   }
 `;
 
-const generalIntegrations = [
+const generalIntegrations: Array<{
+  id: keyof ClientIntegrationsInput;
+  name: string;
+  description: string;
+  keyType?: string;
+  url: string;
+  color?: string;
+}> = [
   {
-    id: 'hive',
+    id: 'hiveId',
     name: 'Hive',
     description:
       'Schema registry, analytics, metrics and gateway for GraphQL federation and other GraphQL APIs',
-    status: 'disconnected',
-    lastSync: 'Never',
+    url: 'https://the-guild.dev/graphql/hive',
   },
   {
-    id: 'slack',
-    name: 'Slack',
-    description: 'Team communication and notifications',
-    status: 'disconnected',
-    lastSync: 'Never',
-  },
-  {
-    id: 'retool',
-    name: 'Retool',
-    description: 'Internal tools and dashboards',
-    status: 'disconnected',
-    lastSync: 'Never',
-  },
-  {
-    id: 'linear',
+    id: 'linearId',
     name: 'Linear',
     description: 'Issue tracking and project management',
-    status: 'disconnected',
-    lastSync: 'Never',
+    url: 'https://linear.app/the-guild/customer/[ID]',
+    color: 'indigo-500',
   },
   {
-    id: 'workflowy',
+    id: 'slackChannelKey',
+    name: 'Slack',
+    description: 'Team communication and notifications',
+    keyType: 'Channel Key',
+    url: 'https://guild-oss.slack.com/archives/[ID]',
+  },
+  {
+    id: 'notionId',
+    name: 'Notion',
+    description: 'Documentation and knowledge management',
+    url: 'https://www.notion.so/theguildoss/[ID]',
+  },
+  {
+    id: 'workflowyUrl',
     name: 'Workflowy',
+    keyType: 'URL',
     description: 'Task management and note taking',
-    status: 'disconnected',
-    lastSync: 'Never',
+    url: '[ID]',
   },
 ];
 
@@ -99,39 +123,50 @@ interface Props {
 }
 
 export function IntegrationsSection({ data }: Props) {
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const business = getFragmentData(ClientIntegrationsSectionFragmentDoc, data);
+  const integrations = business?.clientInfo?.integrations;
+  const { updateClient } = useUpdateClient();
 
   const [{ data: greenInvoiceData, fetching: fetchingGreenInvoice }, fetchGreenInvoice] = useQuery({
     query: ClientIntegrationsSectionGreenInvoiceDocument,
     variables: {
       clientId: business?.id ?? '',
     },
-    pause: !business?.clientInfo?.greenInvoiceId || !business?.id,
+    pause:
+      !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
   });
-
-  const { updateClient } = useUpdateClient();
+  const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
 
   const updateIdByAttribute = useCallback(
-    (id: string, attribute: keyof Pick<ClientUpdateInput, 'greenInvoiceId' | 'hiveId'>) => {
+    (
+      id: string,
+      attribute: keyof Pick<
+        ClientIntegrationsInput,
+        'hiveId' | 'greenInvoiceId' | 'linearId' | 'slackChannelKey' | 'notionId' | 'workflowyUrl'
+      >,
+    ) => {
       if (!business?.id) return;
 
-      const fields: ClientUpdateInput = {};
-      fields[attribute] = id;
+      const integrations: ClientIntegrationsInput = {};
+      integrations[attribute] = id;
       updateClient({
         businessId: business?.id,
-        fields,
+        fields: { integrations },
       });
     },
     [business?.id, updateClient],
   );
 
   useEffect(() => {
-    if (business?.clientInfo?.greenInvoiceId && business?.id) {
+    if (
+      integrations?.greenInvoiceInfo?.id &&
+      business?.id &&
+      openSections.includes('green-invoice')
+    ) {
       fetchGreenInvoice();
     }
-  }, [business?.clientInfo?.greenInvoiceId, business?.id, fetchGreenInvoice]);
-
-  const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
+  }, [integrations?.greenInvoiceInfo?.id, business?.id, fetchGreenInvoice, openSections]);
 
   return (
     <Card>
@@ -141,14 +176,15 @@ export function IntegrationsSection({ data }: Props) {
             <CardTitle>Integrations</CardTitle>
             <CardDescription>Connected external services and providers</CardDescription>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Integration
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Accordion type="multiple" defaultValue={['green-invoice']} className="space-y-4">
+        <Accordion
+          type="multiple"
+          value={openSections}
+          onValueChange={setOpenSections}
+          className="space-y-4"
+        >
           {/* Green Invoice Integration */}
           {fetchingGreenInvoice ? (
             <AccordionItem
@@ -266,7 +302,7 @@ export function IntegrationsSection({ data }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     <UpdateIntegrationConfigDialog
-                      id={business?.clientInfo?.greenInvoiceId ?? undefined}
+                      id={business?.clientInfo?.integrations.greenInvoiceInfo?.id ?? undefined}
                       provider="Green Invoice"
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
@@ -289,7 +325,7 @@ export function IntegrationsSection({ data }: Props) {
                             Integration ID
                           </span>
                           <p className="text-sm font-mono">
-                            {business?.clientInfo?.greenInvoiceId}
+                            {business?.clientInfo?.integrations.greenInvoiceInfo?.id}
                           </p>
                         </div>
                         <div className="space-y-1">
@@ -381,40 +417,79 @@ export function IntegrationsSection({ data }: Props) {
             <AccordionItem
               key={integration.id}
               value={integration.id}
-              className="rounded-lg border"
+              className="rounded-lg border-2 border-gray-500/20 bg-gray-500/5"
             >
-              <div className="px-4 py-3">
+              <div className="px-4 py-3 bg-gray-500/10 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="space-y-1">
+                    {integrations?.[integration.id as keyof typeof integrations] ? (
+                      <Link
+                        to={integration.url.replace(
+                          '[ID]',
+                          (integrations?.[integration.id as keyof typeof integrations] as string) ??
+                            '',
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={event => event.stopPropagation()}
+                        className="inline-flex items-center font-semibold"
+                      >
+                        <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold">
+                          <LinkIcon />
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold">
+                        <Unlink />
+                      </div>
+                    )}
+                    <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-semibold">{integration.name}</h4>
-                        {integration.status === 'connected' ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <h3 className="font-semibold text-lg">{integration.name}</h3>
+                        {integrations?.[integration.id as keyof typeof integrations] == null ? (
+                          <CircleSlash className="h-5 w-5 text-red-600" />
                         ) : (
-                          <XCircle className="h-4 w-4 text-muted-foreground" />
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">{integration.description}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={e => e.stopPropagation()}>
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <AccordionTrigger className="hover:no-underline p-2" />
+                    <UpdateIntegrationConfigDialog
+                      id={
+                        business?.clientInfo?.integrations[
+                          integration.id as keyof typeof integrations
+                        ] ?? undefined
+                      }
+                      provider={integration.name}
+                      keyType={integration.keyType}
+                      updateClient={async newId => updateIdByAttribute(newId, integration.id)}
+                    />
+                    {/* <AccordionTrigger className="hover:no-underline p-2" /> */}
                   </div>
                 </div>
               </div>
 
-              <AccordionContent>
+              {/* <AccordionContent>
                 <div className="px-4 pb-4 pt-2 border-t">
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Last sync: </span>
-                    <span className="font-medium">{integration.lastSync}</span>
+                    <Link
+                      to={integration.url.replace(
+                        '[ID]',
+                        (integrations?.[integration.id as keyof typeof integrations] as string) ??
+                          '',
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={event => event.stopPropagation()}
+                      className="inline-flex items-center font-semibold"
+                    >
+                      <LinkIcon className="h-4 w-4 mr-2" />
+                    </Link>
                   </div>
                 </div>
-              </AccordionContent>
+              </AccordionContent> */}
             </AccordionItem>
           ))}
         </Accordion>
@@ -426,10 +501,16 @@ export function IntegrationsSection({ data }: Props) {
 interface updateIntegrationProps {
   id?: string;
   provider: string;
+  keyType?: string;
   updateClient: (newId: string) => Promise<void>;
 }
 
-function UpdateIntegrationConfigDialog({ id, provider, updateClient }: updateIntegrationProps) {
+function UpdateIntegrationConfigDialog({
+  id,
+  provider,
+  keyType,
+  updateClient,
+}: updateIntegrationProps) {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [updatedId, setUpdatedId] = useState(id);
 
@@ -443,8 +524,7 @@ function UpdateIntegrationConfigDialog({ id, provider, updateClient }: updateInt
     <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" onClick={e => e.stopPropagation()}>
-          <Settings className="h-4 w-4 mr-2" />
-          Configure
+          <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent onClick={e => e.stopPropagation()}>
@@ -454,12 +534,14 @@ function UpdateIntegrationConfigDialog({ id, provider, updateClient }: updateInt
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="id">{provider} ID</Label>
+            <Label htmlFor="id">
+              {provider} {keyType ?? 'ID'}
+            </Label>
             <Input
               id="id"
               value={updatedId}
               onChange={e => setUpdatedId(e.target.value)}
-              placeholder={`Enter ${provider} ID`}
+              placeholder={`Enter ${provider} ${keyType ?? 'ID'}`}
             />
           </div>
         </div>

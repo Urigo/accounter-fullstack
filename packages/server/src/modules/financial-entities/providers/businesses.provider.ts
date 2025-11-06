@@ -281,7 +281,7 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
     UPDATE accounter_schema.clients
     SET business_id = $targetBusinessId
     WHERE business_id = $businessIdToReplace
-    RETURNING green_invoice_id
+    RETURNING (integrations->>'greenInvoiceId')::uuid
   )
   UPDATE accounter_schema.transactions
   SET business_id = $targetBusinessId
