@@ -309,7 +309,7 @@ __metadata:
     "@envelop/graphql-modules": "npm:8.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
     "@graphql-hive/yoga": "npm:0.42.2"
-    "@graphql-yoga/plugin-defer-stream": "npm:3.16.1"
+    "@graphql-yoga/plugin-defer-stream": "npm:3.16.2"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
     "@types/basic-auth": "npm:1.1.8"
@@ -329,7 +329,7 @@ __metadata:
     graphql: "npm:16.12.0"
     graphql-modules: "npm:3.0.0"
     graphql-scalars: "npm:1.25.0"
-    graphql-yoga: "npm:5.16.1"
+    graphql-yoga: "npm:5.16.2"
     inline-css: "npm:4.0.3"
     json-bigint-patch: "npm:0.0.8"
     node-cache: "npm:5.1.2"
@@ -4094,15 +4094,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-yoga/plugin-defer-stream@npm:3.16.1":
-  version: 3.16.1
-  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.16.1"
+"@graphql-yoga/plugin-defer-stream@npm:3.16.2":
+  version: 3.16.2
+  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.16.2"
   dependencies:
     "@graphql-tools/utils": "npm:^10.6.1"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0
-    graphql-yoga: ^5.16.1
-  checksum: 10c0/789fc11224ab5db09b86f0ffd76912408f3b6115ec1c2b4293a7d41e7bd3342f76f0c564b21fa7ba89468d70fb64e60b5d71cc8de36cbe373794e923a4708a46
+    graphql-yoga: ^5.16.2
+  checksum: 10c0/b1336c2663722a5dff0c61dc4dc705c212a8a3b9c4d5107e31f12840af99db6ce40568b075bf94f27cab46d3f7e160959586b165ff2fc19fc30d92519407d7ed
   languageName: node
   linkType: hard
 
@@ -14122,9 +14122,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-yoga@npm:5.16.1":
-  version: 5.16.1
-  resolution: "graphql-yoga@npm:5.16.1"
+"graphql-yoga@npm:5.16.2":
+  version: 5.16.2
+  resolution: "graphql-yoga@npm:5.16.2"
   dependencies:
     "@envelop/core": "npm:^5.3.0"
     "@envelop/instrumentation": "npm:^1.0.0"
@@ -14140,7 +14140,7 @@ __metadata:
     tslib: "npm:^2.8.1"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0
-  checksum: 10c0/78a78058b600342ae15763cf6f15f5a7082c1073c33cb7a4e1cc47988acbe71e355568b8e1b6cd1795e80a3e1420f25311fd2e1e1907e185bf741c30a2702d34
+  checksum: 10c0/436da339b0d136bc9feac05a0e2fb81ced5a12abb7e27ddb265d1078128e1b416710c35d05ef3e7cf5bb455bf77de95119a39b83330bf187762ec70338f472c0
   languageName: node
   linkType: hard
 
