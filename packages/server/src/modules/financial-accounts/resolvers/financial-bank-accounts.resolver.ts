@@ -1,11 +1,20 @@
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import { FinancialBankAccountsProvider } from '../providers/financial-bank-accounts.provider.js';
-import type { FinancialAccountsModule, IGetFinancialBankAccountsByIdsResult } from '../types.js';
+import type {
+  FinancialAccountsModule,
+  IGetFinancialAccountsByOwnerIdsResult,
+  IGetFinancialBankAccountsByIdsResult,
+} from '../types.js';
 import { commonFinancialAccountFields } from './common.js';
 
-function validateBankAccount(
-  bankAccount: IGetFinancialBankAccountsByIdsResult | undefined,
-): IGetFinancialBankAccountsByIdsResult {
+async function getBankAccountByFinancialAccount(
+  financialAccount: IGetFinancialAccountsByOwnerIdsResult,
+  injector: Injector,
+): Promise<IGetFinancialBankAccountsByIdsResult> {
+  const bankAccount = await injector
+    .get(FinancialBankAccountsProvider)
+    .getFinancialBankAccountByIdLoader.load(financialAccount.id);
   if (!bankAccount) {
     throw new GraphQLError('Bank account not found');
   }
@@ -23,22 +32,16 @@ export const financialBankAccountsResolvers: FinancialAccountsModule.Resolvers =
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: async (DbAccount, _, { injector }) =>
-      injector
-        .get(FinancialBankAccountsProvider)
-        .getFinancialBankAccountByIdLoader.load(DbAccount.id)
-        .then(validateBankAccount)
-        .then(bankAccount => bankAccount.bank_number.toString()),
+      getBankAccountByFinancialAccount(DbAccount, injector).then(bankAccount =>
+        bankAccount.bank_number.toString(),
+      ),
     branchNumber: async (DbAccount, _, { injector }) =>
-      injector
-        .get(FinancialBankAccountsProvider)
-        .getFinancialBankAccountByIdLoader.load(DbAccount.id)
-        .then(validateBankAccount)
-        .then(bankAccount => bankAccount.branch_number.toString()),
+      getBankAccountByFinancialAccount(DbAccount, injector).then(bankAccount =>
+        bankAccount.branch_number.toString(),
+      ),
     name: async (DbAccount, _, { injector }) =>
-      injector
-        .get(FinancialBankAccountsProvider)
-        .getFinancialBankAccountByIdLoader.load(DbAccount.id)
-        .then(validateBankAccount)
-        .then(bankAccount => `${bankAccount.bank_number}-${DbAccount.account_number}`),
+      getBankAccountByFinancialAccount(DbAccount, injector).then(
+        bankAccount => `${bankAccount.bank_number}-${DbAccount.account_number}`,
+      ),
   },
 };
