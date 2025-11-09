@@ -64,6 +64,11 @@ export async function getPaymentsFromTransactions(
         bankAccount = await injector
           .get(FinancialBankAccountsProvider)
           .getFinancialBankAccountByIdLoader.load(account.id);
+        if (!bankAccount) {
+          throw new GraphQLError(
+            `Bank account details not found for financial account ID "${account.id}"`,
+          );
+        }
       }
 
       // get further fields
