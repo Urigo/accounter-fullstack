@@ -27,17 +27,18 @@ export const financialBankAccountsResolvers: FinancialAccountsModule.Resolvers =
     //   return injector.get(FinancialAccountsProvider).getAllFinancialAccounts();
     // },
   },
+  Mutation: {},
   BankFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'BANK_ACCOUNT',
     ...commonFinancialAccountFields,
     accountNumber: DbAccount => DbAccount.account_number,
     bankNumber: async (DbAccount, _, { injector }) =>
-      getBankAccountByFinancialAccount(DbAccount, injector).then(bankAccount =>
-        bankAccount.bank_number.toString(),
+      getBankAccountByFinancialAccount(DbAccount, injector).then(
+        bankAccount => bankAccount.bank_number,
       ),
     branchNumber: async (DbAccount, _, { injector }) =>
-      getBankAccountByFinancialAccount(DbAccount, injector).then(bankAccount =>
-        bankAccount.branch_number.toString(),
+      getBankAccountByFinancialAccount(DbAccount, injector).then(
+        bankAccount => bankAccount.branch_number,
       ),
     name: async (DbAccount, _, { injector }) =>
       getBankAccountByFinancialAccount(DbAccount, injector).then(
