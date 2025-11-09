@@ -16,12 +16,42 @@ import type {
 } from '../types.js';
 
 const getFinancialBankAccountsByIds = sql<IGetFinancialBankAccountsByIdsQuery>`
-  SELECT *
+  SELECT id,
+    bank_number,
+    branch_number,
+    extended_bank_number,
+    party_preferred_indication,
+    party_account_involvement_code,
+    account_deal_date,
+    account_update_date,
+    meteg_doar_net,
+    kod_harshaat_peilut,
+    account_closing_reason_code,
+    account_agreement_opening_date,
+    service_authorization_desc,
+    branch_type_code,
+    mymail_entitlement_switch,
+    product_label
   FROM accounter_schema.financial_bank_accounts
   WHERE id IN $$bankAccountIds;`;
 
 const getAllFinancialBankAccounts = sql<IGetAllFinancialBankAccountsQuery>`
-  SELECT *
+  SELECT id,
+    bank_number,
+    branch_number,
+    extended_bank_number,
+    party_preferred_indication,
+    party_account_involvement_code,
+    account_deal_date,
+    account_update_date,
+    meteg_doar_net,
+    kod_harshaat_peilut,
+    account_closing_reason_code,
+    account_agreement_opening_date,
+    service_authorization_desc,
+    branch_type_code,
+    mymail_entitlement_switch,
+    product_label
   FROM accounter_schema.financial_bank_accounts;`;
 
 const updateBankAccount = sql<IUpdateBankAccountQuery>`
