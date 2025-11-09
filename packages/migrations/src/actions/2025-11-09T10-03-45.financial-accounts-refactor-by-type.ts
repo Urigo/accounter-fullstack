@@ -26,7 +26,7 @@ CREATE TABLE
 ALTER TABLE
   accounter_schema.financial_bank_accounts
 ADD
-  CONSTRAINT financial_accounts_pk PRIMARY KEY (id);
+  CONSTRAINT financial_bank_accounts_pk PRIMARY KEY (id);
 
 ALTER TABLE
   accounter_schema.financial_bank_accounts
