@@ -31,7 +31,7 @@ ADD
 ALTER TABLE
   accounter_schema.financial_bank_accounts
 ADD
-  CONSTRAINT financial_bank_accounts_relation_1 FOREIGN KEY (id) REFERENCES accounter_schema.financial_accounts (id) ON UPDATE NO ACTION ON DELETE NO ACTION;
+  CONSTRAINT fk_financial_bank_accounts_id FOREIGN KEY (id) REFERENCES accounter_schema.financial_accounts (id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 insert into
   accounter_schema.financial_bank_accounts (
