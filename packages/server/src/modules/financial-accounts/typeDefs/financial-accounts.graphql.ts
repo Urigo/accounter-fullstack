@@ -56,6 +56,7 @@ export default gql`
     name: String!
     ownerId: UUID!
     type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
     bankAccountDetails: BankAccountInsertInput
   }
 
@@ -65,6 +66,7 @@ export default gql`
     name: String
     ownerId: UUID
     type: FinancialAccountType
+    privateOrBusiness: PrivateOrBusinessType
     bankAccountDetails: BankAccountUpdateInput
   }
 
@@ -100,5 +102,11 @@ export default gql`
     CRYPTO_WALLET
     BANK_DEPOSIT_ACCOUNT
     FOREIGN_SECURITIES
+  }
+
+  " private or business account type "
+  enum PrivateOrBusinessType {
+    PRIVATE
+    BUSINESS
   }
 `;
