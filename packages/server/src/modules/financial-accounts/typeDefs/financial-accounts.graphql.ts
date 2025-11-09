@@ -14,17 +14,6 @@ export default gql`
     type: String!
   }
 
-  " represent a single bank account"
-  type BankFinancialAccount implements FinancialAccount {
-    id: UUID!
-    name: String!
-    type: String!
-    " the external identifier of the bank account "
-    accountNumber: String!
-    bankNumber: String!
-    branchNumber: String!
-  }
-
   " represent a single credit card "
   type CardFinancialAccount implements FinancialAccount {
     id: UUID!
