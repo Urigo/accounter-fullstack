@@ -12,22 +12,22 @@ import type {
 } from '../types.js';
 
 const getFinancialAccountsByOwnerIds = sql<IGetFinancialAccountsByOwnerIdsQuery>`
-    SELECT *
+    SELECT id, account_number, private_business, owner, type
     FROM accounter_schema.financial_accounts
     WHERE owner IN $$ownerIds;`;
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
-SELECT *
+SELECT id, account_number, private_business, owner, type
 FROM accounter_schema.financial_accounts
 WHERE account_number IN $$accountNumbers;`;
 
 const getFinancialAccountsByAccountIDs = sql<IGetFinancialAccountsByAccountIDsQuery>`
-SELECT *
+SELECT id, account_number, private_business, owner, type
 FROM accounter_schema.financial_accounts
 WHERE id IN $$accountIDs;`;
 
 const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
-    SELECT *
+    SELECT id, account_number, private_business, owner, type
     FROM accounter_schema.financial_accounts;`;
 
 @Injectable({

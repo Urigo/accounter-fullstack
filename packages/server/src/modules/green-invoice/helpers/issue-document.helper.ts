@@ -9,6 +9,8 @@ import {
   IGetIssuedDocumentsByIdsResult,
 } from '@modules/documents/types';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialBankAccountsProvider } from '@modules/financial-accounts/providers/financial-bank-accounts.provider.js';
+import { IGetFinancialBankAccountsByIdsResult } from '@modules/financial-accounts/types.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
@@ -57,6 +59,13 @@ export async function getPaymentsFromTransactions(
           break;
       }
 
+      let bankAccount: IGetFinancialBankAccountsByIdsResult | undefined = undefined;
+      if (account.type === 'BANK_ACCOUNT') {
+        bankAccount = await injector
+          .get(FinancialBankAccountsProvider)
+          .getFinancialBankAccountByIdLoader.load(account.id);
+      }
+
       // get further fields
       let paymentTypeSpecificAttributes: Partial<GreenInvoicePayment> = {};
       switch (type as string) {
@@ -76,8 +85,8 @@ export async function getPaymentsFromTransactions(
           break;
         case 'WIRE_TRANSFER':
           paymentTypeSpecificAttributes = {
-            bankName: account.bank_number?.toString(),
-            bankBranch: account.branch_number?.toString(),
+            bankName: bankAccount?.bank_number?.toString(),
+            bankBranch: bankAccount?.branch_number?.toString(),
             bankAccount: account.account_number?.toString(),
           };
           break;
