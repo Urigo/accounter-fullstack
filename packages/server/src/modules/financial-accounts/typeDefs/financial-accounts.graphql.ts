@@ -19,6 +19,8 @@ export default gql`
     id: UUID!
     " the name of the account"
     name: String!
+    " Account number "
+    number: String!
     " the general type of the account"
     type: FinancialAccountType!
   }

@@ -5,6 +5,7 @@ export default gql`
   type BankFinancialAccount implements FinancialAccount {
     id: UUID!
     name: String!
+    number: String!
     type: FinancialAccountType!
     " the external identifier of the bank account "
     accountNumber: String!
