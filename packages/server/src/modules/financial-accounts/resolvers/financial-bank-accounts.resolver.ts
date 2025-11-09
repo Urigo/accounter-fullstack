@@ -22,12 +22,6 @@ async function getBankAccountByFinancialAccount(
 }
 
 export const financialBankAccountsResolvers: FinancialAccountsModule.Resolvers = {
-  Query: {
-    // allFinancialAccounts: async (_, __, { injector }) => {
-    //   return injector.get(FinancialAccountsProvider).getAllFinancialAccounts();
-    // },
-  },
-  Mutation: {},
   BankFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'BANK_ACCOUNT',
     ...commonFinancialAccountFields,
