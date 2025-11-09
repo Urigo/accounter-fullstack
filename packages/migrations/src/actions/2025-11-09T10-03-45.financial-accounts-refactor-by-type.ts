@@ -6,8 +6,8 @@ export default {
 CREATE TABLE
   accounter_schema.financial_bank_accounts (
     id uuid NOT NULL,
-    bank_number integer NULL,
-    branch_number integer NULL,
+    bank_number integer NOT NULL,
+    branch_number integer NOT NULL,
     extended_bank_number integer NULL,
     party_preferred_indication integer NULL,
     party_account_involvement_code integer NULL,
