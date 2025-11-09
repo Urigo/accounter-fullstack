@@ -127,6 +127,7 @@ import migration_2025_10_27T18_11_45_add_operations_count_per_contract from './a
 import migration_2025_10_29T17_39_47_update_deel_invoices_amounts from './actions/2025-10-29T17-39-47.update-deel-invoices-amounts.js';
 import migration_2025_10_29T17_59_09_refactor_admin_business from './actions/2025-10-29T17-59-09.refactor-admin-business.js';
 import migration_2025_10_30T18_57_58_client_integrations from './actions/2025-10-30T18-57-58.client-integrations.js';
+import migration_2025_11_09T10_03_45_financial_accounts_refactor_by_type from './actions/2025-11-09T10-03-45.financial-accounts-refactor-by-type.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const runPGMigrations = (args: { slonik: DatabasePool }) =>
@@ -261,5 +262,6 @@ export const runPGMigrations = (args: { slonik: DatabasePool }) =>
       migration_2025_10_29T17_59_09_refactor_admin_business,
       migration_2025_10_29T17_39_47_update_deel_invoices_amounts,
       migration_2025_10_30T18_57_58_client_integrations,
+      migration_2025_11_09T10_03_45_financial_accounts_refactor_by_type,
     ],
   });
