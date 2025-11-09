@@ -179,15 +179,13 @@ export class FinancialBankAccountsProvider {
   }
 
   public async updateBankAccount(params: IUpdateBankAccountParams) {
-    if (params.bankAccountId) {
-      this.invalidateById(params.bankAccountId);
-      const bankAccount = await this.getFinancialBankAccountByIdLoader.load(params.bankAccountId);
-      if (bankAccount?.id) {
-        this.cache.set(`bank-account-id-${bankAccount?.id}`, bankAccount);
-      }
-      return bankAccount;
+    const updatedAccounts = await updateBankAccount.run(params, this.dbProvider);
+    const updatedAccount = updatedAccounts[0];
+    if (updatedAccount) {
+      this.invalidateById(updatedAccount.id);
+      this.getFinancialBankAccountByIdLoader.prime(updatedAccount.id, updatedAccount);
     }
-    return updateBankAccount.run(params, this.dbProvider);
+    return updatedAccount;
   }
 
   public async deleteBankAccount(params: IDeleteBankAccountParams) {
