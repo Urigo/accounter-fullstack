@@ -202,7 +202,7 @@ export class FinancialBankAccountsProvider {
     return getAllFinancialBankAccounts.run(undefined, this.dbProvider).then(res => {
       this.cache.set('all-bank-accounts', res);
       res.map(account => {
-        this.cache.set(`bank-account-id-${account.id}`, account);
+        this.getFinancialBankAccountByIdLoader.prime(account.id, account);
       });
       return res;
     });
