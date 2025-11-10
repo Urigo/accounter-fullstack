@@ -1,0 +1,30 @@
+import type { Currency, FinancialAccountType } from '@/gql/graphql.js';
+
+export interface CurrencyTaxCategory {
+  currency: Currency;
+  taxCategory: string;
+}
+
+export interface FinancialAccount {
+  id: string;
+  accountNumber: string;
+  isBusiness: boolean;
+  type: FinancialAccountType;
+  currencies: CurrencyTaxCategory[];
+  // Bank-specific fields
+  bankNumber?: number;
+  branchNumber?: number;
+  extendedBankNumber?: number;
+  partyPreferredIndication?: number;
+  partyAccountInvolvementCode?: number;
+  accountDealDate?: number;
+  accountUpdateDate?: number;
+  metegDoraNet?: number;
+  kodHarshaatPeilut?: number;
+  accountClosingReasonCode?: number;
+  accountAgreementOpeningDate?: number;
+  serviceAuthorizationDesc?: string;
+  branchTypeCode?: number;
+  mymailEntitlementSwitch?: number;
+  productLabel?: string;
+}

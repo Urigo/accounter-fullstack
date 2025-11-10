@@ -1,0 +1,610 @@
+'use client';
+
+import { forwardRef, useImperativeHandle, useState, type JSX } from 'react';
+import { Plus, X } from 'lucide-react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form.js';
+import { Input } from '@/components/ui/input.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.js';
+import { Switch } from '@/components/ui/switch.js';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { FinancialAccount } from './types.js';
+
+const currencyTaxCategorySchema = z.object({
+  currency: z.string().min(1, 'Currency is required'),
+  taxCategory: z.string().min(1, 'Tax category is required'),
+});
+
+const financialAccountSchema = z.object({
+  accountNumber: z.string().min(1, 'Account number is required'),
+  isBusiness: z.boolean().default(false).optional(),
+  type: z.enum([
+    'BANK_ACCOUNT',
+    'CREDIT_CARD',
+    'CRYPTO_WALLET',
+    'FOREIGN_SECURITIES',
+    'BANK_DEPOSIT_ACCOUNT',
+  ]),
+  currencies: z.array(currencyTaxCategorySchema).min(1, 'Add at least one currency'),
+  bankNumber: z.number().int().optional(),
+  branchNumber: z.number().int().optional(),
+  extendedBankNumber: z.number().int().optional(),
+  partyPreferredIndication: z.number().int().optional(),
+  partyAccountInvolvementCode: z.number().int().optional(),
+  accountDealDate: z.number().int().optional(),
+  accountUpdateDate: z.number().int().optional(),
+  metegDoraNet: z.number().int().optional(),
+  kodHarshaatPeilut: z.number().int().optional(),
+  accountClosingReasonCode: z.number().int().optional(),
+  accountAgreementOpeningDate: z.number().int().optional(),
+  serviceAuthorizationDesc: z.string().optional(),
+  branchTypeCode: z.number().int().optional(),
+  mymailEntitlementSwitch: z.number().int().optional(),
+  productLabel: z.string().optional(),
+});
+
+type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
+
+// // Ensure all optional fields are typed as their correct types for compatibility with react-hook-form
+// type FinancialAccountForm = {
+//   accountNumber: string;
+//   isBusiness: boolean;
+//   type: AccountType;
+//   currencies: CurrencyTaxCategory[];
+//   bankNumber?: number;
+//   branchNumber?: number;
+//   extendedBankNumber?: number;
+//   partyPreferredIndication?: number;
+//   partyAccountInvolvementCode?: number;
+//   accountDealDate?: number;
+//   accountUpdateDate?: number;
+//   metegDoraNet?: number;
+//   kodHarshaatPeilut?: number;
+//   accountClosingReasonCode?: number;
+//   accountAgreementOpeningDate?: number;
+//   serviceAuthorizationDesc?: string;
+//   branchTypeCode?: number;
+//   mymailEntitlementSwitch?: number;
+//   productLabel?: string;
+// };
+
+interface ModalProps {
+  onDone?: () => void;
+}
+
+export interface ModifyFinancialAccountModalRef {
+  open: (account?: FinancialAccount) => void;
+}
+
+export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModalRef, ModalProps>(
+  function ModifyFinancialAccountModal({ onDone }, ref): JSX.Element {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingAccount, setEditingAccount] = useState<FinancialAccount | null>(null);
+    const form = useForm<FinancialAccountForm>({
+      resolver: zodResolver(financialAccountSchema),
+      defaultValues: {
+        accountNumber: '',
+        isBusiness: false,
+        type: 'BANK_ACCOUNT',
+        currencies: [],
+        bankNumber: undefined,
+        branchNumber: undefined,
+        extendedBankNumber: undefined,
+        partyPreferredIndication: undefined,
+        partyAccountInvolvementCode: undefined,
+        accountDealDate: undefined,
+        accountUpdateDate: undefined,
+        metegDoraNet: undefined,
+        kodHarshaatPeilut: undefined,
+        accountClosingReasonCode: undefined,
+        accountAgreementOpeningDate: undefined,
+        serviceAuthorizationDesc: '',
+        branchTypeCode: undefined,
+        mymailEntitlementSwitch: undefined,
+        productLabel: '',
+      },
+      mode: 'onBlur',
+    });
+
+    const { control, handleSubmit: rhfHandleSubmit, watch, reset } = form;
+
+    const handleOpenModal = (account?: FinancialAccount): void => {
+      if (account) {
+        setEditingAccount(account);
+        reset({
+          accountNumber: account.accountNumber,
+          isBusiness: account.isBusiness,
+          type: account.type,
+          currencies: account.currencies,
+          bankNumber: account.bankNumber,
+          branchNumber: account.branchNumber,
+          extendedBankNumber: account.extendedBankNumber,
+          partyPreferredIndication: account.partyPreferredIndication,
+          partyAccountInvolvementCode: account.partyAccountInvolvementCode,
+          accountDealDate: account.accountDealDate,
+          accountUpdateDate: account.accountUpdateDate,
+          metegDoraNet: account.metegDoraNet,
+          kodHarshaatPeilut: account.kodHarshaatPeilut,
+          accountClosingReasonCode: account.accountClosingReasonCode,
+          accountAgreementOpeningDate: account.accountAgreementOpeningDate,
+          serviceAuthorizationDesc: account.serviceAuthorizationDesc ?? '',
+          branchTypeCode: account.branchTypeCode,
+          mymailEntitlementSwitch: account.mymailEntitlementSwitch,
+          productLabel: account.productLabel ?? '',
+        });
+      } else {
+        setEditingAccount(null);
+        reset();
+      }
+      setIsModalOpen(true);
+    };
+
+    useImperativeHandle(ref, () => ({
+      open: handleOpenModal,
+    }));
+
+    const currenciesFieldArray = useFieldArray({ control, name: 'currencies' });
+
+    const handleCloseModal = (): void => {
+      setIsModalOpen(false);
+      setEditingAccount(null);
+      reset();
+    };
+
+    const onSubmit = (values: FinancialAccountForm): void => {
+      // TODO: Here you would typically send the form data to the server
+      console.log('Submitted Financial Account:', values);
+
+      handleCloseModal();
+      onDone?.();
+    };
+
+    const addCurrency = (): void => {
+      currenciesFieldArray.append({ currency: 'USD', taxCategory: '' });
+    };
+
+    const removeCurrency = (index: number): void => {
+      currenciesFieldArray.remove(index);
+    };
+
+    return (
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingAccount ? 'Edit Account' : 'New Account'}</DialogTitle>
+            <DialogDescription>
+              {editingAccount
+                ? 'Update account details and settings'
+                : 'Add a new financial account'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={rhfHandleSubmit(onSubmit)} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel>Account Number *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel>Account Type *</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BANK">Bank Account</SelectItem>
+                            <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                            <SelectItem value="CRYPTO_WALLET">Crypto Wallet</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name="isBusiness"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Switch
+                            id="isBusiness"
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>Business Account</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Currencies & Tax Categories */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Currencies & Tax Categories</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCurrency}
+                    aria-label="Add currency row"
+                  >
+                    <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
+                    Add Currency
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {currenciesFieldArray.fields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <FormField
+                          control={control}
+                          name={`currencies.${index}.currency`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input placeholder="Currency (e.g., ILS, USD)" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={control}
+                          name={`currencies.${index}.taxCategory`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input placeholder="Tax Category" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeCurrency(index)}
+                        aria-label={`Remove currency ${watch(`currencies.${index}.currency`) || ''}`}
+                      >
+                        <X className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bank-specific fields */}
+              {watch('type') === 'BANK_ACCOUNT' && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold">Bank-Specific Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FormField
+                      control={control}
+                      name="bankNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Bank Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="branchNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Branch Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="extendedBankNumber"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Extended Bank Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="partyPreferredIndication"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Party Preferred Indication</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="partyAccountInvolvementCode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Party Account Involvement Code</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="accountDealDate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Account Deal Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              placeholder="YYYYMMDD"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="accountUpdateDate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Account Update Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              placeholder="YYYYMMDD"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="metegDoraNet"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Meteg Dora Net</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="kodHarshaatPeilut"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Kod Harshaot Peilut</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="accountClosingReasonCode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Account Closing Reason Code</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="accountAgreementOpeningDate"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Account Agreement Opening Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              placeholder="YYYYMMDD"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="branchTypeCode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Branch Type Code</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="mymailEntitlementSwitch"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Mymail Entitlement Switch</FormLabel>
+                          <FormControl>
+                            <Input
+                              inputMode="numeric"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="serviceAuthorizationDesc"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2 md:col-span-2">
+                          <FormLabel>Service Authorization Description</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="productLabel"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2 md:col-span-2 lg:col-span-3">
+                          <FormLabel>Product Label</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={handleCloseModal}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {editingAccount ? 'Update Account' : 'Create Account'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    );
+  },
+);
