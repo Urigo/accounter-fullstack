@@ -10,6 +10,7 @@ import {
   Plug,
   Settings,
   Shield,
+  Wallet,
   //   TrendingUp,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -26,6 +27,7 @@ import { ConfigurationsSection } from './configurations-section.jsx';
 import { ContactInfoSection } from './contact-info-section.jsx';
 import { ContractsSection } from './contracts-section.jsx';
 import { DocumentsSection } from './documents-section.jsx';
+import { FinancialAccountsSection } from './financial-account-section.js';
 import { IntegrationsSection } from './integrations-section.jsx';
 import { LedgerSection } from './ledger-section.js';
 import { TransactionsSection } from './transactions-section.js';
@@ -159,13 +161,22 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               </>
             )}
             {isAdmin && (
-              <TabsTrigger
-                value="admin"
-                className="flex items-center gap-2 data-[state=active]:bg-background"
-              >
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Admin</span>
-              </TabsTrigger>
+              <>
+                <TabsTrigger
+                  value="accounts"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Accounts</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="admin"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -214,9 +225,14 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           )}
 
           {isAdmin && (
-            <TabsContent value="admin" className="mt-0">
-              <AdminBusinessSection data={business} />
-            </TabsContent>
+            <>
+              <TabsContent value="accounts" className="mt-0">
+                <FinancialAccountsSection adminId={business.id} />
+              </TabsContent>
+              <TabsContent value="admin" className="mt-0">
+                <AdminBusinessSection data={business} />
+              </TabsContent>
+            </>
           )}
         </Tabs>
       </main>

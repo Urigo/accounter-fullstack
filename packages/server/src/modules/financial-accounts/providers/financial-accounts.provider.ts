@@ -4,31 +4,80 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { getCacheInstance } from '@shared/helpers';
 import type {
+  IDeleteFinancialAccountParams,
+  IDeleteFinancialAccountQuery,
   IGetAllFinancialAccountsQuery,
   IGetAllFinancialAccountsResult,
   IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByOwnerIdsQuery,
+  IInsertFinancialAccountsParams,
+  IInsertFinancialAccountsQuery,
+  IUpdateFinancialAccountParams,
+  IUpdateFinancialAccountQuery,
 } from '../types.js';
 
 const getFinancialAccountsByOwnerIds = sql<IGetFinancialAccountsByOwnerIdsQuery>`
-    SELECT id, account_number, private_business, owner, type
+    SELECT id, account_number, account_name, private_business, owner, type
     FROM accounter_schema.financial_accounts
     WHERE owner IN $$ownerIds;`;
 
 const getFinancialAccountsByAccountNumbers = sql<IGetFinancialAccountsByAccountNumbersQuery>`
-SELECT id, account_number, private_business, owner, type
+SELECT id, account_number, account_name, private_business, owner, type
 FROM accounter_schema.financial_accounts
 WHERE account_number IN $$accountNumbers;`;
 
 const getFinancialAccountsByAccountIDs = sql<IGetFinancialAccountsByAccountIDsQuery>`
-SELECT id, account_number, private_business, owner, type
+SELECT id, account_number, account_name, private_business, owner, type
 FROM accounter_schema.financial_accounts
 WHERE id IN $$accountIDs;`;
 
 const getAllFinancialAccounts = sql<IGetAllFinancialAccountsQuery>`
-    SELECT id, account_number, private_business, owner, type
+    SELECT id, account_number, account_name, private_business, owner, type
     FROM accounter_schema.financial_accounts;`;
+
+const updateFinancialAccount = sql<IUpdateFinancialAccountQuery>`
+      UPDATE accounter_schema.financial_accounts
+      SET
+      account_number = COALESCE(
+        $accountNumber,
+        account_number
+      ),
+      account_name = COALESCE(
+        $name,
+        account_name
+      ),
+      private_business = COALESCE(
+        $privateBusiness,
+        private_business
+      ),
+      owner = COALESCE(
+        $ownerId,
+        owner
+      ),
+      type = COALESCE(
+        $type,
+        type
+      )
+      WHERE
+        id = $financialAccountId
+      RETURNING *;
+    `;
+
+const insertFinancialAccounts = sql<IInsertFinancialAccountsQuery>`
+      INSERT INTO accounter_schema.financial_accounts (
+        account_number, account_name, private_business, owner, type
+      )
+      VALUES $$bankAccounts(
+        accountNumber, name, privateBusiness, ownerId, type
+      )
+      RETURNING *;`;
+
+const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
+        DELETE FROM accounter_schema.financial_accounts
+        WHERE id = $financialAccountId
+        RETURNING id;
+      `;
 
 @Injectable({
   scope: Scope.Singleton,
@@ -105,12 +154,46 @@ export class FinancialAccountsProvider {
     return getAllFinancialAccounts.run(undefined, this.dbProvider).then(res => {
       this.cache.set('all-accounts', res);
       res.map(account => {
-        this.cache.set(`account-number-${account.account_number}`, account);
-        this.cache.set(`account-id-${account.id}`, account);
-        if (account.owner) this.cache.set(`account-by-owner-id-${account.owner}`, account);
+        this.getFinancialAccountByAccountNumberLoader.prime(account.account_number, account);
+        this.getFinancialAccountByAccountIDLoader.prime(account.id, account);
+        if (account.owner) this.getFinancialAccountsByOwnerIdLoader.clear(account.owner);
       });
       return res;
     });
+  }
+
+  public async updateFinancialAccount(params: IUpdateFinancialAccountParams) {
+    const updatedAccounts = await updateFinancialAccount.run(params, this.dbProvider);
+    const updatedAccount = updatedAccounts[0];
+    if (updatedAccount) {
+      this.invalidateById(updatedAccount.id);
+      this.getFinancialAccountByAccountIDLoader.prime(updatedAccount.id, updatedAccount);
+    }
+    return updatedAccount;
+  }
+
+  public async deleteFinancialAccount(params: IDeleteFinancialAccountParams) {
+    if (params.financialAccountId) {
+      await this.invalidateById(params.financialAccountId);
+    }
+    return deleteFinancialAccount.run(params, this.dbProvider);
+  }
+
+  public async insertFinancialAccounts(params: IInsertFinancialAccountsParams) {
+    this.cache.delete('all-accounts');
+    return insertFinancialAccounts.run(params, this.dbProvider);
+  }
+
+  public async invalidateById(financialAccountId: string) {
+    const account = await this.getFinancialAccountByAccountIDLoader.load(financialAccountId);
+    if (account) {
+      if (account.owner) {
+        this.getFinancialAccountsByOwnerIdLoader.clear(account.owner);
+      }
+      this.getFinancialAccountByAccountNumberLoader.clear(account.account_number);
+    }
+    this.cache.delete('all-accounts');
+    this.getFinancialAccountByAccountIDLoader.clear(financialAccountId);
   }
 
   public clearCache() {

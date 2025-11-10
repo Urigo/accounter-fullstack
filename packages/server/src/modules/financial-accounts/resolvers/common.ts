@@ -1,10 +1,38 @@
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { Currency, PrivateOrBusinessType } from '@shared/gql-types';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule, IGetFinancialAccountsByAccountIDsResult } from '../types.js';
+
+function getPrivateOrBusinessType(privateOrBusiness: string): PrivateOrBusinessType {
+  switch (privateOrBusiness) {
+    case 'PRIVATE':
+      return 'PRIVATE';
+    case 'BUSINESS':
+      return 'BUSINESS';
+    default:
+      throw new Error(`Unknown privateOrBusiness type: ${privateOrBusiness}`);
+  }
+}
 
 export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAccountResolvers = {
   id: DbAccount => DbAccount.id,
   type: DbAccount => DbAccount.type,
+  number: DbAccount => DbAccount.account_number,
+  privateOrBusiness: DbAccount => getPrivateOrBusinessType(DbAccount.private_business),
+  accountTaxCategories: async (DbAccount, _, { injector }) => {
+    const taxCategories = await injector
+      .get(TaxCategoriesProvider)
+      .taxCategoryByFinancialAccountIdsLoader.load(DbAccount.id)
+      .then(categories => {
+        return categories.map(category => ({
+          id: `${DbAccount.id}-${category.currency}`,
+          currency: category.currency as Currency,
+          taxCategory: category,
+        }));
+      });
+    return taxCategories;
+  },
 };
 
 export const commonTransactionFields:

@@ -81,7 +81,7 @@ async function seed() {
         bank_number: parseInt(bankNumber),
         branch_number: parseInt(branchNumber),
         type: 'BANK_ACCOUNT',
-        private_business: 'business',
+        private_business: 'BUSINESS',
         owner: adminEntityId,
       });
     }
@@ -99,7 +99,7 @@ async function seed() {
       accountsToCreate.push({
         account_number: last4digits,
         type: 'CREDIT_CARD',
-        private_business: 'business',
+        private_business: 'BUSINESS',
         owner: adminEntityId,
       });
     }
