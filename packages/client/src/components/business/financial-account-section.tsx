@@ -6,6 +6,7 @@ import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
 import {
   AdminFinancialAccountsSectionDocument,
+  PrivateOrBusinessType,
   type AdminFinancialAccountsSectionQuery,
 } from '@/gql/graphql.js';
 import { FinancialAccountCard } from '../financial-accounts/financial-account-card.js';
@@ -25,6 +26,14 @@ import type { FinancialAccount } from '../financial-accounts/types.js';
       number
       type
       privateOrBusiness
+      accountTaxCategories {
+        id
+        currency
+        taxCategory {
+          id
+          name
+        }
+      }
     }
   }
 `;
@@ -36,25 +45,32 @@ function convertFinancialAccountDataToFormValues(
     id: account.id,
     name: account.name,
     number: account.number,
-    isBusiness: account.privateOrBusiness === 'BUSINESS',
+    isBusiness: account.privateOrBusiness === PrivateOrBusinessType.Business,
     type: account.type,
-    currencies: [], // TODO: fetch currencies when supported
-    // // Bank-specific fields
-    // bankNumber?: number;
-    // branchNumber?: number;
-    // extendedBankNumber?: number;
-    // partyPreferredIndication?: number;
-    // partyAccountInvolvementCode?: number;
-    // accountDealDate?: number;
-    // accountUpdateDate?: number;
-    // metegDoarNet?: number;
-    // kodHarshaatPeilut?: number;
-    // accountClosingReasonCode?: number;
-    // accountAgreementOpeningDate?: number;
-    // serviceAuthorizationDesc?: number;
-    // branchTypeCode?: number;
-    // mymailEntitlementSwitch?: number;
-    // productLabel?: number;
+    currencies: account.accountTaxCategories.map(cat => ({
+      currency: cat.currency,
+      taxCategory: { id: cat.taxCategory.id, name: cat.taxCategory.name },
+    })),
+    // Bank-specific fields
+    ...(account.__typename === 'BankFinancialAccount'
+      ? {
+          // bankNumber?: number;
+          // branchNumber?: number;
+          // extendedBankNumber?: number;
+          // partyPreferredIndication?: number;
+          // partyAccountInvolvementCode?: number;
+          // accountDealDate?: number;
+          // accountUpdateDate?: number;
+          // metegDoarNet?: number;
+          // kodHarshaatPeilut?: number;
+          // accountClosingReasonCode?: number;
+          // accountAgreementOpeningDate?: number;
+          // serviceAuthorizationDesc?: number;
+          // branchTypeCode?: number;
+          // mymailEntitlementSwitch?: number;
+          // productLabel?: number;
+        }
+      : {}),
   };
 }
 

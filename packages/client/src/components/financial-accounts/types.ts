@@ -2,7 +2,7 @@ import type { Currency, FinancialAccountType } from '@/gql/graphql.js';
 
 export interface CurrencyTaxCategory {
   currency: Currency;
-  taxCategory: string;
+  taxCategory: { id: string; name: string };
 }
 
 export interface FinancialAccount {
@@ -11,7 +11,7 @@ export interface FinancialAccount {
   number: string;
   isBusiness?: boolean;
   type: FinancialAccountType;
-  currencies: CurrencyTaxCategory[];
+  currencies?: CurrencyTaxCategory[];
   // Bank-specific fields
   bankNumber?: number;
   branchNumber?: number;

@@ -2,7 +2,7 @@
 
 import { forwardRef, useImperativeHandle, useState, type JSX } from 'react';
 import { Plus, X } from 'lucide-react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
-import { Currency, FinancialAccountType } from '@/gql/graphql.js';
+import { Currency, FinancialAccountType, PrivateOrBusinessType } from '@/gql/graphql.js';
 import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.js';
 import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,7 +39,10 @@ import { getAccountTypeLabel } from './utils.js';
 
 const currencyTaxCategorySchema = z.object({
   currency: z.enum(Object.values(Currency), 'Currency is required'),
-  taxCategory: z.string().min(1, 'Tax category is required'),
+  taxCategory: z.object({
+    id: z.uuid('Tax category ID is required'),
+    name: z.string().min(1, 'Tax category name is required'),
+  }),
 });
 
 // Helper to coerce empty strings to undefined for optional numeric fields
@@ -58,7 +61,8 @@ const financialAccountSchema = z.object({
   number: z.string().min(1, 'Account number is required'),
   isBusiness: z.boolean().default(false).optional(),
   type: z.enum(Object.values(FinancialAccountType), 'Account type is required'),
-  currencies: z.array(currencyTaxCategorySchema).min(1, 'Add at least one currency'),
+  // currencies are display-only and managed separately by the server
+  currencies: z.array(currencyTaxCategorySchema),
   bankNumber: optionalInt,
   branchNumber: optionalInt,
   extendedBankNumber: optionalInt,
@@ -94,9 +98,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const { createFinancialAccount, creating } = useCreateFinancialAccount();
     const { updateFinancialAccount, updating } = useUpdateFinancialAccount();
     const form = useForm<FinancialAccountForm>({
-      resolver: zodResolver<FinancialAccountForm, unknown, Omit<FinancialAccount, 'id'>>(
-        financialAccountSchema,
-      ),
+      resolver: zodResolver(financialAccountSchema) as Resolver<FinancialAccountForm>,
       defaultValues: {
         name: '',
         number: '',
@@ -127,28 +129,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const handleOpenModal = (account?: FinancialAccount): void => {
       if (account) {
         setEditingAccount(account);
-        reset({
-          name: account.name,
-          number: account.number,
-          isBusiness: account.isBusiness,
-          type: account.type,
-          currencies: account.currencies,
-          bankNumber: account.bankNumber,
-          branchNumber: account.branchNumber,
-          extendedBankNumber: account.extendedBankNumber,
-          partyPreferredIndication: account.partyPreferredIndication,
-          partyAccountInvolvementCode: account.partyAccountInvolvementCode,
-          accountDealDate: account.accountDealDate,
-          accountUpdateDate: account.accountUpdateDate,
-          metegDoarNet: account.metegDoarNet,
-          kodHarshaatPeilut: account.kodHarshaatPeilut,
-          accountClosingReasonCode: account.accountClosingReasonCode,
-          accountAgreementOpeningDate: account.accountAgreementOpeningDate,
-          serviceAuthorizationDesc: account.serviceAuthorizationDesc,
-          branchTypeCode: account.branchTypeCode,
-          mymailEntitlementSwitch: account.mymailEntitlementSwitch,
-          productLabel: account.productLabel,
-        });
+        reset(account);
       } else {
         setEditingAccount(null);
         reset();
@@ -170,7 +151,10 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
 
     const onSubmit = async (values: FinancialAccountForm): Promise<void> => {
       try {
-        const privateOrBusiness = values.isBusiness ? 'BUSINESS' : 'PRIVATE';
+        const privateOrBusiness = values.isBusiness
+          ? PrivateOrBusinessType.Business
+          : PrivateOrBusinessType.Private;
+        // Note: currencies are display-only and managed separately by the server
 
         // Build bank account details for BANK_ACCOUNT type
         // Note: bankNumber and branchNumber are required in BankAccountInsertInput
@@ -223,7 +207,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
           await updateFinancialAccount({
             financialAccountId: editingAccount.id,
             fields: {
-              name: values.name || values.number,
+              name: values.name,
               number: values.number,
               type: values.type,
               privateOrBusiness,
@@ -250,7 +234,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     };
 
     const addCurrency = (): void => {
-      currenciesFieldArray.append({ currency: 'USD', taxCategory: '' });
+      currenciesFieldArray.append({ currency: Currency.Usd, taxCategory: { id: '', name: '' } });
     };
 
     const removeCurrency = (index: number): void => {
@@ -378,11 +362,11 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                         />
                         <FormField
                           control={control}
-                          name={`currencies.${index}.taxCategory`}
+                          name={`currencies.${index}.taxCategory.id`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
-                                <Input placeholder="Tax Category" {...field} />
+                                <Input placeholder="Tax Category ID" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

@@ -2,10 +2,12 @@
 
 import { type JSX } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { FinancialAccountType } from '@/gql/graphql.js';
+import { ROUTES } from '@/router/routes.js';
 import type { FinancialAccount } from './types.js';
 import { getAccountIcon, getAccountTypeLabel } from './utils.js';
 
@@ -64,10 +66,18 @@ export function FinancialAccountCard({
         <div>
           <h4 className="text-sm font-medium mb-2">Currencies & Tax Categories</h4>
           <div className="flex flex-wrap gap-2">
-            {account.currencies.map((curr, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">
-                {curr.currency} → {curr.taxCategory}
-              </Badge>
+            {account.currencies?.map((curr, idx) => (
+              <Link
+                key={idx}
+                to={ROUTES.TAX_CATEGORIES} // TODO: Link to specific tax category page
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+              >
+                <Badge variant="secondary" className="text-xs">
+                  {curr.currency} → {curr.taxCategory.name}
+                </Badge>
+              </Link>
             ))}
           </div>
         </div>
