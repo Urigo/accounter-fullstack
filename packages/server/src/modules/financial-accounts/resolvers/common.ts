@@ -1,10 +1,24 @@
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { PrivateOrBusinessType } from '@shared/gql-types';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule, IGetFinancialAccountsByAccountIDsResult } from '../types.js';
+
+function getPrivateOrBusinessType(privateOrBusiness: string): PrivateOrBusinessType {
+  switch (privateOrBusiness) {
+    case 'PRIVATE':
+      return 'PRIVATE';
+    case 'BUSINESS':
+      return 'BUSINESS';
+    default:
+      throw new Error(`Unknown privateOrBusiness type: ${privateOrBusiness}`);
+  }
+}
 
 export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAccountResolvers = {
   id: DbAccount => DbAccount.id,
   type: DbAccount => DbAccount.type,
+  number: DbAccount => DbAccount.account_number,
+  privateOrBusiness: DbAccount => getPrivateOrBusinessType(DbAccount.private_business),
 };
 
 export const commonTransactionFields:

@@ -23,6 +23,8 @@ export default gql`
     number: String!
     " the general type of the account"
     type: FinancialAccountType!
+    " indicates if the account is private or business "
+    privateOrBusiness: PrivateOrBusinessType!
   }
 
   " represent a single credit card "
@@ -30,6 +32,7 @@ export default gql`
     id: UUID!
     name: String!
     type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
     " the external identifier of the card "
     number: String!
     fourDigits: String!
@@ -40,6 +43,7 @@ export default gql`
     id: UUID!
     name: String!
     type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
     " the external identifier of the wallet "
     number: String!
   }
@@ -49,6 +53,7 @@ export default gql`
     id: UUID!
     name: String!
     type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
     number: String!
   }
 

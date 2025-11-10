@@ -87,14 +87,12 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
   CardFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'CREDIT_CARD',
     ...commonFinancialAccountFields,
-    number: DbAccount => DbAccount.account_number,
     fourDigits: DbAccount => DbAccount.account_number,
     name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
   },
   CryptoWalletFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'CRYPTO_WALLET',
     ...commonFinancialAccountFields,
-    number: DbAccount => DbAccount.account_number,
     name: DbAccount =>
       DbAccount.account_name ??
       (DbAccount.account_number.length >= 20
@@ -104,7 +102,6 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
   ForeignSecuritiesFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'FOREIGN_SECURITIES',
     ...commonFinancialAccountFields,
-    number: DbAccount => DbAccount.account_number,
     name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
   },
   ConversionTransaction: {

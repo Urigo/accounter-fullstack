@@ -7,6 +7,7 @@ export default gql`
     name: String!
     number: String!
     type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
     " the external identifier of the bank account "
     accountNumber: String!
     bankNumber: Int!
