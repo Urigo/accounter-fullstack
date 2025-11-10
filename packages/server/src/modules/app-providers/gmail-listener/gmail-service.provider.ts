@@ -584,7 +584,7 @@ export class GmailServiceProvider {
     // that appears after "From:".
     const regex = /From:.*?<a href="mailto:([^"]+)">/i;
 
-    const invoiceIssuingProvidersEmail = ['notify@morning.co', 'c@sumit.co.il'];
+    const invoiceIssuingProvidersEmail = ['notify@morning.co', 'c@sumit.co.il', 'ap@the-guild.dev'];
 
     const body = emailData.body;
     const bodyRows = body.split('\n').map(row => row.trim());
