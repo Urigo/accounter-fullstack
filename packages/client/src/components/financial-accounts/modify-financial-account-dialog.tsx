@@ -30,44 +30,50 @@ import {
   SelectValue,
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
-import type { FinancialAccountType } from '@/gql/graphql.js';
+import { Currency, FinancialAccountType } from '@/gql/graphql.js';
 import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.js';
 import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FinancialAccount } from './types.js';
+import { getAccountTypeLabel } from './utils.js';
 
 const currencyTaxCategorySchema = z.object({
-  currency: z.string().min(1, 'Currency is required'),
+  currency: z.enum(Object.values(Currency), 'Currency is required'),
   taxCategory: z.string().min(1, 'Tax category is required'),
 });
+
+// Helper to coerce empty strings to undefined for optional numeric fields
+const optionalInt = z.preprocess<
+  number | undefined,
+  z.ZodOptional<z.ZodNumber>,
+  number | undefined
+>((val: string | number | undefined | null) => {
+  if (val === '' || val === undefined || val === null) return undefined;
+  const num = typeof val === 'string' ? parseInt(val, 10) : val;
+  return Number.isNaN(num) ? undefined : num;
+}, z.number().int().optional());
 
 const financialAccountSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   number: z.string().min(1, 'Account number is required'),
   isBusiness: z.boolean().default(false).optional(),
-  type: z.enum([
-    'BANK_ACCOUNT',
-    'CREDIT_CARD',
-    'CRYPTO_WALLET',
-    'FOREIGN_SECURITIES',
-    'BANK_DEPOSIT_ACCOUNT',
-  ]),
+  type: z.enum(Object.values(FinancialAccountType), 'Account type is required'),
   currencies: z.array(currencyTaxCategorySchema).min(1, 'Add at least one currency'),
-  bankNumber: z.number().int().optional(),
-  branchNumber: z.number().int().optional(),
-  extendedBankNumber: z.number().int().optional(),
-  partyPreferredIndication: z.number().int().optional(),
-  partyAccountInvolvementCode: z.number().int().optional(),
-  accountDealDate: z.number().int().optional(),
-  accountUpdateDate: z.number().int().optional(),
-  metegDoraNet: z.number().int().optional(),
-  kodHarshaatPeilut: z.number().int().optional(),
-  accountClosingReasonCode: z.number().int().optional(),
-  accountAgreementOpeningDate: z.number().int().optional(),
-  serviceAuthorizationDesc: z.string().optional(),
-  branchTypeCode: z.number().int().optional(),
-  mymailEntitlementSwitch: z.number().int().optional(),
-  productLabel: z.string().optional(),
+  bankNumber: optionalInt,
+  branchNumber: optionalInt,
+  extendedBankNumber: optionalInt,
+  partyPreferredIndication: optionalInt,
+  partyAccountInvolvementCode: optionalInt,
+  accountDealDate: optionalInt,
+  accountUpdateDate: optionalInt,
+  metegDoarNet: optionalInt,
+  kodHarshaatPeilut: optionalInt,
+  accountClosingReasonCode: optionalInt,
+  accountAgreementOpeningDate: optionalInt,
+  serviceAuthorizationDesc: optionalInt,
+  branchTypeCode: optionalInt,
+  mymailEntitlementSwitch: optionalInt,
+  productLabel: optionalInt,
 });
 
 type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
@@ -88,12 +94,14 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const { createFinancialAccount, creating } = useCreateFinancialAccount();
     const { updateFinancialAccount, updating } = useUpdateFinancialAccount();
     const form = useForm<FinancialAccountForm>({
-      resolver: zodResolver(financialAccountSchema),
+      resolver: zodResolver<FinancialAccountForm, unknown, Omit<FinancialAccount, 'id'>>(
+        financialAccountSchema,
+      ),
       defaultValues: {
         name: '',
         number: '',
         isBusiness: false,
-        type: 'BANK_ACCOUNT',
+        type: FinancialAccountType.BankAccount,
         currencies: [],
         bankNumber: undefined,
         branchNumber: undefined,
@@ -102,14 +110,14 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
         partyAccountInvolvementCode: undefined,
         accountDealDate: undefined,
         accountUpdateDate: undefined,
-        metegDoraNet: undefined,
+        metegDoarNet: undefined,
         kodHarshaatPeilut: undefined,
         accountClosingReasonCode: undefined,
         accountAgreementOpeningDate: undefined,
-        serviceAuthorizationDesc: '',
+        serviceAuthorizationDesc: undefined,
         branchTypeCode: undefined,
         mymailEntitlementSwitch: undefined,
-        productLabel: '',
+        productLabel: undefined,
       },
       mode: 'onBlur',
     });
@@ -132,14 +140,14 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
           partyAccountInvolvementCode: account.partyAccountInvolvementCode,
           accountDealDate: account.accountDealDate,
           accountUpdateDate: account.accountUpdateDate,
-          metegDoraNet: account.metegDoraNet,
+          metegDoarNet: account.metegDoarNet,
           kodHarshaatPeilut: account.kodHarshaatPeilut,
           accountClosingReasonCode: account.accountClosingReasonCode,
           accountAgreementOpeningDate: account.accountAgreementOpeningDate,
-          serviceAuthorizationDesc: account.serviceAuthorizationDesc ?? '',
+          serviceAuthorizationDesc: account.serviceAuthorizationDesc,
           branchTypeCode: account.branchTypeCode,
           mymailEntitlementSwitch: account.mymailEntitlementSwitch,
-          productLabel: account.productLabel ?? '',
+          productLabel: account.productLabel,
         });
       } else {
         setEditingAccount(null);
@@ -163,6 +171,54 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const onSubmit = async (values: FinancialAccountForm): Promise<void> => {
       try {
         const privateOrBusiness = values.isBusiness ? 'BUSINESS' : 'PRIVATE';
+
+        // Build bank account details for BANK_ACCOUNT type
+        // Note: bankNumber and branchNumber are required in BankAccountInsertInput
+        const bankAccountDetails =
+          values.type === FinancialAccountType.BankAccount &&
+          values.bankNumber !== undefined &&
+          values.branchNumber !== undefined
+            ? {
+                bankNumber: values.bankNumber,
+                branchNumber: values.branchNumber,
+                ...(values.extendedBankNumber !== undefined && {
+                  extendedBankNumber: values.extendedBankNumber,
+                }),
+                ...(values.partyPreferredIndication !== undefined && {
+                  partyPreferredIndication: values.partyPreferredIndication,
+                }),
+                ...(values.partyAccountInvolvementCode !== undefined && {
+                  partyAccountInvolvementCode: values.partyAccountInvolvementCode,
+                }),
+                ...(values.accountDealDate !== undefined && {
+                  accountDealDate: values.accountDealDate,
+                }),
+                ...(values.accountUpdateDate !== undefined && {
+                  accountUpdateDate: values.accountUpdateDate,
+                }),
+                ...(values.metegDoarNet !== undefined && { metegDoarNet: values.metegDoarNet }),
+                ...(values.kodHarshaatPeilut !== undefined && {
+                  kodHarshaatPeilut: values.kodHarshaatPeilut,
+                }),
+                ...(values.accountClosingReasonCode !== undefined && {
+                  accountClosingReasonCode: values.accountClosingReasonCode,
+                }),
+                ...(values.accountAgreementOpeningDate !== undefined && {
+                  accountAgreementOpeningDate: values.accountAgreementOpeningDate,
+                }),
+                ...(values.serviceAuthorizationDesc !== undefined && {
+                  serviceAuthorizationDesc: values.serviceAuthorizationDesc,
+                }),
+                ...(values.branchTypeCode !== undefined && {
+                  branchTypeCode: values.branchTypeCode,
+                }),
+                ...(values.mymailEntitlementSwitch !== undefined && {
+                  mymailEntitlementSwitch: values.mymailEntitlementSwitch,
+                }),
+                ...(values.productLabel !== undefined && { productLabel: values.productLabel }),
+              }
+            : undefined;
+
         if (editingAccount) {
           await updateFinancialAccount({
             financialAccountId: editingAccount.id,
@@ -171,7 +227,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               number: values.number,
               type: values.type,
               privateOrBusiness,
-              // bankAccountDetails can be added for BANK_ACCOUNT when needed
+              bankAccountDetails,
             },
           });
         } else {
@@ -182,7 +238,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               ownerId,
               type: values.type,
               privateOrBusiness,
-              // NOTE: bank details omitted for now; add when API is aligned
+              bankAccountDetails,
             },
           });
         }
@@ -258,11 +314,11 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="BANK_ACCOUNT">Bank Account</SelectItem>
-                            <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
-                            <SelectItem value="CRYPTO_WALLET">Crypto Wallet</SelectItem>
-                            <SelectItem value="BANK_DEPOSIT_ACCOUNT">Bank Deposit</SelectItem>
-                            <SelectItem value="FOREIGN_SECURITIES">Foreign Securities</SelectItem>
+                            {Object.values(FinancialAccountType).map(type => (
+                              <SelectItem key={type} value={type}>
+                                {getAccountTypeLabel(type)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -348,7 +404,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               </div>
 
               {/* Bank-specific fields */}
-              {(watch('type') as FinancialAccountType) === 'BANK_ACCOUNT' && (
+              {watch('type') === FinancialAccountType.BankAccount && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold">Bank-Specific Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -482,7 +538,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
 
                     <FormField
                       control={control}
-                      name="metegDoraNet"
+                      name="metegDoarNet"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
                           <FormLabel>Meteg Dora Net</FormLabel>

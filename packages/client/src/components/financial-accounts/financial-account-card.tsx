@@ -106,7 +106,7 @@ export function FinancialAccountCard({
               </div>
               <div>
                 <span className="text-muted-foreground">Meteg Dora Net:</span>
-                <p className="font-medium">{account.metegDoraNet}</p>
+                <p className="font-medium">{account.metegDoarNet}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Kod Harshaot Peilut:</span>

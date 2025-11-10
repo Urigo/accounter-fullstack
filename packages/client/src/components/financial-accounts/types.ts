@@ -9,7 +9,7 @@ export interface FinancialAccount {
   id: string;
   name: string;
   number: string;
-  isBusiness: boolean;
+  isBusiness?: boolean;
   type: FinancialAccountType;
   currencies: CurrencyTaxCategory[];
   // Bank-specific fields
@@ -20,12 +20,12 @@ export interface FinancialAccount {
   partyAccountInvolvementCode?: number;
   accountDealDate?: number;
   accountUpdateDate?: number;
-  metegDoraNet?: number;
+  metegDoarNet?: number;
   kodHarshaatPeilut?: number;
   accountClosingReasonCode?: number;
   accountAgreementOpeningDate?: number;
-  serviceAuthorizationDesc?: string;
+  serviceAuthorizationDesc?: number;
   branchTypeCode?: number;
   mymailEntitlementSwitch?: number;
-  productLabel?: string;
+  productLabel?: number;
 }

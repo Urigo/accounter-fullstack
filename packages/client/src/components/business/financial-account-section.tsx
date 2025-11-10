@@ -47,14 +47,14 @@ function convertFinancialAccountDataToFormValues(
     // partyAccountInvolvementCode?: number;
     // accountDealDate?: number;
     // accountUpdateDate?: number;
-    // metegDoraNet?: number;
+    // metegDoarNet?: number;
     // kodHarshaatPeilut?: number;
     // accountClosingReasonCode?: number;
     // accountAgreementOpeningDate?: number;
-    // serviceAuthorizationDesc?: string;
+    // serviceAuthorizationDesc?: number;
     // branchTypeCode?: number;
     // mymailEntitlementSwitch?: number;
-    // productLabel?: string;
+    // productLabel?: number;
   };
 }
 
