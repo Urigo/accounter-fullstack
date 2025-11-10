@@ -58,6 +58,15 @@ export default gql`
     number: String!
   }
 
+  " represent a bank deposit account "
+  type BankDepositFinancialAccount implements FinancialAccount {
+    id: UUID!
+    name: String!
+    type: FinancialAccountType!
+    privateOrBusiness: PrivateOrBusinessType!
+    number: String!
+  }
+
   " input type for creating a financial account "
   input CreateFinancialAccountInput {
     number: String!

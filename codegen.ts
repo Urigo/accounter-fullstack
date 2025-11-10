@@ -63,6 +63,8 @@ const config: CodegenConfig = {
           BankDepositCharge: '@modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
             '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
+          BankDepositFinancialAccount:
+            '@modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           Business: '@modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           BusinessTransaction: '@shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',

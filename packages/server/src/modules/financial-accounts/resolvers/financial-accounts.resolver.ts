@@ -109,6 +109,11 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     ...commonFinancialAccountFields,
     name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
   },
+  BankDepositFinancialAccount: {
+    __isTypeOf: DbAccount => DbAccount.type === 'BANK_DEPOSIT_ACCOUNT',
+    ...commonFinancialAccountFields,
+    name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
+  },
   ConversionTransaction: {
     ...commonTransactionFields,
   },
