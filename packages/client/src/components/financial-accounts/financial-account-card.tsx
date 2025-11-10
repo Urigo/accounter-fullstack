@@ -28,10 +28,13 @@ export function FinancialAccountCard({
               {getAccountIcon(account.type)}
             </div>
             <div>
-              <CardTitle className="text-lg">{account.accountNumber}</CardTitle>
+              <CardTitle className="text-lg">
+                {account.name}
+                {account.name === account.number ? '' : ` (${account.number})`}
+              </CardTitle>
               <CardDescription className="flex items-center gap-2 mt-1">
                 <Badge variant="outline">{getAccountTypeLabel(account.type)}</Badge>
-                {account.isBusiness && <Badge variant="secondary">Business</Badge>}
+                {!account.isBusiness && <Badge variant="secondary">Private</Badge>}
               </CardDescription>
             </div>
           </div>
@@ -40,7 +43,7 @@ export function FinancialAccountCard({
               variant="ghost"
               size="sm"
               onClick={() => handleOpenModal(account)}
-              aria-label={`Edit account ${account.accountNumber}`}
+              aria-label={`Edit account ${account.name}`}
             >
               <Edit className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -48,7 +51,7 @@ export function FinancialAccountCard({
               variant="ghost"
               size="sm"
               onClick={() => handleDeleteAccount(account.id)}
-              aria-label={`Delete account ${account.accountNumber}`}
+              aria-label={`Delete account ${account.name}`}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>

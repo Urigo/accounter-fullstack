@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
 import type { FinancialAccountType } from '@/gql/graphql.js';
+import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.js';
+import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FinancialAccount } from './types.js';
 
@@ -40,7 +42,8 @@ const currencyTaxCategorySchema = z.object({
 });
 
 const financialAccountSchema = z.object({
-  accountNumber: z.string().min(1, 'Account number is required'),
+  name: z.string().min(1, 'Name is required'),
+  number: z.string().min(1, 'Account number is required'),
   isBusiness: z.boolean().default(false).optional(),
   type: z.enum([
     'BANK_ACCOUNT',
@@ -70,6 +73,7 @@ const financialAccountSchema = z.object({
 type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
 
 interface ModalProps {
+  ownerId: string;
   onDone?: () => void;
 }
 
@@ -78,13 +82,16 @@ export interface ModifyFinancialAccountModalRef {
 }
 
 export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModalRef, ModalProps>(
-  function ModifyFinancialAccountModal({ onDone }, ref): JSX.Element {
+  function ModifyFinancialAccountModal({ ownerId, onDone }, ref): JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | null>(null);
+    const { createFinancialAccount, creating } = useCreateFinancialAccount();
+    const { updateFinancialAccount, updating } = useUpdateFinancialAccount();
     const form = useForm<FinancialAccountForm>({
       resolver: zodResolver(financialAccountSchema),
       defaultValues: {
-        accountNumber: '',
+        name: '',
+        number: '',
         isBusiness: false,
         type: 'BANK_ACCOUNT',
         currencies: [],
@@ -113,7 +120,8 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
       if (account) {
         setEditingAccount(account);
         reset({
-          accountNumber: account.accountNumber,
+          name: account.name,
+          number: account.number,
           isBusiness: account.isBusiness,
           type: account.type,
           currencies: account.currencies,
@@ -152,12 +160,37 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
       reset();
     };
 
-    const onSubmit = (values: FinancialAccountForm): void => {
-      // TODO: Here you would typically send the form data to the server
-      console.log('Submitted Financial Account:', values);
-
-      handleCloseModal();
-      onDone?.();
+    const onSubmit = async (values: FinancialAccountForm): Promise<void> => {
+      try {
+        const privateOrBusiness = values.isBusiness ? 'BUSINESS' : 'PRIVATE';
+        if (editingAccount) {
+          await updateFinancialAccount({
+            financialAccountId: editingAccount.id,
+            fields: {
+              name: values.name || values.number,
+              number: values.number,
+              type: values.type,
+              privateOrBusiness,
+              // bankAccountDetails can be added for BANK_ACCOUNT when needed
+            },
+          });
+        } else {
+          await createFinancialAccount({
+            input: {
+              name: values.name,
+              number: values.number,
+              ownerId,
+              type: values.type,
+              privateOrBusiness,
+              // NOTE: bank details omitted for now; add when API is aligned
+            },
+          });
+        }
+        handleCloseModal();
+        onDone?.();
+      } catch {
+        // errors are handled via hooks' toasts
+      }
     };
 
     const addCurrency = (): void => {
@@ -188,7 +221,21 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={control}
-                    name="accountNumber"
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel>Name *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name="number"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
                         <FormLabel>Account Number *</FormLabel>
@@ -211,9 +258,11 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="BANK">Bank Account</SelectItem>
+                            <SelectItem value="BANK_ACCOUNT">Bank Account</SelectItem>
                             <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
                             <SelectItem value="CRYPTO_WALLET">Crypto Wallet</SelectItem>
+                            <SelectItem value="BANK_DEPOSIT_ACCOUNT">Bank Deposit</SelectItem>
+                            <SelectItem value="FOREIGN_SECURITIES">Foreign Securities</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -575,8 +624,14 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                 <Button type="button" variant="outline" onClick={handleCloseModal}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingAccount ? 'Update Account' : 'Create Account'}
+                <Button type="submit" disabled={creating || updating}>
+                  {editingAccount
+                    ? updating
+                      ? 'Updating…'
+                      : 'Update Account'
+                    : creating
+                      ? 'Creating…'
+                      : 'Create Account'}
                 </Button>
               </DialogFooter>
             </form>

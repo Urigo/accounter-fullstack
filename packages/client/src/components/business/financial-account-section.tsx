@@ -34,7 +34,8 @@ function convertFinancialAccountDataToFormValues(
 ): FinancialAccount {
   return {
     id: account.id,
-    accountNumber: account.number,
+    name: account.name,
+    number: account.number,
     isBusiness: account.privateOrBusiness === 'BUSINESS',
     type: account.type,
     currencies: [], // TODO: fetch currencies when supported

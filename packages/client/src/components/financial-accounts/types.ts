@@ -7,7 +7,8 @@ export interface CurrencyTaxCategory {
 
 export interface FinancialAccount {
   id: string;
-  accountNumber: string;
+  name: string;
+  number: string;
   isBusiness: boolean;
   type: FinancialAccountType;
   currencies: CurrencyTaxCategory[];
