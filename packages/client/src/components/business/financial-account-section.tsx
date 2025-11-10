@@ -124,7 +124,7 @@ export function FinancialAccountsSection({ adminId }: Props): JSX.Element {
         </div>
       )}
 
-      <ModifyFinancialAccountModal ref={modalRef} onDone={() => refetch()} />
+      <ModifyFinancialAccountModal ownerId={adminId} ref={modalRef} onDone={() => refetch()} />
     </div>
   );
 }

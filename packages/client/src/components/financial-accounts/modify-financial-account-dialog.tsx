@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
+import type { FinancialAccountType } from '@/gql/graphql.js';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { FinancialAccount } from './types.js';
 
@@ -67,29 +68,6 @@ const financialAccountSchema = z.object({
 });
 
 type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
-
-// // Ensure all optional fields are typed as their correct types for compatibility with react-hook-form
-// type FinancialAccountForm = {
-//   accountNumber: string;
-//   isBusiness: boolean;
-//   type: AccountType;
-//   currencies: CurrencyTaxCategory[];
-//   bankNumber?: number;
-//   branchNumber?: number;
-//   extendedBankNumber?: number;
-//   partyPreferredIndication?: number;
-//   partyAccountInvolvementCode?: number;
-//   accountDealDate?: number;
-//   accountUpdateDate?: number;
-//   metegDoraNet?: number;
-//   kodHarshaatPeilut?: number;
-//   accountClosingReasonCode?: number;
-//   accountAgreementOpeningDate?: number;
-//   serviceAuthorizationDesc?: string;
-//   branchTypeCode?: number;
-//   mymailEntitlementSwitch?: number;
-//   productLabel?: string;
-// };
 
 interface ModalProps {
   onDone?: () => void;
@@ -321,7 +299,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               </div>
 
               {/* Bank-specific fields */}
-              {watch('type') === 'BANK_ACCOUNT' && (
+              {(watch('type') as FinancialAccountType) === 'BANK_ACCOUNT' && (
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold">Bank-Specific Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
