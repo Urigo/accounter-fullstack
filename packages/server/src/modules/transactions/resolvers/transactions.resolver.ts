@@ -15,7 +15,7 @@ import type {
 import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const transactionsResolvers: TransactionsModule.Resolvers &
-  Pick<Resolvers, 'UpdateTransactionResult'> = {
+  Pick<Resolvers, 'UpdateTransactionResult' | 'UpdateTransactionsResult'> = {
   Query: {
     transactionsByIDs: async (_, { transactionIDs }, { injector }) => {
       if (transactionIDs.length === 0) {
@@ -296,6 +296,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         return 'CommonError';
       }
       throw new GraphQLError('Unexpected type for UpdateTransactionResult');
+    },
+  },
+  UpdateTransactionsResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'UpdatedTransactionsSuccessfulResult';
     },
   },
   BankDepositCharge: commonChargeFields,
