@@ -8,6 +8,7 @@ export default gql`
     number: String!
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
+    accountTaxCategories: [CurrencyTaxCategory!]!
     " the external identifier of the bank account "
     accountNumber: String!
     bankNumber: Int!

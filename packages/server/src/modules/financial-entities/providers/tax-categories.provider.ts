@@ -13,6 +13,7 @@ import type {
   IGetTaxCategoryByBusinessAndOwnerIDsQuery,
   IGetTaxCategoryByChargeIDsQuery,
   IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
+  IGetTaxCategoryByFinancialAccountIdsQuery,
   IGetTaxCategoryByFinancialAccountOwnerIdsQuery,
   IGetTaxCategoryByIDsQuery,
   IInsertBusinessTaxCategoryParams,
@@ -27,7 +28,7 @@ import type {
 } from '../types.js';
 
 const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, tc.hashavshevet_name, tc.tax_excluded, tcm.business_id, tcm.owner_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, tcm.business_id, tcm.owner_id
 FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id
@@ -37,7 +38,7 @@ WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
 
 const getTaxCategoryByFinancialAccountIdsAndCurrencies = sql<IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
 FROM accounter_schema.financial_accounts_tax_categories fatc
 LEFT JOIN accounter_schema.tax_categories tc
   ON fatc.tax_category_id = tc.id
@@ -47,7 +48,7 @@ WHERE fatc.currency IN $$Currencies
 AND fatc.financial_account_id IN $$FinancialAccountIds;`;
 
 const getTaxCategoryByFinancialAccountOwnerIds = sql<IGetTaxCategoryByFinancialAccountOwnerIdsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency, fa.owner as "financial_account_owner_id"
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency, fa.owner as "financial_account_owner_id"
 FROM accounter_schema.financial_accounts_tax_categories fatc
 LEFT JOIN accounter_schema.tax_categories tc
   ON fatc.tax_category_id = tc.id
@@ -57,8 +58,17 @@ LEFT JOIN accounter_schema.financial_accounts fa
   ON fa.id = fatc.financial_account_id
 WHERE fa.owner IN $$ownerIds;`;
 
+const getTaxCategoryByFinancialAccountIds = sql<IGetTaxCategoryByFinancialAccountIdsQuery>`
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
+FROM accounter_schema.financial_accounts_tax_categories fatc
+LEFT JOIN accounter_schema.tax_categories tc
+  ON fatc.tax_category_id = tc.id
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fatc.tax_category_id = fe.id
+WHERE fatc.financial_account_id IN $$financialAccountIds;`;
+
 const getTaxCategoryByChargeIDs = sql<IGetTaxCategoryByChargeIDsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, tc.hashavshevet_name, tc.tax_excluded, c.business_id, c.owner_id, c.id as charge_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, c.business_id, c.owner_id, c.id as charge_id
 FROM accounter_schema.extended_charges c
 LEFT JOIN accounter_schema.tax_categories tc
   ON c.tax_category_id = tc.id
@@ -250,6 +260,25 @@ export class TaxCategoriesProvider {
 
   public taxCategoryByFinancialAccountOwnerIdsLoader = new DataLoader(
     (keys: readonly string[]) => this.batchTaxCategoryByFinancialAccountOwnerIds(keys),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchTaxCategoryByFinancialAccountIds(financialAccountIds: readonly string[]) {
+    const taxCategories = await getTaxCategoryByFinancialAccountIds.run(
+      {
+        financialAccountIds,
+      },
+      this.dbProvider,
+    );
+    return financialAccountIds.map(id =>
+      taxCategories.filter(tc => tc.financial_account_id === id),
+    );
+  }
+
+  public taxCategoryByFinancialAccountIdsLoader = new DataLoader(
+    (keys: readonly string[]) => this.batchTaxCategoryByFinancialAccountIds(keys),
     {
       cache: false,
     },

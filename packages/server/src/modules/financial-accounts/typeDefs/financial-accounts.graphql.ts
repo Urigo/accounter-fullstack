@@ -26,6 +26,15 @@ export default gql`
     type: FinancialAccountType!
     " indicates if the account is private or business "
     privateOrBusiness: PrivateOrBusinessType!
+    " account's tax categories per currency "
+    accountTaxCategories: [CurrencyTaxCategory!]!
+  }
+
+  " extended type for currency tax category linked to financial account "
+  type CurrencyTaxCategory {
+    id: ID!
+    currency: Currency!
+    taxCategory: TaxCategory!
   }
 
   " represent a single credit card "
@@ -34,6 +43,7 @@ export default gql`
     name: String!
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
+    accountTaxCategories: [CurrencyTaxCategory!]!
     " the external identifier of the card "
     number: String!
     fourDigits: String!
@@ -45,6 +55,7 @@ export default gql`
     name: String!
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
+    accountTaxCategories: [CurrencyTaxCategory!]!
     " the external identifier of the wallet "
     number: String!
   }
@@ -55,6 +66,7 @@ export default gql`
     name: String!
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
+    accountTaxCategories: [CurrencyTaxCategory!]!
     number: String!
   }
 
@@ -64,6 +76,7 @@ export default gql`
     name: String!
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
+    accountTaxCategories: [CurrencyTaxCategory!]!
     number: String!
   }
 
