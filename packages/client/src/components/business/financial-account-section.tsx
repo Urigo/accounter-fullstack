@@ -119,11 +119,11 @@ export function FinancialAccountsSection({ adminId }: Props): JSX.Element {
     modalRef.current?.open(account);
   };
 
-  const handleDeleteAccount = (id: string): void => {
-    const confirmDelete = window.confirm('Delete this account? This action cannot be undone.');
-    if (!confirmDelete) return;
-    setAccounts(prev => prev.filter(acc => acc.id !== id));
-  };
+  // const handleDeleteAccount = (id: string): void => {
+  //   const confirmDelete = window.confirm('Delete this account? This action cannot be undone.');
+  //   if (!confirmDelete) return;
+  //   setAccounts(prev => prev.filter(acc => acc.id !== id));
+  // };
 
   return (
     <div className="space-y-6">
@@ -151,7 +151,7 @@ export function FinancialAccountsSection({ adminId }: Props): JSX.Element {
             <FinancialAccountCard
               key={account.id}
               account={account}
-              handleDeleteAccount={handleDeleteAccount}
+              // handleDeleteAccount={handleDeleteAccount}
               handleOpenModal={handleOpenModal}
             />
           ))}

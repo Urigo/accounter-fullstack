@@ -1,7 +1,10 @@
 'use client';
 
 import { type JSX } from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import {
+  Edit,
+  // Trash2
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -13,13 +16,13 @@ import { getAccountIcon, getAccountTypeLabel } from './utils.js';
 
 interface Props {
   account: FinancialAccount;
-  handleDeleteAccount: (id: string) => void;
+  // handleDeleteAccount: (id: string) => void;
   handleOpenModal: (account?: FinancialAccount) => void;
 }
 
 export function FinancialAccountCard({
   account,
-  handleDeleteAccount,
+  // handleDeleteAccount,
   handleOpenModal,
 }: Props): JSX.Element {
   return (
@@ -50,14 +53,14 @@ export function FinancialAccountCard({
             >
               <Edit className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               size="sm"
               onClick={() => handleDeleteAccount(account.id)}
               aria-label={`Delete account ${account.name}`}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>
