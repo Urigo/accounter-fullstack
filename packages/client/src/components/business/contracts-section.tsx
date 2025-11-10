@@ -45,8 +45,6 @@ function convertContractDataToFormValues(
 ): ContractFormValues {
   return {
     id: contract.id,
-    // TODO: activate this field later. requires additional backend support
-    // operationsLimit: 0, // Placeholder, as this field is not in the query
     pos: contract.purchaseOrders ?? undefined,
     startDate: contract.startDate,
     endDate: contract.endDate,
