@@ -24,8 +24,8 @@ export interface FinancialAccount {
   kodHarshaatPeilut?: number;
   accountClosingReasonCode?: number;
   accountAgreementOpeningDate?: number;
-  serviceAuthorizationDesc?: number;
+  serviceAuthorizationDesc?: string;
   branchTypeCode?: number;
   mymailEntitlementSwitch?: number;
-  productLabel?: number;
+  productLabel?: string;
 }

@@ -34,6 +34,23 @@ import type { FinancialAccount } from '../financial-accounts/types.js';
           name
         }
       }
+      ... on BankFinancialAccount {
+        bankNumber
+        branchNumber
+        extendedBankNumber
+        partyPreferredIndication
+        partyAccountInvolvementCode
+        accountDealDate
+        accountUpdateDate
+        metegDoarNet
+        kodHarshaatPeilut
+        accountClosingReasonCode
+        accountAgreementOpeningDate
+        serviceAuthorizationDesc
+        branchTypeCode
+        mymailEntitlementSwitch
+        productLabel
+      }
     }
   }
 `;
@@ -54,21 +71,21 @@ function convertFinancialAccountDataToFormValues(
     // Bank-specific fields
     ...(account.__typename === 'BankFinancialAccount'
       ? {
-          // bankNumber?: number;
-          // branchNumber?: number;
-          // extendedBankNumber?: number;
-          // partyPreferredIndication?: number;
-          // partyAccountInvolvementCode?: number;
-          // accountDealDate?: number;
-          // accountUpdateDate?: number;
-          // metegDoarNet?: number;
-          // kodHarshaatPeilut?: number;
-          // accountClosingReasonCode?: number;
-          // accountAgreementOpeningDate?: number;
-          // serviceAuthorizationDesc?: number;
-          // branchTypeCode?: number;
-          // mymailEntitlementSwitch?: number;
-          // productLabel?: number;
+          bankNumber: account.bankNumber,
+          branchNumber: account.branchNumber,
+          extendedBankNumber: account.extendedBankNumber,
+          partyPreferredIndication: account.partyPreferredIndication,
+          partyAccountInvolvementCode: account.partyAccountInvolvementCode,
+          accountDealDate: account.accountDealDate,
+          accountUpdateDate: account.accountUpdateDate,
+          metegDoarNet: account.metegDoarNet,
+          kodHarshaatPeilut: account.kodHarshaatPeilut,
+          accountClosingReasonCode: account.accountClosingReasonCode,
+          accountAgreementOpeningDate: account.accountAgreementOpeningDate,
+          serviceAuthorizationDesc: account.serviceAuthorizationDesc,
+          branchTypeCode: account.branchTypeCode,
+          mymailEntitlementSwitch: account.mymailEntitlementSwitch,
+          productLabel: account.productLabel,
         }
       : {}),
   };

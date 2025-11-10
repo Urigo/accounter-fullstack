@@ -13,6 +13,19 @@ export default gql`
     accountNumber: String!
     bankNumber: Int!
     branchNumber: Int!
+    extendedBankNumber: Int
+    partyPreferredIndication: Int
+    partyAccountInvolvementCode: Int
+    accountDealDate: Int
+    accountUpdateDate: Int
+    metegDoarNet: Int
+    kodHarshaatPeilut: Int
+    accountClosingReasonCode: Int
+    accountAgreementOpeningDate: Int
+    serviceAuthorizationDesc: String
+    branchTypeCode: Int
+    mymailEntitlementSwitch: Int
+    productLabel: String
   }
 
   " input type for creating a bank account "
@@ -28,10 +41,10 @@ export default gql`
     kodHarshaatPeilut: Int
     accountClosingReasonCode: Int
     accountAgreementOpeningDate: Int
-    serviceAuthorizationDesc: Int
+    serviceAuthorizationDesc: String
     branchTypeCode: Int
     mymailEntitlementSwitch: Int
-    productLabel: Int
+    productLabel: String
   }
 
   " input type for updating a bank account "
@@ -47,9 +60,9 @@ export default gql`
     kodHarshaatPeilut: Int
     accountClosingReasonCode: Int
     accountAgreementOpeningDate: Int
-    serviceAuthorizationDesc: Int
+    serviceAuthorizationDesc: String
     branchTypeCode: Int
     mymailEntitlementSwitch: Int
-    productLabel: Int
+    productLabel: String
   }
 `;

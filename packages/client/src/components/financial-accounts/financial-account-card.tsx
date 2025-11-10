@@ -88,63 +88,63 @@ export function FinancialAccountCard({
             <h4 className="text-sm font-medium mb-3">Bank Details</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
               <div>
-                <span className="text-muted-foreground">Bank Number:</span>
+                <span className="text-muted-foreground text-xs">Bank Number:</span>
                 <p className="font-medium">{account.bankNumber}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Branch Number:</span>
+                <span className="text-muted-foreground text-xs">Branch Number:</span>
                 <p className="font-medium">{account.branchNumber}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Extended Bank Number:</span>
+                <span className="text-muted-foreground text-xs">Extended Bank Number:</span>
                 <p className="font-medium">{account.extendedBankNumber}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Party Preferred Indication:</span>
+                <span className="text-muted-foreground text-xs">Party Preferred Indication:</span>
                 <p className="font-medium">{account.partyPreferredIndication}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Party Account Involvement:</span>
+                <span className="text-muted-foreground text-xs">Party Account Involvement:</span>
                 <p className="font-medium">{account.partyAccountInvolvementCode}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Account Deal Date:</span>
+                <span className="text-muted-foreground text-xs">Account Deal Date:</span>
                 <p className="font-medium">{account.accountDealDate}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Account Update Date:</span>
+                <span className="text-muted-foreground text-xs">Account Update Date:</span>
                 <p className="font-medium">{account.accountUpdateDate}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Meteg Dora Net:</span>
+                <span className="text-muted-foreground text-xs">Meteg Dora Net:</span>
                 <p className="font-medium">{account.metegDoarNet}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Kod Harshaot Peilut:</span>
+                <span className="text-muted-foreground text-xs">Kod Harshaot Peilut:</span>
                 <p className="font-medium">{account.kodHarshaatPeilut}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Closing Reason Code:</span>
+                <span className="text-muted-foreground text-xs">Closing Reason Code:</span>
                 <p className="font-medium">{account.accountClosingReasonCode}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Agreement Opening Date:</span>
+                <span className="text-muted-foreground text-xs">Agreement Opening Date:</span>
                 <p className="font-medium">{account.accountAgreementOpeningDate}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Branch Type Code:</span>
+                <span className="text-muted-foreground text-xs">Branch Type Code:</span>
                 <p className="font-medium">{account.branchTypeCode}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Mymail Entitlement:</span>
+                <span className="text-muted-foreground text-xs">Mymail Entitlement:</span>
                 <p className="font-medium">{account.mymailEntitlementSwitch}</p>
               </div>
               <div className="col-span-2">
-                <span className="text-muted-foreground">Service Authorization:</span>
+                <span className="text-muted-foreground text-xs">Service Authorization:</span>
                 <p className="font-medium">{account.serviceAuthorizationDesc}</p>
               </div>
               <div className="col-span-2">
-                <span className="text-muted-foreground">Product Label:</span>
+                <span className="text-muted-foreground text-xs">Product Label:</span>
                 <p className="font-medium">{account.productLabel}</p>
               </div>
             </div>

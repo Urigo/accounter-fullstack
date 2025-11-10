@@ -74,10 +74,10 @@ const financialAccountSchema = z.object({
   kodHarshaatPeilut: optionalInt,
   accountClosingReasonCode: optionalInt,
   accountAgreementOpeningDate: optionalInt,
-  serviceAuthorizationDesc: optionalInt,
+  serviceAuthorizationDesc: z.string().optional(),
   branchTypeCode: optionalInt,
   mymailEntitlementSwitch: optionalInt,
-  productLabel: optionalInt,
+  productLabel: z.string().optional(),
 });
 
 type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
