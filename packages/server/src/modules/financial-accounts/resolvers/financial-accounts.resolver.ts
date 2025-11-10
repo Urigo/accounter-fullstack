@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
+import { FinancialBankAccountsProvider } from '../providers/financial-bank-accounts.provider.js';
 import type {
   FinancialAccountsModule,
   IInsertFinancialAccountsParams,
@@ -53,8 +54,31 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           .get(FinancialAccountsProvider)
           .insertFinancialAccounts({ bankAccounts: [bankAccount] });
 
-        if (input.bankAccountDetails) {
-          // TODO: Update bank account details
+        if (
+          input.bankAccountDetails &&
+          Object.values(input.bankAccountDetails).some(v => v != null)
+        ) {
+          await injector.get(FinancialBankAccountsProvider).insertBankAccounts({
+            bankAccounts: [
+              {
+                bankNumber: input.bankAccountDetails.bankNumber,
+                branchNumber: input.bankAccountDetails.branchNumber,
+                extendedBankNumber: input.bankAccountDetails.extendedBankNumber,
+                partyPreferredIndication: input.bankAccountDetails.partyPreferredIndication,
+                partyAccountInvolvementCode: input.bankAccountDetails.partyAccountInvolvementCode,
+                accountDealDate: input.bankAccountDetails.accountDealDate,
+                accountUpdateDate: input.bankAccountDetails.accountUpdateDate,
+                metegDoarNet: input.bankAccountDetails.metegDoarNet,
+                kodHarshaatPeilut: input.bankAccountDetails.kodHarshaatPeilut,
+                accountClosingReasonCode: input.bankAccountDetails.accountClosingReasonCode,
+                accountAgreementOpeningDate: input.bankAccountDetails.accountAgreementOpeningDate,
+                serviceAuthorizationDesc: input.bankAccountDetails.serviceAuthorizationDesc,
+                branchTypeCode: input.bankAccountDetails.branchTypeCode,
+                mymailEntitlementSwitch: input.bankAccountDetails.mymailEntitlementSwitch,
+                productLabel: input.bankAccountDetails.productLabel,
+              },
+            ],
+          });
         }
 
         return account;
@@ -77,8 +101,28 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           .get(FinancialAccountsProvider)
           .updateFinancialAccount(updatedAccount);
 
-        if (fields.bankAccountDetails) {
-          // TODO: Update bank account details
+        if (
+          fields.bankAccountDetails &&
+          Object.values(fields.bankAccountDetails).some(v => v != null)
+        ) {
+          await injector.get(FinancialBankAccountsProvider).updateBankAccount({
+            bankAccountId: id,
+            accountAgreementOpeningDate: fields.bankAccountDetails.accountAgreementOpeningDate,
+            accountClosingReasonCode: fields.bankAccountDetails.accountClosingReasonCode,
+            accountDealDate: fields.bankAccountDetails.accountDealDate,
+            accountUpdateDate: fields.bankAccountDetails.accountUpdateDate,
+            bankNumber: fields.bankAccountDetails.bankNumber,
+            branchNumber: fields.bankAccountDetails.branchNumber,
+            branchTypeCode: fields.bankAccountDetails.branchTypeCode,
+            extendedBankNumber: fields.bankAccountDetails.extendedBankNumber,
+            kodHarshaatPeilut: fields.bankAccountDetails.kodHarshaatPeilut,
+            metegDoarNet: fields.bankAccountDetails.metegDoarNet,
+            mymailEntitlementSwitch: fields.bankAccountDetails.mymailEntitlementSwitch,
+            partyAccountInvolvementCode: fields.bankAccountDetails.partyAccountInvolvementCode,
+            partyPreferredIndication: fields.bankAccountDetails.partyPreferredIndication,
+            productLabel: fields.bankAccountDetails.productLabel,
+            serviceAuthorizationDesc: fields.bankAccountDetails.serviceAuthorizationDesc,
+          });
         }
 
         return account;
