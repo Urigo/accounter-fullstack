@@ -227,7 +227,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           {isAdmin && (
             <>
               <TabsContent value="accounts" className="mt-0">
-                <FinancialAccountsSection />
+                <FinancialAccountsSection adminId={business.id} />
               </TabsContent>
               <TabsContent value="admin" className="mt-0">
                 <AdminBusinessSection data={business} />
