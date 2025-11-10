@@ -1,18 +1,18 @@
 import { type ReactNode } from 'react';
 import { BadgeQuestionMark, Bitcoin, Building2, CreditCard } from 'lucide-react';
-import type { FinancialAccountType } from '@/gql/graphql';
+import { FinancialAccountType } from '@/gql/graphql.js';
 
 export const getAccountIcon = (type: FinancialAccountType): ReactNode => {
   switch (type) {
-    case 'BANK_ACCOUNT':
+    case FinancialAccountType.BankAccount:
       return <Building2 className="h-5 w-5" />;
-    case 'CREDIT_CARD':
+    case FinancialAccountType.CreditCard:
       return <CreditCard className="h-5 w-5" />;
-    case 'CRYPTO_WALLET':
+    case FinancialAccountType.CryptoWallet:
       return <Bitcoin className="h-5 w-5" />;
-    case 'BANK_DEPOSIT_ACCOUNT':
+    case FinancialAccountType.BankDepositAccount:
       return <Building2 className="h-5 w-5" />;
-    case 'FOREIGN_SECURITIES':
+    case FinancialAccountType.ForeignSecurities:
       return <Building2 className="h-5 w-5" />;
     default:
       return <BadgeQuestionMark className="h-5 w-5" />;
@@ -21,15 +21,15 @@ export const getAccountIcon = (type: FinancialAccountType): ReactNode => {
 
 export const getAccountTypeLabel = (type: FinancialAccountType): string => {
   switch (type) {
-    case 'BANK_ACCOUNT':
+    case FinancialAccountType.BankAccount:
       return 'Bank Account';
-    case 'CREDIT_CARD':
+    case FinancialAccountType.CreditCard:
       return 'Credit Card';
-    case 'CRYPTO_WALLET':
+    case FinancialAccountType.CryptoWallet:
       return 'Crypto Wallet';
-    case 'BANK_DEPOSIT_ACCOUNT':
+    case FinancialAccountType.BankDepositAccount:
       return 'Bank Deposit Account';
-    case 'FOREIGN_SECURITIES':
+    case FinancialAccountType.ForeignSecurities:
       return 'Foreign Securities';
     default:
       return 'Unknown Account Type';

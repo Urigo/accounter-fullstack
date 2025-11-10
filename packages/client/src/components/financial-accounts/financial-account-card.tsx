@@ -5,6 +5,7 @@ import { Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
+import { FinancialAccountType } from '@/gql/graphql.js';
 import type { FinancialAccount } from './types.js';
 import { getAccountIcon, getAccountTypeLabel } from './utils.js';
 
@@ -72,7 +73,7 @@ export function FinancialAccountCard({
         </div>
 
         {/* Bank-specific fields */}
-        {account.type === 'BANK_ACCOUNT' && (
+        {account.type === FinancialAccountType.BankAccount && (
           <div className="border-t pt-4">
             <h4 className="text-sm font-medium mb-3">Bank Details</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
