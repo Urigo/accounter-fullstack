@@ -6,6 +6,6 @@ export default {
 ALTER TABLE
   accounter_schema.financial_accounts
 ADD COLUMN
-  account_name2 TEXT NULL;
+  account_name TEXT NULL;
 `,
 } satisfies MigrationExecutor;
