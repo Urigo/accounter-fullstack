@@ -16,6 +16,11 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     allFinancialAccounts: async (_, __, { injector }) => {
       return injector.get(FinancialAccountsProvider).getAllFinancialAccounts();
     },
+    financialAccountsByOwner: async (_, { ownerId }, { injector }) => {
+      return injector
+        .get(FinancialAccountsProvider)
+        .getFinancialAccountsByOwnerIdLoader.load(ownerId);
+    },
     financialAccount: async (_, { id }, { injector }) => {
       return injector
         .get(FinancialAccountsProvider)

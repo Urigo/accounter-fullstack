@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allFinancialAccounts: [FinancialAccount!]! @auth(role: ACCOUNTANT)
+    financialAccountsByOwner(ownerId: UUID!): [FinancialAccount!]! @auth(role: ACCOUNTANT)
     financialAccount(id: UUID!): FinancialAccount! @auth(role: ACCOUNTANT)
   }
 
