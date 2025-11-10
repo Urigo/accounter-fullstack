@@ -66,9 +66,9 @@ export function FinancialAccountCard({
         <div>
           <h4 className="text-sm font-medium mb-2">Currencies & Tax Categories</h4>
           <div className="flex flex-wrap gap-2">
-            {account.currencies?.map((curr, idx) => (
+            {account.currencies?.map(curr => (
               <Link
-                key={idx}
+                key={curr.currency}
                 to={ROUTES.TAX_CATEGORIES} // TODO: Link to specific tax category page
                 target="_blank"
                 rel="noreferrer"
