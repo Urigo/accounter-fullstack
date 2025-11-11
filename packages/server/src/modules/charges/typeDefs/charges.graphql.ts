@@ -425,42 +425,6 @@ export default gql`
     charge: Charge
   }
 
-  extend interface FinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type BankFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type CardFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type CryptoWalletFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type ForeignSecuritiesFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type BankDepositFinancialAccount {
-    charges(filter: ChargeFilter): [Charge!]!
-  }
-
-  extend type LtdFinancialEntity {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
-  extend type PersonalFinancialEntity {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
-  extend interface Business {
-    charges(filter: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-  }
-
   " charge spread type "
   type YearOfRelevance {
     year: String!
