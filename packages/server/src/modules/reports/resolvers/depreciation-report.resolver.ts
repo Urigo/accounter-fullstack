@@ -1,9 +1,11 @@
 // import { GraphQLError } from 'graphql';
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { IGetAllDepreciationCategoriesResult } from '@modules/depreciation/types.js';
+import { getTransactionsMinDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { calculateDepreciation } from '../helpers/depreciation-report.helper.js';
@@ -105,13 +107,10 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
-          const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(record.charge_id);
-          if (!charge || charge instanceof Error) {
-            console.error('No charge for depreciation record', record);
-            return;
-          }
+          const [charge, transactions] = await Promise.all([
+            injector.get(ChargesTempProvider).getChargeByIdLoader.load(record.charge_id),
+            injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(record.charge_id),
+          ]);
 
           const amount = Math.round(Number(record.amount));
 
@@ -124,6 +123,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
               record.expiration_date ?? undefined,
             );
 
+          const minDebitDate = getTransactionsMinDebitDate(transactions);
           const activationYear = record.activation_date.getFullYear();
 
           const originalCost = activationYear === year ? 0 : amount;
@@ -135,9 +135,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             id: record.id,
             chargeId: record.charge_id,
             description: charge.user_description ?? undefined,
-            purchaseDate: dateToTimelessDateString(
-              charge.transactions_min_debit_date ?? record.activation_date,
-            ),
+            purchaseDate: dateToTimelessDateString(minDebitDate ?? record.activation_date),
             activationDate: dateToTimelessDateString(record.activation_date),
             originalCost,
             reportYearDelta,

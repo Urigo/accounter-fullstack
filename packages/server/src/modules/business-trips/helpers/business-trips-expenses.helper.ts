@@ -1,6 +1,6 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import type { Injector } from 'graphql-modules';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { isSupplementalFeeTransaction } from '@modules/ledger/helpers/fee-transactions.js';
 import { LedgerError } from '@modules/ledger/helpers/utils.helper.js';
 import { generateLedgerRecordsForBusinessTrip } from '@modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
@@ -195,7 +195,7 @@ export async function generateChargeForEmployeePayment(
     throw new GraphQLError('Business trip tax category not set');
   }
   try {
-    const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
+    const { id: chargeId } = await injector.get(ChargesTempProvider).generateCharge({
       ownerId: defaultAdminBusinessId,
       taxCategoryId: businessTripTaxCategoryId,
       userDescription: description || 'Employee payment charge',

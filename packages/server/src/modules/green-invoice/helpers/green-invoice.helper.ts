@@ -20,11 +20,11 @@ import type {
 } from '@accounter/green-invoice-graphql';
 import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { CountryCode } from '@modules/countries/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
-import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
+import type { document_status, IInsertDocumentsParams } from '@modules/documents/types.js';
 import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
@@ -1139,7 +1139,7 @@ export async function insertNewDocumentFromGreenInvoice(
         userDescription = greenInvoiceDoc.description;
       }
 
-      const [charge] = await injector.get(ChargesProvider).generateCharge({
+      const charge = await injector.get(ChargesTempProvider).generateCharge({
         ownerId,
         userDescription,
       });

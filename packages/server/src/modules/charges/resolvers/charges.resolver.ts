@@ -20,6 +20,7 @@ import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
+import { ChargesTempProvider } from '../providers/charges-temp.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 import type {
   accountant_statusArray,
@@ -116,7 +117,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       // get by charge
       const getByChargesPromise = injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .getChargesByMissingRequiredInfo()
         .then(charges => {
           charges.map(charge => {
@@ -204,9 +205,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeId,
       };
       try {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
         await injector
-          .get(ChargesProvider)
+          .get(ChargesTempProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
@@ -340,7 +340,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       };
       try {
         await injector
-          .get(ChargesProvider)
+          .get(ChargesTempProvider)
           .batchUpdateCharges({ ...adjustedFields })
           .catch(e => {
             console.error(e);
@@ -402,9 +402,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
           };
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
               const message = `Failed to update charge ID="${baseChargeID}" before merge`;
@@ -434,11 +433,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-        if (!charge) {
-          throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-        }
-        if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+        const [documents, transactions] = await Promise.all([
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
+          injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+        ]);
+        if (documents.length > 0 || transactions.length > 0) {
           throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
         }
 

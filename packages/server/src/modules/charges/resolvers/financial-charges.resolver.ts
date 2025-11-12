@@ -17,7 +17,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
@@ -25,13 +25,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating revaluation charge');
@@ -47,7 +47,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         if (!bankDepositInterestIncomeTaxCategoryId) {
           throw new GraphQLError('Bank deposit interest income tax category missing');
         }
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           bankDepositInterestIncomeTaxCategoryId,
@@ -55,13 +55,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating bank deposits revaluation charge');
@@ -79,7 +79,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           taxExpensesTaxCategoryId,
@@ -87,13 +87,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating tax expenses charge');
@@ -114,7 +114,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Accumulated depreciation tax category missing');
       }
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           accumulatedDepreciationTaxCategoryId,
@@ -122,13 +122,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating depreciation charge');
@@ -149,7 +149,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Recovery reserve tax category missing');
       }
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           recoveryReserveTaxCategoryId,
@@ -157,13 +157,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating recovery reserve charge');
@@ -185,7 +185,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
 
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           ownerId,
           vacationReserveTaxCategoryId,
@@ -193,13 +193,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating vacation reserves charge');
@@ -227,7 +227,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
 
       try {
-        const charge = await generateAndTagCharge(
+        const chargeId = await generateAndTagCharge(
           injector,
           defaultAdminBusinessId,
           defaultTaxCategoryId,
@@ -243,7 +243,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
             }
             await injector
               .get(MiscExpensesProvider)
-              .insertExpense({ ...record, chargeId: charge.id })
+              .insertExpense({ ...record, chargeId })
               .catch(() => {
                 throw new GraphQLError('Error adding balance records');
               });
@@ -251,13 +251,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge.id,
+          chargeId,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge.id;
+        return chargeId;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating balance charge');

@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
@@ -188,14 +187,9 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripCharge: {
     businessTrip: async (chargeId, _, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-        if (!charge.business_trip_id) {
-          return null;
-        }
-
         return injector
           .get(BusinessTripsProvider)
-          .getBusinessTripsByIdLoader.load(charge.business_trip_id)
+          .getBusinessTripsByChargeIdLoader.load(chargeId)
           .then(businessTrip => businessTrip ?? null);
       } catch (e) {
         console.error(`Error finding business trip for charge id ${chargeId}:`, e);

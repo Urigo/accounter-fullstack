@@ -1,5 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { getDocumentsMinDate } from '@modules/documents/helpers/dates.helper.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { getLedgerMinInvoiceDate } from '@modules/ledger/helpers/dates.helper.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { getTransactionsMinDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
@@ -85,15 +89,16 @@ export const commonTransactionFields:
 
 export const commonChargeFields: ExchangeRatesModule.ChargeResolvers = {
   exchangeRates: async (chargeId, _, { injector }) => {
-    const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-    if (!charge) {
-      return null;
-    }
+    const [transactions, documents, ledgerRecords] = await Promise.all([
+      injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+      injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
+      injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
+    ]);
 
     const ratesDate =
-      charge.transactions_min_debit_date ||
-      charge.documents_min_date ||
-      charge.ledger_min_invoice_date;
+      getTransactionsMinDebitDate(transactions) ||
+      getDocumentsMinDate(documents) ||
+      getLedgerMinInvoiceDate(ledgerRecords);
 
     if (!ratesDate) {
       return null;

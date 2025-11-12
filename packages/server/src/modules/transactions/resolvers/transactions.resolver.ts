@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import type { Resolvers } from '@shared/gql-types';
@@ -63,7 +64,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         const existingChargePromise = async () => {
           const charge = await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .getChargeByIdLoader.load(fields.chargeId ?? '');
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
@@ -78,29 +79,29 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
           }
           if (transaction.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(transaction.charge_id);
-            if (!charge) {
-              throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
-            }
+            const [charge, transactions, documents] = await Promise.all([
+              injector.get(ChargesTempProvider).getChargeByIdLoader.load(transaction.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(transaction.charge_id),
+              injector
+                .get(DocumentsProvider)
+                .getDocumentsByChargeIdLoader.load(transaction.charge_id),
+            ]);
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(ChargesTempProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Transaction unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(
                 `Failed to generate new charge for transaction ID="${transactionId}"`,
               );
             }
-            chargeId = newCharge?.[0]?.id;
+            chargeId = newCharge?.id;
 
-            if (
-              Number(charge.documents_count ?? 0) === 0 &&
-              Number(charge.transactions_count ?? 1) === 1
-            ) {
+            if (Number(transactions.length) === 0 && Number(documents.length) === 1) {
               postUpdateActions = async () =>
                 deleteCharges([charge.id], injector)
                   .catch(e => {
@@ -167,7 +168,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const existingChargePromise = async () => {
           // verify charge exists
           const charge = await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .getChargeByIdLoader.load(fields.chargeId ?? '');
           if (!charge) {
             throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
@@ -196,19 +197,18 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
                 if (!transaction.charge_id) {
                   return;
                 }
-                const charge = await injector
-                  .get(ChargesProvider)
-                  .getChargeByIdLoader.load(transaction.charge_id);
-                if (!charge) {
-                  throw new GraphQLError(
-                    `Former transaction's charge ID ("${transaction.charge_id}") not valid`,
-                  );
-                }
 
-                if (
-                  Number(charge.documents_count ?? 0) === 0 &&
-                  Number(charge.transactions_count ?? 1) === 1
-                ) {
+                const [charge, transactions, documents] = await Promise.all([
+                  injector.get(ChargesTempProvider).getChargeByIdLoader.load(transaction.charge_id),
+                  injector
+                    .get(TransactionsProvider)
+                    .transactionsByChargeIDLoader.load(transaction.charge_id),
+                  injector
+                    .get(DocumentsProvider)
+                    .getDocumentsByChargeIdLoader.load(transaction.charge_id),
+                ]);
+
+                if (Number(transactions.length) === 0 && Number(documents.length ?? 1) === 1) {
                   chargesToDelete.add(charge.id);
                 }
               }),
@@ -231,14 +231,14 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(ChargesTempProvider).generateCharge({
               ownerId: defaultAdminBusinessId,
               userDescription: 'Transactions unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(`Failed to generate new charge for transactions update`);
             }
-            chargeId = newCharge[0].id;
+            chargeId = newCharge.id;
           }
         };
 
@@ -288,7 +288,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           .transactionByIdLoader.load(raw);
 
         const charge = await injector
-          .get(ChargesProvider)
+          .get(ChargesTempProvider)
           .getChargeByIdLoader.load(transaction.charge_id);
         return charge.type === 'CONVERSION' ? 'ConversionTransaction' : 'CommonTransaction';
       }
@@ -323,7 +323,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         .transactionByIdLoader.load(transactionId);
 
       const charge = await injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .getChargeByIdLoader.load(transaction.charge_id);
       return charge.type === 'CONVERSION';
     },
@@ -378,7 +378,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         .transactionByIdLoader.load(transactionId);
 
       const charge = await injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .getChargeByIdLoader.load(transaction.charge_id);
       if (!charge) {
         throw new GraphQLError(`Charge ID="${transaction.charge_id}" not found`);
@@ -387,7 +387,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         console.error(charge);
         throw new GraphQLError(`Charge ID="${transaction.charge_id}" not found`);
       }
-      return charge.type !== 'CONVERSION';
+      return charge.type == null;
     },
     ...commonTransactionFields,
   },

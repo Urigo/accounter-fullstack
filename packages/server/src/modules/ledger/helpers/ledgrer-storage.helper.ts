@@ -1,5 +1,4 @@
 import { startOfDay } from 'date-fns';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
 import type { LedgerProto } from '@shared/types';
@@ -265,8 +264,10 @@ export async function storeInitialGeneratedRecords(
   records: LedgerProto[],
   context: GraphQLModules.Context,
 ) {
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-  if (!charge.ledger_count || Number(charge.ledger_count) === 0) {
+  const currentLedgerRecords = await context.injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByChargesIdLoader.load(chargeId);
+  if (currentLedgerRecords.length === 0) {
     const ledgerRecords: IInsertLedgerRecordsParams['ledgerRecords'] = records.map(record =>
       convertToStorageInputRecord(record, context),
     );

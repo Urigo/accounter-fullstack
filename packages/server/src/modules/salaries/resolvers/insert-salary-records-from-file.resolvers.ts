@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import xlsx from 'node-xlsx';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { EmployeesProvider } from '../providers/employees.provider.js';
 import { FundsProvider } from '../providers/funds.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
@@ -132,13 +132,13 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
       const salaryChargePromise = chargeId
         ? Promise.resolve(chargeId)
         : injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .generateCharge({
               type: 'PAYROLL',
               ownerId: currentUser.userId,
               userDescription: `Salaries ${rawSalaryMonth}`,
             })
-            .then(res => res[0].id)
+            .then(res => res.id)
             .catch(e => {
               console.error(e);
               throw new SalaryError('Failed to generate salary charge');
