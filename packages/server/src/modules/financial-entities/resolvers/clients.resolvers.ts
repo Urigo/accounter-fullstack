@@ -124,7 +124,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         .getBusinessByIdLoader.load(business.business_id);
 
       if (!businessMatch) {
-        throw new GraphQLError('Client not found');
+        throw new GraphQLError('Business not found');
       }
 
       return businessMatch;

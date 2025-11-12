@@ -134,6 +134,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const greenInvoiceClientId = validateClientIntegrations(
         businessMatch?.integrations ?? {},
       ).greenInvoiceId;
+      if (!greenInvoiceClientId) {
+        throw new GraphQLError(
+          `Green invoice integration missing for business ID="${charge.business_id}"`,
+        );
+      }
 
       const income = getIncomeFromDocuments(
         openIssuedDocuments.map(doc => ({
@@ -192,7 +197,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client: greenInvoiceClientId,
+        client: charge.business_id,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -286,6 +291,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       const greenInvoiceClientId = validateClientIntegrations(
         businessMatch?.integrations ?? {},
       ).greenInvoiceId;
+      if (!greenInvoiceClientId) {
+        throw new GraphQLError(
+          `Green invoice integration missing for business ID="${charge.business_id}"`,
+        );
+      }
 
       const [greenInvoiceDocument, payment] = await Promise.all([
         greenInvoiceDocumentPromise,
@@ -339,7 +349,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client: greenInvoiceClientId,
+        client: charge.business_id,
         income,
         payment,
         // linkedPaymentId: ____,
