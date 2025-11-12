@@ -46,7 +46,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   minDocumentsDate: async (chargeId, _, { injector }) =>
     (await safeGetChargeById(chargeId, injector)).documents_min_date,
   validationData: (chargeId, _, context) => validateCharge(chargeId, context),
-  metadata: (chargeId, _, { injector }) => safeGetChargeById(chargeId, injector),
+  metadata: chargeId => chargeId,
   yearsOfRelevance: async (chargeId, _, { injector }) => {
     const spreadRecords = await injector
       .get(ChargeSpreadProvider)

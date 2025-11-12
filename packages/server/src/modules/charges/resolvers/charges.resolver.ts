@@ -9,7 +9,7 @@ import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expe
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
+import { ChargeSortByField, ChargeTypeEnum, DocumentType } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import {
   batchUpdateChargesBusinessTrip,
@@ -27,7 +27,7 @@ import type {
   IBatchUpdateChargesParams,
   IUpdateChargeParams,
 } from '../types.js';
-import { commonChargeFields, commonDocumentsFields } from './common.js';
+import { commonChargeFields, commonDocumentsFields, safeGetChargeById } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
@@ -546,31 +546,69 @@ export const chargesResolvers: ChargesModule.Resolvers &
     ...commonDocumentsFields,
   },
   ChargeMetadata: {
-    createdAt: DbCharge => DbCharge.created_at,
-    updatedAt: DbCharge => DbCharge.updated_at,
-    invoicesCount: DbCharge => (DbCharge.invoices_count ? Number(DbCharge.invoices_count) : 0),
-    receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
-    documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
-    invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
-    openDocuments: DbCharge => DbCharge.open_docs_flag ?? false,
-    transactionsCount: DbCharge => {
-      return DbCharge.transactions_count ? Number(DbCharge.transactions_count) : 0;
+    createdAt: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).created_at,
+    updatedAt: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).updated_at,
+    invoicesCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const invoicesCount = documents.filter(
+        doc =>
+          doc.type === DocumentType.Invoice ||
+          doc.type === DocumentType.CreditInvoice ||
+          doc.type === DocumentType.InvoiceReceipt,
+      ).length;
+      return invoicesCount;
     },
-    invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
-    ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
-    invalidLedger: async (DbCharge, _, context, info) => {
+    receiptsCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const receiptsCount = documents.filter(
+        doc => doc.type === DocumentType.Receipt || doc.type === DocumentType.InvoiceReceipt,
+      ).length;
+      return receiptsCount;
+    },
+    documentsCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      return documents.length;
+    },
+    invalidDocuments: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).invalid_documents ?? true,
+    openDocuments: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).open_docs_flag ?? false,
+    transactionsCount: async (chargeId, _, { injector }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId);
+      return transactions.length;
+    },
+    invalidTransactions: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).invalid_transactions ?? true,
+    ledgerCount: async (chargeId, _, { injector }) => {
+      const ledgerRecords = await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(chargeId);
+      return ledgerRecords.length;
+    },
+    invalidLedger: async (chargeId, _, context, info) => {
       try {
-        if (isChargeLocked(DbCharge, context.adminContext.ledgerLock)) {
+        const charge = await safeGetChargeById(chargeId, context.injector);
+        if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
           return 'VALID';
         }
 
-        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context).then(func =>
-          func(DbCharge.id, { insertLedgerRecordsIfNotExists: false }, context, info),
+        const generatedLedgerPromise = ledgerGenerationByCharge(charge, context).then(func =>
+          func(chargeId, { insertLedgerRecordsIfNotExists: false }, context, info),
         );
 
         const currentRecordPromise = context.injector
           .get(LedgerProvider)
-          .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
+          .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
         const [currentRecord, generated] = await Promise.all([
           currentRecordPromise,
@@ -597,11 +635,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
         return 'INVALID';
       }
     },
-    miscExpensesCount: async (DbCharge, _, { injector }) => {
+    miscExpensesCount: async (chargeId, _, { injector }) => {
       try {
         return injector
           .get(MiscExpensesProvider)
-          .getExpensesByChargeIdLoader.load(DbCharge.id)
+          .getExpensesByChargeIdLoader.load(chargeId)
           .then(res => res.length);
       } catch (err) {
         const message = 'Error loading misc expenses';
@@ -609,8 +647,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError(message);
       }
     },
-    optionalBusinesses: DbCharge =>
-      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
-    isSalary: DbCharge => DbCharge.type === 'PAYROLL',
+    optionalBusinesses: async (chargeId, _, { injector }) => {
+      const charge = await safeGetChargeById(chargeId, injector);
+      return charge.business_array && charge.business_array.length > 1 ? charge.business_array : [];
+    },
   },
 };

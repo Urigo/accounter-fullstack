@@ -376,7 +376,6 @@ export default gql`
     transactionsCount: Int!
     invalidTransactions: Boolean!
     optionalBusinesses: [String!]!
-    isSalary: Boolean!
     ledgerCount: Int!
     miscExpensesCount: Int!
     invalidLedger: LedgerValidationStatus!

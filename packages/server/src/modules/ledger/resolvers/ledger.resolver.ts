@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { safeGetChargeById } from '@modules/charges/resolvers/common.js';
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
@@ -520,7 +521,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
   },
   ChargeMetadata: {
-    isLedgerLocked: async (DbCharge, _, { adminContext }) =>
-      isChargeLocked(DbCharge, adminContext.ledgerLock),
+    isLedgerLocked: async (chargeId, _, { adminContext, injector }) => {
+      const charge = await safeGetChargeById(chargeId, injector);
+      return isChargeLocked(charge, adminContext.ledgerLock);
+    },
   },
 };
