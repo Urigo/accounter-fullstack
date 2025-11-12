@@ -1,4 +1,3 @@
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
@@ -6,7 +5,7 @@ import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 
 export async function generateMiscExpensesLedger(
-  charge: IGetChargesByIdsResult,
+  chargeId: string,
   context: GraphQLModules.Context,
 ): Promise<LedgerProto[]> {
   const {
@@ -15,7 +14,7 @@ export async function generateMiscExpensesLedger(
   } = context;
   const expenses = await injector
     .get(MiscExpensesProvider)
-    .getExpensesByChargeIdLoader.load(charge.id);
+    .getExpensesByChargeIdLoader.load(chargeId);
   if (!expenses.length) {
     return [];
   }

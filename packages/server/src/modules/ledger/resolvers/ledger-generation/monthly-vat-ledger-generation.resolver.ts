@@ -156,13 +156,15 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     });
 
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        miscExpensesLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
-      });
-    });
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(
+      entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          miscExpensesLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        });
+      },
+    );
 
     await Promise.all([...mainTransactionsPromises, miscExpensesLedgerPromise]);
     for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {

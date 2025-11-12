@@ -172,15 +172,17 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     let transactionsTotalLocalAmount = 0;
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
-        dates.add(entry.valueDate.getTime());
-        currencies.add(entry.currency);
-      });
-    });
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(
+      entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+          dates.add(entry.valueDate.getTime());
+          currencies.add(entry.currency);
+        });
+      },
+    );
 
     // for each transaction, create a ledger record
     const mainTransactionsPromises = mainTransactions.map(async preValidatedTransaction => {

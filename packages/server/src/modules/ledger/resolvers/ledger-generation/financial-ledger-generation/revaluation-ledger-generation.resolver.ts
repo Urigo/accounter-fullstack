@@ -165,7 +165,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     entriesPromises.push(...foreignAccountsLedger);
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);

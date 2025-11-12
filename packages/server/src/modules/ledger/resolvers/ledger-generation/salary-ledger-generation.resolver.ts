@@ -237,13 +237,15 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         }
       }
     });
-    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge, context).then(entries => {
-      entries.map(entry => {
-        entry.ownerId = charge.owner_id;
-        miscExpensesLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
-      });
-    });
+    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge.id, context).then(
+      entries => {
+        entries.map(entry => {
+          entry.ownerId = charge.owner_id;
+          miscExpensesLedgerEntries.push(entry);
+          updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        });
+      },
+    );
     entriesPromises.push(...transactionEntriesPromises, miscExpensesEntriesPromise);
 
     await Promise.all(entriesPromises);

@@ -128,7 +128,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
     );
 
     // generate ledger from misc expenses
-    await generateMiscExpensesLedger(charge, context).then(entries => {
+    await generateMiscExpensesLedger(charge.id, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);

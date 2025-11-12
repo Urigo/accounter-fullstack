@@ -14,6 +14,8 @@ export async function getChargeType(
       return ChargeTypeEnum.Salary;
     case 'FINANCIAL':
       return ChargeTypeEnum.Financial;
+    case 'BANK_DEPOSIT':
+      return ChargeTypeEnum.BankDeposit;
   }
 
   if (charge.business_trip_id) {

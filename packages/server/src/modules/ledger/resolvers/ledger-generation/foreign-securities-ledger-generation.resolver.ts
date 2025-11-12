@@ -167,7 +167,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         miscExpensesLedgerEntries.push(entry);
