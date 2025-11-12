@@ -310,6 +310,23 @@ export async function executeDocumentIssue(
       throw new GraphQLError('Failed to issue new document');
     }
 
+    // validate all linked documents are closed
+    if (input.linkedDocumentIds?.length) {
+      await Promise.all(
+        input.linkedDocumentIds.map(async id => {
+          if (id) {
+            await injector
+              .get(GreenInvoiceClientProvider)
+              .closeDocument(id)
+              .catch(e => {
+                const message = `ERROR: Failed to close Green Invoice linked document with ID ${id}`;
+                console.error(`${message}: ${e}`);
+              });
+          }
+        }),
+      );
+    }
+
     if ('id' in document && document.id) {
       const greenInvoiceDocument = await injector
         .get(GreenInvoiceClientProvider)
