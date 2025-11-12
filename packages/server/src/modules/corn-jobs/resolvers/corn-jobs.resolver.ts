@@ -159,9 +159,7 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
 
         return {
           success: true,
-          charges: Object.keys(mergableMathces)
-            .map(id => charges.find(charge => charge.id === id))
-            .filter(charge => charge) as IGetChargesByIdsResult[],
+          charges: Object.keys(mergableMathces),
         };
       } catch (e) {
         if (e instanceof GraphQLError) {

@@ -1,3 +1,4 @@
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -25,7 +26,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   const {
     injector,
     adminContext: {
@@ -46,7 +47,13 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     };
   }
 
-  const chargeId = charge.id;
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

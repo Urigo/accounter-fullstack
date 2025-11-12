@@ -1,18 +1,13 @@
 import { endOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
-import {
-  Currency,
-  Maybe,
-  ResolverFn,
-  ResolversParentTypes,
-  ResolversTypes,
-} from '@shared/gql-types';
+import { Currency, Maybe, ResolverFn, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { LedgerProto, TimelessDateString } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
@@ -21,7 +16,7 @@ export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';
 
 export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
-  ResolversParentTypes['Charge'],
+  IGetChargesByIdsResult,
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {

@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
@@ -131,13 +130,13 @@ export const salariesResolvers: SalariesModule.Resolvers &
     },
   },
   SalaryCharge: {
-    salaryRecords: (DbCharge, _, { injector }) => {
-      return injector.get(SalariesProvider).getSalaryRecordsByChargeIdLoader.load(DbCharge.id);
+    salaryRecords: (chargeId, _, { injector }) => {
+      return injector.get(SalariesProvider).getSalaryRecordsByChargeIdLoader.load(chargeId);
     },
-    employees: async (DbCharge, _, { injector }) => {
+    employees: async (chargeId, _, { injector }) => {
       const salaryRecords = await injector
         .get(SalariesProvider)
-        .getSalaryRecordsByChargeIdLoader.load(DbCharge.id);
+        .getSalaryRecordsByChargeIdLoader.load(chargeId);
       return injector
         .get(BusinessesProvider)
         .getBusinessByIdLoader.loadMany(salaryRecords.map(salaryRecord => salaryRecord.employee_id))
@@ -146,7 +145,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
             res.map(employee => {
               if (!employee || employee instanceof Error) {
                 throw new GraphQLError(
-                  `Employee not found for one of the salary record of charge ${DbCharge.id}`,
+                  `Employee not found for one of the salary record of charge ${chargeId}`,
                 );
               }
               return employee;
@@ -230,14 +229,6 @@ export const salariesResolvers: SalariesModule.Resolvers &
     sicknessDays: DbSalary => ({
       balance: DbSalary.sickness_days_balance ? Number(DbSalary.sickness_days_balance) : null,
     }),
-    charge: (DbSalary, _, { injector }) => {
-      if (!DbSalary.charge_id) {
-        return null;
-      }
-      return injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(DbSalary.charge_id)
-        .then(res => res ?? null);
-    },
+    charge: DbSalary => DbSalary.charge_id,
   },
 };

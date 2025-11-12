@@ -328,9 +328,9 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
   ]);
 
   const ledgerRecords = await Promise.all(
-    charges.map(charge =>
-      ledgerGenerationByCharge(charge, context)(
-        charge,
+    charges.map(async charge =>
+      (await ledgerGenerationByCharge(charge, context))(
+        charge.id,
         { insertLedgerRecordsIfNotExists: false },
         context,
         info,

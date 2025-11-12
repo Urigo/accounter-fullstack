@@ -3,6 +3,7 @@ import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -48,7 +49,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   const {
     injector,
     adminContext: {
@@ -59,7 +60,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       },
     },
   } = context;
-  const chargeId = charge.id;
+
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

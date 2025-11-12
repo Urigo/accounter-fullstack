@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
@@ -46,11 +45,7 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           })),
         });
 
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-        if (!charge) {
-          throw new Error(`Charge ID="${chargeId}" not found`);
-        }
-        return charge;
+        return chargeId;
       } catch (e) {
         const message = 'Error inserting misc expense';
         console.error(`${message}: ${e}`);
@@ -90,23 +85,7 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
   MiscExpense: {
     id: dbExpense => dbExpense.id,
     chargeId: dbExpense => dbExpense.charge_id,
-    charge: async (dbExpense, _, { injector }) => {
-      try {
-        return injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(dbExpense.charge_id)
-          .then(charge => {
-            if (!charge) {
-              throw new Error(`Charge ID="${dbExpense.charge_id}" not found`);
-            }
-            return charge;
-          });
-      } catch (error) {
-        const message = 'Error fetching misc expense charge';
-        console.error(`${message}: ${error}`);
-        throw new GraphQLError(message);
-      }
-    },
+    charge: dbExpense => dbExpense.charge_id,
     creditor: async (dbExpense, _, { injector }) => {
       try {
         return injector

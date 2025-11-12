@@ -1,4 +1,5 @@
 import { BankDepositTransactionsProvider } from '@modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -33,8 +34,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const chargeId = charge.id;
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   const {
     injector,
     adminContext: {
@@ -44,6 +44,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       },
     },
   } = context;
+
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

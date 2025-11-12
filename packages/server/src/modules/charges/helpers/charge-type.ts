@@ -1,10 +1,12 @@
 import { ChargeTypeEnum } from '@shared/enums';
-import type { IGetChargesByIdsResult } from '../types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 
-export function getChargeType(
-  charge: IGetChargesByIdsResult,
+export async function getChargeType(
+  chargeId: string,
   context: GraphQLModules.Context,
-): ChargeTypeEnum {
+): Promise<ChargeTypeEnum> {
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+
   switch (charge.type) {
     case 'CONVERSION':
       return ChargeTypeEnum.Conversion;

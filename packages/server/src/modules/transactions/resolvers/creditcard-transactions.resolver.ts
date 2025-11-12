@@ -3,17 +3,17 @@ import type { TransactionsModule } from '../types.js';
 
 export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers = {
   CreditcardBankCharge: {
-    creditCardTransactions: async (dbCharge, _, { injector }) => {
+    creditCardTransactions: async (chargeId, _, { injector }) => {
       return injector
         .get(CreditCardTransactionsProvider)
-        .getCreditCardTransactionsByChargeIdLoader.load(dbCharge.id)
+        .getCreditCardTransactionsByChargeIdLoader.load(chargeId)
         .then(res => res.map(dbTransaction => dbTransaction.id).filter(Boolean) as string[]);
     },
-    validCreditCardAmount: async (dbCharge, _, { injector }) => {
+    validCreditCardAmount: async (chargeId, _, { injector }) => {
       try {
         const res = await injector
           .get(CreditCardTransactionsProvider)
-          .validateCreditCardTransactionsAmountByChargeIdLoader.load(dbCharge.id);
+          .validateCreditCardTransactionsAmountByChargeIdLoader.load(chargeId);
         return res ?? false;
       } catch (error) {
         console.error(error);

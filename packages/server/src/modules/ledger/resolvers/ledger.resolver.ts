@@ -97,11 +97,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               return;
             }
             try {
-              const generatedRecordsPromise = ledgerGenerationByCharge(charge, context)(
-                charge,
-                { insertLedgerRecordsIfNotExists: false },
-                context,
-                info,
+              const generatedRecordsPromise = ledgerGenerationByCharge(charge, context).then(func =>
+                func(charge.id, { insertLedgerRecordsIfNotExists: false }, context, info),
               );
               const storageRecordsPromise = injector
                 .get(LedgerProvider)
@@ -114,7 +111,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
               if (!generatedRecords || 'message' in generatedRecords) {
                 handledCharges++;
-                push({ progress: calculateProgress(), charge });
+                push({ progress: calculateProgress(), charge: charge.id });
                 return;
               }
 
@@ -134,11 +131,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               }
 
               handledCharges++;
-              push({ progress: calculateProgress(), charge });
+              push({ progress: calculateProgress(), charge: charge.id });
             } catch (err) {
               console.error(err);
               handledCharges++;
-              push({ progress: calculateProgress(), charge });
+              push({ progress: calculateProgress(), charge: charge.id });
             }
           }),
         );
@@ -185,11 +182,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
-          charge,
-          { insertLedgerRecordsIfNotExists: true },
-          context,
-          info,
+        const generated = await ledgerGenerationByCharge(charge, context).then(func =>
+          func(charge.id, { insertLedgerRecordsIfNotExists: true }, context, info),
         );
         if (!generated || 'message' in generated) {
           const message = generated?.message ?? 'generation error';
@@ -426,11 +420,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
-          charge,
-          { insertLedgerRecordsIfNotExists: records.length === 0 },
-          context,
-          info,
+        const generated = await ledgerGenerationByCharge(charge, context).then(func =>
+          func(charge.id, { insertLedgerRecordsIfNotExists: records.length === 0 }, context, info),
         );
         if (!generated || 'message' in generated) {
           return {

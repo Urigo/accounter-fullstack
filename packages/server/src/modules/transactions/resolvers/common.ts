@@ -82,9 +82,9 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
 };
 
 export const commonChargeFields: TransactionsModule.ChargeResolvers = {
-  transactions: (DbCharge, _, { injector }) =>
+  transactions: (chargeId, _, { injector }) =>
     injector
       .get(TransactionsProvider)
-      .transactionsByChargeIDLoader.load(DbCharge.id)
+      .transactionsByChargeIDLoader.load(chargeId)
       .then(res => res.map(t => t.id)),
 };

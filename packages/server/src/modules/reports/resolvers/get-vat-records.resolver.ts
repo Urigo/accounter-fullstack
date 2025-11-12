@@ -186,7 +186,7 @@ export const getVatRecords = async (
       charges.map(
         charge =>
           new Promise((resolve, reject) => {
-            validateCharge(charge, context)
+            validateCharge(charge.id, context)
               .then(res => {
                 if ('isValid' in res) {
                   resolve({ charge, isValid: res.isValid });
@@ -202,15 +202,15 @@ export const getVatRecords = async (
     for (const { charge, isValid } of validatedCharges) {
       if (charge.business_trip_id) {
         // If valid and has business trip, add to business trips
-        response.businessTrips.push(charge);
+        response.businessTrips.push(charge.id);
       } else if (isValid) {
         if (!includedChargeIDs.has(charge.id)) {
           // If valid but not yet included, add to charges with different month doc
-          response.differentMonthDoc.push(charge);
+          response.differentMonthDoc.push(charge.id);
         }
       } else {
         // add to charges with missing info
-        response.missingInfo.push(charge);
+        response.missingInfo.push(charge.id);
       }
     }
 

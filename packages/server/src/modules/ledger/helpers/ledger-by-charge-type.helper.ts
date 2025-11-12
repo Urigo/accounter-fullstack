@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ChargeTypeEnum } from '@shared/enums';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
@@ -23,11 +24,12 @@ const resolveLockedCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   object
-> = async (charge, _, context, __) => {
+> = async (chargeId, _, context, __) => {
   try {
-    const records = await context.injector
-      .get(LedgerProvider)
-      .getLedgerRecordsByChargesIdLoader.load(charge.id);
+    const [records, charge] = await Promise.all([
+      context.injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
+      context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+    ]);
 
     return {
       records,
@@ -42,18 +44,18 @@ const resolveLockedCharge: ResolverFn<
     };
   } catch (e) {
     console.error(e);
-    throw new GraphQLError(`Error loading ledger records for charge ID="${charge.id}"`);
+    throw new GraphQLError(`Error loading ledger records for charge ID="${chargeId}"`);
   }
 };
 
-export function ledgerGenerationByCharge(
+export async function ledgerGenerationByCharge(
   charge: IGetChargesByIdsResult,
   context: GraphQLModules.Context,
 ) {
   if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
     return resolveLockedCharge;
   }
-  const chargeType = getChargeType(charge, context);
+  const chargeType = await getChargeType(charge.id, context);
   switch (chargeType) {
     case ChargeTypeEnum.Common:
       return generateLedgerRecordsForCommonCharge;
@@ -87,7 +89,7 @@ export async function ledgerUnbalancedBusinessesByCharge(
   context: GraphQLModules.Context,
 ): Promise<Set<string> | undefined> {
   const { injector } = context;
-  const chargeType = getChargeType(charge, context);
+  const chargeType = await getChargeType(charge.id, context);
   switch (chargeType) {
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector

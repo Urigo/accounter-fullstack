@@ -2,7 +2,6 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import {
   IGetDocumentsByChargeIdResult,
@@ -353,7 +352,7 @@ export async function executeDocumentIssue(
         // Close origin
       }
 
-      return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
+      return newDocument.charge_id;
     }
 
     console.error('Document issue failed', document);

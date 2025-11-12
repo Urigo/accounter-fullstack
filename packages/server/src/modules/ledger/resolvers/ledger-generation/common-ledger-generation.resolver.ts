@@ -1,3 +1,4 @@
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -43,7 +44,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   const {
     injector,
     adminContext: {
@@ -54,7 +55,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       },
     },
   } = context;
-  const chargeId = charge.id;
+
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

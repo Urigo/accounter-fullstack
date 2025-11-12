@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -25,7 +26,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, __) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context, __) => {
   const {
     injector,
     adminContext: {
@@ -36,7 +37,14 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       },
     },
   } = context;
-  const chargeId = charge.id;
+
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

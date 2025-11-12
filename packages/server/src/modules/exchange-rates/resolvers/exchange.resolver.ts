@@ -68,12 +68,12 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   FinancialCharge: commonChargeFields,
   ConversionCharge: {
     ...commonChargeFields,
-    officialRate: async (dbCharge, _, { injector }) => {
+    officialRate: async (chargeId, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
-        .transactionsByChargeIDLoader.load(dbCharge.id);
+        .transactionsByChargeIDLoader.load(chargeId);
       if (!transactions) {
-        throw new GraphQLError(`Couldn't find any transactions for charge ID="${dbCharge.id}"`);
+        throw new GraphQLError(`Couldn't find any transactions for charge ID="${chargeId}"`);
       }
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
@@ -95,10 +95,10 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         rate,
       };
     },
-    eventRate: async (dbCharge, _, { injector }) => {
+    eventRate: async (chargeId, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
-        .transactionsByChargeIDLoader.load(dbCharge.id);
+        .transactionsByChargeIDLoader.load(chargeId);
       const { baseTransaction, quoteTransaction } = defineConversionBaseAndQuote(transactions);
 
       const baseCurrency = formatCurrency(baseTransaction.currency);
@@ -109,14 +109,14 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         if (transaction.currency_rate && transaction.currency_rate !== '0') {
           const transactionRate = Number(transaction.currency_rate);
           if (rate && rate !== transactionRate) {
-            throw new GraphQLError(`Multiple rates found for charge ID="${dbCharge.id}"`);
+            throw new GraphQLError(`Multiple rates found for charge ID="${chargeId}"`);
           }
           rate = transactionRate;
         }
       }
 
       if (!rate) {
-        throw new GraphQLError(`Couldn't find any rate for charge ID="${dbCharge.id}"`);
+        throw new GraphQLError(`Couldn't find any rate for charge ID="${chargeId}"`);
       }
 
       return {

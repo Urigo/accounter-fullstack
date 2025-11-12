@@ -1,3 +1,4 @@
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
@@ -15,7 +16,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context, info) => {
   const {
     adminContext: {
       defaultTaxCategoryId,
@@ -30,10 +31,18 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
     },
   } = context;
 
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
+
   if (isChargeLocked(charge, ledgerLock)) {
     return {
       __typename: 'CommonError',
-      message: `Charge ID="${charge.id}" is locked for ledger generation`,
+      message: `Charge ID="${chargeId}" is locked for ledger generation`,
     };
   }
 

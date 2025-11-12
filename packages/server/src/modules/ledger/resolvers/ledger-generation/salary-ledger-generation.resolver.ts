@@ -1,4 +1,5 @@
 import { lastDayOfMonth } from 'date-fns';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
@@ -34,17 +35,24 @@ export const generateLedgerRecordsForSalary: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, _info) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context, _info) => {
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
+
   if (charge.business_array?.length === 1) {
     // for one business, use the default ledger generation
     return generateLedgerRecordsForCommonCharge(
-      charge,
+      charge.id,
       { insertLedgerRecordsIfNotExists },
       context,
       _info,
     );
   }
-  const chargeId = charge.id;
   const {
     injector,
     adminContext: {

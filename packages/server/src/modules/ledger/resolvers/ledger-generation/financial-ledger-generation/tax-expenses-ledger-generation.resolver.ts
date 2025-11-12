@@ -1,3 +1,4 @@
+import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -12,13 +13,13 @@ import {
   calculateTaxAmounts,
 } from '@modules/reports/helpers/tax.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import { Maybe, ResolverFn, ResolversTypes } from '@shared/gql-types';
 import type { LedgerProto } from '@shared/types';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForTaxExpenses: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
-  ResolversParentTypes['Charge'],
+  IGetChargesByIdsResult,
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context) => {

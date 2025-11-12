@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { safeGetChargeById } from '@modules/charges/resolvers/common.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -18,35 +19,40 @@ export const commonFinancialEntityFields:
 };
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
-  taxCategory: async (DbCharge, _, { injector }) => {
-    if (!DbCharge.tax_category_id) {
+  taxCategory: async (chargeId, _, { injector }) => {
+    const charge = await safeGetChargeById(chargeId, injector);
+    if (!charge.tax_category_id) {
       return null;
     }
     return injector
       .get(TaxCategoriesProvider)
-      .taxCategoryByIdLoader.load(DbCharge.tax_category_id)
+      .taxCategoryByIdLoader.load(charge.tax_category_id)
       .then(taxCategory => taxCategory ?? null);
   },
 };
 
 export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
-  counterparty: async (DbCharge, _, { injector }) =>
-    DbCharge.business_id
+  counterparty: async (chargeId, _, { injector }) => {
+    const charge = await safeGetChargeById(chargeId, injector);
+    return charge.business_id
       ? injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(DbCharge.business_id)
+          .getFinancialEntityByIdLoader.load(charge.business_id)
           .then(res => res ?? null)
-      : null,
-  owner: (DbCharge, _, { injector }) =>
-    injector
+      : null;
+  },
+  owner: async (chargeId, _, { injector }) => {
+    const charge = await safeGetChargeById(chargeId, injector);
+    return injector
       .get(BusinessesProvider)
-      .getBusinessByIdLoader.load(DbCharge.owner_id)
+      .getBusinessByIdLoader.load(charge.owner_id)
       .then(res => {
         if (!res) {
-          throw new Error(`Unable to find financial entity for charge ${DbCharge.owner_id}`);
+          throw new Error(`Unable to find financial entity for charge ${charge.owner_id}`);
         }
         return res;
-      }),
+      });
+  },
 };
 
 export const commonTransactionFields:

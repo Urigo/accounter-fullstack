@@ -7,7 +7,7 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import { getChargeType } from '../helpers/charge-type.js';
 import { generateAndTagCharge } from '../helpers/financial-charge.helper.js';
 import type { ChargesModule } from '../types.js';
-import { commonChargeFields } from './common.js';
+import { commonChargeFields, safeGetChargeById } from './common.js';
 
 export const financialChargesResolvers: ChargesModule.Resolvers = {
   Mutation: {
@@ -25,13 +25,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating revaluation charge');
@@ -55,13 +55,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating bank deposits revaluation charge');
@@ -87,13 +87,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating tax expenses charge');
@@ -122,13 +122,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating depreciation charge');
@@ -157,13 +157,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating recovery reserve charge');
@@ -193,13 +193,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating vacation reserves charge');
@@ -251,13 +251,13 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         );
 
         await generateLedgerRecordsForFinancialCharge(
-          charge,
+          charge.id,
           { insertLedgerRecordsIfNotExists: true },
           context,
           info,
         );
 
-        return charge;
+        return charge.id;
       } catch (e) {
         console.error(e);
         throw new GraphQLError('Error generating balance charge');
@@ -265,8 +265,8 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     },
   },
   FinancialCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Financial,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,
@@ -274,8 +274,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     conversion: () => false,
     salary: () => false,
     isInvoicePaymentDifferentCurrency: () => false,
-    minEventDate: DbCharge => DbCharge.ledger_min_invoice_date,
-    minDebitDate: DbCharge => DbCharge.ledger_min_value_date,
+    minEventDate: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).ledger_min_invoice_date,
+    minDebitDate: async (chargeId, _, { injector }) =>
+      (await safeGetChargeById(chargeId, injector)).ledger_min_value_date,
     // minDocumentsDate:
     // validationData:
     // metadata:

@@ -289,8 +289,7 @@ export async function createTravelAndSubsistenceExpense(
       chargeGenerationPromise,
     ]);
 
-    const [charge] = await Promise.all([
-      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+    await Promise.all([
       injector
         .get(BusinessTripTravelAndSubsistenceExpensesProvider)
         .insertBusinessTripTravelAndSubsistenceExpense({
@@ -311,13 +310,9 @@ export async function createTravelAndSubsistenceExpense(
         : Promise.resolve(),
     ]);
 
-    if (!charge) {
-      throw new GraphQLError('Failed to generate charge for employee payment');
-    }
-
     // generate ledger records
     await generateLedgerRecordsForBusinessTrip(
-      charge,
+      chargeId,
       { insertLedgerRecordsIfNotExists: true },
       context,
       {} as GraphQLResolveInfo,

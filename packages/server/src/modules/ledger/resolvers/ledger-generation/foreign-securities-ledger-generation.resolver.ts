@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -28,8 +29,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const chargeId = charge.id;
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   const {
     injector,
     adminContext: {
@@ -38,6 +38,14 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       foreignSecurities: { foreignSecuritiesFeesCategoryId },
     },
   } = context;
+
+  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    return {
+      __typename: 'CommonError',
+      message: `Charge ID="${chargeId}" not found`,
+    };
+  }
 
   const errors: Set<string> = new Set();
 

@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
@@ -83,11 +84,16 @@ export const commonTransactionFields:
 };
 
 export const commonChargeFields: ExchangeRatesModule.ChargeResolvers = {
-  exchangeRates: DbCharge => {
+  exchangeRates: async (chargeId, _, { injector }) => {
+    const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+    if (!charge) {
+      return null;
+    }
+
     const ratesDate =
-      DbCharge.transactions_min_debit_date ||
-      DbCharge.documents_min_date ||
-      DbCharge.ledger_min_invoice_date;
+      charge.transactions_min_debit_date ||
+      charge.documents_min_date ||
+      charge.ledger_min_invoice_date;
 
     if (!ratesDate) {
       return null;

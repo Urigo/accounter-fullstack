@@ -20,12 +20,11 @@ import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
   IBatchUpdateChargesParams,
-  IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
 import { commonChargeFields, commonDocumentsFields } from './common.js';
@@ -33,36 +32,8 @@ import { commonChargeFields, commonDocumentsFields } from './common.js';
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
-    charge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-      }
-      return charge;
-    },
-    chargesByIDs: async (_, { chargeIDs }, { injector }) => {
-      if (chargeIDs.length === 0) {
-        return [];
-      }
-
-      const dbCharges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIDs);
-      if (!dbCharges) {
-        if (chargeIDs.length === 1) {
-          throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
-        } else {
-          throw new GraphQLError(`Couldn't find any charges`);
-        }
-      }
-
-      const charges = chargeIDs.map(id => {
-        const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
-        if (!charge) {
-          throw new GraphQLError(`Charge ID="${id}" not found`);
-        }
-        return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
-      });
-      return charges;
-    },
+    charge: (_, { chargeId }) => chargeId,
+    chargesByIDs: (_, { chargeIDs }) => chargeIDs,
     allCharges: async (_, { filters, page, limit }, { injector }) => {
       // handle sort column
       let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
@@ -110,7 +81,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       return {
         __typename: 'PaginatedCharges',
-        nodes: pageCharges,
+        nodes: pageCharges.map(charge => charge.id),
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
           totalRecords: charges.length,
@@ -210,7 +181,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       return {
         __typename: 'PaginatedCharges',
-        nodes: pageCharges,
+        nodes: pageCharges.map(charge => charge.id),
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
           totalRecords: charges.length,
@@ -234,23 +205,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
       };
       try {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        const res = await injector
+        await injector
           .get(ChargesProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charge ID="${chargeId}"`);
           });
-        const updatedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(res[0].id)
-          .catch(e => {
-            console.error(e);
-            throw new GraphQLError(`Error loading updated charge ID="${chargeId}"`);
-          });
-        if (!updatedCharge) {
-          throw new Error(`Charge ID="${chargeId}" not found`);
-        }
 
         const indirectUpdatesPromises: Array<Promise<unknown>> = [];
 
@@ -346,7 +307,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
-        return { charge: updatedCharge };
+        return { charge: chargeId };
       } catch (e) {
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
@@ -378,38 +339,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeIds,
       };
       try {
-        for (const chargeId of chargeIds) {
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        }
-        const res = await injector
+        await injector
           .get(ChargesProvider)
           .batchUpdateCharges({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charges (IDs "${chargeIds.join('", "')}")`);
           });
-        const updatedCharges = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.loadMany(res.map(c => c.id))
-          .catch(e => {
-            console.error(e);
-            throw new GraphQLError(
-              `Error loading updated charges (IDs "${chargeIds.join('", "')}")`,
-            );
-          });
-
-        // check if all charges were updated successfully
-        if (!updatedCharges) {
-          throw new GraphQLError(`Updated charges not found (IDs "${chargeIds.join('", "')}")`);
-        }
-        if (updatedCharges.some(charge => !charge || charge instanceof Error)) {
-          throw new GraphQLError(
-            `Some updated charges not found (IDs "${chargeIds.join('", "')}")`,
-          );
-        }
-
-        // Type assertion as error handling is done above
-        const charges = updatedCharges as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
 
         const indirectUpdatesPromises: Array<Promise<unknown>> = [];
 
@@ -440,7 +376,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
-        return { charges };
+        return { charges: chargeIds };
       } catch (e) {
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
@@ -454,11 +390,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     mergeCharges: async (_, { baseChargeID, chargeIdsToMerge, fields }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID);
-        if (!charge) {
-          throw new Error(`Charge not found`);
-        }
-
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
             accountantStatus: fields?.accountantApproval,
@@ -487,7 +418,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await mergeChargesExecutor(chargeIdsToMerge, baseChargeID, injector);
 
-        return { charge };
+        return { charge: baseChargeID };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
@@ -544,50 +475,53 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
   },
   CommonCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Common,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Conversion,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Conversion,
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Salary,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Salary,
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.InternalTransfer,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.InternalTransfer,
     ...commonChargeFields,
   },
   DividendCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Dividend,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Dividend,
     ...commonChargeFields,
   },
   BusinessTripCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BusinessTrip,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.BusinessTrip,
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.MonthlyVat,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.MonthlyVat,
     ...commonChargeFields,
   },
   BankDepositCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BankDeposit,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.BankDeposit,
     ...commonChargeFields,
   },
   ForeignSecuritiesCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.ForeignSecurities,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.ForeignSecurities,
     ...commonChargeFields,
   },
   CreditcardBankCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.CreditcardBankCharge,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.CreditcardBankCharge,
     ...commonChargeFields,
   },
   Invoice: {
@@ -630,11 +564,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
           return 'VALID';
         }
 
-        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context)(
-          DbCharge,
-          { insertLedgerRecordsIfNotExists: false },
-          context,
-          info,
+        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context).then(func =>
+          func(DbCharge.id, { insertLedgerRecordsIfNotExists: false }, context, info),
         );
 
         const currentRecordPromise = context.injector

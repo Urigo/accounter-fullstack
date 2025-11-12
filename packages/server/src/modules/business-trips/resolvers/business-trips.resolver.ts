@@ -39,19 +39,11 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
     updateChargeBusinessTrip: async (_, { chargeId, businessTripId = null }, { injector }) => {
       try {
-        const [updatedChargeId] = await injector
+        const [updatedCharge] = await injector
           .get(BusinessTripsProvider)
           .updateChargeBusinessTrip(chargeId, businessTripId);
-        if (updatedChargeId) {
-          return injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(updatedChargeId.charge_id)
-            .then(charge => {
-              if (charge) {
-                return charge;
-              }
-              throw new Error(`Updated charge with id ${updatedChargeId} not found`);
-            });
+        if (updatedCharge) {
+          return updatedCharge.charge_id;
         }
         throw new Error('Error updating charge business trip');
       } catch (e) {
@@ -194,18 +186,20 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
   },
   BusinessTripCharge: {
-    businessTrip: (dbCharge, _, { injector }) => {
-      if (!dbCharge.business_trip_id) {
-        return null;
-      }
+    businessTrip: async (chargeId, _, { injector }) => {
       try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge.business_trip_id) {
+          return null;
+        }
+
         return injector
           .get(BusinessTripsProvider)
-          .getBusinessTripsByIdLoader.load(dbCharge.business_trip_id)
+          .getBusinessTripsByIdLoader.load(charge.business_trip_id)
           .then(businessTrip => businessTrip ?? null);
       } catch (e) {
-        console.error(`Error finding business trip for charge id ${dbCharge.id}:`, e);
-        throw new GraphQLError(`Error finding business trip for charge id ${dbCharge.id}`);
+        console.error(`Error finding business trip for charge id ${chargeId}:`, e);
+        throw new GraphQLError(`Error finding business trip for charge id ${chargeId}`);
       }
     },
   },
