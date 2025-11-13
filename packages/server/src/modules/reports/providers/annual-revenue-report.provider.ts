@@ -44,7 +44,7 @@ LEFT JOIN LATERAL (
     WHERE er.exchange_date <= t.debit_date
     ORDER BY er.exchange_date DESC
     LIMIT 1
-) lr ON t.currency = 'ILS' OR t.currency = 'EUR' OR t.currency ='GBP' OR t.currency = 'CAD' OR t.currency = 'JPY' OR t.currency = 'AUD' OR t.currency = 'SEK'
+) lr ON t.currency = 'ILS' OR t.currency = 'EUR' OR t.currency ='GBP' OR t.currency = 'CAD' OR t.currency = 'JPY' OR t.currency = 'AUD' OR t.currency = 'SEK' OR t.currency = 'USD'
 LEFT JOIN LATERAL (
     SELECT cer.value
     FROM accounter_schema.crypto_exchange_rates cer
