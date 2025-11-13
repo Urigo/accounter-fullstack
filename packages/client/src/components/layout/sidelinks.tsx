@@ -26,6 +26,7 @@ import {
   Scale,
   Signature,
   Tags,
+  TrendingUp,
 } from 'lucide-react';
 import { ROUTES } from '../../router/routes.js';
 
@@ -115,6 +116,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.REPORTS.DEPRECIATION,
         icon: <ChartColumnDecreasing size={18} />,
+      },
+      {
+        title: 'Annual Revenue Report',
+        label: '',
+        href: ROUTES.REPORTS.ANNUAL_REVENUE,
+        icon: <TrendingUp size={18} />,
       },
       {
         title: 'Shaam 6111 Report',
