@@ -305,8 +305,8 @@ __metadata:
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
     "@ai-sdk/anthropic": "npm:2.0.42"
-    "@envelop/generic-auth": "npm:10.0.1"
-    "@envelop/graphql-modules": "npm:8.0.0"
+    "@envelop/generic-auth": "npm:11.0.0"
+    "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
     "@graphql-hive/yoga": "npm:0.42.2"
     "@graphql-yoga/plugin-defer-stream": "npm:3.16.2"
@@ -1592,19 +1592,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envelop/extended-validation@npm:^6.1.0":
-  version: 6.1.0
-  resolution: "@envelop/extended-validation@npm:6.1.0"
-  dependencies:
-    "@graphql-tools/utils": "npm:^10.0.0"
-    tslib: "npm:^2.5.0"
-  peerDependencies:
-    "@envelop/core": ^5.3.2
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/0b44a393e69dec354f6babd9f33d780d1256418dafb2953d54e187c8f7c3615c70b3bfa4aff834bff1d30783003c174f27afff17c180febf139c1336ccc91115
-  languageName: node
-  linkType: hard
-
 "@envelop/extended-validation@npm:^7.0.0":
   version: 7.0.0
   resolution: "@envelop/extended-validation@npm:7.0.0"
@@ -1618,19 +1605,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envelop/generic-auth@npm:10.0.1":
-  version: 10.0.1
-  resolution: "@envelop/generic-auth@npm:10.0.1"
+"@envelop/generic-auth@npm:11.0.0":
+  version: 11.0.0
+  resolution: "@envelop/generic-auth@npm:11.0.0"
   dependencies:
-    "@envelop/extended-validation": "npm:^6.1.0"
+    "@envelop/extended-validation": "npm:^7.0.0"
     "@graphql-tools/executor": "npm:^1.3.6"
     "@graphql-tools/utils": "npm:^10.5.1"
     "@whatwg-node/promise-helpers": "npm:^1.2.1"
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@envelop/core": ^5.3.2
+    "@envelop/core": ^5.4.0
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/0befd12cf9b9ced5a0df623573e41176f5f47bb09409ddefa258eaf9c3fe4d7e9e9da90c3dc8218c606c3e9428e83163125d847d72d6acdc832c270c189c59d0
+  checksum: 10c0/828af7788b94684744f7559ae40c7d2a5ceefbd2a356a30b1a6c39fb6d2e5f6e33671ee508791b2fb8364475f5314db26d2ebdd0b0f4c5f8dcf0e9f199f57e29
   languageName: node
   linkType: hard
 
@@ -1648,16 +1635,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@envelop/graphql-modules@npm:8.0.0":
-  version: 8.0.0
-  resolution: "@envelop/graphql-modules@npm:8.0.0"
+"@envelop/graphql-modules@npm:9.0.0":
+  version: 9.0.0
+  resolution: "@envelop/graphql-modules@npm:9.0.0"
   dependencies:
     tslib: "npm:^2.5.0"
   peerDependencies:
-    "@envelop/core": ^5.3.0
+    "@envelop/core": ^5.4.0
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-modules: ^1 || ^2.0.0 || ^3.0.0
-  checksum: 10c0/55f423778aebe2c7e9db5dea3759efdd2fa73c5960b7fb631dbd1b1cd50973ba63cdf36e7fe19ab95f2eb6a22cafb5c8ad2baa621e9b18a4a0e32413ed14a513
+  checksum: 10c0/f916952df242cd4b3d28ea1495061a925d7fb7e066fca14f98fe7a83f4c642af5e29de486683e6f67e41436ba7fbf830fb15d5de7284bd159f29aa5606c850ca
   languageName: node
   linkType: hard
 
