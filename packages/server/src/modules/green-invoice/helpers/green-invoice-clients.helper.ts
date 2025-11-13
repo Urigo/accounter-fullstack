@@ -151,7 +151,7 @@ function pickGreenInvoiceClientFields(
     /** Is the client currently active or not */
     active: businessFields.isActive,
     /** The client tax ID */
-    //   taxId: businessFields.tax_id
+    taxId: businessFields.governmentId,
     //   paymentTerms: clientFields.payment_terms,
     //   labels: clientFields.labels,
     /** Whether to send emails to the user automatically when assigning him to an invoice or not */
