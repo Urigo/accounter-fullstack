@@ -15,18 +15,29 @@ export default gql`
 
   " annual revenue report country "
   type AnnualRevenueReportCountry {
+    id: ID!
     code: String!
     name: String!
-    revenue: FinancialAmount!
+    revenueLocal: FinancialAmount!
+    revenueDefaultForeign: FinancialAmount!
     clients: [AnnualRevenueReportCountryClient!]!
   }
 
   " annual revenue report country client "
   type AnnualRevenueReportCountryClient {
-    id: UUID!
+    id: ID!
     name: String!
-    revenue: FinancialAmount!
-    transactions: [Transaction!]!
+    revenueLocal: FinancialAmount!
+    revenueDefaultForeign: FinancialAmount!
+    transactionsInfo: [AnnualRevenueReportClientTransaction!]!
+  }
+
+  " annual revenue report country client "
+  type AnnualRevenueReportClientTransaction {
+    id: ID!
+    transaction: Transaction!
+    revenueLocal: FinancialAmount!
+    revenueDefaultForeign: FinancialAmount!
   }
 
   " annual revenue report filter "
