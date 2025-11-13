@@ -1,11 +1,13 @@
 'use client';
 
 import { type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AnnualRevenueReportTransactionFragmentDoc,
   type AnnualRevenueReportTransactionFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { ROUTES } from '@/router/routes';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -23,6 +25,7 @@ import { getFragmentData, type FragmentType } from '@/gql/index.js';
     }
     transaction {
       id
+      chargeId
       effectiveDate
       eventDate
       amount {
@@ -35,6 +38,7 @@ import { getFragmentData, type FragmentType } from '@/gql/index.js';
 
 type Transaction = {
   id: string;
+  chargeId: string;
   date: string;
   description: string;
   amountILS: number;
@@ -45,6 +49,7 @@ type Transaction = {
 function transactionFromFragment(fragment: AnnualRevenueReportTransactionFragment): Transaction {
   return {
     id: fragment.transaction.id,
+    chargeId: fragment.transaction.chargeId,
     date: fragment.transaction.effectiveDate ?? fragment.transaction.eventDate,
     description: fragment.transaction.sourceDescription,
     amountILS: fragment.revenueLocal.raw,
@@ -74,7 +79,13 @@ export const AnnualRevenueTransaction = ({
 
   return (
     <div className="p-2 bg-background rounded-lg border border-border/30 text-sm">
-      <div className="flex items-start justify-between gap-2">
+      <Link
+        to={ROUTES.CHARGES.DETAIL(transaction.chargeId)}
+        target="_blank"
+        rel="noreferrer"
+        onClick={event => event.stopPropagation()}
+        className="flex items-start justify-between gap-2"
+      >
         <div className="flex-1">
           <p className="font-medium text-foreground">{transaction.description}</p>
           <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
@@ -96,7 +107,7 @@ export const AnnualRevenueTransaction = ({
             {formatCurrency(transaction.amountILS, 'ILS')}
           </p>
         </div>
-      </div>
+      </Link>
     </div>
   );
 };
