@@ -20,7 +20,7 @@ import { AnnualRevenueCountry } from './country.js';
       countries {
         code
         name
-        revenues {
+        revenue {
           raw
           formatted
           currency
@@ -28,7 +28,7 @@ import { AnnualRevenueCountry } from './country.js';
         clients {
           id
           name
-          revenues {
+          revenue {
             raw
             formatted
             currency
@@ -61,7 +61,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     rows.push('Country,Client,Transaction ID,Date,Description,Revenue ILS,Revenue USD');
 
     // Data rows
-    data.annualRevenueReport.map(country => {
+    data?.annualRevenueReport.countries.map(country => {
       country.clients.map(client => {
         if (client.transactions && client.transactions.length > 0) {
           client.transactions.map(transaction => {
@@ -125,7 +125,7 @@ export const AnnualRevenueReport = (): ReactElement => {
           {/* Main Content */}
           <main className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl">
             <div className="space-y-8">
-              {data.annualRevenueReport.map(country => (
+              {data?.annualRevenueReport.countries.map(country => (
                 <AnnualRevenueCountry key={country.code} country={country} />
               ))}
             </div>

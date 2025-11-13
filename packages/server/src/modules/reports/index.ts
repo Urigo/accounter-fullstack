@@ -1,3 +1,4 @@
+import annualRevenue from './typeDefs/annual-revenue.graphql.js';
 import balanceReport from './typeDefs/balance-report.graphql.js';
 import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
 import depreciationReport from './typeDefs/depreciation-report.graphql.js';
@@ -37,6 +38,7 @@ export const reportsModule = createModule({
     depreciationReport,
     shaam6111Report,
     uniformFormat,
+    annualRevenue,
   ],
   resolvers: [
     reportsResolvers,
