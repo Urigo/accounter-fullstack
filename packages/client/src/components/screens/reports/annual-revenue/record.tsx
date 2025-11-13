@@ -3,9 +3,9 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AnnualRevenueReportTransactionFragmentDoc,
+  AnnualRevenueReportRecordFragmentDoc,
   Currency,
-  type AnnualRevenueReportTransactionFragment,
+  type AnnualRevenueReportRecordFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { ROUTES } from '@/router/routes.js';
@@ -13,7 +13,7 @@ import { formatCurrency } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment AnnualRevenueReportTransaction on AnnualRevenueReportClientTransaction {
+  fragment AnnualRevenueReportRecord on AnnualRevenueReportClientRecord {
     id
     revenueLocal {
       raw
@@ -25,80 +25,79 @@ import { formatCurrency } from './utils.js';
       formatted
       currency
     }
-    transaction {
-      id
-      chargeId
-      effectiveDate
-      eventDate
-      amount {
-        formatted
-      }
-      sourceDescription
+    revenueOriginal {
+      raw
+      formatted
+      currency
     }
+    chargeId
+    date
+    description
+    reference
   }
 `;
 
-type Transaction = {
+type Record = {
   id: string;
   chargeId: string;
   date: string;
   description: string;
+  reference: string;
   amountILS: number;
   amountUSD: number;
   originalAmount: string;
 };
 
-function transactionFromFragment(fragment: AnnualRevenueReportTransactionFragment): Transaction {
+function recordFromFragment(fragment: AnnualRevenueReportRecordFragment): Record {
   return {
-    id: fragment.transaction.id,
-    chargeId: fragment.transaction.chargeId,
-    date: fragment.transaction.effectiveDate ?? fragment.transaction.eventDate,
-    description: fragment.transaction.sourceDescription,
+    id: fragment.id,
+    chargeId: fragment.chargeId,
+    date: fragment.date,
+    description: fragment.description ?? '',
+    reference: fragment.reference ?? '',
     amountILS: fragment.revenueLocal.raw,
     amountUSD: fragment.revenueDefaultForeign.raw,
-    originalAmount: fragment.transaction.amount.formatted,
+    originalAmount: fragment.revenueOriginal.formatted,
   };
 }
 
-export const AnnualRevenueTransaction = ({
-  transactionData,
+export const AnnualRevenueRecord = ({
+  recordData,
 }: {
-  transactionData: FragmentType<typeof AnnualRevenueReportTransactionFragmentDoc>;
+  recordData: FragmentType<typeof AnnualRevenueReportRecordFragmentDoc>;
 }): ReactElement => {
-  const transactionFragment = getFragmentData(
-    AnnualRevenueReportTransactionFragmentDoc,
-    transactionData,
-  );
-  const transaction = transactionFromFragment(transactionFragment);
+  const recordFragment = getFragmentData(AnnualRevenueReportRecordFragmentDoc, recordData);
+  const record = recordFromFragment(recordFragment);
 
   return (
     <div className="p-2 bg-background rounded-lg border border-border/30 text-sm">
       <Link
-        to={ROUTES.CHARGES.DETAIL(transaction.chargeId)}
+        to={ROUTES.CHARGES.DETAIL(record.chargeId)}
         target="_blank"
         rel="noreferrer"
         onClick={event => event.stopPropagation()}
         className="flex items-start justify-between gap-2"
       >
         <div className="flex-1">
-          <p className="font-medium text-foreground">{transaction.description}</p>
+          <p className="font-medium text-foreground">{record.reference}</p>
+          <p className="font-medium text-foreground">{record.description}</p>
           <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-            <span>{transaction.id}</span>
-            <span>{transaction.date}</span>
+            <span>{record.chargeId}</span>
+            <span>{record.date}</span>
           </div>
         </div>
         <div className="invisible md:visible md:text-right flex-shrink-0">
           <p className="text-sm font-medium text-foreground">
-            {formatCurrency(transaction.amountILS, Currency.Ils)}
+            {formatCurrency(record.amountILS, Currency.Ils)}
           </p>
           <p className="text-xs text-muted-foreground">
-            {formatCurrency(transaction.amountUSD, Currency.Usd)}
+            {formatCurrency(record.amountUSD, Currency.Usd)}
           </p>
-          <p className="text-xs text-muted-foreground">{transaction.originalAmount}</p>
+          <p className="text-xs text-muted-foreground">{record.originalAmount}</p>
         </div>
         <div className="md:invisible ml-2 text-right">
           <p className="text-xs font-medium text-foreground">
-            {formatCurrency(transaction.amountILS, Currency.Ils)}
+            {formatCurrency(record.amountILS, Currency.Ils)}
           </p>
         </div>
       </Link>

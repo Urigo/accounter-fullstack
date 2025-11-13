@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card.js';
 import { getFragmentData, type FragmentType } from '@/gql/fragment-masking.js';
@@ -30,6 +30,9 @@ import { formatCurrency } from './utils.js';
     }
     clients {
       id
+      revenueDefaultForeign {
+        raw
+      }
       ...AnnualRevenueReportClient
     }
   }
@@ -75,6 +78,12 @@ export const AnnualRevenueCountry = ({
   };
 
   const totalClientsRevenue = { ILS: country.revenues.ILS, USD: country.revenues.USD };
+
+  const sortedClients = useMemo(() => {
+    return country.clients
+      .slice()
+      .sort((a, b) => b.data.revenueDefaultForeign.raw - a.data.revenueDefaultForeign.raw);
+  }, [country.clients]);
 
   return (
     <Card key={country.code} className="border border-border">
@@ -131,7 +140,7 @@ export const AnnualRevenueCountry = ({
       {expanded && (
         <div className="border-t border-border">
           <div className="space-y-2 p-3 bg-muted/30">
-            {country.clients.map(client => (
+            {sortedClients.map(client => (
               <AnnualRevenueClient key={client.id} clientData={client.data} />
             ))}
 
