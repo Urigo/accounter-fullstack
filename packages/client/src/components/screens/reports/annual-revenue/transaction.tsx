@@ -7,7 +7,7 @@ import {
   type AnnualRevenueReportTransactionFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
-import { ROUTES } from '@/router/routes';
+import { ROUTES } from '@/router/routes.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
