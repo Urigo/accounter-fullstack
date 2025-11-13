@@ -4,10 +4,12 @@ import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AnnualRevenueReportTransactionFragmentDoc,
+  Currency,
   type AnnualRevenueReportTransactionFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { ROUTES } from '@/router/routes.js';
+import { formatCurrency } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -69,14 +71,6 @@ export const AnnualRevenueTransaction = ({
   );
   const transaction = transactionFromFragment(transactionFragment);
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   return (
     <div className="p-2 bg-background rounded-lg border border-border/30 text-sm">
       <Link
@@ -95,16 +89,16 @@ export const AnnualRevenueTransaction = ({
         </div>
         <div className="invisible md:visible md:text-right flex-shrink-0">
           <p className="text-sm font-medium text-foreground">
-            {formatCurrency(transaction.amountILS, 'ILS')}
+            {formatCurrency(transaction.amountILS, Currency.Ils)}
           </p>
           <p className="text-xs text-muted-foreground">
-            {formatCurrency(transaction.amountUSD, 'USD')}
+            {formatCurrency(transaction.amountUSD, Currency.Usd)}
           </p>
           <p className="text-xs text-muted-foreground">{transaction.originalAmount}</p>
         </div>
         <div className="md:invisible ml-2 text-right">
           <p className="text-xs font-medium text-foreground">
-            {formatCurrency(transaction.amountILS, 'ILS')}
+            {formatCurrency(transaction.amountILS, Currency.Ils)}
           </p>
         </div>
       </Link>

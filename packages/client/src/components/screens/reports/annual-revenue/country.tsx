@@ -6,9 +6,11 @@ import { Card } from '@/components/ui/card.js';
 import { getFragmentData, type FragmentType } from '@/gql/fragment-masking.js';
 import {
   AnnualRevenueReportCountryFragmentDoc,
+  Currency,
   type AnnualRevenueReportCountryFragment,
 } from '@/gql/graphql.js';
 import { AnnualRevenueClient } from './client.js';
+import { formatCurrency } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -72,14 +74,6 @@ export const AnnualRevenueCountry = ({
     setExpanded(prev => !prev);
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const totalClientsRevenue = { ILS: country.revenues.ILS, USD: country.revenues.USD };
 
   return (
@@ -105,13 +99,13 @@ export const AnnualRevenueCountry = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">ILS</p>
             <p className="font-semibold text-foreground">
-              {formatCurrency(country.revenues.ILS, 'ILS')}
+              {formatCurrency(country.revenues.ILS, Currency.Ils)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">USD</p>
             <p className="font-semibold text-foreground">
-              {formatCurrency(country.revenues.USD, 'USD')}
+              {formatCurrency(country.revenues.USD, Currency.Usd)}
             </p>
           </div>
         </div>
@@ -122,13 +116,13 @@ export const AnnualRevenueCountry = ({
         <div>
           <p className="text-xs text-muted-foreground mb-1">ILS</p>
           <p className="font-semibold text-foreground">
-            {formatCurrency(country.revenues.ILS, 'ILS')}
+            {formatCurrency(country.revenues.ILS, Currency.Ils)}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground mb-1">USD</p>
           <p className="font-semibold text-foreground">
-            {formatCurrency(country.revenues.USD, 'USD')}
+            {formatCurrency(country.revenues.USD, Currency.Usd)}
           </p>
         </div>
       </div>
@@ -148,21 +142,21 @@ export const AnnualRevenueCountry = ({
                 <div className="hidden md:grid grid-cols-2 gap-4 text-right">
                   <div>
                     <p className="font-semibold text-foreground">
-                      {formatCurrency(totalClientsRevenue.ILS, 'ILS')}
+                      {formatCurrency(totalClientsRevenue.ILS, Currency.Ils)}
                     </p>
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">
-                      {formatCurrency(totalClientsRevenue.USD, 'USD')}
+                      {formatCurrency(totalClientsRevenue.USD, Currency.Usd)}
                     </p>
                   </div>
                 </div>
                 <div className="md:hidden ml-4 text-right">
                   <p className="text-sm font-semibold text-foreground">
-                    {formatCurrency(totalClientsRevenue.ILS, 'ILS')}
+                    {formatCurrency(totalClientsRevenue.ILS, Currency.Ils)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatCurrency(totalClientsRevenue.USD, 'USD')}
+                    {formatCurrency(totalClientsRevenue.USD, Currency.Usd)}
                   </p>
                 </div>
               </div>

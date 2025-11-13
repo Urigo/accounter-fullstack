@@ -4,10 +4,12 @@ import { useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   AnnualRevenueReportClientFragmentDoc,
+  Currency,
   type AnnualRevenueReportClientFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
-import { AnnualRevenueTransaction } from './transaction';
+import { AnnualRevenueTransaction } from './transaction.js';
+import { formatCurrency } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -69,19 +71,11 @@ export const AnnualRevenueClient = ({
     setExpanded(prev => !prev);
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   return (
     <div>
       {/* Client Header */}
       <button
-        onClick={() => toggleClient()}
+        onClick={toggleClient}
         className="w-full flex items-center justify-between p-2 bg-background rounded-lg border border-border/50 hover:bg-accent/5 transition-colors"
       >
         <div className="flex items-center gap-3 flex-1">
@@ -102,22 +96,22 @@ export const AnnualRevenueClient = ({
         <div className="hidden md:grid grid-cols-2 gap-4 text-right flex-shrink-0">
           <div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(client.revenueILS, 'ILS')}
+              {formatCurrency(client.revenueILS, Currency.Ils)}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(client.revenueUSD, 'USD')}
+              {formatCurrency(client.revenueUSD, Currency.Usd)}
             </p>
           </div>
         </div>
 
         <div className="md:hidden ml-4 text-right">
           <p className="text-xs font-medium text-foreground">
-            {formatCurrency(client.revenueILS, 'ILS')}
+            {formatCurrency(client.revenueILS, Currency.Ils)}
           </p>
           <p className="text-xs text-muted-foreground">
-            {formatCurrency(client.revenueUSD, 'USD')}
+            {formatCurrency(client.revenueUSD, Currency.Usd)}
           </p>
         </div>
       </button>
