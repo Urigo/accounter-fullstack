@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Download } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
@@ -18,25 +18,42 @@ import { AnnualRevenueCountry } from './country.js';
       id
       year
       countries {
-        code
+        id
         name
-        revenue {
+        revenueLocal {
           raw
-          formatted
+          currency
+        }
+        revenueDefaultForeign {
+          raw
           currency
         }
         clients {
           id
           name
-          revenue {
+          revenueLocal {
             raw
-            formatted
-            currency
           }
-          transactions {
+          revenueDefaultForeign {
+            raw
+          }
+          transactionsInfo {
             id
+            transaction {
+              id
+              effectiveDate
+              eventDate
+              sourceDescription
+            }
+            revenueLocal {
+              raw
+            }
+            revenueDefaultForeign {
+              raw
+            }
           }
         }
+        ...AnnualRevenueReportCountry
       }
     }
   }
@@ -54,7 +71,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     },
   });
 
-  const downloadCSV = () => {
+  const downloadCSV = useCallback(() => {
     const rows: string[] = [];
 
     // Header
@@ -62,11 +79,17 @@ export const AnnualRevenueReport = (): ReactElement => {
 
     // Data rows
     data?.annualRevenueReport.countries.map(country => {
+      rows.push(
+        `${country.name},,,,TOTAL,${country.revenueLocal.raw},${country.revenueDefaultForeign.raw}`,
+      );
       country.clients.map(client => {
-        if (client.transactions && client.transactions.length > 0) {
-          client.transactions.map(transaction => {
+        if (client.transactionsInfo && client.transactionsInfo.length > 0) {
+          rows.push(
+            `${country.name},${client.name},,,TOTAL,${client.revenueLocal.raw},${client.revenueDefaultForeign.raw}`,
+          );
+          client.transactionsInfo.map(transaction => {
             rows.push(
-              `${country.name},${client.name},${transaction.id},${transaction.date},${transaction.description},${transaction.amountILS},${transaction.amountUSD}`,
+              `${country.name},${client.name},${transaction.id},${transaction.transaction.effectiveDate ?? transaction.transaction.eventDate},${transaction.transaction.sourceDescription},${transaction.revenueLocal.raw},${transaction.revenueDefaultForeign.raw}`,
             );
           });
         } else {
@@ -85,7 +108,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [data]);
 
   const { setFiltersContext } = useContext(FiltersContext);
 
@@ -126,7 +149,7 @@ export const AnnualRevenueReport = (): ReactElement => {
           <main className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl">
             <div className="space-y-8">
               {data?.annualRevenueReport.countries.map(country => (
-                <AnnualRevenueCountry key={country.code} country={country} />
+                <AnnualRevenueCountry key={country.id} countryData={country} />
               ))}
             </div>
           </main>

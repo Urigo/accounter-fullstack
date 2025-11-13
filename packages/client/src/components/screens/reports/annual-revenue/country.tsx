@@ -3,31 +3,70 @@
 import { useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card.js';
-import { AnnualRevenueClient } from './client';
+import { getFragmentData, type FragmentType } from '@/gql/fragment-masking.js';
+import {
+  AnnualRevenueReportCountryFragmentDoc,
+  type AnnualRevenueReportCountryFragment,
+} from '@/gql/graphql.js';
+import { AnnualRevenueClient } from './client.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment AnnualRevenueReportCountry on AnnualRevenueReportCountry {
+    id
+    code
+    name
+    revenueLocal {
+      raw
+      formatted
+      currency
+    }
+    revenueDefaultForeign {
+      raw
+      formatted
+      currency
+    }
+    clients {
+      id
+      ...AnnualRevenueReportClient
+    }
+  }
+`;
+
+type Country = {
+  code: string;
+  name: string;
+  revenues: { ILS: number; USD: number };
+  clients: Array<{
+    id: string;
+    data: AnnualRevenueReportCountryFragment['clients'][number];
+  }>;
+};
+
+function countryFromFragment(fragment: AnnualRevenueReportCountryFragment): Country {
+  return {
+    code: fragment.code,
+    name: fragment.name,
+    revenues: {
+      ILS: fragment.revenueLocal.raw,
+      USD: fragment.revenueDefaultForeign.raw,
+    },
+    clients: fragment.clients.map(c => ({
+      id: c.id,
+      data: c,
+    })),
+  };
+}
 
 export const AnnualRevenueCountry = ({
-  country,
+  countryData,
 }: {
-  country: {
-    code: string;
-    name: string;
-    revenues: { ILS: number; USD: number };
-    clients: Array<{
-      id: number;
-      name: string;
-      revenueILS: number;
-      revenueUSD: number;
-      transactions: Array<{
-        id: string;
-        date: string;
-        description: string;
-        amountILS: number;
-        amountUSD: number;
-      }>;
-    }>;
-  };
+  countryData: FragmentType<typeof AnnualRevenueReportCountryFragmentDoc>;
 }): ReactElement => {
   const [expanded, setExpanded] = useState<boolean>(false);
+
+  const countryFragment = getFragmentData(AnnualRevenueReportCountryFragmentDoc, countryData);
+  const country = countryFromFragment(countryFragment);
 
   const toggleCountry = () => {
     setExpanded(prev => !prev);
@@ -41,13 +80,7 @@ export const AnnualRevenueCountry = ({
     }).format(amount);
   };
 
-  const totalClientsRevenue = country.clients.reduce(
-    (sum, client) => ({
-      ILS: sum.ILS + client.revenueILS,
-      USD: sum.USD + client.revenueUSD,
-    }),
-    { ILS: 0, USD: 0 },
-  );
+  const totalClientsRevenue = { ILS: country.revenues.ILS, USD: country.revenues.USD };
 
   return (
     <Card key={country.code} className="border border-border">
@@ -105,7 +138,7 @@ export const AnnualRevenueCountry = ({
         <div className="border-t border-border">
           <div className="space-y-2 p-6 bg-muted/30">
             {country.clients.map(client => (
-              <AnnualRevenueClient key={client.id} client={client} />
+              <AnnualRevenueClient key={client.id} clientData={client.data} />
             ))}
 
             {/* Clients Subtotal */}

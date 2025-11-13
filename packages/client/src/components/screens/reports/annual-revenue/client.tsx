@@ -2,25 +2,68 @@
 
 import { useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  AnnualRevenueReportClientFragmentDoc,
+  type AnnualRevenueReportClientFragment,
+} from '@/gql/graphql.js';
+import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { AnnualRevenueTransaction } from './transaction';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment AnnualRevenueReportClient on AnnualRevenueReportCountryClient {
+    id
+    name
+    revenueLocal {
+      raw
+      formatted
+      currency
+    }
+    revenueDefaultForeign {
+      raw
+      formatted
+      currency
+    }
+    transactionsInfo {
+      id
+      ...AnnualRevenueReportTransaction
+    }
+  }
+`;
+
+type Client = {
+  id: string;
+  name: string;
+  revenueILS: number;
+  revenueUSD: number;
+  transactions: Array<{
+    id: string;
+    data: AnnualRevenueReportClientFragment['transactionsInfo'][number];
+  }>;
+};
+
+function clientFromFragment(fragment: AnnualRevenueReportClientFragment): Client {
+  return {
+    id: fragment.id,
+    name: fragment.name,
+    revenueILS: fragment.revenueLocal.raw,
+    revenueUSD: fragment.revenueDefaultForeign.raw,
+    transactions: fragment.transactionsInfo.map(t => ({
+      id: t.id,
+      data: t,
+    })),
+  };
+}
 
 export const AnnualRevenueClient = ({
-  client,
+  clientData,
 }: {
-  client: {
-    id: number;
-    name: string;
-    revenueILS: number;
-    revenueUSD: number;
-    transactions: Array<{
-      id: string;
-      date: string;
-      description: string;
-      amountILS: number;
-      amountUSD: number;
-    }>;
-  };
+  clientData: FragmentType<typeof AnnualRevenueReportClientFragmentDoc>;
 }): ReactElement => {
   const [expanded, setExpanded] = useState<boolean>(false);
+
+  const clientFragment = getFragmentData(AnnualRevenueReportClientFragmentDoc, clientData);
+  const client = clientFromFragment(clientFragment);
 
   const toggleClient = () => {
     setExpanded(prev => !prev);
@@ -35,7 +78,7 @@ export const AnnualRevenueClient = ({
   };
 
   return (
-    <div key={client.id}>
+    <div>
       {/* Client Header */}
       <button
         onClick={() => toggleClient()}
@@ -83,33 +126,7 @@ export const AnnualRevenueClient = ({
       {expanded && client.transactions && (
         <div className="mt-2 ml-3 space-y-2 border-l-2 border-border/50 pl-4">
           {client.transactions.map(transaction => (
-            <div
-              key={transaction.id}
-              className="p-3 bg-background rounded-lg border border-border/30 text-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{transaction.description}</p>
-                  <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                    <span>{transaction.id}</span>
-                    <span>{transaction.date}</span>
-                  </div>
-                </div>
-                <div className="hidden md:text-right flex-shrink-0">
-                  <p className="text-sm font-medium text-foreground">
-                    {formatCurrency(transaction.amountILS, 'ILS')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(transaction.amountUSD, 'USD')}
-                  </p>
-                </div>
-                <div className="md:hidden ml-2 text-right">
-                  <p className="text-xs font-medium text-foreground">
-                    {formatCurrency(transaction.amountILS, 'ILS')}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <AnnualRevenueTransaction key={transaction.id} transactionData={transaction.data} />
           ))}
         </div>
       )}
