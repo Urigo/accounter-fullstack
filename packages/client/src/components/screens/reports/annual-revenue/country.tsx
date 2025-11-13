@@ -87,13 +87,13 @@ export const AnnualRevenueCountry = ({
       {/* Country Header */}
       <button
         onClick={() => toggleCountry()}
-        className="w-full px-6 py-4 hover:bg-accent/5 transition-colors flex items-center justify-between"
+        className="w-full px-4 py-2 hover:bg-accent/5 transition-colors flex items-center justify-between"
       >
-        <div className="flex items-center gap-4 flex-1">
+        <div className="flex items-center gap-2 flex-1">
           {expanded ? (
-            <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            <ChevronDown className="size-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+            <ChevronRight className="size-5 text-muted-foreground flex-shrink-0" />
           )}
           <div className="text-left">
             <p className="font-semibold text-foreground text-lg">{country.name}</p>
@@ -101,7 +101,7 @@ export const AnnualRevenueCountry = ({
           </div>
         </div>
 
-        <div className="hidden md:grid grid-cols-2 gap-8 text-right flex-shrink-0">
+        <div className="hidden md:grid grid-cols-2 gap-4 text-right flex-shrink-0">
           <div>
             <p className="text-sm text-muted-foreground mb-1">ILS</p>
             <p className="font-semibold text-foreground">
@@ -118,7 +118,7 @@ export const AnnualRevenueCountry = ({
       </button>
 
       {/* Mobile Revenue Summary */}
-      <div className="md:hidden px-6 py-3 bg-accent/5 border-t border-border flex gap-8">
+      <div className="md:hidden px-2 py-2 bg-accent/5 border-t border-border flex gap-4">
         <div>
           <p className="text-xs text-muted-foreground mb-1">ILS</p>
           <p className="font-semibold text-foreground">
@@ -136,16 +136,16 @@ export const AnnualRevenueCountry = ({
       {/* Expanded Clients List */}
       {expanded && (
         <div className="border-t border-border">
-          <div className="space-y-2 p-6 bg-muted/30">
+          <div className="space-y-2 p-3 bg-muted/30">
             {country.clients.map(client => (
               <AnnualRevenueClient key={client.id} clientData={client.data} />
             ))}
 
             {/* Clients Subtotal */}
             <div className="pt-2 border-t border-border/50 mt-4">
-              <div className="flex items-center justify-between p-3">
+              <div className="flex items-center justify-between p-2">
                 <p className="font-semibold text-foreground text-sm">Clients Subtotal</p>
-                <div className="hidden md:grid grid-cols-2 gap-8 text-right">
+                <div className="hidden md:grid grid-cols-2 gap-4 text-right">
                   <div>
                     <p className="font-semibold text-foreground">
                       {formatCurrency(totalClientsRevenue.ILS, 'ILS')}

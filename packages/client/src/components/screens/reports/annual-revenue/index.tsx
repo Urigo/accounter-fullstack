@@ -156,8 +156,8 @@ export const AnnualRevenueReport = (): ReactElement => {
       ) : (
         <div className="min-h-screen bg-background">
           {/* Main Content */}
-          <main className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl">
-            <div className="space-y-8">
+          <main className="container mx-auto px-2 py-2 max-w-7xl">
+            <div className="space-y-2">
               {data?.annualRevenueReport.countries.map(country => (
                 <AnnualRevenueCountry key={country.id} countryData={country} />
               ))}

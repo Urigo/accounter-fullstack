@@ -73,8 +73,8 @@ export const AnnualRevenueTransaction = ({
   };
 
   return (
-    <div className="p-3 bg-background rounded-lg border border-border/30 text-sm">
-      <div className="flex items-start justify-between gap-4">
+    <div className="p-2 bg-background rounded-lg border border-border/30 text-sm">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <p className="font-medium text-foreground">{transaction.description}</p>
           <div className="flex gap-4 mt-1 text-xs text-muted-foreground">

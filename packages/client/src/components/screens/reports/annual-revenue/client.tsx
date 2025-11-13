@@ -82,13 +82,13 @@ export const AnnualRevenueClient = ({
       {/* Client Header */}
       <button
         onClick={() => toggleClient()}
-        className="w-full flex items-center justify-between p-3 bg-background rounded-lg border border-border/50 hover:bg-accent/5 transition-colors"
+        className="w-full flex items-center justify-between p-2 bg-background rounded-lg border border-border/50 hover:bg-accent/5 transition-colors"
       >
         <div className="flex items-center gap-3 flex-1">
           {expanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <ChevronDown className="size-4 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <ChevronRight className="size-4 text-muted-foreground flex-shrink-0" />
           )}
           <div className="text-left">
             <p className="font-medium text-foreground text-sm">{client.name}</p>
@@ -99,7 +99,7 @@ export const AnnualRevenueClient = ({
           </div>
         </div>
 
-        <div className="hidden md:grid grid-cols-2 gap-8 text-right flex-shrink-0">
+        <div className="hidden md:grid grid-cols-2 gap-4 text-right flex-shrink-0">
           <div>
             <p className="text-xs text-muted-foreground">
               {formatCurrency(client.revenueILS, 'ILS')}
@@ -124,7 +124,7 @@ export const AnnualRevenueClient = ({
 
       {/* Expanded Transactions */}
       {expanded && client.transactions && (
-        <div className="mt-2 ml-3 space-y-2 border-l-2 border-border/50 pl-4">
+        <div className="mt-3 ml-2 space-y-3 border-l-2 border-border/50 pl-2">
           {client.transactions.map(transaction => (
             <AnnualRevenueTransaction key={transaction.id} transactionData={transaction.data} />
           ))}
