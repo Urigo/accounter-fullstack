@@ -307,25 +307,23 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 />
               )}
 
-              {isLocalEntity && (
-                <FormField
-                  control={form.control}
-                  name="govId"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel>Government ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="Enter Government ID"
-                          className={dirtyFieldMarker(fieldState)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="govId"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Government ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter Government ID"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
