@@ -1,21 +1,26 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
+import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
+import { basicTransactionsValidation } from '@modules/transactions/helpers/validation.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
-import { ChargeSortByField, ChargeTypeEnum, DocumentType } from '@shared/enums';
+import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import {
   batchUpdateChargesBusinessTrip,
   batchUpdateChargesTags,
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
+import { getChargeBusinesses } from '../helpers/charge-summaries.helper.js';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
@@ -28,7 +33,7 @@ import type {
   IBatchUpdateChargesParams,
   IUpdateChargeParams,
 } from '../types.js';
-import { commonChargeFields, commonDocumentsFields, safeGetChargeById } from './common.js';
+import { commonChargeFields, commonDocumentsFields, safeGetChargeTempById } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
@@ -546,28 +551,21 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   ChargeMetadata: {
     createdAt: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).created_at,
+      (await safeGetChargeTempById(chargeId, injector)).created_at,
     updatedAt: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).updated_at,
+      (await safeGetChargeTempById(chargeId, injector)).updated_at,
     invoicesCount: async (chargeId, _, { injector }) => {
       const documents = await injector
         .get(DocumentsProvider)
         .getDocumentsByChargeIdLoader.load(chargeId);
-      const invoicesCount = documents.filter(
-        doc =>
-          doc.type === DocumentType.Invoice ||
-          doc.type === DocumentType.CreditInvoice ||
-          doc.type === DocumentType.InvoiceReceipt,
-      ).length;
+      const invoicesCount = documents.filter(doc => isInvoice(doc.type)).length;
       return invoicesCount;
     },
     receiptsCount: async (chargeId, _, { injector }) => {
       const documents = await injector
         .get(DocumentsProvider)
         .getDocumentsByChargeIdLoader.load(chargeId);
-      const receiptsCount = documents.filter(
-        doc => doc.type === DocumentType.Receipt || doc.type === DocumentType.InvoiceReceipt,
-      ).length;
+      const receiptsCount = documents.filter(doc => isReceipt(doc.type)).length;
       return receiptsCount;
     },
     documentsCount: async (chargeId, _, { injector }) => {
@@ -576,18 +574,44 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .getDocumentsByChargeIdLoader.load(chargeId);
       return documents.length;
     },
-    invalidDocuments: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).invalid_documents ?? true,
-    openDocuments: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).open_docs_flag ?? false,
+    invalidDocuments: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      if (documents.length === 0) {
+        return false;
+      }
+      return documents.some(doc => !basicDocumentValidation(doc));
+    },
+    openDocuments: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      if (documents.length === 0) {
+        return false;
+      }
+      const issuedDocuments = await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByIdLoader.loadMany(documents.map(doc => doc.id));
+      return issuedDocuments.some(
+        issuedDoc => issuedDoc && !(issuedDoc instanceof Error) && issuedDoc.status === 'OPEN',
+      );
+    },
     transactionsCount: async (chargeId, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
         .transactionsByChargeIDLoader.load(chargeId);
       return transactions.length;
     },
-    invalidTransactions: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).invalid_transactions ?? true,
+    invalidTransactions: async (chargeId, _, { injector }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId);
+      if (transactions.length === 0) {
+        return false;
+      }
+      return transactions.some(t => !basicTransactionsValidation(t));
+    },
     ledgerCount: async (chargeId, _, { injector }) => {
       const ledgerRecords = await injector
         .get(LedgerProvider)
@@ -596,12 +620,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     invalidLedger: async (chargeId, _, context, info) => {
       try {
-        const charge = await safeGetChargeById(chargeId, context.injector);
-        if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+        if (await isChargeLocked(chargeId, context.injector, context.adminContext.ledgerLock)) {
           return 'VALID';
         }
 
-        const generatedLedgerPromise = ledgerGenerationByCharge(charge, context).then(func =>
+        const generatedLedgerPromise = ledgerGenerationByCharge(chargeId, context).then(func =>
           func(chargeId, { insertLedgerRecordsIfNotExists: false }, context, info),
         );
 
@@ -647,8 +670,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     optionalBusinesses: async (chargeId, _, { injector }) => {
-      const charge = await safeGetChargeById(chargeId, injector);
-      return charge.business_array && charge.business_array.length > 1 ? charge.business_array : [];
+      const { allBusinessIds } = await getChargeBusinesses(chargeId, injector);
+      return allBusinessIds.length > 1 ? allBusinessIds : [];
     },
   },
 };

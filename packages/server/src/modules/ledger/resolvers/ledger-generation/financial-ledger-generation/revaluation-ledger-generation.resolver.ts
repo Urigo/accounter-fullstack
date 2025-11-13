@@ -1,6 +1,6 @@
 import { endOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
@@ -16,10 +16,10 @@ export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';
 
 export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
-  IGetChargesByIdsResult,
+  Awaited<ResolversTypes['Charge']>,
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
     const {
       injector,
@@ -30,6 +30,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
         },
       },
     } = context;
+    const charge = await injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -156,7 +157,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
         localCurrencyDebitAmount1: Math.abs(revaluationDiff),
         description: `${REVALUATION_LEDGER_DESCRIPTION} "${account.name}"`,
         ownerId: charge.owner_id,
-        chargeId: charge.id,
+        chargeId,
         currencyRate: rate,
       };
 
@@ -165,7 +166,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     entriesPromises.push(...foreignAccountsLedger);
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -176,12 +177,12 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     await Promise.all(entriesPromises);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(chargeId, ledgerEntries, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      chargeId,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],
@@ -193,7 +194,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   } catch (e) {
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${charge.id}"\n${e}`,
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
     };
   }
 };

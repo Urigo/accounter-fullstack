@@ -276,7 +276,6 @@ export class DocumentsProvider {
         this.cache.set('all-documents', res);
         res.map(doc => {
           this.cache.set(`document-${doc.id}`, doc);
-          this.cache.delete(`document-by-charge-${doc.charge_id}`);
         });
       }
       return res;
@@ -290,7 +289,7 @@ export class DocumentsProvider {
 
       return chargeIds.map(id =>
         docs.filter(doc => {
-          this.cache.set(`document-${doc.id}`, doc);
+          this.getDocumentsByIdLoader.prime(doc.id, doc);
           return doc.charge_id === id;
         }),
       );
@@ -303,7 +302,7 @@ export class DocumentsProvider {
   public getDocumentsByChargeIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
     {
-      cacheKeyFn: key => `document-by-charge-${key}`,
+      cacheKeyFn: key => `documents-by-charge-${key}`,
       cacheMap: this.cache,
     },
   );
@@ -323,8 +322,7 @@ export class DocumentsProvider {
     };
     return getDocumentsByFilters.run(fullParams, this.dbProvider).then(res => {
       res.map(doc => {
-        this.cache.set(`document-${doc.id}`, doc);
-        this.cache.delete(`document-by-charge-${doc.charge_id}`);
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
       });
       return res;
     });
@@ -349,8 +347,7 @@ export class DocumentsProvider {
     };
     return getDocumentsByExtendedFilters.run(fullParams, this.dbProvider).then(res => {
       res.map(doc => {
-        this.cache.set(`document-${doc.id}`, doc);
-        this.cache.delete(`document-by-charge-${doc.charge_id}`);
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
       });
       return res;
     });
@@ -360,6 +357,7 @@ export class DocumentsProvider {
     const uniqueIDs = [...new Set(ids)];
     try {
       const docs = await getDocumentsByIds.run({ Ids: uniqueIDs }, this.dbProvider);
+      docs.map(doc => this.getDocumentsByIdLoader.prime(doc.id, doc));
 
       return ids.map(id => docs.find(doc => doc.id === id));
     } catch (e) {
@@ -380,6 +378,7 @@ export class DocumentsProvider {
     const uniqueIDs = [...new Set(businessIds)];
     try {
       const docs = await getDocumentsByBusinessIds.run({ Ids: uniqueIDs }, this.dbProvider);
+      docs.map(doc => this.getDocumentsByIdLoader.prime(doc.id, doc));
 
       return businessIds.map(id =>
         docs.filter(doc => doc.creditor_id === id || doc.debtor_id === id),
@@ -405,7 +404,7 @@ export class DocumentsProvider {
         { hashes: uniqueHashes.map(hash => hash.toString()) },
         this.dbProvider,
       );
-
+      docs.map(doc => this.getDocumentsByIdLoader.prime(doc.id, doc));
       return hashes.map(hash => docs.find(doc => doc.file_hash === hash.toString()));
     } catch (e) {
       console.error(e);

@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { getChargeBusinesses } from '@modules/charges/helpers/charge-summaries.helper.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -39,7 +40,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     },
   } = context;
 
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const charge = await context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -68,9 +69,10 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       .get(FinancialAccountsProvider)
       .getFinancialAccountsByOwnerIdLoader.load(defaultAdminBusinessId);
 
-    const [transactions, financialAccounts] = await Promise.all([
+    const [transactions, financialAccounts, { mainBusiness }] = await Promise.all([
       transactionsPromise,
       financialAccountsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const foreignSecuritiesAccountId = financialAccounts.find(
@@ -96,7 +98,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
           context,
           chargeId,
           charge.owner_id,
-          charge.business_id ?? undefined,
+          mainBusiness ?? undefined,
         )
           .then(ledgerEntry => {
             financialAccountLedgerEntries.push(ledgerEntry);
@@ -167,7 +169,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         miscExpensesLedgerEntries.push(entry);
@@ -189,7 +191,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       ...miscExpensesLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
@@ -205,7 +207,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     );
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

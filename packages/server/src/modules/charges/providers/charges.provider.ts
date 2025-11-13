@@ -118,6 +118,8 @@ type IGetAdjustedChargesByFiltersParams = Optional<
 //     DELETE FROM accounter_schema.charges
 //     WHERE id IN $$chargeIds;`;
 
+const chargeIdsSet = new Set<string>();
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -126,6 +128,12 @@ export class ChargesProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
+    ids.map(id => {
+      if (chargeIdsSet.has(id)) {
+        console.error(`Duplicate charge ID requested in loader: "${id}"`);
+      }
+      chargeIdsSet.add(id);
+    });
     const charges = (await getChargesByIds.run(
       {
         chargeIds: ids,

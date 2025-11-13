@@ -97,7 +97,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       }
       return injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
+        .taxCategoryByChargeIDsLoader.load(chargeId)
         .then(res => res?.id)
         .then(res => {
           if (res) {
@@ -231,7 +231,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const feeTransactionsPromises = feeTransactions.map(async transaction => {
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
-          charge,
+          chargeId,
           context,
         ).catch(e => {
           if (e instanceof LedgerError) {
@@ -257,7 +257,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
@@ -348,11 +348,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         ...miscLedgerEntries,
       ];
       if (records.length && insertLedgerRecordsIfNotExists) {
-        await storeInitialGeneratedRecords(charge.id, records, context);
+        await storeInitialGeneratedRecords(chargeId, records, context);
       }
       return {
         records: ledgerProtoToRecordsConverter(records),
-        charge,
+        chargeId,
         balance: { balanceSum, isBalanced, unbalancedEntities },
         errors: Array.from(errors),
       };
@@ -377,12 +377,12 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
 
           if (insertLedgerRecordsIfNotExists) {
-            await storeInitialGeneratedRecords(charge.id, records, context);
+            await storeInitialGeneratedRecords(chargeId, records, context);
           }
 
           return {
             records: ledgerProtoToRecordsConverter(records),
-            charge,
+            chargeId,
             balance: { balanceSum, isBalanced, unbalancedEntities },
             errors: Array.from(errors),
           };
@@ -509,7 +509,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
@@ -520,7 +520,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

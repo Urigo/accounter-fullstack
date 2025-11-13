@@ -1,11 +1,17 @@
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { ChargesProvider } from '../providers/charges.provider.js';
+import { ChargesTempProvider } from '../providers/charges-temp.provider.js';
+import { getChargeBusinesses } from './charge-summaries.helper.js';
 
 export async function getChargeType(
   chargeId: string,
   context: GraphQLModules.Context,
 ): Promise<ChargeTypeEnum> {
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const [charge, { allBusinessIds, mainBusiness }, businessTrip] = await Promise.all([
+    context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId),
+    getChargeBusinesses(chargeId, context.injector),
+    context.injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(chargeId),
+  ]);
 
   switch (charge.type) {
     case 'CONVERSION':
@@ -18,7 +24,7 @@ export async function getChargeType(
       return ChargeTypeEnum.BankDeposit;
   }
 
-  if (charge.business_trip_id) {
+  if (businessTrip) {
     return ChargeTypeEnum.BusinessTrip;
   }
 
@@ -32,36 +38,34 @@ export async function getChargeType(
 
   if (
     bankDepositBusinessId &&
-    (charge.business_id === bankDepositBusinessId ||
-      charge.business_array?.includes(bankDepositBusinessId))
+    (mainBusiness === bankDepositBusinessId || allBusinessIds?.includes(bankDepositBusinessId))
   ) {
     return ChargeTypeEnum.BankDeposit;
   }
 
   if (
     foreignSecuritiesBusinessId &&
-    (charge.business_id === foreignSecuritiesBusinessId ||
-      charge.business_array?.includes(foreignSecuritiesBusinessId))
+    (mainBusiness === foreignSecuritiesBusinessId ||
+      allBusinessIds?.includes(foreignSecuritiesBusinessId))
   ) {
     return ChargeTypeEnum.ForeignSecurities;
   }
 
   if (
-    (charge.business_array?.filter(businessId => internalWalletsIds.includes(businessId))?.length ??
-      0) > 1
+    (allBusinessIds?.filter(businessId => internalWalletsIds.includes(businessId))?.length ?? 0) > 1
   ) {
     return ChargeTypeEnum.InternalTransfer;
   }
 
-  if (charge.business_array?.some(businessId => dividendBusinessIds.includes(businessId))) {
+  if (allBusinessIds?.some(businessId => dividendBusinessIds.includes(businessId))) {
     return ChargeTypeEnum.Dividend;
   }
 
-  if (charge.business_id === vatBusinessId) {
+  if (mainBusiness === vatBusinessId) {
     return ChargeTypeEnum.MonthlyVat;
   }
 
-  if (charge.business_id && creditCardIds.includes(charge.business_id)) {
+  if (mainBusiness && creditCardIds.includes(mainBusiness)) {
     return ChargeTypeEnum.CreditcardBankCharge;
   }
 

@@ -1,5 +1,6 @@
 import { BankDepositTransactionsProvider } from '@modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { getChargeBusinesses } from '@modules/charges/helpers/charge-summaries.helper.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -45,7 +46,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     },
   } = context;
 
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const charge = await context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -74,9 +75,10 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       .get(BankDepositTransactionsProvider)
       .getDepositTransactionsByChargeId(chargeId);
 
-    const [transactions, bankDepositTransactions] = await Promise.all([
+    const [transactions, bankDepositTransactions, { mainBusiness }] = await Promise.all([
       transactionsPromise,
       bankDepositTransactionsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const entriesPromises: Array<Promise<void>> = [];
@@ -115,7 +117,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         context,
         chargeId,
         charge.owner_id,
-        charge.business_id ?? undefined,
+        mainBusiness ?? undefined,
       )
         .then(ledgerEntry => {
           financialAccountLedgerEntries.push(ledgerEntry);
@@ -188,7 +190,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
@@ -331,7 +333,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       ...miscLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
@@ -347,7 +349,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     );
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

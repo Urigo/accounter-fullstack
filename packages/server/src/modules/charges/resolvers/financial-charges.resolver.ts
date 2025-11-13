@@ -1,5 +1,10 @@
 import { GraphQLError } from 'graphql';
+import {
+  getLedgerMinDebitDate,
+  getLedgerMinInvoiceDate,
+} from '@modules/ledger/helpers/dates.helper.js';
 import { getMinDate } from '@modules/ledger/helpers/ledger-lock.js';
+import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
@@ -7,7 +12,7 @@ import { dateToTimelessDateString } from '@shared/helpers';
 import { getChargeType } from '../helpers/charge-type.js';
 import { generateAndTagCharge } from '../helpers/financial-charge.helper.js';
 import type { ChargesModule } from '../types.js';
-import { commonChargeFields, safeGetChargeById } from './common.js';
+import { commonChargeFields } from './common.js';
 
 export const financialChargesResolvers: ChargesModule.Resolvers = {
   Mutation: {
@@ -274,10 +279,18 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     conversion: () => false,
     salary: () => false,
     isInvoicePaymentDifferentCurrency: () => false,
-    minEventDate: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).ledger_min_invoice_date,
-    minDebitDate: async (chargeId, _, { injector }) =>
-      (await safeGetChargeById(chargeId, injector)).ledger_min_value_date,
+    minEventDate: async (chargeId, _, { injector }) => {
+      const ledgerRecords = await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(chargeId);
+      return getLedgerMinInvoiceDate(ledgerRecords);
+    },
+    minDebitDate: async (chargeId, _, { injector }) => {
+      const ledgerRecords = await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(chargeId);
+      return getLedgerMinDebitDate(ledgerRecords);
+    },
     // minDocumentsDate:
     // validationData:
     // metadata:

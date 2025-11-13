@@ -1,6 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import type { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
@@ -308,29 +306,12 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
     adminContext: { defaultLocalCurrency },
   } = context;
 
-  const [charges, financialEntities] = await Promise.all([
-    injector
-      .get(ChargesProvider)
-      .getChargeByIdLoader.loadMany(Array.from(chargeIds))
-      .then(res =>
-        res.map(charge => {
-          if (!charge) {
-            throw new GraphQLError(`One of the ledger records has no charge`);
-          }
-          if (charge instanceof Error) {
-            console.error(charge);
-            throw new GraphQLError(`Error fetching charge`);
-          }
-          return charge;
-        }),
-      ) as Promise<IGetChargesByIdsResult[]>,
-    injector.get(FinancialEntitiesProvider).getAllFinancialEntities(),
-  ]);
+  const financialEntities = await injector.get(FinancialEntitiesProvider).getAllFinancialEntities();
 
   const ledgerRecords = await Promise.all(
-    charges.map(async charge =>
-      (await ledgerGenerationByCharge(charge, context))(
-        charge.id,
+    Array.from(chargeIds).map(async chargeId =>
+      (await ledgerGenerationByCharge(chargeId, context))(
+        chargeId,
         { insertLedgerRecordsIfNotExists: false },
         context,
         info,

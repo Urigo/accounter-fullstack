@@ -1,5 +1,6 @@
 import { lastDayOfMonth } from 'date-fns';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { getChargeBusinesses } from '@modules/charges/helpers/charge-summaries.helper.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
@@ -36,7 +37,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (chargeId, { insertLedgerRecordsIfNotExists }, context, _info) => {
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const [charge, { allBusinessIds }] = await Promise.all([
+    context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId),
+    getChargeBusinesses(chargeId, context.injector),
+  ]);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -44,10 +48,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     };
   }
 
-  if (charge.business_array?.length === 1) {
+  if (allBusinessIds.length === 1) {
     // for one business, use the default ledger generation
     return generateLedgerRecordsForCommonCharge(
-      charge.id,
+      chargeId,
       { insertLedgerRecordsIfNotExists },
       context,
       _info,
@@ -237,7 +241,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         }
       }
     });
-    const miscExpensesEntriesPromise = generateMiscExpensesLedger(charge.id, context).then(
+    const miscExpensesEntriesPromise = generateMiscExpensesLedger(chargeId, context).then(
       entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;
@@ -424,7 +428,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeFinancialAccountLedgerEntriesPromises = feeTransactions.map(async transaction => {
-      await getEntriesFromFeeTransaction(transaction, charge, context).then(ledgerEntries => {
+      await getEntriesFromFeeTransaction(transaction, chargeId, context).then(ledgerEntries => {
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
@@ -521,12 +525,12 @@ export const generateLedgerRecordsForSalary: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

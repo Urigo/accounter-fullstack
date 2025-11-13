@@ -1,4 +1,4 @@
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -19,10 +19,10 @@ import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js'
 
 export const generateLedgerRecordsForTaxExpenses: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
-  IGetChargesByIdsResult,
+  Awaited<ResolversTypes['Charge']>,
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context) => {
   try {
     const {
       injector,
@@ -31,6 +31,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
         authorities: { taxBusinessId, taxExpensesTaxCategoryId },
       },
     } = context;
+    const charge = await injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -129,14 +130,14 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       localCurrencyDebitAmount1: Math.abs(annualTaxExpenseAmount),
       description: `Tax expenses for ${year}`,
       ownerId: charge.owner_id,
-      chargeId: charge.id,
+      chargeId,
       currencyRate: 1,
     };
 
     const ledgerEntries = [ledgerEntry];
 
     // generate ledger from misc expenses
-    await generateMiscExpensesLedger(charge.id, context).then(entries => {
+    await generateMiscExpensesLedger(chargeId, context).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -144,12 +145,12 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     });
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(chargeId, ledgerEntries, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      chargeId,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],
@@ -161,7 +162,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
   } catch (e) {
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${charge.id}"\n${e}`,
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
     };
   }
 };

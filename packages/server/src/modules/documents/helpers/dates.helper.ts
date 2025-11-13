@@ -3,8 +3,9 @@ export function getDocumentsMinDate(
     date: Date | null;
   }[],
 ): Date | null {
-  return documents
-    .map(t => t.date)
-    .filter(date => !!date)
-    .reduce((min, curr) => (curr < min ? curr : min));
+  const dates = documents.map(t => t.date).filter(date => !!date);
+  if (!dates.length) {
+    return null;
+  }
+  return dates.reduce((min, curr) => (curr < min ? curr : min));
 }

@@ -235,6 +235,8 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
     DELETE FROM accounter_schema.charges
     WHERE id IN $$chargeIds;`;
 
+const chargeIdsSet = new Set<string>();
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -247,6 +249,12 @@ export class ChargesTempProvider {
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
+    ids.map(id => {
+      if (chargeIdsSet.has(id)) {
+        console.error(`Duplicate charge ID requested in loader: "${id}"`);
+      }
+      chargeIdsSet.add(id);
+    });
     const charges = await getChargesByIds.run(
       {
         chargeIds: ids,
@@ -277,6 +285,7 @@ export class ChargesTempProvider {
       },
       this.dbProvider,
     );
+    charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
     return transactionIds.map(id => charges.find(charge => charge.transaction_id === id));
   }
 
@@ -289,7 +298,10 @@ export class ChargesTempProvider {
   );
 
   public async getChargesByMissingRequiredInfo() {
-    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider);
+    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider).then(charges => {
+      charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+      return charges;
+    });
   }
 
   public updateCharge(params: IUpdateChargeParams) {

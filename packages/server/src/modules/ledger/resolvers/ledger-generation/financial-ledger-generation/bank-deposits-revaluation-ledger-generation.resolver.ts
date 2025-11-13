@@ -1,6 +1,6 @@
 import { sub } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -15,10 +15,10 @@ export const BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION = 'Bank deposits reval
 
 export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
-  IGetChargesByIdsResult,
+  Awaited<ResolversTypes['Charge']>,
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
+> = async (chargeId, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
     const {
       injector,
@@ -30,6 +30,8 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
         bankDeposits: { bankDepositBusinessId },
       },
     } = context;
+
+    const charge = await injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -177,7 +179,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
     return {
       records: ledgerProtoToRecordsConverter(ledgerEntries),
-      charge,
+      chargeId: charge.id,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],
@@ -189,7 +191,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   } catch (e) {
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${charge.id}"\n${e}`,
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
     };
   }
 };

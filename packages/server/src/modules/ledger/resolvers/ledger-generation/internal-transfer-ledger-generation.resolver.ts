@@ -1,4 +1,4 @@
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -36,7 +36,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     },
   } = context;
 
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const charge = await context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -155,7 +155,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       try {
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
-          charge,
+          chargeId,
           context,
         ).catch(e => {
           if (e instanceof LedgerError) {
@@ -185,7 +185,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     });
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(
       entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;
@@ -265,12 +265,12 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

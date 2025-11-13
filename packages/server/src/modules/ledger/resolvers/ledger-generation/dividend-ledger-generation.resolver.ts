@@ -1,4 +1,4 @@
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -47,7 +47,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     };
   }
 
-  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const charge = await injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -250,7 +250,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     // create a ledger record for fee transactions
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      await getEntriesFromFeeTransaction(transaction, charge, context)
+      await getEntriesFromFeeTransaction(transaction, chargeId, context)
         .then(ledgerEntries => {
           feeFinancialAccountLedgerEntries.push(...ledgerEntries);
           ledgerEntries.map(ledgerEntry => {
@@ -269,7 +269,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     const entriesPromises = [...feeTransactionsPromises, ...coreLedgerEntriesPromises];
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge.id, context)
+    const expensesLedgerPromise = generateMiscExpensesLedger(chargeId, context)
       .then(entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;
@@ -303,7 +303,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           valueDate: entry.valueDate,
           currency: entry.currency,
           ownerId: entry.ownerId,
-          chargeId: charge.id,
+          chargeId,
         };
 
         miscLedgerEntries.push(currencyBalanceEntry1);
@@ -320,7 +320,7 @@ export const generateLedgerRecordsForDividend: ResolverFn<
           valueDate: entry.valueDate,
           currency: defaultLocalCurrency,
           ownerId: entry.ownerId,
-          chargeId: charge.id,
+          chargeId,
         };
 
         miscLedgerEntries.push(currencyBalanceEntry2);
@@ -368,12 +368,12 @@ export const generateLedgerRecordsForDividend: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

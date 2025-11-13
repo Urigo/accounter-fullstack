@@ -106,7 +106,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
       return injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
+        .taxCategoryByChargeIDsLoader.load(chargeId)
         .then(res => res?.id)
         .then(res => {
           if (res) {
@@ -172,7 +172,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     let transactionsTotalLocalAmount = 0;
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(
       entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;
@@ -275,15 +275,17 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // create a ledger record for fee transactions
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, context).catch(
-        e => {
-          if (e instanceof LedgerError) {
-            errors.add(e.message);
-          } else {
-            throw e;
-          }
-        },
-      );
+      const ledgerEntries = await getEntriesFromFeeTransaction(
+        transaction,
+        chargeId,
+        context,
+      ).catch(e => {
+        if (e instanceof LedgerError) {
+          errors.add(e.message);
+        } else {
+          throw e;
+        }
+      });
 
       if (!ledgerEntries) {
         return;
@@ -421,7 +423,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
               isCreditorCounterparty,
               ownerId: charge.owner_id,
               currencyRate: exchangeRate,
-              chargeId: charge.id,
+              chargeId,
             };
 
             accountingLedgerEntries.push(ledgerEntry);
@@ -616,12 +618,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     );
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: updatedLedgerBalanceInfo,
       errors: Array.from(errors),
     };

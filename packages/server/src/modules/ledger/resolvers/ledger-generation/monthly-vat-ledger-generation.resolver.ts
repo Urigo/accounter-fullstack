@@ -1,11 +1,15 @@
 import { format } from 'date-fns';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
 import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
+import {
+  getTransactionsMinDebitDate,
+  getTransactionsMinEventDate,
+} from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString, getMonthFromDescription } from '@shared/helpers';
@@ -38,7 +42,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     },
   } = context;
 
-  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  const [charge, transactions] = await Promise.all([
+    injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId),
+    injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+  ]);
   if (!charge) {
     return {
       __typename: 'CommonError',
@@ -51,7 +58,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   try {
     // figure out VAT month
     const transactionDate =
-      charge.transactions_min_debit_date ?? charge.transactions_min_event_date ?? undefined;
+      getTransactionsMinDebitDate(transactions) ??
+      getTransactionsMinEventDate(transactions) ??
+      undefined;
     if (!charge.user_description) {
       errors.add(
         `Monthly VAT charge must have description that indicates it's month (ID="${chargeId}")`,
@@ -83,17 +92,12 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       };
     });
 
-    const transactionsPromise = injector
-      .get(TransactionsProvider)
-      .transactionsByChargeIDLoader.load(chargeId);
-
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
-    const [vatRecords, transactions, unbalancedBusinesses] = await Promise.all([
+    const [vatRecords, unbalancedBusinesses] = await Promise.all([
       Promise.all(vatRecordsPromises),
-      transactionsPromise,
       unbalancedBusinessesPromise,
     ]);
 
@@ -156,7 +160,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     });
 
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge.id, context).then(
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(chargeId, context).then(
       entries => {
         entries.map(entry => {
           entry.ownerId = charge.owner_id;
@@ -259,12 +263,12 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(chargeId, records, context);
     }
 
     return {
       records: ledgerProtoToRecordsConverter(records),
-      charge,
+      chargeId,
       balance: ledgerBalanceInfo,
       errors: Array.from(errors),
     };

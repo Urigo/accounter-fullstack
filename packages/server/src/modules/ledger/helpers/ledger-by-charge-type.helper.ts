@@ -1,8 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ChargeTypeEnum } from '@shared/enums';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
@@ -26,14 +24,13 @@ const resolveLockedCharge: ResolverFn<
   object
 > = async (chargeId, _, context, __) => {
   try {
-    const [records, charge] = await Promise.all([
-      context.injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
-      context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-    ]);
+    const records = await context.injector
+      .get(LedgerProvider)
+      .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
     return {
       records,
-      charge,
+      chargeId,
       balance: {
         isBalanced: true,
         unbalancedEntities: [],
@@ -48,14 +45,11 @@ const resolveLockedCharge: ResolverFn<
   }
 };
 
-export async function ledgerGenerationByCharge(
-  charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
-) {
-  if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+export async function ledgerGenerationByCharge(chargeId: string, context: GraphQLModules.Context) {
+  if (await isChargeLocked(chargeId, context.injector, context.adminContext.ledgerLock)) {
     return resolveLockedCharge;
   }
-  const chargeType = await getChargeType(charge.id, context);
+  const chargeType = await getChargeType(chargeId, context);
   switch (chargeType) {
     case ChargeTypeEnum.Common:
       return generateLedgerRecordsForCommonCharge;
@@ -85,16 +79,16 @@ export async function ledgerGenerationByCharge(
 }
 
 export async function ledgerUnbalancedBusinessesByCharge(
-  charge: IGetChargesByIdsResult,
+  chargeId: string,
   context: GraphQLModules.Context,
 ): Promise<Set<string> | undefined> {
   const { injector } = context;
-  const chargeType = await getChargeType(charge.id, context);
+  const chargeType = await getChargeType(chargeId, context);
   switch (chargeType) {
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector
         .get(UnbalancedBusinessesProvider)
-        .getChargeUnbalancedBusinessesByChargeIds.load(charge.id);
+        .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
       const allowedUnbalancedBusinesses = new Set(
         unbalancedBusinesses.map(({ business_id }) => business_id),
@@ -106,7 +100,7 @@ export async function ledgerUnbalancedBusinessesByCharge(
     case 'SalaryCharge': {
       const unbalancedBusinesses = await injector
         .get(UnbalancedBusinessesProvider)
-        .getChargeUnbalancedBusinessesByChargeIds.load(charge.id);
+        .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
       const allowedUnbalancedBusinesses = new Set(
         unbalancedBusinesses.map(({ business_id }) => business_id),
@@ -123,7 +117,7 @@ export async function ledgerUnbalancedBusinessesByCharge(
     case 'BusinessTripCharge': {
       const businessTripAttendees = await injector
         .get(BusinessTripAttendeesProvider)
-        .getBusinessTripsAttendeesByChargeIdLoader.load(charge.id);
+        .getBusinessTripsAttendeesByChargeIdLoader.load(chargeId);
 
       const allowedUnbalancedBusinesses = new Set(
         businessTripAttendees.map(attendee => attendee.id),

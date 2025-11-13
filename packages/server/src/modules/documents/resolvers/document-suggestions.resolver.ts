@@ -1,4 +1,9 @@
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsAmounts,
+  getChargeTransactionsAmounts,
+} from '@modules/charges/helpers/charge-summaries.helper.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import {
@@ -24,32 +29,41 @@ const missingInfoSuggestions: Resolver<
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};
   if (RawDocument.charge_id) {
-    const charge = await injector
-      .get(ChargesProvider)
-      .getChargeByIdLoader.load(RawDocument.charge_id);
-    if (charge?.business_id) {
-      response.counterpartyId = charge.business_id;
+    const [charge, { mainBusiness }, { transactionsAmount, currencies }] = await Promise.all([
+      injector.get(ChargesTempProvider).getChargeByIdLoader.load(RawDocument.charge_id),
+      getChargeBusinesses(RawDocument.charge_id, injector),
+      getChargeTransactionsAmounts(RawDocument.charge_id, injector),
+    ]);
+    if (mainBusiness) {
+      response.counterpartyId = mainBusiness;
     }
     if (charge?.owner_id) {
       response.ownerId = charge.owner_id;
     }
-    if (charge?.transactions_event_amount) {
-      const amount = Number(charge.transactions_event_amount);
+    if (transactionsAmount) {
+      const amount = transactionsAmount;
       if (!Number.isNaN(amount)) {
-        response.isIncome = Number(charge.transactions_event_amount) > 0;
+        response.isIncome = transactionsAmount > 0;
       }
     }
-    if (charge?.transactions_event_amount && charge?.transactions_currency) {
+    if (transactionsAmount && currencies.length === 1) {
       // use transactions info, if exists
       response.amount = {
-        amount: Number(charge.transactions_event_amount),
-        currency: formatCurrency(charge.transactions_currency),
+        amount: transactionsAmount,
+        currency: formatCurrency(currencies[0]),
       };
-    } else if (charge?.documents_event_amount && charge?.documents_currency) {
+      return response;
+    }
+    const {
+      invoiceAmount,
+      receiptAmount,
+      currencies: documentsCurrencies,
+    } = await getChargeDocumentsAmounts(RawDocument.charge_id, injector);
+    if ((invoiceAmount || receiptAmount) && documentsCurrencies.length === 1) {
       // Use parallel documents (if exists) as documents_event_amount is based on invoices OR receipts
       response.amount = {
-        amount: charge.documents_event_amount,
-        currency: formatCurrency(charge.documents_currency),
+        amount: invoiceAmount || receiptAmount,
+        currency: formatCurrency(documentsCurrencies[0]),
       };
     }
   }

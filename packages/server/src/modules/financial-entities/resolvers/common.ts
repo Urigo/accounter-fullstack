@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { safeGetChargeById } from '@modules/charges/resolvers/common.js';
+import { getChargeBusinesses } from '@modules/charges/helpers/charge-summaries.helper.js';
+import { safeGetChargeTempById } from '@modules/charges/resolvers/common.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -20,29 +21,32 @@ export const commonFinancialEntityFields:
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   taxCategory: async (chargeId, _, { injector }) => {
-    const charge = await safeGetChargeById(chargeId, injector);
-    if (!charge.tax_category_id) {
-      return null;
+    const charge = await safeGetChargeTempById(chargeId, injector);
+    if (charge.tax_category_id) {
+      return injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByIdLoader.load(charge.tax_category_id)
+        .then(taxCategory => taxCategory ?? null);
     }
     return injector
       .get(TaxCategoriesProvider)
-      .taxCategoryByIdLoader.load(charge.tax_category_id)
+      .taxCategoryByChargeIDsLoader.load(chargeId)
       .then(taxCategory => taxCategory ?? null);
   },
 };
 
 export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   counterparty: async (chargeId, _, { injector }) => {
-    const charge = await safeGetChargeById(chargeId, injector);
-    return charge.business_id
+    const { mainBusiness } = await getChargeBusinesses(chargeId, injector);
+    return mainBusiness
       ? injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(charge.business_id)
+          .getFinancialEntityByIdLoader.load(mainBusiness)
           .then(res => res ?? null)
       : null;
   },
   owner: async (chargeId, _, { injector }) => {
-    const charge = await safeGetChargeById(chargeId, injector);
+    const charge = await safeGetChargeTempById(chargeId, injector);
     return injector
       .get(BusinessesProvider)
       .getBusinessByIdLoader.load(charge.owner_id)

@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
+import type { IGetChargesByIdsResult } from '@modules/charges/__generated__/charges-temp.types.js';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
 import type { CornJobsModule } from '../types.js';
@@ -23,9 +23,14 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
 
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
         const charges = await injector
-          .get(ChargesProvider)
+          .get(ChargesTempProvider)
           .getChargeByIdLoader.loadMany(Array.from(chargeIds))
-          .then(res => res.filter(charge => charge && 'id' in charge) as IGetChargesByIdsResult[]);
+          .then(
+            res =>
+              res.filter(
+                charge => !!charge && !(charge instanceof Error),
+              ) as IGetChargesByIdsResult[],
+          );
 
         const referenceMap = new Map<
           string,

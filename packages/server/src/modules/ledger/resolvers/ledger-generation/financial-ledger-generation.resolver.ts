@@ -1,4 +1,5 @@
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
@@ -31,74 +32,86 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
     },
   } = context;
 
-  const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-  if (!charge) {
-    return {
-      __typename: 'CommonError',
-      message: `Charge ID="${chargeId}" not found`,
-    };
-  }
-
-  if (isChargeLocked(charge, ledgerLock)) {
-    return {
-      __typename: 'CommonError',
-      message: `Charge ID="${chargeId}" is locked for ledger generation`,
-    };
-  }
-
   try {
-    if (!charge.tax_category_id) {
+    const charge = await context.injector
+      .get(ChargesTempProvider)
+      .getChargeByIdLoader.load(chargeId);
+    if (!charge) {
+      return {
+        __typename: 'CommonError',
+        message: `Charge ID="${chargeId}" not found`,
+      };
+    }
+
+    if (await isChargeLocked(chargeId, context.injector, ledgerLock)) {
+      return {
+        __typename: 'CommonError',
+        message: `Charge ID="${chargeId}" is locked for ledger generation`,
+      };
+    }
+
+    let taxCategoryId = charge.tax_category_id;
+    if (!taxCategoryId) {
+      const taxCategory = await context.injector
+        .get(TaxCategoriesProvider)
+        .taxCategoryByChargeIDsLoader.load(chargeId);
+      if (taxCategory?.id) {
+        taxCategoryId = taxCategory.id;
+      }
+    }
+
+    if (!taxCategoryId) {
       return {
         __typename: 'CommonError',
         message: `Financial charge must include tax category`,
       };
     }
-    switch (charge.tax_category_id) {
+    switch (taxCategoryId) {
       case exchangeRevaluationTaxCategoryId:
         return generateLedgerRecordsForExchangeRevaluation(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case taxExpensesTaxCategoryId:
         return generateLedgerRecordsForTaxExpenses(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case accumulatedDepreciationTaxCategoryId:
         return generateLedgerRecordsForDepreciationExpenses(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case recoveryReserveTaxCategoryId:
         return generateLedgerRecordsForRecoveryReserveExpenses(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case vacationReserveTaxCategoryId:
         return generateLedgerRecordsForVacationReserveExpenses(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case bankDepositInterestIncomeTaxCategoryId:
         return generateLedgerRecordsForBankDepositsRevaluation(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
         );
       case defaultTaxCategoryId:
         return generateLedgerRecordsForBalance(
-          charge,
+          chargeId,
           { insertLedgerRecordsIfNotExists },
           context,
           info,
@@ -112,7 +125,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   } catch (e) {
     return {
       __typename: 'CommonError',
-      message: `Failed to generate ledger records for charge ID="${charge.id}"\n${e}`,
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
     };
   }
 };
