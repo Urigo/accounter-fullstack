@@ -1,3 +1,4 @@
+import annualRevenue from './typeDefs/annual-revenue.graphql.js';
 import balanceReport from './typeDefs/balance-report.graphql.js';
 import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
 import depreciationReport from './typeDefs/depreciation-report.graphql.js';
@@ -10,9 +11,11 @@ import uniformFormat from './typeDefs/uniform-format.graphql.js';
 import vatReport from './typeDefs/vat-report.graphql.js';
 import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 import { createModule } from 'graphql-modules';
+import { AnnualRevenueReportProvider } from './providers/annual-revenue-report.provider.js';
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
 import { VatReportProvider } from './providers/vat-report.provider.js';
+import { annualRevenueResolvers } from './resolvers/annual-revenue.resover.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
 import { depreciationReportResolvers } from './resolvers/depreciation-report.resolver.js';
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
@@ -37,6 +40,7 @@ export const reportsModule = createModule({
     depreciationReport,
     shaam6111Report,
     uniformFormat,
+    annualRevenue,
   ],
   resolvers: [
     reportsResolvers,
@@ -45,8 +49,14 @@ export const reportsModule = createModule({
     pcn874Resolvers,
     depreciationReportResolvers,
     shaam6111Resolvers,
+    annualRevenueResolvers,
   ],
-  providers: () => [DynamicReportProvider, BalanceReportProvider, VatReportProvider],
+  providers: () => [
+    DynamicReportProvider,
+    BalanceReportProvider,
+    VatReportProvider,
+    AnnualRevenueReportProvider,
+  ],
 });
 
 export * as ReportsTypes from './types.js';

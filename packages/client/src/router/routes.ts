@@ -58,6 +58,7 @@ export const ROUTES = {
     DEPRECIATION: '/reports/depreciation',
     SHAAM_6111: '/reports/shaam6111',
     YEARLY_LEDGER: '/reports/yearly-ledger',
+    ANNUAL_REVENUE: '/reports/annual-revenue',
     CORPORATE_TAX_RULING_COMPLIANCE: (year?: number) =>
       year
         ? `/reports/corporate-tax-ruling-compliance/${year}`

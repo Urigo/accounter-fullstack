@@ -115,6 +115,11 @@ const DepreciationReport = lazy(() =>
     default: m.DepreciationReport,
   })),
 );
+const AnnualRevenueReport = lazy(() =>
+  import('../components/screens/reports/annual-revenue/index.js').then(m => ({
+    default: m.AnnualRevenueReport,
+  })),
+);
 const Shaam6111Report = lazy(() =>
   import('../components/screens/reports/shaam6111-report/index.js').then(m => ({
     default: m.Shaam6111Report,
@@ -450,6 +455,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Depreciation Report',
                   breadcrumb: 'Depreciation',
+                },
+              },
+              {
+                path: 'annual-revenue',
+                element: withSuspense(AnnualRevenueReport, <ReportSkeleton />),
+                handle: {
+                  title: 'Annual Revenue Report',
+                  breadcrumb: 'Annual Revenue',
                 },
               },
               {
