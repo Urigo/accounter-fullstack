@@ -78,37 +78,47 @@ export const AnnualRevenueReport = (): ReactElement => {
     rows.push('Country,Client,Transaction ID,Date,Description,Revenue ILS,Revenue USD');
 
     // Data rows
-    data?.annualRevenueReport.countries.map(country => {
-      rows.push(
-        `${country.name},,,,TOTAL,${country.revenueLocal.raw},${country.revenueDefaultForeign.raw}`,
-      );
-      country.clients.map(client => {
-        if (client.transactionsInfo && client.transactionsInfo.length > 0) {
-          rows.push(
-            `${country.name},${client.name},,,TOTAL,${client.revenueLocal.raw},${client.revenueDefaultForeign.raw}`,
-          );
-          client.transactionsInfo.map(transaction => {
-            rows.push(
-              `${country.name},${client.name},${transaction.id},${transaction.transaction.effectiveDate ?? transaction.transaction.eventDate},${transaction.transaction.sourceDescription},${transaction.revenueLocal.raw},${transaction.revenueDefaultForeign.raw}`,
-            );
+    data?.annualRevenueReport.countries
+      .sort((a, b) => b.revenueDefaultForeign.raw - a.revenueDefaultForeign.raw)
+      .map(country => {
+        rows.push(
+          `${country.name},,,,TOTAL,${country.revenueLocal.raw.toFixed(2)},${country.revenueDefaultForeign.raw.toFixed(2)}`,
+        );
+        country.clients
+          .sort((a, b) => b.revenueDefaultForeign.raw - a.revenueDefaultForeign.raw)
+          .map(client => {
+            if (client.transactionsInfo && client.transactionsInfo.length > 0) {
+              rows.push(
+                `${country.name},${client.name},,,TOTAL,${client.revenueLocal.raw.toFixed(2)},${client.revenueDefaultForeign.raw.toFixed(2)}`,
+              );
+              client.transactionsInfo
+                .sort((a, b) =>
+                  (a.transaction.effectiveDate ?? a.transaction.eventDate).localeCompare(
+                    b.transaction.effectiveDate ?? b.transaction.eventDate,
+                  ),
+                )
+                .map(transaction => {
+                  rows.push(
+                    `${country.name},${client.name},${transaction.id},${transaction.transaction.effectiveDate ?? transaction.transaction.eventDate},${transaction.transaction.sourceDescription},${transaction.revenueLocal.raw.toFixed(2)},${transaction.revenueDefaultForeign.raw.toFixed(2)}`,
+                  );
+                });
+            } else {
+              rows.push(`${country.name},${client.name},,,,,`);
+            }
           });
-        } else {
-          rows.push(`${country.name},${client.name},,,,,`);
-        }
       });
-    });
 
     const csvContent = rows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `annual-revenue-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `annual-revenue-${year}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [data]);
+  }, [data, year]);
 
   const { setFiltersContext } = useContext(FiltersContext);
 
