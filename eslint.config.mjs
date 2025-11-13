@@ -104,6 +104,8 @@ export default [
             types: [
               'AccountantApproval',
               'AnnualId',
+              'AnnualRevenueReportCountry',
+              'AnnualRevenueReportFilter',
               'AutoMatchChargesResult',
               'BatchUpdateChargesSuccessfulResult',
               'BusinessTripSummary',
