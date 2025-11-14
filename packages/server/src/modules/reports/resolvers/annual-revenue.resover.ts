@@ -1,21 +1,29 @@
 import { endOfYear, startOfYear } from 'date-fns';
 import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { TimelessDateString } from '@shared/types';
 import { AnnualRevenueReportProvider } from '../providers/annual-revenue-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
-interface NormalizedTransaction {
+interface NormalizedRecord {
   clientId: string;
   countryCode: string;
   amountIls: number;
   amountUsd: number;
-  transaction: {
+  record: {
     id: string;
+    chargeId: string;
+    businessId: string;
+    date: TimelessDateString;
+    description: string | null;
+    reference: string | null;
     amountIls: number;
     amountUsd: number;
+    amountOriginal: number;
+    currency: Currency;
   };
 }
 
@@ -23,46 +31,58 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
   Query: {
     annualRevenueReport: async (_, { filters: { year, adminBusinessId } }, context) => {
       const adminId = adminBusinessId ?? context.adminContext.defaultAdminBusinessId;
-      const clients = await context.injector.get(ClientsProvider).getAllClients();
-      const clientBusinessIds = clients.map(client => client.business_id);
+      const incomeTaxCategories = await context.injector
+        .get(TaxCategoriesProvider)
+        .taxCategoriesBySortCodeLoader.load(810);
       const date = new Date(year, 6, 1);
-      const transactions = await context.injector
+      const records = await context.injector
         .get(AnnualRevenueReportProvider)
-        .getNormalizedRevenueTransactions({
-          businessIDs: clientBusinessIds,
-          isBusinessIDs: clientBusinessIds.length,
+        .getNormalizedRevenueRecords({
+          incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
+          incomeToCollectId: context.adminContext.crossYear.incomeToCollectTaxCategoryId,
           ownerId: adminId,
           fromDate: dateToTimelessDateString(startOfYear(date)),
           toDate: dateToTimelessDateString(endOfYear(date)),
         });
 
-      // Normalize transactions (client, amount local currency, amount default foreign currency)
+      // Normalize records (client, amount local currency, amount default foreign currency)
       const businessesProvider = context.injector.get(BusinessesProvider);
-      const normalizedTransactions: NormalizedTransaction[] = [];
+      const normalizedRecords: NormalizedRecord[] = [];
 
-      for (const transaction of transactions) {
-        if (!transaction.business_id) continue;
+      const businesses = await Promise.all(
+        records.map(r =>
+          r.business_id ? businessesProvider.getBusinessByIdLoader.load(r.business_id) : null,
+        ),
+      );
 
-        const business = await businessesProvider.getBusinessByIdLoader.load(
-          transaction.business_id,
-        );
-        if (!business) continue;
+      records.map((record, index) => {
+        if (!record.business_id) return;
 
-        const amountIls = transaction.amount_ils ? parseFloat(transaction.amount_ils) : 0;
-        const amountUsd = transaction.amount_usd ? parseFloat(transaction.amount_usd) : 0;
+        const business = businesses[index];
+        if (!business) return;
 
-        normalizedTransactions.push({
-          clientId: transaction.business_id,
+        const amountIls = record.amount_local ? parseFloat(record.amount_local) : 0;
+        const amountUsd = record.amount_usd ? parseFloat(record.amount_usd) : 0;
+
+        normalizedRecords.push({
+          clientId: record.business_id,
           countryCode: business.country,
           amountIls,
           amountUsd,
-          transaction: {
-            id: transaction.id,
+          record: {
+            id: record.id ?? '',
+            chargeId: record.charge_id!,
+            businessId: record.business_id!,
+            date: dateToTimelessDateString(record.date!),
+            description: record.description ?? null,
+            reference: record.reference ?? null,
             amountIls,
             amountUsd,
+            amountOriginal: record.amount_foreign ? parseFloat(record.amount_foreign) : 0,
+            currency: record.currency as Currency,
           },
         });
-      }
+      });
 
       // Group and sum by client
       const clientSums = new Map<
@@ -71,26 +91,33 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
           countryCode: string;
           amountIls: number;
           amountUsd: number;
-          transactions: {
+          records: {
             id: string;
+            chargeId: string;
+            businessId: string;
+            date: TimelessDateString;
+            description: string | null;
+            reference: string | null;
             amountIls: number;
             amountUsd: number;
+            amountOriginal: number;
+            currency: Currency;
           }[];
         }
       >();
 
-      for (const normalized of normalizedTransactions) {
+      for (const normalized of normalizedRecords) {
         const existing = clientSums.get(normalized.clientId);
         if (existing) {
           existing.amountIls += normalized.amountIls;
           existing.amountUsd += normalized.amountUsd;
-          existing.transactions.push(normalized.transaction);
+          existing.records.push(normalized.record);
         } else {
           clientSums.set(normalized.clientId, {
             countryCode: normalized.countryCode,
             amountIls: normalized.amountIls,
             amountUsd: normalized.amountUsd,
-            transactions: [normalized.transaction],
+            records: [normalized.record],
           });
         }
       }
@@ -105,10 +132,17 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
             id: string;
             amountIls: number;
             amountUsd: number;
-            transactions: {
+            records: {
               id: string;
+              chargeId: string;
+              businessId: string;
+              date: TimelessDateString;
+              description: string | null;
+              reference: string | null;
               amountIls: number;
               amountUsd: number;
+              amountOriginal: number;
+              currency: Currency;
             }[];
           }>;
         }
@@ -123,7 +157,7 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
             id: clientId,
             amountIls: data.amountIls,
             amountUsd: data.amountUsd,
-            transactions: data.transactions,
+            records: data.records,
           });
         } else {
           countrySums.set(data.countryCode, {
@@ -134,7 +168,7 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
                 id: clientId,
                 amountIls: data.amountIls,
                 amountUsd: data.amountUsd,
-                transactions: data.transactions,
+                records: data.records,
               },
             ],
           });
@@ -156,11 +190,15 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
                 name: business?.name ?? '',
                 revenueLocal: formatFinancialAmount(client.amountIls, Currency.Ils),
                 revenueDefaultForeign: formatFinancialAmount(client.amountUsd, Currency.Usd),
-                transactionsInfo: client.transactions.map(transaction => ({
-                  id: `annual-revenue-report-${year}-${countryCode}-${client.id}-transaction-${transaction.id}`,
-                  transaction: transaction.id,
-                  revenueLocal: formatFinancialAmount(transaction.amountIls, Currency.Ils),
-                  revenueDefaultForeign: formatFinancialAmount(transaction.amountUsd, Currency.Usd),
+                records: client.records.map(record => ({
+                  id: `annual-revenue-report-${year}-${countryCode}-${client.id}-record-${record.id}`,
+                  chargeId: record.chargeId,
+                  date: record.date,
+                  description: record.description,
+                  reference: record.reference,
+                  revenueLocal: formatFinancialAmount(record.amountIls, Currency.Ils),
+                  revenueDefaultForeign: formatFinancialAmount(record.amountUsd, Currency.Usd),
+                  revenueOriginal: formatFinancialAmount(record.amountOriginal, record.currency),
                 })),
               };
             }),

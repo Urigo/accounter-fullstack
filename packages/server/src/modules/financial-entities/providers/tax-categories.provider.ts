@@ -16,6 +16,7 @@ import type {
   IGetTaxCategoryByFinancialAccountIdsQuery,
   IGetTaxCategoryByFinancialAccountOwnerIdsQuery,
   IGetTaxCategoryByIDsQuery,
+  IGetTaxCategoryBySortCodesQuery,
   IInsertBusinessTaxCategoryParams,
   IInsertBusinessTaxCategoryQuery,
   IInsertTaxCategoryParams,
@@ -36,6 +37,13 @@ LEFT JOIN accounter_schema.business_tax_category_match tcm
   ON tcm.tax_category_id = tc.id
 WHERE tcm.business_id IN $$BusinessIds
 AND tcm.owner_id IN $$OwnerIds;`;
+
+const getTaxCategoryBySortCodes = sql<IGetTaxCategoryBySortCodesQuery>`
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fe.owner_id
+FROM accounter_schema.tax_categories tc
+LEFT JOIN accounter_schema.financial_entities fe
+  ON fe.id = tc.id
+WHERE fe.sort_code IN $$sortCodes;`;
 
 const getTaxCategoryByFinancialAccountIdsAndCurrencies = sql<IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery>`
 SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
@@ -213,6 +221,25 @@ export class TaxCategoriesProvider {
 
   public taxCategoryByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchTaxCategoryByIDs(ids),
+    {
+      cache: false,
+    },
+  );
+
+  private async batchTaxCategoriesBySortCodes(
+    sortCodes: readonly number[],
+  ): Promise<IGetAllTaxCategoriesResult[][]> {
+    const taxCategories = await getTaxCategoryBySortCodes.run(
+      {
+        sortCodes: [...sortCodes],
+      },
+      this.dbProvider,
+    );
+    return sortCodes.map(sortCode => taxCategories.filter(tc => tc.sort_code === sortCode));
+  }
+
+  public taxCategoriesBySortCodeLoader = new DataLoader(
+    (sortCodes: readonly number[]) => this.batchTaxCategoriesBySortCodes(sortCodes),
     {
       cache: false,
     },

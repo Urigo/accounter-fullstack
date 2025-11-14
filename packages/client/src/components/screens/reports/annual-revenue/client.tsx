@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   AnnualRevenueReportClientFragmentDoc,
@@ -8,7 +8,7 @@ import {
   type AnnualRevenueReportClientFragment,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
-import { AnnualRevenueTransaction } from './transaction.js';
+import { AnnualRevenueRecord } from './record.js';
 import { formatCurrency } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -26,9 +26,10 @@ import { formatCurrency } from './utils.js';
       formatted
       currency
     }
-    transactionsInfo {
+    records {
       id
-      ...AnnualRevenueReportTransaction
+      date
+      ...AnnualRevenueReportRecord
     }
   }
 `;
@@ -38,9 +39,9 @@ type Client = {
   name: string;
   revenueILS: number;
   revenueUSD: number;
-  transactions: Array<{
+  records: Array<{
     id: string;
-    data: AnnualRevenueReportClientFragment['transactionsInfo'][number];
+    data: AnnualRevenueReportClientFragment['records'][number];
   }>;
 };
 
@@ -50,7 +51,7 @@ function clientFromFragment(fragment: AnnualRevenueReportClientFragment): Client
     name: fragment.name,
     revenueILS: fragment.revenueLocal.raw,
     revenueUSD: fragment.revenueDefaultForeign.raw,
-    transactions: fragment.transactionsInfo.map(t => ({
+    records: fragment.records.map(t => ({
       id: t.id,
       data: t,
     })),
@@ -71,6 +72,10 @@ export const AnnualRevenueClient = ({
     setExpanded(prev => !prev);
   };
 
+  const sortedRecords = useMemo(() => {
+    return client.records.slice().sort((a, b) => a.data.date.localeCompare(b.data.date));
+  }, [client.records]);
+
   return (
     <div>
       {/* Client Header */}
@@ -87,8 +92,8 @@ export const AnnualRevenueClient = ({
           <div className="text-left">
             <p className="font-medium text-foreground text-sm">{client.name}</p>
             <p className="text-xs text-muted-foreground">
-              {client.transactions?.length || 0} transaction
-              {client.transactions?.length === 1 ? '' : 's'}
+              {client.records?.length || 0} record
+              {client.records?.length === 1 ? '' : 's'}
             </p>
           </div>
         </div>
@@ -116,11 +121,11 @@ export const AnnualRevenueClient = ({
         </div>
       </button>
 
-      {/* Expanded Transactions */}
-      {expanded && client.transactions && (
+      {/* Expanded Records */}
+      {expanded && sortedRecords && (
         <div className="mt-3 ml-2 space-y-3 border-l-2 border-border/50 pl-2">
-          {client.transactions.map(transaction => (
-            <AnnualRevenueTransaction key={transaction.id} transactionData={transaction.data} />
+          {sortedRecords.map(record => (
+            <AnnualRevenueRecord key={record.id} recordData={record.data} />
           ))}
         </div>
       )}

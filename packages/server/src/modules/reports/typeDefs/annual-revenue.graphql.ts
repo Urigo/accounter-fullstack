@@ -29,15 +29,19 @@ export default gql`
     name: String!
     revenueLocal: FinancialAmount!
     revenueDefaultForeign: FinancialAmount!
-    transactionsInfo: [AnnualRevenueReportClientTransaction!]!
+    records: [AnnualRevenueReportClientRecord!]!
   }
 
-  " annual revenue report country client "
-  type AnnualRevenueReportClientTransaction {
+  " annual revenue report country client record "
+  type AnnualRevenueReportClientRecord {
     id: ID!
-    transaction: Transaction!
+    chargeId: UUID!
+    date: TimelessDate!
+    description: String
+    reference: String
     revenueLocal: FinancialAmount!
     revenueDefaultForeign: FinancialAmount!
+    revenueOriginal: FinancialAmount!
   }
 
   " annual revenue report filter "

@@ -37,14 +37,12 @@ import { AnnualRevenueCountry } from './country.js';
           revenueDefaultForeign {
             raw
           }
-          transactionsInfo {
+          records {
             id
-            transaction {
-              id
-              effectiveDate
-              eventDate
-              sourceDescription
-            }
+            date
+            description
+            reference
+            chargeId
             revenueLocal {
               raw
             }
@@ -75,7 +73,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     const rows: string[] = [];
 
     // Header
-    rows.push('Country,Client,Transaction ID,Date,Description,Revenue ILS,Revenue USD');
+    rows.push('Country,Client,charge ID,Date,Description,Revenue ILS,Revenue USD');
 
     // Data rows
     data?.annualRevenueReport.countries
@@ -87,19 +85,15 @@ export const AnnualRevenueReport = (): ReactElement => {
         country.clients
           .sort((a, b) => b.revenueDefaultForeign.raw - a.revenueDefaultForeign.raw)
           .map(client => {
-            if (client.transactionsInfo && client.transactionsInfo.length > 0) {
+            if (client.records && client.records.length > 0) {
               rows.push(
                 `${country.name},${client.name},,,TOTAL,${client.revenueLocal.raw.toFixed(2)},${client.revenueDefaultForeign.raw.toFixed(2)}`,
               );
-              client.transactionsInfo
-                .sort((a, b) =>
-                  (a.transaction.effectiveDate ?? a.transaction.eventDate).localeCompare(
-                    b.transaction.effectiveDate ?? b.transaction.eventDate,
-                  ),
-                )
-                .map(transaction => {
+              client.records
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .map(record => {
                   rows.push(
-                    `${country.name},${client.name},${transaction.id},${transaction.transaction.effectiveDate ?? transaction.transaction.eventDate},${transaction.transaction.sourceDescription},${transaction.revenueLocal.raw.toFixed(2)},${transaction.revenueDefaultForeign.raw.toFixed(2)}`,
+                    `${country.name},${client.name},${record.chargeId},${record.date},${record.description},${record.revenueLocal.raw.toFixed(2)},${record.revenueDefaultForeign.raw.toFixed(2)}`,
                   );
                 });
             } else {
@@ -149,6 +143,12 @@ export const AnnualRevenueReport = (): ReactElement => {
     return `Annual Revenue Report for ${year}`;
   }, [year]);
 
+  const sortedCountries = useMemo(() => {
+    return data?.annualRevenueReport.countries.slice().sort((a, b) => {
+      return b.revenueDefaultForeign.raw - a.revenueDefaultForeign.raw;
+    });
+  }, [data]);
+
   return (
     <PageLayout title="Annual Revenue Report" description={description}>
       {fetching ? (
@@ -158,7 +158,7 @@ export const AnnualRevenueReport = (): ReactElement => {
           {/* Main Content */}
           <main className="container mx-auto px-2 py-2 max-w-7xl">
             <div className="space-y-2">
-              {data?.annualRevenueReport.countries.map(country => (
+              {sortedCountries?.map(country => (
                 <AnnualRevenueCountry key={country.id} countryData={country} />
               ))}
             </div>
