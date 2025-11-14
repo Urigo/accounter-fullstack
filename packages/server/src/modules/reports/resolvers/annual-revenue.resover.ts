@@ -49,11 +49,17 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
       const businessesProvider = context.injector.get(BusinessesProvider);
       const normalizedRecords: NormalizedRecord[] = [];
 
-      for (const record of records) {
-        if (!record.business_id) continue;
+      const businesses = await Promise.all(
+        records.map(r =>
+          r.business_id ? businessesProvider.getBusinessByIdLoader.load(r.business_id) : null,
+        ),
+      );
 
-        const business = await businessesProvider.getBusinessByIdLoader.load(record.business_id);
-        if (!business) continue;
+      records.map((record, index) => {
+        if (!record.business_id) return;
+
+        const business = businesses[index];
+        if (!business) return;
 
         const amountIls = record.amount_local ? parseFloat(record.amount_local) : 0;
         const amountUsd = record.amount_usd ? parseFloat(record.amount_usd) : 0;
@@ -76,7 +82,7 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
             currency: record.currency as Currency,
           },
         });
-      }
+      });
 
       // Group and sum by client
       const clientSums = new Map<
