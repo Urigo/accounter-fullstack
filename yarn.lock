@@ -304,7 +304,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.42"
+    "@ai-sdk/anthropic": "npm:2.0.43"
     "@envelop/generic-auth": "npm:10.0.1"
     "@envelop/graphql-modules": "npm:8.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -371,15 +371,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.42":
-  version: 2.0.42
-  resolution: "@ai-sdk/anthropic@npm:2.0.42"
+"@ai-sdk/anthropic@npm:2.0.43":
+  version: 2.0.43
+  resolution: "@ai-sdk/anthropic@npm:2.0.43"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.16"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/19ba61506514a24b7ba0c86a4cb273e655f88c1ce7cc34ad81202f0b6ce6bb7ceae9c9715b5670ebec3119e413886e8e70c175b3e70b16ec7acc11c9d68f49e5
+  checksum: 10c0/a83029edc541a9cecda9e15b8732de111ed739a586b55d6a0e7d2b8ef40660289986d7a144252736bfc9ee067ee19b11d5c5830278513aa32c6fa24666bd0e78
   languageName: node
   linkType: hard
 
