@@ -1,32 +1,95 @@
+import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
+import { getDocumentsMinDate } from '@modules/documents/helpers/dates.helper.js';
+import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import {
+  getTransactionsMinDebitDate,
+  getTransactionsMinEventDate,
+} from '@modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { calculateTotalAmount } from '../helpers/common.helper.js';
+import {
+  getChargeDocumentsAmounts,
+  getChargeTransactionsAmounts,
+} from '../helpers/charge-summaries.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
+import { ChargesTempProvider } from '../providers/charges-temp.provider.js';
+import type { ChargesModule } from '../types.js';
+
+export async function safeGetChargeTempById(chargeId: string, injector: Injector) {
+  return injector
+    .get(ChargesTempProvider)
+    .getChargeByIdLoader.load(chargeId)
+    .catch(error => {
+      console.error('Error loading charge by ID:', error);
+      throw new GraphQLError('Error loading charge');
+    });
+}
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
-  id: DbCharge => DbCharge.id,
-  vat: DbCharge =>
-    DbCharge.documents_vat_amount != null && DbCharge.documents_currency
-      ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
-      : null,
-  totalAmount: (dbCharge, _, { adminContext: { defaultLocalCurrency } }) =>
-    calculateTotalAmount(dbCharge, defaultLocalCurrency),
-  property: DbCharge => DbCharge.is_property,
-  conversion: DbCharge => DbCharge.type === 'CONVERSION',
-  salary: DbCharge => DbCharge.type === 'PAYROLL',
-  isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
-  userDescription: DbCharge => DbCharge.user_description,
-  minEventDate: DbCharge => DbCharge.transactions_min_event_date,
-  minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
-  minDocumentsDate: DbCharge => DbCharge.documents_min_date,
-  validationData: (DbCharge, _, context) => validateCharge(DbCharge, context),
-  metadata: DbCharge => DbCharge,
-  yearsOfRelevance: async (DbCharge, _, { injector }) => {
+  id: chargeId => chargeId,
+  vat: async (chargeId, _, { injector }) => {
+    const { currencies, invoiceVatAmount } = await getChargeDocumentsAmounts(chargeId, injector);
+    return invoiceVatAmount != null && currencies.length === 1
+      ? formatFinancialAmount(invoiceVatAmount, currencies[0])
+      : null;
+  },
+  totalAmount: async (chargeId, _, { adminContext: { defaultLocalCurrency }, injector }) => {
+    const [
+      charge,
+      { invoiceAmount, receiptAmount, currencies: documentCurrencies },
+      { transactionsAmount, currencies: transactionsCurrencies },
+    ] = await Promise.all([
+      safeGetChargeTempById(chargeId, injector),
+      getChargeDocumentsAmounts(chargeId, injector),
+      getChargeTransactionsAmounts(chargeId, injector),
+    ]);
+    if (charge.type === 'PAYROLL' && transactionsAmount != null) {
+      return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
+    }
+    if ((invoiceAmount || receiptAmount) != null && documentCurrencies.length === 1) {
+      return formatFinancialAmount(invoiceAmount || receiptAmount, documentCurrencies[0]);
+    }
+    if (transactionsAmount != null && transactionsCurrencies.length === 1) {
+      return formatFinancialAmount(transactionsAmount, transactionsCurrencies[0]);
+    }
+    return null;
+  },
+  property: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).is_property,
+  conversion: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).type === 'CONVERSION',
+  salary: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).type === 'PAYROLL',
+  isInvoicePaymentDifferentCurrency: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).invoice_payment_currency_diff,
+  userDescription: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).user_description,
+  minEventDate: async (chargeId, _, { injector }) => {
+    const transactions = await injector
+      .get(TransactionsProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
+    return getTransactionsMinEventDate(transactions);
+  },
+  minDebitDate: async (chargeId, _, { injector }) => {
+    const transactions = await injector
+      .get(TransactionsProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
+    return getTransactionsMinDebitDate(transactions);
+  },
+  minDocumentsDate: async (chargeId, _, { injector }) => {
+    const documents = await injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId);
+    return getDocumentsMinDate(documents);
+  },
+  validationData: (chargeId, _, context) => validateCharge(chargeId, context),
+  metadata: chargeId => chargeId,
+  yearsOfRelevance: async (chargeId, _, { injector }) => {
     const spreadRecords = await injector
       .get(ChargeSpreadProvider)
-      .getChargeSpreadByChargeIdLoader.load(DbCharge.id);
+      .getChargeSpreadByChargeIdLoader.load(chargeId);
     return (
       spreadRecords?.map(record => ({
         year: dateToTimelessDateString(record.year_of_relevance),
@@ -34,66 +97,12 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       })) ?? null
     );
   },
-  optionalVAT: DbCharge => DbCharge.optional_vat,
-  optionalDocuments: DbCharge => DbCharge.documents_optional_flag,
+  optionalVAT: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).optional_vat,
+  optionalDocuments: async (chargeId, _, { injector }) =>
+    (await safeGetChargeTempById(chargeId, injector)).documents_optional_flag,
 };
 
 export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
-  charge: async (documentRoot, _, { injector }) => {
-    if (!documentRoot.charge_id) {
-      return null;
-    }
-    const charge = await injector
-      .get(ChargesProvider)
-      .getChargeByIdLoader.load(documentRoot.charge_id);
-    return charge ?? null;
-  },
-};
-
-export const commonFinancialAccountFields:
-  | ChargesModule.CardFinancialAccountResolvers
-  | ChargesModule.BankFinancialAccountResolvers = {
-  charges: async (DbAccount, { filter }, { injector }) => {
-    if (!filter || Object.keys(filter).length === 0) {
-      const charges = await injector
-        .get(ChargesProvider)
-        .getChargeByFinancialAccountIDsLoader.load(DbAccount.id);
-      return charges;
-    }
-    const charges = await injector.get(ChargesProvider).getChargesByFinancialAccountIds({
-      financialAccountIDs: [DbAccount.id],
-      fromDate: filter?.fromDate,
-      toDate: filter?.toDate,
-    });
-    return charges;
-  },
-};
-
-export const commonFinancialEntityFields:
-  | ChargesModule.LtdFinancialEntityResolvers
-  | ChargesModule.PersonalFinancialEntityResolvers = {
-  charges: async (DbBusiness, { filter, page, limit }, { injector }) => {
-    const charges: ChargeRequiredWrapper<IGetChargesByIdsResult>[] = [];
-    if (!filter || Object.keys(filter).length === 0) {
-      const newCharges = await injector
-        .get(ChargesProvider)
-        .getChargeByFinancialEntityIdLoader.load(DbBusiness.id);
-      charges.push(...newCharges);
-    } else {
-      const newCharges = await injector.get(ChargesProvider).getChargesByFinancialEntityIds({
-        ownerIds: [DbBusiness.id],
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-      });
-      charges.push(...newCharges);
-    }
-    return {
-      __typename: 'PaginatedCharges',
-      nodes: charges.slice(page * limit - limit, page * limit),
-      pageInfo: {
-        totalPages: Math.ceil(charges.length / limit),
-        totalRecords: charges.length,
-      },
-    };
-  },
+  charge: documentRoot => documentRoot.charge_id,
 };

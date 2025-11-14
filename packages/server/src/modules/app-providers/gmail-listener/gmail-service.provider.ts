@@ -2,7 +2,7 @@ import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import {
   getDocumentFromUrlsAndOcrData,
   type OcrData,
@@ -81,7 +81,7 @@ export class GmailServiceProvider {
     @Inject(ENVIRONMENT) private env: Environment,
     private cloudinaryProvider: CloudinaryProvider,
     private anthropicProvider: AnthropicProvider,
-    private chargesProvider: ChargesProvider,
+    private chargesProvider: ChargesTempProvider,
     private documentsProvider: DocumentsProvider,
     private businessesProvider: BusinessesProvider,
   ) {
@@ -693,7 +693,7 @@ export class GmailServiceProvider {
           return;
         }
 
-        const [charge] = await this.chargesProvider
+        const charge = await this.chargesProvider
           .generateCharge({
             ownerId: this.env.authorization.adminBusinessId,
             userDescription: `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`,

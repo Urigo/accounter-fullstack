@@ -2,7 +2,8 @@ import { GraphQLError } from 'graphql';
 import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import { Resolvers } from '@shared/gql-types';
@@ -103,7 +104,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       if (!chargeId) {
         // generate new charge
-        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+        const newCharge = await injector.get(ChargesTempProvider).generateCharge({
           ownerId: defaultAdminBusinessId,
           userDescription: 'New uploaded documents',
         });
@@ -156,7 +157,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       if (!chargeId) {
         // generate new charge
-        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+        const newCharge = await injector.get(ChargesTempProvider).generateCharge({
           ownerId: defaultAdminBusinessId,
           userDescription: 'New uploaded documents',
         });
@@ -198,9 +199,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
           if (document.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id);
+            const [charge, transactions, documents] = await Promise.all([
+              injector.get(ChargesTempProvider).getChargeByIdLoader.load(document.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(document.charge_id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
+            ]);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -208,21 +213,18 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             }
 
             // generate new charge
-            const newCharge = await injector.get(ChargesProvider).generateCharge({
+            const newCharge = await injector.get(ChargesTempProvider).generateCharge({
               ownerId: charge.owner_id,
               userDescription: 'Document unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(
                 `Failed to generate new charge for document ID="${documentId}"`,
               );
             }
-            chargeId = newCharge?.[0]?.id;
+            chargeId = newCharge?.id;
 
-            if (
-              Number(charge.documents_count ?? 1) === 1 &&
-              Number(charge.transactions_count ?? 0) === 0
-            ) {
+            if (documents.length === 1 && transactions.length === 0) {
               postUpdateActions = async () => {
                 try {
                   await deleteCharges([charge.id], injector);
@@ -242,7 +244,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         } else if (fields.chargeId) {
           // case new charge ID
           const charge = await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .getChargeByIdLoader.load(fields.chargeId);
           if (!charge) {
             throw new GraphQLError(`Charge ID="${fields.chargeId}" not valid`);
@@ -302,10 +304,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           if (document.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id);
-            if (charge && !charge.documents_count && !charge.transactions_count) {
+            const [charge, transactions, documents] = await Promise.all([
+              injector.get(ChargesTempProvider).getChargeByIdLoader.load(document.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(document.charge_id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
+            ]);
+            if (charge && documents.length === 0 && transactions.length === 0) {
               await deleteCharges([charge.id], injector);
             }
           }
@@ -327,7 +333,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       try {
         if (record.chargeId) {
           const charge = await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .getChargeByIdLoader.load(record.chargeId);
 
           if (!charge) {

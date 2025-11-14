@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
@@ -44,19 +43,11 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
         : null,
     isFee: t => t.is_fee ?? false,
     description: t => t.source_description ?? null,
-    charge: (t, _, context) => {
+    charge: t => {
       if (!t.charge_id) {
         throw new GraphQLError(`Charge ID missing for transaction ID ${t.id}`);
       }
-      return context.injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(t.charge_id)
-        .then(res => {
-          if (!res) {
-            throw new GraphQLError(`Charge not found for ID ${t.charge_id}`);
-          }
-          return res;
-        });
+      return t.charge_id;
     },
   },
 };

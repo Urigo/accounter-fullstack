@@ -1,5 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -450,7 +450,7 @@ export const transactionSuggestionsResolvers: TransactionsModule.Resolvers = {
         });
 
       const chargePromise = injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .getChargeByTransactionIdLoader.load(transactionId)
         .catch(e => {
           console.error('Error fetching charge', { transactionId, error: e });

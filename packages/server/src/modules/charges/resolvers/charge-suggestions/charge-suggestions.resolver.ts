@@ -1,7 +1,14 @@
 import { GraphQLError } from 'graphql';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsAmounts,
+  getChargeTransactionsAmounts,
+} from '@modules/charges/helpers/charge-summaries.helper.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -25,9 +32,17 @@ const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
   ResolversParentTypes['Charge'],
   GraphQLModules.Context
-> = async (DbCharge, _, context, __) => {
+> = async (chargeId, _, context, __) => {
+  const [charge, tags] = await Promise.all([
+    context.injector.get(ChargesTempProvider).getChargeByIdLoader.load(chargeId),
+    context.injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(chargeId),
+  ]);
+  if (!charge) {
+    throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+  }
+
   // if all required fields are filled, no need for suggestions
-  if (!!DbCharge.tags?.length && !!DbCharge.user_description?.trim()) {
+  if (!!tags.length && !!charge.user_description?.trim()) {
     return null;
   }
 
@@ -35,17 +50,19 @@ const missingInfoSuggestions: Resolver<
   const { poalimBusinessId, etherScanBusinessId, krakenBusinessId, etanaBusinessId } =
     adminContext.financialAccounts;
 
-  const chargeType = getChargeType(DbCharge, context);
+  const chargeType = await getChargeType(chargeId, context);
 
   if (chargeType === ChargeTypeEnum.Conversion) {
-    return missingConversionInfoSuggestions(DbCharge, _, context, __);
+    return missingConversionInfoSuggestions(chargeId, _, context, __);
   }
 
+  const { allBusinessIds, mainBusiness } = await getChargeBusinesses(chargeId, injector);
+
   // if charge has a businesses, use it's suggestion data
-  if (DbCharge.business_id) {
+  if (mainBusiness) {
     const business = await injector
       .get(BusinessesProvider)
-      .getBusinessByIdLoader.load(DbCharge.business_id);
+      .getBusinessByIdLoader.load(mainBusiness);
     if (business?.suggestion_data) {
       const {
         data: suggestionData,
@@ -73,12 +90,11 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  if (DbCharge.business_array && DbCharge.business_array.length > 1) {
-    const isKrakenIncluded = krakenBusinessId && DbCharge.business_array.includes(krakenBusinessId);
-    const isEtherscanIncluded =
-      etherScanBusinessId && DbCharge.business_array.includes(etherScanBusinessId);
-    const isEtanaIncluded = etanaBusinessId && DbCharge.business_array.includes(etanaBusinessId);
-    const isPoalimIncluded = poalimBusinessId && DbCharge.business_array.includes(poalimBusinessId);
+  if (allBusinessIds.length > 1) {
+    const isKrakenIncluded = krakenBusinessId && allBusinessIds.includes(krakenBusinessId);
+    const isEtherscanIncluded = etherScanBusinessId && allBusinessIds.includes(etherScanBusinessId);
+    const isEtanaIncluded = etanaBusinessId && allBusinessIds.includes(etanaBusinessId);
+    const isPoalimIncluded = poalimBusinessId && allBusinessIds.includes(poalimBusinessId);
 
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {
@@ -126,7 +142,7 @@ const missingInfoSuggestions: Resolver<
       continue;
     }
 
-    if (business.id in (DbCharge.business_array ?? [])) {
+    if (business.id in allBusinessIds) {
       return {
         description: suggestionData.description,
         tags: await Promise.all(
@@ -159,7 +175,7 @@ const missingInfoSuggestions: Resolver<
 
   const transactions = await injector
     .get(TransactionsProvider)
-    .transactionsByChargeIDLoader.load(DbCharge.id);
+    .transactionsByChargeIDLoader.load(charge.id);
   const description = transactions.map(t => t.source_description).join(' ');
 
   for (const [phrase, suggestion] of Object.entries(suggestions)) {
@@ -171,10 +187,16 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
+  const [{ invoiceAmount, receiptAmount }, { transactionsAmount }] = await Promise.all([
+    getChargeDocumentsAmounts(charge.id, injector),
+    getChargeTransactionsAmounts(charge.id, injector),
+  ]);
+  const chargeAmount = invoiceAmount || receiptAmount || transactionsAmount;
+
   if (
     description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
+    (description.includes('העברת מט"ח') && Math.abs(formatAmount(chargeAmount)) < 400) ||
+    (description.includes('מטח') && Math.abs(formatAmount(chargeAmount)) < 400) ||
     description.includes('F.C.COM') ||
     description.includes('ע.מפעולות-ישיר') ||
     description.includes('ריבית חובה') ||
@@ -469,16 +491,16 @@ const missingInfoSuggestions: Resolver<
         .getTagByNameLoader.load('business')
         .then(res => (res ? [res] : [])),
     };
-    if (formatAmount(DbCharge.event_amount) <= -2000) {
+    if (formatAmount(chargeAmount) <= -2000) {
       suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
-    } else if (formatAmount(DbCharge.event_amount) <= -1000) {
+    } else if (formatAmount(chargeAmount) <= -1000) {
       suggested.description = 'Monthly Sponsor for Andarist, warrenday';
     } else {
       suggested.description = 'GitHub Actions';
     }
     return suggested;
   }
-  if (formatAmount(DbCharge.event_amount) === -4329) {
+  if (formatAmount(chargeAmount) === -4329) {
     return {
       description: 'Office rent',
       tags: await injector
@@ -488,7 +510,7 @@ const missingInfoSuggestions: Resolver<
     };
   }
   if (description.includes('APPLE COM BILL/ITUNES.COM')) {
-    const flag = formatAmount(DbCharge.event_amount) === -109.9;
+    const flag = formatAmount(chargeAmount) === -109.9;
     return {
       taxCategory: 'אתר',
       beneficiaaries: [], // NOTE: used to be ' '
@@ -501,8 +523,8 @@ const missingInfoSuggestions: Resolver<
   }
   if (
     description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
+    (description.includes('העברת מט"ח') && Math.abs(formatAmount(chargeAmount)) < 400) ||
+    (description.includes('מטח') && Math.abs(formatAmount(chargeAmount)) < 400) ||
     description.includes('F.C.COM') ||
     description.includes('ע.מפעולות-ישיר') ||
     description.includes('ריבית חובה') ||
@@ -574,7 +596,7 @@ const missingInfoSuggestions: Resolver<
         .then(res => (res ? [res] : [])),
     };
   }
-  if (formatAmount(DbCharge.event_amount) === -12_000) {
+  if (formatAmount(chargeAmount) === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -586,7 +608,7 @@ const missingInfoSuggestions: Resolver<
         .then(res => (res ? [res] : [])),
     };
   }
-  if (formatAmount(DbCharge.event_amount) === -600) {
+  if (formatAmount(chargeAmount) === -600) {
     return {
       description: 'Matic Zavadlal - April 2021',
       tags: await injector
@@ -620,13 +642,19 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Charge ID is required');
       }
 
-      const mainCharge = await injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(chargeId)
-        .catch(e => {
-          console.error('Error fetching charge', { chargeId, error: e });
-          throw new GraphQLError('Error fetching charge');
-        });
+      const [
+        mainCharge,
+        { allBusinessIds: allMainChargeBusinessIds, mainBusiness: mainChargeBusinessId },
+      ] = await Promise.all([
+        injector
+          .get(ChargesTempProvider)
+          .getChargeByIdLoader.load(chargeId)
+          .catch(e => {
+            console.error('Error fetching charge', { chargeId, error: e });
+            throw new GraphQLError('Error fetching charge');
+          }),
+        getChargeBusinesses(chargeId, injector),
+      ]);
 
       if (!mainCharge) {
         throw new GraphQLError(`Charge not found: ${chargeId}`);
@@ -635,8 +663,8 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
       const similarCharges = await injector
         .get(ChargesProvider)
         .getSimilarCharges({
-          businessId: mainCharge.business_id,
-          businessArray: mainCharge.business_array,
+          businessId: mainChargeBusinessId,
+          businessArray: allMainChargeBusinessIds,
           withMissingTags,
           withMissingDescription,
           tagsDifferentThan: tagsDifferentThan ? [...tagsDifferentThan] : undefined,
@@ -646,13 +674,13 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         .catch(e => {
           console.error('Error fetching similar charges:', {
             chargeId,
-            businessId: mainCharge.business_id,
-            businessArray: mainCharge.business_array,
+            businessId: mainChargeBusinessId,
+            businessArray: allMainChargeBusinessIds,
             error: e.message,
           });
           throw new GraphQLError('Error fetching similar charges');
         });
-      return similarCharges;
+      return similarCharges.map(charge => charge.id);
     },
     similarChargesByBusiness: async (
       _,
@@ -681,7 +709,7 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
           });
           throw new GraphQLError('Error fetching similar charges by business');
         });
-      return similarCharges;
+      return similarCharges.map(charge => charge.id);
     },
   },
   CommonCharge: commonChargeFields,

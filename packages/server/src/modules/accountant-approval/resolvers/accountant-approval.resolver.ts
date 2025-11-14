@@ -1,7 +1,7 @@
 import { BusinessTripsTypes } from '@modules/business-trips/index.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import type { ChargesTypes } from '@modules/charges';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import type { AccountantApprovalModule } from '../types.js';
 import { commonChargeFields } from './common.js';
 
@@ -13,18 +13,14 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         chargeId,
       };
       const res = await injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .updateAccountantApproval({ ...adjustedFields });
 
-      if (!res || res.length === 0) {
+      if (!res) {
         throw new Error(`Failed to update charge ID='${chargeId}'`);
       }
 
-      /* clear cache */
-      if (res[0].id) {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(res[0].id);
-      }
-      return res[0].accountant_status || 'UNAPPROVED';
+      return res.accountant_status || 'UNAPPROVED';
     },
     updateBusinessTripAccountantApproval: async (
       _,

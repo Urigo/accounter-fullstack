@@ -1,23 +1,37 @@
 import { validateDocumentAllocation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
 import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
-import { IGetChargesByIdsResult } from '../types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import { getChargeType } from './charge-type.js';
 
 export const validateCharge = async (
-  charge: IGetChargesByIdsResult,
+  chargeId: string,
   context: GraphQLModules.Context,
 ): Promise<ResolversTypes['ValidationData']> => {
   const { injector, adminContext } = context;
+
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    throw new Error(`Charge with ID ${chargeId} not found for validation.`);
+  }
+
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const chargeType = getChargeType(charge, context);
+  const [chargeType, taxCategory] = await Promise.all([
+    getChargeType(chargeId, context),
+    charge.tax_category_id
+      ? Promise.resolve()
+      : injector.get(TaxCategoriesProvider).taxCategoryByChargeIDsLoader.load(chargeId),
+  ]);
+
+  const taxCategoryId = charge.tax_category_id ?? taxCategory?.id;
 
   const isGeneralFees =
-    charge.tax_category_id === adminContext.general.taxCategories.generalFeeTaxCategoryId;
+    taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // check for consistent counterparty business
   const businessNotRequired =

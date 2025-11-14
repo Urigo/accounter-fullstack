@@ -8,6 +8,7 @@
 import { subYears } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -62,12 +63,13 @@ export class ChargesMatcherProvider {
     }
 
     // Get providers from injector
+    const chargesTempProvider = injector.get(ChargesTempProvider);
     const chargesProvider = injector.get(ChargesProvider);
     const transactionsProvider = injector.get(TransactionsProvider);
     const documentsProvider = injector.get(DocumentsProvider);
 
     // Step 1: Load source charge data
-    const sourceCharge = await chargesProvider.getChargeByIdLoader.load(chargeId);
+    const sourceCharge = await chargesTempProvider.getChargeByIdLoader.load(chargeId);
     if (sourceCharge instanceof Error) {
       throw new Error(`Source charge not found: ${chargeId}`);
     }

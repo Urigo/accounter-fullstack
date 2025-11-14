@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
@@ -39,19 +38,11 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
   Mutation: {
     updateChargeBusinessTrip: async (_, { chargeId, businessTripId = null }, { injector }) => {
       try {
-        const [updatedChargeId] = await injector
+        const [updatedCharge] = await injector
           .get(BusinessTripsProvider)
           .updateChargeBusinessTrip(chargeId, businessTripId);
-        if (updatedChargeId) {
-          return injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(updatedChargeId.charge_id)
-            .then(charge => {
-              if (charge) {
-                return charge;
-              }
-              throw new Error(`Updated charge with id ${updatedChargeId} not found`);
-            });
+        if (updatedCharge) {
+          return updatedCharge.charge_id;
         }
         throw new Error('Error updating charge business trip');
       } catch (e) {
@@ -194,18 +185,15 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
   },
   BusinessTripCharge: {
-    businessTrip: (dbCharge, _, { injector }) => {
-      if (!dbCharge.business_trip_id) {
-        return null;
-      }
+    businessTrip: async (chargeId, _, { injector }) => {
       try {
         return injector
           .get(BusinessTripsProvider)
-          .getBusinessTripsByIdLoader.load(dbCharge.business_trip_id)
+          .getBusinessTripsByChargeIdLoader.load(chargeId)
           .then(businessTrip => businessTrip ?? null);
       } catch (e) {
-        console.error(`Error finding business trip for charge id ${dbCharge.id}:`, e);
-        throw new GraphQLError(`Error finding business trip for charge id ${dbCharge.id}`);
+        console.error(`Error finding business trip for charge id ${chargeId}:`, e);
+        throw new GraphQLError(`Error finding business trip for charge id ${chargeId}`);
       }
     },
   },

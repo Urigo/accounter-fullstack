@@ -69,14 +69,14 @@ export const commonFinancialDocumentsFields:
 };
 
 export const commonChargeFields: DocumentsModule.ChargeResolvers = {
-  additionalDocuments: async (DbCharge, _, { injector }) => {
-    if (!DbCharge.id) {
+  additionalDocuments: async (chargeId, _, { injector }) => {
+    if (!chargeId) {
       return [];
     }
     try {
       const docs = await injector
         .get(DocumentsProvider)
-        .getDocumentsByChargeIdLoader.load(DbCharge.id);
+        .getDocumentsByChargeIdLoader.load(chargeId);
       return docs;
     } catch (e) {
       console.error(e);

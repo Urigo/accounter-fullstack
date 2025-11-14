@@ -89,7 +89,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         await Promise.all(
           limitedCharges.map(async charge => {
-            if (isChargeLocked(charge, adminContext.ledgerLock)) {
+            if (await isChargeLocked(charge.id, injector, adminContext.ledgerLock)) {
               handledCharges++;
               if (handledCharges % 50 === 0 || handledCharges === limitedCharges.length) {
                 push({ progress: calculateProgress() });
@@ -97,15 +97,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               return;
             }
             try {
-              const generatedRecordsPromise = ledgerGenerationByCharge(charge, context)(
-                charge,
-                { insertLedgerRecordsIfNotExists: false },
-                context,
-                info,
+              const chargeId = charge.id;
+              const generatedRecordsPromise = ledgerGenerationByCharge(chargeId, context).then(
+                func => func(chargeId, { insertLedgerRecordsIfNotExists: false }, context, info),
               );
               const storageRecordsPromise = injector
                 .get(LedgerProvider)
-                .getLedgerRecordsByChargesIdLoader.load(charge.id);
+                .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
               const [generatedRecords, storageRecords] = await Promise.all([
                 generatedRecordsPromise,
@@ -114,7 +112,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
               if (!generatedRecords || 'message' in generatedRecords) {
                 handledCharges++;
-                push({ progress: calculateProgress(), charge });
+                push({ progress: calculateProgress(), charge: charge.id });
                 return;
               }
 
@@ -134,11 +132,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               }
 
               handledCharges++;
-              push({ progress: calculateProgress(), charge });
+              push({ progress: calculateProgress(), charge: charge.id });
             } catch (err) {
               console.error(err);
               handledCharges++;
-              push({ progress: calculateProgress(), charge });
+              push({ progress: calculateProgress(), charge: charge.id });
             }
           }),
         );
@@ -174,22 +172,15 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge with id ${chargeId} not found`);
-      }
-      if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+      if (await isChargeLocked(chargeId, injector, context.adminContext.ledgerLock)) {
         return {
           __typename: 'CommonError',
           message: `Charge with id ${chargeId} is locked`,
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
-          charge,
-          { insertLedgerRecordsIfNotExists: true },
-          context,
-          info,
+        const generated = await ledgerGenerationByCharge(chargeId, context).then(func =>
+          func(chargeId, { insertLedgerRecordsIfNotExists: true }, context, info),
         );
         if (!generated || 'message' in generated) {
           const message = generated?.message ?? 'generation error';
@@ -210,7 +201,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         if (fullMatching.isFullyMatched) {
           return {
             records: storageLedgerRecords,
-            charge,
+            chargeId,
             errors: generated.errors,
           };
         }
@@ -299,7 +290,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         return {
           records: toUpdate,
-          charge,
+          chargeId,
           errors: generated.errors,
         };
       } catch (e) {
@@ -389,7 +380,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             res.filter(e => !!e && !(e instanceof Error)) as IGetFinancialEntitiesByIdsResult[],
         );
       const allowedUnbalancedBusinessesPromise = ledgerUnbalancedBusinessesByCharge(
-        parent.charge,
+        parent.chargeId,
         context,
       );
 
@@ -415,9 +406,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         financialEntities,
       );
     },
-    validate: async ({ charge, records }, _, context, info) => {
+    validate: async ({ chargeId, records }, _, context, info) => {
       const { ledgerLock } = context.adminContext;
-      if (isChargeLocked(charge, ledgerLock)) {
+      if (await isChargeLocked(chargeId, context.injector, ledgerLock)) {
         return {
           isValid: true,
           differences: [],
@@ -426,11 +417,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
-          charge,
-          { insertLedgerRecordsIfNotExists: records.length === 0 },
-          context,
-          info,
+        const generated = await ledgerGenerationByCharge(chargeId, context).then(func =>
+          func(chargeId, { insertLedgerRecordsIfNotExists: records.length === 0 }, context, info),
         );
         if (!generated || 'message' in generated) {
           return {
@@ -529,7 +517,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
   },
   ChargeMetadata: {
-    isLedgerLocked: async (DbCharge, _, { adminContext }) =>
-      isChargeLocked(DbCharge, adminContext.ledgerLock),
+    isLedgerLocked: async (chargeId, _, { adminContext, injector }) => {
+      return isChargeLocked(chargeId, injector, adminContext.ledgerLock);
+    },
   },
 };

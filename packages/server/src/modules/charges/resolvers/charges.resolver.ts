@@ -1,12 +1,16 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
+import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
+import { basicTransactionsValidation } from '@modules/transactions/helpers/validation.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
@@ -16,58 +20,26 @@ import {
   batchUpdateChargesTags,
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
+import { getChargeBusinesses } from '../helpers/charge-summaries.helper.js';
 import { getChargeType } from '../helpers/charge-type.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { ChargesTempProvider } from '../providers/charges-temp.provider.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
   IBatchUpdateChargesParams,
-  IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import {
-  commonChargeFields,
-  commonDocumentsFields,
-  commonFinancialAccountFields,
-  commonFinancialEntityFields,
-} from './common.js';
+import { commonChargeFields, commonDocumentsFields, safeGetChargeTempById } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
-    charge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-      }
-      return charge;
-    },
-    chargesByIDs: async (_, { chargeIDs }, { injector }) => {
-      if (chargeIDs.length === 0) {
-        return [];
-      }
-
-      const dbCharges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIDs);
-      if (!dbCharges) {
-        if (chargeIDs.length === 1) {
-          throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
-        } else {
-          throw new GraphQLError(`Couldn't find any charges`);
-        }
-      }
-
-      const charges = chargeIDs.map(id => {
-        const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
-        if (!charge) {
-          throw new GraphQLError(`Charge ID="${id}" not found`);
-        }
-        return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
-      });
-      return charges;
-    },
+    charge: (_, { chargeId }) => chargeId,
+    chargesByIDs: (_, { chargeIDs }) => chargeIDs,
     allCharges: async (_, { filters, page, limit }, { injector }) => {
       // handle sort column
       let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
@@ -115,7 +87,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       return {
         __typename: 'PaginatedCharges',
-        nodes: pageCharges,
+        nodes: pageCharges.map(charge => charge.id),
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
           totalRecords: charges.length,
@@ -150,7 +122,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       // get by charge
       const getByChargesPromise = injector
-        .get(ChargesProvider)
+        .get(ChargesTempProvider)
         .getChargesByMissingRequiredInfo()
         .then(charges => {
           charges.map(charge => {
@@ -215,7 +187,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       return {
         __typename: 'PaginatedCharges',
-        nodes: pageCharges,
+        nodes: pageCharges.map(charge => charge.id),
         pageInfo: {
           totalPages: Math.ceil(charges.length / limit),
           totalRecords: charges.length,
@@ -238,24 +210,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeId,
       };
       try {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        const res = await injector
-          .get(ChargesProvider)
+        await injector
+          .get(ChargesTempProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charge ID="${chargeId}"`);
           });
-        const updatedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(res[0].id)
-          .catch(e => {
-            console.error(e);
-            throw new GraphQLError(`Error loading updated charge ID="${chargeId}"`);
-          });
-        if (!updatedCharge) {
-          throw new Error(`Charge ID="${chargeId}" not found`);
-        }
 
         const indirectUpdatesPromises: Array<Promise<unknown>> = [];
 
@@ -351,7 +312,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
-        return { charge: updatedCharge };
+        return { charge: chargeId };
       } catch (e) {
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
@@ -383,38 +344,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeIds,
       };
       try {
-        for (const chargeId of chargeIds) {
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        }
-        const res = await injector
-          .get(ChargesProvider)
+        await injector
+          .get(ChargesTempProvider)
           .batchUpdateCharges({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charges (IDs "${chargeIds.join('", "')}")`);
           });
-        const updatedCharges = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.loadMany(res.map(c => c.id))
-          .catch(e => {
-            console.error(e);
-            throw new GraphQLError(
-              `Error loading updated charges (IDs "${chargeIds.join('", "')}")`,
-            );
-          });
-
-        // check if all charges were updated successfully
-        if (!updatedCharges) {
-          throw new GraphQLError(`Updated charges not found (IDs "${chargeIds.join('", "')}")`);
-        }
-        if (updatedCharges.some(charge => !charge || charge instanceof Error)) {
-          throw new GraphQLError(
-            `Some updated charges not found (IDs "${chargeIds.join('", "')}")`,
-          );
-        }
-
-        // Type assertion as error handling is done above
-        const charges = updatedCharges as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
 
         const indirectUpdatesPromises: Array<Promise<unknown>> = [];
 
@@ -445,7 +381,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
-        return { charges };
+        return { charges: chargeIds };
       } catch (e) {
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
@@ -459,11 +395,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     mergeCharges: async (_, { baseChargeID, chargeIdsToMerge, fields }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID);
-        if (!charge) {
-          throw new Error(`Charge not found`);
-        }
-
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
             accountantStatus: fields?.accountantApproval,
@@ -476,9 +407,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
           };
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
-            .get(ChargesProvider)
+            .get(ChargesTempProvider)
             .updateCharge({ ...adjustedFields })
             .catch(e => {
               const message = `Failed to update charge ID="${baseChargeID}" before merge`;
@@ -492,7 +422,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await mergeChargesExecutor(chargeIdsToMerge, baseChargeID, injector);
 
-        return { charge };
+        return { charge: baseChargeID };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
@@ -508,11 +438,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-        if (!charge) {
-          throw new GraphQLError(`Charge ID="${chargeId}" not found`);
-        }
-        if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+        const [documents, transactions] = await Promise.all([
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
+          injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+        ]);
+        if (documents.length > 0 || transactions.length > 0) {
           throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
         }
 
@@ -549,50 +479,53 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
   },
   CommonCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Common,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Conversion,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Conversion,
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Salary,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Salary,
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.InternalTransfer,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.InternalTransfer,
     ...commonChargeFields,
   },
   DividendCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Dividend,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.Dividend,
     ...commonChargeFields,
   },
   BusinessTripCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BusinessTrip,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.BusinessTrip,
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.MonthlyVat,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.MonthlyVat,
     ...commonChargeFields,
   },
   BankDepositCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BankDeposit,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.BankDeposit,
     ...commonChargeFields,
   },
   ForeignSecuritiesCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.ForeignSecurities,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.ForeignSecurities,
     ...commonChargeFields,
   },
   CreditcardBankCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.CreditcardBankCharge,
+    __isTypeOf: async (chargeId, context) =>
+      (await getChargeType(chargeId, context)) === ChargeTypeEnum.CreditcardBankCharge,
     ...commonChargeFields,
   },
   Invoice: {
@@ -616,47 +549,88 @@ export const chargesResolvers: ChargesModule.Resolvers &
   Receipt: {
     ...commonDocumentsFields,
   },
-  BankFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  CardFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  LtdFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
-  PersonalFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
   ChargeMetadata: {
-    createdAt: DbCharge => DbCharge.created_at,
-    updatedAt: DbCharge => DbCharge.updated_at,
-    invoicesCount: DbCharge => (DbCharge.invoices_count ? Number(DbCharge.invoices_count) : 0),
-    receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
-    documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
-    invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
-    openDocuments: DbCharge => DbCharge.open_docs_flag ?? false,
-    transactionsCount: DbCharge => {
-      return DbCharge.transactions_count ? Number(DbCharge.transactions_count) : 0;
+    createdAt: async (chargeId, _, { injector }) =>
+      (await safeGetChargeTempById(chargeId, injector)).created_at,
+    updatedAt: async (chargeId, _, { injector }) =>
+      (await safeGetChargeTempById(chargeId, injector)).updated_at,
+    invoicesCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const invoicesCount = documents.filter(doc => isInvoice(doc.type)).length;
+      return invoicesCount;
     },
-    invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
-    ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
-    invalidLedger: async (DbCharge, _, context, info) => {
+    receiptsCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      const receiptsCount = documents.filter(doc => isReceipt(doc.type)).length;
+      return receiptsCount;
+    },
+    documentsCount: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      return documents.length;
+    },
+    invalidDocuments: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      if (documents.length === 0) {
+        return false;
+      }
+      return documents.some(doc => !basicDocumentValidation(doc));
+    },
+    openDocuments: async (chargeId, _, { injector }) => {
+      const documents = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByChargeIdLoader.load(chargeId);
+      if (documents.length === 0) {
+        return false;
+      }
+      const issuedDocuments = await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsByIdLoader.loadMany(documents.map(doc => doc.id));
+      return issuedDocuments.some(
+        issuedDoc => issuedDoc && !(issuedDoc instanceof Error) && issuedDoc.status === 'OPEN',
+      );
+    },
+    transactionsCount: async (chargeId, _, { injector }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId);
+      return transactions.length;
+    },
+    invalidTransactions: async (chargeId, _, { injector }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeId);
+      if (transactions.length === 0) {
+        return false;
+      }
+      return transactions.some(t => !basicTransactionsValidation(t));
+    },
+    ledgerCount: async (chargeId, _, { injector }) => {
+      const ledgerRecords = await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(chargeId);
+      return ledgerRecords.length;
+    },
+    invalidLedger: async (chargeId, _, context, info) => {
       try {
-        if (isChargeLocked(DbCharge, context.adminContext.ledgerLock)) {
+        if (await isChargeLocked(chargeId, context.injector, context.adminContext.ledgerLock)) {
           return 'VALID';
         }
 
-        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context)(
-          DbCharge,
-          { insertLedgerRecordsIfNotExists: false },
-          context,
-          info,
+        const generatedLedgerPromise = ledgerGenerationByCharge(chargeId, context).then(func =>
+          func(chargeId, { insertLedgerRecordsIfNotExists: false }, context, info),
         );
 
         const currentRecordPromise = context.injector
           .get(LedgerProvider)
-          .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
+          .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
         const [currentRecord, generated] = await Promise.all([
           currentRecordPromise,
@@ -683,11 +657,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
         return 'INVALID';
       }
     },
-    miscExpensesCount: async (DbCharge, _, { injector }) => {
+    miscExpensesCount: async (chargeId, _, { injector }) => {
       try {
         return injector
           .get(MiscExpensesProvider)
-          .getExpensesByChargeIdLoader.load(DbCharge.id)
+          .getExpensesByChargeIdLoader.load(chargeId)
           .then(res => res.length);
       } catch (err) {
         const message = 'Error loading misc expenses';
@@ -695,8 +669,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError(message);
       }
     },
-    optionalBusinesses: DbCharge =>
-      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
-    isSalary: DbCharge => DbCharge.type === 'PAYROLL',
+    optionalBusinesses: async (chargeId, _, { injector }) => {
+      const { allBusinessIds } = await getChargeBusinesses(chargeId, injector);
+      return allBusinessIds.length > 1 ? allBusinessIds : [];
+    },
   },
 };

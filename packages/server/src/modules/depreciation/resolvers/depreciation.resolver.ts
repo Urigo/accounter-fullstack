@@ -184,24 +184,14 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
     },
   },
   CommonCharge: {
-    depreciationRecords: async (dbCharge, _, { injector }) => {
+    depreciationRecords: async (chargeId, _, { injector }) => {
       return injector
         .get(DepreciationProvider)
-        .getDepreciationRecordsByChargeIdLoader.load(dbCharge.id);
+        .getDepreciationRecordsByChargeIdLoader.load(chargeId);
     },
   },
   DepreciationRecord: {
-    charge: (dbDepreciationRecord, _, { injector }) => {
-      return injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(dbDepreciationRecord.charge_id)
-        .then(charge => {
-          if (!charge) {
-            throw new GraphQLError(`Charge with id ${dbDepreciationRecord.charge_id} not found`);
-          }
-          return charge;
-        });
-    },
+    charge: dbDepreciationRecord => dbDepreciationRecord.charge_id,
     chargeId: dbDepreciationRecord => dbDepreciationRecord.charge_id,
     amount: async (
       dbDepreciationRecord,

@@ -2,10 +2,10 @@ import { ChargeTagsProvider } from '../providers/charge-tags.provider.js';
 import { TagsModule } from '../types.js';
 
 export const commonTagsChargeFields: TagsModule.ChargeResolvers = {
-  tags: async (DbCharge, _, { injector }) => {
+  tags: async (chargeId, _, { injector }) => {
     return injector
       .get(ChargeTagsProvider)
-      .getTagsByChargeIDLoader.load(DbCharge.id)
+      .getTagsByChargeIDLoader.load(chargeId)
       .then(res => {
         if (!res) {
           return [];

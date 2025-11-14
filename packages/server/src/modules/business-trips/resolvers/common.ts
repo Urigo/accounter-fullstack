@@ -1,6 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
@@ -158,18 +156,12 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       : null,
   transactions: DbTripTransaction =>
     DbTripTransaction.transaction_ids?.length ? DbTripTransaction.transaction_ids : null,
-  charges: async (DbTripTransaction, _, { injector }) => {
+  charges: DbTripTransaction => {
     if (!DbTripTransaction.charge_ids?.length) {
       return null;
     }
 
-    return injector
-      .get(ChargesProvider)
-      .getChargeByIdLoader.loadMany(DbTripTransaction.charge_ids)
-      .then(
-        res =>
-          res.filter(charge => charge && !(charge instanceof Error)) as IGetChargesByIdsResult[],
-      );
+    return DbTripTransaction.charge_ids;
   },
   payedByEmployee: dbTransaction => dbTransaction.payed_by_employee,
 };

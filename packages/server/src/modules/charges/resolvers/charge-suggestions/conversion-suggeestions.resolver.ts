@@ -9,10 +9,10 @@ export const missingConversionInfoSuggestions: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   object
-> = async (DbCharge, _, { injector }) => {
+> = async (chargeId, _, { injector }) => {
   const transactions = await injector
     .get(TransactionsProvider)
-    .transactionsByChargeIDLoader.load(DbCharge.id);
+    .transactionsByChargeIDLoader.load(chargeId);
 
   let fromCurrency: string | undefined;
   let toCurrency: string | undefined;

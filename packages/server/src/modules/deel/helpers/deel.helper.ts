@@ -7,7 +7,7 @@ import type {
   PaymentBreakdownRecord,
   PaymentReceipts,
 } from '@modules/app-providers/deel/schemas.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesTempProvider } from '@modules/charges/providers/charges-temp.provider.js';
 import { uploadToCloudinary } from '@modules/documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import type {
@@ -337,7 +337,7 @@ export async function getChargeMatchesForPayments(
   await Promise.all(
     newReceipts.map(async receipt => {
       const description = await getDeelChargeDescription(injector, receipt.workers);
-      const [charge] = await injector.get(ChargesProvider).generateCharge({
+      const charge = await injector.get(ChargesTempProvider).generateCharge({
         ownerId,
         userDescription: description,
       });

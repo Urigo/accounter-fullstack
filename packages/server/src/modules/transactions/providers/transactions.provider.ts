@@ -155,7 +155,7 @@ export class TransactionsProvider {
   public async getTransactionsByMissingRequiredInfo() {
     return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider).then(res =>
       res.map(t => {
-        this.cache.set(`transaction-${t.id}`, t);
+        this.transactionByIdLoader.prime(t.id, t);
         return t;
       }),
     );
@@ -169,7 +169,7 @@ export class TransactionsProvider {
       this.dbProvider,
     );
     transactions.map(t => {
-      this.cache.set(`transaction-${t.id}`, t);
+      this.transactionByIdLoader.prime(t.id, t);
     });
     return chargeIds.map(id => transactions.filter(transaction => transaction.charge_id === id));
   }
@@ -200,12 +200,22 @@ export class TransactionsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getTransactionsByFilters.run(fullParams, this.dbProvider);
+    return getTransactionsByFilters.run(fullParams, this.dbProvider).then(transactions => {
+      transactions.map(t => {
+        this.transactionByIdLoader.prime(t.id, t);
+      });
+      return transactions;
+    });
   }
 
   public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
     try {
-      return getSimilarTransactions.run(params, this.dbProvider);
+      return getSimilarTransactions.run(params, this.dbProvider).then(transactions => {
+        transactions.map(t => {
+          this.transactionByIdLoader.prime(t.id, t);
+        });
+        return transactions;
+      });
     } catch (error) {
       const message = 'Failed to fetch similar transactions';
       console.error(message, error);
@@ -244,8 +254,8 @@ export class TransactionsProvider {
         },
         this.dbProvider,
       );
-      transactions.map(transaction => this.cache.delete(`transaction-${transaction.id}`));
-      this.cache.delete(`transactions-by-charge-${chargeId}`);
+      transactions.map(transaction => this.transactionByIdLoader.clear(transaction.id));
+      this.transactionsByChargeIDLoader.clear(chargeId);
     } catch (e) {
       console.error(`Error invalidating transaction by charge ID "${chargeId}":`, e);
     }
@@ -260,9 +270,9 @@ export class TransactionsProvider {
         this.dbProvider,
       );
       if (transaction) {
-        this.cache.delete(`transactions-by-charge-${transaction.charge_id}`);
+        this.transactionsByChargeIDLoader.clear(transaction.charge_id);
       }
-      this.cache.delete(`transaction-${id}`);
+      this.transactionByIdLoader.clear(id);
     } catch (e) {
       console.error(`Error invalidating transaction by ID "${id}":`, e);
     }
