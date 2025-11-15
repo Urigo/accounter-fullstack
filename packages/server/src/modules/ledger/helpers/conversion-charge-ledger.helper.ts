@@ -11,7 +11,23 @@ export function getConversionBankRate(base: LedgerProto, quote: LedgerProto) {
   if (!!baseRate && !!quoteRate && baseRate !== quoteRate) {
     throw new LedgerError('Conversion records have mismatching currency rates');
   }
-  const bankRate = baseRate || quoteRate;
+  let bankRate = baseRate || quoteRate;
+
+  if (
+    quote.currency === Currency.Ils ||
+    quote.currency === Currency.Jpy ||
+    base.currency === Currency.Gbp ||
+    (base.currency === Currency.Usd && quote.currency === Currency.Usdc)
+  ) {
+    /**
+     * NOTE:
+     * Invert the bank rate if buying local currency (ILS) or JPY (for unknown reason)
+     * Or selling GBP through HaPoalim
+     *
+     * Also invert when converting from USD to USDC through Kraken, need to check if same is true for other crypto purchases
+     */
+    bankRate = 1 / bankRate;
+  }
 
   return bankRate;
 }
@@ -37,11 +53,20 @@ export function conversionFeeCalculator(
     quote.currency === defaultLocalCurrency
       ? quote.localCurrencyCreditAmount1
       : (quote.creditAmount1 as number);
-  const baseAmountConvertedByEventRate = baseAmount / eventRate;
-  const minimalPrecision = Math.max(baseAmount / 10_000_000, 0.005);
-  if (baseAmountConvertedByEventRate - quoteAmount > minimalPrecision) {
+
+  // use the relatively absolute smaller amount to determine currency used for precision check
+  const baseAmountConvertedByEventRate = eventRate >= 1 ? baseAmount / eventRate : baseAmount;
+  const quoteAmountConvertedByEventRate = eventRate < 1 ? quoteAmount * eventRate : quoteAmount;
+  const minimalPrecision = Math.max(
+    (eventRate >= 1 ? baseAmount : quoteAmount) / 10_000_000,
+    0.005,
+  );
+  if (
+    Math.abs(baseAmountConvertedByEventRate - quoteAmountConvertedByEventRate) >
+    Math.abs(minimalPrecision)
+  ) {
     throw new LedgerError(
-      'Conversion records have mismatching amounts, taking the bank rate into account',
+      `Based on bank conversion rate (${eventRate}) records have mismatching amounts`,
     );
   }
   const baseAmountConvertedByOfficialRate = baseAmount / officialRate;
