@@ -10,14 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.10.12",
+    "@whatwg-node/fetch": "0.10.13",
     "diary": "0.4.5",
     "dotenv": "17.2.3",
     "node-kraken-api": "2.2.2",
     "pg-promise": "12.3.0"
   },
   "devDependencies": {
-    "tsup": "8.5.0"
+    "tsup": "8.5.1"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
