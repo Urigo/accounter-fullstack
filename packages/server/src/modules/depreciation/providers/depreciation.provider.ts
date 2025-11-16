@@ -88,7 +88,7 @@ const deleteDepreciationRecord = sql<IDeleteDepreciationRecordQuery>`
 
 const deleteDepreciationRecordByChargeId = sql<IDeleteDepreciationRecordByChargeIdQuery>`
   DELETE FROM accounter_schema.depreciation
-  WHERE id = $chargeId
+  WHERE charge_id = $chargeId
   RETURNING id;
 `;
 
