@@ -28,12 +28,7 @@ import type {
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import {
-  commonChargeFields,
-  commonDocumentsFields,
-  commonFinancialAccountFields,
-  commonFinancialEntityFields,
-} from './common.js';
+import { commonChargeFields, commonDocumentsFields } from './common.js';
 
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
@@ -612,18 +607,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Receipt: {
     ...commonDocumentsFields,
-  },
-  BankFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  CardFinancialAccount: {
-    ...commonFinancialAccountFields,
-  },
-  LtdFinancialEntity: {
-    ...commonFinancialEntityFields,
-  },
-  PersonalFinancialEntity: {
-    ...commonFinancialEntityFields,
   },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
