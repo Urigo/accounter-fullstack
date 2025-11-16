@@ -101,6 +101,9 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
+          if (!row.original.debitAccount1 && !row.original.diff?.debitAccount1) {
+            return null;
+          }
           return (
             <AmountCell
               foreignAmount={row.original.debitAmount1}
@@ -168,6 +171,9 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
+          if (!row.original.creditAccount1 && !row.original.diff?.creditAccount1) {
+            return null;
+          }
           return (
             <AmountCell
               foreignAmount={row.original.creditAmount1}
@@ -235,6 +241,9 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
+          if (!row.original.debitAccount2 && !row.original.diff?.debitAccount2) {
+            return null;
+          }
           return (
             <AmountCell
               foreignAmount={row.original.debitAmount2}
@@ -275,6 +284,9 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
+          if (!row.original.creditAccount2 && !row.original.diff?.creditAccount2) {
+            return null;
+          }
           return (
             <CounterpartyCell
               account={row.original.creditAccount2}
