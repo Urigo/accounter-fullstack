@@ -90,7 +90,6 @@ export function ChargeExtendedInfoMenu({
               Insert Document
             </Menu.Item>
           )}
-          (
           <Menu.Item
             icon={<FilePlus2 size={14} />}
             onClick={(event: ClickEvent): void => {
@@ -101,7 +100,6 @@ export function ChargeExtendedInfoMenu({
           >
             Upload Documents
           </Menu.Item>
-          )
           {setMatchDocuments && (
             <Menu.Item
               icon={<Search size={14} />}
