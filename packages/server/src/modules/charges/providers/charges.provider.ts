@@ -112,10 +112,6 @@ const updateCharge = sql<IUpdateChargeQuery>`
     $type,
     type
   ),
-  is_property = COALESCE(
-    $isProperty,
-    is_property
-  ),
   invoice_payment_currency_diff = COALESCE(
     $isInvoicePaymentDifferentCurrency,
     invoice_payment_currency_diff
@@ -156,10 +152,6 @@ const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
     $type,
     type
   ),
-  is_property = COALESCE(
-    $isProperty,
-    is_property
-  ),
   invoice_payment_currency_diff = COALESCE(
     $isInvoicePaymentDifferentCurrency,
     invoice_payment_currency_diff
@@ -195,8 +187,8 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 `;
 
 const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, is_property, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag)
-  VALUES ($ownerId, $type, $isProperty, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments)
+  INSERT INTO accounter_schema.charges (owner_id, type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag)
+  VALUES ($ownerId, $type, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments)
   RETURNING *;
 `;
 
@@ -398,7 +390,6 @@ export class ChargesProvider {
 
   public generateCharge(params: IGenerateChargeParams) {
     const fullParams = {
-      isProperty: false,
       userDescription: null,
       optionalVAT: false,
       optionalDocuments: false,

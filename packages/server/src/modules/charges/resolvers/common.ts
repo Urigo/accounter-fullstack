@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { calculateTotalAmount } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
@@ -13,7 +15,18 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       : null,
   totalAmount: (dbCharge, _, { adminContext: { defaultLocalCurrency } }) =>
     calculateTotalAmount(dbCharge, defaultLocalCurrency),
-  property: DbCharge => DbCharge.is_property,
+  property: async (dbCharge, _, { injector }) => {
+    try {
+      const depreciation = await injector
+        .get(DepreciationProvider)
+        .getDepreciationRecordsByChargeIdLoader.load(dbCharge.id);
+      return depreciation.length > 0;
+    } catch (error) {
+      const message = `Failed to fetch depreciation records`;
+      console.error(`${message} for charge ID=${dbCharge.id}: `, error);
+      throw new GraphQLError(message);
+    }
+  },
   conversion: DbCharge => DbCharge.type === 'CONVERSION',
   salary: DbCharge => DbCharge.type === 'PAYROLL',
   isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
