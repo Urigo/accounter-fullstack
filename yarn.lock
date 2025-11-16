@@ -23,7 +23,7 @@ __metadata:
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch"
     "@types/pg": "npm:8.15.6"
-    pg-promise: "npm:12.2.0"
+    pg-promise: "npm:12.3.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
     zod: "npm:4.1.12"
@@ -163,7 +163,7 @@ __metadata:
     csv-parse: "npm:6.1.0"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.3"
-    pg-promise: "npm:12.2.0"
+    pg-promise: "npm:12.3.0"
     tsup: "npm:8.5.0"
   languageName: unknown
   linkType: soft
@@ -175,7 +175,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.12"
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.3"
-    pg-promise: "npm:12.2.0"
+    pg-promise: "npm:12.3.0"
     tsup: "npm:8.5.0"
   languageName: unknown
   linkType: soft
@@ -240,7 +240,7 @@ __metadata:
     diary: "npm:0.4.5"
     dotenv: "npm:17.2.3"
     node-kraken-api: "npm:2.2.2"
-    pg-promise: "npm:12.2.0"
+    pg-promise: "npm:12.3.0"
     tsup: "npm:8.5.0"
   languageName: unknown
   linkType: soft
@@ -18389,17 +18389,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-promise@npm:12.2.0":
-  version: 12.2.0
-  resolution: "pg-promise@npm:12.2.0"
+"pg-promise@npm:12.3.0":
+  version: 12.3.0
+  resolution: "pg-promise@npm:12.3.0"
   dependencies:
     assert-options: "npm:0.8.3"
     pg: "npm:8.16.3"
     pg-minify: "npm:1.8.0"
-    spex: "npm:4.0.2"
+    spex: "npm:4.1.0"
   peerDependencies:
     pg-query-stream: 4.10.3
-  checksum: 10c0/5ed230abe4c2b674c38c501179e660ef65a7f4664dc235d93e7dd998fd58ec85aecd2b27679d7128529e08d826ed97c5e7aae8c30f70ffad900d98e53d87e4cb
+  checksum: 10c0/e170ffa741e3849672cdc8733ddf24c80a900744988f390e324b104ac3da553d6d4adc2cd81078250b6e59d923692958ead243f5ed04c1cccfcf76e4660195a0
   languageName: node
   linkType: hard
 
@@ -20686,10 +20686,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"spex@npm:4.0.2":
-  version: 4.0.2
-  resolution: "spex@npm:4.0.2"
-  checksum: 10c0/d7b8d6badabce50678c4edc8d4e7f6882b0f2fa4d1606964cd695d8694fb519f7ed3a4da91297d1339898ad8084511db1c012feff5e1b2a1ab981a662162326a
+"spex@npm:4.1.0":
+  version: 4.1.0
+  resolution: "spex@npm:4.1.0"
+  checksum: 10c0/d073167f3da25c7b36fbec378963d9b3de403f0b552bfd53f826fb30ea540714c2eb616090944e888876d00b78a480f3c958ba338f817b18916c20abff15bb48
   languageName: node
   linkType: hard
 
