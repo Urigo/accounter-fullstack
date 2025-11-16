@@ -256,27 +256,25 @@ export const generateLedgerRecordsForConversion: ResolverFn<
             .getExchangeRates(currency as Currency, defaultLocalCurrency, baseEntry!.valueDate),
         ),
       );
-      const toLocalRate = quoteRate;
       const directRate = quoteRate / baseRate;
 
       try {
-        const conversionFee = conversionFeeCalculator(
+        const conversionFeeInLocalAmount = conversionFeeCalculator(
           baseEntry,
           quoteEntry,
           directRate,
           defaultLocalCurrency,
-          toLocalRate,
         );
 
-        if (conversionFee.localAmount !== 0) {
-          const isDebitConversion = conversionFee.localAmount >= 0;
+        if (conversionFeeInLocalAmount !== 0) {
+          const isDebitConversion = conversionFeeInLocalAmount >= 0;
 
           const ledgerEntry: LedgerProto = {
             id: quoteEntry.id + '|revaluation', // NOTE: this field is dummy
             creditAccountID1: isDebitConversion ? exchangeRevaluationTaxCategoryId : undefined,
-            localCurrencyCreditAmount1: Math.abs(conversionFee.localAmount),
+            localCurrencyCreditAmount1: Math.abs(conversionFeeInLocalAmount),
             debitAccountID1: isDebitConversion ? undefined : exchangeRevaluationTaxCategoryId,
-            localCurrencyDebitAmount1: Math.abs(conversionFee.localAmount),
+            localCurrencyDebitAmount1: Math.abs(conversionFeeInLocalAmount),
             description: 'Exchange Revaluation',
             isCreditorCounterparty: true,
             invoiceDate: quoteEntry.invoiceDate,
