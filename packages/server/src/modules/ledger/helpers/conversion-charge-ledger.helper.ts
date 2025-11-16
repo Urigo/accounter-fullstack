@@ -13,12 +13,9 @@ export function conversionFeeCalculator(
   }
 
   if (quote.currency === defaultLocalCurrency) {
-    const baseAmount =
-      base.currency === defaultLocalCurrency
-        ? base.localCurrencyCreditAmount1
-        : (base.creditAmount1 as number);
+    const baseAmount = (base.creditAmount1 ?? 0) / officialRate;
 
-    const feeAmountByQuoteCurrency = quote.localCurrencyCreditAmount1 - baseAmount / officialRate;
+    const feeAmountByQuoteCurrency = quote.localCurrencyCreditAmount1 - baseAmount;
 
     return feeAmountByQuoteCurrency;
   }
