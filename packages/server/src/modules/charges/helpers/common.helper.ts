@@ -59,27 +59,19 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
   });
 
   ledgerRecords.map(lr => {
-    if (lr.credit_entity1 && lr.credit_entity1 !== charge.owner_id) {
-      allBusinessIdsSet.add(lr.credit_entity1);
-    }
-    if (lr.credit_entity2 && lr.credit_entity2 !== charge.owner_id) {
-      allBusinessIdsSet.add(lr.credit_entity2);
-    }
-    if (lr.debit_entity1 && lr.debit_entity1 !== charge.owner_id) {
-      allBusinessIdsSet.add(lr.debit_entity1);
-    }
-    if (lr.debit_entity2 && lr.debit_entity2 !== charge.owner_id) {
-      allBusinessIdsSet.add(lr.debit_entity2);
-    }
+    [lr.credit_entity1, lr.credit_entity2, lr.debit_entity1, lr.debit_entity2].map(id => {
+      if (id && id !== charge.owner_id) {
+        allBusinessIdsSet.add(id);
+      }
+    });
   });
 
   miscExpenses.map(me => {
-    if (me.creditor_id && me.creditor_id !== charge.owner_id) {
-      allBusinessIdsSet.add(me.creditor_id);
-    }
-    if (me.debtor_id && me.debtor_id !== charge.owner_id) {
-      allBusinessIdsSet.add(me.debtor_id);
-    }
+    [me.creditor_id, me.debtor_id].map(id => {
+      if (id && id !== charge.owner_id) {
+        allBusinessIdsSet.add(id);
+      }
+    });
   });
 
   const allBusinessIds = Array.from(allBusinessIdsSet);
@@ -112,10 +104,10 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     const amount = d.total_amount ?? 0;
     let factor = 1;
     if (d.debtor_id === charge.owner_id) {
-      factor = factor * -1;
+      factor *= -1;
     }
     if (d.type === DocumentType.CreditInvoice) {
-      factor = factor * -1;
+      factor *= -1;
     }
 
     if (isInvoice(d.type)) {
@@ -148,7 +140,8 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
   const currenciesSet = new Set<Currency>();
 
   transactions.map(t => {
-    const amount = Number.isNaN(t.amount) ? null : Number(t.amount);
+    const amountAsNumber = Number(t.amount);
+    const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
     if (amount != null) {
       transactionsAmount ??= 0;
       transactionsAmount += amount;
