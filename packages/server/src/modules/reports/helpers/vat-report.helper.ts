@@ -1,4 +1,5 @@
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
+import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
@@ -63,6 +64,11 @@ export async function adjustTaxRecord(
       throw new Error(`Date is missing for invoice ID=${doc.id}`);
     }
 
+    const isProperty = await injector
+      .get(DepreciationProvider)
+      .getDepreciationRecordsByChargeIdLoader.load(charge.id)
+      .then(records => records.length > 0);
+
     // get exchange rate
     let rate = 1;
     if (doc.exchange_rate_override) {
@@ -91,7 +97,7 @@ export async function adjustTaxRecord(
       documentAmount: String(creditInvoiceFactor * totalAmount),
       foreignVat: doc.currency_code === defaultLocalCurrency ? null : vatAmount,
       localVat: doc.currency_code === defaultLocalCurrency ? vatAmount : null,
-      isProperty: charge.is_property,
+      isProperty,
       vatNumber: business.vat_number,
       isExpense:
         doc.type === DocumentType.CreditInvoice

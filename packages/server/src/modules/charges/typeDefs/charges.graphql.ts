@@ -309,18 +309,6 @@ export default gql`
 
   " input variables for updateCharge "
   input UpdateChargeInput {
-    # createdAt: DateTime!
-    # additionalDocument: [Linkable!]!
-
-    # transactions: [Transaction!]!
-
-    # description: String
-    # vat: Float
-    # withholdingTax: Float
-    # totalAmount: FinancialAmountInput
-    # eslint-disable-next-line @graphql-eslint/no-hashtag-description -- field for the future
-    # invoice: Invoice
-    isProperty: Boolean
     isConversion: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "

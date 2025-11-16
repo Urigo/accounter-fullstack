@@ -62,9 +62,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
   const [selectedOwner, setSelectedOwner] = useState<{ id: string; value: string } | undefined>(
     undefined,
   );
-  const [selectedProperty, setSelectedProperty] = useState<
-    { id: string; value: boolean } | undefined
-  >(undefined);
   const [selectedOptionalVAT, setSelectedOptionalVAT] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
@@ -123,13 +120,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         isConversion: selectedConversion.value,
       };
     }
-    if (selectedProperty && selectedProperty.value !== mainCharge.property) {
-      fields ??= {};
-      fields = {
-        ...fields,
-        isProperty: selectedProperty.value,
-      };
-    }
     if (selectedOptionalVAT && selectedOptionalVAT.value !== mainCharge.optionalVAT) {
       fields ??= {};
       fields = {
@@ -181,7 +171,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedDescription,
     selectedOwner,
     selectedConversion,
-    selectedProperty,
     selectedOptionalVAT,
     selectedCurrencyDiff,
     selectedTags,
@@ -223,10 +212,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedOwner({
                           id: charge.id,
                           value: charge.owner.id,
-                        });
-                        setSelectedProperty({
-                          id: charge.id,
-                          value: charge.property ?? false,
                         });
                         setSelectedOptionalVAT({
                           id: charge.id,
@@ -302,36 +287,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       style={selectedOwner?.id === charge.id ? { background: '#228be633' } : {}}
                     >
                       {charge.owner.name}
-                    </div>
-                  </button>
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <th>Is Property</th>
-              {charges.map(charge => (
-                <td key={charge.id}>
-                  <button
-                    className="w-full px-2"
-                    disabled={
-                      charge.property == null || charge.property === selectedProperty?.value
-                    }
-                    onClick={(): void => {
-                      setSelectedProperty({
-                        id: charge.id,
-                        value: charge.property ?? false,
-                      });
-                    }}
-                  >
-                    <div
-                      className="flex items-center justify-center px-2 py-2 border-x-2"
-                      style={selectedProperty?.id === charge.id ? { background: '#228be633' } : {}}
-                    >
-                      {charge.property ? (
-                        <CheckSquare size={20} color="green" />
-                      ) : (
-                        <XSquare size={20} color="red" />
-                      )}
                     </div>
                   </button>
                 </td>
@@ -448,7 +403,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       charge.isInvoicePaymentDifferentCurrency === selectedCurrencyDiff?.value
                     }
                     onClick={(): void => {
-                      setSelectedProperty({
+                      setSelectedCurrencyDiff({
                         id: charge.id,
                         value: charge.isInvoicePaymentDifferentCurrency ?? false,
                       });
