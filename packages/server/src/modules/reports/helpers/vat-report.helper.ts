@@ -1,8 +1,8 @@
 import type { IGetChargesByFiltersResult } from '@modules/charges/types';
-import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider';
-import type { IGetDocumentsByFiltersResult } from '@modules/documents/types';
+import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
+import type { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
+import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import { DECREASED_VAT_RATIO } from '@shared/constants';
 import { Currency, DocumentType } from '@shared/enums';
