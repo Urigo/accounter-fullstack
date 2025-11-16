@@ -7,6 +7,15 @@ import { CounterpartyCell } from './counterparty-cell.jsx';
 import { DateCell } from './date-cell.jsx';
 import type { LedgerRecordRow } from './index.js';
 
+const shouldHideCellForAccount = (
+  row: { original: LedgerRecordRow },
+  accountKey: 'debitAccount1' | 'creditAccount1' | 'debitAccount2' | 'creditAccount2',
+) => {
+  const account = row.original[accountKey];
+  const diffAccount = row.original.diff?.[accountKey];
+  return !account && !diffAccount;
+};
+
 export const columns: ColumnDef<LedgerRecordRow>[] = [
   {
     accessorKey: 'invoiceDate',
@@ -101,7 +110,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
-          if (!row.original.debitAccount1 && !row.original.diff?.debitAccount1) {
+          if (shouldHideCellForAccount(row, 'debitAccount1')) {
             return null;
           }
           return (
@@ -171,7 +180,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
-          if (!row.original.creditAccount1 && !row.original.diff?.creditAccount1) {
+          if (shouldHideCellForAccount(row, 'creditAccount1')) {
             return null;
           }
           return (
@@ -241,7 +250,7 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
-          if (!row.original.debitAccount2 && !row.original.diff?.debitAccount2) {
+          if (shouldHideCellForAccount(row, 'debitAccount2')) {
             return null;
           }
           return (
@@ -284,9 +293,6 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
-          if (!row.original.creditAccount2 && !row.original.diff?.creditAccount2) {
-            return null;
-          }
           return (
             <CounterpartyCell
               account={row.original.creditAccount2}
@@ -314,6 +320,9 @@ export const columns: ColumnDef<LedgerRecordRow>[] = [
           );
         },
         cell: ({ row }) => {
+          if (shouldHideCellForAccount(row, 'creditAccount2')) {
+            return null;
+          }
           return (
             <AmountCell
               foreignAmount={row.original.creditAmount2}
