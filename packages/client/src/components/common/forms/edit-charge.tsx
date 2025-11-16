@@ -239,26 +239,6 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <TagsInput formManager={formManager} tagsPath="tags" />
 
               <FormField
-                name="isProperty"
-                control={control}
-                defaultValue={charge.property}
-                render={({ field }) => (
-                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Is Property</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        disabled
-                        checked={field.value === true}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
                 name="isConversion"
                 control={control}
                 defaultValue={charge.conversion}
