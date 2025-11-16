@@ -4,8 +4,8 @@ import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers
 import { calculateTotalAmount } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
-import type { ChargesModule, IGetChargesByIdsResult } from '../types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
+import type { ChargesModule } from '../types.js';
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
   id: DbCharge => DbCharge.id,
