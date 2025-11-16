@@ -48,14 +48,12 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
   });
 
   documents.map(d => {
-    if (d.creditor_id && d.creditor_id !== charge.owner_id) {
-      allBusinessIdsSet.add(d.creditor_id);
-      mainBusinessIdsSet.add(d.creditor_id);
-    }
-    if (d.debtor_id && d.debtor_id !== charge.owner_id) {
-      allBusinessIdsSet.add(d.debtor_id);
-      mainBusinessIdsSet.add(d.debtor_id);
-    }
+    [d.creditor_id, d.debtor_id].map(id => {
+      if (id && id !== charge.owner_id) {
+        allBusinessIdsSet.add(id);
+        mainBusinessIdsSet.add(id);
+      }
+    });
   });
 
   ledgerRecords.map(lr => {
