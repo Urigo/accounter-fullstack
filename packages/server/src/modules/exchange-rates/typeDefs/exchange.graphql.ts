@@ -31,54 +31,13 @@ export default gql`
     rate: Float!
   }
 
-  extend interface Charge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type CommonCharge {
-    exchangeRates: ExchangeRates
-  }
-
   extend type FinancialCharge {
     exchangeRates: ExchangeRates
   }
 
   extend type ConversionCharge {
-    exchangeRates: ExchangeRates
     eventRate: ConversionRate
     officialRate: ConversionRate
-  }
-
-  extend type SalaryCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type InternalTransferCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type DividendCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type BusinessTripCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type MonthlyVatCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type BankDepositCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type ForeignSecuritiesCharge {
-    exchangeRates: ExchangeRates
-  }
-
-  extend type CreditcardBankCharge {
-    exchangeRates: ExchangeRates
   }
 
   extend interface Transaction {
