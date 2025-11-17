@@ -627,7 +627,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           return 'VALID';
         }
 
-        const generatedLedgerPromise = ledgerGenerationByCharge(DbCharge, context)(
+        const generatedLedgerPromise = ledgerGenerationByCharge(
           DbCharge,
           { insertLedgerRecordsIfNotExists: false },
           context,
