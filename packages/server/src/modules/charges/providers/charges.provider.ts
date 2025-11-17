@@ -14,10 +14,6 @@ import type {
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
-  IGetChargesByFinancialAccountIdsParams,
-  IGetChargesByFinancialAccountIdsQuery,
-  IGetChargesByFinancialAccountIdsResult,
-  IGetChargesByFinancialEntityIdsParams,
   IGetChargesByFinancialEntityIdsQuery,
   IGetChargesByFinancialEntityIdsResult,
   IGetChargesByIdsQuery,
@@ -66,20 +62,6 @@ const getChargesByTransactionIds = sql<IGetChargesByTransactionIdsQuery>`
     LEFT JOIN accounter_schema.extended_charges c
       ON t.charge_id = c.id
     WHERE t.id IN $$transactionIds;`;
-
-const getChargesByFinancialAccountIds = sql<IGetChargesByFinancialAccountIdsQuery>`
-    SELECT c.*, t.account_id
-    FROM accounter_schema.extended_charges c
-    LEFT JOIN accounter_schema.transactions t
-    ON c.id = t.charge_id AND t.event_date = c.transactions_min_event_date
-    WHERE c.id IN (
-      SELECT charge_id
-      FROM accounter_schema.transactions
-      WHERE account_id IN $$financialAccountIDs
-      AND ($fromDate ::TEXT IS NULL OR transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-      AND ($toDate ::TEXT IS NULL OR transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    )
-    ORDER BY t.event_date DESC;`;
 
 const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
     SELECT c.*
@@ -313,39 +295,6 @@ export class ChargesProvider {
     (transactionIds: readonly string[]) => this.batchChargesByTransactionIds(transactionIds),
     { cache: false },
   );
-
-  public getChargesByFinancialAccountIds(params: IGetChargesByFinancialAccountIdsParams) {
-    return getChargesByFinancialAccountIds.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IGetChargesByFinancialAccountIdsResult>[]
-    >;
-  }
-
-  private async batchChargesByFinancialAccountIds(financialAccountIDs: readonly string[]) {
-    const charges = (await getChargesByFinancialAccountIds.run(
-      {
-        financialAccountIDs,
-        fromDate: null,
-        toDate: null,
-      },
-      this.dbProvider,
-    )) as ChargeRequiredWrapper<IGetChargesByFinancialAccountIdsResult>[];
-    return financialAccountIDs.map(accountId =>
-      charges.filter(charge => charge.account_id === accountId),
-    );
-  }
-
-  public getChargeByFinancialAccountIDsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesByFinancialAccountIds(keys),
-    {
-      cache: false,
-    },
-  );
-
-  public getChargesByFinancialEntityIds(params: IGetChargesByFinancialEntityIdsParams) {
-    return getChargesByFinancialEntityIds.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResult>[]
-    >;
-  }
 
   private async batchChargesByFinancialEntityIds(ownerIds: readonly string[]) {
     const charges = (await getChargesByFinancialEntityIds.run(
