@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { calculateTotalAmount } from '../helpers/common.helper.js';
+import { calculateTotalAmount, getChargeTransactionsMeta } from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
@@ -31,8 +31,20 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   salary: DbCharge => DbCharge.type === 'PAYROLL',
   isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
   userDescription: DbCharge => DbCharge.user_description,
-  minEventDate: DbCharge => DbCharge.transactions_min_event_date,
-  minDebitDate: DbCharge => DbCharge.transactions_min_debit_date,
+  minEventDate: async (DbCharge, _, { injector }) =>
+    getChargeTransactionsMeta(DbCharge.id, injector)
+      .then(({ transactionsMinEventDate }) => transactionsMinEventDate)
+      .catch(error => {
+        console.error('Failed to fetch charge transactions meta:', error);
+        throw new GraphQLError('Failed to fetch min event date');
+      }),
+  minDebitDate: async (DbCharge, _, { injector }) =>
+    getChargeTransactionsMeta(DbCharge.id, injector)
+      .then(({ transactionsMinDebitDate }) => transactionsMinDebitDate)
+      .catch(error => {
+        console.error('Failed to fetch charge transactions meta:', error);
+        throw new GraphQLError('Failed to fetch min debit date');
+      }),
   minDocumentsDate: DbCharge => DbCharge.documents_min_date,
   validationData: (DbCharge, _, context) => validateCharge(DbCharge, context),
   metadata: DbCharge => DbCharge,

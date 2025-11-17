@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
@@ -64,11 +65,11 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     date: timelessDate => timelessDate,
   },
   FinancialCharge: {
-    exchangeRates: DbCharge => {
+    exchangeRates: async (DbCharge, _, { injector }) => {
+      const { transactionsMinDebitDate } = await getChargeTransactionsMeta(DbCharge.id, injector);
+
       const ratesDate =
-        DbCharge.transactions_min_debit_date ||
-        DbCharge.documents_min_date ||
-        DbCharge.ledger_min_invoice_date;
+        transactionsMinDebitDate || DbCharge.documents_min_date || DbCharge.ledger_min_invoice_date;
 
       if (!ratesDate) {
         return null;

@@ -6,6 +6,8 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
   let transactionsAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
   let invalidTransactions = false;
+  let transactionsMinDebitDate: Date | null = null;
+  let transactionsMinEventDate: Date | null = null;
 
   transactions.map(t => {
     const amountAsNumber = Number(t.amount);
@@ -15,6 +17,23 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
       transactionsAmount += amount;
       currenciesSet.add(t.currency as Currency);
     }
+    if (t.debit_timestamp) {
+      transactionsMinDebitDate ??= t.debit_timestamp;
+      if (transactionsMinDebitDate > t.debit_timestamp) {
+        transactionsMinDebitDate = t.debit_timestamp;
+      }
+    } else if (t.debit_date) {
+      transactionsMinDebitDate ??= t.debit_date;
+      if (transactionsMinDebitDate > t.debit_date) {
+        transactionsMinDebitDate = t.debit_date;
+      }
+    }
+
+    transactionsMinEventDate ??= t.event_date;
+    if (transactionsMinEventDate > t.event_date) {
+      transactionsMinEventDate = t.event_date;
+    }
+
     if (isTransactionsValid(t)) {
       invalidTransactions = true;
     }
@@ -30,5 +49,7 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
     transactionsCurrencies,
     transactionsCurrency,
     invalidTransactions,
+    transactionsMinDebitDate,
+    transactionsMinEventDate,
   };
 }

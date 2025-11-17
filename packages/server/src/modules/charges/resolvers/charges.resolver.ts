@@ -17,6 +17,7 @@ import {
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
 import { getChargeType } from '../helpers/charge-type.js';
+import { getChargeTransactionsMeta } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
@@ -158,23 +159,31 @@ export const chargesResolvers: ChargesModule.Resolvers &
       await Promise.all([getByTransactionsPromise, getByDocumentsPromise, getByChargesPromise]);
 
       const charges = await Promise.all(
-        Array.from(chargeIds).map(
-          async id =>
-            await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(id)
-              .then(charge => {
-                if (!charge) {
-                  throw new GraphQLError(`Charge ID="${id}" not found`);
-                }
-                return charge;
-              })
-              .catch(e => {
-                const message = `Error loading charge ID="${id}"`;
-                console.error(`${message}: ${e}`);
-                throw new GraphQLError(message);
-              }),
-        ),
+        Array.from(chargeIds).map(async id => {
+          const [charge, { transactionsMinDebitDate, transactionsMinEventDate }] =
+            await Promise.all([
+              injector
+                .get(ChargesProvider)
+                .getChargeByIdLoader.load(id)
+                .then(charge => {
+                  if (!charge) {
+                    throw new GraphQLError(`Charge ID="${id}" not found`);
+                  }
+                  return charge;
+                })
+                .catch(e => {
+                  const message = `Error loading charge ID="${id}"`;
+                  console.error(`${message}: ${e}`);
+                  throw new GraphQLError(message);
+                }),
+              getChargeTransactionsMeta(id, injector),
+            ]);
+          return {
+            ...charge,
+            transactionsMinDebitDate,
+            transactionsMinEventDate,
+          };
+        }),
       );
 
       const pageCharges = charges
@@ -183,16 +192,16 @@ export const chargesResolvers: ChargesModule.Resolvers &
           const dateA =
             (
               chargeA.documents_min_date ||
-              chargeA.transactions_min_debit_date ||
-              chargeA.transactions_min_event_date ||
+              chargeA.transactionsMinDebitDate ||
+              chargeA.transactionsMinEventDate ||
               chargeA.ledger_min_value_date ||
               chargeA.ledger_min_invoice_date
             )?.getTime() ?? 0;
           const dateB =
             (
               chargeB.documents_min_date ||
-              chargeB.transactions_min_debit_date ||
-              chargeB.transactions_min_event_date ||
+              chargeB.transactionsMinDebitDate ||
+              chargeB.transactionsMinEventDate ||
               chargeB.ledger_min_value_date ||
               chargeB.ledger_min_invoice_date
             )?.getTime() ?? 0;

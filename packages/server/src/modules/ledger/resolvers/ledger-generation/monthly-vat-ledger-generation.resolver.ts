@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -42,8 +43,12 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
   try {
     // figure out VAT month
-    const transactionDate =
-      charge.transactions_min_debit_date ?? charge.transactions_min_event_date ?? undefined;
+    const { transactionsMinDebitDate, transactionsMinEventDate } = await getChargeTransactionsMeta(
+      chargeId,
+      injector,
+    );
+
+    const transactionDate = transactionsMinDebitDate ?? transactionsMinEventDate ?? undefined;
     if (!charge.user_description) {
       errors.add(
         `Monthly VAT charge must have description that indicates it's month (ID="${chargeId}")`,
