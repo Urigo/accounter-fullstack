@@ -183,6 +183,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const documentDate = getDocumentDateOutOfTransactions(transactions);
 
+      const transactionsCurrencies = Array.from(new Set(transactions.map(t => t.currency)));
+      const transactionsCurrency =
+        transactionsCurrencies.length === 1 ? transactionsCurrencies[0] : undefined;
+
       return {
         remarks,
         // description: ____,
@@ -191,7 +195,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.transactions_currency ||
+        currency: (transactionsCurrency ||
           charge.documents_currency ||
           defaultCryptoConversionFiatCurrency) as Currency,
         vatType,

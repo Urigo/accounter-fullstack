@@ -13,8 +13,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     DbCharge.documents_vat_amount != null && DbCharge.documents_currency
       ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
       : null,
-  totalAmount: (dbCharge, _, { adminContext: { defaultLocalCurrency } }) =>
-    calculateTotalAmount(dbCharge, defaultLocalCurrency),
+  totalAmount: async (dbCharge, _, { adminContext: { defaultLocalCurrency }, injector }) =>
+    calculateTotalAmount(dbCharge.id, injector, defaultLocalCurrency),
   property: async (dbCharge, _, { injector }) => {
     try {
       const depreciation = await injector

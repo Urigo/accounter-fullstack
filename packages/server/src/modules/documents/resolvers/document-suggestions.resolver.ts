@@ -1,3 +1,4 @@
+import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -24,26 +25,24 @@ const missingInfoSuggestions: Resolver<
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};
   if (RawDocument.charge_id) {
-    const charge = await injector
-      .get(ChargesProvider)
-      .getChargeByIdLoader.load(RawDocument.charge_id);
+    const [charge, { transactionsAmount, transactionsCurrency }] = await Promise.all([
+      injector.get(ChargesProvider).getChargeByIdLoader.load(RawDocument.charge_id),
+      getChargeTransactionsMeta(RawDocument.charge_id, injector),
+    ]);
     if (charge?.business_id) {
       response.counterpartyId = charge.business_id;
     }
     if (charge?.owner_id) {
       response.ownerId = charge.owner_id;
     }
-    if (charge?.transactions_event_amount) {
-      const amount = Number(charge.transactions_event_amount);
-      if (!Number.isNaN(amount)) {
-        response.isIncome = Number(charge.transactions_event_amount) > 0;
-      }
+    if (transactionsAmount) {
+      response.isIncome = transactionsAmount > 0;
     }
-    if (charge?.transactions_event_amount && charge?.transactions_currency) {
+    if (transactionsAmount && transactionsCurrency) {
       // use transactions info, if exists
       response.amount = {
-        amount: Number(charge.transactions_event_amount),
-        currency: formatCurrency(charge.transactions_currency),
+        amount: transactionsAmount,
+        currency: formatCurrency(transactionsCurrency),
       };
     } else if (charge?.documents_event_amount && charge?.documents_currency) {
       // Use parallel documents (if exists) as documents_event_amount is based on invoices OR receipts

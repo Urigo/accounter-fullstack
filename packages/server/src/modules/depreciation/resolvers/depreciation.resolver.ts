@@ -211,13 +211,13 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       if (dbDepreciationRecord.amount && dbDepreciationRecord.currency) {
         return formatFinancialAmount(dbDepreciationRecord.amount, dbDepreciationRecord.currency);
       }
-      const charge = await injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(dbDepreciationRecord.charge_id);
+      const [charge, amount] = await Promise.all([
+        injector.get(ChargesProvider).getChargeByIdLoader.load(dbDepreciationRecord.charge_id),
+        calculateTotalAmount(dbDepreciationRecord.charge_id, injector, defaultLocalCurrency),
+      ]);
       if (!charge) {
         throw new GraphQLError(`Charge with id ${dbDepreciationRecord.charge_id} not found`);
       }
-      const amount = calculateTotalAmount(charge, defaultLocalCurrency);
       if (!amount) {
         throw new GraphQLError(
           `Error calculating amount for depreciation record id ${dbDepreciationRecord.id}`,

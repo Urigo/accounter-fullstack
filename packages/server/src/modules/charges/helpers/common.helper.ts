@@ -3,26 +3,32 @@ import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.j
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
-import { isTransactionsValid } from '@modules/transactions/helpers/validation.helper.js';
+import { getTransactionsMeta } from '@modules/transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
 import { ChargesSimpleProvider } from '../providers/charges-simple.provider.js';
-import type { IGetChargesByIdsResult } from '../types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 
-export function calculateTotalAmount(
-  charge: IGetChargesByIdsResult,
+export async function calculateTotalAmount(
+  chargeId: string,
+  injector: Injector,
   defaultLocalCurrency: Currency,
-): FinancialAmount | null {
-  if (charge.type === 'PAYROLL' && charge.transactions_event_amount != null) {
-    return formatFinancialAmount(charge.transactions_event_amount, defaultLocalCurrency);
+): Promise<FinancialAmount | null> {
+  const [charge, { transactionsAmount, transactionsCurrency }] = await Promise.all([
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+    getChargeTransactionsMeta(chargeId, injector),
+  ]);
+
+  if (charge.type === 'PAYROLL' && transactionsAmount != null) {
+    return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
   }
   if (charge.documents_event_amount != null && charge.documents_currency) {
     return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
   }
-  if (charge.transactions_event_amount != null && charge.transactions_currency) {
-    return formatFinancialAmount(charge.transactions_event_amount, charge.transactions_currency);
+  if (transactionsAmount != null && transactionsCurrency) {
+    return formatFinancialAmount(transactionsAmount, transactionsCurrency);
   }
   return null;
 }
@@ -135,27 +141,5 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
     .get(TransactionsProvider)
     .transactionsByChargeIDLoader.load(chargeId);
 
-  let transactionsAmount: number | null = null;
-  const currenciesSet = new Set<Currency>();
-  let invalidTransactions = false;
-
-  transactions.map(t => {
-    const amountAsNumber = Number(t.amount);
-    const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
-    if (amount != null) {
-      transactionsAmount ??= 0;
-      transactionsAmount += amount;
-      currenciesSet.add(t.currency as Currency);
-    }
-    if (isTransactionsValid(t)) {
-      invalidTransactions = true;
-    }
-  });
-
-  return {
-    transactionsCount: transactions.length,
-    transactionsAmount,
-    currencies: Array.from(currenciesSet),
-    invalidTransactions,
-  };
+  return getTransactionsMeta(transactions);
 }
