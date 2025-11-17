@@ -30,7 +30,7 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
     },
   } = context;
 
-  if (isChargeLocked(charge, ledgerLock)) {
+  if (await isChargeLocked(charge, context.injector, ledgerLock)) {
     return {
       __typename: 'CommonError',
       message: `Charge ID="${charge.id}" is locked for ledger generation`,

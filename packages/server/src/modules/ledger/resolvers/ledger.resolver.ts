@@ -89,7 +89,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         await Promise.all(
           limitedCharges.map(async charge => {
-            if (isChargeLocked(charge, adminContext.ledgerLock)) {
+            if (await isChargeLocked(charge, injector, adminContext.ledgerLock)) {
               handledCharges++;
               if (handledCharges % 50 === 0 || handledCharges === limitedCharges.length) {
                 push({ progress: calculateProgress() });
@@ -178,7 +178,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       if (!charge) {
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }
-      if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+      if (await isChargeLocked(charge, injector, context.adminContext.ledgerLock)) {
         return {
           __typename: 'CommonError',
           message: `Charge with id ${chargeId} is locked`,
@@ -416,8 +416,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       );
     },
     validate: async ({ charge, records }, _, context, info) => {
-      const { ledgerLock } = context.adminContext;
-      if (isChargeLocked(charge, ledgerLock)) {
+      const { injector, adminContext } = context;
+      const { ledgerLock } = adminContext;
+      if (await isChargeLocked(charge, injector, ledgerLock)) {
         return {
           isValid: true,
           differences: [],
@@ -529,7 +530,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
   },
   ChargeMetadata: {
-    isLedgerLocked: async (DbCharge, _, { adminContext }) =>
-      isChargeLocked(DbCharge, adminContext.ledgerLock),
+    isLedgerLocked: async (DbCharge, _, { adminContext, injector }) =>
+      isChargeLocked(DbCharge, injector, adminContext.ledgerLock),
   },
 };

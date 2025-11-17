@@ -62,7 +62,7 @@ export async function ledgerGenerationByCharge(
   context: GraphQLModules.ModuleContext,
   info: GraphQLResolveInfo,
 ): Promise<Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>> {
-  if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+  if (await isChargeLocked(charge, context.injector, context.adminContext.ledgerLock)) {
     return resolveLockedCharge(charge, params, context, info);
   }
   const chargeType = getChargeType(charge, context);

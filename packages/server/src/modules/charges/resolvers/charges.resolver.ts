@@ -637,7 +637,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
-        if (isChargeLocked(DbCharge, context.adminContext.ledgerLock)) {
+        if (await isChargeLocked(DbCharge, context.injector, context.adminContext.ledgerLock)) {
           return 'VALID';
         }
 
