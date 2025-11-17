@@ -78,7 +78,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const gotRelevantDocuments =
       Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
-    const gotTransactions = !!charge.transactions_count;
 
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
       if (charge.tax_category_id) {
@@ -106,9 +105,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
       : Promise.resolve([]);
 
-    const transactionsPromise = gotTransactions
-      ? injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId)
-      : Promise.resolve([]);
+    const transactionsPromise = injector
+      .get(TransactionsProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
@@ -189,7 +188,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
 
     // generate ledger from transactions
-    if (gotTransactions) {
+    if (transactions.length > 0) {
       const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
       // for each transaction, create a ledger record

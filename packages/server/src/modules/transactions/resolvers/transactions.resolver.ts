@@ -78,9 +78,12 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
           }
           if (transaction.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(transaction.charge_id);
+            const [charge, transactions] = await Promise.all([
+              injector.get(ChargesProvider).getChargeByIdLoader.load(transaction.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(transaction.charge_id),
+            ]);
             if (!charge) {
               throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
             }
@@ -97,10 +100,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             }
             chargeId = newCharge?.[0]?.id;
 
-            if (
-              Number(charge.documents_count ?? 0) === 0 &&
-              Number(charge.transactions_count ?? 1) === 1
-            ) {
+            if (Number(charge.documents_count ?? 0) === 0 && transactions.length === 1) {
               postUpdateActions = async () =>
                 deleteCharges([charge.id], injector)
                   .catch(e => {
@@ -196,19 +196,19 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
                 if (!transaction.charge_id) {
                   return;
                 }
-                const charge = await injector
-                  .get(ChargesProvider)
-                  .getChargeByIdLoader.load(transaction.charge_id);
+                const [charge, transactions] = await Promise.all([
+                  injector.get(ChargesProvider).getChargeByIdLoader.load(transaction.charge_id),
+                  injector
+                    .get(TransactionsProvider)
+                    .transactionsByChargeIDLoader.load(transaction.charge_id),
+                ]);
                 if (!charge) {
                   throw new GraphQLError(
                     `Former transaction's charge ID ("${transaction.charge_id}") not valid`,
                   );
                 }
 
-                if (
-                  Number(charge.documents_count ?? 0) === 0 &&
-                  Number(charge.transactions_count ?? 1) === 1
-                ) {
+                if (Number(charge.documents_count ?? 0) === 0 && transactions.length === 1) {
                   chargesToDelete.add(charge.id);
                 }
               }),

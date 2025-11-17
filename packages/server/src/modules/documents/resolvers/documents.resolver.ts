@@ -3,6 +3,7 @@ import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
 import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { DocumentType } from '@shared/enums';
 import { Resolvers } from '@shared/gql-types';
@@ -198,9 +199,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
           if (document.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id);
+            const [charge, transactions] = await Promise.all([
+              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(document.charge_id),
+            ]);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -221,7 +225,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
             if (
               Number(charge.documents_count ?? 1) === 1 &&
-              Number(charge.transactions_count ?? 0) === 0
+              Number(transactions.length ?? 0) === 0
             ) {
               postUpdateActions = async () => {
                 try {
@@ -302,10 +306,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           if (document.charge_id) {
-            const charge = await injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(document.charge_id);
-            if (charge && !charge.documents_count && !charge.transactions_count) {
+            const [charge, transactions] = await Promise.all([
+              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
+              injector
+                .get(TransactionsProvider)
+                .transactionsByChargeIDLoader.load(document.charge_id),
+            ]);
+            if (charge && !charge.documents_count && transactions.length === 0) {
               await deleteCharges([charge.id], injector);
             }
           }

@@ -500,11 +500,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        const [charge, transactions] = await Promise.all([
+          injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+          injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+        ]);
         if (!charge) {
           throw new GraphQLError(`Charge ID="${chargeId}" not found`);
         }
-        if (Number(charge.documents_count ?? 0) > 0 || Number(charge.transactions_count ?? 0) > 0) {
+        if (Number(charge.documents_count ?? 0) > 0 || Number(transactions.length ?? 0) > 0) {
           throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
         }
 
@@ -616,10 +619,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
     documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
     invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
     openDocuments: DbCharge => DbCharge.open_docs_flag ?? false,
-    transactionsCount: DbCharge => {
-      return DbCharge.transactions_count ? Number(DbCharge.transactions_count) : 0;
+    transactionsCount: async (DbCharge, _, { injector }) => {
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(DbCharge.id);
+      return transactions.length;
     },
-    invalidTransactions: DbCharge => DbCharge.invalid_transactions ?? true,
     ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
