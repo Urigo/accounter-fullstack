@@ -34,7 +34,7 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
       transactionsMinEventDate = t.event_date;
     }
 
-    if (isTransactionsValid(t)) {
+    if (!isTransactionsValid(t)) {
       invalidTransactions = true;
     }
   });
