@@ -6,6 +6,7 @@ import { ChargeTypeEnum } from '@shared/enums';
 import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
+import { getChargeTransactionsMeta } from './common.helper.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
@@ -91,10 +92,13 @@ export const validateCharge = async (
   }
 
   // validate transactions
-  const hasTransaction = charge.transactions_event_amount != null;
+  const { invalidTransactions, transactionsCount } = await getChargeTransactionsMeta(
+    charge.id,
+    context.injector,
+  ); // TODO: for more efficient process, put promises together later
+  const hasTransaction = transactionsCount >= 1;
   const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
-  const dbTransactionsAreValid = !charge.invalid_transactions;
-  const transactionsAreFine = transactionsNotRequired || (hasTransaction && dbTransactionsAreValid);
+  const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }

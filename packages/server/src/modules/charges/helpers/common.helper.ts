@@ -3,6 +3,7 @@ import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.j
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import { isTransactionsValid } from '@modules/transactions/helpers/validation.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
@@ -136,6 +137,7 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
 
   let transactionsAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
+  let invalidTransactions = false;
 
   transactions.map(t => {
     const amountAsNumber = Number(t.amount);
@@ -145,10 +147,15 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
       transactionsAmount += amount;
       currenciesSet.add(t.currency as Currency);
     }
+    if (isTransactionsValid(t)) {
+      invalidTransactions = true;
+    }
   });
 
   return {
+    transactionsCount: transactions.length,
     transactionsAmount,
     currencies: Array.from(currenciesSet),
+    invalidTransactions,
   };
 }
