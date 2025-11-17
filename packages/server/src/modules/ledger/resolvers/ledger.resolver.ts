@@ -97,7 +97,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
               return;
             }
             try {
-              const generatedRecordsPromise = ledgerGenerationByCharge(charge, context)(
+              const generatedRecordsPromise = ledgerGenerationByCharge(
                 charge,
                 { insertLedgerRecordsIfNotExists: false },
                 context,
@@ -185,7 +185,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
+        const generated = await ledgerGenerationByCharge(
           charge,
           { insertLedgerRecordsIfNotExists: true },
           context,
@@ -426,7 +426,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         };
       }
       try {
-        const generated = await ledgerGenerationByCharge(charge, context)(
+        const generated = await ledgerGenerationByCharge(
           charge,
           { insertLedgerRecordsIfNotExists: records.length === 0 },
           context,

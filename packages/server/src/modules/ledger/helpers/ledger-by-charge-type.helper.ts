@@ -1,9 +1,17 @@
-import { GraphQLError } from 'graphql';
+import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  CommonError,
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+  ResolverTypeWrapper,
+} from '@shared/gql-types';
+import { LedgerRecordsProto } from '@shared/types';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForBankDeposit } from '../resolvers/ledger-generation/bank-deposit-ledger-generation.resolver.js';
@@ -46,37 +54,41 @@ const resolveLockedCharge: ResolverFn<
   }
 };
 
-export function ledgerGenerationByCharge(
+export async function ledgerGenerationByCharge(
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
-) {
+  params: {
+    insertLedgerRecordsIfNotExists: boolean;
+  },
+  context: GraphQLModules.ModuleContext,
+  info: GraphQLResolveInfo,
+): Promise<Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>> {
   if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
-    return resolveLockedCharge;
+    return resolveLockedCharge(charge, params, context, info);
   }
   const chargeType = getChargeType(charge, context);
   switch (chargeType) {
     case ChargeTypeEnum.Common:
-      return generateLedgerRecordsForCommonCharge;
+      return generateLedgerRecordsForCommonCharge(charge, params, context, info);
     case ChargeTypeEnum.Conversion:
-      return generateLedgerRecordsForConversion;
+      return generateLedgerRecordsForConversion(charge, params, context, info);
     case ChargeTypeEnum.Salary:
-      return generateLedgerRecordsForSalary;
+      return generateLedgerRecordsForSalary(charge, params, context, info);
     case ChargeTypeEnum.InternalTransfer:
-      return generateLedgerRecordsForInternalTransfer;
+      return generateLedgerRecordsForInternalTransfer(charge, params, context, info);
     case ChargeTypeEnum.Dividend:
-      return generateLedgerRecordsForDividend;
+      return generateLedgerRecordsForDividend(charge, params, context, info);
     case ChargeTypeEnum.BusinessTrip:
-      return generateLedgerRecordsForBusinessTrip;
+      return generateLedgerRecordsForBusinessTrip(charge, params, context, info);
     case ChargeTypeEnum.MonthlyVat:
-      return generateLedgerRecordsForMonthlyVat;
+      return generateLedgerRecordsForMonthlyVat(charge, params, context, info);
     case ChargeTypeEnum.BankDeposit:
-      return generateLedgerRecordsForBankDeposit;
+      return generateLedgerRecordsForBankDeposit(charge, params, context, info);
     case ChargeTypeEnum.ForeignSecurities:
-      return generateLedgerRecordsForForeignSecurities;
+      return generateLedgerRecordsForForeignSecurities(charge, params, context, info);
     case ChargeTypeEnum.CreditcardBankCharge:
-      return generateLedgerRecordsForCommonCharge;
+      return generateLedgerRecordsForCommonCharge(charge, params, context, info);
     case ChargeTypeEnum.Financial:
-      return generateLedgerRecordsForFinancialCharge;
+      return generateLedgerRecordsForFinancialCharge(charge, params, context, info);
     default:
       throw new Error(`Unknown charge type: ${chargeType}`);
   }
