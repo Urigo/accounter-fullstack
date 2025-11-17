@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
@@ -627,7 +628,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
     receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
     documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
     invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
-    openDocuments: DbCharge => DbCharge.open_docs_flag ?? false,
+    openDocuments: async (DbCharge, _, { injector }) =>
+      injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsStatusByChargeIdLoader.load(DbCharge.id)
+        .then(res => res?.open_docs_flag ?? false),
     transactionsCount: async (DbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)

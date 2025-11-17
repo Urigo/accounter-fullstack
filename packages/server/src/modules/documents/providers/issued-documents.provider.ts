@@ -14,6 +14,7 @@ import type {
   IGetIssuedDocumentsByIdsQuery,
   IGetIssuedDocumentsByTypeParams,
   IGetIssuedDocumentsByTypeQuery,
+  IGetIssuedDocumentsStatusByChargeIdsQuery,
   IInsertIssuedDocumentsParams,
   IInsertIssuedDocumentsQuery,
   IUpdateIssuedDocumentByExternalIdParams,
@@ -45,6 +46,24 @@ const getIssuedDocumentsByClientIds = sql<IGetIssuedDocumentsByClientIdsQuery>`
   LEFT JOIN accounter_schema.documents d
     ON di.id = d.id
   WHERE d.debtor_id IN $$clientIds OR d.creditor_id IN $$clientIds;
+`;
+
+const getIssuedDocumentsStatusByChargeIds = sql<IGetIssuedDocumentsStatusByChargeIdsQuery>`
+  SELECT
+    documents.charge_id,
+    COALESCE(
+      bool_or(
+        documents_issued.status = 'OPEN'::accounter_schema.document_status
+      ),
+      false
+    ) AS open_docs_flag
+  FROM
+    accounter_schema.documents_issued
+    LEFT JOIN accounter_schema.documents ON documents.id = documents_issued.id
+  WHERE
+    documents.charge_id in $$chargeIds
+  GROUP BY
+    documents.charge_id
 `;
 
 const getIssuedDocumentsByType = sql<IGetIssuedDocumentsByTypeQuery>`
@@ -218,6 +237,35 @@ export class IssuedDocumentsProvider {
     },
   );
 
+  private async batchIssuedDocumentsStatusByChargeIds(chargeIds: readonly string[]) {
+    const uniqueClientIDs = [...new Set(chargeIds)];
+    try {
+      const statuses = await getIssuedDocumentsStatusByChargeIds.run(
+        { chargeIds: uniqueClientIDs },
+        this.dbProvider,
+      );
+
+      return chargeIds.map(id =>
+        statuses.find(status => {
+          return status.charge_id === id;
+        }),
+      );
+    } catch (e) {
+      const message = 'Error fetching issued documents status by charge IDs';
+      console.error(message, e);
+      throw new Error(message);
+    }
+  }
+
+  public getIssuedDocumentsStatusByChargeIdLoader = new DataLoader(
+    (chargeIds: readonly string[]) => this.batchIssuedDocumentsStatusByChargeIds(chargeIds),
+    {
+      cache: false,
+      cacheKeyFn: id => `issued-documents-by-charge-${id}`,
+      cacheMap: this.cache,
+    },
+  );
+
   public async getIssuedDocumentsByType(params: IGetIssuedDocumentsByTypeParams) {
     return getIssuedDocumentsByType.run(params, this.dbProvider).then(res => {
       if (res) {
@@ -259,6 +307,8 @@ export class IssuedDocumentsProvider {
 
   public async invalidateById(id: string) {
     this.cache.delete([`issued-document-${id}`, 'all-issued-documents']);
+    // since no direct link between issued-documents and charges, on invalidation clear all:
+    this.getIssuedDocumentsStatusByChargeIdLoader.clearAll();
   }
 
   public clearCache() {
