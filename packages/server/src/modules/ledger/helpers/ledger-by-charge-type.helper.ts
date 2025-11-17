@@ -66,32 +66,36 @@ export async function ledgerGenerationByCharge(
     return resolveLockedCharge(charge, params, context, info);
   }
   const chargeType = getChargeType(charge, context);
-  switch (chargeType) {
-    case ChargeTypeEnum.Common:
-      return generateLedgerRecordsForCommonCharge(charge, params, context, info);
-    case ChargeTypeEnum.Conversion:
-      return generateLedgerRecordsForConversion(charge, params, context, info);
-    case ChargeTypeEnum.Salary:
-      return generateLedgerRecordsForSalary(charge, params, context, info);
-    case ChargeTypeEnum.InternalTransfer:
-      return generateLedgerRecordsForInternalTransfer(charge, params, context, info);
-    case ChargeTypeEnum.Dividend:
-      return generateLedgerRecordsForDividend(charge, params, context, info);
-    case ChargeTypeEnum.BusinessTrip:
-      return generateLedgerRecordsForBusinessTrip(charge, params, context, info);
-    case ChargeTypeEnum.MonthlyVat:
-      return generateLedgerRecordsForMonthlyVat(charge, params, context, info);
-    case ChargeTypeEnum.BankDeposit:
-      return generateLedgerRecordsForBankDeposit(charge, params, context, info);
-    case ChargeTypeEnum.ForeignSecurities:
-      return generateLedgerRecordsForForeignSecurities(charge, params, context, info);
-    case ChargeTypeEnum.CreditcardBankCharge:
-      return generateLedgerRecordsForCommonCharge(charge, params, context, info);
-    case ChargeTypeEnum.Financial:
-      return generateLedgerRecordsForFinancialCharge(charge, params, context, info);
-    default:
-      throw new Error(`Unknown charge type: ${chargeType}`);
+  type LedgerGenFunction = ResolverFn<
+    Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>,
+    IGetChargesByIdsResult,
+    GraphQLModules.ModuleContext,
+    {
+      insertLedgerRecordsIfNotExists: boolean;
+    }
+  >;
+
+  const ledgerGenerationMap: Record<ChargeTypeEnum, LedgerGenFunction> = {
+    [ChargeTypeEnum.Common]: generateLedgerRecordsForCommonCharge,
+    [ChargeTypeEnum.Conversion]: generateLedgerRecordsForConversion,
+    [ChargeTypeEnum.Salary]: generateLedgerRecordsForSalary,
+    [ChargeTypeEnum.InternalTransfer]: generateLedgerRecordsForInternalTransfer,
+    [ChargeTypeEnum.Dividend]: generateLedgerRecordsForDividend,
+    [ChargeTypeEnum.BusinessTrip]: generateLedgerRecordsForBusinessTrip,
+    [ChargeTypeEnum.MonthlyVat]: generateLedgerRecordsForMonthlyVat,
+    [ChargeTypeEnum.BankDeposit]: generateLedgerRecordsForBankDeposit,
+    [ChargeTypeEnum.ForeignSecurities]: generateLedgerRecordsForForeignSecurities,
+    [ChargeTypeEnum.CreditcardBankCharge]: generateLedgerRecordsForCommonCharge,
+    [ChargeTypeEnum.Financial]: generateLedgerRecordsForFinancialCharge,
+  };
+
+  const generationFunction = ledgerGenerationMap[chargeType];
+
+  if (generationFunction) {
+    return generationFunction(charge, params, context, info);
   }
+
+  throw new Error(`Unknown charge type: ${chargeType}`);
 }
 
 export async function ledgerUnbalancedBusinessesByCharge(
