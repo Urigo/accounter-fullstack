@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
@@ -510,14 +511,15 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const [charge, transactions] = await Promise.all([
+        const [charge, transactions, documents] = await Promise.all([
           injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
           injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
+          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
         ]);
         if (!charge) {
           throw new GraphQLError(`Charge ID="${chargeId}" not found`);
         }
-        if (Number(charge.documents_count ?? 0) > 0 || Number(transactions.length ?? 0) > 0) {
+        if (documents.length > 0 || transactions.length > 0) {
           throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
         }
 
@@ -624,9 +626,42 @@ export const chargesResolvers: ChargesModule.Resolvers &
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
     updatedAt: DbCharge => DbCharge.updated_at,
-    invoicesCount: DbCharge => (DbCharge.invoices_count ? Number(DbCharge.invoices_count) : 0),
-    receiptsCount: DbCharge => (DbCharge.receipts_count ? Number(DbCharge.receipts_count) : 0),
-    documentsCount: DbCharge => (DbCharge.documents_count ? Number(DbCharge.documents_count) : 0),
+    invoicesCount: async (DbCharge, _, { injector }) => {
+      try {
+        return injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(DbCharge.id)
+          .then(docs => docs.filter(doc => isInvoice(doc.type)).length);
+      } catch (err) {
+        const message = 'Error loading invoices';
+        console.error(`${message}: ${err}`);
+        throw new GraphQLError(message);
+      }
+    },
+    receiptsCount: async (DbCharge, _, { injector }) => {
+      try {
+        return injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(DbCharge.id)
+          .then(docs => docs.filter(doc => isReceipt(doc.type)).length);
+      } catch (err) {
+        const message = 'Error loading receipts';
+        console.error(`${message}: ${err}`);
+        throw new GraphQLError(message);
+      }
+    },
+    documentsCount: async (DbCharge, _, { injector }) => {
+      try {
+        return injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(DbCharge.id)
+          .then(docs => docs.length);
+      } catch (err) {
+        const message = 'Error loading documents';
+        console.error(`${message}: ${err}`);
+        throw new GraphQLError(message);
+      }
+    },
     invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
     openDocuments: async (DbCharge, _, { injector }) =>
       injector

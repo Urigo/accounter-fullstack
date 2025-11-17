@@ -1,3 +1,4 @@
+import { isInvoice } from '@modules/documents/helpers/common.helper.js';
 import { validateDocumentAllocation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -6,7 +7,7 @@ import { ChargeTypeEnum } from '@shared/enums';
 import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
-import { getChargeTransactionsMeta } from './common.helper.js';
+import { getChargeDocumentsMeta, getChargeTransactionsMeta } from './common.helper.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
@@ -54,36 +55,25 @@ export const validateCharge = async (
   }
   let documentsAreFine = false;
   if (shouldHaveDocuments) {
-    const documents = await injector
-      .get(DocumentsProvider)
-      .getDocumentsByChargeIdLoader.load(charge.id);
-    let invoicesCount = 0;
-    let receiptsCount = 0;
+    const [documents, { invoiceCount, receiptCount }] = await Promise.all([
+      injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
+      getChargeDocumentsMeta(charge.id, injector),
+    ]);
     let missingAllocationNumber = false;
     await Promise.all(
       documents.map(async doc => {
-        if (
-          [DocumentType.Invoice, DocumentType.CreditInvoice, DocumentType.InvoiceReceipt].includes(
-            doc.type as DocumentType,
-          )
-        ) {
-          invoicesCount++;
+        if (isInvoice(doc.type)) {
           const validAllocation = await validateDocumentAllocation(doc, context);
           if (!validAllocation) {
             missingAllocationNumber = true;
           }
         }
-        if (
-          [DocumentType.Receipt, DocumentType.InvoiceReceipt].includes(doc.type as DocumentType)
-        ) {
-          receiptsCount++;
-        }
       }),
     );
-    const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptsCount > 0);
+    const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptCount > 0);
     const dbDocumentsAreValid = !charge.invalid_documents;
     documentsAreFine =
-      dbDocumentsAreValid && (invoicesCount > 0 || isReceiptEnough) && !missingAllocationNumber;
+      dbDocumentsAreValid && (invoiceCount > 0 || isReceiptEnough) && !missingAllocationNumber;
   } else {
     documentsAreFine = true;
   }

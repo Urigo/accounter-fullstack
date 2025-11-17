@@ -101,7 +101,9 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   ]);
 
   let receiptAmount = 0;
+  let receiptCount = 0;
   let invoiceAmount = 0;
+  let invoiceCount = 0;
   let invoiceVatAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
 
@@ -116,6 +118,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     }
 
     if (isInvoice(d.type)) {
+      invoiceCount++;
       invoiceAmount += amount * factor;
       if (d.vat_amount != null) {
         invoiceVatAmount ??= 0;
@@ -123,6 +126,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       }
     }
     if (isReceipt(d.type)) {
+      receiptCount++;
       receiptAmount += amount * factor;
     }
     currenciesSet.add(d.currency_code as Currency);
@@ -130,8 +134,11 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
 
   return {
     receiptAmount,
+    receiptCount,
     invoiceAmount,
+    invoiceCount,
     invoiceVatAmount,
+    documentsCount: documents.length,
     currencies: Array.from(currenciesSet),
   };
 }

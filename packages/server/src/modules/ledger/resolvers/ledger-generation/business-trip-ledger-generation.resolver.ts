@@ -3,6 +3,7 @@ import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import { getChargeDocumentsMeta } from '@modules/charges/helpers/common.helper.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -79,16 +80,17 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     >();
 
-    const gotRelevantDocuments =
-      Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
+    const { invoiceCount, receiptCount } = await getChargeDocumentsMeta(chargeId, injector);
+
+    const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
       .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
-    const documentsPromise = gotRelevantDocuments
-      ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
-      : Promise.resolve([]);
+    const documentsPromise = injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId);
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
       if (charge.tax_category_id) {
         resolve(charge.tax_category_id);

@@ -1,3 +1,4 @@
+import { getChargeDocumentsMeta } from '@modules/charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -76,8 +77,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    const gotRelevantDocuments =
-      Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
+    const { invoiceCount, receiptCount } = await getChargeDocumentsMeta(chargeId, injector);
+    const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
       if (charge.tax_category_id) {

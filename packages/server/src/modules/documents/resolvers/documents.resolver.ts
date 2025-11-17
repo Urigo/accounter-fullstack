@@ -199,11 +199,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
           if (document.charge_id) {
-            const [charge, transactions] = await Promise.all([
+            const [charge, transactions, documents] = await Promise.all([
               injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
               injector
                 .get(TransactionsProvider)
                 .transactionsByChargeIDLoader.load(document.charge_id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
             ]);
             if (!charge) {
               throw new GraphQLError(
@@ -223,10 +224,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             }
             chargeId = newCharge?.[0]?.id;
 
-            if (
-              Number(charge.documents_count ?? 1) === 1 &&
-              Number(transactions.length ?? 0) === 0
-            ) {
+            if (documents.length === 1 && transactions.length === 0) {
               postUpdateActions = async () => {
                 try {
                   await deleteCharges([charge.id], injector);
@@ -306,13 +304,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           if (document.charge_id) {
-            const [charge, transactions] = await Promise.all([
+            const [charge, transactions, documents] = await Promise.all([
               injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
               injector
                 .get(TransactionsProvider)
                 .transactionsByChargeIDLoader.load(document.charge_id),
+              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
             ]);
-            if (charge && !charge.documents_count && transactions.length === 0) {
+            if (charge && documents.length === 0 && transactions.length === 0) {
               await deleteCharges([charge.id], injector);
             }
           }
