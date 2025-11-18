@@ -7,6 +7,7 @@ import {
   CumulativeBalance,
   DateCell,
   DepositIndicator,
+  Interest,
   LocalAmount,
   LocalCumulativeBalance,
 } from './cells/index.js';
@@ -16,6 +17,7 @@ import {
   fragment DepositTransactionFields on Transaction {
     id
     eventDate
+    chargeId
     amount {
       raw
       formatted
@@ -51,6 +53,8 @@ export type DepositTransactionRowType = DepositTransactionFieldsFragment & {
   localCumulativeBalance: number;
   localAmount: number;
   localCurrency: Currency;
+  totalInterest: number;
+  isInterest: boolean;
 };
 
 export const columns: ColumnDef<DepositTransactionRowType>[] = [
@@ -132,6 +136,29 @@ export const columns: ColumnDef<DepositTransactionRowType>[] = [
     },
     cell: ({ row }) => {
       return <CumulativeBalance transaction={row.original} />;
+    },
+  },
+  {
+    id: 'totalInterest',
+    accessorKey: 'totalInterest',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Interest
+          {column.getIsSorted() &&
+            (column.getIsSorted() === 'asc' ? (
+              <ChevronUp className="ml-2 h-4 w-4" />
+            ) : (
+              <ChevronDown className="ml-2 h-4 w-4" />
+            ))}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return <Interest transaction={row.original} />;
     },
   },
   {

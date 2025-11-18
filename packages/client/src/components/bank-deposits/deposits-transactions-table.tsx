@@ -74,6 +74,30 @@ export function DepositsTransactionsTable({
       getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
     );
 
+    // Identify interest transactions by grouping by charge_id
+    const chargeGroups = new Map<string, typeof transactions>();
+    for (const tx of transactions) {
+      if (!tx.chargeId) continue;
+      if (!chargeGroups.has(tx.chargeId)) {
+        chargeGroups.set(tx.chargeId, []);
+      }
+      chargeGroups.get(tx.chargeId)!.push(tx);
+    }
+
+    const interestTransactionIds = new Set<string>();
+    for (const [_, txs] of chargeGroups) {
+      if (txs.length > 1) {
+        // Multiple transactions per charge - find the one with highest absolute amount
+        const sortedByAbsAmount = [...txs].sort(
+          (a, b) => Math.abs(Number(b.amount.raw ?? 0)) - Math.abs(Number(a.amount.raw ?? 0)),
+        );
+        // All except the first (highest) are interest
+        for (let i = 1; i < sortedByAbsAmount.length; i++) {
+          interestTransactionIds.add(sortedByAbsAmount[i].id);
+        }
+      }
+    }
+
     // Sort by date ascending for cumulative calculation
     const sortedTransactions = [...transactions].sort((a, b) => {
       const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
@@ -82,23 +106,27 @@ export function DepositsTransactionsTable({
     });
 
     let cumulativeBalance = 0;
+    let totalInterest = 0;
     let localCumulativeBalance = 0;
 
     return sortedTransactions.map(tx => {
       let rate: number | null = null;
-      console.log('currency: ', tx.amount.currency);
       const currencyKey = currencyMap[tx.amount.currency];
-      console.log('currencyKey:', currencyKey);
       if (currencyKey) {
         rate = tx.debitExchangeRates?.[currencyKey] ?? tx.eventExchangeRates?.[currencyKey] ?? null;
       }
-      console.log('rate:', rate, tx.debitExchangeRates ?? tx.eventExchangeRates);
       const amount = Number(tx.amount.raw);
       const localAmount = amount * (rate ?? 1);
       const localCurrency = (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
+      const isInterest = interestTransactionIds.has(tx.id);
 
-      cumulativeBalance += amount;
-      localCumulativeBalance += localAmount;
+      // Only include non-interest transactions in balance
+      if (isInterest) {
+        totalInterest += amount;
+      } else {
+        cumulativeBalance += amount;
+        localCumulativeBalance += localAmount;
+      }
 
       return {
         ...tx,
@@ -106,6 +134,8 @@ export function DepositsTransactionsTable({
         localCumulativeBalance,
         localAmount,
         localCurrency,
+        totalInterest,
+        isInterest,
       };
     });
   }, [data?.deposit, userContext]);

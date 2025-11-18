@@ -85,7 +85,8 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
       t.debit_date,
       t.event_date,
       t.amount,
-      t.current_balance
+      t.current_balance,
+      t.charge_id
     FROM accounter_schema.transactions_bank_deposits tbd
     LEFT JOIN accounter_schema.transactions t
       USING (id)
@@ -161,10 +162,35 @@ export class BankDepositTransactionsProvider {
         openDate: Date | null;
         closeDate: Date | null;
         currentBalance: number;
+        totalInterest: number;
         currencyError: string[];
         transactionIds: string[];
       }
     >();
+
+    // First pass: identify interest transactions by grouping by charge_id
+    const chargeGroups = new Map<string, typeof rows>();
+    for (const row of rows) {
+      if (!row.charge_id) continue;
+      if (!chargeGroups.has(row.charge_id)) {
+        chargeGroups.set(row.charge_id, []);
+      }
+      chargeGroups.get(row.charge_id)!.push(row);
+    }
+
+    const interestTransactionIds = new Set<string>();
+    for (const [_, transactions] of chargeGroups) {
+      if (transactions.length > 1) {
+        // Multiple transactions per charge - find the one with highest absolute amount
+        const sortedByAbsAmount = [...transactions].sort(
+          (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
+        );
+        // All except the first (highest) are interest
+        for (let i = 1; i < sortedByAbsAmount.length; i++) {
+          interestTransactionIds.add(sortedByAbsAmount[i].id);
+        }
+      }
+    }
 
     for (const row of rows) {
       if (!row.deposit_id) continue;
@@ -176,6 +202,7 @@ export class BankDepositTransactionsProvider {
           openDate: row.debit_date ?? row.event_date,
           closeDate: null,
           currentBalance: 0,
+          totalInterest: 0,
           currencyError: [],
           transactionIds: [],
         });
@@ -198,12 +225,17 @@ export class BankDepositTransactionsProvider {
         deposit.openDate = txDate;
       }
 
-      // Track balance and closeDate
+      // Track balance and interest separately
       if (row.amount) {
-        deposit.currentBalance += Number(row.amount);
+        const amount = Number(row.amount);
+        if (interestTransactionIds.has(row.id)) {
+          deposit.totalInterest += amount;
+        } else {
+          deposit.currentBalance += amount;
+        }
       }
 
-      // If balance reaches zero, update closeDate
+      // If balance reaches zero, update closeDate (interest doesn't affect closure)
       if (Math.abs(deposit.currentBalance) < 0.005 && txDate) {
         deposit.closeDate = txDate;
       }
@@ -222,6 +254,7 @@ export class BankDepositTransactionsProvider {
       openDate: deposit.openDate ? dateToTimelessDateString(deposit.openDate) : null,
       closeDate: deposit.closeDate ? dateToTimelessDateString(deposit.closeDate) : null,
       currentBalance: deposit.currentBalance,
+      totalInterest: deposit.totalInterest,
       currencyError: deposit.currencyError,
       transactionIds: deposit.transactionIds,
     }));
@@ -237,6 +270,7 @@ export class BankDepositTransactionsProvider {
       openDate: null,
       closeDate: null,
       currentBalance: 0,
+      totalInterest: 0,
       currencyError: [],
       transactionIds: [],
     };

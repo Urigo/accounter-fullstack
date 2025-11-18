@@ -11,7 +11,39 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
           .getTransactionsByBankDepositLoader.load(depositId);
-        const currentBalance = transactions.reduce((acc, tx) => acc + Number(tx.amount), 0);
+        
+        // Identify interest transactions
+        const chargeGroups = new Map<string, typeof transactions>();
+        for (const tx of transactions) {
+          if (!tx.charge_id) continue;
+          if (!chargeGroups.has(tx.charge_id)) {
+            chargeGroups.set(tx.charge_id, []);
+          }
+          chargeGroups.get(tx.charge_id)!.push(tx);
+        }
+        
+        const interestTransactionIds = new Set<string>();
+        for (const [_, txs] of chargeGroups) {
+          if (txs.length > 1) {
+            const sortedByAbsAmount = [...txs].sort(
+              (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
+            );
+            for (let i = 1; i < sortedByAbsAmount.length; i++) {
+              interestTransactionIds.add(sortedByAbsAmount[i].id);
+            }
+          }
+        }
+        
+        let currentBalance = 0;
+        let totalInterest = 0;
+        for (const tx of transactions) {
+          const amount = Number(tx.amount);
+          if (interestTransactionIds.has(tx.id)) {
+            totalInterest += amount;
+          } else {
+            currentBalance += amount;
+          }
+        }
 
         const currency = (transactions[0]?.currency ?? defaultLocalCurrency) as Currency;
         const sortedByDebit = [...transactions].sort((a, b) => {
@@ -30,7 +62,9 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         let runningBalance = 0;
         let closeDate = null;
         for (const tx of sortedByDebit) {
-          runningBalance += Number(tx.amount);
+          if (!interestTransactionIds.has(tx.id)) {
+            runningBalance += Number(tx.amount);
+          }
           if (Math.abs(runningBalance) < 0.005) {
             closeDate = dateToTimelessDateString((tx.debit_date ?? tx.event_date) as Date);
           }
@@ -54,6 +88,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           openDate,
           closeDate,
           currentBalance: formatFinancialAmount(currentBalance),
+          totalInterest: formatFinancialAmount(totalInterest),
           isOpen: Math.abs(currentBalance) >= 0.005,
           currencyError,
           transactions: transactions.map(tx => tx.id),
@@ -68,7 +103,39 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
           .getDepositTransactionsByChargeId(chargeId, true);
-        const currentBalance = transactions.reduce((acc, tx) => acc + Number(tx.amount), 0);
+        
+        // Identify interest transactions
+        const chargeGroups = new Map<string, typeof transactions>();
+        for (const tx of transactions) {
+          if (!tx.charge_id) continue;
+          if (!chargeGroups.has(tx.charge_id)) {
+            chargeGroups.set(tx.charge_id, []);
+          }
+          chargeGroups.get(tx.charge_id)!.push(tx);
+        }
+        
+        const interestTransactionIds = new Set<string>();
+        for (const [_, txs] of chargeGroups) {
+          if (txs.length > 1) {
+            const sortedByAbsAmount = [...txs].sort(
+              (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
+            );
+            for (let i = 1; i < sortedByAbsAmount.length; i++) {
+              interestTransactionIds.add(sortedByAbsAmount[i].id);
+            }
+          }
+        }
+        
+        let currentBalance = 0;
+        let totalInterest = 0;
+        for (const tx of transactions) {
+          const amount = Number(tx.amount);
+          if (interestTransactionIds.has(tx.id)) {
+            totalInterest += amount;
+          } else {
+            currentBalance += amount;
+          }
+        }
 
         const depositIds = new Set(
           transactions.map(tx => tx.deposit_id).filter(Boolean) as string[],
@@ -98,7 +165,9 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         let runningBalance = 0;
         let closeDate = null;
         for (const tx of sortedByDebit) {
-          runningBalance += Number(tx.amount);
+          if (!interestTransactionIds.has(tx.id)) {
+            runningBalance += Number(tx.amount);
+          }
           if (Math.abs(runningBalance) < 0.005) {
             closeDate = dateToTimelessDateString((tx.debit_date ?? tx.event_date) as Date);
           }
@@ -121,6 +190,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           openDate,
           closeDate,
           currentBalance: formatFinancialAmount(currentBalance),
+          totalInterest: formatFinancialAmount(totalInterest),
           isOpen: Math.abs(currentBalance) >= 0.005,
           currencyError,
           transactions: transactions.map(tx => tx.id),
@@ -143,6 +213,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           openDate: deposit.openDate ?? dateToTimelessDateString(new Date()),
           closeDate: deposit.closeDate,
           currentBalance: formatFinancialAmount(deposit.currentBalance),
+          totalInterest: formatFinancialAmount(deposit.totalInterest),
           isOpen: Math.abs(deposit.currentBalance) >= 0.005,
           currencyError: deposit.currencyError,
           transactions: deposit.transactionIds,
@@ -164,6 +235,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           openDate: dateToTimelessDateString(new Date()),
           closeDate: null,
           currentBalance: formatFinancialAmount(0),
+          totalInterest: formatFinancialAmount(0),
           isOpen: false,
           currencyError: [],
           transactions: [],
@@ -185,6 +257,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           openDate: updatedDeposit.openDate ?? dateToTimelessDateString(new Date()),
           closeDate: updatedDeposit.closeDate,
           currentBalance: formatFinancialAmount(updatedDeposit.currentBalance),
+          totalInterest: formatFinancialAmount(updatedDeposit.totalInterest),
           isOpen: Math.abs(updatedDeposit.currentBalance) >= 0.005,
           currencyError: updatedDeposit.currencyError,
           transactions: updatedDeposit.transactionIds,
