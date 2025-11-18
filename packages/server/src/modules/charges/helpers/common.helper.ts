@@ -17,18 +17,21 @@ export async function calculateTotalAmount(
   injector: Injector,
   defaultLocalCurrency: Currency,
 ): Promise<FinancialAmount | null> {
-  const [charge, { transactionsAmount, transactionsCurrency }, { documentsCurrency }] =
-    await Promise.all([
-      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-      getChargeTransactionsMeta(chargeId, injector),
-      getChargeDocumentsMeta(chargeId, injector),
-    ]);
+  const [
+    charge,
+    { transactionsAmount, transactionsCurrency },
+    { documentsCurrency, documentsAmount },
+  ] = await Promise.all([
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+    getChargeTransactionsMeta(chargeId, injector),
+    getChargeDocumentsMeta(chargeId, injector),
+  ]);
 
   if (charge.type === 'PAYROLL' && transactionsAmount != null) {
     return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
   }
-  if (charge.documents_event_amount != null && documentsCurrency) {
-    return formatFinancialAmount(charge.documents_event_amount, documentsCurrency);
+  if (documentsAmount != null && documentsCurrency) {
+    return formatFinancialAmount(documentsAmount, documentsCurrency);
   }
   if (transactionsAmount != null && transactionsCurrency) {
     return formatFinancialAmount(transactionsAmount, transactionsCurrency);
@@ -146,12 +149,14 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   });
 
   const currencies = Array.from(currenciesSet);
+  const documentsAmount = invoiceAmount == null ? receiptAmount : invoiceAmount;
 
   return {
     receiptAmount,
     receiptCount,
     invoiceAmount,
     invoiceCount,
+    documentsAmount,
     documentsVatAmount: invoiceVatAmount == null ? receiptVatAmount : invoiceVatAmount,
     documentsCount: documents.length,
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
