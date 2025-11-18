@@ -11,7 +11,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
           .getTransactionsByBankDepositLoader.load(depositId);
-        
+
         // Identify interest transactions
         const chargeGroups = new Map<string, typeof transactions>();
         for (const tx of transactions) {
@@ -21,7 +21,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           }
           chargeGroups.get(tx.charge_id)!.push(tx);
         }
-        
+
         const interestTransactionIds = new Set<string>();
         for (const [_, txs] of chargeGroups) {
           if (txs.length > 1) {
@@ -33,15 +33,19 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
             }
           }
         }
-        
+
         let currentBalance = 0;
         let totalInterest = 0;
+        let totalDeposit = 0;
         for (const tx of transactions) {
           const amount = Number(tx.amount);
           if (interestTransactionIds.has(tx.id)) {
             totalInterest += amount;
           } else {
             currentBalance += amount;
+            if (amount > 0) {
+              totalDeposit += amount;
+            }
           }
         }
 
@@ -89,6 +93,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           closeDate,
           currentBalance: formatFinancialAmount(currentBalance),
           totalInterest: formatFinancialAmount(totalInterest),
+          totalDeposit: formatFinancialAmount(totalDeposit),
           isOpen: Math.abs(currentBalance) >= 0.005,
           currencyError,
           transactions: transactions.map(tx => tx.id),
@@ -103,7 +108,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
           .getDepositTransactionsByChargeId(chargeId, true);
-        
+
         // Identify interest transactions
         const chargeGroups = new Map<string, typeof transactions>();
         for (const tx of transactions) {
@@ -113,7 +118,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           }
           chargeGroups.get(tx.charge_id)!.push(tx);
         }
-        
+
         const interestTransactionIds = new Set<string>();
         for (const [_, txs] of chargeGroups) {
           if (txs.length > 1) {
@@ -125,15 +130,19 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
             }
           }
         }
-        
+
         let currentBalance = 0;
         let totalInterest = 0;
+        let totalDeposit = 0;
         for (const tx of transactions) {
           const amount = Number(tx.amount);
           if (interestTransactionIds.has(tx.id)) {
             totalInterest += amount;
           } else {
             currentBalance += amount;
+            if (amount > 0) {
+              totalDeposit += amount;
+            }
           }
         }
 
@@ -191,6 +200,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           closeDate,
           currentBalance: formatFinancialAmount(currentBalance),
           totalInterest: formatFinancialAmount(totalInterest),
+          totalDeposit: formatFinancialAmount(totalDeposit),
           isOpen: Math.abs(currentBalance) >= 0.005,
           currencyError,
           transactions: transactions.map(tx => tx.id),
@@ -212,12 +222,13 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           currency: (deposit.currency as Currency) ?? Currency.Ils,
           openDate: deposit.openDate ?? dateToTimelessDateString(new Date()),
           closeDate: deposit.closeDate,
-          currentBalance: formatFinancialAmount(deposit.currentBalance),
-          totalInterest: formatFinancialAmount(deposit.totalInterest),
+          currentBalance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
+          totalDeposit: formatFinancialAmount(deposit.totalDeposit, deposit.currency),
+          totalInterest: formatFinancialAmount(deposit.totalInterest, deposit.currency),
           isOpen: Math.abs(deposit.currentBalance) >= 0.005,
           currencyError: deposit.currencyError,
           transactions: deposit.transactionIds,
-          balance: formatFinancialAmount(deposit.currentBalance),
+          balance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
         }));
       } catch {
         throw new GraphQLError('Error fetching all deposits');
@@ -236,6 +247,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           closeDate: null,
           currentBalance: formatFinancialAmount(0),
           totalInterest: formatFinancialAmount(0),
+          totalDeposit: formatFinancialAmount(0),
           isOpen: false,
           currencyError: [],
           transactions: [],
@@ -258,6 +270,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           closeDate: updatedDeposit.closeDate,
           currentBalance: formatFinancialAmount(updatedDeposit.currentBalance),
           totalInterest: formatFinancialAmount(updatedDeposit.totalInterest),
+          totalDeposit: formatFinancialAmount(updatedDeposit.totalDeposit),
           isOpen: Math.abs(updatedDeposit.currentBalance) >= 0.005,
           currencyError: updatedDeposit.currencyError,
           transactions: updatedDeposit.transactionIds,

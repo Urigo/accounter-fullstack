@@ -37,6 +37,14 @@ import {
         raw
         formatted
       }
+      totalDeposit {
+        raw
+        formatted
+      }
+      totalInterest {
+        raw
+        formatted
+      }
       # transactions field exists but we don't need to pull ids here
     }
   }
@@ -51,6 +59,10 @@ type DepositRow = {
   currencyError: string[];
   currentBalanceRaw: number;
   currentBalanceFormatted: string;
+  totalDepositRaw: number;
+  totalDepositFormatted: string;
+  totalInterestRaw: number;
+  totalInterestFormatted: string;
 };
 
 export function DepositsScreen(): ReactElement {
@@ -68,6 +80,10 @@ export function DepositsScreen(): ReactElement {
       currencyError: d.currencyError ?? [],
       currentBalanceRaw: d.currentBalance?.raw ?? 0,
       currentBalanceFormatted: d.currentBalance?.formatted ?? '',
+      totalDepositRaw: d.totalDeposit?.raw ?? 0,
+      totalDepositFormatted: d.totalDeposit?.formatted ?? '',
+      totalInterestRaw: d.totalInterest?.raw ?? 0,
+      totalInterestFormatted: d.totalInterest?.formatted ?? '',
     }));
   }, [data]);
 
@@ -125,6 +141,13 @@ export function DepositsScreen(): ReactElement {
       },
     },
     {
+      id: 'totalDeposit',
+      header: 'Total Deposit',
+      accessorFn: row => row.totalDepositRaw,
+      cell: info => <span className="tabular-nums">{info.row.original.totalDepositFormatted}</span>,
+      sortingFn: (a, b) => a.original.totalDepositRaw - b.original.totalDepositRaw,
+    },
+    {
       id: 'currentBalance',
       header: 'Current Balance',
       accessorFn: row => row.currentBalanceRaw,
@@ -132,6 +155,15 @@ export function DepositsScreen(): ReactElement {
         <span className="tabular-nums">{info.row.original.currentBalanceFormatted}</span>
       ),
       sortingFn: (a, b) => a.original.currentBalanceRaw - b.original.currentBalanceRaw,
+    },
+    {
+      id: 'totalInterest',
+      header: 'Total Interest',
+      accessorFn: row => row.totalInterestRaw,
+      cell: info => (
+        <span className="tabular-nums">{info.row.original.totalInterestFormatted}</span>
+      ),
+      sortingFn: (a, b) => a.original.totalInterestRaw - b.original.totalInterestRaw,
     },
   ]);
   const columns = columnsRef.current;

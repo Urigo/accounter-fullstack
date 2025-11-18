@@ -21,6 +21,7 @@ export default gql`
     closeDate: TimelessDate
     currentBalance: FinancialAmount!
     totalInterest: FinancialAmount!
+    totalDeposit: FinancialAmount!
     isOpen: Boolean!
     currencyError: [UUID!]!
     transactions: [Transaction!]!

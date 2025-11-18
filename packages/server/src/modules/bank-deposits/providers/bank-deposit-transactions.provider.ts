@@ -163,6 +163,7 @@ export class BankDepositTransactionsProvider {
         closeDate: Date | null;
         currentBalance: number;
         totalInterest: number;
+        totalDeposit: number;
         currencyError: string[];
         transactionIds: string[];
       }
@@ -203,6 +204,7 @@ export class BankDepositTransactionsProvider {
           closeDate: null,
           currentBalance: 0,
           totalInterest: 0,
+          totalDeposit: 0,
           currencyError: [],
           transactionIds: [],
         });
@@ -232,6 +234,9 @@ export class BankDepositTransactionsProvider {
           deposit.totalInterest += amount;
         } else {
           deposit.currentBalance += amount;
+          if (amount > 0) {
+            deposit.totalDeposit += amount;
+          }
         }
       }
 
@@ -255,6 +260,7 @@ export class BankDepositTransactionsProvider {
       closeDate: deposit.closeDate ? dateToTimelessDateString(deposit.closeDate) : null,
       currentBalance: deposit.currentBalance,
       totalInterest: deposit.totalInterest,
+      totalDeposit: deposit.totalDeposit,
       currencyError: deposit.currencyError,
       transactionIds: deposit.transactionIds,
     }));
