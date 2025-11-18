@@ -155,8 +155,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       );
 
       // if no relevant documents found and business can settle with receipts, look for receipts
-      if (!relevantDocuments.length && charge.can_settle_with_receipt) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+      if (!relevantDocuments.length && mainBusinessId) {
+        const business = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(mainBusinessId);
+        if (business?.can_settle_with_receipt) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+        }
       }
 
       // for each invoice - generate accounting ledger entry

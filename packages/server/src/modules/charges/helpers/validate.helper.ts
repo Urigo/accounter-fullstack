@@ -86,7 +86,7 @@ export const validateCharge = async (
         }
       }),
     );
-    const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptCount > 0);
+    const isReceiptEnough = !!(business?.can_settle_with_receipt && receiptCount > 0);
     const dbDocumentsAreValid = !invalidDocuments;
     documentsAreFine =
       dbDocumentsAreValid && (invoiceCount > 0 || isReceiptEnough) && !missingAllocationNumber;

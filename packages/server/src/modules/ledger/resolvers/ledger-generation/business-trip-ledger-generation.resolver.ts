@@ -11,6 +11,7 @@ import {
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
   getExchangeDates,
@@ -306,8 +307,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       );
 
       // if no relevant documents found and business can settle with receipts, look for receipts
-      if (!relevantDocuments.length && charge.can_settle_with_receipt) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+      if (!relevantDocuments.length && mainBusinessId) {
+        const business = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(mainBusinessId);
+        if (business?.can_settle_with_receipt) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+        }
       }
 
       // for each invoice - generate accounting ledger entry
