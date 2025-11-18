@@ -147,7 +147,6 @@ export async function handleCrossYearLedgerEntries(
   const [{ mainBusinessId }, { documentsMinDate }] = await Promise.all([
     getChargeBusinesses(charge.id, injector),
     getChargeDocumentsMeta(charge.id, injector),
-    getChargeDocumentsMeta(charge.id, injector),
   ]);
 
   // handle current year auto-added spread record if amounts do not match

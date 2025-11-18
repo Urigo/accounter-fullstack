@@ -367,8 +367,6 @@ export async function multipleForeignCurrenciesBalanceEntries(
 
   const { mainBusinessId } = await getChargeBusinesses(charge.id, context.injector);
   if (mainBusinessId && Object.keys(foreignAmounts).length > 0) {
-    const mainBusiness = mainBusinessId ?? undefined;
-
     const transactionEntry = transactionEntries.reduce((prev, curr) => {
       if (!prev) {
         return curr;
@@ -396,8 +394,8 @@ export async function multipleForeignCurrenciesBalanceEntries(
       const isCreditorCounterparty = foreign < 0;
       const ledgerEntry: LedgerProto = {
         id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
-        creditAccountID1: mainBusiness,
-        debitAccountID1: mainBusiness,
+        creditAccountID1: mainBusinessId,
+        debitAccountID1: mainBusinessId,
         localCurrencyCreditAmount1: Math.abs(local),
         localCurrencyDebitAmount1: Math.abs(local),
         ...(isCreditorCounterparty
@@ -458,10 +456,10 @@ export async function multipleForeignCurrenciesBalanceEntries(
         id: transactionEntry.id + `|${currency}-balance`, // NOTE: this field is dummy
         ...(isCreditorCounterparty
           ? {
-              creditAccountID1: mainBusiness,
+              creditAccountID1: mainBusinessId,
             }
           : {
-              debitAccountID1: mainBusiness,
+              debitAccountID1: mainBusinessId,
             }),
         localCurrencyCreditAmount1: Math.abs(localToUse),
         localCurrencyDebitAmount1: Math.abs(localToUse),

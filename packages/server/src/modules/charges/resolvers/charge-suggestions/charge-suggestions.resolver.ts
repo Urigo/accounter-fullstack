@@ -48,9 +48,8 @@ const missingInfoSuggestions: Resolver<
     return missingConversionInfoSuggestions(DbCharge, _, context, __);
   }
 
-  const [formattedAmount, { allBusinessIds }, { mainBusinessId }] = await Promise.all([
+  const [formattedAmount, { allBusinessIds, mainBusinessId }] = await Promise.all([
     calculateTotalAmount(DbCharge.id, injector, adminContext.defaultLocalCurrency),
-    getChargeBusinesses(DbCharge.id, injector),
     getChargeBusinesses(DbCharge.id, injector),
   ]);
 
