@@ -1,4 +1,7 @@
-import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
+import {
+  getChargeBusinesses,
+  getChargeTaxCategoryId,
+} from '@modules/charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
@@ -130,8 +133,10 @@ export async function getEntriesFromFeeTransaction(
     ledgerEntries.push(ledgerEntry);
   }
 
+  const taxCategoryId = await getChargeTaxCategoryId(charge.id, injector);
+
   const feeTaxCategory =
-    charge.tax_category_id === generalFeeTaxCategoryId ? generalFeeTaxCategoryId : feeTaxCategoryId;
+    taxCategoryId === generalFeeTaxCategoryId ? generalFeeTaxCategoryId : feeTaxCategoryId;
 
   const ledgerEntry: LedgerProto = {
     ...partialLedgerEntry,

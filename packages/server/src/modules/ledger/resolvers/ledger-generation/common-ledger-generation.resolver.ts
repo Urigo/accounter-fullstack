@@ -2,11 +2,11 @@ import {
   calculateTotalAmount,
   getChargeBusinesses,
   getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
 } from '@modules/charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
   getExchangeDates,
   isRefundCharge,
@@ -87,27 +87,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     ]);
     const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
-    const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
+    const documentsTaxCategoryIdPromise = async () => {
       if (charge.tax_category_id) {
-        resolve(charge.tax_category_id);
+        return charge.tax_category_id;
       }
+
+      const taxCategoryId = await getChargeTaxCategoryId(chargeId, injector);
+      if (taxCategoryId) {
+        return taxCategoryId;
+      }
+
       if (!gotRelevantDocuments) {
-        resolve(undefined);
+        return undefined;
       }
-      return injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
-        .then(res => res?.id)
-        .then(res => {
-          if (res) {
-            resolve(res);
-          } else {
-            errors.add('Tax category not found');
-            resolve(defaultTaxCategoryId);
-          }
-        })
-        .catch(reject);
-    });
+
+      errors.add('Tax category not found');
+      return defaultTaxCategoryId;
+    };
 
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
@@ -133,7 +129,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       balanceCancellations,
       { mainBusinessId },
     ] = await Promise.all([
-      documentsTaxCategoryIdPromise,
+      documentsTaxCategoryIdPromise(),
       documentsPromise,
       transactionsPromise,
       unbalancedBusinessesPromise,

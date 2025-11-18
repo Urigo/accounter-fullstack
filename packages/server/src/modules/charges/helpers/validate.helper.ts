@@ -10,6 +10,7 @@ import { getChargeType } from './charge-type.js';
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
   getChargeTransactionsMeta,
 } from './common.helper.js';
 
@@ -20,13 +21,14 @@ export const validateCharge = async (
   const { injector, adminContext } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const [chargeType, { mainBusinessId }] = await Promise.all([
+  const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
     getChargeType(charge, context),
     getChargeBusinesses(charge.id, context.injector),
+    getChargeTaxCategoryId(charge.id, context.injector),
   ]);
 
   const isGeneralFees =
-    charge.tax_category_id === adminContext.general.taxCategories.generalFeeTaxCategoryId;
+    taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // check for consistent counterparty business
   const businessNotRequired =
@@ -137,7 +139,7 @@ export const validateCharge = async (
   const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
     chargeType,
   );
-  const taxCategoryIsFine = !shouldHaveTaxCategory || !!charge.tax_category_id;
+  const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
   }

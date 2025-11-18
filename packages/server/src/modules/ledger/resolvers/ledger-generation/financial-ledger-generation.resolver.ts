@@ -1,3 +1,4 @@
+import { getChargeTaxCategoryId } from '@modules/charges/helpers/common.helper.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
@@ -38,13 +39,14 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   }
 
   try {
-    if (!charge.tax_category_id) {
+    const taxCategoryId = await getChargeTaxCategoryId(charge.id, context.injector);
+    if (!taxCategoryId) {
       return {
         __typename: 'CommonError',
         message: `Financial charge must include tax category`,
       };
     }
-    switch (charge.tax_category_id) {
+    switch (taxCategoryId) {
       case exchangeRevaluationTaxCategoryId:
         return generateLedgerRecordsForExchangeRevaluation(
           charge,

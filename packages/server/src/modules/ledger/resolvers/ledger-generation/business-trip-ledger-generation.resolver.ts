@@ -7,12 +7,12 @@ import {
   calculateTotalAmount,
   getChargeBusinesses,
   getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
 } from '@modules/charges/helpers/common.helper.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
   getExchangeDates,
   ledgerEntryFromDocument,
@@ -69,12 +69,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
   const errors: Set<string> = new Set();
 
-  if (!charge.tax_category_id) {
-    errors.add(`Business trip is missing tax category`);
-  }
-  const tripTaxCategory = charge.tax_category_id;
-
   try {
+    const tripTaxCategory = await getChargeTaxCategoryId(charge.id, injector);
+    if (!tripTaxCategory) {
+      errors.add(`Business trip is missing tax category`);
+    }
+
     // validate ledger records are balanced
     const ledgerBalance = new Map<
       string,
@@ -99,27 +99,23 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const documentsPromise = injector
       .get(DocumentsProvider)
       .getDocumentsByChargeIdLoader.load(chargeId);
-    const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
+    const documentsTaxCategoryIdPromise = async () => {
       if (charge.tax_category_id) {
-        resolve(charge.tax_category_id);
+        return charge.tax_category_id;
       }
+
+      const taxCategoryId = await getChargeTaxCategoryId(chargeId, injector);
+      if (taxCategoryId) {
+        return taxCategoryId;
+      }
+
       if (!gotRelevantDocuments) {
-        resolve(undefined);
+        return undefined;
       }
-      return injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
-        .then(res => res?.id)
-        .then(res => {
-          if (res) {
-            resolve(res);
-          } else {
-            errors.add('Tax category not found');
-            resolve(defaultTaxCategoryId);
-          }
-        })
-        .catch(reject);
-    });
+
+      errors.add('Tax category not found');
+      return defaultTaxCategoryId;
+    };
     const businessTripExpensesPromise = injector
       .get(BusinessTripsProvider)
       .getBusinessTripsByChargeIdLoader.load(chargeId)
@@ -152,7 +148,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
-      documentsTaxCategoryIdPromise,
+      documentsTaxCategoryIdPromise(),
       businessTripExpensesPromise,
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,

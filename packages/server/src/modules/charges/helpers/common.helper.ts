@@ -2,6 +2,7 @@ import { Injector } from 'graphql-modules';
 import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
 import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { getLedgerMeta } from '@modules/ledger/helpers/common.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
@@ -201,4 +202,29 @@ export async function getChargeLedgerMeta(chargeId: string, injector: Injector) 
     .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
   return getLedgerMeta(ledgerRecords);
+}
+
+export async function getChargeTaxCategoryId(
+  chargeId: string,
+  injector: Injector,
+): Promise<string | null> {
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (charge.tax_category_id) {
+    return charge.tax_category_id;
+  }
+
+  const { mainBusinessId } = await getChargeBusinesses(chargeId, injector);
+
+  if (!mainBusinessId) {
+    return null;
+  }
+
+  const taxCategory = await injector
+    .get(TaxCategoriesProvider)
+    .taxCategoryByBusinessAndOwnerIDsLoader.load({
+      businessId: mainBusinessId,
+      ownerId: charge.owner_id,
+    });
+
+  return taxCategory?.id ?? null;
 }
