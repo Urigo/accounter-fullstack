@@ -1,7 +1,11 @@
 import { GraphQLError } from 'graphql';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { calculateTotalAmount, getChargeTransactionsMeta } from '../helpers/common.helper.js';
+import {
+  calculateTotalAmount,
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from '../helpers/common.helper.js';
 import { validateCharge } from '../helpers/validate.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
@@ -9,10 +13,15 @@ import type { ChargesModule } from '../types.js';
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
   id: DbCharge => DbCharge.id,
-  vat: DbCharge =>
-    DbCharge.documents_vat_amount != null && DbCharge.documents_currency
-      ? formatFinancialAmount(DbCharge.documents_vat_amount, DbCharge.documents_currency)
-      : null,
+  vat: async (dbCharge, _, { injector }) => {
+    const { documentsVatAmount, documentsCurrency } = await getChargeDocumentsMeta(
+      dbCharge.id,
+      injector,
+    );
+    return documentsVatAmount != null && documentsCurrency
+      ? formatFinancialAmount(documentsVatAmount, documentsCurrency)
+      : null;
+  },
   totalAmount: async (dbCharge, _, { adminContext: { defaultLocalCurrency }, injector }) =>
     calculateTotalAmount(dbCharge.id, injector, defaultLocalCurrency),
   property: async (dbCharge, _, { injector }) => {

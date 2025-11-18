@@ -82,10 +82,10 @@ export const validateCharge = async (
   }
 
   // validate transactions
-  const { invalidTransactions, transactionsCount } = await getChargeTransactionsMeta(
-    charge.id,
-    context.injector,
-  ); // TODO: for more efficient process, put promises together later
+  const [{ invalidTransactions, transactionsCount }, { documentsVatAmount }] = await Promise.all([
+    getChargeTransactionsMeta(charge.id, context.injector),
+    getChargeDocumentsMeta(charge.id, context.injector),
+  ]); // TODO: for more efficient process, put promises together later
   const hasTransaction = transactionsCount >= 1;
   const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
   const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
@@ -117,8 +117,7 @@ export const validateCharge = async (
   const vatIsFine =
     !shouldHaveDocuments ||
     isGeneralFees ||
-    (charge.documents_vat_amount != null &&
-      (isVATlessBusiness || charge.documents_vat_amount !== 0));
+    (documentsVatAmount != null && (isVATlessBusiness || documentsVatAmount !== 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }

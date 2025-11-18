@@ -1,4 +1,7 @@
-import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
+import {
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -25,10 +28,12 @@ const missingInfoSuggestions: Resolver<
 > = async (RawDocument, _, { injector }) => {
   const response: DocumentSuggestionsProto = {};
   if (RawDocument.charge_id) {
-    const [charge, { transactionsAmount, transactionsCurrency }] = await Promise.all([
-      injector.get(ChargesProvider).getChargeByIdLoader.load(RawDocument.charge_id),
-      getChargeTransactionsMeta(RawDocument.charge_id, injector),
-    ]);
+    const [charge, { transactionsAmount, transactionsCurrency }, { documentsCurrency }] =
+      await Promise.all([
+        injector.get(ChargesProvider).getChargeByIdLoader.load(RawDocument.charge_id),
+        getChargeTransactionsMeta(RawDocument.charge_id, injector),
+        getChargeDocumentsMeta(RawDocument.charge_id, injector),
+      ]);
     if (charge?.business_id) {
       response.counterpartyId = charge.business_id;
     }
@@ -44,11 +49,11 @@ const missingInfoSuggestions: Resolver<
         amount: transactionsAmount,
         currency: formatCurrency(transactionsCurrency),
       };
-    } else if (charge?.documents_event_amount && charge?.documents_currency) {
+    } else if (charge?.documents_event_amount && documentsCurrency) {
       // Use parallel documents (if exists) as documents_event_amount is based on invoices OR receipts
       response.amount = {
         amount: charge.documents_event_amount,
-        currency: formatCurrency(charge.documents_currency),
+        currency: documentsCurrency,
       };
     }
   }

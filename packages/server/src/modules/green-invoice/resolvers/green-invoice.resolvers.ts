@@ -2,6 +2,7 @@ import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
+import { getChargeDocumentsMeta } from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ContractsProvider } from '@modules/contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '@modules/contracts/types.js';
@@ -70,10 +71,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .transactionsByChargeIDLoader.load(chargeId)
         .then(res => filterAndHandleSwiftTransactions(res, swiftBusinessId));
 
-      const [charge, documents, transactions] = await Promise.all([
+      const [charge, documents, transactions, { documentsCurrency }] = await Promise.all([
         chargePromise,
         documentsPromise,
         transactionsPromise,
+        getChargeDocumentsMeta(chargeId, injector),
       ]);
 
       if (!charge) {
@@ -196,7 +198,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
         currency: (transactionsCurrency ||
-          charge.documents_currency ||
+          documentsCurrency ||
           defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
@@ -301,9 +303,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         );
       }
 
-      const [greenInvoiceDocument, payment] = await Promise.all([
+      const [greenInvoiceDocument, payment, { documentsCurrency }] = await Promise.all([
         greenInvoiceDocumentPromise,
         paymentPromise,
+        getChargeDocumentsMeta(charge.id, injector),
       ]);
 
       if (!greenInvoiceDocument) {
@@ -349,7 +352,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.documents_currency || defaultCryptoConversionFiatCurrency) as Currency,
+        currency: (documentsCurrency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
         signed: true,

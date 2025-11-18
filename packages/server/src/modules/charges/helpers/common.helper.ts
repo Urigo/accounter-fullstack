@@ -16,16 +16,18 @@ export async function calculateTotalAmount(
   injector: Injector,
   defaultLocalCurrency: Currency,
 ): Promise<FinancialAmount | null> {
-  const [charge, { transactionsAmount, transactionsCurrency }] = await Promise.all([
-    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-    getChargeTransactionsMeta(chargeId, injector),
-  ]);
+  const [charge, { transactionsAmount, transactionsCurrency }, { documentsCurrency }] =
+    await Promise.all([
+      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+      getChargeTransactionsMeta(chargeId, injector),
+      getChargeDocumentsMeta(chargeId, injector),
+    ]);
 
   if (charge.type === 'PAYROLL' && transactionsAmount != null) {
     return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
   }
-  if (charge.documents_event_amount != null && charge.documents_currency) {
-    return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
+  if (charge.documents_event_amount != null && documentsCurrency) {
+    return formatFinancialAmount(charge.documents_event_amount, documentsCurrency);
   }
   if (transactionsAmount != null && transactionsCurrency) {
     return formatFinancialAmount(transactionsAmount, transactionsCurrency);
@@ -101,10 +103,11 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   ]);
 
   let receiptAmount = 0;
+  let receiptVatAmount: number | null = null;
   let receiptCount = 0;
   let invoiceAmount = 0;
-  let invoiceCount = 0;
   let invoiceVatAmount: number | null = null;
+  let invoiceCount = 0;
   const currenciesSet = new Set<Currency>();
 
   documents.map(d => {
@@ -128,18 +131,24 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     if (isReceipt(d.type)) {
       receiptCount++;
       receiptAmount += amount * factor;
+      if (d.vat_amount != null) {
+        receiptVatAmount ??= 0;
+        receiptVatAmount += (d.vat_amount ?? 0) * factor;
+      }
     }
     currenciesSet.add(d.currency_code as Currency);
   });
+
+  const currencies = Array.from(currenciesSet);
 
   return {
     receiptAmount,
     receiptCount,
     invoiceAmount,
     invoiceCount,
-    invoiceVatAmount,
+    documentsVatAmount: invoiceVatAmount == null ? receiptVatAmount : invoiceVatAmount,
     documentsCount: documents.length,
-    currencies: Array.from(currenciesSet),
+    documentsCurrency: currencies.length === 1 ? currencies[0] : null,
   };
 }
 
