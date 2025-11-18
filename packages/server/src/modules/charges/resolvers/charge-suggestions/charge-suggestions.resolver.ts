@@ -6,6 +6,7 @@ import {
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
+import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -29,16 +30,19 @@ const missingInfoSuggestions: Resolver<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context
 > = async (DbCharge, _, context, __) => {
-  // if all required fields are filled, no need for suggestions
-  if (!!DbCharge.tags?.length && !!DbCharge.user_description?.trim()) {
-    return null;
-  }
-
   const { injector, adminContext } = context;
   const { poalimBusinessId, etherScanBusinessId, krakenBusinessId, etanaBusinessId } =
     adminContext.financialAccounts;
 
-  const chargeType = await getChargeType(DbCharge, context);
+  const [chargeType, tags] = await Promise.all([
+    getChargeType(DbCharge, context),
+    context.injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(DbCharge.id),
+  ]);
+
+  // if all required fields are filled, no need for suggestions
+  if (!!tags.length && !!DbCharge.user_description?.trim()) {
+    return null;
+  }
 
   if (chargeType === ChargeTypeEnum.Conversion) {
     return missingConversionInfoSuggestions(DbCharge, _, context, __);
