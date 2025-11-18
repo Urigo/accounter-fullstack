@@ -2,11 +2,13 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { dateToTimelessDateString } from '@shared/helpers';
 import type {
   IAddBankDepositTransactionParams,
   IAddBankDepositTransactionQuery,
   IDeleteBankDepositTransactionsByIdsParams,
   IDeleteBankDepositTransactionsByIdsQuery,
+  IGetAllDepositsWithTransactionsQuery,
   IGetBankDepositTransactionsByIdsQuery,
   IGetDepositTransactionsByChargeIdQuery,
   IGetDepositTransactionsByTransactionIdQuery,
@@ -75,6 +77,21 @@ const deleteBankDepositTransactionsByIds = sql<IDeleteBankDepositTransactionsByI
     DELETE FROM accounter_schema.transactions_bank_deposits
     WHERE id IN $$transactionIds;`;
 
+const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>`
+    SELECT 
+      tbd.deposit_id,
+      t.id,
+      t.currency,
+      t.debit_date,
+      t.event_date,
+      t.amount,
+      t.current_balance
+    FROM accounter_schema.transactions_bank_deposits tbd
+    LEFT JOIN accounter_schema.transactions t
+      USING (id)
+    WHERE tbd.deposit_id IS NOT NULL
+    ORDER BY tbd.deposit_id, COALESCE(t.debit_date, t.event_date);`;
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -130,5 +147,142 @@ export class BankDepositTransactionsProvider {
 
   public deleteBankDepositTransactionsByIds(params: IDeleteBankDepositTransactionsByIdsParams) {
     return deleteBankDepositTransactionsByIds.run(params, this.dbProvider);
+  }
+
+  public async getAllDepositsWithMetadata() {
+    const rows = await getAllDepositsWithTransactions.run(undefined, this.dbProvider);
+
+    // Group transactions by deposit_id
+    const depositMap = new Map<
+      string,
+      {
+        id: string;
+        currency: string | null;
+        openDate: Date | null;
+        closeDate: Date | null;
+        currentBalance: number;
+        currencyError: string[];
+        transactionIds: string[];
+      }
+    >();
+
+    for (const row of rows) {
+      if (!row.deposit_id) continue;
+
+      if (!depositMap.has(row.deposit_id)) {
+        depositMap.set(row.deposit_id, {
+          id: row.deposit_id,
+          currency: row.currency,
+          openDate: row.debit_date ?? row.event_date,
+          closeDate: null,
+          currentBalance: 0,
+          currencyError: [],
+          transactionIds: [],
+        });
+      }
+
+      const deposit = depositMap.get(row.deposit_id)!;
+      deposit.transactionIds.push(row.id);
+
+      // Validate single currency
+      if (deposit.currency && row.currency && deposit.currency !== row.currency) {
+        const alreadyInErrors = deposit.currencyError.includes(row.id);
+        if (!alreadyInErrors) {
+          deposit.currencyError.push(row.id);
+        }
+      }
+
+      // Update openDate (earliest transaction)
+      const txDate = row.debit_date ?? row.event_date;
+      if (!deposit.openDate || (txDate && txDate < deposit.openDate)) {
+        deposit.openDate = txDate;
+      }
+
+      // Track balance and closeDate
+      if (row.amount) {
+        deposit.currentBalance += Number(row.amount);
+      }
+
+      // If balance reaches zero, update closeDate
+      if (Math.abs(deposit.currentBalance) < 0.005 && txDate) {
+        deposit.closeDate = txDate;
+      }
+    }
+
+    // Ensure closeDate reflects final state: if not closed, closeDate must be null
+    for (const d of depositMap.values()) {
+      if (Math.abs(d.currentBalance) >= 0.005) {
+        d.closeDate = null;
+      }
+    }
+
+    return Array.from(depositMap.values()).map(deposit => ({
+      id: deposit.id,
+      currency: deposit.currency,
+      openDate: deposit.openDate ? dateToTimelessDateString(deposit.openDate) : null,
+      closeDate: deposit.closeDate ? dateToTimelessDateString(deposit.closeDate) : null,
+      currentBalance: deposit.currentBalance,
+      currencyError: deposit.currencyError,
+      transactionIds: deposit.transactionIds,
+    }));
+  }
+
+  public async createDeposit(currency: string) {
+    // Generate unique deposit ID using timestamp and random suffix
+    const depositId = `${currency}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    return {
+      id: depositId,
+      currency,
+      openDate: null,
+      closeDate: null,
+      currentBalance: 0,
+      currencyError: [],
+      transactionIds: [],
+    };
+  }
+
+  public async assignTransactionToDeposit(transactionId: string, depositId: string) {
+    // Get transaction to validate currency
+    const transactionDepositInfo = await getBankDepositTransactionsByIds.run(
+      { transactionIds: [transactionId] },
+      this.dbProvider,
+    );
+
+    if (transactionDepositInfo.length === 0) {
+      throw new Error('Transaction not found');
+    }
+
+    // Get target deposit transactions to validate currency
+    const depositTransactions = await this.getTransactionsByBankDepositLoader.load(depositId);
+
+    // Get transaction details to check currency
+    const fullTransaction = depositTransactions.find(t => t.id === transactionId);
+
+    // Check currency conflict
+    if (depositTransactions.length > 0 && fullTransaction) {
+      const depositCurrency = depositTransactions[0].currency;
+      if (depositCurrency && fullTransaction.currency !== depositCurrency) {
+        throw new Error(
+          `Currency conflict: Transaction currency (${fullTransaction.currency}) does not match deposit currency (${depositCurrency})`,
+        );
+      }
+    }
+
+    // Update deposit_id
+    await this.updateBankDepositTransaction({
+      transactionId,
+      depositId,
+    });
+
+    // Return updated deposit metadata
+    const allDeposits = await this.getAllDepositsWithMetadata();
+    const updatedDeposit = allDeposits.find(d => d.id === depositId);
+
+    if (!updatedDeposit) {
+      throw new Error('Deposit not found after assignment');
+    }
+
+    return updatedDeposit;
   }
 }
