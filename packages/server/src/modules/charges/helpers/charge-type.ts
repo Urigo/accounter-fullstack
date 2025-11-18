@@ -1,3 +1,4 @@
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
@@ -15,9 +16,12 @@ export async function getChargeType(
       return ChargeTypeEnum.Financial;
   }
 
-  const { allBusinessIds, mainBusinessId } = await getChargeBusinesses(charge.id, context.injector);
+  const [{ allBusinessIds, mainBusinessId }, businessTrip] = await Promise.all([
+    getChargeBusinesses(charge.id, context.injector),
+    context.injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
+  ]);
 
-  if (charge.business_trip_id) {
+  if (businessTrip) {
     return ChargeTypeEnum.BusinessTrip;
   }
 

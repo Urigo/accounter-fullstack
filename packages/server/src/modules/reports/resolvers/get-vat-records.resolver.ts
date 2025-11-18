@@ -1,5 +1,6 @@
 import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
@@ -194,25 +195,26 @@ export const getVatRecords = async (
     const validatedCharges = await Promise.all<{
       charge: IGetChargesByFiltersResult;
       isValid: boolean;
+      businessTripId: string | null;
     }>(
-      charges.map(
-        charge =>
-          new Promise((resolve, reject) => {
-            validateCharge(charge, context)
-              .then(res => {
-                if ('isValid' in res) {
-                  resolve({ charge, isValid: res.isValid });
-                } else {
-                  reject('Error validating charge');
-                }
-              })
-              .catch(reject);
-          }),
-      ),
+      charges.map(async charge => {
+        const [validation, businessTrip] = await Promise.all([
+          validateCharge(charge, context),
+          injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
+        ]);
+        if (!('isValid' in validation)) {
+          throw new Error('Error validating charge');
+        }
+        return {
+          charge,
+          isValid: validation.isValid,
+          businessTripId: businessTrip?.id ?? null,
+        };
+      }),
     );
 
-    for (const { charge, isValid } of validatedCharges) {
-      if (charge.business_trip_id) {
+    for (const { charge, isValid, businessTripId } of validatedCharges) {
+      if (businessTripId) {
         // If valid and has business trip, add to business trips
         response.businessTrips.push(charge);
       } else if (isValid) {
