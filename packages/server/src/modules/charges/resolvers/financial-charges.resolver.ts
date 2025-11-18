@@ -265,8 +265,8 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     },
   },
   FinancialCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Financial,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,

@@ -1,4 +1,5 @@
 import {
+  getChargeBusinesses,
   getChargeDocumentsMeta,
   getChargeTransactionsMeta,
 } from '@modules/charges/helpers/common.helper.js';
@@ -32,13 +33,15 @@ const missingInfoSuggestions: Resolver<
       charge,
       { transactionsAmount, transactionsCurrency },
       { documentsAmount, documentsCurrency },
+      { mainBusinessId },
     ] = await Promise.all([
       injector.get(ChargesProvider).getChargeByIdLoader.load(RawDocument.charge_id),
       getChargeTransactionsMeta(RawDocument.charge_id, injector),
       getChargeDocumentsMeta(RawDocument.charge_id, injector),
+      getChargeBusinesses(RawDocument.charge_id, injector),
     ]);
-    if (charge?.business_id) {
-      response.counterpartyId = charge.business_id;
+    if (mainBusinessId) {
+      response.counterpartyId = mainBusinessId;
     }
     if (charge?.owner_id) {
       response.ownerId = charge.owner_id;

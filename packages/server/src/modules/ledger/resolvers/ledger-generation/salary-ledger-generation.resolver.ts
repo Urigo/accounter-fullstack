@@ -1,4 +1,5 @@
 import { lastDayOfMonth } from 'date-fns';
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
@@ -35,7 +36,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, _info) => {
-  if (charge.business_array?.length === 1) {
+  const { allBusinessIds } = await getChargeBusinesses(charge.id, context.injector);
+  if (allBusinessIds.length === 1) {
     // for one business, use the default ledger generation
     return generateLedgerRecordsForCommonCharge(
       charge,

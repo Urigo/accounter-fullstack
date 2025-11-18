@@ -1,5 +1,6 @@
 import {
   calculateTotalAmount,
+  getChargeBusinesses,
   getChargeDocumentsMeta,
 } from '@modules/charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
@@ -130,12 +131,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       transactions,
       unbalancedBusinesses,
       balanceCancellations,
+      { mainBusinessId },
     ] = await Promise.all([
       documentsTaxCategoryIdPromise,
       documentsPromise,
       transactionsPromise,
       unbalancedBusinessesPromise,
       chargeBallanceCancellationsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const entriesPromises: Array<Promise<void>> = [];
@@ -205,7 +208,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           context,
           chargeId,
           charge.owner_id,
-          charge.business_id ?? undefined,
+          mainBusinessId ?? undefined,
           gotRelevantDocuments,
         ).catch(e => {
           if (e instanceof LedgerError) {
@@ -297,24 +300,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
 
     // multiple currencies balance
-    const mainBusiness = charge.business_id;
-    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    const businessBalance = ledgerBalance.get(mainBusinessId ?? '');
     if (
-      mainBusiness &&
+      mainBusinessId &&
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
       const transactionEntries = financialAccountLedgerEntries.filter(entry => {
-        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId)) return true;
         return false;
       });
       const documentEntries = accountingLedgerEntries.filter(entry => {
-        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId)) return true;
         return false;
       });
 
       try {
-        const entries = multipleForeignCurrenciesBalanceEntries(
+        const entries = await multipleForeignCurrenciesBalanceEntries(
           context,
           documentEntries,
           transactionEntries,
@@ -361,10 +363,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       );
     } else if (!isBalanced) {
       // check if business doesn't require documents
-      if (!accountingLedgerEntries.length && charge.business_id) {
+      if (!accountingLedgerEntries.length && mainBusinessId) {
         const business = await injector
           .get(BusinessesProvider)
-          .getBusinessByIdLoader.load(charge.business_id);
+          .getBusinessByIdLoader.load(mainBusinessId);
         if (business?.no_invoices_required) {
           const unbalancedBusinesses = unbalancedEntities.find(b => b.entityId === business.id);
           if (unbalancedBusinesses) {

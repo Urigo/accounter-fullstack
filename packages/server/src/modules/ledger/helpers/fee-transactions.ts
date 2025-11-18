@@ -1,3 +1,4 @@
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
@@ -117,7 +118,8 @@ export async function getEntriesFromFeeTransaction(
   if (isSupplementalFee) {
     mainAccount = await getFinancialAccountTaxCategoryId(injector, transaction);
   } else {
-    const mainBusiness = charge.business_id ?? undefined;
+    const { mainBusinessId } = await getChargeBusinesses(charge.id, injector);
+    const mainBusiness = mainBusinessId ?? undefined;
 
     const ledgerEntry: LedgerProto = {
       ...partialLedgerEntry,

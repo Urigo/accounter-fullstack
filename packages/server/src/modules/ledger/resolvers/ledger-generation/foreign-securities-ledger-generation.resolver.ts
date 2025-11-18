@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -60,9 +61,10 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       .get(FinancialAccountsProvider)
       .getFinancialAccountsByOwnerIdLoader.load(defaultAdminBusinessId);
 
-    const [transactions, financialAccounts] = await Promise.all([
+    const [transactions, financialAccounts, { mainBusinessId }] = await Promise.all([
       transactionsPromise,
       financialAccountsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const foreignSecuritiesAccountId = financialAccounts.find(
@@ -88,7 +90,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
           context,
           chargeId,
           charge.owner_id,
-          charge.business_id ?? undefined,
+          mainBusinessId ?? undefined,
         )
           .then(ledgerEntry => {
             financialAccountLedgerEntries.push(ledgerEntry);

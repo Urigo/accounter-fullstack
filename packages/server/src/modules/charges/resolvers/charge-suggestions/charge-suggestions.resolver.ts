@@ -1,5 +1,8 @@
 import { GraphQLError } from 'graphql';
-import { calculateTotalAmount } from '@modules/charges/helpers/common.helper.js';
+import {
+  calculateTotalAmount,
+  getChargeBusinesses,
+} from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -35,23 +38,25 @@ const missingInfoSuggestions: Resolver<
   const { poalimBusinessId, etherScanBusinessId, krakenBusinessId, etanaBusinessId } =
     adminContext.financialAccounts;
 
-  const chargeType = getChargeType(DbCharge, context);
+  const chargeType = await getChargeType(DbCharge, context);
 
   if (chargeType === ChargeTypeEnum.Conversion) {
     return missingConversionInfoSuggestions(DbCharge, _, context, __);
   }
 
-  const [formattedAmount] = await Promise.all([
+  const [formattedAmount, { allBusinessIds }, { mainBusinessId }] = await Promise.all([
     calculateTotalAmount(DbCharge.id, injector, adminContext.defaultLocalCurrency),
+    getChargeBusinesses(DbCharge.id, injector),
+    getChargeBusinesses(DbCharge.id, injector),
   ]);
 
   const chargeAmount = formattedAmount?.raw ?? 0;
 
   // if charge has a businesses, use it's suggestion data
-  if (DbCharge.business_id) {
+  if (mainBusinessId) {
     const business = await injector
       .get(BusinessesProvider)
-      .getBusinessByIdLoader.load(DbCharge.business_id);
+      .getBusinessByIdLoader.load(mainBusinessId);
     if (business?.suggestion_data) {
       const {
         data: suggestionData,
@@ -79,12 +84,11 @@ const missingInfoSuggestions: Resolver<
     }
   }
 
-  if (DbCharge.business_array && DbCharge.business_array.length > 1) {
-    const isKrakenIncluded = krakenBusinessId && DbCharge.business_array.includes(krakenBusinessId);
-    const isEtherscanIncluded =
-      etherScanBusinessId && DbCharge.business_array.includes(etherScanBusinessId);
-    const isEtanaIncluded = etanaBusinessId && DbCharge.business_array.includes(etanaBusinessId);
-    const isPoalimIncluded = poalimBusinessId && DbCharge.business_array.includes(poalimBusinessId);
+  if (allBusinessIds.length > 1) {
+    const isKrakenIncluded = krakenBusinessId && allBusinessIds.includes(krakenBusinessId);
+    const isEtherscanIncluded = etherScanBusinessId && allBusinessIds.includes(etherScanBusinessId);
+    const isEtanaIncluded = etanaBusinessId && allBusinessIds.includes(etanaBusinessId);
+    const isPoalimIncluded = poalimBusinessId && allBusinessIds.includes(poalimBusinessId);
 
     if (isKrakenIncluded && isEtherscanIncluded) {
       return {
@@ -132,7 +136,7 @@ const missingInfoSuggestions: Resolver<
       continue;
     }
 
-    if (business.id in (DbCharge.business_array ?? [])) {
+    if (business.id in allBusinessIds) {
       return {
         description: suggestionData.description,
         tags: await Promise.all(
@@ -626,13 +630,16 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Charge ID is required');
       }
 
-      const mainCharge = await injector
-        .get(ChargesProvider)
-        .getChargeByIdLoader.load(chargeId)
-        .catch(e => {
-          console.error('Error fetching charge', { chargeId, error: e });
-          throw new GraphQLError('Error fetching charge');
-        });
+      const [mainCharge, { allBusinessIds, mainBusinessId }] = await Promise.all([
+        injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(chargeId)
+          .catch(e => {
+            console.error('Error fetching charge', { chargeId, error: e });
+            throw new GraphQLError('Error fetching charge');
+          }),
+        getChargeBusinesses(chargeId, injector),
+      ]);
 
       if (!mainCharge) {
         throw new GraphQLError(`Charge not found: ${chargeId}`);
@@ -641,8 +648,8 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
       const similarCharges = await injector
         .get(ChargesProvider)
         .getSimilarCharges({
-          businessId: mainCharge.business_id,
-          businessArray: mainCharge.business_array,
+          businessId: mainBusinessId,
+          businessArray: allBusinessIds,
           withMissingTags,
           withMissingDescription,
           tagsDifferentThan: tagsDifferentThan ? [...tagsDifferentThan] : undefined,
@@ -652,8 +659,8 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         .catch(e => {
           console.error('Error fetching similar charges:', {
             chargeId,
-            businessId: mainCharge.business_id,
-            businessArray: mainCharge.business_array,
+            businessId: mainBusinessId,
+            businessArray: allBusinessIds,
             error: e.message,
           });
           throw new GraphQLError('Error fetching similar charges');

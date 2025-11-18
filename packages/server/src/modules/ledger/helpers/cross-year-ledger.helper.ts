@@ -1,3 +1,4 @@
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
@@ -140,6 +141,8 @@ export async function handleCrossYearLedgerEntries(
       return acc + mainAmount;
     }, 0);
 
+  const [{ mainBusinessId }] = await Promise.all([getChargeBusinesses(charge.id, injector)]);
+
   // handle current year auto-added spread record if amounts do not match
   if (
     yearsWithoutSpecifiedAmountCount === 0 &&
@@ -162,11 +165,11 @@ export async function handleCrossYearLedgerEntries(
   }
 
   let description: string | undefined = undefined;
-  if (charge.business_id) {
+  if (mainBusinessId) {
     try {
       const mainBusiness = await injector
         .get(FinancialEntitiesProvider)
-        .getFinancialEntityByIdLoader.load(charge.business_id);
+        .getFinancialEntityByIdLoader.load(mainBusinessId);
       if (mainBusiness) {
         description = `Main counterparty: ${mainBusiness.name}`;
       }

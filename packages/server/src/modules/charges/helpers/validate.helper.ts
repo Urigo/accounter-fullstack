@@ -7,7 +7,11 @@ import { ChargeTypeEnum } from '@shared/enums';
 import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
-import { getChargeDocumentsMeta, getChargeTransactionsMeta } from './common.helper.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from './common.helper.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
@@ -16,7 +20,10 @@ export const validateCharge = async (
   const { injector, adminContext } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const chargeType = getChargeType(charge, context);
+  const [chargeType, { mainBusinessId }] = await Promise.all([
+    getChargeType(charge, context),
+    getChargeBusinesses(charge.id, context.injector),
+  ]);
 
   const isGeneralFees =
     charge.tax_category_id === adminContext.general.taxCategories.generalFeeTaxCategoryId;
@@ -27,8 +34,8 @@ export const validateCharge = async (
       chargeType,
     ) || isGeneralFees;
   const businessPromise =
-    charge.business_id && !businessNotRequired
-      ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
+    mainBusinessId && !businessNotRequired
+      ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(mainBusinessId)
       : Promise.resolve(undefined);
 
   const [

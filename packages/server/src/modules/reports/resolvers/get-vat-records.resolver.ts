@@ -1,5 +1,6 @@
 import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { validateCharge } from '@modules/charges/helpers/validate.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { IGetChargesByFiltersResult } from '@modules/charges/types.js';
@@ -101,8 +102,19 @@ export const getVatRecords = async (
       charges.push(...moreDocsCharges);
       docsCharges.push(...moreDocsCharges);
     }
-    docsCharges = docsCharges.filter(charge => {
-      for (const businessId of charge.business_array ?? []) {
+
+    const extendedCharges = await Promise.all(
+      charges.map(async charge => {
+        const { allBusinessIds } = await getChargeBusinesses(charge.id, injector);
+        return {
+          ...charge,
+          allBusinessIds,
+        };
+      }),
+    );
+
+    docsCharges = extendedCharges.filter(charge => {
+      for (const businessId of charge.allBusinessIds) {
         if (vatReportExcludedBusinessNames.includes(businessId)) {
           return false;
         }

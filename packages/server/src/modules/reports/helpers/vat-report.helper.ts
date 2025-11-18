@@ -1,4 +1,7 @@
-import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
+import {
+  getChargeBusinesses,
+  getChargeTransactionsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import type { IGetChargesByFiltersResult } from '@modules/charges/types.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
@@ -65,12 +68,13 @@ export async function adjustTaxRecord(
       throw new Error(`Date is missing for invoice ID=${doc.id}`);
     }
 
-    const [isProperty, { transactionsMinEventDate }] = await Promise.all([
+    const [isProperty, { transactionsMinEventDate }, { mainBusinessId }] = await Promise.all([
       injector
         .get(DepreciationProvider)
         .getDepreciationRecordsByChargeIdLoader.load(charge.id)
         .then(records => records.length > 0),
       getChargeTransactionsMeta(charge.id, injector),
+      getChargeBusinesses(charge.id, injector),
     ]);
 
     // get exchange rate
@@ -89,7 +93,7 @@ export async function adjustTaxRecord(
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
     const partialRecord: RawVatReportRecord = {
-      businessId: charge.business_id,
+      businessId: mainBusinessId,
       chargeAccountantStatus: charge.accountant_status,
       chargeDate: transactionsMinEventDate ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,

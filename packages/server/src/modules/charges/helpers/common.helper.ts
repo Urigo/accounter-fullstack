@@ -88,15 +88,15 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
   const allBusinessIds = Array.from(allBusinessIdsSet);
   const mainBusinessIds = Array.from(mainBusinessIdsSet);
 
-  let mainBusiness: string | null = null;
+  let mainBusinessId: string | null = null;
 
   if (mainBusinessIds.length === 1) {
-    mainBusiness = mainBusinessIds[0];
+    mainBusinessId = mainBusinessIds[0];
   }
 
   return {
     allBusinessIds,
-    mainBusiness,
+    mainBusinessId,
   };
 }
 

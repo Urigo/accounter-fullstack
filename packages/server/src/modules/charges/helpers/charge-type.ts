@@ -1,10 +1,11 @@
 import { ChargeTypeEnum } from '@shared/enums';
 import type { IGetChargesByIdsResult } from '../types.js';
+import { getChargeBusinesses } from './common.helper.js';
 
-export function getChargeType(
+export async function getChargeType(
   charge: IGetChargesByIdsResult,
   context: GraphQLModules.Context,
-): ChargeTypeEnum {
+): Promise<ChargeTypeEnum> {
   switch (charge.type) {
     case 'CONVERSION':
       return ChargeTypeEnum.Conversion;
@@ -13,6 +14,8 @@ export function getChargeType(
     case 'FINANCIAL':
       return ChargeTypeEnum.Financial;
   }
+
+  const { allBusinessIds, mainBusinessId } = await getChargeBusinesses(charge.id, context.injector);
 
   if (charge.business_trip_id) {
     return ChargeTypeEnum.BusinessTrip;
@@ -28,36 +31,34 @@ export function getChargeType(
 
   if (
     bankDepositBusinessId &&
-    (charge.business_id === bankDepositBusinessId ||
-      charge.business_array?.includes(bankDepositBusinessId))
+    (mainBusinessId === bankDepositBusinessId || allBusinessIds.includes(bankDepositBusinessId))
   ) {
     return ChargeTypeEnum.BankDeposit;
   }
 
   if (
     foreignSecuritiesBusinessId &&
-    (charge.business_id === foreignSecuritiesBusinessId ||
-      charge.business_array?.includes(foreignSecuritiesBusinessId))
+    (mainBusinessId === foreignSecuritiesBusinessId ||
+      allBusinessIds.includes(foreignSecuritiesBusinessId))
   ) {
     return ChargeTypeEnum.ForeignSecurities;
   }
 
   if (
-    (charge.business_array?.filter(businessId => internalWalletsIds.includes(businessId))?.length ??
-      0) > 1
+    (allBusinessIds.filter(businessId => internalWalletsIds.includes(businessId))?.length ?? 0) > 1
   ) {
     return ChargeTypeEnum.InternalTransfer;
   }
 
-  if (charge.business_array?.some(businessId => dividendBusinessIds.includes(businessId))) {
+  if (allBusinessIds.some(businessId => dividendBusinessIds.includes(businessId))) {
     return ChargeTypeEnum.Dividend;
   }
 
-  if (charge.business_id === vatBusinessId) {
+  if (mainBusinessId === vatBusinessId) {
     return ChargeTypeEnum.MonthlyVat;
   }
 
-  if (charge.business_id && creditCardIds.includes(charge.business_id)) {
+  if (mainBusinessId && creditCardIds.includes(mainBusinessId)) {
     return ChargeTypeEnum.CreditcardBankCharge;
   }
 

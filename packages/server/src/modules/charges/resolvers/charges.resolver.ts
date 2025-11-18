@@ -19,7 +19,7 @@ import {
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
 import { getChargeType } from '../helpers/charge-type.js';
-import { getChargeTransactionsMeta } from '../helpers/common.helper.js';
+import { getChargeBusinesses, getChargeTransactionsMeta } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
@@ -556,50 +556,53 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
   },
   CommonCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Common,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Common,
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Conversion,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Conversion,
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Salary,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Salary,
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.InternalTransfer,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.InternalTransfer,
     ...commonChargeFields,
   },
   DividendCharge: {
-    __isTypeOf: (DbCharge, context) => getChargeType(DbCharge, context) === ChargeTypeEnum.Dividend,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Dividend,
     ...commonChargeFields,
   },
   BusinessTripCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BusinessTrip,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.BusinessTrip,
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.MonthlyVat,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.MonthlyVat,
     ...commonChargeFields,
   },
   BankDepositCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.BankDeposit,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.BankDeposit,
     ...commonChargeFields,
   },
   ForeignSecuritiesCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.ForeignSecurities,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.ForeignSecurities,
     ...commonChargeFields,
   },
   CreditcardBankCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.CreditcardBankCharge,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.CreditcardBankCharge,
     ...commonChargeFields,
   },
   Invoice: {
@@ -728,8 +731,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError(message);
       }
     },
-    optionalBusinesses: DbCharge =>
-      DbCharge.business_array && DbCharge.business_array.length > 1 ? DbCharge.business_array : [],
+    optionalBusinesses: async (DbCharge, _, { injector }) => {
+      const { allBusinessIds } = await getChargeBusinesses(DbCharge.id, injector);
+      return allBusinessIds.length > 1 ? allBusinessIds : [];
+    },
     isSalary: DbCharge => DbCharge.type === 'PAYROLL',
   },
 };

@@ -5,6 +5,7 @@ import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
 import {
   calculateTotalAmount,
+  getChargeBusinesses,
   getChargeDocumentsMeta,
 } from '@modules/charges/helpers/common.helper.js';
 import { currency } from '@modules/charges/types.js';
@@ -146,6 +147,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripsEmployeePayments,
       businessTripAttendees,
       chargeUnbalancedBusinesses,
+      { mainBusinessId },
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
@@ -154,6 +156,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,
       unbalancedBusinessesPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     // generate ledger from transactions
@@ -476,22 +479,21 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const miscLedgerEntries: LedgerProto[] = [];
 
     // multiple currencies balance
-    const mainBusiness = charge.business_id;
-    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    const businessBalance = ledgerBalance.get(mainBusinessId ?? '');
     if (
-      mainBusiness &&
+      mainBusinessId &&
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
       const transactionEntries = financialAccountLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId),
       );
       const documentEntries = accountingLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId),
       );
 
       try {
-        const entries = multipleForeignCurrenciesBalanceEntries(
+        const entries = await multipleForeignCurrenciesBalanceEntries(
           context,
           documentEntries,
           transactionEntries,

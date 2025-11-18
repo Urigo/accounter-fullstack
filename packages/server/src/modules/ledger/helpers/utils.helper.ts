@@ -1,4 +1,5 @@
 import { Injector } from 'graphql-modules';
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -345,14 +346,14 @@ export async function getFinancialAccountTaxCategoryId(
   return taxCategory.id;
 }
 
-export function multipleForeignCurrenciesBalanceEntries(
+export async function multipleForeignCurrenciesBalanceEntries(
   context: GraphQLModules.Context,
   documentEntries: LedgerProto[],
   transactionEntries: LedgerProto[],
   charge: IGetChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
   balanceAgainstLocal?: boolean,
-): LedgerProto[] {
+): Promise<LedgerProto[]> {
   const {
     adminContext: { defaultLocalCurrency },
   } = context;
@@ -364,8 +365,9 @@ export function multipleForeignCurrenciesBalanceEntries(
 
   const ledgerEntries: LedgerProto[] = [];
 
-  if (charge.business_id && Object.keys(foreignAmounts).length > 0) {
-    const mainBusiness = charge.business_id;
+  const { mainBusinessId } = await getChargeBusinesses(charge.id, context.injector);
+  if (mainBusinessId && Object.keys(foreignAmounts).length > 0) {
+    const mainBusiness = mainBusinessId ?? undefined;
 
     const transactionEntry = transactionEntries.reduce((prev, curr) => {
       if (!prev) {
