@@ -141,6 +141,16 @@ export function DepositsTransactionsTable({
   }, [data?.deposit, userContext]);
 
   const columnsWithActions: ColumnDef<DepositTransactionRowType>[] = useMemo(() => {
+    const defaultLocalCurrency =
+      (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
+
+    const originEqualsLocal =
+      !!data?.deposit?.currency && data.deposit.currency === defaultLocalCurrency;
+
+    const baseColumns: ColumnDef<DepositTransactionRowType>[] = originEqualsLocal
+      ? columns.filter(c => c.id !== 'amount' && c.id !== 'cumulativeBalance')
+      : columns;
+
     const actionColumns: ColumnDef<DepositTransactionRowType>[] = enableReassign
       ? [
           {
@@ -157,8 +167,14 @@ export function DepositsTransactionsTable({
         ]
       : [];
 
-    return [...columns, ...actionColumns];
-  }, [enableReassign, depositId, refetch]);
+    return [...baseColumns, ...actionColumns];
+  }, [
+    enableReassign,
+    depositId,
+    refetch,
+    data?.deposit?.currency,
+    userContext?.context.defaultLocalCurrency,
+  ]);
 
   const table = useReactTable({
     data: tableData,
