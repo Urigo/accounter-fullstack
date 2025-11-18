@@ -1,6 +1,7 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { Currency, DocumentType } from '@shared/gql-types';
 import type { IGetAllDocumentsResult } from '../types.js';
+import { isInvoice } from './common.helper.js';
 
 export function validateDocumentVat(
   document: IGetAllDocumentsResult,
@@ -87,4 +88,26 @@ export async function validateDocumentAllocation(
     console.error(`${message}: ${error}`);
     throw new Error(message);
   }
+}
+
+export function basicDocumentValidation(document: IGetAllDocumentsResult) {
+  if (document.type === DocumentType.Unprocessed) {
+    return false;
+  }
+  if (document.type === DocumentType.Other) {
+    return true;
+  }
+
+  const hasRequiredFields =
+    document.debtor_id &&
+    document.creditor_id &&
+    document.date &&
+    document.total_amount != null &&
+    document.currency_code &&
+    document.serial_number &&
+    document.charge_id;
+
+  const isInvoiceValid = !isInvoice(document.type) || document.vat_amount != null;
+
+  return hasRequiredFields && isInvoiceValid;
 }
