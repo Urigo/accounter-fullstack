@@ -1,4 +1,7 @@
-import { getChargeDocumentsMeta } from '@modules/charges/helpers/common.helper.js';
+import {
+  calculateTotalAmount,
+  getChargeDocumentsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -77,7 +80,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    const { invoiceCount, receiptCount } = await getChargeDocumentsMeta(chargeId, injector);
+    const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
+      getChargeDocumentsMeta(chargeId, injector),
+      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+    ]);
     const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
     const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
@@ -431,7 +437,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
           const isRefund = isRefundCharge(charge.user_description);
           const isIncomeCharge =
-            !isRefund && charge.event_amount && Number(charge.event_amount) > 0;
+            !isRefund && !!formattedChargeAmount && formattedChargeAmount.raw > 0;
           if (isIncomeCharge) {
             exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
           }

@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { calculateTotalAmount } from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
@@ -14,7 +15,6 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import { formatAmount } from '@shared/helpers';
 import { getChargeType } from '../../helpers/charge-type.js';
 import type { ChargesModule } from '../../types.js';
 import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';
@@ -40,6 +40,12 @@ const missingInfoSuggestions: Resolver<
   if (chargeType === ChargeTypeEnum.Conversion) {
     return missingConversionInfoSuggestions(DbCharge, _, context, __);
   }
+
+  const [formattedAmount] = await Promise.all([
+    calculateTotalAmount(DbCharge.id, injector, adminContext.defaultLocalCurrency),
+  ]);
+
+  const chargeAmount = formattedAmount?.raw ?? 0;
 
   // if charge has a businesses, use it's suggestion data
   if (DbCharge.business_id) {
@@ -173,8 +179,8 @@ const missingInfoSuggestions: Resolver<
 
   if (
     description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
+    (description.includes('העברת מט"ח') && Math.abs(chargeAmount) < 400) ||
+    (description.includes('מטח') && Math.abs(chargeAmount) < 400) ||
     description.includes('F.C.COM') ||
     description.includes('ע.מפעולות-ישיר') ||
     description.includes('ריבית חובה') ||
@@ -469,16 +475,16 @@ const missingInfoSuggestions: Resolver<
         .getTagByNameLoader.load('business')
         .then(res => (res ? [res] : [])),
     };
-    if (formatAmount(DbCharge.event_amount) <= -2000) {
+    if (chargeAmount <= -2000) {
       suggested.description = 'Monthly Sponsor for Benjie, Code-Hex, hayes';
-    } else if (formatAmount(DbCharge.event_amount) <= -1000) {
+    } else if (chargeAmount <= -1000) {
       suggested.description = 'Monthly Sponsor for Andarist, warrenday';
     } else {
       suggested.description = 'GitHub Actions';
     }
     return suggested;
   }
-  if (formatAmount(DbCharge.event_amount) === -4329) {
+  if (chargeAmount === -4329) {
     return {
       description: 'Office rent',
       tags: await injector
@@ -488,7 +494,7 @@ const missingInfoSuggestions: Resolver<
     };
   }
   if (description.includes('APPLE COM BILL/ITUNES.COM')) {
-    const flag = formatAmount(DbCharge.event_amount) === -109.9;
+    const flag = chargeAmount === -109.9;
     return {
       taxCategory: 'אתר',
       beneficiaaries: [], // NOTE: used to be ' '
@@ -501,8 +507,8 @@ const missingInfoSuggestions: Resolver<
   }
   if (
     description.includes('ע\' העברת מט"ח') ||
-    (description.includes('העברת מט"ח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
-    (description.includes('מטח') && Math.abs(formatAmount(DbCharge.event_amount)) < 400) ||
+    (description.includes('העברת מט"ח') && Math.abs(chargeAmount) < 400) ||
+    (description.includes('מטח') && Math.abs(chargeAmount) < 400) ||
     description.includes('F.C.COM') ||
     description.includes('ע.מפעולות-ישיר') ||
     description.includes('ריבית חובה') ||
@@ -574,7 +580,7 @@ const missingInfoSuggestions: Resolver<
         .then(res => (res ? [res] : [])),
     };
   }
-  if (formatAmount(DbCharge.event_amount) === -12_000) {
+  if (chargeAmount === -12_000) {
     const current = new Date();
     current.setMonth(current.getMonth() - 1);
     const previousMonth = current.toLocaleString('default', { month: '2-digit' });
@@ -586,7 +592,7 @@ const missingInfoSuggestions: Resolver<
         .then(res => (res ? [res] : [])),
     };
   }
-  if (formatAmount(DbCharge.event_amount) === -600) {
+  if (chargeAmount === -600) {
     return {
       description: 'Matic Zavadlal - April 2021',
       tags: await injector

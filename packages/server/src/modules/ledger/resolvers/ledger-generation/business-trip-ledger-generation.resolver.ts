@@ -3,7 +3,10 @@ import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
-import { getChargeDocumentsMeta } from '@modules/charges/helpers/common.helper.js';
+import {
+  calculateTotalAmount,
+  getChargeDocumentsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -80,7 +83,10 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     >();
 
-    const { invoiceCount, receiptCount } = await getChargeDocumentsMeta(chargeId, injector);
+    const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
+      getChargeDocumentsMeta(chargeId, injector),
+      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+    ]);
 
     const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
@@ -541,7 +547,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             ? exchangeRateEntry.creditAccountID1
             : exchangeRateEntry.debitAccountID1;
 
-        const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
+        const isIncomeCharge = !!formattedChargeAmount && formattedChargeAmount.raw > 0;
         if (isIncomeCharge) {
           exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
         }
