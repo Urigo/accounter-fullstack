@@ -98,23 +98,16 @@ export function basicDocumentValidation(document: IGetAllDocumentsResult) {
     return true;
   }
 
-  if (!document.debtor_id || !document.creditor_id) {
-    return false;
-  }
-  if (!document.date) {
-    return false;
-  }
-  if (document.total_amount == null || !document.currency_code) {
-    return false;
-  }
-  if (isInvoice(document.type) && document.vat_amount == null) {
-    return false;
-  }
-  if (!document.serial_number) {
-    return false;
-  }
-  if (!document.charge_id) {
-    return false;
-  }
-  return true;
+  const hasRequiredFields =
+    document.debtor_id &&
+    document.creditor_id &&
+    document.date &&
+    document.total_amount != null &&
+    document.currency_code &&
+    document.serial_number &&
+    document.charge_id;
+
+  const isInvoiceValid = !isInvoice(document.type) || document.vat_amount != null;
+
+  return hasRequiredFields && isInvoiceValid;
 }
