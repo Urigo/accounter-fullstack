@@ -693,7 +693,7 @@ export class GmailServiceProvider {
           return;
         }
 
-        const [charge] = await this.chargesProvider
+        const charge = await this.chargesProvider
           .generateCharge({
             ownerId: this.env.authorization.adminBusinessId,
             userDescription: `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`,

@@ -1,4 +1,8 @@
 import { GraphQLError } from 'graphql';
+import {
+  getChargeBusinesses,
+  getChargeTaxCategoryId,
+} from '@modules/charges/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -19,24 +23,27 @@ export const commonFinancialEntityFields:
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   taxCategory: async (DbCharge, _, { injector }) => {
-    if (!DbCharge.tax_category_id) {
+    const taxCategoryId = await getChargeTaxCategoryId(DbCharge.id, injector);
+    if (!taxCategoryId) {
       return null;
     }
     return injector
       .get(TaxCategoriesProvider)
-      .taxCategoryByIdLoader.load(DbCharge.tax_category_id)
+      .taxCategoryByIdLoader.load(taxCategoryId)
       .then(taxCategory => taxCategory ?? null);
   },
 };
 
 export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
-  counterparty: async (DbCharge, _, { injector }) =>
-    DbCharge.business_id
+  counterparty: async (DbCharge, _, { injector }) => {
+    const { mainBusinessId } = await getChargeBusinesses(DbCharge.id, injector);
+    return mainBusinessId
       ? injector
           .get(FinancialEntitiesProvider)
-          .getFinancialEntityByIdLoader.load(DbCharge.business_id)
+          .getFinancialEntityByIdLoader.load(mainBusinessId)
           .then(res => res ?? null)
-      : null,
+      : null;
+  },
   owner: (DbCharge, _, { injector }) =>
     injector
       .get(BusinessesProvider)

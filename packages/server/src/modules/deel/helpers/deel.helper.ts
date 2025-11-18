@@ -337,7 +337,7 @@ export async function getChargeMatchesForPayments(
   await Promise.all(
     newReceipts.map(async receipt => {
       const description = await getDeelChargeDescription(injector, receipt.workers);
-      const [charge] = await injector.get(ChargesProvider).generateCharge({
+      const charge = await injector.get(ChargesProvider).generateCharge({
         ownerId,
         userDescription: description,
       });

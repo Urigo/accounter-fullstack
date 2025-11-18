@@ -12,19 +12,19 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         accountantStatus: approvalStatus,
         chargeId,
       };
-      const res = await injector
+      const updatedCharge = await injector
         .get(ChargesProvider)
         .updateAccountantApproval({ ...adjustedFields });
 
-      if (!res || res.length === 0) {
+      if (!updatedCharge) {
         throw new Error(`Failed to update charge ID='${chargeId}'`);
       }
 
       /* clear cache */
-      if (res[0].id) {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(res[0].id);
+      if (updatedCharge.id) {
+        injector.get(ChargesProvider).getChargeByIdLoader.clear(updatedCharge.id);
       }
-      return res[0].accountant_status || 'UNAPPROVED';
+      return updatedCharge.accountant_status || 'UNAPPROVED';
     },
     updateBusinessTripAccountantApproval: async (
       _,

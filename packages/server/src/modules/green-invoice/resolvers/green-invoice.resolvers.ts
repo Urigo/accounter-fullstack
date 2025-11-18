@@ -2,6 +2,10 @@ import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { ContractsProvider } from '@modules/contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '@modules/contracts/types.js';
@@ -70,18 +74,21 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         .transactionsByChargeIDLoader.load(chargeId)
         .then(res => filterAndHandleSwiftTransactions(res, swiftBusinessId));
 
-      const [charge, documents, transactions] = await Promise.all([
-        chargePromise,
-        documentsPromise,
-        transactionsPromise,
-      ]);
+      const [charge, documents, transactions, { documentsCurrency }, { mainBusinessId }] =
+        await Promise.all([
+          chargePromise,
+          documentsPromise,
+          transactionsPromise,
+          getChargeDocumentsMeta(chargeId, injector),
+          getChargeBusinesses(chargeId, injector),
+        ]);
 
       if (!charge) {
         throw new GraphQLError(`Charge with ID "${chargeId}" not found`);
       }
 
-      const businessMatchPromise = charge.business_id
-        ? injector.get(ClientsProvider).getClientByIdLoader.load(charge.business_id)
+      const businessMatchPromise = mainBusinessId
+        ? injector.get(ClientsProvider).getClientByIdLoader.load(mainBusinessId)
         : Promise.resolve(undefined);
 
       const openIssuedDocumentsPromise = injector
@@ -107,7 +114,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const paymentPromise = getPaymentsFromTransactions(injector, transactions);
 
-      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, charge.business_id);
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, mainBusinessId);
 
       const [businessMatch, openIssuedDocuments, payment, vatType] = await Promise.all([
         businessMatchPromise,
@@ -136,7 +143,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       ).greenInvoiceId;
       if (!greenInvoiceClientId) {
         throw new GraphQLError(
-          `Green invoice integration missing for business ID="${charge.business_id}"`,
+          `Green invoice integration missing for business ID="${mainBusinessId}"`,
         );
       }
 
@@ -183,6 +190,10 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
 
       const documentDate = getDocumentDateOutOfTransactions(transactions);
 
+      const transactionsCurrencies = Array.from(new Set(transactions.map(t => t.currency)));
+      const transactionsCurrency =
+        transactionsCurrencies.length === 1 ? transactionsCurrencies[0] : undefined;
+
       return {
         remarks,
         // description: ____,
@@ -191,13 +202,13 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.transactions_currency ||
-          charge.documents_currency ||
+        currency: (transactionsCurrency ||
+          documentsCurrency ||
           defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
         signed: true,
-        client: charge.business_id,
+        client: mainBusinessId,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -239,22 +250,29 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             .transactionsByChargeIDLoader.load(document.charge_id)
             .then(res => filterAndHandleSwiftTransactions(res, swiftBusinessId))
         : Promise.resolve(undefined);
+      const chargeBusinessIdPromise = document.charge_id
+        ? getChargeBusinesses(document.charge_id, injector).then(res => res.mainBusinessId)
+        : Promise.resolve(undefined);
 
-      const [charge, transactions] = await Promise.all([chargePromise, transactionsPromise]);
+      const [charge, transactions, chargeBusinessId] = await Promise.all([
+        chargePromise,
+        transactionsPromise,
+        chargeBusinessIdPromise,
+      ]);
 
       if (!charge) {
         throw new GraphQLError(`Charge with ID "${document.charge_id}" not found`);
       }
 
-      const businessMatchPromise = charge.business_id
-        ? injector.get(ClientsProvider).getClientByIdLoader.load(charge.business_id)
+      const businessMatchPromise = chargeBusinessId
+        ? injector.get(ClientsProvider).getClientByIdLoader.load(chargeBusinessId)
         : Promise.resolve(undefined);
 
       const openIssuedDocumentPromise = injector
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
-      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, charge.business_id);
+      const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, chargeBusinessId);
 
       const [businessMatch, openIssuedDocument, vatType] = await Promise.all([
         businessMatchPromise,
@@ -293,13 +311,14 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       ).greenInvoiceId;
       if (!greenInvoiceClientId) {
         throw new GraphQLError(
-          `Green invoice integration missing for business ID="${charge.business_id}"`,
+          `Green invoice integration missing for business ID="${chargeBusinessId}"`,
         );
       }
 
-      const [greenInvoiceDocument, payment] = await Promise.all([
+      const [greenInvoiceDocument, payment, { documentsCurrency }] = await Promise.all([
         greenInvoiceDocumentPromise,
         paymentPromise,
+        getChargeDocumentsMeta(charge.id, injector),
       ]);
 
       if (!greenInvoiceDocument) {
@@ -345,11 +364,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         date: documentDate,
         dueDate: dateToTimelessDateString(endOfMonth(new Date())),
         lang: 'ENGLISH',
-        currency: (charge.documents_currency || defaultCryptoConversionFiatCurrency) as Currency,
+        currency: (documentsCurrency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
         rounding: false,
         signed: true,
-        client: charge.business_id,
+        client: chargeBusinessId,
         income,
         payment,
         // linkedPaymentId: ____,

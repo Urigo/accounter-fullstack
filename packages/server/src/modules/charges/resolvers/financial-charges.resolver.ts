@@ -5,6 +5,7 @@ import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expe
 import { ChargeTypeEnum } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { getChargeType } from '../helpers/charge-type.js';
+import { getChargeLedgerMeta } from '../helpers/common.helper.js';
 import { generateAndTagCharge } from '../helpers/financial-charge.helper.js';
 import type { ChargesModule } from '../types.js';
 import { commonChargeFields } from './common.js';
@@ -265,8 +266,8 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     },
   },
   FinancialCharge: {
-    __isTypeOf: (DbCharge, context) =>
-      getChargeType(DbCharge, context) === ChargeTypeEnum.Financial,
+    __isTypeOf: async (DbCharge, context) =>
+      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,
@@ -274,8 +275,14 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     conversion: () => false,
     salary: () => false,
     isInvoicePaymentDifferentCurrency: () => false,
-    minEventDate: DbCharge => DbCharge.ledger_min_invoice_date,
-    minDebitDate: DbCharge => DbCharge.ledger_min_value_date,
+    minEventDate: async (DbCharge, _, { injector }) => {
+      const { ledgerMinInvoiceDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+      return ledgerMinInvoiceDate;
+    },
+    minDebitDate: async (DbCharge, _, { injector }) => {
+      const { ledgerMinValueDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+      return ledgerMinValueDate;
+    },
     // minDocumentsDate:
     // validationData:
     // metadata:

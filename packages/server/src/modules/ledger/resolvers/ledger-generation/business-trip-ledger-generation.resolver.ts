@@ -3,10 +3,16 @@ import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers
 import { BusinessTripEmployeePaymentsProvider } from '@modules/business-trips/providers/business-trips-employee-payments.provider.js';
 import { BusinessTripExpensesProvider } from '@modules/business-trips/providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
+import {
+  calculateTotalAmount,
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
+} from '@modules/charges/helpers/common.helper.js';
 import { currency } from '@modules/charges/types.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import {
   getExchangeDates,
   ledgerEntryFromDocument,
@@ -63,12 +69,12 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
   const errors: Set<string> = new Set();
 
-  if (!charge.tax_category_id) {
-    errors.add(`Business trip is missing tax category`);
-  }
-  const tripTaxCategory = charge.tax_category_id;
-
   try {
+    const tripTaxCategory = await getChargeTaxCategoryId(charge.id, injector);
+    if (!tripTaxCategory) {
+      errors.add(`Business trip is missing tax category`);
+    }
+
     // validate ledger records are balanced
     const ledgerBalance = new Map<
       string,
@@ -79,37 +85,37 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       }
     >();
 
-    const gotRelevantDocuments =
-      Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
+    const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
+      getChargeDocumentsMeta(chargeId, injector),
+      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+    ]);
+
+    const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
     // Get all transactions and business trip transactions
     const transactionsPromise = injector
       .get(TransactionsProvider)
       .transactionsByChargeIDLoader.load(chargeId);
-    const documentsPromise = gotRelevantDocuments
-      ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
-      : Promise.resolve([]);
-    const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
+    const documentsPromise = injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(chargeId);
+    const documentsTaxCategoryIdPromise = async () => {
       if (charge.tax_category_id) {
-        resolve(charge.tax_category_id);
+        return charge.tax_category_id;
       }
+
+      const taxCategoryId = await getChargeTaxCategoryId(chargeId, injector);
+      if (taxCategoryId) {
+        return taxCategoryId;
+      }
+
       if (!gotRelevantDocuments) {
-        resolve(undefined);
+        return undefined;
       }
-      return injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
-        .then(res => res?.id)
-        .then(res => {
-          if (res) {
-            resolve(res);
-          } else {
-            errors.add('Tax category not found');
-            resolve(defaultTaxCategoryId);
-          }
-        })
-        .catch(reject);
-    });
+
+      errors.add('Tax category not found');
+      return defaultTaxCategoryId;
+    };
     const businessTripExpensesPromise = injector
       .get(BusinessTripsProvider)
       .getBusinessTripsByChargeIdLoader.load(chargeId)
@@ -138,14 +144,16 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       businessTripsEmployeePayments,
       businessTripAttendees,
       chargeUnbalancedBusinesses,
+      { mainBusinessId },
     ] = await Promise.all([
       transactionsPromise,
       documentsPromise,
-      documentsTaxCategoryIdPromise,
+      documentsTaxCategoryIdPromise(),
       businessTripExpensesPromise,
       businessTripsEmployeePaymentsPromise,
       businessTripAttendeesPromise,
       unbalancedBusinessesPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     // generate ledger from transactions
@@ -295,8 +303,13 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       );
 
       // if no relevant documents found and business can settle with receipts, look for receipts
-      if (!relevantDocuments.length && charge.can_settle_with_receipt) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+      if (!relevantDocuments.length && mainBusinessId) {
+        const business = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(mainBusinessId);
+        if (business?.can_settle_with_receipt) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+        }
       }
 
       // for each invoice - generate accounting ledger entry
@@ -468,22 +481,21 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const miscLedgerEntries: LedgerProto[] = [];
 
     // multiple currencies balance
-    const mainBusiness = charge.business_id;
-    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    const businessBalance = ledgerBalance.get(mainBusinessId ?? '');
     if (
-      mainBusiness &&
+      mainBusinessId &&
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
       const transactionEntries = financialAccountLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId),
       );
       const documentEntries = accountingLedgerEntries.filter(entry =>
-        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness),
+        [entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId),
       );
 
       try {
-        const entries = multipleForeignCurrenciesBalanceEntries(
+        const entries = await multipleForeignCurrenciesBalanceEntries(
           context,
           documentEntries,
           transactionEntries,
@@ -539,7 +551,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             ? exchangeRateEntry.creditAccountID1
             : exchangeRateEntry.debitAccountID1;
 
-        const isIncomeCharge = charge.event_amount && Number(charge.event_amount) > 0;
+        const isIncomeCharge = !!formattedChargeAmount && formattedChargeAmount.raw > 0;
         if (isIncomeCharge) {
           exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
         }

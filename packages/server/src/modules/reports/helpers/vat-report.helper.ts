@@ -1,16 +1,21 @@
-import type { IGetChargesByFiltersResult } from '@modules/charges/types';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from '@modules/charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import { DECREASED_VAT_RATIO } from '@shared/constants';
-import { Currency, DocumentType } from '@shared/enums';
+import { DocumentType, type Currency } from '@shared/enums';
 import type { AccountantStatus, Pcn874RecordType } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
-  charge: IGetChargesByFiltersResult;
+  charge: IGetChargesByIdsResult;
   doc: IGetDocumentsByFiltersResult;
   business: IGetBusinessesByIdsResult;
 };
@@ -64,10 +69,16 @@ export async function adjustTaxRecord(
       throw new Error(`Date is missing for invoice ID=${doc.id}`);
     }
 
-    const isProperty = await injector
-      .get(DepreciationProvider)
-      .getDepreciationRecordsByChargeIdLoader.load(charge.id)
-      .then(records => records.length > 0);
+    const [isProperty, { transactionsMinEventDate }, { mainBusinessId }, { documentsMinDate }] =
+      await Promise.all([
+        injector
+          .get(DepreciationProvider)
+          .getDepreciationRecordsByChargeIdLoader.load(charge.id)
+          .then(records => records.length > 0),
+        getChargeTransactionsMeta(charge.id, injector),
+        getChargeBusinesses(charge.id, injector),
+        getChargeDocumentsMeta(charge.id, injector),
+      ]);
 
     // get exchange rate
     let rate = 1;
@@ -85,9 +96,9 @@ export async function adjustTaxRecord(
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
     const partialRecord: RawVatReportRecord = {
-      businessId: charge.business_id,
+      businessId: mainBusinessId,
       chargeAccountantStatus: charge.accountant_status,
-      chargeDate: charge.transactions_min_event_date ?? charge.documents_min_date!, // must have min_date, as will throw if local doc is missing date
+      chargeDate: transactionsMinEventDate ?? documentsMinDate!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
       currencyCode: currency,
       documentDate: doc.date,

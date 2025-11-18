@@ -1,12 +1,16 @@
 import { GraphQLError } from 'graphql';
+import {
+  getChargeDocumentsMeta,
+  getChargeLedgerMeta,
+  getChargeTransactionsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/gql-types';
-import { formatCurrency } from '@shared/helpers';
+import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { defineConversionBaseAndQuote, getFiatExchangeRate } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';
-import { commonChargeFields, commonTransactionFields } from './common.js';
 
 export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   Query: {
@@ -64,10 +68,25 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
     date: timelessDate => timelessDate,
   },
-  CommonCharge: commonChargeFields,
-  FinancialCharge: commonChargeFields,
+  FinancialCharge: {
+    exchangeRates: async (DbCharge, _, { injector }) => {
+      const [{ transactionsMinDebitDate }, { ledgerMinInvoiceDate }, { documentsMinDate }] =
+        await Promise.all([
+          getChargeTransactionsMeta(DbCharge.id, injector),
+          getChargeLedgerMeta(DbCharge.id, injector),
+          getChargeDocumentsMeta(DbCharge.id, injector),
+        ]);
+
+      const ratesDate = transactionsMinDebitDate || documentsMinDate || ledgerMinInvoiceDate;
+
+      if (!ratesDate) {
+        return null;
+      }
+
+      return dateToTimelessDateString(ratesDate);
+    },
+  },
   ConversionCharge: {
-    ...commonChargeFields,
     officialRate: async (dbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
@@ -125,19 +144,5 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         rate,
       };
     },
-  },
-  SalaryCharge: commonChargeFields,
-  InternalTransferCharge: commonChargeFields,
-  DividendCharge: commonChargeFields,
-  BusinessTripCharge: commonChargeFields,
-  MonthlyVatCharge: commonChargeFields,
-  BankDepositCharge: commonChargeFields,
-  ForeignSecuritiesCharge: commonChargeFields,
-  CreditcardBankCharge: commonChargeFields,
-  ConversionTransaction: {
-    ...commonTransactionFields,
-  },
-  CommonTransaction: {
-    ...commonTransactionFields,
   },
 };

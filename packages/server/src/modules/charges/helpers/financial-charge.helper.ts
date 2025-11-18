@@ -13,7 +13,7 @@ export async function generateAndTagCharge(
   taxCategoryId: string,
   description: string,
 ): Promise<IGetChargesByIdsResult> {
-  const [charge] = await injector.get(ChargesProvider).generateCharge({
+  const charge = await injector.get(ChargesProvider).generateCharge({
     ownerId,
     userDescription: description,
     type: 'FINANCIAL',

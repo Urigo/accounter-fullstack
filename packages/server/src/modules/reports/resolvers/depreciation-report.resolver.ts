@@ -1,5 +1,6 @@
 // import { GraphQLError } from 'graphql';
 import { GraphQLError } from 'graphql';
+import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
@@ -105,9 +106,10 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
-          const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(record.charge_id);
+          const [charge, { transactionsMinDebitDate }] = await Promise.all([
+            injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
+            getChargeTransactionsMeta(record.charge_id, injector),
+          ]);
           if (!charge || charge instanceof Error) {
             console.error('No charge for depreciation record', record);
             return;
@@ -136,7 +138,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             chargeId: record.charge_id,
             description: charge.user_description ?? undefined,
             purchaseDate: dateToTimelessDateString(
-              charge.transactions_min_debit_date ?? record.activation_date,
+              transactionsMinDebitDate ?? record.activation_date,
             ),
             activationDate: dateToTimelessDateString(record.activation_date),
             originalCost,

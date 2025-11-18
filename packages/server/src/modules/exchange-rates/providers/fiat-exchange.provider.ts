@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
-import type { ChargesTypes } from '@modules/charges';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import type {
@@ -86,23 +85,6 @@ export class FiatExchangeProvider {
       cacheMap: this.cache,
     },
   );
-
-  public async getChargeExchangeRates(charge: ChargesTypes.IGetChargesByIdsResult) {
-    if (!charge.transactions_min_debit_date) {
-      throw new Error(`Charge ID=${charge.id} has no debit date`);
-    }
-    if (!charge.documents_min_date) {
-      throw new Error(`Charge ID=${charge.id} has no tax invoice date`);
-    }
-    const results = await Promise.all([
-      this.getExchangeRatesByDatesLoader.load(charge.transactions_min_debit_date),
-      this.getExchangeRatesByDatesLoader.load(charge.documents_min_date),
-    ]);
-    return {
-      debitExchangeRates: results[0],
-      invoiceExchangeRates: results[1],
-    };
-  }
 
   public clearCache() {
     this.cache.clear();

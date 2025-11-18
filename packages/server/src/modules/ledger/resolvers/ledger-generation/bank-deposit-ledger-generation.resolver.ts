@@ -1,4 +1,5 @@
 import { BankDepositTransactionsProvider } from '@modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
+import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
@@ -66,9 +67,10 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       .get(BankDepositTransactionsProvider)
       .getDepositTransactionsByChargeId(chargeId);
 
-    const [transactions, bankDepositTransactions] = await Promise.all([
+    const [transactions, bankDepositTransactions, { mainBusinessId }] = await Promise.all([
       transactionsPromise,
       bankDepositTransactionsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const entriesPromises: Array<Promise<void>> = [];
@@ -107,7 +109,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         context,
         chargeId,
         charge.owner_id,
-        charge.business_id ?? undefined,
+        mainBusinessId ?? undefined,
       )
         .then(ledgerEntry => {
           financialAccountLedgerEntries.push(ledgerEntry);

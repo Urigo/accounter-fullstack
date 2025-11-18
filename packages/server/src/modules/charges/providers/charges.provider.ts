@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { getCacheInstance } from '@shared/helpers';
 import type { Optional, TimelessDateString } from '@shared/types';
 import type {
   accountant_status,
@@ -14,21 +15,15 @@ import type {
   IGetChargesByFiltersParams,
   IGetChargesByFiltersQuery,
   IGetChargesByFiltersResult,
-  IGetChargesByFinancialEntityIdsQuery,
-  IGetChargesByFinancialEntityIdsResult,
   IGetChargesByIdsQuery,
-  IGetChargesByIdsResult,
   IGetChargesByMissingRequiredInfoQuery,
   IGetChargesByTransactionIdsQuery,
-  IGetChargesByTransactionIdsResult,
   IGetSimilarChargesParams,
   IGetSimilarChargesQuery,
   IUpdateAccountantApprovalParams,
   IUpdateAccountantApprovalQuery,
-  IUpdateAccountantApprovalResult,
   IUpdateChargeParams,
   IUpdateChargeQuery,
-  IUpdateChargeResult,
 } from '../types.js';
 
 export type ChargeRequiredWrapper<
@@ -39,10 +34,19 @@ export type ChargeRequiredWrapper<
     accountant_status: unknown;
     updated_at: unknown;
     created_at: unknown;
+    documents_optional_flag: unknown;
+    optional_vat: unknown;
   },
 > = Omit<
   T,
-  'id' | 'owner_id' | 'is_property' | 'accountant_status' | 'updated_at' | 'created_at'
+  | 'id'
+  | 'owner_id'
+  | 'is_property'
+  | 'accountant_status'
+  | 'updated_at'
+  | 'created_at'
+  | 'documents_optional_flag'
+  | 'optional_vat'
 > & {
   id: NonNullable<T['id']>;
   owner_id: NonNullable<T['owner_id']>;
@@ -50,26 +54,20 @@ export type ChargeRequiredWrapper<
   accountant_status: NonNullable<T['accountant_status']>;
   updated_at: NonNullable<T['updated_at']>;
   created_at: NonNullable<T['created_at']>;
+  documents_optional_flag: NonNullable<T['documents_optional_flag']>;
+  optional_vat: NonNullable<T['optional_vat']>;
 };
 
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *
-    FROM accounter_schema.extended_charges
+    FROM accounter_schema.charges
     WHERE id IN $$chargeIds;`;
 
 const getChargesByTransactionIds = sql<IGetChargesByTransactionIdsQuery>`
     SELECT t.id AS transaction_id, c.* FROM accounter_schema.transactions t
-    LEFT JOIN accounter_schema.extended_charges c
+    LEFT JOIN accounter_schema.charges c
       ON t.charge_id = c.id
     WHERE t.id IN $$transactionIds;`;
-
-const getChargesByFinancialEntityIds = sql<IGetChargesByFinancialEntityIdsQuery>`
-    SELECT c.*
-    FROM accounter_schema.extended_charges c
-    WHERE owner_id IN $$ownerIds
-    AND ($fromDate ::TEXT IS NULL OR c.transactions_max_event_date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR c.transactions_min_event_date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
-    ORDER BY c.transactions_min_event_date DESC;`;
 
 const getChargesByMissingRequiredInfo = sql<IGetChargesByMissingRequiredInfoQuery>`
     SELECT c.*
@@ -252,21 +250,24 @@ type IGetAdjustedChargesByFiltersParams = Optional<
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
     DELETE FROM accounter_schema.charges
     WHERE id IN $$chargeIds;`;
-
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
 export class ChargesProvider {
+  cache = getCacheInstance({
+    stdTTL: 60 * 60, // 1 hours
+  });
+
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
-    const charges = (await getChargesByIds.run(
+    const charges = await getChargesByIds.run(
       {
         chargeIds: ids,
       },
       this.dbProvider,
-    )) as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
+    );
     return ids.map(id => {
       const charge = charges.find(charge => charge.id === id);
       if (!charge) {
@@ -278,16 +279,20 @@ export class ChargesProvider {
 
   public getChargeByIdLoader = new DataLoader(
     (keys: readonly string[]) => this.batchChargesByIds(keys),
-    { cache: false },
+    {
+      cacheKeyFn: id => `charge-${id}`,
+      cacheMap: this.cache,
+    },
   );
 
   private async batchChargesByTransactionIds(transactionIds: readonly string[]) {
-    const charges = (await getChargesByTransactionIds.run(
+    const charges = await getChargesByTransactionIds.run(
       {
         transactionIds,
       },
       this.dbProvider,
-    )) as ChargeRequiredWrapper<IGetChargesByTransactionIdsResult>[];
+    );
+    charges.map(c => this.getChargeByIdLoader.prime(c.id, c));
     return transactionIds.map(id => charges.find(charge => charge.transaction_id === id));
   }
 
@@ -296,45 +301,39 @@ export class ChargesProvider {
     { cache: false },
   );
 
-  private async batchChargesByFinancialEntityIds(ownerIds: readonly string[]) {
-    const charges = (await getChargesByFinancialEntityIds.run(
-      {
-        ownerIds,
-        fromDate: null,
-        toDate: null,
-      },
-      this.dbProvider,
-    )) as ChargeRequiredWrapper<IGetChargesByFinancialEntityIdsResult>[];
-    return ownerIds.map(id => charges.filter(charge => charge.owner_id === id));
-  }
-
-  public getChargeByFinancialEntityIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesByFinancialEntityIds(keys),
-    {
-      cache: false,
-    },
-  );
-
   public async getChargesByMissingRequiredInfo() {
-    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider);
+    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider).then(charges =>
+      charges.map(c => {
+        this.getChargeByIdLoader.prime(c.id, c);
+        return c;
+      }),
+    );
   }
 
   public updateCharge(params: IUpdateChargeParams) {
-    return updateCharge.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IUpdateChargeResult>[]
-    >;
+    return updateCharge.run(params, this.dbProvider).then(([newCharge]) => {
+      if (newCharge) {
+        this.invalidateCharge(newCharge.id);
+        this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+      }
+      return newCharge;
+    });
   }
 
   public batchUpdateCharges(params: IBatchUpdateChargesParams) {
-    return batchUpdateCharges.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IUpdateChargeResult>[]
-    >;
+    return batchUpdateCharges.run(params, this.dbProvider).then(charges => {
+      charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+      return charges;
+    });
   }
 
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
-    return updateAccountantApproval.run(params, this.dbProvider) as Promise<
-      ChargeRequiredWrapper<IUpdateAccountantApprovalResult>[]
-    >;
+    return updateAccountantApproval.run(params, this.dbProvider).then(([newCharge]) => {
+      if (newCharge) {
+        this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+      }
+      return newCharge;
+    });
   }
 
   public generateCharge(params: IGenerateChargeParams) {
@@ -345,7 +344,12 @@ export class ChargesProvider {
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
-    return generateCharge.run(fullParams, this.dbProvider);
+    return generateCharge.run(fullParams, this.dbProvider).then(([newCharge]) => {
+      if (newCharge) {
+        this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+      }
+      return newCharge;
+    });
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
@@ -402,5 +406,13 @@ export class ChargesProvider {
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
     return deleteChargesByIds.run(params, this.dbProvider);
+  }
+
+  public async invalidateCharge(chargeId: string) {
+    this.getChargeByIdLoader.clear(chargeId);
+  }
+
+  public clearCache() {
+    this.cache.clear();
   }
 }

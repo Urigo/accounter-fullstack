@@ -1,11 +1,18 @@
+import { isInvoice } from '@modules/documents/helpers/common.helper.js';
 import { validateDocumentAllocation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
+  getChargeTransactionsMeta,
+} from './common.helper.js';
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
@@ -14,20 +21,34 @@ export const validateCharge = async (
   const { injector, adminContext } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const chargeType = getChargeType(charge, context);
+  const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
+    getChargeType(charge, context),
+    getChargeBusinesses(charge.id, context.injector),
+    getChargeTaxCategoryId(charge.id, context.injector),
+  ]);
 
   const isGeneralFees =
-    charge.tax_category_id === adminContext.general.taxCategories.generalFeeTaxCategoryId;
+    taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // check for consistent counterparty business
   const businessNotRequired =
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
       chargeType,
     ) || isGeneralFees;
-  const business =
-    charge.business_id && !businessNotRequired
-      ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
-      : undefined;
+  const businessPromise =
+    mainBusinessId && !businessNotRequired
+      ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(mainBusinessId)
+      : Promise.resolve(undefined);
+
+  const [
+    business,
+    { invalidTransactions, transactionsCount },
+    { documentsVatAmount, invoiceCount, receiptCount, invalidDocuments },
+  ] = await Promise.all([
+    businessPromise,
+    getChargeTransactionsMeta(charge.id, context.injector),
+    getChargeDocumentsMeta(charge.id, context.injector),
+  ]);
 
   const businessIsFine = businessNotRequired || !!business;
   if (!businessIsFine) {
@@ -56,33 +77,21 @@ export const validateCharge = async (
     const documents = await injector
       .get(DocumentsProvider)
       .getDocumentsByChargeIdLoader.load(charge.id);
-    let invoicesCount = 0;
-    let receiptsCount = 0;
     let missingAllocationNumber = false;
     await Promise.all(
       documents.map(async doc => {
-        if (
-          [DocumentType.Invoice, DocumentType.CreditInvoice, DocumentType.InvoiceReceipt].includes(
-            doc.type as DocumentType,
-          )
-        ) {
-          invoicesCount++;
+        if (isInvoice(doc.type)) {
           const validAllocation = await validateDocumentAllocation(doc, context);
           if (!validAllocation) {
             missingAllocationNumber = true;
           }
         }
-        if (
-          [DocumentType.Receipt, DocumentType.InvoiceReceipt].includes(doc.type as DocumentType)
-        ) {
-          receiptsCount++;
-        }
       }),
     );
-    const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptsCount > 0);
-    const dbDocumentsAreValid = !charge.invalid_documents;
+    const isReceiptEnough = !!(business?.can_settle_with_receipt && receiptCount > 0);
+    const dbDocumentsAreValid = !invalidDocuments;
     documentsAreFine =
-      dbDocumentsAreValid && (invoicesCount > 0 || isReceiptEnough) && !missingAllocationNumber;
+      dbDocumentsAreValid && (invoiceCount > 0 || isReceiptEnough) && !missingAllocationNumber;
   } else {
     documentsAreFine = true;
   }
@@ -91,10 +100,9 @@ export const validateCharge = async (
   }
 
   // validate transactions
-  const hasTransaction = charge.transactions_event_amount != null;
+  const hasTransaction = transactionsCount >= 1;
   const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
-  const dbTransactionsAreValid = !charge.invalid_transactions;
-  const transactionsAreFine = transactionsNotRequired || (hasTransaction && dbTransactionsAreValid);
+  const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }
@@ -108,7 +116,6 @@ export const validateCharge = async (
   // validate tags
   const tags = await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id);
   const tagsAreFine = tags.length > 0;
-  //  && tags.reduce((partsSum, tag) => partsSum + (tag.part ?? 0), 0) === 1;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }
@@ -123,8 +130,7 @@ export const validateCharge = async (
   const vatIsFine =
     !shouldHaveDocuments ||
     isGeneralFees ||
-    (charge.documents_vat_amount != null &&
-      (isVATlessBusiness || charge.documents_vat_amount !== 0));
+    (documentsVatAmount != null && (isVATlessBusiness || documentsVatAmount !== 0));
   if (!vatIsFine) {
     missingInfo.push(MissingChargeInfo.Vat);
   }
@@ -133,7 +139,7 @@ export const validateCharge = async (
   const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
     chargeType,
   );
-  const taxCategoryIsFine = !shouldHaveTaxCategory || !!charge.tax_category_id;
+  const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
   }

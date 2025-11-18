@@ -1,7 +1,12 @@
+import {
+  calculateTotalAmount,
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
+} from '@modules/charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import {
   getExchangeDates,
   isRefundCharge,
@@ -76,39 +81,37 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     const dates = new Set<number>();
     const currencies = new Set<currency>();
 
-    const gotRelevantDocuments =
-      Number(charge.invoices_count ?? 0) + Number(charge.receipts_count ?? 0) > 0;
-    const gotTransactions = !!charge.transactions_count;
+    const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
+      getChargeDocumentsMeta(chargeId, injector),
+      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+    ]);
+    const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
-    const documentsTaxCategoryIdPromise = new Promise<string | undefined>((resolve, reject) => {
+    const documentsTaxCategoryIdPromise = async () => {
       if (charge.tax_category_id) {
-        resolve(charge.tax_category_id);
+        return charge.tax_category_id;
       }
+
+      const taxCategoryId = await getChargeTaxCategoryId(chargeId, injector);
+      if (taxCategoryId) {
+        return taxCategoryId;
+      }
+
       if (!gotRelevantDocuments) {
-        resolve(undefined);
+        return undefined;
       }
-      return injector
-        .get(TaxCategoriesProvider)
-        .taxCategoryByChargeIDsLoader.load(charge.id)
-        .then(res => res?.id)
-        .then(res => {
-          if (res) {
-            resolve(res);
-          } else {
-            errors.add('Tax category not found');
-            resolve(defaultTaxCategoryId);
-          }
-        })
-        .catch(reject);
-    });
+
+      errors.add('Tax category not found');
+      return defaultTaxCategoryId;
+    };
 
     const documentsPromise = gotRelevantDocuments
       ? injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId)
       : Promise.resolve([]);
 
-    const transactionsPromise = gotTransactions
-      ? injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId)
-      : Promise.resolve([]);
+    const transactionsPromise = injector
+      .get(TransactionsProvider)
+      .transactionsByChargeIDLoader.load(chargeId);
 
     const unbalancedBusinessesPromise = injector
       .get(UnbalancedBusinessesProvider)
@@ -124,12 +127,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       transactions,
       unbalancedBusinesses,
       balanceCancellations,
+      { mainBusinessId },
     ] = await Promise.all([
-      documentsTaxCategoryIdPromise,
+      documentsTaxCategoryIdPromise(),
       documentsPromise,
       transactionsPromise,
       unbalancedBusinessesPromise,
       chargeBallanceCancellationsPromise,
+      getChargeBusinesses(chargeId, injector),
     ]);
 
     const entriesPromises: Array<Promise<void>> = [];
@@ -146,8 +151,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       );
 
       // if no relevant documents found and business can settle with receipts, look for receipts
-      if (!relevantDocuments.length && charge.can_settle_with_receipt) {
-        relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+      if (!relevantDocuments.length && mainBusinessId) {
+        const business = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(mainBusinessId);
+        if (business?.can_settle_with_receipt) {
+          relevantDocuments.push(...documents.filter(d => d.type === 'RECEIPT'));
+        }
       }
 
       // for each invoice - generate accounting ledger entry
@@ -189,7 +199,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
 
     // generate ledger from transactions
-    if (gotTransactions) {
+    if (transactions.length > 0) {
       const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
       // for each transaction, create a ledger record
@@ -199,7 +209,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           context,
           chargeId,
           charge.owner_id,
-          charge.business_id ?? undefined,
+          mainBusinessId ?? undefined,
           gotRelevantDocuments,
         ).catch(e => {
           if (e instanceof LedgerError) {
@@ -291,24 +301,23 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     );
 
     // multiple currencies balance
-    const mainBusiness = charge.business_id;
-    const businessBalance = ledgerBalance.get(mainBusiness ?? '');
+    const businessBalance = ledgerBalance.get(mainBusinessId ?? '');
     if (
-      mainBusiness &&
+      mainBusinessId &&
       Object.keys(businessBalance?.foreignAmounts ?? {}).length >
         (charge.invoice_payment_currency_diff ? 0 : 1)
     ) {
       const transactionEntries = financialAccountLedgerEntries.filter(entry => {
-        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId)) return true;
         return false;
       });
       const documentEntries = accountingLedgerEntries.filter(entry => {
-        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusiness)) return true;
+        if ([entry.creditAccountID1, entry.debitAccountID1].includes(mainBusinessId)) return true;
         return false;
       });
 
       try {
-        const entries = multipleForeignCurrenciesBalanceEntries(
+        const entries = await multipleForeignCurrenciesBalanceEntries(
           context,
           documentEntries,
           transactionEntries,
@@ -355,10 +364,10 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       );
     } else if (!isBalanced) {
       // check if business doesn't require documents
-      if (!accountingLedgerEntries.length && charge.business_id) {
+      if (!accountingLedgerEntries.length && mainBusinessId) {
         const business = await injector
           .get(BusinessesProvider)
-          .getBusinessByIdLoader.load(charge.business_id);
+          .getBusinessByIdLoader.load(mainBusinessId);
         if (business?.no_invoices_required) {
           const unbalancedBusinesses = unbalancedEntities.find(b => b.entityId === business.id);
           if (unbalancedBusinesses) {
@@ -431,7 +440,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
           const isRefund = isRefundCharge(charge.user_description);
           const isIncomeCharge =
-            !isRefund && charge.event_amount && Number(charge.event_amount) > 0;
+            !isRefund && !!formattedChargeAmount && formattedChargeAmount.raw > 0;
           if (isIncomeCharge) {
             exchangeRateTaxCategory = incomeExchangeRateTaxCategoryId;
           }

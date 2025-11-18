@@ -1,34 +1,48 @@
 import { Injector } from 'graphql-modules';
 import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
+import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { getLedgerMeta } from '@modules/ledger/helpers/common.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import { getTransactionsMeta } from '@modules/transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import { ChargesSimpleProvider } from '../providers/charges-simple.provider.js';
-import type { IGetChargesByIdsResult } from '../types.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 
-export function calculateTotalAmount(
-  charge: IGetChargesByIdsResult,
+export async function calculateTotalAmount(
+  chargeId: string,
+  injector: Injector,
   defaultLocalCurrency: Currency,
-): FinancialAmount | null {
-  if (charge.type === 'PAYROLL' && charge.transactions_event_amount != null) {
-    return formatFinancialAmount(charge.transactions_event_amount, defaultLocalCurrency);
+): Promise<FinancialAmount | null> {
+  const [
+    charge,
+    { transactionsAmount, transactionsCurrency },
+    { documentsCurrency, documentsAmount },
+  ] = await Promise.all([
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+    getChargeTransactionsMeta(chargeId, injector),
+    getChargeDocumentsMeta(chargeId, injector),
+  ]);
+
+  if (charge.type === 'PAYROLL' && transactionsAmount != null) {
+    return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
   }
-  if (charge.documents_event_amount != null && charge.documents_currency) {
-    return formatFinancialAmount(charge.documents_event_amount, charge.documents_currency);
+  if (documentsAmount != null && documentsCurrency) {
+    return formatFinancialAmount(documentsAmount, documentsCurrency);
   }
-  if (charge.transactions_event_amount != null && charge.transactions_currency) {
-    return formatFinancialAmount(charge.transactions_event_amount, charge.transactions_currency);
+  if (transactionsAmount != null && transactionsCurrency) {
+    return formatFinancialAmount(transactionsAmount, transactionsCurrency);
   }
   return null;
 }
 
 export async function getChargeBusinesses(chargeId: string, injector: Injector) {
   const [charge, transactions, documents, ledgerRecords, miscExpenses] = await Promise.all([
-    injector.get(ChargesSimpleProvider).getChargeByIdLoader.load(chargeId),
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
     injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
     injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
@@ -75,28 +89,34 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
   const allBusinessIds = Array.from(allBusinessIdsSet);
   const mainBusinessIds = Array.from(mainBusinessIdsSet);
 
-  let mainBusiness: string | null = null;
+  let mainBusinessId: string | null = null;
 
   if (mainBusinessIds.length === 1) {
-    mainBusiness = mainBusinessIds[0];
+    mainBusinessId = mainBusinessIds[0];
   }
 
   return {
     allBusinessIds,
-    mainBusiness,
+    mainBusinessId,
   };
 }
 
 export async function getChargeDocumentsMeta(chargeId: string, injector: Injector) {
   const [charge, documents] = await Promise.all([
-    injector.get(ChargesSimpleProvider).getChargeByIdLoader.load(chargeId),
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
   ]);
 
+  let invalidDocuments = false;
   let receiptAmount = 0;
+  let receiptVatAmount: number | null = null;
+  let receiptCount = 0;
   let invoiceAmount = 0;
   let invoiceVatAmount: number | null = null;
+  let invoiceCount = 0;
   const currenciesSet = new Set<Currency>();
+  let documentsMinAccountancyDate: Date | null = null;
+  let documentsMinAnyDate: Date | null = null;
 
   documents.map(d => {
     const amount = d.total_amount ?? 0;
@@ -108,24 +128,62 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       factor *= -1;
     }
 
+    if (d.date) {
+      documentsMinAnyDate ??= d.date;
+      if (documentsMinAnyDate > d.date) {
+        documentsMinAnyDate = d.date;
+      }
+    }
+
     if (isInvoice(d.type)) {
+      invoiceCount++;
       invoiceAmount += amount * factor;
       if (d.vat_amount != null) {
         invoiceVatAmount ??= 0;
         invoiceVatAmount += (d.vat_amount ?? 0) * factor;
       }
+      if (d.date) {
+        documentsMinAccountancyDate ??= d.date;
+        if (documentsMinAccountancyDate > d.date) {
+          documentsMinAccountancyDate = d.date;
+        }
+      }
     }
     if (isReceipt(d.type)) {
+      receiptCount++;
       receiptAmount += amount * factor;
+      if (d.vat_amount != null) {
+        receiptVatAmount ??= 0;
+        receiptVatAmount += (d.vat_amount ?? 0) * factor;
+      }
+      if (d.date) {
+        documentsMinAccountancyDate ??= d.date;
+        if (documentsMinAccountancyDate > d.date) {
+          documentsMinAccountancyDate = d.date;
+        }
+      }
     }
     currenciesSet.add(d.currency_code as Currency);
+
+    if (!basicDocumentValidation(d)) {
+      invalidDocuments = true;
+    }
   });
+
+  const currencies = Array.from(currenciesSet);
+  const documentsAmount = invoiceAmount == null ? receiptAmount : invoiceAmount;
 
   return {
     receiptAmount,
+    receiptCount,
     invoiceAmount,
-    invoiceVatAmount,
-    currencies: Array.from(currenciesSet),
+    invoiceCount,
+    documentsAmount,
+    documentsVatAmount: invoiceVatAmount == null ? receiptVatAmount : invoiceVatAmount,
+    documentsCount: documents.length,
+    documentsCurrency: currencies.length === 1 ? currencies[0] : null,
+    invalidDocuments,
+    documentsMinDate: documentsMinAccountancyDate ?? (documentsMinAnyDate as Date | null),
   };
 }
 
@@ -134,21 +192,38 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
     .get(TransactionsProvider)
     .transactionsByChargeIDLoader.load(chargeId);
 
-  let transactionsAmount: number | null = null;
-  const currenciesSet = new Set<Currency>();
+  return getTransactionsMeta(transactions);
+}
 
-  transactions.map(t => {
-    const amountAsNumber = Number(t.amount);
-    const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
-    if (amount != null) {
-      transactionsAmount ??= 0;
-      transactionsAmount += amount;
-      currenciesSet.add(t.currency as Currency);
-    }
-  });
+export async function getChargeLedgerMeta(chargeId: string, injector: Injector) {
+  const ledgerRecords = await injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
-  return {
-    transactionsAmount,
-    currencies: Array.from(currenciesSet),
-  };
+  return getLedgerMeta(ledgerRecords);
+}
+
+export async function getChargeTaxCategoryId(
+  chargeId: string,
+  injector: Injector,
+): Promise<string | null> {
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (charge.tax_category_id) {
+    return charge.tax_category_id;
+  }
+
+  const { mainBusinessId } = await getChargeBusinesses(chargeId, injector);
+
+  if (!mainBusinessId) {
+    return null;
+  }
+
+  const taxCategory = await injector
+    .get(TaxCategoriesProvider)
+    .taxCategoryByBusinessAndOwnerIDsLoader.load({
+      businessId: mainBusinessId,
+      ownerId: charge.owner_id,
+    });
+
+  return taxCategory?.id ?? null;
 }

@@ -62,10 +62,10 @@ export async function ledgerGenerationByCharge(
   context: GraphQLModules.ModuleContext,
   info: GraphQLResolveInfo,
 ): Promise<Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>> {
-  if (isChargeLocked(charge, context.adminContext.ledgerLock)) {
+  if (await isChargeLocked(charge, context.injector, context.adminContext.ledgerLock)) {
     return resolveLockedCharge(charge, params, context, info);
   }
-  const chargeType = getChargeType(charge, context);
+  const chargeType = await getChargeType(charge, context);
   type LedgerGenFunction = ResolverFn<
     Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>,
     IGetChargesByIdsResult,
@@ -103,7 +103,7 @@ export async function ledgerUnbalancedBusinessesByCharge(
   context: GraphQLModules.Context,
 ): Promise<Set<string> | undefined> {
   const { injector } = context;
-  const chargeType = getChargeType(charge, context);
+  const chargeType = await getChargeType(charge, context);
   switch (chargeType) {
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector

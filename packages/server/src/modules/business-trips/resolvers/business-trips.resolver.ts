@@ -194,14 +194,11 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
     },
   },
   BusinessTripCharge: {
-    businessTrip: (dbCharge, _, { injector }) => {
-      if (!dbCharge.business_trip_id) {
-        return null;
-      }
+    businessTrip: async (dbCharge, _, { injector }) => {
       try {
         return injector
           .get(BusinessTripsProvider)
-          .getBusinessTripsByIdLoader.load(dbCharge.business_trip_id)
+          .getBusinessTripsByChargeIdLoader.load(dbCharge.id)
           .then(businessTrip => businessTrip ?? null);
       } catch (e) {
         console.error(`Error finding business trip for charge id ${dbCharge.id}:`, e);
