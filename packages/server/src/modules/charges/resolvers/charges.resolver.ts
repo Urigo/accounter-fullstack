@@ -662,7 +662,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw new GraphQLError(message);
       }
     },
-    invalidDocuments: DbCharge => DbCharge.invalid_documents ?? true,
     openDocuments: async (DbCharge, _, { injector }) =>
       injector
         .get(IssuedDocumentsProvider)

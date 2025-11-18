@@ -4,7 +4,7 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { DocumentType, MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
 import { getChargeDocumentsMeta, getChargeTransactionsMeta } from './common.helper.js';
@@ -26,10 +26,20 @@ export const validateCharge = async (
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
       chargeType,
     ) || isGeneralFees;
-  const business =
+  const businessPromise =
     charge.business_id && !businessNotRequired
-      ? await injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
-      : undefined;
+      ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(charge.business_id)
+      : Promise.resolve(undefined);
+
+  const [
+    business,
+    { invalidTransactions, transactionsCount },
+    { documentsVatAmount, invoiceCount, receiptCount, invalidDocuments },
+  ] = await Promise.all([
+    businessPromise,
+    getChargeTransactionsMeta(charge.id, context.injector),
+    getChargeDocumentsMeta(charge.id, context.injector),
+  ]);
 
   const businessIsFine = businessNotRequired || !!business;
   if (!businessIsFine) {
@@ -55,10 +65,9 @@ export const validateCharge = async (
   }
   let documentsAreFine = false;
   if (shouldHaveDocuments) {
-    const [documents, { invoiceCount, receiptCount }] = await Promise.all([
-      injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
-      getChargeDocumentsMeta(charge.id, injector),
-    ]);
+    const documents = await injector
+      .get(DocumentsProvider)
+      .getDocumentsByChargeIdLoader.load(charge.id);
     let missingAllocationNumber = false;
     await Promise.all(
       documents.map(async doc => {
@@ -71,7 +80,7 @@ export const validateCharge = async (
       }),
     );
     const isReceiptEnough = !!(charge.can_settle_with_receipt && receiptCount > 0);
-    const dbDocumentsAreValid = !charge.invalid_documents;
+    const dbDocumentsAreValid = !invalidDocuments;
     documentsAreFine =
       dbDocumentsAreValid && (invoiceCount > 0 || isReceiptEnough) && !missingAllocationNumber;
   } else {
@@ -82,10 +91,6 @@ export const validateCharge = async (
   }
 
   // validate transactions
-  const [{ invalidTransactions, transactionsCount }, { documentsVatAmount }] = await Promise.all([
-    getChargeTransactionsMeta(charge.id, context.injector),
-    getChargeDocumentsMeta(charge.id, context.injector),
-  ]); // TODO: for more efficient process, put promises together later
   const hasTransaction = transactionsCount >= 1;
   const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
   const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
@@ -102,7 +107,6 @@ export const validateCharge = async (
   // validate tags
   const tags = await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id);
   const tagsAreFine = tags.length > 0;
-  //  && tags.reduce((partsSum, tag) => partsSum + (tag.part ?? 0), 0) === 1;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }

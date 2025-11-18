@@ -1,5 +1,6 @@
 import { Injector } from 'graphql-modules';
 import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
+import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
@@ -102,6 +103,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
   ]);
 
+  let invalidDocuments = false;
   let receiptAmount = 0;
   let receiptVatAmount: number | null = null;
   let receiptCount = 0;
@@ -137,6 +139,10 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       }
     }
     currenciesSet.add(d.currency_code as Currency);
+
+    if (!basicDocumentValidation(d)) {
+      invalidDocuments = true;
+    }
   });
 
   const currencies = Array.from(currenciesSet);
@@ -149,6 +155,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     documentsVatAmount: invoiceVatAmount == null ? receiptVatAmount : invoiceVatAmount,
     documentsCount: documents.length,
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
+    invalidDocuments,
   };
 }
 
