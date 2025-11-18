@@ -144,6 +144,7 @@ assignTransactionToDeposit(transactionId: UUID!, depositId: String!): BankDeposi
 
 - `depositId: string` (required)
 - `enableReassign?: boolean` (optional)
+- `refetchDeposits?: () => void` (optional)
 
 **Features**:
 
