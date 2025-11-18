@@ -1,5 +1,8 @@
 import type { Injector } from 'graphql-modules';
-import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
+import {
+  getChargeLedgerMeta,
+  getChargeTransactionsMeta,
+} from '@modules/charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type { TimelessDateString } from '@shared/types';
@@ -23,13 +26,17 @@ export async function isChargeLocked(
     return false;
   }
 
-  const [{ transactionsMinDebitDate, transactionsMinEventDate }] = await Promise.all([
+  const [
+    { transactionsMinDebitDate, transactionsMinEventDate },
+    { ledgerMinInvoiceDate, ledgerMinValueDate },
+  ] = await Promise.all([
     getChargeTransactionsMeta(charge.id, injector),
+    getChargeLedgerMeta(charge.id, injector),
   ]);
 
   const chargeMinDate = getMinDate([
-    charge.ledger_min_invoice_date,
-    charge.ledger_min_value_date,
+    ledgerMinInvoiceDate,
+    ledgerMinValueDate,
     transactionsMinDebitDate,
     transactionsMinEventDate,
     charge.documents_min_date,

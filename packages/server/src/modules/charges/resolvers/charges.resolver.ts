@@ -19,7 +19,11 @@ import {
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
 import { getChargeType } from '../helpers/charge-type.js';
-import { getChargeBusinesses, getChargeTransactionsMeta } from '../helpers/common.helper.js';
+import {
+  getChargeBusinesses,
+  getChargeLedgerMeta,
+  getChargeTransactionsMeta,
+} from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
@@ -162,28 +166,34 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
       const charges = await Promise.all(
         Array.from(chargeIds).map(async id => {
-          const [charge, { transactionsMinDebitDate, transactionsMinEventDate }] =
-            await Promise.all([
-              injector
-                .get(ChargesProvider)
-                .getChargeByIdLoader.load(id)
-                .then(charge => {
-                  if (!charge) {
-                    throw new GraphQLError(`Charge ID="${id}" not found`);
-                  }
-                  return charge;
-                })
-                .catch(e => {
-                  const message = `Error loading charge ID="${id}"`;
-                  console.error(`${message}: ${e}`);
-                  throw new GraphQLError(message);
-                }),
-              getChargeTransactionsMeta(id, injector),
-            ]);
+          const [
+            charge,
+            { transactionsMinDebitDate, transactionsMinEventDate },
+            { ledgerMinInvoiceDate, ledgerMinValueDate },
+          ] = await Promise.all([
+            injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(id)
+              .then(charge => {
+                if (!charge) {
+                  throw new GraphQLError(`Charge ID="${id}" not found`);
+                }
+                return charge;
+              })
+              .catch(e => {
+                const message = `Error loading charge ID="${id}"`;
+                console.error(`${message}: ${e}`);
+                throw new GraphQLError(message);
+              }),
+            getChargeTransactionsMeta(id, injector),
+            getChargeLedgerMeta(id, injector),
+          ]);
           return {
             ...charge,
             transactionsMinDebitDate,
             transactionsMinEventDate,
+            ledgerMinInvoiceDate,
+            ledgerMinValueDate,
           };
         }),
       );
@@ -196,16 +206,16 @@ export const chargesResolvers: ChargesModule.Resolvers &
               chargeA.documents_min_date ||
               chargeA.transactionsMinDebitDate ||
               chargeA.transactionsMinEventDate ||
-              chargeA.ledger_min_value_date ||
-              chargeA.ledger_min_invoice_date
+              chargeA.ledgerMinValueDate ||
+              chargeA.ledgerMinInvoiceDate
             )?.getTime() ?? 0;
           const dateB =
             (
               chargeB.documents_min_date ||
               chargeB.transactionsMinDebitDate ||
               chargeB.transactionsMinEventDate ||
-              chargeB.ledger_min_value_date ||
-              chargeB.ledger_min_invoice_date
+              chargeB.ledgerMinValueDate ||
+              chargeB.ledgerMinInvoiceDate
             )?.getTime() ?? 0;
 
           if (dateA > dateB) {
@@ -676,7 +686,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .transactionsByChargeIDLoader.load(DbCharge.id);
       return transactions.length;
     },
-    ledgerCount: DbCharge => (DbCharge.ledger_count ? Number(DbCharge.ledger_count) : 0),
+    ledgerCount: async (DbCharge, _, { injector }) =>
+      injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByChargesIdLoader.load(DbCharge.id)
+        .then(records => records.length),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
         if (await isChargeLocked(DbCharge, context.injector, context.adminContext.ledgerLock)) {

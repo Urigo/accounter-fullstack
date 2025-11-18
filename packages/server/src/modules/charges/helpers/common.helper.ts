@@ -2,6 +2,7 @@ import { Injector } from 'graphql-modules';
 import { isInvoice, isReceipt } from '@modules/documents/helpers/common.helper.js';
 import { basicDocumentValidation } from '@modules/documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+import { getLedgerMeta } from '@modules/ledger/helpers/common.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { getTransactionsMeta } from '@modules/transactions/helpers/common.helper.js';
@@ -170,4 +171,12 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
     .transactionsByChargeIDLoader.load(chargeId);
 
   return getTransactionsMeta(transactions);
+}
+
+export async function getChargeLedgerMeta(chargeId: string, injector: Injector) {
+  const records = await injector
+    .get(LedgerProvider)
+    .getLedgerRecordsByChargesIdLoader.load(chargeId);
+
+  return getLedgerMeta(records);
 }
