@@ -3,7 +3,7 @@ import {
   getChargeDocumentsMeta,
   getChargeTransactionsMeta,
 } from '@modules/charges/helpers/common.helper.js';
-import type { IGetChargesByFiltersResult } from '@modules/charges/types.js';
+import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import type { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
@@ -15,7 +15,7 @@ import type { AccountantStatus, Pcn874RecordType } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 
 export type VatReportRecordSources = {
-  charge: IGetChargesByFiltersResult;
+  charge: IGetChargesByIdsResult;
   doc: IGetDocumentsByFiltersResult;
   business: IGetBusinessesByIdsResult;
 };

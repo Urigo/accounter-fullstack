@@ -258,19 +258,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
       };
       try {
         injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        const res = await injector
+        const updatedCharge = await injector
           .get(ChargesProvider)
           .updateCharge({ ...adjustedFields })
           .catch(e => {
             console.error(e);
             throw new GraphQLError(`Error updating charge ID="${chargeId}"`);
-          });
-        const updatedCharge = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.load(res[0].id)
-          .catch(e => {
-            console.error(e);
-            throw new GraphQLError(`Error loading updated charge ID="${chargeId}"`);
           });
         if (!updatedCharge) {
           throw new Error(`Charge ID="${chargeId}" not found`);

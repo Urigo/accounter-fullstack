@@ -97,12 +97,12 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               ownerId: charge.owner_id,
               userDescription: 'Transaction unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(
                 `Failed to generate new charge for transaction ID="${transactionId}"`,
               );
             }
-            chargeId = newCharge?.[0]?.id;
+            chargeId = newCharge.id;
 
             if (documents.length === 0 && transactions.length === 1) {
               postUpdateActions = async () =>
@@ -242,10 +242,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               ownerId: defaultAdminBusinessId,
               userDescription: 'Transactions unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(`Failed to generate new charge for transactions update`);
             }
-            chargeId = newCharge[0].id;
+            chargeId = newCharge.id;
           }
         };
 

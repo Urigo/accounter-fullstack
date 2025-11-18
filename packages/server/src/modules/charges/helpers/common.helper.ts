@@ -11,7 +11,6 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { Currency, DocumentType } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import { ChargesSimpleProvider } from '../providers/charges-simple.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function calculateTotalAmount(
@@ -43,7 +42,7 @@ export async function calculateTotalAmount(
 
 export async function getChargeBusinesses(chargeId: string, injector: Injector) {
   const [charge, transactions, documents, ledgerRecords, miscExpenses] = await Promise.all([
-    injector.get(ChargesSimpleProvider).getChargeByIdLoader.load(chargeId),
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
     injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
     injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
@@ -104,7 +103,7 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
 
 export async function getChargeDocumentsMeta(chargeId: string, injector: Injector) {
   const [charge, documents] = await Promise.all([
-    injector.get(ChargesSimpleProvider).getChargeByIdLoader.load(chargeId),
+    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
   ]);
 

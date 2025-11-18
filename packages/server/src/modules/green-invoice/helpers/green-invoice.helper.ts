@@ -1139,7 +1139,7 @@ export async function insertNewDocumentFromGreenInvoice(
         userDescription = greenInvoiceDoc.description;
       }
 
-      const [charge] = await injector.get(ChargesProvider).generateCharge({
+      const charge = await injector.get(ChargesProvider).generateCharge({
         ownerId,
         userDescription,
       });

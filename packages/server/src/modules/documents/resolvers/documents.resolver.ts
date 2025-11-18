@@ -104,7 +104,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       if (!chargeId) {
         // generate new charge
-        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+        const newCharge = await injector.get(ChargesProvider).generateCharge({
           ownerId: defaultAdminBusinessId,
           userDescription: 'New uploaded documents',
         });
@@ -157,7 +157,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       if (!chargeId) {
         // generate new charge
-        const [newCharge] = await injector.get(ChargesProvider).generateCharge({
+        const newCharge = await injector.get(ChargesProvider).generateCharge({
           ownerId: defaultAdminBusinessId,
           userDescription: 'New uploaded documents',
         });
@@ -217,12 +217,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               ownerId: charge.owner_id,
               userDescription: 'Document unlinked from charge',
             });
-            if (!newCharge || newCharge.length === 0) {
+            if (!newCharge) {
               throw new GraphQLError(
                 `Failed to generate new charge for document ID="${documentId}"`,
               );
             }
-            chargeId = newCharge?.[0]?.id;
+            chargeId = newCharge.id;
 
             if (documents.length === 1 && transactions.length === 0) {
               postUpdateActions = async () => {

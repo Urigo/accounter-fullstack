@@ -138,7 +138,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
               ownerId: currentUser.userId,
               userDescription: `Salaries ${rawSalaryMonth}`,
             })
-            .then(res => res[0].id)
+            .then(res => res.id)
             .catch(e => {
               console.error(e);
               throw new SalaryError('Failed to generate salary charge');

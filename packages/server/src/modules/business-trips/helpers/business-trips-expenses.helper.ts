@@ -195,7 +195,7 @@ export async function generateChargeForEmployeePayment(
     throw new GraphQLError('Business trip tax category not set');
   }
   try {
-    const [{ id: chargeId }] = await injector.get(ChargesProvider).generateCharge({
+    const { id: chargeId } = await injector.get(ChargesProvider).generateCharge({
       ownerId: defaultAdminBusinessId,
       taxCategoryId: businessTripTaxCategoryId,
       userDescription: description || 'Employee payment charge',
