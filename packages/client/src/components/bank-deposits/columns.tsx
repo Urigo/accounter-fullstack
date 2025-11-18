@@ -21,9 +21,10 @@ import {
       formatted
       currency
     }
-    currency
   }
 `;
+
+export { DepositTransactionFieldsFragmentDoc } from '../../gql/graphql.js';
 
 export type DepositTransactionRowType = DepositTransactionFieldsFragment & {
   cumulativeBalance: number;
