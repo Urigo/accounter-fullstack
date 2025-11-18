@@ -1,8 +1,8 @@
-import { Injector } from 'graphql-modules';
-import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper';
-import { IGetChargesByIdsResult } from '@modules/charges/types';
+import type { Injector } from 'graphql-modules';
+import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import type { TimelessDateString } from '@shared/types';
 
 export function getMinDate(dates: (Date | null | undefined)[]): Date | null {
   const filteredDates = dates.filter(Boolean) as Date[];
