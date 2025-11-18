@@ -6,14 +6,14 @@ import type { BankDepositsModule } from '../types.js';
 
 export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
   Query: {
-    deposit: async (_, { depositId }, { injector }) => {
+    deposit: async (_, { depositId }, { injector, adminContext: { defaultLocalCurrency } }) => {
       try {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
           .getTransactionsByBankDepositLoader.load(depositId);
         const currentBalance = transactions.reduce((acc, tx) => acc + Number(tx.amount), 0);
 
-        const currency = (transactions[0]?.currency ?? 'ILS') as Currency;
+        const currency = (transactions[0]?.currency ?? defaultLocalCurrency) as Currency;
         const sortedByDebit = [...transactions].sort((a, b) => {
           const ad = a.debit_date ?? a.event_date;
           const bd = b.debit_date ?? b.event_date;

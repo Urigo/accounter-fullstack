@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { DepositTransactionFieldsFragment } from '../../gql/graphql.js';
+import type { Currency, DepositTransactionFieldsFragment } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
   Amount,
@@ -21,6 +21,26 @@ import {
       formatted
       currency
     }
+    debitExchangeRates {
+      aud
+      cad
+      eur
+      gbp
+      jpy
+      sek
+      usd
+      date
+    }
+    eventExchangeRates {
+      aud
+      cad
+      eur
+      gbp
+      jpy
+      sek
+      usd
+      date
+    }
   }
 `;
 
@@ -30,6 +50,7 @@ export type DepositTransactionRowType = DepositTransactionFieldsFragment & {
   cumulativeBalance: number;
   localCumulativeBalance: number;
   localAmount: number;
+  localCurrency: Currency;
 };
 
 export const columns: ColumnDef<DepositTransactionRowType>[] = [

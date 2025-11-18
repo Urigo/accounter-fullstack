@@ -1,6 +1,8 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useContext, useMemo, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
+import { getFragmentData } from '@/gql/fragment-masking.js';
+import { UserContext } from '@/providers/user-provider.js';
 import {
   flexRender,
   getCoreRowModel,
@@ -9,14 +11,13 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { SharedDepositTransactionsDocument } from '../../gql/graphql.js';
-import { getFragmentData } from '../../gql/index.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.jsx';
 import {
-  columns,
+  Currency,
   DepositTransactionFieldsFragmentDoc,
-  type DepositTransactionRowType,
-} from './columns.jsx';
+  SharedDepositTransactionsDocument,
+} from '../../gql/graphql.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.jsx';
+import { columns, type DepositTransactionRowType } from './columns.jsx';
 import { DepositReassignDialog } from './deposit-erassign-dialog.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -33,6 +34,18 @@ import { DepositReassignDialog } from './deposit-erassign-dialog.jsx';
   }
 `;
 
+const currencyMap: Partial<
+  Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'usd'>
+> = {
+  [Currency.Eur]: 'eur',
+  [Currency.Gbp]: 'gbp',
+  [Currency.Cad]: 'cad',
+  [Currency.Jpy]: 'jpy',
+  [Currency.Aud]: 'aud',
+  [Currency.Sek]: 'sek',
+  [Currency.Usd]: 'usd',
+};
+
 type Props = {
   depositId: string;
   enableReassign?: boolean;
@@ -44,6 +57,7 @@ export function DepositsTransactionsTable({
   enableReassign = false,
   refetch,
 }: Props): ReactElement {
+  const { userContext } = useContext(UserContext);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
 
   const [{ data, fetching }] = useQuery({
@@ -71,8 +85,17 @@ export function DepositsTransactionsTable({
     let localCumulativeBalance = 0;
 
     return sortedTransactions.map(tx => {
+      let rate: number | null = null;
+      console.log('currency: ', tx.amount.currency);
+      const currencyKey = currencyMap[tx.amount.currency];
+      console.log('currencyKey:', currencyKey);
+      if (currencyKey) {
+        rate = tx.debitExchangeRates?.[currencyKey] ?? tx.eventExchangeRates?.[currencyKey] ?? null;
+      }
+      console.log('rate:', rate, tx.debitExchangeRates ?? tx.eventExchangeRates);
       const amount = Number(tx.amount.raw);
-      const localAmount = amount; // TODO: Apply exchange rate conversion
+      const localAmount = amount * (rate ?? 1);
+      const localCurrency = (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
 
       cumulativeBalance += amount;
       localCumulativeBalance += localAmount;
@@ -82,9 +105,10 @@ export function DepositsTransactionsTable({
         cumulativeBalance,
         localCumulativeBalance,
         localAmount,
+        localCurrency,
       };
     });
-  }, [data?.deposit?.transactions]);
+  }, [data?.deposit, userContext]);
 
   const columnsWithActions: ColumnDef<DepositTransactionRowType>[] = useMemo(() => {
     const actionColumns: ColumnDef<DepositTransactionRowType>[] = enableReassign
