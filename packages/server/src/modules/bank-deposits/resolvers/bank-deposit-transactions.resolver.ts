@@ -48,6 +48,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         };
       } catch (e) {
         console.error('Error fetching bank deposit', e);
+        if (e instanceof GraphQLError) throw e;
         throw new GraphQLError('Error fetching bank deposit');
       }
     },
