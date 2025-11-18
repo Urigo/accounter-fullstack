@@ -115,6 +115,8 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   let invoiceVatAmount: number | null = null;
   let invoiceCount = 0;
   const currenciesSet = new Set<Currency>();
+  let documentsMinAccountancyDate: Date | null = null;
+  let documentsMinAnyDate: Date | null = null;
 
   documents.map(d => {
     const amount = d.total_amount ?? 0;
@@ -126,12 +128,25 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       factor *= -1;
     }
 
+    if (d.date) {
+      documentsMinAnyDate ??= d.date;
+      if (documentsMinAnyDate > d.date) {
+        documentsMinAnyDate = d.date;
+      }
+    }
+
     if (isInvoice(d.type)) {
       invoiceCount++;
       invoiceAmount += amount * factor;
       if (d.vat_amount != null) {
         invoiceVatAmount ??= 0;
         invoiceVatAmount += (d.vat_amount ?? 0) * factor;
+      }
+      if (d.date) {
+        documentsMinAccountancyDate ??= d.date;
+        if (documentsMinAccountancyDate > d.date) {
+          documentsMinAccountancyDate = d.date;
+        }
       }
     }
     if (isReceipt(d.type)) {
@@ -140,6 +155,12 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       if (d.vat_amount != null) {
         receiptVatAmount ??= 0;
         receiptVatAmount += (d.vat_amount ?? 0) * factor;
+      }
+      if (d.date) {
+        documentsMinAccountancyDate ??= d.date;
+        if (documentsMinAccountancyDate > d.date) {
+          documentsMinAccountancyDate = d.date;
+        }
       }
     }
     currenciesSet.add(d.currency_code as Currency);
@@ -162,6 +183,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     documentsCount: documents.length,
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
     invalidDocuments,
+    documentsMinDate: documentsMinAccountancyDate ?? (documentsMinAnyDate as Date | null),
   };
 }
 
@@ -174,9 +196,9 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
 }
 
 export async function getChargeLedgerMeta(chargeId: string, injector: Injector) {
-  const records = await injector
+  const ledgerRecords = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByChargesIdLoader.load(chargeId);
 
-  return getLedgerMeta(records);
+  return getLedgerMeta(ledgerRecords);
 }

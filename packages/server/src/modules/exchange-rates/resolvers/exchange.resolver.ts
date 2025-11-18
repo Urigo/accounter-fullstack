@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import {
+  getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
 } from '@modules/charges/helpers/common.helper.js';
@@ -69,13 +70,14 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   },
   FinancialCharge: {
     exchangeRates: async (DbCharge, _, { injector }) => {
-      const [{ transactionsMinDebitDate }, { ledgerMinInvoiceDate }] = await Promise.all([
-        getChargeTransactionsMeta(DbCharge.id, injector),
-        getChargeLedgerMeta(DbCharge.id, injector),
-      ]);
+      const [{ transactionsMinDebitDate }, { ledgerMinInvoiceDate }, { documentsMinDate }] =
+        await Promise.all([
+          getChargeTransactionsMeta(DbCharge.id, injector),
+          getChargeLedgerMeta(DbCharge.id, injector),
+          getChargeDocumentsMeta(DbCharge.id, injector),
+        ]);
 
-      const ratesDate =
-        transactionsMinDebitDate || DbCharge.documents_min_date || ledgerMinInvoiceDate;
+      const ratesDate = transactionsMinDebitDate || documentsMinDate || ledgerMinInvoiceDate;
 
       if (!ratesDate) {
         return null;

@@ -54,7 +54,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
         console.error('Failed to fetch charge transactions meta:', error);
         throw new GraphQLError('Failed to fetch min debit date');
       }),
-  minDocumentsDate: DbCharge => DbCharge.documents_min_date,
+  minDocumentsDate: async (DbCharge, _, { injector }) =>
+    getChargeDocumentsMeta(DbCharge.id, injector).then(docsMeta => docsMeta.documentsMinDate),
   validationData: (DbCharge, _, context) => validateCharge(DbCharge, context),
   metadata: DbCharge => DbCharge,
   yearsOfRelevance: async (DbCharge, _, { injector }) => {

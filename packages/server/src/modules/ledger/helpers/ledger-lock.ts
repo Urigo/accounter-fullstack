@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import {
+  getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
 } from '@modules/charges/helpers/common.helper.js';
@@ -29,9 +30,11 @@ export async function isChargeLocked(
   const [
     { transactionsMinDebitDate, transactionsMinEventDate },
     { ledgerMinInvoiceDate, ledgerMinValueDate },
+    { documentsMinDate },
   ] = await Promise.all([
     getChargeTransactionsMeta(charge.id, injector),
     getChargeLedgerMeta(charge.id, injector),
+    getChargeDocumentsMeta(charge.id, injector),
   ]);
 
   const chargeMinDate = getMinDate([
@@ -39,7 +42,7 @@ export async function isChargeLocked(
     ledgerMinValueDate,
     transactionsMinDebitDate,
     transactionsMinEventDate,
-    charge.documents_min_date,
+    documentsMinDate,
   ]);
 
   if (!chargeMinDate) {

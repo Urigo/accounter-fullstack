@@ -21,6 +21,7 @@ import {
 import { getChargeType } from '../helpers/charge-type.js';
 import {
   getChargeBusinesses,
+  getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
 } from '../helpers/common.helper.js';
@@ -170,6 +171,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             charge,
             { transactionsMinDebitDate, transactionsMinEventDate },
             { ledgerMinInvoiceDate, ledgerMinValueDate },
+            { documentsMinDate },
           ] = await Promise.all([
             injector
               .get(ChargesProvider)
@@ -187,6 +189,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
               }),
             getChargeTransactionsMeta(id, injector),
             getChargeLedgerMeta(id, injector),
+            getChargeDocumentsMeta(id, injector),
           ]);
           return {
             ...charge,
@@ -194,6 +197,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             transactionsMinEventDate,
             ledgerMinInvoiceDate,
             ledgerMinValueDate,
+            documentsMinDate,
           };
         }),
       );
@@ -203,7 +207,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .sort((chargeA, chargeB) => {
           const dateA =
             (
-              chargeA.documents_min_date ||
+              chargeA.documentsMinDate ||
               chargeA.transactionsMinDebitDate ||
               chargeA.transactionsMinEventDate ||
               chargeA.ledgerMinValueDate ||
@@ -211,7 +215,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
             )?.getTime() ?? 0;
           const dateB =
             (
-              chargeB.documents_min_date ||
+              chargeB.documentsMinDate ||
               chargeB.transactionsMinDebitDate ||
               chargeB.transactionsMinEventDate ||
               chargeB.ledgerMinValueDate ||
