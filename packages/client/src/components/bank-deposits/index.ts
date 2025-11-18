@@ -1,1 +1,1 @@
-export { DepositsTransactionsTable } from './deposits-transactions-table.jsx';
+export { DepositsTransactionsTable } from './deposits-transactions-table.js';

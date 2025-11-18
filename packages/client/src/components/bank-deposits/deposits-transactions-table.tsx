@@ -6,20 +6,22 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { DepositTransactionsDocument } from '../../gql/graphql.js';
+import { SharedDepositTransactionsDocument } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.jsx';
 import {
   columns,
   DepositTransactionFieldsFragmentDoc,
   type DepositTransactionRowType,
-} from './columns.js';
+} from './columns.jsx';
+import { DepositReassignDialog } from './deposit-erassign-dialog.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query DepositTransactions($depositId: String!) {
+  query SharedDepositTransactions($depositId: String!) {
     deposit(depositId: $depositId) {
       id
       currency
@@ -33,21 +35,20 @@ import {
 
 type Props = {
   depositId: string;
+  enableReassign?: boolean;
+  refetch?: () => void;
 };
 
-export function DepositsTransactionsTable({ depositId }: Props): ReactElement {
-  const [sorting, setSorting] = useState<SortingState>([
-    {
-      id: 'date',
-      desc: false,
-    },
-  ]);
+export function DepositsTransactionsTable({
+  depositId,
+  enableReassign = false,
+  refetch,
+}: Props): ReactElement {
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
 
   const [{ data, fetching }] = useQuery({
-    query: DepositTransactionsDocument,
-    variables: {
-      depositId,
-    },
+    query: SharedDepositTransactionsDocument,
+    variables: { depositId },
   });
 
   const tableData: DepositTransactionRowType[] = useMemo(() => {
@@ -85,21 +86,39 @@ export function DepositsTransactionsTable({ depositId }: Props): ReactElement {
     });
   }, [data?.deposit?.transactions]);
 
+  const columnsWithActions: ColumnDef<DepositTransactionRowType>[] = useMemo(() => {
+    const actionColumns: ColumnDef<DepositTransactionRowType>[] = enableReassign
+      ? [
+          {
+            id: 'actions',
+            header: 'Actions',
+            cell: ({ row }) => (
+              <DepositReassignDialog
+                depositId={depositId}
+                transactionId={row.original.id}
+                refetch={refetch}
+              />
+            ),
+          },
+        ]
+      : [];
+
+    return [...columns, ...actionColumns];
+  }, [enableReassign, depositId, refetch]);
+
   const table = useReactTable({
     data: tableData,
-    columns,
+    columns: columnsWithActions,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
+    state: { sorting },
   });
 
   if (fetching) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin" />
+        <Loader2 className="size-10 animate-spin" />
       </div>
     );
   }
@@ -132,7 +151,7 @@ export function DepositsTransactionsTable({ depositId }: Props): ReactElement {
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
+            <TableCell colSpan={columnsWithActions.length} className="h-24 text-center">
               No transactions in this deposit.
             </TableCell>
           </TableRow>

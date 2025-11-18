@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
+import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -25,7 +26,6 @@ import {
 } from '../../../gql/graphql.js';
 import { useAssignTransactionToDeposit } from '../../../hooks/use-assign-transaction-to-deposit.js';
 import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
-import { TransactionsTable } from '../../transactions-table/index.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -87,11 +87,6 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newDepositCurrency, setNewDepositCurrency] = useState<Currency>('ILS');
 
-  const transactions = useMemo(
-    () => depositData?.depositByCharge?.transactions?.filter(t => t.chargeId !== chargeId) ?? [],
-    [depositData?.depositByCharge?.transactions, chargeId],
-  );
-
   const openDeposits = useMemo(
     () => (allDepositsData?.allDeposits ?? []).filter(d => d.isOpen),
     [allDepositsData?.allDeposits],
@@ -137,11 +132,7 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
           {depositData?.depositByCharge?.isOpen ? 'Deposit is open' : 'Deposit is closed'}
         </span>
       </div>
-      {transactions.length === 0 ? (
-        <div className="text-sm text-gray-500">No transactions found for this deposit.</div>
-      ) : (
-        <TransactionsTable transactionsProps={transactions} enableChargeLink />
-      )}
+      <DepositsTransactionsTable depositId={depositData.depositByCharge.id} />
     </div>
   ) : (
     <div className="space-y-4">

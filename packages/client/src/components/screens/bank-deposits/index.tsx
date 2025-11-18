@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ReactElement } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuery } from 'urql';
-import { DepositsTransactionsTable } from '@/components/bank-deposits/deposits-transactions-table.js';
+import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -54,7 +54,7 @@ type DepositRow = {
 };
 
 export function DepositsScreen(): ReactElement {
-  const [{ data, fetching }] = useQuery({ query: AllDepositsDocument });
+  const [{ data, fetching }, refetch] = useQuery({ query: AllDepositsDocument });
   const [sorting, setSorting] = useState<SortingState>([{ id: 'openDate', desc: false }]);
 
   const rows: DepositRow[] = useMemo(() => {
@@ -199,7 +199,11 @@ export function DepositsScreen(): ReactElement {
                             </div>
                           </div>
                         )}
-                        <DepositsTransactionsTable depositId={row.original.id} />
+                        <DepositsTransactionsTable
+                          depositId={row.original.id}
+                          enableReassign
+                          refetch={refetch}
+                        />
                       </TableCell>
                     </TableRow>
                   ) : null}
