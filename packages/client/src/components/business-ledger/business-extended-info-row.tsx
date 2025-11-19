@@ -11,7 +11,7 @@ type Props = {
 export const BusinessExtendedInfoRow = ({ row }: Props): ReactElement => {
   const handleRowClick = (event: React.MouseEvent): void => {
     event.stopPropagation();
-    window.open(ROUTES.CHARGES.DETAIL(row.original.chargeId), '_blank', 'noreferrer');
+    window.open(ROUTES.CHARGES.DETAIL(row.original.chargeId), '_blank', 'noopener noreferrer');
   };
 
   return (
