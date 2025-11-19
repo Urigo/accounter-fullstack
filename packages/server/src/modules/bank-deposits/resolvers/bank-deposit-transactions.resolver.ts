@@ -85,7 +85,8 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           transactions: transactions.map(tx => tx.id),
           balance: formatFinancialAmount(currentBalance),
         };
-      } catch {
+      } catch (e) {
+        if (e instanceof GraphQLError) throw e;
         throw new GraphQLError('Error fetching bank deposit');
       }
     },
@@ -205,7 +206,8 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           transactions: deposit.transactionIds,
           balance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
         }));
-      } catch {
+      } catch (e) {
+        if (e instanceof GraphQLError) throw e;
         throw new GraphQLError('Error fetching all deposits');
       }
     },
@@ -228,7 +230,8 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           transactions: [],
           balance: formatFinancialAmount(0),
         };
-      } catch {
+      } catch (e) {
+        if (e instanceof GraphQLError) throw e;
         throw new GraphQLError('Error creating deposit');
       }
     },
