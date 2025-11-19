@@ -46,6 +46,24 @@ yarn seed:admin-context (new script) -> foundational entities
 yarn test:integration (Vitest invoking DB-backed tests)
 ```
 
+Updated Execution Flow (Current Harness):
+
+```
+docker compose -f docker/docker-compose.dev.yml up -d postgres
+# Run migrations explicitly (not inside tests)
+yarn workspace @accounter/migrations migration:run
+# (Optional) seed admin context for non-test environments; tests seed idempotently inside transactions
+# Run full test suite (includes schema guard asserting LATEST_MIGRATION_NAME applied)
+yarn workspace @accounter/server vitest run
+```
+
+Notes:
+
+- Tests DO NOT run migrations automatically; they assert the latest migration name
+  (`LATEST_MIGRATION_NAME`) is present.
+- Seeding occurs transactionally per test where needed, ensuring rollback and no persistent test
+  data.
+
 ## 5. Data Domain Summary (Core Tables)
 
 | Table              | Purpose                                                      | Key Relationships                                                          |
@@ -175,26 +193,27 @@ Pros: type safety, IDE autocompletion, easy programmatic mutation.
 
 ## 12. Test Database Strategy
 
-Approach: **Single Postgres container + transactional test isolation**. Workflow per test file:
+Approach: **External migrations + transactional test isolation**.
 
-1. Global setup (beforeAll): run migrations if not yet applied; seed admin core once; start a pooled
-   client.
-2. Each test (beforeEach): open transaction (`BEGIN`).
-3. Load fixtures inside transaction.
-4. Run GraphQL operations or direct provider calls.
-5. Assert results (ledger correctness, charge completeness).
-6. Rollback (`ROLLBACK`) in `afterEach`.
+Workflow:
 
-Benefits: Speed, no need for repeated full database resets, deterministic cleanup.
+1. Migrations applied once outside the test process (local dev or CI step).
+2. Global test setup creates isolated temp env file (`TEST_ENV_FILE`) and initializes connection
+   pool.
+3. Each test opens a transaction via helper (`withTestTransaction`); seeding (admin core, tax
+   categories) performed idempotently inside transaction when needed.
+4. Assertions executed; diagnostics emitted only when `DEBUG=accounter:test`.
+5. Automatic rollback ensures zero data persistence across tests.
 
-**Implementation**: Transaction wrapper utilities implemented in
-`packages/server/src/__tests__/helpers/test-transaction.ts`:
+Benefits:
 
-- `withTestTransaction<T>(pool, fn)` - Single transaction with auto-rollback
-- `withConcurrentTransactions<T>(pool, fns)` - Parallel transactions for race testing
+- Eliminates migration drift inside test harness and prevents FK conflicts.
+- Guarantees clean state without TRUNCATE overhead.
+- Precise schema version guard using `LATEST_MIGRATION_NAME`.
 
-These helpers eliminate boilerplate and guarantee rollback even on errors. See
-`docs/architectural-improvements-s1-s3.md` for usage examples.
+Helpers (unchanged): `withTestTransaction`, `withConcurrentTransactions` in `test-transaction.ts`.
+
+Diagnostics: Pool health snapshots & connection retries logged when debugging enabled.
 
 ## 13. Ledger Generation Test Strategy
 
@@ -242,35 +261,49 @@ S1-S3 hardening phase. See `docs/architectural-improvements-s1-s3.md` for detail
 
 ## 15. CI Integration
 
-Add workflow job steps (spec reference, not implemented here):
+Current Workflow (Implemented):
 
-1. Checkout & install.
-2. Start Postgres service (Docker). Environment variables: POSTGRES_DB=accounter_test.
-3. Run migrations: `yarn workspace @accounter/server migrations:run`.
-4. Seed admin: `yarn workspace @accounter/server seed:admin`.
-5. Execute integration tests:
-   `yarn workspace @accounter/server test --runInBand --dir packages/server/src/modules/ledger/__tests__`.
-6. Collect coverage (later extension), artifact upload.
+1. Checkout & install dependencies.
+2. Start Postgres service container with test database env vars.
+3. Run migrations: `yarn workspace @accounter/migrations migration:run`.
+4. Execute test suite: `yarn workspace @accounter/server vitest run` (includes schema guard test for
+   `LATEST_MIGRATION_NAME`).
+5. Separate script asserts latest migration applied (independent of test suite outcome).
+6. Collect and upload coverage artifact (threshold enforcement pending).
+7. Environment isolation verified via log of created `TEST_ENV_FILE` path.
+
+Optional future steps: add migration dry-run validation and coverage thresholds.
 
 ## 16. Configuration & Env
 
-New `.env.test` example: CHEMA=accounter_schema POSTGRES_SSL=0 DEFAULT_LOCAL_CURRENCY=ILS
+`.env.test` baseline example:
 
 ```
-
-Vitest can load via `dotenv -e .env.test` or inline in test setup.
-
-**Implementation**: Shared database configuration centralized in
-`packages/server/src/__tests__/helpers/test-db-config.ts` with `testDbConfig` and `testDbSchema`
-exports. The `qualifyTable()` helper ensures consistent schema-qualified table names. See
-`docs/architectural-improvements-s1-s3.md` for details
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=accounter_test
 POSTGRES_SSL=0
 DEFAULT_LOCAL_CURRENCY=ILS
 ```
 
-Vitest can load via `dotenv -e .env.test` or inline in test setup.
+Environment Isolation:
+
+- Global test setup creates a temp file (e.g. `/tmp/accounter-env-XXXX/.env`) and sets
+  `TEST_ENV_FILE`.
+- `seed-admin-context.ts` writes `DEFAULT_FINANCIAL_ENTITY_ID` atomically to that isolated file.
+- Prevents accidental mutation of project root `.env` during tests.
+
+Shared Configuration:
+
+- Centralized in `test-db-config.ts` (`testDbConfig`, `testDbSchema`, `qualifyTable`).
+- Schema-qualified naming ensures portability and future multi-schema test strategies.
+
+Schema Guard:
+
+- Tests use exported `LATEST_MIGRATION_NAME` from migrations package to assert schema currency.
+- Failing guard indicates need to run migrations before re-running tests.
 
 ## 17. Implementation Phases & Tasks
 
@@ -307,13 +340,15 @@ Phase 3 (Source Ingestion Simulation):
 
 ## 19. Risks & Mitigations
 
-| Risk                                | Mitigation                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| Migrations drift between local & CI | Always run migrations in test setup; fail if pending count > 0 after run. |
-| Flaky exchange rate lookups         | Inject deterministic mock provider or seed fixed rate table.              |
-| Slow test startup                   | Transactional isolation avoids full reseed per test.                      |
-| Foreign key insertion order errors  | Pre-validation & deterministic ordering in fixture-loader.                |
-| Large fixture growth                | Enforce modular scenario files + shared factories.                        |
+| Risk                                | Mitigation                                                            |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| Migrations drift between local & CI | External migration step + exact name guard (`LATEST_MIGRATION_NAME`). |
+| Flaky exchange rate lookups         | Deterministic mock provider or seeded fixed rate table.               |
+| Slow test startup                   | Transactional isolation avoids full reseed per test.                  |
+| Foreign key insertion order errors  | Pre-validation & deterministic ordering in fixture-loader.            |
+| Large fixture growth                | Modular scenario files + shared factories.                            |
+| Env file pollution                  | Per-run `TEST_ENV_FILE` isolation + atomic writes.                    |
+| Brittle migration count assertions  | Name-based schema version verification.                               |
 
 ## 20. Extension Hooks
 
@@ -328,14 +363,14 @@ Phase 3 (Source Ingestion Simulation):
 # Spin up DB
 docker compose -f docker/docker-compose.dev.yml up -d postgres
 
-# Run migrations
-yarn workspace @accounter/server migrations:run
+# Apply migrations (must be done before tests)
+yarn workspace @accounter/migrations migration:run
 
-# Seed admin context
-yarn workspace @accounter/server seed:admin
+# (Optional) Seed admin for manual exploration
+yarn workspace @accounter/server tsx packages/server/scripts/seed-admin-context.ts
 
-# Run integration tests (Phase 1 focus)
-yarn workspace @accounter/server vitest run packages/server/src/modules/ledger/__tests__/ledger-generation.integration.test.ts
+# Run full test suite (includes schema guard + coverage)
+yarn workspace @accounter/server vitest run
 ```
 
 ## 22. Open Questions (To Address Before Phase 2)

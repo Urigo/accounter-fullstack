@@ -177,6 +177,50 @@ database has existing data. Current implementation assumes migrations are run on
 
 ---
 
+## Milestone 2.5: Harness Hardening (Completed)
+
+### H1: Modular Refactor & Diagnostics
+
+- [x] Split monolithic `db-setup.ts` responsibilities into modules (`db-connection.ts`,
+      `db-migrations.ts`, `db-fixtures.ts`, `diagnostics.ts`, `errors.ts`, `test-database.ts`)
+- [x] Added pool health snapshot & metrics emission (conditional via `DEBUG=accounter:test`)
+- [x] Implemented `TestDatabase` wrapper exposing connection, seeding, transaction helpers, and
+      teardown
+
+### H2: Precise Migration Guard
+
+- [x] Exported `MIGRATIONS` and `LATEST_MIGRATION_NAME` from migrations runner
+- [x] Replaced brittle migration count assertions with exact latest migration name lookup
+- [x] Added test that intentionally fails when schema not at latest migration (acts as safety net)
+- [x] Added standalone CI step verifying latest migration presence independent of test suite
+
+### H3: Environment Isolation
+
+- [x] Added `TEST_ENV_FILE` support in global vitest setup to create a temp `.env` per test run
+- [x] Updated `seed-admin-context.ts` to atomically write `DEFAULT_FINANCIAL_ENTITY_ID` to isolated
+      env file
+- [x] Prevented pollution of repo root `.env` during tests
+
+### H4: Transactional Seeding & Idempotency
+
+- [x] Converted integration tests to seed inside per-test transactions (`withTestTransaction`) with
+      automatic rollback
+- [x] Ensured admin entities/tax categories/user_context are idempotent across repeated seeds
+
+### H5: CI Workflow
+
+- [x] Added GitHub Actions workflow spinning up Postgres service container
+- [x] Run migrations, then test suite with coverage collection
+- [x] Independent schema guard script validates `LATEST_MIGRATION_NAME`
+- [x] Stores coverage artifact for inspection
+
+**Result:** Harness now enforces external migration step, isolates environment writes, provides
+precise schema drift detection, and surfaces diagnostics without introducing flakiness.
+
+---
+
+---
+
 ## Milestone 3: Factories
 
 ### S11: Factory Scaffolding
@@ -413,6 +457,14 @@ database has existing data. Current implementation assumes migrations are run on
   DEFAULT_LOCAL_CURRENCY=ILS
   ```
 
+### Environment Isolation & Schema Guard (New)
+
+- [x] Global test setup creates isolated temp env (`TEST_ENV_FILE`) and points writes there
+- [x] `seed-admin-context.ts` performs atomic env var write (temp file + rename)
+- [x] Test suite asserts latest migration name (`LATEST_MIGRATION_NAME`) present rather than relying
+      on counts
+- [x] CI job includes separate migration name guard step
+
 ### Database Setup
 
 - [ ] Start PostgreSQL: `docker compose -f docker/docker-compose.dev.yml up -d postgres`
@@ -473,8 +525,10 @@ database has existing data. Current implementation assumes migrations are run on
 
 - [ ] GitHub Actions workflow
 - [ ] Automated test runs on PR
-- [ ] Coverage reporting
+- [x] Coverage reporting (artifact uploaded; threshold enforcement pending)
 - [ ] Performance benchmarks
+- [x] Latest migration guard step (schema version enforcement)
+- [x] Environment isolation verified in CI logs
 
 ---
 
