@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
+import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type {
@@ -99,7 +100,10 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
   global: true,
 })
 export class BankDepositTransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    private transactionsProvider: TransactionsProvider,
+  ) {}
 
   private async batchBankDepositTransactionsByIds(ids: readonly string[]) {
     const transactions = await getBankDepositTransactionsByIds.run(
@@ -267,21 +271,20 @@ export class BankDepositTransactionsProvider {
   }
 
   public async assignTransactionToDeposit(transactionId: string, depositId: string) {
-    // Get transaction to validate currency
-    const transactionDepositInfo = await getBankDepositTransactionsByIds.run(
-      { transactionIds: [transactionId] },
-      this.dbProvider,
-    );
+    const [transactionDepositInfo, depositTransactions, transaction] = await Promise.all([
+      // Get transaction to validate currency
+      getBankDepositTransactionsByIds.run({ transactionIds: [transactionId] }, this.dbProvider),
+      // Get target deposit transactions to validate currency
+      this.getTransactionsByBankDepositLoader.load(depositId),
+      this.transactionsProvider.transactionByIdLoader.load(transactionId),
+    ]);
 
     if (transactionDepositInfo.length === 0) {
       throw new Error('Transaction not found');
     }
 
-    // Get target deposit transactions to validate currency
-    const depositTransactions = await this.getTransactionsByBankDepositLoader.load(depositId);
-
     // Get transaction details to check currency
-    const transactionCurrency = transactionDepositInfo[0].currency;
+    const transactionCurrency = transaction.currency;
 
     // Check currency conflict
     if (depositTransactions.length > 0) {
