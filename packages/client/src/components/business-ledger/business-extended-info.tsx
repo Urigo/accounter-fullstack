@@ -27,7 +27,7 @@ import {
 import { Input } from '../ui/input.js';
 import { Skeleton } from '../ui/skeleton.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { getAllColumns } from './business-extended-info-columns.js';
+import { getAllColumns, getInitialColumnVisibility } from './business-extended-info-columns.js';
 import { BusinessExtendedInfoRow } from './business-extended-info-row.js';
 import { DownloadCSV } from './download-csv.js';
 
@@ -83,10 +83,8 @@ interface Props {
 }
 
 export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {
-  const [isExtendAllCurrencies, setIsExtendAllCurrencies] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState('');
 
   const { fromDate, ownerIds, toDate } = filter ?? {};
@@ -150,20 +148,15 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     [ledgerRecords],
   );
 
-  const toggleAllCurrencies = (): void => {
-    setIsExtendAllCurrencies(prev => !prev);
-  };
+  const columns = getAllColumns();
 
-  const columns = useMemo(
-    () =>
-      getAllColumns({
-        activeCurrencies,
-        isExtendAllCurrencies,
-        toggleAllCurrencies,
-        onDownloadCSV: () => {}, // Handled in toolbar
-      }),
-    [activeCurrencies, isExtendAllCurrencies],
+  const initialColumnVisibility = useMemo(
+    () => getInitialColumnVisibility(activeCurrencies),
+    [activeCurrencies],
   );
+
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(initialColumnVisibility);
 
   const table = useReactTable({
     data: extendedLedgerRecords,
@@ -225,7 +218,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   return (
     <div className="flex flex-col gap-4 max-w-[90vw]">
       <div className="flex items-center gap-4 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search reference, details, business..."

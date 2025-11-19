@@ -1,10 +1,7 @@
-import { ChevronsLeftRightEllipsis, ChevronsRightLeft } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Currency } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { DataTableColumnHeader } from '../common/index.js';
-import { Button } from '../ui/button.js';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
 import type { ExtendedLedger } from './business-extended-info.js';
 import { AmountCell } from './cells/amount-cell.js';
 import { BalanceCell } from './cells/balance-cell.js';
@@ -13,13 +10,6 @@ import { CounterAccountCell } from './cells/counter-account-cell.js';
 import { CurrencyAmountCell } from './cells/currency-amount-cell.js';
 import { CurrencyBalanceCell } from './cells/currency-balance-cell.js';
 import { DateCell } from './cells/date-cell.js';
-
-interface GetColumnsOptions {
-  activeCurrencies: Set<Currency>;
-  isExtendAllCurrencies: boolean;
-  toggleAllCurrencies: () => void;
-  onDownloadCSV: () => void;
-}
 
 /**
  * Base columns that are always visible
@@ -57,19 +47,15 @@ export const getBaseColumns = (): ColumnDef<ExtendedLedger>[] => [
 ];
 
 /**
- * Generate currency-specific columns (Amount + Balance) for each active currency
+ * Generate currency-specific columns (Amount + Balance) for all currencies
+ * Columns for inactive currencies will be hidden via initialState
  */
-export const getCurrencyColumns = (
-  currencies: Set<Currency>,
-  isExtendAllCurrencies: boolean,
-): ColumnDef<ExtendedLedger>[] => {
-  const currenciesToShow = isExtendAllCurrencies ? Object.values(Currency) : Array.from(currencies);
-
-  // Filter out ILS as it's already in base columns
-  const foreignCurrencies = currenciesToShow.filter(currency => currency !== Currency.Ils);
+export const getCurrencyColumns = (): ColumnDef<ExtendedLedger>[] => {
+  // Generate columns for ALL currencies
+  const allCurrencies = Object.values(Currency).filter(currency => currency !== Currency.Ils);
 
   // Sort to show FIAT currencies first, then crypto
-  const sortedCurrencies = foreignCurrencies.sort((a, b) => {
+  const sortedCurrencies = allCurrencies.sort((a, b) => {
     const aIsFiat = FIAT_CURRENCIES.includes(a);
     const bIsFiat = FIAT_CURRENCIES.includes(b);
     if (aIsFiat && !bIsFiat) return -1;
@@ -86,6 +72,8 @@ export const getCurrencyColumns = (
       ),
       cell: ({ row }) => <CurrencyAmountCell row={row.original} currency={currency} />,
       sortingFn: 'basic',
+      // Mark as hideable so users can toggle via column visibility
+      enableHiding: true,
     },
     {
       id: `${currency.toLowerCase()}Balance`,
@@ -95,40 +83,11 @@ export const getCurrencyColumns = (
       ),
       cell: ({ row }) => <CurrencyBalanceCell row={row.original} currency={currency} />,
       sortingFn: 'basic',
+      // Mark as hideable so users can toggle via column visibility
+      enableHiding: true,
     },
   ]);
 };
-
-/**
- * Special columns for actions and controls
- */
-export const getSpecialColumns = (
-  toggleAllCurrencies: () => void,
-  isExtendAllCurrencies: boolean,
-): ColumnDef<ExtendedLedger>[] => [
-  {
-    id: 'currencyToggle',
-    header: () => (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="size-7.5" onClick={toggleAllCurrencies}>
-            {isExtendAllCurrencies ? (
-              <ChevronsRightLeft className="size-5" />
-            ) : (
-              <ChevronsLeftRightEllipsis className="size-5" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{isExtendAllCurrencies ? 'Hide' : 'Show'} all currencies</p>
-        </TooltipContent>
-      </Tooltip>
-    ),
-    cell: () => null,
-    enableSorting: false,
-    enableHiding: false,
-  },
-];
 
 /**
  * End columns that appear after all currency columns
@@ -160,15 +119,32 @@ export const getEndColumns = (): ColumnDef<ExtendedLedger>[] => [
 /**
  * Generate all columns for the business ledger table
  */
-export const getAllColumns = ({
-  activeCurrencies,
-  isExtendAllCurrencies,
-  toggleAllCurrencies,
-}: GetColumnsOptions): ColumnDef<ExtendedLedger>[] => {
-  return [
-    ...getBaseColumns(),
-    ...getCurrencyColumns(activeCurrencies, isExtendAllCurrencies),
-    ...getSpecialColumns(toggleAllCurrencies, isExtendAllCurrencies),
-    ...getEndColumns(),
-  ];
+export const getAllColumns = (): ColumnDef<ExtendedLedger>[] => {
+  return [...getBaseColumns(), ...getCurrencyColumns(), ...getEndColumns()];
+};
+
+/**
+ * Get initial column visibility state
+ * Hides currency columns that are not in the active currencies set
+ */
+export const getInitialColumnVisibility = (
+  activeCurrencies: Set<Currency>,
+): Record<string, boolean> => {
+  const visibility: Record<string, boolean> = {};
+
+  // Hide all currency columns that are not active
+  for (const currency of Object.values(Currency).filter(c => c !== Currency.Ils)) {
+    const isActive = activeCurrencies.has(currency);
+    const amountKey = `${currency.toLowerCase()}Amount`;
+    const balanceKey = `${currency.toLowerCase()}Balance`;
+
+    // Only set to false (hidden) if not active
+    // Omitting means visible by default
+    if (!isActive) {
+      visibility[amountKey] = false;
+      visibility[balanceKey] = false;
+    }
+  }
+
+  return visibility;
 };
