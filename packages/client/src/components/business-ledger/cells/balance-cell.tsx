@@ -9,13 +9,17 @@ type Props = {
 };
 
 export const BalanceCell = ({ balance, currency }: Props): ReactElement => {
+  if (balance === 0) {
+    return <span className="text-sm text-gray-400">—</span>;
+  }
+
   const formattedBalance = formatAmountWithCurrency(balance, currency);
 
   return (
     <span
       className={cn(
         'text-sm font-medium whitespace-nowrap',
-        balance === 0 ? 'text-gray-600' : balance > 0 ? 'text-green-700' : 'text-red-600',
+        balance > 0 ? 'text-green-700' : 'text-red-600',
       )}
     >
       {formattedBalance}
