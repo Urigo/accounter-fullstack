@@ -187,7 +187,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         throw new GraphQLError('Error fetching bank deposit');
       }
     },
-    allDeposits: async (_, __, { injector }) => {
+    allDeposits: async (_, __, { injector, adminContext: { defaultLocalCurrency } }) => {
       try {
         const deposits = await injector
           .get(BankDepositTransactionsProvider)
@@ -195,7 +195,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
 
         return deposits.map(deposit => ({
           id: deposit.id,
-          currency: (deposit.currency as Currency) ?? Currency.Ils,
+          currency: (deposit.currency as Currency) ?? defaultLocalCurrency,
           openDate: deposit.openDate ?? dateToTimelessDateString(new Date()),
           closeDate: deposit.closeDate,
           currentBalance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
@@ -235,7 +235,11 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         throw new GraphQLError('Error creating deposit');
       }
     },
-    assignTransactionToDeposit: async (_, { transactionId, depositId }, { injector }) => {
+    assignTransactionToDeposit: async (
+      _,
+      { transactionId, depositId },
+      { injector, adminContext: { defaultLocalCurrency } },
+    ) => {
       try {
         const updatedDeposit = await injector
           .get(BankDepositTransactionsProvider)
@@ -243,7 +247,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
 
         return {
           id: updatedDeposit.id,
-          currency: (updatedDeposit.currency as Currency) ?? Currency.Ils,
+          currency: (updatedDeposit.currency as Currency) ?? defaultLocalCurrency,
           openDate: updatedDeposit.openDate ?? dateToTimelessDateString(new Date()),
           closeDate: updatedDeposit.closeDate,
           currentBalance: formatFinancialAmount(updatedDeposit.currentBalance),
