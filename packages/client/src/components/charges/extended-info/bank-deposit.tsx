@@ -98,10 +98,16 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
   );
 
   const onCreateDeposit = useCallback(async () => {
-    await createDeposit({ currency: newDepositCurrency });
+    const depositId = await createDeposit({ currency: newDepositCurrency });
+    if (depositId && transactionIdForAssignment) {
+      await assignTransactionToDeposit({
+        transactionId: transactionIdForAssignment,
+        depositId,
+      });
+    }
     setCreateDialogOpen(false);
     // TODO: refetch deposits list or set selectedDepositId from result
-  }, [createDeposit, newDepositCurrency]);
+  }, [createDeposit, assignTransactionToDeposit, newDepositCurrency, transactionIdForAssignment]);
 
   const onAssign = useCallback(async () => {
     if (!selectedDepositId || !transactionIdForAssignment) return;
@@ -181,9 +187,9 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
                   <SelectValue id="deposit-currency-select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.keys(Currency).map(c => (
-                    <SelectItem key={c} value={c}>
-                      {c}
+                  {Object.entries(Currency).map(([key, value]) => (
+                    <SelectItem key={key} value={value}>
+                      {value}
                     </SelectItem>
                   ))}
                 </SelectContent>

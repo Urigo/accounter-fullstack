@@ -279,10 +279,6 @@ export class BankDepositTransactionsProvider {
       this.transactionsProvider.transactionByIdLoader.load(transactionId),
     ]);
 
-    if (transactionDepositInfo.length === 0) {
-      throw new Error('Transaction not found');
-    }
-
     // Get transaction details to check currency
     const transactionCurrency = transaction.currency;
 
@@ -296,11 +292,19 @@ export class BankDepositTransactionsProvider {
       }
     }
 
-    // Update deposit_id
-    await this.updateBankDepositTransaction({
-      transactionId,
-      depositId,
-    });
+    if (transactionDepositInfo.length === 0) {
+      // New assignment
+      await addBankDepositTransaction.run(
+        { bankDepositTransactions: [{ id: transactionId, depositId }] },
+        this.dbProvider,
+      );
+    } else {
+      // Update deposit_id
+      await this.updateBankDepositTransaction({
+        transactionId,
+        depositId,
+      });
+    }
 
     // Return updated deposit metadata
     const allDeposits = await this.getAllDepositsWithMetadata();

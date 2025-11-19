@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     deposit(depositId: String!): BankDeposit! @auth(role: ACCOUNTANT)
-    depositByCharge(chargeId: UUID!): BankDeposit! @auth(role: ACCOUNTANT)
+    depositByCharge(chargeId: UUID!): BankDeposit @auth(role: ACCOUNTANT)
     allDeposits: [BankDeposit!]! @auth(role: ACCOUNTANT)
   }
 
