@@ -1,153 +1,122 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import {
-  connectTestDb,
-  runMigrationsIfNeeded,
-  seedAdminOnce,
-  withTestTransaction,
-  closeTestDb,
-} from './helpers/db-setup.js';
-import { testDbSchema, qualifyTable } from './helpers/test-db-config.js';
-import type { Pool } from 'pg';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { TestDatabase, LATEST_MIGRATION_NAME, isPoolHealthy } from './helpers/db-setup.js';
+import { seedAdminCore } from '../../scripts/seed-admin-context.js';
+import { qualifyTable } from './helpers/test-db-config.js';
 
 /**
  * Smoke test for DB test harness
- * Verifies the full bootstrap pipeline: connect → migrate → seed → query
- * 
- * NOTE: This test assumes migrations have already been run via `yarn db:init`
- * Running migrations programmatically in tests can cause FK constraint violations
- * if the database already has data from previous runs.
+ * Verifies the full bootstrap pipeline: connect → seed → query
+ *
+ * NOTE: We assume migrations were run via `yarn db:init` beforehand.
  */
 describe('DB Test Harness Bootstrap', () => {
-  let pool: Pool;
+  let db: TestDatabase;
+
+  const EXPECTED_TAX_CATEGORIES = 19;
 
   beforeAll(async () => {
-    // Step 1: Connect to database
-    pool = await connectTestDb();
-
-    // Step 2: Seed admin context (idempotent)
-    // NOTE: Skipping runMigrationsIfNeeded() - assume migrations already run
-    await seedAdminOnce(pool);
+    db = new TestDatabase();
+    await db.connect();
   });
 
-  it('should connect to database', () => {
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it('connects to database', () => {
+    const pool = db.getPool();
     expect(pool).toBeDefined();
-    expect(pool.totalCount).toBeGreaterThanOrEqual(0);
+    const m = isPoolHealthy(pool);
+    expect(m.total).toBeGreaterThanOrEqual(0);
   });
 
-  it('should have migrations table (verifies schema is ready)', () =>
-    withTestTransaction(pool, async client => {
+  it('is at latest migration (schema ready)', async () =>
+    db.withTransaction(async client => {
       const result = await client.query(
-        `SELECT COUNT(*) FROM ${qualifyTable('migration')}`,
+        `SELECT 1 FROM ${qualifyTable('migration')} WHERE name = $1 LIMIT 1`,
+        [LATEST_MIGRATION_NAME],
       );
-      const count = parseInt(result.rows[0].count, 10);
-      
-      // Should have many migrations (over 100 as of 2025)
-      // This verifies migrations were run before tests
-      expect(count).toBeGreaterThan(100);
+      expect(result.rowCount).toBe(1);
     }));
 
-  it('should have admin business after seeding', () =>
-    withTestTransaction(pool, async client => {
+  it('has admin business after seeding', async () =>
+    db.withTransaction(async client => {
+      await seedAdminCore(client);
       const result = await client.query(
-        `SELECT fe.id, fe.name 
+        `SELECT fe.id, fe.name
          FROM ${qualifyTable('financial_entities')} fe
          JOIN ${qualifyTable('businesses')} b ON fe.id = b.id
          WHERE fe.name = 'Admin Business'`,
       );
-      
+
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].name).toBe('Admin Business');
       expect(result.rows[0].id).toBeDefined();
     }));
 
-  it('should have 3 authorities after seeding', () =>
-    withTestTransaction(pool, async client => {
+  it('has 3 authorities after seeding', async () =>
+    db.withTransaction(async client => {
+      await seedAdminCore(client);
       const result = await client.query(
-        `SELECT COUNT(*) 
+        `SELECT COUNT(*)
          FROM ${qualifyTable('financial_entities')} fe
          JOIN ${qualifyTable('businesses')} b ON fe.id = b.id
          WHERE fe.name IN ('VAT', 'Tax', 'Social Security')`,
       );
       const count = parseInt(result.rows[0].count, 10);
-      
       expect(count).toBe(3);
     }));
 
-  it('should have 19 tax categories after seeding', () =>
-    withTestTransaction(pool, async client => {
+  it('has expected tax categories', async () =>
+    db.withTransaction(async client => {
+      await seedAdminCore(client);
       const result = await client.query(
         `SELECT COUNT(*) FROM ${qualifyTable('tax_categories')}`,
       );
       const count = parseInt(result.rows[0].count, 10);
-      
-      expect(count).toBe(19);
+      expect(count).toBe(EXPECTED_TAX_CATEGORIES);
     }));
 
-  it('should have user_context after seeding', () =>
-    withTestTransaction(pool, async client => {
+  it('has user_context after seeding', async () =>
+    db.withTransaction(async client => {
+      await seedAdminCore(client);
       const result = await client.query(
         `SELECT owner_id, vat_business_id FROM ${qualifyTable('user_context')} LIMIT 1`,
       );
-      
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].owner_id).toBeDefined();
       expect(result.rows[0].vat_business_id).toBeDefined();
     }));
 
-  it('should isolate transaction changes (verify withTestTransaction)', () =>
-    withTestTransaction(pool, async client => {
-      // Insert a temporary financial entity + business
+  it('rolls back changes between transactions (independent)', async () => {
+    const TEMP_NAME = 'Temporary Test Entity (Rollback)';
+
+    await db.withTransaction(async client => {
       const insertResult = await client.query(
-        `INSERT INTO ${qualifyTable('financial_entities')} (name, type) 
-         VALUES ('Temporary Test Entity', 'business') 
-         RETURNING id, name`,
+        `INSERT INTO ${qualifyTable('financial_entities')} (name, type)
+         VALUES ($1, 'business')
+         RETURNING id`,
+        [TEMP_NAME],
       );
-      
       const entityId = insertResult.rows[0].id;
-      
       await client.query(
         `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
         [entityId],
       );
-      
-      expect(insertResult.rows[0].name).toBe('Temporary Test Entity');
-      
-      // Verify it exists in this transaction
       const selectInTx = await client.query(
-        `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} 
-         WHERE name = 'Temporary Test Entity'`,
+        `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} WHERE name = $1`,
+        [TEMP_NAME],
       );
       expect(parseInt(selectInTx.rows[0].count, 10)).toBe(1);
-      
-      // After transaction rolls back, verify it's gone
-      // (This verification happens in next test to prove rollback worked)
-    }));
+    });
 
-  it('should have rolled back previous transaction', () =>
-    withTestTransaction(pool, async client => {
+    await db.withTransaction(async client => {
       const result = await client.query(
-        `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} 
-         WHERE name = 'Temporary Test Entity'`,
+        `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} WHERE name = $1`,
+        [TEMP_NAME],
       );
       const count = parseInt(result.rows[0].count, 10);
-      
-      // Should be 0 because previous transaction rolled back
       expect(count).toBe(0);
-    }));
-
-  it('should allow multiple calls to seed (idempotency)', async () => {
-    // This should be a no-op due to in-memory flag
-    await seedAdminOnce(pool);
-    
-    // Verify admin business still exists and count is still 1
-    await withTestTransaction(pool, async client => {
-      const result = await client.query(
-        `SELECT COUNT(*) 
-         FROM ${qualifyTable('financial_entities')} fe
-         JOIN ${qualifyTable('businesses')} b ON fe.id = b.id
-         WHERE fe.name = 'Admin Business'`,
-      );
-      expect(parseInt(result.rows[0].count, 10)).toBe(1);
     });
   });
 });

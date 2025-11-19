@@ -155,29 +155,40 @@ describe('seedAdminCore integration', () => {
     const pool = new pg.Pool(testDbConfig);
     const client = await pool.connect();
 
+    const TEMP_NAME = 'seed-admin-context.integration.test.ts: temp rollback entity';
+
     try {
       await client.query('BEGIN');
 
-      // Create admin context
-      const { adminEntityId } = await seedAdminCore(client);
-
-      // Verify exists in transaction
-      const inTransactionResult = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities WHERE id = $1`,
-        [adminEntityId],
+      // Insert a throwaway entity inside a transaction
+      const insertEntity = await client.query(
+        `INSERT INTO accounter_schema.financial_entities (name, type)
+         VALUES ($1, 'business')
+         RETURNING id`,
+        [TEMP_NAME],
       );
-      expect(inTransactionResult.rows[0].count).toBe('1');
+      const tempId = insertEntity.rows[0].id;
+      await client.query(
+        `INSERT INTO accounter_schema.businesses (id) VALUES ($1)`,
+        [tempId],
+      );
+
+      // Verify exists within the same transaction
+      const inTx = await client.query(
+        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities WHERE name = $1`,
+        [TEMP_NAME],
+      );
+      expect(inTx.rows[0].count).toBe('1');
 
       await client.query('ROLLBACK');
 
-      // Verify doesn't exist after rollback
+      // Verify does not exist after rollback in a new transaction
       await client.query('BEGIN');
-      const afterRollbackResult = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities WHERE id = $1`,
-        [adminEntityId],
+      const after = await client.query(
+        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities WHERE name = $1`,
+        [TEMP_NAME],
       );
-      expect(afterRollbackResult.rows[0].count).toBe('0');
-
+      expect(after.rows[0].count).toBe('0');
       await client.query('ROLLBACK');
     } finally {
       client.release();

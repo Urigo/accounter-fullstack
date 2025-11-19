@@ -41,10 +41,20 @@ isolation to ensure stability and speed. Defer ingestion (scrapers, Gmail) until
 
 ### Milestone 2: DB Test Harness
 
-- **Chunk 2.1**: Add `db-setup.ts` (connect, run migrations once, seed admin once).
-- **Chunk 2.2**: Add `begin/rollback` isolation hooks for Vitest per test.
-- **Chunk 2.3**: Utilities: truncate/clear helpers for specific tables.
-- **Chunk 2.4**: Example "can connect + migrate + seed" test.
+- **Chunk 2.1**: Add `db-setup.ts` (connect, seed admin context idempotently).
+- **Chunk 2.2**: Add transactional isolation helpers (`withTestTransaction`,
+  `withConcurrentTransactions`).
+- **Chunk 2.3**: Modularize harness into discrete helper files (`db-connection`, `db-migrations`,
+  `db-fixtures`, `diagnostics`, `errors`, `test-database`).
+- **Chunk 2.4**: Add diagnostics (pool health snapshot, connection retry/backoff).
+- **Chunk 2.5**: Export `MIGRATIONS` & `LATEST_MIGRATION_NAME` from migrations package (schema
+  version precision).
+- **Chunk 2.6**: Add exact latest migration name assertion test (fails if schema outdated;
+  migrations NOT auto-run in test harness).
+- **Chunk 2.7**: Introduce isolated env file via `TEST_ENV_FILE` in global setup for atomic,
+  sandboxed env var writes.
+- **Chunk 2.8**: CI workflow: migrations step (external), test run, independent schema guard script,
+  coverage artifact.
 
 ### Milestone 3: Factories
 
@@ -336,16 +346,16 @@ Context:
 - Vitest root config exists; no DB bootstrap.
 - We need helpers to connect, run migrations (via migrations package), and seed admin once globally.
 
-Requirements:
-- File: `packages/server/src/__tests__/helpers/db-setup.ts`
-  - `connectTestDb(): Promise<Pool>`
-  - `runMigrationsIfNeeded(pool): Promise<void>` (invoke migrations runner with env; stub if you must, but provide interface)
-  - `seedAdminOnce(pool): Promise<void>` with a lock check (e.g., table `test_runtime_lock` or in-memory once per process)
-  - `withTransaction<T>(pool, fn: (client) => Promise<T>)` that does BEGIN/ROLLBACK
-- Add `packages/server/src/__tests__/smoke/db-bootstrap.test.ts`: connects, runs migrations, seeds admin once, queries `user_context`.
+Updated Requirements (Refactored Harness):
+- File: `packages/server/src/__tests__/helpers/db-setup.ts` (aggregator only; underlying logic split into dedicated modules)
+  - `connectTestDb(): Promise<Pool>` with retry/backoff + health check
+  - `assertLatestMigrationApplied(pool): Promise<void>` (checks last applied migration name vs `LATEST_MIGRATION_NAME`; does NOT run migrations)
+  - `seedAdminCoreTransactional(pool): Promise<void>` executed inside per-test transactions (no global persistent seed)
+  - Re-export `withTestTransaction`, `withConcurrentTransactions`
+- Smoke test: verifies presence of `user_context`, admin entities, and latest migration name; fails if outdated.
 
 Acceptance:
-- Smoke test passes; leaves DB clean.
+- Smoke test passes when schema current; intentional failure when schema behind.
 ```
 
 ---
@@ -355,18 +365,13 @@ Acceptance:
 ```text
 Task: Provide beforeEach/afterEach hooks for transactional isolation.
 
-Requirements:
-- Add `packages/server/src/__tests__/helpers/test-hooks.ts`
-  - Export `setupDbHooks()` that:
-    - beforeAll: connect pool, run migrations if needed, seedAdminOnce
-    - beforeEach: BEGIN
-    - afterEach: ROLLBACK
-    - afterAll: end pool
-- Add `packages/server/scripts/vitest-setup.ts` to import `setupDbHooks()` and call it.
-- Update root `vitest.config.ts` if needed to include this setup file for server tests.
+Updated Requirements:
+- Global setup script creates temp env file (`TEST_ENV_FILE`) and initializes pool.
+- Per-test isolation achieved explicitly by wrapping logic with `withTestTransaction` (no mandatory hook file; optional utility retained).
+- Migrations not invoked here; schema guard test verifies currency.
 
 Acceptance:
-- A dummy test proves isolation: insert a row inside a test, not visible in next test.
+- Dummy isolation test plus env isolation log confirms setup.
 ```
 
 ---
@@ -573,15 +578,56 @@ Acceptance:
 ```text
 Task: Add convenience scripts and summarize in docs.
 
-Requirements:
-- Add `package.json` scripts under `@accounter/server`:
+Updated Requirements:
+- Add scripts:
   - `"seed:admin": "tsx packages/server/scripts/seed-admin-context.ts"`
-  - `"test:integration": "vitest --run --dir packages/server/src/modules/ledger/__tests__"`
-- Update `docs/demo-test-data-plan.md` with any path corrections.
-- No tests required; ensure scripts run.
+  - `"test": "vitest run"` (full suite including schema guard)
+- Update `docs/demo-test-data-plan.md` for external migrations + env isolation + latest migration guard.
+- Confirm CI workflow includes independent migration name guard and coverage artifact.
 
 Acceptance:
-- Scripts execute in local dev environment.
+- Scripts run locally; CI passes with schema guard succeeding when migrations applied.
+
+---
+
+### Prompt 19: Precise Migration Name Guard
+
+Task: Add exact latest migration name assertion.
+
+Requirements:
+- Export `MIGRATIONS` and `LATEST_MIGRATION_NAME` from migrations runner module.
+- Add test `db-bootstrap.test.ts` asserting last applied migration name equals `LATEST_MIGRATION_NAME`.
+- Deliberately allow failure when schema is behind to surface drift.
+- Add CI step running a lightweight Node script that loads migrations index and checks DB state independently from test suite.
+
+Acceptance:
+- Guard test passes on current schema; fails on drift.
+- CI step exits non-zero if mismatch.
+
+### Prompt 20: Environment Isolation for Tests
+
+Task: Prevent `.env` pollution during test runs.
+
+Requirements:
+- Global test setup creates a temp directory & file for env (`TEST_ENV_FILE`).
+- Update seeding script to write `DEFAULT_FINANCIAL_ENTITY_ID` to that file using atomic pattern (temp write + rename).
+- Log path in setup for debugging.
+
+Acceptance:
+- Test run logs isolated env path.
+- Root `.env` remains unchanged after tests.
+
+### Prompt 21: Diagnostics & Error Taxonomy Documentation
+
+Task: Surface harness observability & structured errors.
+
+Requirements:
+- Add diagnostics module: pool health snapshot, connection attempt metrics.
+- Introduce custom error classes (`TestDbConnectionError`, `TestDbMigrationError`, `TestDbSeedError`).
+- Document usage in `architectural-improvements-milestone2.md` & reference in prompt plan.
+
+Acceptance:
+- Errors thrown carry contextual properties; diagnostics only emitted when `DEBUG` flag set.
 ```
 
 ---
