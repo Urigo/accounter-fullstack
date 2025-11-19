@@ -50,7 +50,7 @@
     "@graphql-codegen/typescript": "5.0.4",
     "@graphql-codegen/typescript-resolvers": "4.5.2",
     "@graphql-eslint/eslint-plugin": "4.4.0",
-    "@graphql-hive/cli": "0.53.2",
+    "@graphql-hive/cli": "0.53.4",
     "@graphql-inspector/cli": "6.0.3",
     "@parcel/watcher": "2.5.1",
     "@pgtyped/cli": "2.4.3",
