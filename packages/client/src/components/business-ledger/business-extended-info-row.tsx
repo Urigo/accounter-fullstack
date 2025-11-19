@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
-import { flexRender, type Row } from '@tanstack/react-table';
 import { ROUTES } from '@/router/routes.js';
+import { flexRender, type Row } from '@tanstack/react-table';
 import { TableCell, TableRow } from '../ui/table.js';
 import type { ExtendedLedger } from './business-extended-info.js';
 
