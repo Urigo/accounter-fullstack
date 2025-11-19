@@ -59,9 +59,10 @@ import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
 
 type Props = {
   chargeId: string;
+  onChange?: () => void;
 };
 
-export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
+export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement => {
   // Existing deposit info for this charge
   const [{ data: depositData, fetching: fetchingDeposit }] = useQuery({
     query: BankDepositInfoDocument,
@@ -99,15 +100,23 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
 
   const onCreateDeposit = useCallback(async () => {
     const depositId = await createDeposit({ currency: newDepositCurrency });
-    if (depositId && transactionIdForAssignment) {
-      await assignTransactionToDeposit({
-        transactionId: transactionIdForAssignment,
-        depositId,
-      });
+    if (depositId) {
+      if (transactionIdForAssignment) {
+        await assignTransactionToDeposit({
+          transactionId: transactionIdForAssignment,
+          depositId,
+        });
+      }
+      setCreateDialogOpen(false);
+      onChange?.();
     }
-    setCreateDialogOpen(false);
-    // TODO: refetch deposits list or set selectedDepositId from result
-  }, [createDeposit, assignTransactionToDeposit, newDepositCurrency, transactionIdForAssignment]);
+  }, [
+    createDeposit,
+    assignTransactionToDeposit,
+    newDepositCurrency,
+    transactionIdForAssignment,
+    onChange,
+  ]);
 
   const onAssign = useCallback(async () => {
     if (!selectedDepositId || !transactionIdForAssignment) return;
@@ -115,8 +124,8 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
       transactionId: transactionIdForAssignment,
       depositId: selectedDepositId,
     });
-    // TODO: refetch deposit info
-  }, [assignTransactionToDeposit, selectedDepositId, transactionIdForAssignment]);
+    onChange?.();
+  }, [assignTransactionToDeposit, selectedDepositId, transactionIdForAssignment, onChange]);
 
   const isLoading =
     fetchingDeposit ||
