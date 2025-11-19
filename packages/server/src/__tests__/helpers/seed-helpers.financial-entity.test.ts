@@ -1,24 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import pg from 'pg';
-import { config } from 'dotenv';
 import { ensureFinancialEntity } from './seed-helpers.js';
-
-config();
+import { testDbConfig, qualifyTable } from './test-db-config.js';
+import { EntityValidationError } from './seed-errors.js';
 
 describe('ensureFinancialEntity', () => {
   let pool: pg.Pool;
   let client: pg.PoolClient;
 
   beforeAll(async () => {
-    // Create connection pool
-    pool = new pg.Pool({
-      user: process.env.POSTGRES_USER || 'postgres',
-      password: process.env.POSTGRES_PASSWORD || 'postgres',
-      host: process.env.POSTGRES_HOST || 'localhost',
-      port: parseInt(process.env.POSTGRES_PORT || '5432'),
-      database: process.env.POSTGRES_DB || 'accounter',
-      ssl: process.env.POSTGRES_SSL === '1',
-    });
+    // Create connection pool with shared config
+    pool = new pg.Pool(testDbConfig);
 
     // Get a client for transactions
     client = await pool.connect();
@@ -55,7 +47,7 @@ describe('ensureFinancialEntity', () => {
 
     // Verify it was inserted
     const checkResult = await client.query(
-      'SELECT id, name, type, owner_id FROM accounter_schema.financial_entities WHERE id = $1',
+      `SELECT id, name, type, owner_id FROM ${qualifyTable('financial_entities')} WHERE id = $1`,
       [result.id],
     );
 
@@ -80,7 +72,7 @@ describe('ensureFinancialEntity', () => {
 
     // Verify only one row exists
     const countResult = await client.query(
-      'SELECT COUNT(*) FROM accounter_schema.financial_entities WHERE name = $1 AND type = $2',
+      `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} WHERE name = $1 AND type = $2`,
       ['Duplicate Test', 'tax_category'],
     );
 
@@ -96,7 +88,7 @@ describe('ensureFinancialEntity', () => {
 
     // Create corresponding business record (required for foreign key)
     await client.query(
-      'INSERT INTO accounter_schema.businesses (id) VALUES ($1)',
+      `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
       [ownerEntityResult.id],
     );
 
@@ -111,7 +103,7 @@ describe('ensureFinancialEntity', () => {
 
     // Verify owner_id is set correctly
     const checkResult = await client.query(
-      'SELECT owner_id FROM accounter_schema.financial_entities WHERE id = $1',
+      `SELECT owner_id FROM ${qualifyTable('financial_entities')} WHERE id = $1`,
       [result.id],
     );
 
@@ -126,7 +118,7 @@ describe('ensureFinancialEntity', () => {
 
     // Create corresponding business record
     await client.query(
-      'INSERT INTO accounter_schema.businesses (id) VALUES ($1)',
+      `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
       [ownerEntityResult.id],
     );
 
@@ -146,7 +138,7 @@ describe('ensureFinancialEntity', () => {
 
     // Verify only one row
     const countResult = await client.query(
-      `SELECT COUNT(*) FROM accounter_schema.financial_entities 
+      `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')}
        WHERE name = $1 AND type = $2 AND owner_id = $3`,
       ['Child Entity', 'tax_category', ownerEntityResult.id],
     );
@@ -174,7 +166,7 @@ describe('ensureFinancialEntity', () => {
       type: 'business',
     });
     await client.query(
-      'INSERT INTO accounter_schema.businesses (id) VALUES ($1)',
+      `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
       [owner1Entity.id],
     );
 
@@ -183,7 +175,7 @@ describe('ensureFinancialEntity', () => {
       type: 'business',
     });
     await client.query(
-      'INSERT INTO accounter_schema.businesses (id) VALUES ($1)',
+      `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
       [owner2Entity.id],
     );
 
@@ -227,12 +219,40 @@ describe('ensureFinancialEntity', () => {
 
     // The entity should exist within this transaction
     const checkInTransaction = await client.query(
-      'SELECT COUNT(*) FROM accounter_schema.financial_entities WHERE name = $1',
+      `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} WHERE name = $1`,
       ['Transient Entity'],
     );
 
     expect(parseInt(checkInTransaction.rows[0].count)).toBe(1);
 
     // After ROLLBACK in afterEach, this data won't be visible in next test
+  });
+
+  // Validation tests
+  it('should reject empty entity name', async () => {
+    await expect(
+      ensureFinancialEntity(client, {
+        name: '',
+        type: 'business',
+      }),
+    ).rejects.toThrow(EntityValidationError);
+  });
+
+  it('should reject invalid entity type', async () => {
+    await expect(
+      ensureFinancialEntity(client, {
+        name: 'Test Entity',
+        type: 'invalid_type' as any,
+      }),
+    ).rejects.toThrow(EntityValidationError);
+  });
+
+  it('should reject whitespace-only name', async () => {
+    await expect(
+      ensureFinancialEntity(client, {
+        name: '   ',
+        type: 'business',
+      }),
+    ).rejects.toThrow(EntityValidationError);
   });
 });

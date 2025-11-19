@@ -1,19 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import pg from 'pg';
 import { ensureFinancialEntity, ensureBusinessForEntity } from './seed-helpers.js';
-
-const pool = new pg.Pool({
-  user: 'postgres',
-  password: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  database: 'accounter',
-});
+import { testDbConfig, qualifyTable } from './test-db-config.js';
+import { EntityValidationError } from './seed-errors.js';
 
 describe('ensureBusinessForEntity', () => {
+  let pool: pg.Pool;
   let client: pg.PoolClient;
 
   beforeAll(async () => {
+    pool = new pg.Pool(testDbConfig);
     client = await pool.connect();
   });
 
@@ -42,7 +38,7 @@ describe('ensureBusinessForEntity', () => {
 
     // Verify business exists
     const result = await client.query(
-      'SELECT id, no_invoices_required FROM accounter_schema.businesses WHERE id = $1',
+      `SELECT id, no_invoices_required FROM ${qualifyTable('businesses')} WHERE id = $1`,
       [entityId],
     );
 
@@ -65,7 +61,7 @@ describe('ensureBusinessForEntity', () => {
 
     // Verify only one business exists
     const result = await client.query(
-      'SELECT id FROM accounter_schema.businesses WHERE id = $1',
+      `SELECT id FROM ${qualifyTable('businesses')} WHERE id = $1`,
       [entityId],
     );
 
@@ -85,7 +81,7 @@ describe('ensureBusinessForEntity', () => {
 
     // Verify business has correct option set
     const result = await client.query(
-      'SELECT id, no_invoices_required FROM accounter_schema.businesses WHERE id = $1',
+      `SELECT id, no_invoices_required FROM ${qualifyTable('businesses')} WHERE id = $1`,
       [entityId],
     );
 
@@ -106,7 +102,7 @@ describe('ensureBusinessForEntity', () => {
 
     // Verify business has default value
     const result = await client.query(
-      'SELECT no_invoices_required FROM accounter_schema.businesses WHERE id = $1',
+      `SELECT no_invoices_required FROM ${qualifyTable('businesses')} WHERE id = $1`,
       [entityId],
     );
 
@@ -129,7 +125,7 @@ describe('ensureBusinessForEntity', () => {
 
     // Verify original value is preserved
     const result = await client.query(
-      'SELECT no_invoices_required FROM accounter_schema.businesses WHERE id = $1',
+      `SELECT no_invoices_required FROM ${qualifyTable('businesses')} WHERE id = $1`,
       [entityId],
     );
 
@@ -141,10 +137,25 @@ describe('ensureBusinessForEntity', () => {
     // This test verifies transactional isolation by checking that data
     // from previous tests is not visible
     const result = await client.query(
-      "SELECT COUNT(*) as count FROM accounter_schema.businesses WHERE id IN (SELECT id FROM accounter_schema.financial_entities WHERE name LIKE 'Test Business Entity%')",
+      `SELECT COUNT(*) as count FROM ${qualifyTable('businesses')} WHERE id IN (SELECT id FROM ${qualifyTable('financial_entities')} WHERE name LIKE 'Test Business Entity%')`,
     );
 
     // Due to ROLLBACK after each test, count should be 0
     expect(parseInt(result.rows[0].count)).toBe(0);
+  });
+
+  // Validation tests
+  it('should reject invalid UUID format', async () => {
+    await expect(
+      ensureBusinessForEntity(client, 'not-a-valid-uuid'),
+    ).rejects.toThrow(EntityValidationError);
+  });
+
+  it('should reject non-existent financial entity', async () => {
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    await expect(
+      ensureBusinessForEntity(client, fakeId),
+    ).rejects.toThrow(EntityValidationError);
   });
 });

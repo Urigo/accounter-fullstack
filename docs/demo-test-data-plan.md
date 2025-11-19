@@ -78,6 +78,17 @@ New Script Commands (added to `@accounter/server/package.json`):
 "seed:demo-expenses": "ts-node scripts/seed-demo-expenses.ts",
 ```
 
+**Implementation Progress (S1-S3)**:
+
+- ✅ `writeEnvVar()` helper with atomic file writes (temp + rename pattern)
+- ✅ `ensureFinancialEntity()` with type-safe validation and NULL handling
+- ✅ `ensureBusinessForEntity()` with FK validation and UUID format checks
+- ⏳ `ensureTaxCategoryForEntity()` - pending S4
+- ⏳ `seedAdminCore()` composition - pending S5
+
+See `docs/architectural-improvements-s1-s3.md` for detailed implementation status and
+`docs/demo-test-data-todo.md` for complete checklist.
+
 ## 7. Initial Demo Scenarios (Phase 1)
 
 ### Expense Scenario A (Local Currency)
@@ -176,6 +187,15 @@ Approach: **Single Postgres container + transactional test isolation**. Workflow
 
 Benefits: Speed, no need for repeated full database resets, deterministic cleanup.
 
+**Implementation**: Transaction wrapper utilities implemented in
+`packages/server/src/__tests__/helpers/test-transaction.ts`:
+
+- `withTestTransaction<T>(pool, fn)` - Single transaction with auto-rollback
+- `withConcurrentTransactions<T>(pool, fns)` - Parallel transactions for race testing
+
+These helpers eliminate boilerplate and guarantee rollback even on errors. See
+`docs/architectural-improvements-s1-s3.md` for usage examples.
+
 ## 13. Ledger Generation Test Strategy
 
 Location: `packages/server/src/modules/ledger/__tests__/ledger-generation.integration.test.ts`.
@@ -200,7 +220,11 @@ Seed Layer:
 
 - Wrap inserts in try/catch; log succinct contextual error (entity type + name) and abort current
   transaction.
-- Surface errors via thrown custom `SeedError`.
+- Surface errors via thrown custom error hierarchy: `SeedError` (base), `EntityValidationError`,
+  `EntityNotFoundError`, `ConstraintViolationError`, `SeedConfigurationError`.
+- **Implementation**: Custom error types in `packages/server/src/__tests__/helpers/seed-errors.ts`
+  provide structured context, `toJSON()` serialization, and enable `instanceof` checks for specific
+  handling.
 
 Fixture Loader:
 
@@ -212,6 +236,9 @@ Tests:
 
 - Fail fast: if ledger generation returns `CommonError` union variant, assert message and fail test.
 - Provide diagnostics: on mismatch, print diff of expected vs actual ledger simplified view.
+
+**Note**: Error handling infrastructure (custom error hierarchy) implemented ahead of schedule in
+S1-S3 hardening phase. See `docs/architectural-improvements-s1-s3.md` for details.
 
 ## 15. CI Integration
 
@@ -227,12 +254,16 @@ Add workflow job steps (spec reference, not implemented here):
 
 ## 16. Configuration & Env
 
-New `.env.test` example:
+New `.env.test` example: CHEMA=accounter_schema POSTGRES_SSL=0 DEFAULT_LOCAL_CURRENCY=ILS
 
 ```
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=localhost
+
+Vitest can load via `dotenv -e .env.test` or inline in test setup.
+
+**Implementation**: Shared database configuration centralized in
+`packages/server/src/__tests__/helpers/test-db-config.ts` with `testDbConfig` and `testDbSchema`
+exports. The `qualifyTable()` helper ensures consistent schema-qualified table names. See
+`docs/architectural-improvements-s1-s3.md` for details
 POSTGRES_PORT=5432
 POSTGRES_DB=accounter_test
 POSTGRES_SSL=0
