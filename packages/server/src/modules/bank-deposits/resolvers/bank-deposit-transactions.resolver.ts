@@ -103,7 +103,11 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         throw new GraphQLError('Error fetching bank deposit');
       }
     },
-    depositByCharge: async (_, { chargeId }, { injector }) => {
+    depositByCharge: async (
+      _,
+      { chargeId },
+      { injector, adminContext: { defaultLocalCurrency } },
+    ) => {
       try {
         const transactions = await injector
           .get(BankDepositTransactionsProvider)
@@ -157,7 +161,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         }
 
         const id = [...depositIds][0];
-        const currency = (transactions[0]?.currency ?? 'ILS') as Currency;
+        const currency = (transactions[0]?.currency ?? defaultLocalCurrency) as Currency;
         const sortedByDebit = [...transactions].sort((a, b) => {
           const ad = a.debit_date ?? a.event_date;
           const bd = b.debit_date ?? b.event_date;
