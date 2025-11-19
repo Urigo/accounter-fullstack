@@ -10,7 +10,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
     assignTransactionToDeposit(transactionId: $transactionId, depositId: $depositId) {
       id
       isOpen
-      balance {
+      currentBalance {
         formatted
       }
       transactions {

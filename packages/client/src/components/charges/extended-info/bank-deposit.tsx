@@ -32,7 +32,7 @@ import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
   query BankDepositInfo($chargeId: UUID!) {
     depositByCharge(chargeId: $chargeId) {
       id
-      balance {
+      currentBalance {
         formatted
       }
       transactions {
@@ -125,7 +125,7 @@ export const ChargeBankDeposit = ({ chargeId }: Props): ReactElement => {
     <div>
       <div className="text-lg font-semibold mb-4">
         Bank Deposit "{depositData?.depositByCharge?.id}" Balance:{' '}
-        {depositData?.depositByCharge?.balance.formatted}
+        {depositData?.depositByCharge?.currentBalance.formatted}
       </div>
       <div className="mb-4">
         <span className="text-sm text-gray-500">

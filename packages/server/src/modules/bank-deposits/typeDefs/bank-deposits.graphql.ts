@@ -25,6 +25,5 @@ export default gql`
     isOpen: Boolean!
     currencyError: [UUID!]!
     transactions: [Transaction!]!
-    balance: FinancialAmount!
   }
 `;
