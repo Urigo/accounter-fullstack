@@ -26,18 +26,23 @@ infrastructure for `@accounter/server`. Each item corresponds to prompts in
 
 ### S2: ensureFinancialEntity
 
-- [ ] Create `packages/server/src/__tests__/helpers/seed-helpers.ts`
-- [ ] Implement `ensureFinancialEntity(client, {name, type, ownerId?})`
-  - [ ] Check existence by (name, type, owner_id)
-  - [ ] Return existing id if found
-  - [ ] Insert and return id if not found
-  - [ ] Use SELECT before INSERT or ON CONFLICT
-- [ ] Create `packages/server/src/__tests__/helpers/seed-helpers.financial-entity.test.ts`
-  - [ ] Setup: open transaction (BEGIN)
-  - [ ] Test: call helper twice with same input
-  - [ ] Assert: same id returned, only one insert
-  - [ ] Teardown: ROLLBACK
-- [ ] Tests pass and don't leak data ✅
+- [x] Create `packages/server/src/__tests__/helpers/seed-helpers.ts`
+- [x] Implement `ensureFinancialEntity(client, {name, type, ownerId?})`
+  - [x] Check existence by (name, type, owner_id)
+  - [x] Return existing id if found
+  - [x] Insert and return id if not found
+  - [x] Use SELECT before INSERT or ON CONFLICT
+- [x] Create `packages/server/src/__tests__/helpers/seed-helpers.financial-entity.test.ts`
+  - [x] Setup: open transaction (BEGIN)
+  - [x] Test: call helper twice with same input
+  - [x] Assert: same id returned, only one insert
+  - [x] Test: handle entities with owner_id
+  - [x] Test: distinguish entities by type
+  - [x] Test: distinguish entities by owner_id
+  - [x] Test: NULL vs undefined owner_id handling
+  - [x] Test: no data leakage between tests
+  - [x] Teardown: ROLLBACK
+- [x] Tests pass and don't leak data ✅
 
 ### S3: ensureBusinessForEntity
 
