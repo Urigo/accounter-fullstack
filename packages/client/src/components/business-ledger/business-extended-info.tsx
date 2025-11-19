@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -86,14 +86,37 @@ interface Props {
   filter?: Pick<BusinessTransactionsFilter, 'fromDate' | 'ownerIds' | 'toDate'>;
 }
 
+const STORAGE_KEY_PREFIX = 'businessLedger';
+const STORAGE_KEYS = {
+  SORTING: `${STORAGE_KEY_PREFIX}_sorting`,
+  COLUMN_VISIBILITY: `${STORAGE_KEY_PREFIX}_columnVisibility`,
+} as const;
+
 export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  // Load initial state from localStorage
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.SORTING);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 50,
   });
+
+  // Persist sorting to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SORTING, JSON.stringify(sorting));
+    } catch (error) {
+      console.warn('Failed to save sorting to localStorage:', error);
+    }
+  }, [sorting]);
 
   const { fromDate, ownerIds, toDate } = filter ?? {};
   const [{ data, fetching }] = useQuery({
@@ -163,8 +186,37 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     [activeCurrencies],
   );
 
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>(initialColumnVisibility);
+  // Load column visibility from localStorage, merge with initial visibility
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.COLUMN_VISIBILITY);
+      if (stored) {
+        const savedVisibility = JSON.parse(stored);
+        // Merge saved visibility with initial visibility (to handle new columns)
+        return { ...initialColumnVisibility, ...savedVisibility };
+      }
+    } catch {
+      // Fall through to default
+    }
+    return initialColumnVisibility;
+  });
+
+  // Persist column visibility to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.COLUMN_VISIBILITY, JSON.stringify(columnVisibility));
+    } catch (error) {
+      console.warn('Failed to save column visibility to localStorage:', error);
+    }
+  }, [columnVisibility]);
+
+  // Update column visibility when initial visibility changes (e.g., new currencies appear)
+  useEffect(() => {
+    setColumnVisibility(prev => {
+      const merged = { ...initialColumnVisibility, ...prev };
+      return merged;
+    });
+  }, [initialColumnVisibility]);
 
   const table = useReactTable({
     data: extendedLedgerRecords,
