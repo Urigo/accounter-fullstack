@@ -256,3 +256,120 @@ export async function ensureBusinessForEntity(
     );
   }
 }
+
+export interface EnsureTaxCategoryForEntityOptions {
+  sortCode?: number;
+}
+
+/**
+ * Ensure a tax_categories row exists for a given financial entity id (idempotent)
+ * 
+ * **Idempotency Behavior:**
+ * - If tax category already exists for the given entity ID, does nothing
+ * - Does NOT update existing tax category - preserves all existing values
+ * - If tax category doesn't exist, creates new row
+ * - Safe to call multiple times with same entityId
+ * 
+ * **Foreign Key Requirement:**
+ * - The entityId MUST correspond to an existing financial_entities record
+ * - Will validate entity exists before attempting insert
+ * 
+ * **Name Handling:**
+ * - Tax category names live on the financial_entities table
+ * - This table only ensures the linkage row exists
+ * 
+ * @param client - PostgreSQL client (must be within a transaction for rollback safety)
+ * @param entityId - Financial entity ID to use as tax category ID (must exist in financial_entities)
+ * @param options - Optional tax category configuration
+ * @param options.sortCode - Optional sort code for accounting systems
+ * @returns Promise resolving when complete
+ * @throws {EntityValidationError} If entityId is invalid format
+ * @throws {EntityNotFoundError} If financial entity doesn't exist
+ * @throws {SeedError} If database operation fails
+ * 
+ * @example
+ * ```typescript
+ * // First create financial entity
+ * const { id: entityId } = await ensureFinancialEntity(client, {
+ *   name: 'VAT Category',
+ *   type: 'tax_category',
+ * });
+ * 
+ * // Then create tax category record
+ * await ensureTaxCategoryForEntity(client, entityId, {
+ *   sortCode: 1000,
+ * });
+ * 
+ * // Calling again is safe (no-op)
+ * await ensureTaxCategoryForEntity(client, entityId, {
+ *   sortCode: 2000, // Ignored - existing value preserved
+ * });
+ * ```
+ */
+export async function ensureTaxCategoryForEntity(
+  client: PoolClient,
+  entityId: string,
+  options?: EnsureTaxCategoryForEntityOptions,
+): Promise<void> {
+  // Validate entityId format (basic UUID check)
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(entityId)) {
+    throw new EntityValidationError(
+      'TaxCategory',
+      ['entityId must be a valid UUID'],
+      { entityId },
+    );
+  }
+
+  try {
+    // Validate that financial entity exists
+    const entityCheckQuery = `
+      SELECT 1
+      FROM ${qualifyTable('financial_entities')}
+      WHERE id = $1
+      LIMIT 1
+    `;
+
+    const entityExists = await client.query(entityCheckQuery, [entityId]);
+
+    if (entityExists.rows.length === 0) {
+      throw new EntityValidationError(
+        'TaxCategory',
+        [`Financial entity ${entityId} not found. Create it first via ensureFinancialEntity.`],
+        { entityId },
+      );
+    }
+
+    // Check if tax category already exists
+    const selectQuery = `
+      SELECT 1
+      FROM ${qualifyTable('tax_categories')}
+      WHERE id = $1
+      LIMIT 1
+    `;
+
+    const existingResult = await client.query(selectQuery, [entityId]);
+
+    if (existingResult.rows.length > 0) {
+      return; // Tax category already exists, preserve existing values
+    }
+
+    // Insert new tax category
+    const insertQuery = `
+      INSERT INTO ${qualifyTable('tax_categories')} (id)
+      VALUES ($1)
+    `;
+
+    await client.query(insertQuery, [entityId]);
+  } catch (error) {
+    if (error instanceof EntityValidationError || error instanceof SeedError) {
+      throw error;
+    }
+
+    throw new SeedError(
+      `Failed to ensure tax category for entity ${entityId}`,
+      { entityId, options },
+      error as Error,
+    );
+  }
+}

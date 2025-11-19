@@ -62,15 +62,15 @@ infrastructure for `@accounter/server`. Each item corresponds to prompts in
 
 ### S4: ensureTaxCategoryForEntity
 
-- [ ] Add `ensureTaxCategoryForEntity(client, entityId, options?)` to `seed-helpers.ts`
-  - [ ] Check if tax category exists by id
-  - [ ] Insert if missing
-  - [ ] Support optional `sortCode`
-- [ ] Create `packages/server/src/__tests__/helpers/seed-helpers.tax-category.test.ts`
-  - [ ] Test: first insert creates row
-  - [ ] Test: idempotent behavior
-  - [ ] Use transaction isolation
-- [ ] Tests pass ✅
+- [x] Add `ensureTaxCategoryForEntity(client, entityId, options?)` to `seed-helpers.ts`
+  - [x] Check if tax category exists by id
+  - [x] Insert if missing
+  - [x] Support optional `sortCode`
+- [x] Create `packages/server/src/__tests__/helpers/seed-helpers.tax-category.test.ts`
+  - [x] Test: first insert creates row
+  - [x] Test: idempotent behavior
+  - [x] Use transaction isolation
+- [x] Tests pass ✅
 
 ### S5: seedAdminCore Composition
 
