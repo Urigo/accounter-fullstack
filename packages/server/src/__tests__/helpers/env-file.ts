@@ -1,10 +1,36 @@
-import { readFile, writeFile } from 'fs/promises';
+import { readFile, writeFile, rename, unlink } from 'fs/promises';
 
 /**
  * Write or update an environment variable in a .env file
+ * 
+ * Uses atomic write pattern (temp file + rename) to prevent corruption
+ * if process crashes during write.
+ * 
+ * ⚠️ **SECURITY WARNING**: This function stores values in PLAINTEXT.
+ * Never use for production secrets. Use environment variables,
+ * secret managers (AWS Secrets Manager, Vault), or encrypted files.
+ * 
+ * **Thread Safety**: Not safe for concurrent writes to the same file.
+ * Multiple processes writing simultaneously may cause race conditions.
+ * 
+ * **Format Assumptions**: Assumes KEY=VALUE format without quotes or inline comments.
+ * 
  * @param filePath - Path to the .env file
- * @param key - Environment variable key
- * @param value - Environment variable value
+ * @param key - Environment variable key (uppercase recommended)
+ * @param value - Environment variable value (stored as-is)
+ * 
+ * @example
+ * ```typescript
+ * // Create new variable
+ * await writeEnvVar('.env', 'DATABASE_URL', 'postgresql://localhost/mydb');
+ * 
+ * // Update existing variable
+ * await writeEnvVar('.env', 'DATABASE_URL', 'postgresql://localhost/newdb');
+ * 
+ * // Result is idempotent
+ * await writeEnvVar('.env', 'API_KEY', 'abc123');
+ * await writeEnvVar('.env', 'API_KEY', 'abc123'); // No change
+ * ```
  */
 export async function writeEnvVar(
   filePath: string,
@@ -46,7 +72,21 @@ export async function writeEnvVar(
   // Join with newlines and add single trailing newline
   const newContent = updatedLines.join('\n') + '\n';
   
-  await writeFile(filePath, newContent, 'utf-8');
+  // Atomic write: temp file + rename
+  const tempPath = `${filePath}.tmp.${process.pid}`;
+  
+  try {
+    await writeFile(tempPath, newContent, 'utf-8');
+    await rename(tempPath, filePath);
+  } catch (error) {
+    // Clean up temp file on error
+    try {
+      await unlink(tempPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+    throw error;
+  }
 }
 
 /**

@@ -125,9 +125,52 @@ isolation to ensure stability and speed. Defer ingestion (scrapers, Gmail) until
 
 ---
 
+## Architectural Improvements (Implemented in S1-S3)
+
+The following infrastructure improvements were implemented ahead of schedule during the S1-S3
+hardening phase. See `docs/architectural-improvements-s1-s3.md` for complete details.
+
+### Shared Configuration (`test-db-config.ts`)
+
+- `testDbConfig`: Centralized database configuration with environment variable support
+- `testDbSchema`: Configurable schema name (defaults to 'accounter_schema')
+- `qualifyTable()`: Helper for schema-qualified table names
+
+**Benefits**: Eliminates hardcoded credentials, enables schema-per-test-run patterns, single source
+of truth.
+
+### Custom Error Hierarchy (`seed-errors.ts`)
+
+- `SeedError`: Base class with structured context and `toJSON()` serialization
+- `EntityValidationError`: Input validation failures with detailed error lists
+- `EntityNotFoundError`: Missing entity references
+- `ConstraintViolationError`: Database constraint violations
+- `SeedConfigurationError`: Configuration issues
+
+**Benefits**: Specific error types for different failure modes, rich debugging context, better error
+handling via `instanceof` checks.
+
+### Transaction Wrappers (`test-transaction.ts`)
+
+- `withTestTransaction<T>(pool, fn)`: Single transaction with auto-rollback
+- `withConcurrentTransactions<T>(pool, fns)`: Parallel transactions for race testing
+
+**Benefits**: Eliminates boilerplate, guaranteed rollback on errors, enables functional test
+patterns, simplifies concurrent access testing.
+
+### Test Coverage
+
+- **Concurrent Access Tests**: 3 race condition scenarios in `seed-helpers.concurrent.test.ts`
+- **Validation Tests**: 5 new validation tests across S1-S3
+- **Total Test Suite**: 33 tests, 100% passing in ~400ms
+
+---
+
 ## TDD Prompts for Code-Generation LLM
 
 Each prompt builds on the previous, tests first, no orphan code, and wires into the suite.
+
+**Note**: Prompts 1-3 have been completed with architectural enhancements. Continue from Prompt 4.
 
 ---
 
@@ -146,6 +189,8 @@ Requirements:
   - If `key` exists, replace its value.
   - Else append `\nkey=value`.
   - Preserve other lines untouched.
+  - Use atomic writes (temp file + rename) to prevent corruption on crash.
+  - Add JSDoc with security warnings about plaintext storage.
 - Add tests in `packages/server/src/__tests__/helpers/env-file.test.ts` using a temp file.
 - Use Vitest.
 - Do not modify global `.env` in tests. Use `fs.mkdtemp` and `os.tmpdir`.
@@ -155,43 +200,76 @@ Acceptance:
 
 Run:
 - vitest run packages/server/src/__tests__/helpers/env-file.test.ts
+
+Status: ✅ COMPLETED (S1) - Enhanced with atomic writes and comprehensive documentation.
 ```
 
 ---
 
 ### Prompt 2: ensureFinancialEntity
 
-```text
-Task: Implement SQL helper to ensure a financial entity exists (idempotent), with tests against a real DB transaction.
+```textconfigurable via `testDbSchema`from`test-db-config.ts`.
 
-Context:
-- DB: Postgres, schema `accounter_schema`.
 - Table: `financial_entities (id uuid pk, name text, type text, owner_id uuid nullable, ...)`.
 - Use pg `Client` (or `Pool`) and run inside a transaction opened by test harness (to rollback).
+- Shared DB config: Import from `packages/server/src/__tests__/helpers/test-db-config.ts`.
 
 Requirements:
-- File: `packages/server/src/__tests__/helpers/seed-helpers.ts` export `ensureFinancialEntity(client, {name, type, ownerId?}) -> Promise<{id: string}>`.
+
+- File: `packages/server/src/__tests__/helpers/seed-helpers.ts` export
+  `ensureFinancialEntity(client, {name, type, ownerId?}) -> Promise<{id: string}>`.
+- Type-safe: Use `FinancialEntityType` union type: 'business' | 'tax_category' | 'tag'.
+- Input validation: Reject empty names, invalid types with `EntityValidationError`.
 - If exists by `(name, type, owner_id)`, return it; otherwise insert and return.
-- Use `SELECT ... LIMIT 1` before `INSERT`, or `INSERT ... ON CONFLICT` if a unique constraint exists. If no constraint, do the SELECT path.
+- Use `SELECT ... LIMIT 1` before `INSERT` with NULL-safe comparison for owner_id.
+- Import `qualifyTable()` for schema-qualified table names.
+- Wrap in try/catch, throw `SeedError` with rich context on failure.
 - Add tests: `packages/server/src/__tests__/helpers/seed-helpers.financial-entity.test.ts`
+  - Import `testDbConfig` for connection.
   - Setup: open transaction (BEGIN), call helper twice with same input.
-  - Expect: same id; inserts only once (can assert row count delta or rely on not throwing).
+  - Expect: same id; inserts only once.
+  - Test validation: empty name, invalid type, whitespace-only name.
   - Teardown: ROLLBACK.
 
 Acceptance:
+
+- Tests pass (11 tests) and do not leak data (transaction rolled back).
+
+Status: ✅ COMPLETED (S2) - Enhanced with validation, error handling, and shared configt delta or
+rely on not throwing).
+
+- Teardown: ROLLBACK.
+
+Acceptance:
+
 - Tests pass and do not leak data (transaction rolled back).
+
 ```
 
 ---
+- Use shared config from `test-db-config.ts` for schema qualification.
 
-### Prompt 3: ensureBusinessForEntity
+Requirements:
+- Add `ensureBusinessForEntity(client, entityId, options?: { noInvoicesRequired?: boolean }): Promise<void>` in `seed-helpers.ts`.
+- UUID validation: Check entityId format with regex, throw `EntityValidationError` if invalid.
+- Foreign key validation: Check that financial entity exists before insert, throw clear error if not found.
+- If `SELECT 1 FROM ${qualifyTable('businesses')} WHERE id=$1`, do nothing; else `INSERT`.
+- Wrap in try/catch, throw `SeedError` with context on failure.
+- Comprehensive JSDoc documenting idempotency behavior: "preserves existing values, does not update".
+- Tests: `seed-helpers.business.test.ts` covering:
+  - First-insert creates row
+  - Idempotency (repeated calls)
+  - noInvoicesRequired option
+  - Default values
+  - Preservation of existing values
+  - Invalid UUID format rejection
+  - Non-existent entity rejection
+  - Use transactional tests with shared `testDbConfig`.
 
-```text
-Task: Ensure a `businesses` row for a given financial entity id, idempotently.
+Acceptance:
+- Tests pass (8 tests), table returns single row for repeated calls.
 
-Context:
-- `businesses (id uuid fk -> financial_entities.id, ...)`.
-- Some defaults: `no_invoices_required` can be true for seed convenience.
+Status: ✅ COMPLETED (S3) - Enhanced with FK validation, UUID checks, and comprehensive testseed convenience.
 
 Requirements:
 - Add `ensureBusinessForEntity(client, entityId, options?: { noInvoicesRequired?: boolean }): Promise<void>` in `seed-helpers.ts`.
