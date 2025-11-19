@@ -74,23 +74,23 @@ infrastructure for `@accounter/server`. Each item corresponds to prompts in
 
 ### S5: seedAdminCore Composition
 
-- [ ] Create `packages/server/scripts/seed-admin-context.ts`
-- [ ] Implement `seedAdminCore(client)` function
-  - [ ] Create admin business entity
-  - [ ] Create authorities (VAT, Tax, Social Security)
-  - [ ] Create general tax categories (DEFAULT, Exchange Rates, Income Exchange Rates, etc.)
-  - [ ] Create cross-year categories
-  - [ ] Create tags (if needed)
-  - [ ] Upsert `user_context` row with ILS default currency
-  - [ ] Use `writeEnvVar` to set `DEFAULT_FINANCIAL_ENTITY_ID`
-  - [ ] Return `{ adminEntityId }`
-- [ ] Create `packages/server/src/__tests__/seed-admin-context.integration.test.ts`
-  - [ ] Connect DB, BEGIN transaction
-  - [ ] Call `seedAdminCore`
-  - [ ] Assert `user_context` exists
-  - [ ] Assert mandatory entities referenced
-  - [ ] ROLLBACK
-- [ ] Integration test passes ✅
+- [x] Create `packages/server/scripts/seed-admin-context.ts`
+- [x] Implement `seedAdminCore(client)` function
+  - [x] Create admin business entity
+  - [x] Create authorities (VAT, Tax, Social Security)
+  - [x] Create general tax categories (DEFAULT, Exchange Rates, Income Exchange Rates, etc.)
+  - [x] Create cross-year categories
+  - [x] Create tags (if needed)
+  - [x] Upsert `user_context` row with ILS default currency
+  - [x] Use `writeEnvVar` to set `DEFAULT_FINANCIAL_ENTITY_ID`
+  - [x] Return `{ adminEntityId }`
+- [x] Create `packages/server/src/__tests__/seed-admin-context.integration.test.ts`
+  - [x] Connect DB, BEGIN transaction
+  - [x] Call `seedAdminCore`
+  - [x] Assert `user_context` exists
+  - [x] Assert mandatory entities referenced
+  - [x] ROLLBACK
+- [x] Integration test passes ✅
 
 ### S6: CLI Wrapper (Deferred to Prompt 18)
 

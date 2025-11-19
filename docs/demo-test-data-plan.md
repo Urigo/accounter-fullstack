@@ -78,13 +78,13 @@ New Script Commands (added to `@accounter/server/package.json`):
 "seed:demo-expenses": "ts-node scripts/seed-demo-expenses.ts",
 ```
 
-**Implementation Progress (S1-S3)**:
+**Implementation Progress (S1-S5)**:
 
 - ✅ `writeEnvVar()` helper with atomic file writes (temp + rename pattern)
 - ✅ `ensureFinancialEntity()` with type-safe validation and NULL handling
 - ✅ `ensureBusinessForEntity()` with FK validation and UUID format checks
-- ⏳ `ensureTaxCategoryForEntity()` - pending S4
-- ⏳ `seedAdminCore()` composition - pending S5
+- ✅ `ensureTaxCategoryForEntity()` with idempotent insert behavior
+- ✅ `seedAdminCore()` composition creating complete admin context
 
 See `docs/architectural-improvements-s1-s3.md` for detailed implementation status and
 `docs/demo-test-data-todo.md` for complete checklist.
