@@ -281,14 +281,14 @@ export class BankDepositTransactionsProvider {
     const depositTransactions = await this.getTransactionsByBankDepositLoader.load(depositId);
 
     // Get transaction details to check currency
-    const fullTransaction = depositTransactions.find(t => t.id === transactionId);
+    const transactionCurrency = transactionDepositInfo[0].currency;
 
     // Check currency conflict
-    if (depositTransactions.length > 0 && fullTransaction) {
+    if (depositTransactions.length > 0) {
       const depositCurrency = depositTransactions[0].currency;
-      if (depositCurrency && fullTransaction.currency !== depositCurrency) {
+      if (depositCurrency && transactionCurrency !== depositCurrency) {
         throw new Error(
-          `Currency conflict: Transaction currency (${fullTransaction.currency}) does not match deposit currency (${depositCurrency})`,
+          `Currency conflict: Transaction currency (${transactionCurrency}) does not match deposit currency (${depositCurrency})`,
         );
       }
     }
