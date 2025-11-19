@@ -79,6 +79,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
 
     let isWithdrawal = false;
+    let isBreathingDeposit = false;
 
     // generate ledger from transactions
     const [mainTransaction, interestTransactions] = transactions.reduce(
@@ -209,101 +210,113 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         }
 
         const depositTransactions = bankDepositTransactions.filter(t => Number(t.amount) < 0);
-        if (depositTransactions.length !== 1) {
-          if (depositTransactions.length === 0) {
-            throw new LedgerError('Deposit transaction not found');
+        if (depositTransactions.length === 0) {
+          throw new LedgerError('Deposit transaction not found');
+        }
+        if (depositTransactions.length > 1) {
+          isBreathingDeposit = true;
+          // get all deposit transactions
+          // validate consistent currency, if multiple currencies found, throw LedgerError
+          // if currency is local, return with above ledger
+          // if currency is foreign:
+          // filter out interest transactions
+          // find latest deposit/withdrawal transaction prior to current (="prev action")
+          // calculate origin balance of prev action
+          // get exchange rates to convert prev action currency to local currency
+          // calculate prev action local balance (origin balance * exchange rate)
+          // get exchange rates to convert current action currency to local currency
+          // calculate revaluation (origin balance of prev action * current exchange rates - prev action local balance )
+          // create revaluation ledger out of local diff
+        } else {
+          const mainBusinessBalance = mainTransaction.business_id
+            ? ledgerBalance.get(mainTransaction.business_id)
+            : undefined;
+          const mainBusinessBalanceByCurrency =
+            mainTransaction.currency === defaultLocalCurrency
+              ? mainBusinessBalance?.amount
+              : mainBusinessBalance?.foreignAmounts?.[mainTransaction.currency]?.foreign;
+          const mainBusinessAbsBalance = mainBusinessBalanceByCurrency
+            ? Math.abs(mainBusinessBalanceByCurrency)
+            : undefined;
+
+          const initialDepositTransaction = depositTransactions[0];
+          const depositTransactionAmount = Math.abs(Number(initialDepositTransaction.amount));
+
+          if (
+            mainBusinessAbsBalance !== depositTransactionAmount ||
+            mainTransaction.currency !== initialDepositTransaction.currency
+          ) {
+            throw new LedgerError('Deposit transaction does not match the withdrawal transaction');
           }
-          throw new LedgerError('Multiple deposit transactions found');
-        }
 
-        const mainBusinessBalance = mainTransaction.business_id
-          ? ledgerBalance.get(mainTransaction.business_id)
-          : undefined;
-        const mainBusinessBalanceByCurrency =
-          mainTransaction.currency === defaultLocalCurrency
-            ? mainBusinessBalance?.amount
-            : mainBusinessBalance?.foreignAmounts?.[mainTransaction.currency]?.foreign;
-        const mainBusinessAbsBalance = mainBusinessBalanceByCurrency
-          ? Math.abs(mainBusinessBalanceByCurrency)
-          : undefined;
+          const depositLedgerRecords = await injector
+            .get(LedgerProvider)
+            .getLedgerRecordsByChargesIdLoader.load(initialDepositTransaction.charge_id);
 
-        const depositTransaction = depositTransactions[0];
-        const depositTransactionAmount = Math.abs(Number(depositTransaction.amount));
-
-        if (
-          mainBusinessAbsBalance !== depositTransactionAmount ||
-          mainTransaction.currency !== depositTransaction.currency
-        ) {
-          throw new LedgerError('Deposit transaction does not match the withdrawal transaction');
-        }
-
-        const depositLedgerRecords = await injector
-          .get(LedgerProvider)
-          .getLedgerRecordsByChargesIdLoader.load(depositTransaction.charge_id);
-
-        if (depositLedgerRecords.length !== 1) {
-          if (depositLedgerRecords.length === 0) {
-            throw new LedgerError('Deposit ledger record not found');
-          }
-          throw new LedgerError('Multiple deposit ledger records found');
-        }
-        const depositLedgerRecord = depositLedgerRecords[0];
-
-        if (Number.isNaN(depositLedgerRecord.credit_local_amount1)) {
-          throw new LedgerError('Deposit ledger record has invalid local amount');
-        }
-
-        if (depositLedgerRecord.debit_entity1) {
-          updateLedgerBalanceByEntry(
-            convertLedgerRecordToProto(depositLedgerRecord, context),
-            ledgerBalance,
-            context,
-          );
-        }
-        if (mainTransaction.currency !== defaultLocalCurrency) {
-          const rawAmount =
-            Number(depositLedgerRecord.credit_local_amount1) -
-            mainLedgerEntry.localCurrencyCreditAmount1;
-          const amount = Math.abs(rawAmount);
-          const isCreditorCounterparty = rawAmount > 0;
-          const mainAccountId = mainLedgerEntry.creditAccountID1;
-
-          // validate exchange rate
-          try {
-            const exchangeAmount = calculateExchangeRate(
-              mainLedgerEntry.creditAccountID1,
-              [
-                ...financialAccountLedgerEntries,
-                convertLedgerRecordToProto(depositLedgerRecord, context),
-              ],
-              defaultLocalCurrency,
-            );
-            if (
-              (!exchangeAmount && !!amount) ||
-              (exchangeAmount && Math.abs(exchangeAmount) !== amount)
-            ) {
-              throw new LedgerError('Exchange rate error');
+          if (depositLedgerRecords.length !== 1) {
+            if (depositLedgerRecords.length === 0) {
+              throw new LedgerError('Deposit ledger record not found');
             }
-          } catch (e) {
-            errors.add((e as Error).message);
+            throw new LedgerError('Multiple deposit ledger records found');
+          }
+          const depositLedgerRecord = depositLedgerRecords[0];
+
+          if (Number.isNaN(depositLedgerRecord.credit_local_amount1)) {
+            throw new LedgerError('Deposit ledger record has invalid local amount');
           }
 
-          const exchangeLedgerEntry: StrictLedgerProto = {
-            id: mainTransaction.id + '|fee', // NOTE: this field is dummy
-            creditAccountID1: isCreditorCounterparty ? mainAccountId : exchangeRateTaxCategoryId,
-            localCurrencyCreditAmount1: amount,
-            debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : mainAccountId,
-            localCurrencyDebitAmount1: amount,
-            description: 'Exchange ledger record',
-            isCreditorCounterparty,
-            invoiceDate: mainLedgerEntry.valueDate,
-            valueDate: mainLedgerEntry.valueDate,
-            currency: defaultLocalCurrency,
-            ownerId: mainLedgerEntry.ownerId,
-            chargeId,
-          };
-          miscLedgerEntries.push(exchangeLedgerEntry);
-          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance, context);
+          if (depositLedgerRecord.debit_entity1) {
+            updateLedgerBalanceByEntry(
+              convertLedgerRecordToProto(depositLedgerRecord, context),
+              ledgerBalance,
+              context,
+            );
+          }
+          if (mainTransaction.currency !== defaultLocalCurrency) {
+            const rawAmount =
+              Number(depositLedgerRecord.credit_local_amount1) -
+              mainLedgerEntry.localCurrencyCreditAmount1;
+            const amount = Math.abs(rawAmount);
+            const isCreditorCounterparty = rawAmount > 0;
+            const mainAccountId = mainLedgerEntry.creditAccountID1;
+
+            // validate exchange rate
+            try {
+              const exchangeAmount = calculateExchangeRate(
+                mainLedgerEntry.creditAccountID1,
+                [
+                  ...financialAccountLedgerEntries,
+                  convertLedgerRecordToProto(depositLedgerRecord, context),
+                ],
+                defaultLocalCurrency,
+              );
+              if (
+                (!exchangeAmount && !!amount) ||
+                (exchangeAmount && Math.abs(exchangeAmount) !== amount)
+              ) {
+                throw new LedgerError('Exchange rate error');
+              }
+            } catch (e) {
+              errors.add((e as Error).message);
+            }
+
+            const exchangeLedgerEntry: StrictLedgerProto = {
+              id: mainTransaction.id + '|fee', // NOTE: this field is dummy
+              creditAccountID1: isCreditorCounterparty ? mainAccountId : exchangeRateTaxCategoryId,
+              localCurrencyCreditAmount1: amount,
+              debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : mainAccountId,
+              localCurrencyDebitAmount1: amount,
+              description: 'Exchange ledger record',
+              isCreditorCounterparty,
+              invoiceDate: mainLedgerEntry.valueDate,
+              valueDate: mainLedgerEntry.valueDate,
+              currency: defaultLocalCurrency,
+              ownerId: mainLedgerEntry.ownerId,
+              chargeId,
+            };
+            miscLedgerEntries.push(exchangeLedgerEntry);
+            updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance, context);
+          }
         }
       }
 
@@ -332,6 +345,9 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const mainLedgerEntry = financialAccountLedgerEntries[0];
     if (!mainLedgerEntry.isCreditorCounterparty) {
       allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
+    }
+    if (mainBusinessId && isBreathingDeposit) {
+      allowedUnbalancedBusinesses.add(mainBusinessId);
     }
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       context,
