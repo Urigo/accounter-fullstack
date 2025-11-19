@@ -215,18 +215,129 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         }
         if (depositTransactions.length > 1) {
           isBreathingDeposit = true;
-          // get all deposit transactions
-          // validate consistent currency, if multiple currencies found, throw LedgerError
-          // if currency is local, return with above ledger
-          // if currency is foreign:
-          // filter out interest transactions
-          // find latest deposit/withdrawal transaction prior to current (="prev action")
-          // calculate origin balance of prev action
-          // get exchange rates to convert prev action currency to local currency
-          // calculate prev action local balance (origin balance * exchange rate)
-          // get exchange rates to convert current action currency to local currency
-          // calculate revaluation (origin balance of prev action * current exchange rates - prev action local balance )
-          // create revaluation ledger out of local diff
+
+          // Validate consistent currency
+          const depositCurrency = depositTransactions[0].currency as Currency;
+          for (const tx of depositTransactions) {
+            if (tx.currency !== depositCurrency) {
+              throw new LedgerError(
+                `Deposit has inconsistent currencies: found ${tx.currency} and ${depositCurrency}`,
+              );
+            }
+          }
+
+          // If currency is local, no revaluation needed
+          if (depositCurrency === defaultLocalCurrency) {
+            return;
+          }
+
+          // Filter out interest transactions (group by charge_id, keep only highest absolute amount)
+          const chargeGroups = new Map<string, typeof depositTransactions>();
+          for (const tx of depositTransactions) {
+            if (!tx.charge_id) continue;
+            if (!chargeGroups.has(tx.charge_id)) {
+              chargeGroups.set(tx.charge_id, []);
+            }
+            chargeGroups.get(tx.charge_id)!.push(tx);
+          }
+
+          const interestTransactionIds = new Set<string>();
+          for (const [_, txs] of chargeGroups) {
+            if (txs.length > 1) {
+              const sortedByAbsAmount = [...txs].sort(
+                (a, b) => Math.abs(Number(b.amount)) - Math.abs(Number(a.amount)),
+              );
+              // All except the first (highest) are interest
+              for (let i = 1; i < sortedByAbsAmount.length; i++) {
+                interestTransactionIds.add(sortedByAbsAmount[i].id);
+              }
+            }
+          }
+
+          const nonInterestTransactions = depositTransactions.filter(
+            tx => !interestTransactionIds.has(tx.id),
+          );
+
+          // Find latest deposit/withdrawal transaction prior to current
+          const mainTxDate = mainTransaction.debit_date ?? mainTransaction.event_date;
+          const prevTransactions = nonInterestTransactions.filter(tx => {
+            const txDate = tx.debit_date ?? tx.event_date;
+            if (txDate < mainTxDate) {
+              return true;
+            }
+            if (txDate.getTime() === mainTxDate.getTime()) {
+              // Same date: use ID ordering
+              return tx.id < mainTransaction.id;
+            }
+            return false;
+          });
+
+          if (prevTransactions.length === 0) {
+            throw new LedgerError('No previous deposit transaction found for revaluation');
+          }
+
+          // Sort by date desc, then by id desc to get the latest
+          prevTransactions.sort((a, b) => {
+            const dateA = a.debit_date ?? a.event_date;
+            const dateB = b.debit_date ?? b.event_date;
+            if (dateB.getTime() !== dateA.getTime()) {
+              return dateB.getTime() - dateA.getTime();
+            }
+            return b.id.localeCompare(a.id);
+          });
+
+          const prevAction = prevTransactions[0];
+          const prevActionDate = prevAction.debit_date ?? prevAction.event_date;
+
+          // Calculate origin balance at prev action (sum of all non-interest up to and including prev action)
+          let originBalance = 0;
+          for (const tx of nonInterestTransactions) {
+            const txDate = tx.debit_date ?? tx.event_date;
+            if (
+              txDate < prevActionDate ||
+              (txDate.getTime() === prevActionDate.getTime() && tx.id <= prevAction.id)
+            ) {
+              originBalance += Number(tx.amount);
+            }
+          }
+
+          // Get exchange rate for prev action and calculate prev action local balance
+          const prevExchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(depositCurrency, defaultLocalCurrency, prevActionDate);
+          const prevLocalBalance = originBalance * prevExchangeRate;
+
+          // Get current exchange rate
+          const currentExchangeRate = await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(depositCurrency, defaultLocalCurrency, mainLedgerEntry.valueDate);
+
+          // Calculate revaluation: (origin balance * current rate) - prev local balance
+          const rawRevaluationAmount = originBalance * currentExchangeRate - prevLocalBalance;
+          const revaluationAmount = Math.abs(rawRevaluationAmount);
+
+          if (revaluationAmount > 0) {
+            const isCreditorCounterparty = rawRevaluationAmount > 0;
+            const mainAccountId = mainLedgerEntry.creditAccountID1;
+
+            const revaluationLedgerEntry: StrictLedgerProto = {
+              id: mainTransaction.id + '|revaluation',
+              creditAccountID1: isCreditorCounterparty ? mainAccountId : exchangeRateTaxCategoryId,
+              localCurrencyCreditAmount1: revaluationAmount,
+              debitAccountID1: isCreditorCounterparty ? exchangeRateTaxCategoryId : mainAccountId,
+              localCurrencyDebitAmount1: revaluationAmount,
+              description: 'Revaluation ledger record',
+              isCreditorCounterparty,
+              invoiceDate: mainLedgerEntry.valueDate,
+              valueDate: mainLedgerEntry.valueDate,
+              currency: defaultLocalCurrency,
+              ownerId: mainLedgerEntry.ownerId,
+              chargeId,
+            };
+
+            miscLedgerEntries.push(revaluationLedgerEntry);
+            updateLedgerBalanceByEntry(revaluationLedgerEntry, ledgerBalance, context);
+          }
         } else {
           const mainBusinessBalance = mainTransaction.business_id
             ? ledgerBalance.get(mainTransaction.business_id)
