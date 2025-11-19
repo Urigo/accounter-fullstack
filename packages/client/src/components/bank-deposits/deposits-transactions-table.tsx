@@ -19,6 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.jsx';
 import { columns, type DepositTransactionRowType } from './columns.jsx';
 import { DepositReassignDialog } from './deposit-erassign-dialog.jsx';
+import { identifyInterestTransactionIds } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -74,29 +75,12 @@ export function DepositsTransactionsTable({
       getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
     );
 
-    // Identify interest transactions by grouping by charge_id
-    const chargeGroups = new Map<string, typeof transactions>();
-    for (const tx of transactions) {
-      if (!tx.chargeId) continue;
-      if (!chargeGroups.has(tx.chargeId)) {
-        chargeGroups.set(tx.chargeId, []);
-      }
-      chargeGroups.get(tx.chargeId)!.push(tx);
-    }
-
-    const interestTransactionIds = new Set<string>();
-    for (const [_, txs] of chargeGroups) {
-      if (txs.length > 1) {
-        // Multiple transactions per charge - find the one with highest absolute amount
-        const sortedByAbsAmount = [...txs].sort(
-          (a, b) => Math.abs(Number(b.amount.raw ?? 0)) - Math.abs(Number(a.amount.raw ?? 0)),
-        );
-        // All except the first (highest) are interest
-        for (let i = 1; i < sortedByAbsAmount.length; i++) {
-          interestTransactionIds.add(sortedByAbsAmount[i].id);
-        }
-      }
-    }
+    // Identify interest transactions using shared client helper
+    const interestTransactionIds = identifyInterestTransactionIds(transactions, {
+      getId: tx => tx.id,
+      getChargeId: tx => tx.chargeId,
+      getAmount: tx => Number(tx.amount.raw ?? 0),
+    });
 
     // Sort by date ascending for cumulative calculation
     const sortedTransactions = [...transactions].sort((a, b) => {

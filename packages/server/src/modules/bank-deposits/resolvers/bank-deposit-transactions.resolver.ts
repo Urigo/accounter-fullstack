@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { Currency } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { BankDepositTransactionsProvider } from '../providers/bank-deposit-transactions.provider.js';
@@ -12,27 +13,12 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           .get(BankDepositTransactionsProvider)
           .getTransactionsByBankDepositLoader.load(depositId);
 
-        // Identify interest transactions
-        const chargeGroups = new Map<string, typeof transactions>();
-        for (const tx of transactions) {
-          if (!tx.charge_id) continue;
-          if (!chargeGroups.has(tx.charge_id)) {
-            chargeGroups.set(tx.charge_id, []);
-          }
-          chargeGroups.get(tx.charge_id)!.push(tx);
-        }
-
-        const interestTransactionIds = new Set<string>();
-        for (const [_, txs] of chargeGroups) {
-          if (txs.length > 1) {
-            const sortedByAbsAmount = [...txs].sort(
-              (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
-            );
-            for (let i = 1; i < sortedByAbsAmount.length; i++) {
-              interestTransactionIds.add(sortedByAbsAmount[i].id);
-            }
-          }
-        }
+        // Identify interest transactions via shared helper
+        const interestTransactionIds = identifyInterestTransactionIds(transactions, {
+          getId: t => t.id,
+          getChargeId: t => t.charge_id,
+          getAmount: t => Number(t.amount ?? 0),
+        });
 
         let currentBalance = 0;
         let totalInterest = 0;
@@ -113,27 +99,12 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           .get(BankDepositTransactionsProvider)
           .getDepositTransactionsByChargeId(chargeId, true);
 
-        // Identify interest transactions
-        const chargeGroups = new Map<string, typeof transactions>();
-        for (const tx of transactions) {
-          if (!tx.charge_id) continue;
-          if (!chargeGroups.has(tx.charge_id)) {
-            chargeGroups.set(tx.charge_id, []);
-          }
-          chargeGroups.get(tx.charge_id)!.push(tx);
-        }
-
-        const interestTransactionIds = new Set<string>();
-        for (const [_, txs] of chargeGroups) {
-          if (txs.length > 1) {
-            const sortedByAbsAmount = [...txs].sort(
-              (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
-            );
-            for (let i = 1; i < sortedByAbsAmount.length; i++) {
-              interestTransactionIds.add(sortedByAbsAmount[i].id);
-            }
-          }
-        }
+        // Identify interest transactions via shared helper
+        const interestTransactionIds = identifyInterestTransactionIds(transactions, {
+          getId: t => t.id,
+          getChargeId: t => t.charge_id,
+          getAmount: t => Number(t.amount ?? 0),
+        });
 
         let currentBalance = 0;
         let totalInterest = 0;

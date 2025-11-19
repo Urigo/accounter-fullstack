@@ -2,6 +2,7 @@ import { BankDepositTransactionsProvider } from '@modules/bank-deposits/provider
 import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
 import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
@@ -229,28 +230,12 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           return;
         }
 
-        // Filter out interest transactions (group by charge_id, keep only highest absolute amount)
-        const chargeGroups = new Map<string, typeof depositTransactions>();
-        for (const tx of depositTransactions) {
-          if (!tx.charge_id) continue;
-          if (!chargeGroups.has(tx.charge_id)) {
-            chargeGroups.set(tx.charge_id, []);
-          }
-          chargeGroups.get(tx.charge_id)!.push(tx);
-        }
-
-        const interestTransactionIds = new Set<string>();
-        for (const [_, txs] of chargeGroups) {
-          if (txs.length > 1) {
-            const sortedByAbsAmount = [...txs].sort(
-              (a, b) => Math.abs(Number(b.amount)) - Math.abs(Number(a.amount)),
-            );
-            // All except the first (highest) are interest
-            for (let i = 1; i < sortedByAbsAmount.length; i++) {
-              interestTransactionIds.add(sortedByAbsAmount[i].id);
-            }
-          }
-        }
+        // Filter out interest transactions via shared helper
+        const interestTransactionIds = identifyInterestTransactionIds(depositTransactions, {
+          getId: tx => tx.id,
+          getChargeId: tx => tx.charge_id,
+          getAmount: tx => Number(tx.amount),
+        });
 
         const nonInterestTransactions = depositTransactions.filter(
           tx => !interestTransactionIds.has(tx.id),

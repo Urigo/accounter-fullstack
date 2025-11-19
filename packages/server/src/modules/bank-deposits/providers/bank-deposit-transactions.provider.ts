@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
+import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type {
@@ -169,29 +170,12 @@ export class BankDepositTransactionsProvider {
       }
     >();
 
-    // First pass: identify interest transactions by grouping by charge_id
-    const chargeGroups = new Map<string, typeof rows>();
-    for (const row of rows) {
-      if (!row.charge_id) continue;
-      if (!chargeGroups.has(row.charge_id)) {
-        chargeGroups.set(row.charge_id, []);
-      }
-      chargeGroups.get(row.charge_id)!.push(row);
-    }
-
-    const interestTransactionIds = new Set<string>();
-    for (const [_, transactions] of chargeGroups) {
-      if (transactions.length > 1) {
-        // Multiple transactions per charge - find the one with highest absolute amount
-        const sortedByAbsAmount = [...transactions].sort(
-          (a, b) => Math.abs(Number(b.amount ?? 0)) - Math.abs(Number(a.amount ?? 0)),
-        );
-        // All except the first (highest) are interest
-        for (let i = 1; i < sortedByAbsAmount.length; i++) {
-          interestTransactionIds.add(sortedByAbsAmount[i].id);
-        }
-      }
-    }
+    // Identify interest transactions using shared helper
+    const interestTransactionIds = identifyInterestTransactionIds(rows, {
+      getId: r => r.id,
+      getChargeId: r => r.charge_id,
+      getAmount: r => Number(r.amount ?? 0),
+    });
 
     for (const row of rows) {
       if (!row.deposit_id) continue;
