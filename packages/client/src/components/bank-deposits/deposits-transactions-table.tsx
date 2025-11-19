@@ -16,9 +16,9 @@ import {
   DepositTransactionFieldsFragmentDoc,
   SharedDepositTransactionsDocument,
 } from '../../gql/graphql.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.jsx';
-import { columns, type DepositTransactionRowType } from './columns.jsx';
-import { DepositReassignDialog } from './deposit-erassign-dialog.jsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { columns, type DepositTransactionRowType } from './columns.js';
+import { DepositReassignDialog } from './deposit-reassign-dialog.js';
 import { identifyInterestTransactionIds } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
