@@ -55,48 +55,50 @@ function BusinessLedgerRecordsFilterForm({
     <>
       {businessesLoading ? <div>Loading...</div> : <div />}
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Controller
-          name="ownerIds"
-          control={control}
-          defaultValue={filter.ownerIds}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={businesses}
-              value={
-                field.value ??
-                (userContext?.context.adminBusinessId
-                  ? [userContext.context.adminBusinessId]
-                  : undefined)
-              }
-              disabled={businessesLoading}
-              label="Owners"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
         {!single && (
-          <Controller
-            name="businessIDs"
-            control={control}
-            defaultValue={filter.businessIDs}
-            render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                data={businesses}
-                value={field.value ?? undefined}
-                disabled={businessesLoading}
-                label="Businesses"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
-            )}
-          />
+          <>
+            <Controller
+              name="ownerIds"
+              control={control}
+              defaultValue={filter.ownerIds}
+              render={({ field, fieldState }): ReactElement => (
+                <MultiSelect
+                  {...field}
+                  data={businesses}
+                  value={
+                    field.value ??
+                    (userContext?.context.adminBusinessId
+                      ? [userContext.context.adminBusinessId]
+                      : undefined)
+                  }
+                  disabled={businessesLoading}
+                  label="Owners"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+            <Controller
+              name="businessIDs"
+              control={control}
+              defaultValue={filter.businessIDs}
+              render={({ field, fieldState }): ReactElement => (
+                <MultiSelect
+                  {...field}
+                  data={businesses}
+                  value={field.value ?? undefined}
+                  disabled={businessesLoading}
+                  label="Businesses"
+                  placeholder="Scroll to see all options"
+                  maxDropdownHeight={160}
+                  searchable
+                  error={fieldState.error?.message}
+                />
+              )}
+            />
+          </>
         )}
         <Controller
           name="fromDate"
@@ -154,24 +156,26 @@ function BusinessLedgerRecordsFilterForm({
             />
           )}
         />
-        <Controller
-          name="type"
-          control={control}
-          defaultValue={null}
-          render={({ field, fieldState }): ReactElement => (
-            <Select
-              {...field}
-              onChange={value => field.onChange(value === 'NULL' ? null : value)}
-              data={[
-                { value: 'NULL', label: 'All' },
-                { value: 'BUSINESS', label: 'Business' },
-                { value: 'TAX_CATEGORY', label: 'Tax Category' },
-              ]}
-              error={fieldState.error?.message}
-              label="Type"
-            />
-          )}
-        />
+        {!single && (
+          <Controller
+            name="type"
+            control={control}
+            defaultValue={null}
+            render={({ field, fieldState }): ReactElement => (
+              <Select
+                {...field}
+                onChange={value => field.onChange(value === 'NULL' ? null : value)}
+                data={[
+                  { value: 'NULL', label: 'All' },
+                  { value: 'BUSINESS', label: 'Business' },
+                  { value: 'TAX_CATEGORY', label: 'Tax Category' },
+                ]}
+                error={fieldState.error?.message}
+                label="Type"
+              />
+            )}
+          />
+        )}
         <div className="flex justify-center mt-5 gap-3">
           <button
             type="submit"
