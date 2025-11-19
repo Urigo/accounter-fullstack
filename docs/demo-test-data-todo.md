@@ -46,15 +46,19 @@ infrastructure for `@accounter/server`. Each item corresponds to prompts in
 
 ### S3: ensureBusinessForEntity
 
-- [ ] Add `ensureBusinessForEntity(client, entityId, options?)` to `seed-helpers.ts`
-  - [ ] Check if business exists by id
-  - [ ] Insert if missing
-  - [ ] Support `noInvoicesRequired` option
-- [ ] Create `packages/server/src/__tests__/helpers/seed-helpers.business.test.ts`
-  - [ ] Test: first insert creates row
-  - [ ] Test: repeated calls are idempotent
-  - [ ] Use transactional tests
-- [ ] Tests pass ✅
+- [x] Add `ensureBusinessForEntity(client, entityId, options?)` to `seed-helpers.ts`
+  - [x] Check if business exists by id
+  - [x] Insert if missing
+  - [x] Support `noInvoicesRequired` option
+- [x] Create `packages/server/src/__tests__/helpers/seed-helpers.business.test.ts`
+  - [x] Test: first insert creates row
+  - [x] Test: repeated calls are idempotent
+  - [x] Test: noInvoicesRequired option works
+  - [x] Test: default value when option not specified
+  - [x] Test: existing business not modified on subsequent calls
+  - [x] Test: no data leakage between tests
+  - [x] Use transactional tests
+- [x] Tests pass ✅
 
 ### S4: ensureTaxCategoryForEntity
 

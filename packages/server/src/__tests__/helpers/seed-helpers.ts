@@ -58,3 +58,45 @@ export async function ensureFinancialEntity(
 
   return { id: insertResult.rows[0].id };
 }
+
+export interface EnsureBusinessForEntityOptions {
+  noInvoicesRequired?: boolean;
+}
+
+/**
+ * Ensure a business row exists for a given financial entity id (idempotent)
+ * If a business with the given id already exists, do nothing
+ * Otherwise, insert a new business row
+ * 
+ * @param client - PostgreSQL client (should be within a transaction)
+ * @param entityId - Financial entity id to use as business id
+ * @param options - Optional business configuration
+ * @returns Promise resolving when complete
+ */
+export async function ensureBusinessForEntity(
+  client: PoolClient,
+  entityId: string,
+  options?: EnsureBusinessForEntityOptions,
+): Promise<void> {
+  // Check if business already exists
+  const selectQuery = `
+    SELECT 1
+    FROM accounter_schema.businesses
+    WHERE id = $1
+    LIMIT 1
+  `;
+
+  const existingResult = await client.query(selectQuery, [entityId]);
+
+  if (existingResult.rows.length > 0) {
+    return; // Business already exists
+  }
+
+  // Insert new business
+  const insertQuery = `
+    INSERT INTO accounter_schema.businesses (id, no_invoices_required)
+    VALUES ($1, $2)
+  `;
+
+  await client.query(insertQuery, [entityId, options?.noInvoicesRequired ?? false]);
+}
