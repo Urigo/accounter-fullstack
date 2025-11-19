@@ -56,6 +56,7 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch",
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "6.0.0",
     "@types/inline-css": "3.0.4",
@@ -63,6 +64,7 @@
     "nodemon": "3.1.11",
     "pino-pretty": "13.1.2",
     "rimraf": "6.1.2",
+    "slonik": "48.4.1",
     "tsc-alias": "1.8.16",
     "typescript": "5.9.3"
   },
