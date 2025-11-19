@@ -1,5 +1,5 @@
 import { useMemo, type ReactElement } from 'react';
-import type { DepositTransactionRowType } from '../columns.jsx';
+import type { DepositTransactionRowType } from '../columns.js';
 
 type Props = {
   transaction: DepositTransactionRowType;

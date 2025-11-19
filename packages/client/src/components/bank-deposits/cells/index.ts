@@ -1,7 +1,7 @@
-export { DateCell } from './date.jsx';
-export { DepositIndicator } from './deposit-indicator.jsx';
-export { Amount } from './amount.jsx';
-export { CumulativeBalance } from './cumulative-balance.jsx';
-export { Interest } from './interest.jsx';
-export { LocalAmount } from './local-amount.jsx';
-export { LocalCumulativeBalance } from './local-cumulative-balance.jsx';
+export { DateCell } from './date.js';
+export { DepositIndicator } from './deposit-indicator.js';
+export { Amount } from './amount.js';
+export { CumulativeBalance } from './cumulative-balance.js';
+export { Interest } from './interest.js';
+export { LocalAmount } from './local-amount.js';
+export { LocalCumulativeBalance } from './local-cumulative-balance.js';
