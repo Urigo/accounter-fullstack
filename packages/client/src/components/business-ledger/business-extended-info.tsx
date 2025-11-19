@@ -244,11 +244,13 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
 
   if (fetching) {
     return (
-      <div className="flex flex-col gap-4 max-w-[90vw]">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
+      <div className="flex flex-col gap-4 max-w-[90vw] m-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <Skeleton className="size-10" />
         </div>
         <div className="rounded-md border overflow-x-auto">
           <Table>
