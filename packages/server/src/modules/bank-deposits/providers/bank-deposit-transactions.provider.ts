@@ -6,23 +6,12 @@ import { TransactionsProvider } from '@modules/transactions/providers/transactio
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString } from '@shared/helpers';
 import type {
-  IAddBankDepositTransactionParams,
-  IAddBankDepositTransactionQuery,
-  IDeleteBankDepositTransactionsByIdsParams,
-  IDeleteBankDepositTransactionsByIdsQuery,
   IGetAllDepositsWithTransactionsQuery,
-  IGetBankDepositTransactionsByIdsQuery,
   IGetDepositTransactionsByChargeIdQuery,
-  IGetDepositTransactionsByTransactionIdQuery,
   IGetTransactionsByBankDepositsQuery,
-  IUpdateBankDepositTransactionParams,
-  IUpdateBankDepositTransactionQuery,
+  IInsertOrUpdateBankDepositTransactionParams,
+  IInsertOrUpdateBankDepositTransactionQuery,
 } from '../types.js';
-
-const getBankDepositTransactionsByIds = sql<IGetBankDepositTransactionsByIdsQuery>`
-    SELECT *
-    FROM accounter_schema.transactions_bank_deposits
-    WHERE id IN $$transactionIds;`;
 
 const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     SELECT *
@@ -30,17 +19,6 @@ const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     LEFT JOIN accounter_schema.transactions
       USING (id)
     WHERE deposit_id IN $$depositIds;`;
-
-const getDepositTransactionsByTransactionId = sql<IGetDepositTransactionsByTransactionIdQuery>`
-    SELECT *
-    FROM accounter_schema.transactions_bank_deposits
-    LEFT JOIN accounter_schema.transactions
-      USING (id)
-    WHERE deposit_id IN (
-      SELECT deposit_id
-      FROM accounter_schema.transactions_bank_deposits
-      WHERE id = $transactionId
-    );`;
 
 const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQuery>`
     SELECT *
@@ -56,28 +34,11 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
     )
     AND ($includeCharge OR charge_id <> $chargeId);`;
 
-const updateBankDepositTransaction = sql<IUpdateBankDepositTransactionQuery>`
-  UPDATE accounter_schema.transactions_bank_deposits
-  SET
-    deposit_id = COALESCE(
-      $depositId,
-      deposit_id,
-      NULL
-    )
-  WHERE
-    id = $transactionId
-  RETURNING *;
-`;
-
-const addBankDepositTransaction = sql<IAddBankDepositTransactionQuery>`
+const insertOrUpdateBankDepositTransaction = sql<IInsertOrUpdateBankDepositTransactionQuery>`
   INSERT INTO accounter_schema.transactions_bank_deposits (id, deposit_id)
-  VALUES $$bankDepositTransactions(id, depositId)
-  ON CONFLICT DO NOTHING
-  RETURNING *;`;
-
-const deleteBankDepositTransactionsByIds = sql<IDeleteBankDepositTransactionsByIdsQuery>`
-    DELETE FROM accounter_schema.transactions_bank_deposits
-    WHERE id IN $$transactionIds;`;
+  VALUES ($transactionId, $depositId)
+  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id;
+`;
 
 const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>`
     SELECT 
@@ -105,21 +66,6 @@ export class BankDepositTransactionsProvider {
     private transactionsProvider: TransactionsProvider,
   ) {}
 
-  private async batchBankDepositTransactionsByIds(ids: readonly string[]) {
-    const transactions = await getBankDepositTransactionsByIds.run(
-      {
-        transactionIds: ids,
-      },
-      this.dbProvider,
-    );
-    return ids.map(id => transactions.find(t => t.id === id));
-  }
-
-  public getBankDepositTransactionByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchBankDepositTransactionsByIds(keys),
-    { cache: false },
-  );
-
   private async batchTransactionsByBankDeposits(depositIds: readonly string[]) {
     const transactions = await getTransactionsByBankDeposits.run(
       {
@@ -135,24 +81,12 @@ export class BankDepositTransactionsProvider {
     { cache: false },
   );
 
-  public getDepositTransactionsByTransactionId(transactionId: string) {
-    return getDepositTransactionsByTransactionId.run({ transactionId }, this.dbProvider);
-  }
-
   public getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
     return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.dbProvider);
   }
 
-  public updateBankDepositTransaction(params: IUpdateBankDepositTransactionParams) {
-    return updateBankDepositTransaction.run(params, this.dbProvider);
-  }
-
-  public addBankDepositTransaction(params: IAddBankDepositTransactionParams) {
-    return addBankDepositTransaction.run(params, this.dbProvider);
-  }
-
-  public deleteBankDepositTransactionsByIds(params: IDeleteBankDepositTransactionsByIdsParams) {
-    return deleteBankDepositTransactionsByIds.run(params, this.dbProvider);
+  public insertOrUpdateBankDepositTransaction(params: IInsertOrUpdateBankDepositTransactionParams) {
+    return insertOrUpdateBankDepositTransaction.run(params, this.dbProvider);
   }
 
   public async getAllDepositsWithMetadata() {
@@ -271,9 +205,7 @@ export class BankDepositTransactionsProvider {
   }
 
   public async assignTransactionToDeposit(transactionId: string, depositId: string) {
-    const [transactionDepositInfo, depositTransactions, transaction] = await Promise.all([
-      // Get transaction to validate currency
-      getBankDepositTransactionsByIds.run({ transactionIds: [transactionId] }, this.dbProvider),
+    const [depositTransactions, transaction] = await Promise.all([
       // Get target deposit transactions to validate currency
       this.getTransactionsByBankDepositLoader.load(depositId),
       this.transactionsProvider.transactionByIdLoader.load(transactionId),
@@ -292,19 +224,7 @@ export class BankDepositTransactionsProvider {
       }
     }
 
-    if (transactionDepositInfo.length === 0) {
-      // New assignment
-      await addBankDepositTransaction.run(
-        { bankDepositTransactions: [{ id: transactionId, depositId }] },
-        this.dbProvider,
-      );
-    } else {
-      // Update deposit_id
-      await this.updateBankDepositTransaction({
-        transactionId,
-        depositId,
-      });
-    }
+    await this.insertOrUpdateBankDepositTransaction({ transactionId, depositId });
 
     // Return updated deposit metadata
     const allDeposits = await this.getAllDepositsWithMetadata();
