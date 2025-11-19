@@ -10,19 +10,19 @@ infrastructure for `@accounter/server`. Each item corresponds to prompts in
 
 ### S1: writeEnvVar Helper
 
-- [ ] Create `packages/server/src/__tests__/helpers/env-file.ts`
-- [ ] Implement `writeEnvVar(filePath, key, value)` function
-  - [ ] If key exists, replace its value
-  - [ ] If key doesn't exist, append `\nkey=value`
-  - [ ] Preserve other lines untouched
-- [ ] Create `packages/server/src/__tests__/helpers/env-file.test.ts`
-  - [ ] Test: create new variable
-  - [ ] Test: update existing variable
-  - [ ] Test: no extra trailing whitespace
-  - [ ] Test: idempotent when value unchanged
-  - [ ] Use temp file (fs.mkdtemp + os.tmpdir)
-- [ ] Run tests: `vitest run packages/server/src/__tests__/helpers/env-file.test.ts`
-- [ ] All tests pass ✅
+- [x] Create `packages/server/src/__tests__/helpers/env-file.ts`
+- [x] Implement `writeEnvVar(filePath, key, value)` function
+  - [x] If key exists, replace its value
+  - [x] If key doesn't exist, append `\nkey=value`
+  - [x] Preserve other lines untouched
+- [x] Create `packages/server/src/__tests__/helpers/env-file.test.ts`
+  - [x] Test: create new variable
+  - [x] Test: update existing variable
+  - [x] Test: no extra trailing whitespace
+  - [x] Test: idempotent when value unchanged
+  - [x] Use temp file (fs.mkdtemp + os.tmpdir)
+- [x] Run tests: `vitest run packages/server/src/__tests__/helpers/env-file.test.ts`
+- [x] All tests pass ✅
 
 ### S2: ensureFinancialEntity
 
