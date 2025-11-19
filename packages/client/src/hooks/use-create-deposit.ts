@@ -17,7 +17,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 type UseCreateDeposit = {
   creating: boolean;
-  createDeposit: (variables: { currency: Currency }) => Promise<void>;
+  createDeposit: (variables: { currency: Currency }) => Promise<string | null>;
 };
 
 const NOTIFICATION_ID = 'createDeposit';
@@ -26,7 +26,7 @@ export const useCreateDeposit = (): UseCreateDeposit => {
   const [{ fetching }, mutate] = useMutation(CreateDepositDocument);
 
   const createDeposit = useCallback(
-    async (variables: { currency: Currency }) => {
+    async (variables: { currency: Currency }): Promise<string | null> => {
       const message = `Error creating new deposit in currency ${variables.currency}`;
       const notificationId = `${NOTIFICATION_ID}-${variables.currency}`;
       toast.loading('Creating deposit', { id: notificationId });
@@ -38,6 +38,7 @@ export const useCreateDeposit = (): UseCreateDeposit => {
             id: notificationId,
             description: `Deposit ${data.createDeposit.id} (${data.createDeposit.currency}) created successfully`,
           });
+          return data.createDeposit.id;
         }
       } catch (e) {
         console.error(`${message}: ${e}`);
@@ -48,7 +49,7 @@ export const useCreateDeposit = (): UseCreateDeposit => {
           closeButton: true,
         });
       }
-      return void 0;
+      return null;
     },
     [mutate],
   );

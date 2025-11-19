@@ -126,7 +126,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
           transactions.map(tx => tx.deposit_id).filter(Boolean) as string[],
         );
         if (depositIds.size === 0) {
-          throw new GraphQLError('No deposits found');
+          return null;
         }
         if (depositIds.size > 1) {
           throw new GraphQLError('Multiple deposits found');
