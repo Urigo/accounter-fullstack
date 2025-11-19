@@ -107,7 +107,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.2.5"
+    "@types/react": "npm:19.2.6"
     "@types/react-dom": "npm:19.2.3"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.1.1"
@@ -136,7 +136,7 @@ __metadata:
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.2.0"
     react-error-boundary: "npm:6.0.0"
-    react-hook-form: "npm:7.66.0"
+    react-hook-form: "npm:7.66.1"
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.9.6"
     react-to-pdf: "npm:2.0.1"
@@ -304,7 +304,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.44"
+    "@ai-sdk/anthropic": "npm:2.0.45"
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -317,7 +317,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.15.6"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:5.0.93"
+    ai: "npm:5.0.95"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -371,28 +371,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.44":
-  version: 2.0.44
-  resolution: "@ai-sdk/anthropic@npm:2.0.44"
+"@ai-sdk/anthropic@npm:2.0.45":
+  version: 2.0.45
+  resolution: "@ai-sdk/anthropic@npm:2.0.45"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/6484fdc60da8658d8d28c2c61fc4bc322829aee31baf71f0ea1bfbf17d008d37ce9db5d3bb395646bdd9891866b24b763766cba17b5c0fbd67f183ceac71df57
+  checksum: 10c0/ef0e54f032e3b8324c278f3b25d9b388308204d753404c49fd880709a796c2343aee36d335c99f50e683edd39d5b8b6f42b2e9034e1725d8e0db514e2233d104
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.9":
-  version: 2.0.9
-  resolution: "@ai-sdk/gateway@npm:2.0.9"
+"@ai-sdk/gateway@npm:2.0.11":
+  version: 2.0.11
+  resolution: "@ai-sdk/gateway@npm:2.0.11"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@vercel/oidc": "npm:3.0.3"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/840f94795b96c0fa6e73897ea8dba95fc78af1f8482f3b7d8439b6233b4f4de6979a8b67206f4bbf32649baf2acfb1153a46792dfa20259ca9f5fd214fb25fa5
+  checksum: 10c0/72cd1de50c2dd63dc51362c3156cc0827af2abd4dbec2b5f55935d374c1e3af245b07e7606d24f8dff6d2e03550286da103f9015a3099c48da78283fe2634088
   languageName: node
   linkType: hard
 
@@ -2690,11 +2690,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.53.2":
-  version: 0.53.2
-  resolution: "@graphql-hive/cli@npm:0.53.2"
+"@graphql-hive/cli@npm:0.53.4":
+  version: 0.53.4
+  resolution: "@graphql-hive/cli@npm:0.53.4"
   dependencies:
-    "@graphql-hive/core": "npm:0.13.2"
+    "@graphql-hive/core": "npm:0.15.0"
     "@graphql-inspector/core": "npm:6.4.1"
     "@graphql-tools/code-file-loader": "npm:~8.1.0"
     "@graphql-tools/graphql-file-loader": "npm:~8.1.0"
@@ -2716,7 +2716,7 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/f6500400ebb31e0f8f8b0f0e4b96eeb144fa790b6770978e270fcc6cd02ca8132e96edcafd3928a973d5fe48beaec69f883a06d86c362f5e05cc2b099d41c38c
+  checksum: 10c0/340b2891f764e1dc71985cae20d44fb5c17fa600ed2f576649d7739d5e20ec5568c561282ec48b4a5cef9434a166ff5e977e8efb18fdc27c86ea6c916c063a09
   languageName: node
   linkType: hard
 
@@ -8444,12 +8444,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.2.5":
-  version: 19.2.5
-  resolution: "@types/react@npm:19.2.5"
+"@types/react@npm:19.2.6":
+  version: 19.2.6
+  resolution: "@types/react@npm:19.2.6"
   dependencies:
-    csstype: "npm:^3.0.2"
-  checksum: 10c0/1f9a92c73a5ea5b167f59cd0b5b9460fde65bd22b63b6d23bfaace8ad38537df127c97657418b4912a7a03a66e6451e82a41b84718d638ec1c8e4f0515d94793
+    csstype: "npm:^3.2.2"
+  checksum: 10c0/23b1100f88662ce9f9e4fcca3a2b4ef9fff1ecde24ede2b2dcbd07731e48d6946fd7fd156cd133f5b25321694b0569cd9b8dd30b22c4e076d1cf4c8cdd9a75cb
   languageName: node
   linkType: hard
 
@@ -9040,7 +9040,7 @@ __metadata:
     "@graphql-codegen/typescript": "npm:5.0.4"
     "@graphql-codegen/typescript-resolvers": "npm:4.5.2"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
-    "@graphql-hive/cli": "npm:0.53.2"
+    "@graphql-hive/cli": "npm:0.53.4"
     "@graphql-inspector/cli": "npm:6.0.3"
     "@parcel/watcher": "npm:2.5.1"
     "@pgtyped/cli": "npm:2.4.3"
@@ -9116,17 +9116,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.93":
-  version: 5.0.93
-  resolution: "ai@npm:5.0.93"
+"ai@npm:5.0.95":
+  version: 5.0.95
+  resolution: "ai@npm:5.0.95"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.9"
+    "@ai-sdk/gateway": "npm:2.0.11"
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/64e80a36248ef20d42a0e688a58da6ca4255e2510a47d6ee9c2318a669df8e8ffb5c63ddb03a3cadd841058414bd4b324783f168c761f82421e4a1c2ac958933
+  checksum: 10c0/cc10b1d64c56b4c7f4801a27519be76cbd48bd7c0e112b46e113b862be81ddace94c17b8238b59db7bce5913a3c8d7673da65395ee90558b73ddf7ea9e096766
   languageName: node
   linkType: hard
 
@@ -11274,6 +11274,13 @@ __metadata:
   version: 3.2.2
   resolution: "csstype@npm:3.2.2"
   checksum: 10c0/ec45114093760c9944c84514615fe4080189276ee4980f52359426a4db5e4fdf0a60affac2c033b978d6c0fed275f37820952682aefa85aeec041d00fecff64d
+  languageName: node
+  linkType: hard
+
+"csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: 10c0/cd29c51e70fa822f1cecd8641a1445bed7063697469d35633b516e60fe8c1bde04b08f6c5b6022136bb669b64c63d4173af54864510fbb4ee23281801841a3ce
   languageName: node
   linkType: hard
 
@@ -19586,12 +19593,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hook-form@npm:7.66.0":
-  version: 7.66.0
-  resolution: "react-hook-form@npm:7.66.0"
+"react-hook-form@npm:7.66.1":
+  version: 7.66.1
+  resolution: "react-hook-form@npm:7.66.1"
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
-  checksum: 10c0/9faeafdaedfabfcbf5f8bb1aeefb81863b8e158eef4b089e2a32180fe474aec47d05fe3ed7d4faea085ca9f689118fb1135b94cdeed2022bd7d3fa3a56530c63
+  checksum: 10c0/f82238249d44111b377116bdfb6063045e3e81fef4c73d7f487160554fa4b43ff0970dec1f4d031e57bc2dfbdd974bdfba5608bc8c5785998a7b8a39a566428f
   languageName: node
   linkType: hard
 
