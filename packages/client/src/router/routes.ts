@@ -67,6 +67,11 @@ export const ROUTES = {
     VALIDATE_REPORTS: '/reports/validate-reports',
   },
 
+  BANK_DEPOSITS: {
+    ROOT: '/bank-deposits',
+    ALL: '/bank-deposits',
+  },
+
   ACCOUNTANT_APPROVALS: '/accountant-approvals',
   SALARIES: '/salaries',
   TAGS: '/tags',

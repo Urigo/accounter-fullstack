@@ -11,6 +11,7 @@ import { TimelessDateString } from '@shared/types';
 import { defineConversionBaseAndQuote, getFiatExchangeRate } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';
+import { commonTransactionFields } from './common.js';
 
 export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
   Query: {
@@ -144,5 +145,11 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         rate,
       };
     },
+  },
+  CommonTransaction: {
+    ...commonTransactionFields,
+  },
+  ConversionTransaction: {
+    ...commonTransactionFields,
   },
 };

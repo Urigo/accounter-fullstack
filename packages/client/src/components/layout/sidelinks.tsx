@@ -185,6 +185,12 @@ export const sidelinks: SideLink[] = [
         icon: <Signature size={18} />,
       },
       {
+        title: 'Bank Deposits',
+        label: '',
+        href: ROUTES.BANK_DEPOSITS.ALL,
+        icon: <TrendingUp size={18} />,
+      },
+      {
         title: 'Tax Categories',
         label: '',
         href: ROUTES.TAX_CATEGORIES,

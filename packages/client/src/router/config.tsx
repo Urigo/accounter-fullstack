@@ -164,6 +164,11 @@ const TaxCategories = lazy(() =>
 const SortCodes = lazy(() =>
   import('../components/screens/sort-codes/index.js').then(m => ({ default: m.SortCodes })),
 );
+const DepositsScreen = lazy(() =>
+  import('../components/screens/bank-deposits/index.js').then(m => ({
+    default: m.DepositsScreen,
+  })),
+);
 const PageNotFound = lazy(() =>
   import('../components/screens/page-not-found.js').then(m => ({ default: m.PageNotFound })),
 );
@@ -521,6 +526,11 @@ export const routes: RouteObject[] = [
           },
 
           // Standalone routes
+          {
+            path: 'bank-deposits',
+            element: withSuspense(DepositsScreen, <TableSkeleton />),
+            handle: { title: 'Bank Deposits', breadcrumb: 'Bank Deposits' },
+          },
           {
             path: 'accountant-approvals',
             element: withSuspense(AccountantApprovals, <TableSkeleton />),
