@@ -14,7 +14,7 @@ export const BusinessNameCell = ({ business }: Props): ReactElement => {
     <Link
       to={ROUTES.BUSINESSES.DETAIL(business.id)}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       onClick={event => event.stopPropagation()}
       className="inline-flex items-center font-semibold whitespace-nowrap"
     >
