@@ -19,7 +19,7 @@ export const CounterAccountCell = ({ counterAccount }: Props): ReactElement => {
     <Link
       to={ROUTES.BUSINESSES.DETAIL(counterAccount.id)}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       onClick={event => event.stopPropagation()}
       className="inline-flex items-center font-semibold whitespace-nowrap text-sm"
     >
