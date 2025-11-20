@@ -90,11 +90,11 @@ export function createCharge(
     id: makeUUID(),
     owner_id: params.owner_id,
     type: null,
-    accountant_status: null,
+    accountant_status: 'PENDING', // Database requires NOT NULL, default to PENDING
     user_description: params.user_description ?? null,
     tax_category_id: params.tax_category_id ?? makeUUID('default-tax-category'),
-    optional_vat: null,
-    documents_optional_flag: null,
+    optional_vat: false, // Database requires NOT NULL
+    documents_optional_flag: false, // Database requires NOT NULL
     ...overrides,
   };
 }

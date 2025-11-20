@@ -43,8 +43,8 @@ export function createBusiness(
     governmentId: null,
     exemptDealer: false,
     suggestions: null,
-    optionalVat: null,
-    country: null,
+    optionalVat: false, // Database requires NOT NULL
+    country: 'ISR', // Database requires NOT NULL, default to Israel
     pcn874RecordTypeOverride: null,
     isReceiptEnough: false,
     isDocumentsOptional: false,

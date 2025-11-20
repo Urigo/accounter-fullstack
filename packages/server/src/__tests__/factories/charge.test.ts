@@ -18,12 +18,12 @@ describe('Factory: Charge', () => {
       expect(charge.tax_category_id).toBeDefined();
       expect(charge.tax_category_id).toMatch(UUID_REGEX);
 
-      // Null defaults
+      // Default values (some fields have NOT NULL constraints)
       expect(charge.type).toBeNull();
-      expect(charge.accountant_status).toBeNull();
+      expect(charge.accountant_status).toBe('PENDING'); // NOT NULL constraint
       expect(charge.user_description).toBeNull();
-      expect(charge.optional_vat).toBeNull();
-      expect(charge.documents_optional_flag).toBeNull();
+      expect(charge.optional_vat).toBe(false); // NOT NULL constraint
+      expect(charge.documents_optional_flag).toBe(false); // NOT NULL constraint
     });
 
     it('should generate unique IDs by default', () => {
@@ -91,7 +91,7 @@ describe('Factory: Charge', () => {
       expect(charge.user_description).toBe('Consulting fee');
       expect(charge.type).toBe('INCOME');
       expect(charge.id).toBeDefined();
-      expect(charge.accountant_status).toBeNull();
+      expect(charge.accountant_status).toBe('PENDING'); // Default value
     });
 
     it('should preserve all required fields', () => {
