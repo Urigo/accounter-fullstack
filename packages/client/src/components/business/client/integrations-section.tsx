@@ -432,7 +432,7 @@ export function IntegrationsSection({ data }: Props) {
                       >
                         <div className="h-10 w-10 rounded-lg bg-green-900 flex items-center justify-center text-white font-bold">
                           <img
-                            src="../../../icons/logos/hive.svg"
+                            src="/icons/logos/hive.svg"
                             alt="Hive logo"
                             className="size-8 object-cover"
                           />
