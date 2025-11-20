@@ -496,7 +496,7 @@ export function IntegrationsSection({ data }: Props) {
                       className="inline-flex items-center font-semibold gap-2"
                     >
                       <img
-                        src="../../../icons/logos/retool.svg"
+                        src="/icons/logos/retool.svg"
                         alt="Retool logo"
                         className="size-8 object-cover"
                       />
