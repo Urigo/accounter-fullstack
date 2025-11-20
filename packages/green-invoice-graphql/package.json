@@ -70,8 +70,8 @@
     "@graphql-mesh/cli": "0.100.19",
     "@types/mime-types": "3.0.1",
     "bob-the-bundler": "7.0.1",
-    "mime-types": "3.0.1",
-    "rimraf": "6.1.0"
+    "mime-types": "3.0.2",
+    "rimraf": "6.1.2"
   },
   "publishConfig": {
     "directory": "dist",
