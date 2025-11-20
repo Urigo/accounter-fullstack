@@ -331,19 +331,47 @@ new country FK constraints introduced in latest migrations.
 
 ### S13: Charge/Transaction/Document Factories
 
-- [ ] Create `packages/server/src/__tests__/factories/charge.ts`
-  - [ ] Implement `createCharge({ owner_id, tax_category_id, user_description? }, overrides?)`
-  - [ ] Add unit tests
-- [ ] Create `packages/server/src/__tests__/factories/transaction.ts`
-  - [ ] Implement
+- [x] Create `packages/server/src/__tests__/factories/charge.ts`
+  - [x] Implement `createCharge({ owner_id, tax_category_id, user_description? }, overrides?)`
+  - [x] Add unit tests
+- [x] Create `packages/server/src/__tests__/factories/transaction.ts`
+  - [x] Implement
         `createTransaction({ charge_id, business_id, amount, currency, event_date, is_fee? }, overrides?)`
-  - [ ] Use string for numeric types (pgtyped)
-  - [ ] Add unit tests
-- [ ] Create `packages/server/src/__tests__/factories/document.ts`
-  - [ ] Implement
+  - [x] Use string for numeric types (pgtyped)
+  - [x] Add unit tests
+- [x] Create `packages/server/src/__tests__/factories/document.ts`
+  - [x] Implement
         `createDocument({ charge_id, creditor_id, debtor_id, type, total_amount, currency_code, date }, overrides?)`
-  - [ ] Add unit tests
-- [ ] All factory tests pass ✅
+  - [x] Add unit tests
+- [x] All factory tests pass ✅ (126/126 tests passing)
+
+**Test Results:**
+
+- `charge.test.ts`: 9 tests - required fields, tax_category_id, user_description, overrides, param
+  combinations
+- `transaction.test.ts`: 12 tests - required fields, numeric amount conversion, Date conversion,
+  is_fee flag, currency types, negative/positive amounts
+- `document.test.ts`: 12 tests - required fields, document types (INVOICE, RECEIPT, CREDIT_INVOICE),
+  Date handling, VAT amounts, file/image URLs, negative amounts
+
+**Key Implementation Details:**
+
+- `createCharge`: Minimal shape based on generateCharge SQL from charges.provider.ts; fields:
+  owner_id (required), type, accountant_status, user_description, tax_category_id, optional_vat,
+  documents_optional_flag
+- `createTransaction`: Based on transactions table schema from migrations; amount/current_balance
+  use string for PostgreSQL numeric; accepts string or Date for event_date; converts numeric amount
+  to string via formatNumeric
+- `createDocument`: Based on documents table schema; total_amount is number (double precision in
+  DB); accepts string or Date for date field; supports all document types; includes VAT, serial
+  number, file URLs
+- All factories follow S11-S12 pattern: minimal required params, partial overrides, pgtyped types,
+  deterministic UUIDs
+- Factories use helpers from S11: makeUUID, formatNumeric for type-safe database insertion
+
+**Milestone 3 Complete:** All factory scaffolding and core data factories implemented and tested ✅
+**Total Tests:** 126 passing (9 ids + 22 dates + 31 money + 8 business + 9 tax-category + 14
+financial-account + 9 charge + 12 transaction + 12 document)
 
 ### S14: Factory Integration
 
