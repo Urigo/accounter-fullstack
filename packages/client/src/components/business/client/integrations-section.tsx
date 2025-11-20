@@ -135,7 +135,7 @@ export function IntegrationsSection({ data }: Props) {
       !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
   });
   const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
-  const hiveClient = business?.clientInfo?.integrations.hiveId;
+  const hiveClient = business?.clientInfo?.integrations?.hiveId;
 
   const updateIdByAttribute = useCallback(
     (
