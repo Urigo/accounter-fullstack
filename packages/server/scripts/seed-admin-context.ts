@@ -24,6 +24,22 @@ import {
 export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId: string }> {
   console.log('🌱 Starting admin context seed...');
 
+  // 0. Ensure required reference data exists for FKs inside this transaction
+  // Countries: 'ISR' is the default for businesses.country and user_context.locality
+  try {
+    await client.query(
+      `INSERT INTO accounter_schema.countries (code, name)
+       VALUES ($1, $2)
+       ON CONFLICT (code) DO NOTHING`,
+      ['ISR', 'Israel'],
+    );
+  } catch (e) {
+    console.warn(
+      '⚠️  Failed to ensure countries reference data (ISR). Subsequent inserts may fail:',
+      e,
+    );
+  }
+
   // 1. Create admin business entity
   console.log('Creating admin business entity...');
 

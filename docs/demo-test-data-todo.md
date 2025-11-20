@@ -130,50 +130,76 @@ concurrent + 5 integration)
 - [x] Add `closeTestDb()` for cleanup
 - [x] All helpers implemented ✅
 
-### S9: Vitest Hooks (Deferred - Manual Setup Pattern)
+### S9: Vitest Hooks (Implemented - Transactional Isolation)
 
-- [x] ~~Create `packages/server/src/__tests__/helpers/test-hooks.ts`~~ (Deferred)
-  - Note: Using manual `beforeAll` setup in each test file for flexibility
-  - Tests call `connectTestDb()` and `seedAdminOnce()` directly
-- [x] ~~Implement `setupDbHooks()`~~ (Deferred)
-  - Note: Individual tests use `withTestTransaction` wrapper instead
-- [x] ~~Create/update `packages/server/scripts/vitest-setup.ts`~~ (Not needed)
-- [x] ~~Update root `vitest.config.ts` if needed~~ (Not needed)
-  - Current approach works with existing vitest config
+- [x] Create `packages/server/src/__tests__/helpers/test-hooks.ts`
+  - [x] Implement `beforeAll` hook: create TEST_ENV_FILE, connect pool
+  - [x] Implement `beforeEach` hook: BEGIN transaction
+  - [x] Implement `afterEach` hook: ROLLBACK transaction
+  - [x] Implement `afterAll` hook: close pool
+  - [x] Support optional `seedAdmin` parameter for idempotent admin seeding in transaction
+  - [x] Dynamic import of seedAdminCore to avoid circular dependencies
+- [x] Create `packages/server/src/__tests__/transaction-isolation.dummy.test.ts`
+  - [x] Test: insert visible during transaction
+  - [x] Test: data rolled back between tests (isolation verified)
+- [x] Update `scripts/vitest-global-setup.ts`
+  - [x] Create isolated TEST_ENV_FILE in temp directory
+  - [x] Set ENFORCE_LATEST_MIGRATION=1 by default
+  - [x] Ensure countries reference data (ISR) exists for FK constraints
+  - [x] Return teardown function for shared pool cleanup
+- [x] All transactional hooks tests pass ✅
 
 ### S10: Smoke Test
 
 - [x] Create `packages/server/src/__tests__/db-bootstrap.test.ts`
   - [x] Connect DB
   - [x] ~~Run migrations~~ (Assumes migrations already run via `yarn db:init`)
-  - [x] Seed admin once
+  - [x] Seed admin once (transactionally per test)
   - [x] Query `user_context`
   - [x] Assert data exists
-  - [x] Verify migrations table (100+ migrations)
+  - [x] Verify latest migration by name (LATEST_MIGRATION_NAME guard)
   - [x] Verify admin business creation
   - [x] Verify 3 authority businesses (VAT, Tax, Social Security)
   - [x] Verify 19 tax categories
   - [x] Verify user_context structure
   - [x] Verify transaction isolation (withTestTransaction rollback)
-  - [x] Verify idempotency of seedAdminOnce
-- [x] Smoke test passes ✅ (9/9 tests passing)
-- [x] Transaction isolation test passes ✅ **Milestone 2 Complete:** DB test harness implemented
-      with connection pooling, migration runner, and admin seeding ✅ **Total Tests:** 55 passing
-      (46 from Milestone 1 + 9 db-bootstrap smoke tests) **Test Execution Time:** ~1 second
+  - [x] Verify manual business insert with rollback
+- [x] Smoke test passes ✅ (7/7 tests passing)
+- [x] Transaction isolation test passes ✅ (2/2 tests in dummy suite)
+
+**Milestone 2 Complete:** DB test harness implemented with connection pooling, transactional
+isolation hooks, and admin seeding ✅
+
+**Total Tests:** 9 passing (7 db-bootstrap + 2 transaction-isolation.dummy)
+
+**Test Execution Time:** ~180ms (bootstrap suite)
 
 **Key Deliverables:**
 
-- `db-setup.ts`: Connection pool management, migration runner integration, admin seeding with locks
-- `db-bootstrap.test.ts`: Comprehensive smoke tests verifying full pipeline
+- `db-setup.ts`: Modular harness with `db-connection.ts`, `db-migrations.ts`, `db-fixtures.ts`,
+  `diagnostics.ts`, `errors.ts`, `test-database.ts`
+- `test-hooks.ts`: Optional per-suite transactional isolation hooks (beforeEach BEGIN, afterEach
+  ROLLBACK)
+- `transaction-isolation.dummy.test.ts`: Verification tests for hook-based isolation
+- `db-bootstrap.test.ts`: Comprehensive smoke tests with migration guard and rollback verification
+- `vitest-global-setup.ts`: Env isolation (TEST_ENV_FILE), default migration enforcement, countries
+  reference data seeding
 - Added `slonik@48.4.1` dependency for migration runner
-- Re-exported transaction wrappers for convenience
+- Exported `LATEST_MIGRATION_NAME` from migrations for precise schema guard
 
-**Architecture Decision:** Migrations assumed to be run via `yarn db:init` before tests rather than
-programmatically in each test run to avoid FK constraint violations with existing data.
+**Architecture Decisions:**
 
-**Note:** Running migrations programmatically in tests can cause FK constraint violations if
-database has existing data. Current implementation assumes migrations are run once via
-`yarn db:init` before tests.
+1. **External Migrations**: Migrations run once via
+   `yarn workspace @accounter/migrations migration:run` before tests; test harness validates schema
+   via `LATEST_MIGRATION_NAME` assertion
+2. **Transactional Isolation**: Optional hooks provide per-test BEGIN/ROLLBACK for zero data
+   persistence; seeding idempotent within transactions
+3. **Environment Isolation**: Global setup creates isolated temp `.env` file to prevent pollution of
+   repo root
+4. **Countries FK Constraints**: New migrations introduced `businesses.country` and
+   `user_context.locality` FKs; global setup and seed script ensure 'ISR' country exists
+5. **Default Enforcement**: `ENFORCE_LATEST_MIGRATION=1` set by default in global setup to catch
+   schema drift locally
 
 ---
 
@@ -213,9 +239,19 @@ database has existing data. Current implementation assumes migrations are run on
 - [x] Run migrations, then test suite with coverage collection
 - [x] Independent schema guard script validates `LATEST_MIGRATION_NAME`
 - [x] Stores coverage artifact for inspection
+- [x] Environment isolation verified via TEST_ENV_FILE logging
+
+### H6: Countries FK Support
+
+- [x] Updated `seedAdminCore` to upsert 'ISR' country within transaction
+- [x] Global setup ensures countries table contains 'ISR' for FK defaults
+- [x] Fixed `businesses.country` and `user_context.locality` FK constraint violations
+- [x] Migration tooling (db-connection-string.cjs) updated to disable SSL locally
+- [x] Added `db:reset` script to migrations package for clean DB resets
 
 **Result:** Harness now enforces external migration step, isolates environment writes, provides
-precise schema drift detection, and surfaces diagnostics without introducing flakiness.
+precise schema drift detection, surfaces diagnostics without introducing flakiness, and satisfies
+new country FK constraints introduced in latest migrations.
 
 ---
 

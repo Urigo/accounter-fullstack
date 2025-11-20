@@ -55,6 +55,8 @@ isolation to ensure stability and speed. Defer ingestion (scrapers, Gmail) until
   sandboxed env var writes.
 - **Chunk 2.8**: CI workflow: migrations step (external), test run, independent schema guard script,
   coverage artifact.
+- **Chunk 2.9**: Transactional isolation hooks (optional per-suite `test-hooks.ts`).
+- **Chunk 2.10**: Countries FK support and migration tooling fixes (SSL handling, db:reset).
 
 ### Milestone 3: Factories
 
@@ -103,8 +105,8 @@ isolation to ensure stability and speed. Defer ingestion (scrapers, Gmail) until
 - **S7**: Implement `connectTestDb()` that uses env, returns pooled client.
 - **S8**: Implement `runMigrationsIfNeeded()` and `seedAdminOnce()` with a lock table/flag.
 - **S9**: Vitest hooks `beforeAll/afterAll` (connect/disconnect), `beforeEach/afterEach`
-  (BEGIN/ROLLBACK).
-- **S10**: Smoke test "can query user_context".
+  (BEGIN/ROLLBACK), migration enforcement, countries seeding.
+- **S10**: Smoke test "can query user_context", latest migration guard, rollback verification.
 
 ### Milestone 3
 
@@ -180,7 +182,8 @@ patterns, simplifies concurrent access testing.
 
 Each prompt builds on the previous, tests first, no orphan code, and wires into the suite.
 
-**Note**: Prompts 1-3 have been completed with architectural enhancements. Continue from Prompt 4.
+**Note**: Prompts 1-7 have been completed with architectural enhancements and transactional
+isolation. Continue from Prompt 8 (Factory Scaffolding).
 
 ---
 
@@ -279,16 +282,7 @@ Requirements:
 Acceptance:
 - Tests pass (8 tests), table returns single row for repeated calls.
 
-Status: ✅ COMPLETED (S3) - Enhanced with FK validation, UUID checks, and comprehensive testseed convenience.
-
-Requirements:
-- Add `ensureBusinessForEntity(client, entityId, options?: { noInvoicesRequired?: boolean }): Promise<void>` in `seed-helpers.ts`.
-- If `SELECT 1 FROM accounter_schema.businesses WHERE id=$1`, do nothing; else `INSERT`.
-- Tests: `seed-helpers.business.test.ts` covering first-insert and idempotency.
-- Use transactional tests.
-
-Acceptance:
-- Tests pass, table returns single row for repeated calls.
+Status: ✅ COMPLETED (S3) - Enhanced with FK validation, UUID checks, and comprehensive tests.
 ```
 
 ---
@@ -309,6 +303,8 @@ Requirements:
 
 Acceptance:
 - Tests pass under transaction isolation.
+
+Status: ✅ COMPLETED (S4) - Implemented with FK validation and comprehensive tests.
 ```
 
 ---
@@ -326,13 +322,16 @@ Requirements:
 - File: `packages/server/scripts/seed-admin-context.ts`
   - Export `seedAdminCore(client): Promise<{ adminEntityId: string }>`
   - Compose using helpers from `seed-helpers.ts`
+  - Upsert countries reference data ('ISR') for FK constraints
   - Upsert `user_context` row with default currencies `ILS` and necessary foreign keys.
-  - Use `writeEnvVar` to set `DEFAULT_FINANCIAL_ENTITY_ID` in `.env` if missing.
+  - Use `writeEnvVar` to set `DEFAULT_FINANCIAL_ENTITY_ID` in isolated env file.
 - Add unit tests for smaller pure pieces (optional), and an integration test `packages/server/src/__tests__/seed-admin-context.integration.test.ts` that:
   - Connects DB, BEGIN, calls `seedAdminCore`, asserts `user_context` exists and references mandatory entities, then ROLLBACK.
 
 Acceptance:
 - Integration test passes consistently.
+
+Status: ✅ COMPLETED (S5) - Implemented with countries FK support and env isolation.
 ```
 
 ---
@@ -352,10 +351,13 @@ Updated Requirements (Refactored Harness):
   - `assertLatestMigrationApplied(pool): Promise<void>` (checks last applied migration name vs `LATEST_MIGRATION_NAME`; does NOT run migrations)
   - `seedAdminCoreTransactional(pool): Promise<void>` executed inside per-test transactions (no global persistent seed)
   - Re-export `withTestTransaction`, `withConcurrentTransactions`
+- Modular architecture: `db-connection.ts`, `db-migrations.ts`, `db-fixtures.ts`, `diagnostics.ts`, `errors.ts`, `test-database.ts`
 - Smoke test: verifies presence of `user_context`, admin entities, and latest migration name; fails if outdated.
 
 Acceptance:
 - Smoke test passes when schema current; intentional failure when schema behind.
+
+Status: ✅ COMPLETED (S7-S8, H1-H6) - Implemented with modular architecture, diagnostics, and countries FK support.
 ```
 
 ---
@@ -367,11 +369,16 @@ Task: Provide beforeEach/afterEach hooks for transactional isolation.
 
 Updated Requirements:
 - Global setup script creates temp env file (`TEST_ENV_FILE`) and initializes pool.
-- Per-test isolation achieved explicitly by wrapping logic with `withTestTransaction` (no mandatory hook file; optional utility retained).
+- Implement optional `test-hooks.ts` with beforeEach/afterEach transactional isolation.
+- Global setup sets ENFORCE_LATEST_MIGRATION=1 by default.
+- Global setup ensures countries reference data ('ISR') exists for FK constraints.
 - Migrations not invoked here; schema guard test verifies currency.
 
 Acceptance:
 - Dummy isolation test plus env isolation log confirms setup.
+- Bootstrap tests pass with migration guard enforced.
+
+Status: ✅ COMPLETED (S9) - Implemented with transactional hooks, migration enforcement, and countries FK support.
 ```
 
 ---

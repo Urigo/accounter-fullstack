@@ -3,7 +3,8 @@ import pgpFactory from 'pg-promise';
 import cn from './db-connection-string.cjs';
 
 const pgp = pgpFactory();
-const db = pgp(cn());
+// Connect to the default 'postgres' database to manage other databases
+const db = pgp(cn('postgres'));
 
 const dbName = 'accounter';
 

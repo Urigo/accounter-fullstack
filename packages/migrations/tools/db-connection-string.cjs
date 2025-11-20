@@ -15,8 +15,17 @@ const {
 } = process.env;
 
 function cn(dbName = POSTGRES_DB) {
-  return `postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${dbName}${
-    POSTGRES_SSL ? '?sslmode=require' : '?sslmode=disable'
-  }`;
+  const sslRaw = String(POSTGRES_SSL ?? '')
+    .trim()
+    .toLowerCase();
+  const useSsl = sslRaw === '1' || sslRaw === 'true' || sslRaw === 'require';
+  return {
+    host: POSTGRES_HOST,
+    port: Number(POSTGRES_PORT),
+    database: dbName,
+    user: POSTGRES_USER,
+    password: POSTGRES_PASSWORD,
+    ssl: useSsl ? { rejectUnauthorized: false } : false,
+  };
 }
 module.exports = cn;
