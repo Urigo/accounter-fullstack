@@ -480,7 +480,7 @@ export function IntegrationsSection({ data }: Props) {
                       className="inline-flex items-center font-semibold gap-2"
                     >
                       <img
-                        src="../../../icons/logos/hive.svg"
+                        src="/icons/logos/hive.svg"
                         alt="Hive logo"
                         className="size-8 object-cover"
                       />
