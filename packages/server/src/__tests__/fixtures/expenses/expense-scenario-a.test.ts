@@ -22,6 +22,7 @@ describe('Expense Scenario A Fixture', () => {
   it('should have expected structure', () => {
     expect(expenseScenarioA.businesses?.businesses).toHaveLength(2); // Admin + supplier
     expect(expenseScenarioA.taxCategories?.taxCategories).toHaveLength(2); // Expense + bank
+    expect(expenseScenarioA.accounts?.accounts).toHaveLength(1); // Bank account
     expect(expenseScenarioA.charges?.charges).toHaveLength(1);
     expect(expenseScenarioA.transactions?.transactions).toHaveLength(1);
     expect(expenseScenarioA.documents?.documents).toHaveLength(1);

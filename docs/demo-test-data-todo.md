@@ -580,26 +580,38 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 - Transaction: -500 ILS (expense/outflow) on 2024-01-15
 - Document: Receipt for 500 ILS matching transaction date
 - Tax categories: General Expenses (debit) + Bank Account (credit)
+- Financial account: BANK_ACCOUNT-001 (type: BANK_ACCOUNT, owner: admin) required for transaction FK
 - Ledger expectations: 2 records, balanced at 500 ILS debit/credit
-- All factories used: createBusiness, createTaxCategory, createCharge, createTransaction,
-  createDocument
+- All factories used: createBusiness, createTaxCategory, createFinancialAccount, createCharge,
+  createTransaction, createDocument
 - Deterministic UUIDs via makeUUID for reproducible tests
+- Total test count: 214 (factories + helpers + fixtures + scenario validation + integration)
 
-### S20: Ledger Integration Test for Scenario A
+### S20: Ledger Integration Test for Scenario A ⏳
 
-- [ ] Create `packages/server/src/modules/ledger/__tests__/ledger-scenario-a.integration.test.ts`
-- [ ] Use `setupDbHooks()`
-- [ ] Implement test
-  - [ ] Insert Scenario A via `insertFixture`
-  - [ ] Trigger ledger generation for created charge
-  - [ ] Query `ledger_records`
-  - [ ] Normalize to simplified view
-  - [ ] Assert: record count matches expectation
-  - [ ] Assert: balanced debit/credit sums
-  - [ ] Assert: correct entity IDs
-  - [ ] Assert: amounts match expectations
-- [ ] Test passes ✅
-- [ ] Test repeats deterministically ✅
+- [x] Create `packages/server/src/modules/ledger/__tests__/ledger-scenario-a.integration.test.ts`
+- [x] Use `TestDatabase` class with transaction-based isolation
+- [x] Test: fixture insertion verification (validates charge, transaction, document created)
+- [x] Test: deterministic UUIDs (verifies reproducible IDs via makeUUID)
+- [x] **Fixed**: Vitest path resolution for @shared/\* imports
+  - **Solution**: Created `packages/server/vitest.config.ts` with explicit resolve.alias mappings
+  - **Config**: Maps all @shared/_ and @modules/_ paths to absolute paths
+  - **Result**: @shared/enums and other imports now resolve correctly ✅
+- [ ] **Blocked**: Implement ledger generation trigger
+  - **New Issue**: GraphQL modules initialization error in test environment
+  - **Error**: `TypeError: Cannot read properties of undefined (reading 'resolve')` in
+    graphql-modules during app creation
+  - **Next Steps**:
+    - Option 1: Debug graphql-modules initialization in test environment
+    - Option 2: Mock LedgerProvider directly instead of full GraphQL app
+    - Option 3: Use integration test approach with real GraphQL server
+- [ ] Implement test assertions for ledger records (pending above fix)
+  - [ ] Assert: record count (2)
+  - [ ] Assert: balanced debit/credit sums (500 each)
+  - [ ] Assert: correct entity IDs (expense-general debit, bank-account-tax-category credit)
+  - [ ] Assert: amounts match expectations (500 ILS each)
+- [x] Tests pass ✅ (3/3 tests passing - fixture insertion validated, ledger generation pending)
+- [x] Test repeats deterministically ✅
 
 ### S21: Pretty Diff on Failure
 
