@@ -375,7 +375,8 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 **Milestone 4 Progress:** Fixture types, validation, and loader with transaction support complete ✅
 **Total Tests (Milestone 4):** 28 passing (18 fixture-validation + 10 fixture-loader) **Total Tests
-(All):** 202 passing (factories + helpers + fixtures)
+(Milestone 5 - S19):** 11 passing (expense-scenario-a validation) **Total Tests (All):** 213 passing
+(factories + helpers + fixtures)
 
 ### S14: Factory Integration
 
@@ -550,21 +551,39 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 ## Milestone 5: Expense Scenario A + Integration Test
 
-### S19: Expense Scenario A Fixture
+### S19: Expense Scenario A Fixture ✅
 
-- [ ] Create folder `packages/server/src/__tests__/fixtures/expenses/`
-- [ ] Create `expense-scenario-a.ts`
-  - [ ] Define admin owner (from seed)
-  - [ ] Define supplier business "Local Supplier Ltd"
-  - [ ] Define charge (owner_id = admin, tax_category = expense category)
-  - [ ] Define transaction (ILS negative amount, business_id = supplier)
-  - [ ] Define document (Receipt in ILS, matching transaction)
-  - [ ] Define expectations: ledger (debit expense, credit bank)
-  - [ ] Export as `expenseScenarioA`
-- [ ] Create validation test for fixture
-  - [ ] Test: fixture compiles
-  - [ ] Test: fixture validates
-- [ ] Validation test passes ✅
+- [x] Create folder `packages/server/src/__tests__/fixtures/expenses/`
+- [x] Create `expense-scenario-a.ts`
+  - [x] Define admin owner (from seed)
+  - [x] Define supplier business "Local Supplier Ltd"
+  - [x] Define charge (owner_id = admin, tax_category = expense category)
+  - [x] Define transaction (ILS negative amount, business_id = supplier)
+  - [x] Define document (Receipt in ILS, matching transaction)
+  - [x] Define expectations: ledger (debit expense, credit bank)
+  - [x] Export as `expenseScenarioA`
+- [x] Create validation test for fixture
+  - [x] Test: fixture compiles
+  - [x] Test: fixture validates
+  - [x] Test: structure verification (2 businesses, 2 tax categories, 1 charge, 1 transaction, 1
+        document)
+  - [x] Test: referential integrity (IDs match between charge/transaction/document)
+  - [x] Test: amount matching (transaction -500 ILS, document 500 ILS)
+  - [x] Test: currency matching (both ILS)
+  - [x] Test: date matching (both 2024-01-15)
+  - [x] Test: ledger expectations defined
+- [x] Validation test passes ✅ (11/11 tests passing)
+
+**Implementation Details:**
+
+- Created complete expense fixture with admin business + local supplier
+- Transaction: -500 ILS (expense/outflow) on 2024-01-15
+- Document: Receipt for 500 ILS matching transaction date
+- Tax categories: General Expenses (debit) + Bank Account (credit)
+- Ledger expectations: 2 records, balanced at 500 ILS debit/credit
+- All factories used: createBusiness, createTaxCategory, createCharge, createTransaction,
+  createDocument
+- Deterministic UUIDs via makeUUID for reproducible tests
 
 ### S20: Ledger Integration Test for Scenario A
 
