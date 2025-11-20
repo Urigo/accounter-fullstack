@@ -370,16 +370,41 @@ new country FK constraints introduced in latest migrations.
 - Factories use helpers from S11: makeUUID, formatNumeric for type-safe database insertion
 
 **Milestone 3 Complete:** All factory scaffolding and core data factories implemented and tested ✅
-**Total Tests:** 126 passing (9 ids + 22 dates + 31 money + 8 business + 9 tax-category + 14
-financial-account + 9 charge + 12 transaction + 12 document)
+**Total Tests:** 133 passing (9 ids + 22 dates + 31 money + 8 business + 9 tax-category + 14
+financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 ### S14: Factory Integration
 
-- [ ] Review all factory tests
-- [ ] Ensure type safety across all factories
-- [ ] Verify sensible defaults
-- [ ] Verify override behavior works correctly
-- [ ] All tests pass ✅
+- [x] Review all factory tests
+- [x] Ensure type safety across all factories
+- [x] Verify sensible defaults
+- [x] Verify override behavior works correctly
+- [x] Create centralized export module (`index.ts`)
+- [x] Create integration tests demonstrating factory composition
+- [x] All tests pass ✅ (133/133 tests passing)
+
+**Integration Test Coverage:**
+
+- `index.test.ts`: 7 tests - import validation, complete expense scenario, deterministic UUIDs, all
+  account types, numeric conversions, document types, partial overrides
+
+**Key Deliverables:**
+
+- `index.ts`: Centralized exports for all factories and helpers with comprehensive JSDoc examples
+- `index.test.ts`: Integration tests proving factories work together to create complete scenarios
+- All factories type-safe via pgtyped interfaces
+- Consistent override pattern across all factories
+- Deterministic UUID generation via makeUUID with seeds
+- Proper numeric handling for PostgreSQL (string for numeric, number for double precision)
+
+**Factory Design Patterns Verified:**
+
+1. **Type Safety**: All factories use pgtyped-generated types for compile-time validation
+2. **Minimal Defaults**: Required fields enforced; optional fields default to null/sensible values
+3. **Partial Overrides**: All factories accept `Partial<T>` for flexible customization
+4. **Deterministic IDs**: UUID seeds produce consistent IDs for reproducible tests
+5. **Composition**: Factories can be combined to create complete data scenarios (charge +
+   transaction + document)
 
 ---
 
