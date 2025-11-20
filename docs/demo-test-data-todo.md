@@ -261,17 +261,40 @@ new country FK constraints introduced in latest migrations.
 
 ### S11: Factory Scaffolding
 
-- [ ] Create folder `packages/server/src/__tests__/factories/`
-- [ ] Create `ids.ts`
-  - [ ] Implement `makeUUID(seed?: string): string`
-  - [ ] Add tests for deterministic behavior with seed
-- [ ] Create `dates.ts`
-  - [ ] Implement `iso(date: string): Date`
-  - [ ] Add tests
-- [ ] Create `money.ts`
-  - [ ] Implement helpers to format numeric for pgtyped (string)
-  - [ ] Add tests
-- [ ] All helper tests pass ✅
+- [x] Create folder `packages/server/src/__tests__/factories/`
+- [x] Create `ids.ts`
+  - [x] Implement `makeUUID(seed?: string): string`
+  - [x] Add tests for deterministic behavior with seed
+  - [x] Tests verify random UUIDs without seed, deterministic with seed
+  - [x] Edge cases: empty string seed, complex strings, consistency checks
+- [x] Create `dates.ts`
+  - [x] Implement `iso(dateString: string): Date` - UTC-aware date parsing
+  - [x] Implement `isoToday(): string` - current date in YYYY-MM-DD format
+  - [x] Implement `addDays(dateString: string, days: number): string` - date arithmetic
+  - [x] Add tests for leap years, timezone handling, month/year boundaries
+- [x] Create `money.ts`
+  - [x] Implement `formatNumeric(amount): string` - generic numeric formatting for pgtyped
+  - [x] Implement `formatMoney(amount): string` - convenience wrapper
+  - [x] Implement `formatDecimal(amount, decimals): string` - fixed precision formatting
+  - [x] Implement `parseNumeric(value: string): number` - string to number with validation
+  - [x] Add tests with round-trip validation, edge cases (-0, Infinity, NaN)
+- [x] All helper tests pass ✅ (62/62 tests passing)
+
+**Test Results:**
+
+- `ids.test.ts`: 9 tests - UUID format validation, deterministic seeding, empty string edge case
+- `dates.test.ts`: 22 tests - ISO parsing, invalid date detection, leap year validation, addDays
+  boundaries
+- `money.test.ts`: 31 tests - formatNumeric/Money/Decimal, parseNumeric with validation, round-trip
+  conversion
+
+**Key Implementation Details:**
+
+- `makeUUID`: Hash-based deterministic UUID v4 generation when seed provided; treats empty string as
+  valid seed (hash=0)
+- `iso`: Validates date components match input to catch invalid dates (e.g., 2023-02-29)
+- `parseNumeric`: Normalizes -0 to +0, validates numeric format with regex to reject malformed
+  strings like '12.34.56'
 
 ### S12: Business/Tax/Account Factories
 
