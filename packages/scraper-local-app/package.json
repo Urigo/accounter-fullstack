@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/listr": "0.14.10",
     "@types/pg": "8.15.6",
-    "rimraf": "6.1.0",
+    "rimraf": "6.1.2",
     "tsup": "8.5.1",
     "typescript": "5.9.3"
   },
