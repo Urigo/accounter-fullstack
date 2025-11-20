@@ -298,18 +298,36 @@ new country FK constraints introduced in latest migrations.
 
 ### S12: Business/Tax/Account Factories
 
-- [ ] Create `packages/server/src/__tests__/factories/business.ts`
-  - [ ] Implement `createBusiness(overrides?)`
-  - [ ] Return minimal shape for insert
-  - [ ] Add unit tests (defaults, overrides, required fields)
-- [ ] Create `packages/server/src/__tests__/factories/tax-category.ts`
-  - [ ] Implement `createTaxCategory(overrides?)`
-  - [ ] Add unit tests
-- [ ] Create `packages/server/src/__tests__/factories/financial-account.ts`
-  - [ ] Implement `createFinancialAccount(overrides?)`
-  - [ ] Support type enum
-  - [ ] Add unit tests
-- [ ] All factory tests pass ✅
+- [x] Create `packages/server/src/__tests__/factories/business.ts`
+  - [x] Implement `createBusiness(overrides?)`
+  - [x] Return minimal shape for insert
+  - [x] Add unit tests (defaults, overrides, required fields)
+- [x] Create `packages/server/src/__tests__/factories/tax-category.ts`
+  - [x] Implement `createTaxCategory(overrides?)`
+  - [x] Add unit tests
+- [x] Create `packages/server/src/__tests__/factories/financial-account.ts`
+  - [x] Implement `createFinancialAccount(overrides?)`
+  - [x] Support type enum (BANK_ACCOUNT, CREDIT_CARD, CRYPTO_WALLET, etc.)
+  - [x] Add unit tests
+- [x] All factory tests pass ✅ (93/93 tests passing)
+
+**Test Results:**
+
+- `business.test.ts`: 8 tests - defaults, overrides, contact info, government ID scenarios
+- `tax-category.test.ts`: 9 tests - defaults, Hashavshevet integration, tax-excluded categories
+- `financial-account.test.ts`: 14 tests - all account types (BANK_ACCOUNT, CREDIT_CARD,
+  CRYPTO_WALLET, BANK_DEPOSIT_ACCOUNT, FOREIGN_SECURITIES), ownership scenarios
+
+**Key Implementation Details:**
+
+- `createBusiness`: Generates UUID by default; supports all business fields including exemptDealer,
+  isReceiptEnough, country; typed via `IInsertBusinessesParams`
+- `createTaxCategory`: Minimal shape with id, hashavshevetName, taxExcluded; typed via
+  `IInsertTaxCategoryParams`
+- `createFinancialAccount`: Supports 5 account types via enum; generates unique account number by
+  default; typed via `IInsertFinancialAccountsParams`
+- All factories accept partial overrides and preserve pgtyped type safety
+- Factories use existing constants (UUID_REGEX) and helpers (makeUUID) from previous milestones
 
 ### S13: Charge/Transaction/Document Factories
 
