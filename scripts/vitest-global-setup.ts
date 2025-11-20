@@ -17,6 +17,39 @@ export default async function globalSetup() {
     console.warn('[test-setup] Failed to establish isolated TEST_ENV_FILE', e);
   }
 
+  // Enforce latest migration by default for local runs
+  if (!process.env.ENFORCE_LATEST_MIGRATION) {
+    process.env.ENFORCE_LATEST_MIGRATION = '1';
+    // eslint-disable-next-line no-console
+    console.log('[test-setup] ENFORCE_LATEST_MIGRATION=1 (default)');
+  }
+
+  // Ensure core reference data exists outside per-test transactions
+  // Specifically: countries table must contain 'ISR' for new FK defaults
+  try {
+    const { connectTestDb, closeTestDb } = await import(
+      '../packages/server/src/__tests__/helpers/db-connection.js'
+    );
+    const pool = await connectTestDb();
+    const client = await pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO accounter_schema.countries (code, name)
+         VALUES ($1, $2)
+         ON CONFLICT (code) DO NOTHING`,
+        ['ISR', 'Israel'],
+      );
+      // eslint-disable-next-line no-console
+      console.log('[test-setup] Ensured countries contains ISR');
+    } finally {
+      client.release();
+      await closeTestDb();
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[test-setup] Failed to ensure countries reference data', e);
+  }
+
   // Return a global teardown to ensure the shared test DB pool is closed once.
   return async () => {
     try {

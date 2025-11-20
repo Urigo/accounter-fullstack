@@ -27,7 +27,7 @@ export class TestDatabase {
     await seedAdminOnce(this.getPool());
   }
 
-  async withTransaction<T>(fn: Parameters<typeof withTestTransaction<Promise<T>>>[1]) {
+  async withTransaction<T>(fn: Parameters<typeof withTestTransaction<T>>[1]) {
     if (!this.pool) await this.connect();
     return withTestTransaction(this.getPool(), fn);
   }
