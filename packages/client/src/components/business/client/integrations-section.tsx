@@ -135,7 +135,7 @@ export function IntegrationsSection({ data }: Props) {
       !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
   });
   const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
-  const hiveClient = business?.clientInfo?.integrations?.hiveId;
+  const hiveClient = integrations?.hiveId;
 
   const updateIdByAttribute = useCallback(
     (
@@ -422,7 +422,7 @@ export function IntegrationsSection({ data }: Props) {
               <div className="px-4 py-3 bg-green-900/10 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
-                    {integrations?.hiveId ? (
+                    {integrations.hiveId ? (
                       <Link
                         to="https://the-guild.dev/graphql/hive"
                         target="_blank"
@@ -446,7 +446,7 @@ export function IntegrationsSection({ data }: Props) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg">Hive</h3>
-                        {integrations?.hiveId == null ? (
+                        {integrations.hiveId == null ? (
                           <CircleSlash className="h-5 w-5 text-red-600" />
                         ) : (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -460,7 +460,7 @@ export function IntegrationsSection({ data }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     <UpdateIntegrationConfigDialog
-                      id={business?.clientInfo?.integrations.hiveId ?? undefined}
+                      id={integrations.hiveId ?? undefined}
                       provider="Hive"
                       updateClient={async newId => updateIdByAttribute(newId, 'hiveId')}
                     />
