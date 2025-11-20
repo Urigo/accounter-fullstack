@@ -18,17 +18,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { FiltersContext } from '@/providers/filters-context.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
-import { AdminBusinessSection } from './admin-business-section.js';
+import { AdminBusinessSection } from './admin/admin-business-section.jsx';
+import { FinancialAccountsSection } from './admin/financial-account-section.jsx';
 import { BalanceSection } from './balance-section.js';
 import { BusinessHeader } from './business-header.js';
 import { ChargesSection } from './charges-section.jsx';
-import { ChartsSection } from './charts-section.jsx';
+import { ChartsSection } from './client/charts-section.jsx';
+import { ContractsSection } from './client/contracts-section.jsx';
+import { IntegrationsSection } from './client/integrations-section.jsx';
 import { ConfigurationsSection } from './configurations-section.jsx';
 import { ContactInfoSection } from './contact-info-section.jsx';
-import { ContractsSection } from './contracts-section.jsx';
 import { DocumentsSection } from './documents-section.jsx';
-import { FinancialAccountsSection } from './financial-account-section.js';
-import { IntegrationsSection } from './integrations-section.jsx';
 import { LedgerSection } from './ledger-section.js';
 import { TransactionsSection } from './transactions-section.js';
 
