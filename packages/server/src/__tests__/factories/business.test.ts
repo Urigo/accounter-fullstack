@@ -25,8 +25,8 @@ describe('Factory: Business', () => {
       expect(business.phoneNumber).toBeNull();
       expect(business.governmentId).toBeNull();
       expect(business.suggestions).toBeNull();
-      expect(business.optionalVat).toBeNull();
-      expect(business.country).toBeNull();
+      expect(business.optionalVat).toBe(false); // NOT NULL constraint
+      expect(business.country).toBe('ISR'); // NOT NULL constraint, default to Israel
       expect(business.pcn874RecordTypeOverride).toBeNull();
     });
 
@@ -64,7 +64,7 @@ describe('Factory: Business', () => {
       expect(business.hebrewName).toBe('ספק מקומי');
       expect(business.id).toBeDefined();
       expect(business.exemptDealer).toBe(false);
-      expect(business.country).toBeNull();
+      expect(business.country).toBe('ISR'); // Default value, not null
     });
 
     it('should preserve all required fields', () => {
