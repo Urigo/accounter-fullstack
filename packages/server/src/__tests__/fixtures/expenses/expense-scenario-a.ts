@@ -15,7 +15,14 @@
  * - General expense tax category exists (from seed)
  */
 
-import { createBusiness, createCharge, createDocument, createTransaction, createTaxCategory } from '../../factories';
+import {
+  createBusiness,
+  createCharge,
+  createDocument,
+  createTransaction,
+  createTaxCategory,
+  createFinancialAccount,
+} from '../../factories';
 import { makeUUID } from '../../factories/ids';
 import type { Fixture } from '../../helpers/fixture-types';
 
@@ -75,10 +82,13 @@ export const expenseScenarioA: Fixture = {
   },
 
   accounts: {
-    // Note: Financial accounts typically come from bank feeds or manual setup
-    // For this scenario, we assume admin's bank account exists from prior setup
-    // If needed for the test, create a minimal bank account here
-    accounts: [],
+    accounts: [
+      createFinancialAccount({
+        accountNumber: 'BANK-ACCOUNT-001',
+        type: 'BANK_ACCOUNT',
+        ownerId: makeUUID('admin-business'),
+      }),
+    ],
   },
 
   charges: {
