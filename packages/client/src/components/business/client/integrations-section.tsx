@@ -305,7 +305,7 @@ export function IntegrationsSection({ data }: Props) {
                       provider="Green Invoice"
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
-                    <AccordionTrigger className="hover:no-underline p-2" />
+                    {greenInvoiceClient && <AccordionTrigger className="hover:no-underline p-2" />}
                   </div>
                 </div>
               </div>
@@ -413,63 +413,63 @@ export function IntegrationsSection({ data }: Props) {
           )}
 
           {/* Hive / Retool Integration */}
-          {hiveClient && (
-            <AccordionItem
-              key="hiveId"
-              value="hiveId"
-              className="rounded-lg border-2 border-green-900/20 bg-green-900/5"
-            >
-              <div className="px-4 py-3 bg-green-900/10 rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    {integrations.hiveId ? (
-                      <Link
-                        to="https://the-guild.dev/graphql/hive"
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={event => event.stopPropagation()}
-                        className="inline-flex items-center font-semibold"
-                      >
-                        <div className="h-10 w-10 rounded-lg bg-green-900 flex items-center justify-center text-white font-bold">
-                          <img
-                            src="/icons/logos/hive.svg"
-                            alt="Hive logo"
-                            className="size-8 object-cover"
-                          />
-                        </div>
-                      </Link>
-                    ) : (
+          <AccordionItem
+            key="hiveId"
+            value="hiveId"
+            className="rounded-lg border-2 border-green-900/20 bg-green-900/5"
+          >
+            <div className="px-4 py-3 bg-green-900/10 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  {hiveClient ? (
+                    <Link
+                      to="https://the-guild.dev/graphql/hive"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={event => event.stopPropagation()}
+                      className="inline-flex items-center font-semibold"
+                    >
                       <div className="h-10 w-10 rounded-lg bg-green-900 flex items-center justify-center text-white font-bold">
-                        <Unlink />
+                        <img
+                          src="/icons/logos/hive.svg"
+                          alt="Hive logo"
+                          className="size-8 object-cover"
+                        />
                       </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">Hive</h3>
-                        {integrations.hiveId == null ? (
-                          <CircleSlash className="h-5 w-5 text-red-600" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Schema registry, analytics, metrics and gateway for GraphQL federation and
-                        other GraphQL APIs
-                      </p>
+                    </Link>
+                  ) : (
+                    <div className="h-10 w-10 rounded-lg bg-green-900 flex items-center justify-center text-white font-bold">
+                      <Unlink />
                     </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">Hive</h3>
+                      {hiveClient ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <CircleSlash className="h-5 w-5 text-red-600" />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Schema registry, analytics, metrics and gateway for GraphQL federation and
+                      other GraphQL APIs
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <UpdateIntegrationConfigDialog
-                      id={integrations.hiveId ?? undefined}
-                      provider="Hive"
-                      updateClient={async newId => updateIdByAttribute(newId, 'hiveId')}
-                    />
-                  </div>
-                  <AccordionTrigger className="hover:no-underline p-2" />
                 </div>
+                <div className="flex items-center gap-2">
+                  <UpdateIntegrationConfigDialog
+                    id={integrations?.hiveId ?? undefined}
+                    provider="Hive"
+                    updateClient={async newId => updateIdByAttribute(newId, 'hiveId')}
+                  />
+                </div>
+                {hiveClient && <AccordionTrigger className="hover:no-underline p-2" />}
               </div>
+            </div>
 
-              <AccordionContent>
+            <AccordionContent>
+              {hiveClient && (
                 <div className="flex flex-col gap-4 px-4 pb-4 pt-2 border-t">
                   <div className="text-sm">
                     <Link
@@ -504,9 +504,9 @@ export function IntegrationsSection({ data }: Props) {
                     </Link>
                   </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
           {generalIntegrations.map(integration => (
             <AccordionItem
