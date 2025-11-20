@@ -14,7 +14,7 @@ import {
 import {
   ModifyContractDialog,
   type ContractFormValues,
-} from '../clients/contracts/modify-contract-dialog.js';
+} from '../../clients/contracts/modify-contract-dialog.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

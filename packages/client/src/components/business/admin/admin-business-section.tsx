@@ -39,8 +39,8 @@ import {
 } from '@/helpers/index.js';
 import { useUpdateAdminBusiness } from '@/hooks/use-update-admin-business.js';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Label } from '../ui/label';
-import { Separator } from '../ui/separator';
+import { Label } from '../../ui/label';
+import { Separator } from '../../ui/separator';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
