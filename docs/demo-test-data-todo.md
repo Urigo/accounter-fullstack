@@ -412,27 +412,71 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 ### S15: Fixture Interfaces
 
-- [ ] Create `packages/server/src/__tests__/helpers/fixture-types.ts`
-  - [ ] Define `FixtureBusinesses` interface
-  - [ ] Define `FixtureTaxCategories` interface
-  - [ ] Define `FixtureAccounts` interface
-  - [ ] Define `FixtureCharges` interface
-  - [ ] Define `FixtureTransactions` interface
-  - [ ] Define `FixtureDocuments` interface
-  - [ ] Define `Fixture` aggregating all lists + optional expectations
+- [x] Create `packages/server/src/__tests__/helpers/fixture-types.ts`
+  - [x] Define `FixtureBusinesses` interface
+  - [x] Define `FixtureTaxCategories` interface
+  - [x] Define `FixtureAccounts` interface
+  - [x] Define `FixtureCharges` interface
+  - [x] Define `FixtureTransactions` interface
+  - [x] Define `FixtureDocuments` interface
+  - [x] Define `Fixture` aggregating all lists + optional expectations
+  - [x] Define `LedgerExpectation` interface for expected outcomes
+- [x] All fixture types defined ✅
+
+**Key Implementation Details:**
+
+- `FixtureBusinesses`: Array of `IInsertBusinessesParams['businesses']` entries
+- `FixtureTaxCategories`: Array of `IInsertTaxCategoryParams` entries
+- `FixtureAccounts`: Array of `IInsertFinancialAccountsParams['bankAccounts']` entries
+- `FixtureCharges`: Array of `ChargeInsertParams` from charge factory
+- `FixtureTransactions`: Array of `TransactionInsertParams` from transaction factory
+- `FixtureDocuments`: Array of `DocumentInsertParams` from document factory
+- `Fixture`: Aggregates all fixture types with optional `expectations` for assertions
+- `LedgerExpectation`: Defines expected ledger records (count, debit/credit entities, amounts,
+  balanced)
+- All interfaces use pgtyped-compatible types from factories and generated types
 
 ### S16: Fixture Validation
 
-- [ ] Create `packages/server/src/__tests__/helpers/fixture-validation.ts`
-- [ ] Implement `validateFixture(fixture)`
-  - [ ] Return `{ ok: true }` or `{ ok: false; errors: string[] }`
-  - [ ] Validate referential integrity (transaction.charge_id exists, etc.)
-  - [ ] Validate required keys present
-- [ ] Create validation unit tests
-  - [ ] Test: valid fixture passes
-  - [ ] Test: missing charge_id fails
-  - [ ] Test: invalid references fail
-- [ ] Tests pass ✅
+- [x] Create `packages/server/src/__tests__/helpers/fixture-validation.ts`
+- [x] Implement `validateFixture(fixture)`
+  - [x] Return `{ ok: true }` or `{ ok: false; errors: string[] }`
+  - [x] Validate referential integrity (transaction.charge_id exists, etc.)
+  - [x] Validate required keys present
+  - [x] Detect duplicate IDs
+  - [x] Validate business references (charges, transactions, documents)
+  - [x] Validate charge references (transactions, documents)
+  - [x] Validate tax category references (charges)
+  - [x] Validate account owner references
+- [x] Implement `assertValidFixture(fixture)` helper that throws on validation failure
+- [x] Create validation unit tests
+  - [x] Test: valid complete fixture passes
+  - [x] Test: valid minimal fixture passes
+  - [x] Test: missing charge_id fails
+  - [x] Test: invalid business reference fails
+  - [x] Test: invalid tax category reference fails
+  - [x] Test: invalid charge reference fails (transactions and documents)
+  - [x] Test: missing required fields fails
+  - [x] Test: duplicate IDs detected
+  - [x] Test: financial account owner validation
+  - [x] Test: assertValidFixture throws with formatted message
+- [x] All tests pass ✅ (18/18 tests passing)
+
+**Test Results:**
+
+- `fixture-validation.test.ts`: 18 tests - complete fixture validation, minimal fixture, referential
+  integrity checks, missing required fields, duplicate ID detection, assertValidFixture behavior
+
+**Key Implementation Details:**
+
+- `validateFixture`: Comprehensive validation covering all fixture entity types
+- Builds ID sets for quick lookup (businessIds, taxCategoryIds, accountIds, chargeIds)
+- Validates foreign key references before they would cause DB constraint violations
+- Collects all errors before returning (doesn't fail fast) for better developer experience
+- Special handling for account_id: only validates presence, not reference (accounts use
+  accountNumber not UUID)
+- `assertValidFixture`: Throws Error with formatted multi-line error message for test clarity
+- Validation catches: missing IDs, duplicate IDs, invalid references, missing required fields
 
 ### S17: Fixture Insertion
 
