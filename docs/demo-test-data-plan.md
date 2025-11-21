@@ -66,17 +66,18 @@ Notes:
 
 ## 5. Data Domain Summary (Core Tables)
 
-| Table              | Purpose                                                      | Key Relationships                                                          |
-| ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| financial_entities | Base entity for businesses & tax categories                  | Referenced by `businesses`, `tax_categories`, ledger debit/credit entities |
-| businesses         | Operating entities                                           | Linked to charges (owner_id) & transactions (business_id)                  |
-| tax_categories     | Categorization for ledger & classification                   | Assigned via charges or derived from financial accounts                    |
-| financial_accounts | Bank / credit / crypto accounts                              | Feed transactions; mapped to tax categories for ledger                     |
-| charges            | Aggregation anchor for documents + transactions + ledger     | owner_id → business; referenced by transactions/documents/ledger_records   |
-| transactions       | Monetary events from bank/cc feeds                           | charge_id, business_id, currency, amount                                   |
-| documents          | Financial documents (invoice, receipt, etc.)                 | charge_id (new), creditor_id, debtor_id                                    |
-| ledger_records     | Double-entry–like entries per charge                         | debit_entity*, credit_entity*, charge_id                                   |
-| user_context       | Admin configuration (default currency, mandatory categories) | owner_id (admin business)                                                  |
+| Table                             | Purpose                                                      | Key Relationships                                                                                           |
+| --------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| financial_entities                | Base entity for businesses & tax categories                  | Referenced by `businesses`, `tax_categories`, ledger debit/credit entities                                  |
+| businesses                        | Operating entities                                           | Linked to charges (owner_id) & transactions (business_id)                                                   |
+| tax_categories                    | Categorization for ledger & classification                   | Assigned via charges or derived from financial accounts                                                     |
+| financial_accounts                | Bank / credit / crypto accounts                              | Feed transactions; mapped to tax categories for ledger                                                      |
+| financial_accounts_tax_categories | Maps accounts to tax categories by currency                  | financial_account_id → financial_accounts, tax_category_id → tax_categories, required for ledger generation |
+| charges                           | Aggregation anchor for documents + transactions + ledger     | owner_id → business; referenced by transactions/documents/ledger_records                                    |
+| transactions                      | Monetary events from bank/cc feeds                           | charge_id, business_id, currency, amount                                                                    |
+| documents                         | Financial documents (invoice, receipt, etc.)                 | charge_id (new), creditor_id, debtor_id                                                                     |
+| ledger_records                    | Double-entry–like entries per charge                         | debit_entity*, credit_entity*, charge_id                                                                    |
+| user_context                      | Admin configuration (default currency, mandatory categories) | owner_id (admin business)                                                                                   |
 
 ## 6. Foundational Seed Requirements
 
@@ -215,23 +216,74 @@ Helpers (unchanged): `withTestTransaction`, `withConcurrentTransactions` in `tes
 
 Diagnostics: Pool health snapshots & connection retries logged when debugging enabled.
 
+### Cross-Connection Integration Tests
+
+For tests that span multiple database connections (e.g., fixture insertion in one connection, ledger
+generation in another):
+
+1. **Insert fixtures with explicit BEGIN/COMMIT** (not `withTestTransaction`) to ensure visibility
+   across connections
+2. **Use deterministic UUIDs** for all entities via `makeUUID('semantic-name')`
+3. **Add `afterEach` cleanup** that deletes by ID:
+
+```typescript
+afterEach(async () => {
+  const client = await pool.connect();
+  try {
+    const chargeId = makeUUID('charge-identifier');
+    await client.query('DELETE FROM ledger_records WHERE charge_id = $1', [chargeId]);
+    await client.query('DELETE FROM documents WHERE charge_id = $1', [chargeId]);
+    await client.query('DELETE FROM transactions WHERE charge_id = $1', [chargeId]);
+    await client.query('DELETE FROM charges WHERE id = $1', [chargeId]);
+  } finally {
+    client.release();
+  }
+});
+```
+
+4. **Separate client for business logic** - use a fresh client connection after committing fixture
+   data
+5. **AdminContext from DB** - query `user_context` joined with `financial_entities` to avoid env
+   dependencies
+
+**Pattern distinction:**
+
+- **Unit-style tests**: Use `withTestTransaction` for automatic rollback (single connection)
+- **Integration-style tests**: Use explicit COMMIT + `afterEach` cleanup (multiple connections)
+
 ## 13. Ledger Generation Test Strategy
 
 Location: `packages/server/src/modules/ledger/__tests__/ledger-generation.integration.test.ts`.
 Assertions:
 
-- Number of ledger records produced per charge.
-- Balanced totals (sum debit == sum credit in local currency).
-- Correct debit/credit entity assignments (expense: debit expense category, credit bank; foreign
-  currency: extra exchange rate record if configured).
-- Foreign amount vs local conversion correctness (audit exchange rate usage; delta < tolerance).
-- Absence of unexpected fee entries for simple happy paths.
+- **Number of ledger records**: Assert **minimum expected count** (≥ N) to account for
+  algorithm-generated balancing entries (exchange rate adjustments, VAT corrections, rounding)
+- **Balanced totals**: Sum debit == sum credit in local currency with **tolerance** (delta < 0.01)
+  for floating-point arithmetic
+- **Correct entity assignments**: Check **presence** of required debit/credit entities, not
+  exhaustive list (algorithm may add exchange rate or balancing entries)
+- **Foreign amount validation**: Exchange rate within ±0.5% of seeded/mocked rate
+- **Result structure**: Assert `result.errors` is empty array, `result.balance.isBalanced` is true,
+  and `result.records.length` matches expected count
+- **Type safety**: Guard against `CommonError` union variant before accessing result fields
 
-Helper: `assertLedgerRecords(records, expectation)` comparing ordered normalization:
+Helper: `assertLedgerBalance(records, expectation)` with updated signature:
 
+```typescript
+function assertLedgerBalance(
+  records: LedgerRecord[],
+  expectation: {
+    minRecords: number; // Minimum count (not exact)
+    requiredDebitEntities: string[]; // Must be present
+    requiredCreditEntities: string[]; // Must be present
+    totalTolerance?: number; // Default 0.01
+  },
+): void;
 ```
-{ debit_entity1, credit_entity1, localCurrencyDebitAmount1, localCurrencyCreditAmount1, currency }
-```
+
+**Key insight**: Ledger generation algorithms may produce additional balancing records beyond the
+minimum expected entries. Tests should validate balance correctness and required entity presence
+rather than exact record counts.
 
 ## 14. Error Handling Strategy
 
@@ -333,8 +385,15 @@ Phase 3 (Source Ingestion Simulation):
 
 - Running `yarn seed:admin` creates all mandatory entities idempotently.
 - Two expense fixtures insert successfully under transactional tests.
-- Ledger generation tests pass with balanced entries and expected entity mapping.
+- Ledger generation tests pass with:
+  - Balanced entries (debit == credit within 0.01 tolerance)
+  - Minimum expected record count (accounts for balancing entries)
+  - Required entities present (expense category, bank account category)
+  - Empty errors array and `isBalanced: true` in result
+  - Deterministic UUID-based cleanup in `afterEach`
 - Foreign currency expense test validates exchange rate conversion (deterministic with mocked rate).
+- Financial account tax category mappings created for all scenarios (required for ledger
+  generation).
 - CI pipeline completes within acceptable time (< 2m for integration suite).
 - Developer can create a new scenario with ≤5 lines using factories + fixture loader.
 
@@ -357,7 +416,52 @@ Phase 3 (Source Ingestion Simulation):
 - Optional data export CLI: `yarn demo:export --scenario expenseA` to produce sanitized JSON for
   external demos.
 
-## 21. Developer Workflow Summary
+## 21. Provider Harness Maintenance
+
+The ledger test injector (`packages/server/src/test-utils/ledger-injector.ts`) requires ongoing
+maintenance as ledger logic evolves.
+
+**When to update:**
+
+- New provider dependency added to ledger generation flow
+- Provider constructor signature changes
+- Context requirements expand
+
+**Discovery process:**
+
+1. Run test and observe error: "Unsupported provider requested by injector: XProvider"
+2. Import provider class from appropriate module
+3. Add case to injector factory switch
+4. Instantiate with required dependencies (use stubs for non-critical deps)
+5. Re-run test and repeat until green
+
+**Provider list** (current as of 2025-11-21):
+
+- **Core**: DBProvider, LedgerProvider
+- **Entities**: BusinessesProvider, TaxCategoriesProvider, FinancialEntitiesProvider (+ stub for
+  BusinessesOperationProvider)
+- **Financial**: FinancialAccountsProvider, ChargesProvider, ChargeSpreadProvider
+- **Data**: TransactionsProvider, DocumentsProvider
+- **Business Logic**: ExchangeProvider (+ CryptoExchangeProvider, FiatExchangeProvider,
+  CoinMarketCapProvider), VatProvider, MiscExpensesProvider, BusinessTripsProvider
+- **Balancing**: UnbalancedBusinessesProvider, BalanceCancellationProvider
+
+**Extensibility patterns:**
+
+- For exchange rate mocking: override `ExchangeProvider.getExchangeRates()` method in injector
+- For non-critical dependencies: inject minimal stubs with no-op methods
+- For context-dependent providers: use `contextRef` pattern to inject context after creation
+
+**Example stub pattern:**
+
+```typescript
+const businessesOperationStub = {
+  deleteBusinessById: async (_businessId: string) => {},
+  // Add other methods as needed
+} as any;
+```
+
+## 22. Developer Workflow Summary
 
 ```
 # Spin up DB
@@ -373,11 +477,17 @@ yarn workspace @accounter/server tsx packages/server/scripts/seed-admin-context.
 yarn workspace @accounter/server vitest run
 ```
 
-## 22. Open Questions (To Address Before Phase 2)
+## 23. Open Questions (To Address Before Phase 2)
 
 - Standardized exchange rate seeding vs. runtime provider mock?
+  - **Current approach**: Seed static rates in DB for determinism; use provider mocks for edge cases
 - Preferred fixture diff tooling (custom vs. built-in expect diff)?
+  - **Current approach**: Built-in Vitest expect with custom assertion helpers
 - When to incorporate document upload flow simulation?
+  - **Deferred to Phase 3**: Focus on already-matched charges first
+- AdminContext construction complexity?
+  - **Solution needed**: Extract `buildAdminContextFromDb(pool, businessName)` helper to eliminate
+    ~100 lines of duplication per test
 
 ---
 
