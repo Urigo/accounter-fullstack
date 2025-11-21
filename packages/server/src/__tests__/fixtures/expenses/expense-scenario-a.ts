@@ -91,6 +91,16 @@ export const expenseScenarioA: Fixture = {
     ],
   },
 
+  accountTaxCategories: {
+    mappings: [
+      {
+        accountNumber: 'BANK-ACCOUNT-001',
+        currency: 'ILS',
+        taxCategoryId: makeUUID('bank-account-tax-category'),
+      },
+    ],
+  },
+
   charges: {
     charges: [
       createCharge(

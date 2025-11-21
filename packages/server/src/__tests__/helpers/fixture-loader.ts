@@ -258,6 +258,33 @@ export async function insertFixture(
     });
   }
 
+  // 3b. Insert financial account tax category mappings
+  if (fixture.accountTaxCategories?.mappings && fixture.accountTaxCategories.mappings.length > 0) {
+    await executeSavepointSection('account_tax_categories', async () => {
+      for (const mapping of fixture.accountTaxCategories!.mappings) {
+        // Look up the account UUID by account_number
+        const accountResult = await client.query(
+          `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
+          [mapping.accountNumber],
+        );
+        if (accountResult.rows.length === 0) {
+          throw new Error(`Financial account with account_number '${mapping.accountNumber}' not found`);
+        }
+        const accountId = accountResult.rows[0].id;
+
+        await client.query(
+          `INSERT INTO ${qualifyTable('financial_accounts_tax_categories')} (
+            financial_account_id, currency, tax_category_id
+          )
+          VALUES ($1, $2, $3)
+          ON CONFLICT (financial_account_id, currency) DO UPDATE
+            SET tax_category_id = EXCLUDED.tax_category_id`,
+          [accountId, mapping.currency, mapping.taxCategoryId],
+        );
+      }
+    });
+  }
+
   // 4. Insert charges
   if (fixture.charges?.charges && fixture.charges.charges.length > 0) {
     await executeSavepointSection('charges', async () => {
