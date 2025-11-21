@@ -64,6 +64,41 @@ export interface FixtureAccounts {
 }
 
 /**
+ * Financial account tax category mappings
+ *
+ * Maps financial accounts to tax categories for specific currencies.
+ * Required for ledger generation to identify the tax category for each transaction.
+ */
+export interface FinancialAccountTaxCategoryMapping {
+  /**
+   * Account number (will be resolved to account ID during insertion)
+   */
+  accountNumber: string;
+
+  /**
+   * Currency code (ILS, USD, EUR, etc.)
+   */
+  currency: string;
+
+  /**
+   * Tax category ID to use for this account + currency combination
+   */
+  taxCategoryId: string;
+}
+
+/**
+ * Financial account tax category mappings in a fixture
+ */
+export interface FixtureAccountTaxCategories {
+  /**
+   * Array of account-currency-tax_category mappings
+   *
+   * Each mapping assigns a tax category to a financial account for a specific currency.
+   */
+  mappings: FinancialAccountTaxCategoryMapping[];
+}
+
+/**
  * Charges in a fixture
  *
  * Charges are the central aggregation point for transactions, documents, and ledger entries.
@@ -228,6 +263,11 @@ export interface Fixture {
    * Financial accounts in this fixture
    */
   accounts?: FixtureAccounts;
+
+  /**
+   * Financial account tax category mappings in this fixture
+   */
+  accountTaxCategories?: FixtureAccountTaxCategories;
 
   /**
    * Charges in this fixture
