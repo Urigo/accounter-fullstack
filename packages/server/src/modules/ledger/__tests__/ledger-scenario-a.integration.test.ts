@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
-import type { PoolClient } from 'pg';
 import { TestDatabase } from '../../../__tests__/helpers/db-setup.js';
 import { insertFixture } from '../../../__tests__/helpers/fixture-loader.js';
 import { expenseScenarioA } from '../../../__tests__/fixtures/expenses/expense-scenario-a.js';
 import { makeUUID } from '../../../__tests__/factories/ids.js';
 import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
+import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
-import type { AdminContext } from '../../../plugins/admin-context-plugin.js';
 import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
 
@@ -116,106 +115,12 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       const charge = chargeResult.rows[0];
 
-      const contextResult = await client.query(
-        `SELECT uc.* FROM ${qualifyTable('user_context')} uc
-         JOIN ${qualifyTable('financial_entities')} fe ON fe.id = uc.owner_id
-         WHERE fe.name = $1 AND fe.type = $2
-         LIMIT 1`,
-        ['Admin Business', 'business']
-      );
-      expect(contextResult.rows.length).toBeGreaterThan(0);
-      const dbContext = contextResult.rows[0];
-      const adminBusinessId = dbContext.owner_id as string;
-
-      const adminContext: AdminContext = {
-        defaultLocalCurrency: dbContext.default_local_currency,
-        defaultCryptoConversionFiatCurrency: dbContext.default_fiat_currency_for_crypto_conversions,
-        defaultAdminBusinessId: adminBusinessId,
-        defaultTaxCategoryId: dbContext.default_tax_category_id,
-        locality: dbContext.locality || 'Israel',
-        ledgerLock: dbContext.ledger_lock ? dbContext.ledger_lock.toISOString().split('T')[0] : undefined,
-        authorities: {
-          vatBusinessId: dbContext.vat_business_id,
-          inputVatTaxCategoryId: dbContext.input_vat_tax_category_id,
-          outputVatTaxCategoryId: dbContext.output_vat_tax_category_id,
-          taxBusinessId: dbContext.tax_business_id,
-          taxExpensesTaxCategoryId: dbContext.tax_expenses_tax_category_id,
-          socialSecurityBusinessId: dbContext.social_security_business_id,
-          vatReportExcludedBusinessNames: [],
-        },
-        general: {
-          taxCategories: {
-            exchangeRateTaxCategoryId: dbContext.exchange_rate_tax_category_id,
-            incomeExchangeRateTaxCategoryId: dbContext.income_exchange_rate_tax_category_id,
-            exchangeRevaluationTaxCategoryId: dbContext.exchange_rate_revaluation_tax_category_id,
-            feeTaxCategoryId: dbContext.fee_tax_category_id,
-            generalFeeTaxCategoryId: dbContext.general_fee_tax_category_id,
-            fineTaxCategoryId: dbContext.fine_tax_category_id,
-            untaxableGiftsTaxCategoryId: dbContext.untaxable_gifts_tax_category_id,
-            balanceCancellationTaxCategoryId: dbContext.balance_cancellation_tax_category_id,
-            developmentForeignTaxCategoryId: dbContext.development_foreign_tax_category_id,
-            developmentLocalTaxCategoryId: dbContext.development_local_tax_category_id,
-            salaryExcessExpensesTaxCategoryId: dbContext.salary_excess_expenses_tax_category_id,
-          },
-        },
-        crossYear: {
-          expensesToPayTaxCategoryId: dbContext.expenses_to_pay_tax_category_id,
-            expensesInAdvanceTaxCategoryId: dbContext.expenses_in_advance_tax_category_id,
-            incomeToCollectTaxCategoryId: dbContext.income_to_collect_tax_category_id,
-            incomeInAdvanceTaxCategoryId: dbContext.income_in_advance_tax_category_id,
-        },
-        financialAccounts: {
-          poalimBusinessId: null,
-          discountBusinessId: null,
-          swiftBusinessId: null,
-          isracardBusinessId: null,
-          amexBusinessId: null,
-          calBusinessId: null,
-          etanaBusinessId: null,
-          krakenBusinessId: null,
-          etherScanBusinessId: null,
-          foreignSecuritiesBusinessId: null,
-          bankAccountIds: [],
-          creditCardIds: [],
-          internalWalletsIds: [],
-        },
-        bankDeposits: { bankDepositBusinessId: null, bankDepositInterestIncomeTaxCategoryId: null },
-        foreignSecurities: { foreignSecuritiesBusinessId: null, foreignSecuritiesFeesCategoryId: null },
-        salaries: {
-          zkufotExpensesTaxCategoryId: null,
-          zkufotIncomeTaxCategoryId: null,
-          socialSecurityExpensesTaxCategoryId: null,
-          salaryExpensesTaxCategoryId: null,
-          trainingFundExpensesTaxCategoryId: null,
-          compensationFundExpensesTaxCategoryId: null,
-          pensionExpensesTaxCategoryId: null,
-          batchedEmployeesBusinessId: null,
-          batchedFundsBusinessId: null,
-          salaryBatchedBusinessIds: [],
-          taxDeductionsBusinessId: null,
-          recoveryReserveExpensesTaxCategoryId: null,
-          recoveryReserveTaxCategoryId: null,
-          vacationReserveExpensesTaxCategoryId: null,
-          vacationReserveTaxCategoryId: null,
-        },
-        businessTrips: { businessTripTaxCategoryId: null, businessTripTagId: null },
-        dividends: {
-          dividendWithholdingTaxBusinessId: null,
-          dividendTaxCategoryId: null,
-          dividendPaymentBusinessIds: [],
-          dividendBusinessIds: [],
-        },
-        depreciation: {
-          accumulatedDepreciationTaxCategoryId: null,
-          rndDepreciationExpensesTaxCategoryId: null,
-          gnmDepreciationExpensesTaxCategoryId: null,
-          marketingDepreciationExpensesTaxCategoryId: null,
-        },
-      };
+      // Build AdminContext from database
+      const adminContext = await buildAdminContextFromDb(client);
 
       const mockUser: UserType = {
         username: 'test-admin',
-        userId: adminBusinessId,
+        userId: adminContext.defaultAdminBusinessId,
         role: 'ADMIN',
       };
 
