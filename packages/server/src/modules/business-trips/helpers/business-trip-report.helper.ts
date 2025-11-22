@@ -1,3 +1,4 @@
+import { CountryCode } from '@modules/countries/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
@@ -403,38 +404,38 @@ export function isIncreasedLimitDestination(destinationCode: string | null) {
   if (!destinationCode) {
     return false;
   }
-  const increasedLimitDestinations = [
-    'AGO', // angola
-    'AUS', // australia
-    'AUT', // austria
-    'BEL', // belgium
-    'CMR', // cameroon
-    'CAN', // canada
-    'DNK', // denmark
-    'ARE', // dubai
-    'FIN', // finland
-    'FRA', // france
-    'DEU', // germany
-    'GRC', // greece
-    'HKG', // hong kong
-    'ISL', // iceland
-    'IRL', // ireland
-    'ITA', // italy
-    'JPN', // japan
-    'KOR', // south korea
-    'PRK', // north korea
-    'LUX', // luxembourg
-    'NLD', // netherlands
-    'NOR', // norway
-    'OMN', // oman
-    'QAT', // qatar
-    'ESP', // spain
-    'SWE', // sweden
-    'CHE', // switzerland
-    'TWN', // taiwan
-    'GBR', // united kingdom
+  const increasedLimitDestinations: CountryCode[] = [
+    CountryCode.Angola,
+    CountryCode.Australia,
+    CountryCode.Austria,
+    CountryCode.Belgium,
+    CountryCode.Cameroon,
+    CountryCode.Canada,
+    CountryCode.Denmark,
+    CountryCode['United Arab Emirates (the)'],
+    CountryCode.Finland,
+    CountryCode.France,
+    CountryCode.Germany,
+    CountryCode.Greece,
+    CountryCode['Hong Kong'],
+    CountryCode.Iceland,
+    CountryCode.Ireland,
+    CountryCode.Italy,
+    CountryCode.Japan,
+    CountryCode['Korea (the Republic of)'],
+    CountryCode["Korea (the Democratic People's Republic of)"],
+    CountryCode.Luxembourg,
+    CountryCode['Netherlands (the)'],
+    CountryCode.Norway,
+    CountryCode.Oman,
+    CountryCode.Qatar,
+    CountryCode.Spain,
+    CountryCode.Sweden,
+    CountryCode.Switzerland,
+    CountryCode['Taiwan (Province of China)'],
+    CountryCode['United Kingdom of Great Britain and Northern Ireland (the)'],
   ];
-  return increasedLimitDestinations.includes(destinationCode.toLocaleUpperCase());
+  return increasedLimitDestinations.includes(destinationCode.toLocaleUpperCase() as CountryCode);
 }
 
 export function onlyUnique(value: string, index: number, array: string[]) {
