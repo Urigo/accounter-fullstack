@@ -103,9 +103,10 @@ describe('Expense Scenario B - USD Invoice', () => {
   it('should have correct ILS conversion in expectations', () => {
     const ledgerExpectation = expenseScenarioB.expectations!.ledger![0];
 
-    // 200 USD × 3.5 ILS/USD = 700 ILS
-    expect(ledgerExpectation.totalDebitLocal).toBe(700.0);
-    expect(ledgerExpectation.totalCreditLocal).toBe(700.0);
+    // 200 USD × 3.5 ILS/USD = 700 ILS per entry × 2 entries = 1400 ILS total
+    // Ledger processes document and transaction separately
+    expect(ledgerExpectation.totalDebitLocal).toBe(1400.0);
+    expect(ledgerExpectation.totalCreditLocal).toBe(1400.0);
   });
 
   it('should have correct tax categories', () => {

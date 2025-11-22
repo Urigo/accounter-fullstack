@@ -63,7 +63,7 @@ describe('exchange-mock', () => {
         { fromCurrency: Currency.Eur, toCurrency: Currency.Gbp, rate: 1.2 },
       ]);
 
-      await expect(mockFn(Currency.Jpy, Currency.Cny, new Date('2024-01-01'))).rejects.toThrow(
+      await expect(mockFn(Currency.Jpy, Currency.Aud, new Date('2024-01-01'))).rejects.toThrow(
         /Available mocks: USD→ILS, EUR→GBP/,
       );
     });

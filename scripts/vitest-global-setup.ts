@@ -25,7 +25,7 @@ export default async function globalSetup() {
   }
 
   // Ensure core reference data exists outside per-test transactions
-  // Specifically: countries table must contain 'ISR' for new FK defaults
+  // Specifically: countries table must contain 'ISR' and 'USA' for FK defaults
   try {
     const { connectTestDb, closeTestDb } = await import(
       '../packages/server/src/__tests__/helpers/db-connection.js'
@@ -33,14 +33,22 @@ export default async function globalSetup() {
     const pool = await connectTestDb();
     const client = await pool.connect();
     try {
+      // Insert ISR (Israel)
       await client.query(
         `INSERT INTO accounter_schema.countries (code, name)
          VALUES ($1, $2)
          ON CONFLICT (code) DO NOTHING`,
         ['ISR', 'Israel'],
       );
+      // Insert USA (United States)
+      await client.query(
+        `INSERT INTO accounter_schema.countries (code, name)
+         VALUES ($1, $2)
+         ON CONFLICT (code) DO NOTHING`,
+        ['USA', 'United States'],
+      );
       // eslint-disable-next-line no-console
-      console.log('[test-setup] Ensured countries contains ISR');
+      console.log('[test-setup] Ensured countries contains ISR and USA');
     } finally {
       client.release();
       await closeTestDb();

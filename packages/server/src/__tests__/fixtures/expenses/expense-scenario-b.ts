@@ -175,12 +175,13 @@ export const expenseScenarioB: Fixture = {
     ledger: [
       {
         chargeId: makeUUID('charge-consulting-services'),
-        recordCount: 2, // Minimum: debit expense + credit bank (may include exchange entries)
-        debitEntities: [makeUUID('expense-consulting')],
-        creditEntities: [makeUUID('usd-account-tax-category')],
-        // With exchange rate of 3.5 ILS/USD: 200 USD × 3.5 = 700 ILS
-        totalDebitLocal: 700.0,
-        totalCreditLocal: 700.0,
+        recordCount: 2, // Document + transaction entries
+        debitEntities: [makeUUID('expense-consulting'), makeUUID('usd-account-tax-category')],
+        creditEntities: [makeUUID('usd-account-tax-category'), makeUUID('supplier-us-vendor-llc')],
+        // Ledger processes document (700 ILS) + transaction (700 ILS) = 1400 ILS total
+        // With exchange rate of 3.5 ILS/USD: 200 USD × 3.5 = 700 ILS per entry
+        totalDebitLocal: 1400.0,
+        totalCreditLocal: 1400.0,
         balanced: true,
         foreignCurrency: 'USD',
         foreignAmount: 200.0,
