@@ -11,8 +11,8 @@ export async function runMigrationsIfNeeded(pgPool: Pool): Promise<void> {
   let needToRun = false;
   const client = await pgPool.connect();
   try {
-    const existsRes = await client.query(
-      `SELECT to_regclass($1) as reg` as any,
+    const existsRes = await client.query<{ reg: string | null }>(
+      'SELECT to_regclass($1) as reg',
       [`${testDbSchema}.migration`],
     );
     const tableExists = Boolean(existsRes.rows?.[0]?.reg);
