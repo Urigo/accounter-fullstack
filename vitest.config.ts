@@ -9,5 +9,6 @@ export default defineConfig({
     alias: {},
     exclude: [...defaultExclude],
     setupFiles: ['./scripts/vitest-setup.ts'],
+    globalSetup: ['./scripts/vitest-global-setup.ts'],
   },
 });

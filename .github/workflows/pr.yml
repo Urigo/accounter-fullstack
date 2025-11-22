@@ -28,12 +28,11 @@ jobs:
         shell: bash
         run: yarn build
 
-      - name: Run Tests
-        uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: yarn test
+      # Tests are run by package-specific workflows (eg. `server-tests.yml`) to
+      # provide per-package environments (databases, services) and avoid
+      # duplicate runs. Remove the broad `yarn test` here to prevent running
+      # server tests twice. If you want a fast, cross-package smoke test,
+      # replace the line below with a command that runs only light checks.
 
   lint:
     name: Lint

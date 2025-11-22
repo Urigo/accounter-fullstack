@@ -1,8 +1,12 @@
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
 
+// Prefer isolated test env file when provided, otherwise fall back to repo-level .env
 dotenv({
-  path: '../../.env',
+  path:
+    process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
+      ? process.env.TEST_ENV_FILE
+      : '../../.env',
   debug: process.env.RELEASE ? false : true,
 });
 
