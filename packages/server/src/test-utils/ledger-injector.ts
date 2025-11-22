@@ -20,6 +20,7 @@ import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanc
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
+import type { Currency } from '@shared/gql-types';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
 
 export type ModuleContextLike = {
@@ -44,14 +45,26 @@ class SimpleInjector implements Injector {
   }
 }
 
+export type ExchangeRateMockFn = (
+  baseCurrency: Currency,
+  quoteCurrency: Currency,
+  date: Date,
+) => Promise<number>;
+
 export function createLedgerTestContext(options: {
   pool: Pool;
   adminContext: AdminContext;
   moduleId?: string;
   env?: unknown;
   currentUser?: unknown;
+  /**
+   * Optional mock function to override ExchangeProvider.getExchangeRates.
+   * Use this to fix exchange rates for deterministic tests.
+   * @see createMockExchangeRates, mockExchangeRate from __tests__/helpers/exchange-mock.ts
+   */
+  mockExchangeRates?: ExchangeRateMockFn;
 }): ModuleContextLike {
-  const { pool, adminContext, moduleId = 'test', env, currentUser } = options;
+  const { pool, adminContext, moduleId = 'test', env, currentUser, mockExchangeRates } = options;
 
   const dbProvider = new DBProvider(pool);
 
@@ -79,11 +92,16 @@ export function createLedgerTestContext(options: {
           new CoinMarketCapProvider(),
         );
         const fiat = new FiatExchangeProvider(dbProvider);
-        return new ExchangeProvider(
+        const exchangeProvider = new ExchangeProvider(
           contextRef.current as unknown as GraphQLModules.Context,
           crypto,
           fiat,
         );
+        // Apply mock if provided
+        if (mockExchangeRates) {
+          exchangeProvider.getExchangeRates = mockExchangeRates;
+        }
+        return exchangeProvider;
       }
       case LedgerProvider:
         return new LedgerProvider(

@@ -50,11 +50,11 @@ const config: CodegenConfig = {
           },
         },
         enumValues: {
-          ChargeSortByField: '@shared/enums#ChargeSortByField',
-          Currency: '@shared/enums#Currency',
-          DocumentType: '@shared/enums#DocumentType',
-          MissingChargeInfo: '@shared/enums#MissingChargeInfo',
-          TransactionDirection: '@shared/enums#TransactionDirection',
+          ChargeSortByField: '../shared/enums.js#ChargeSortByField',
+          Currency: '../shared/enums.js#Currency',
+          DocumentType: '../shared/enums.js#DocumentType',
+          MissingChargeInfo: '../shared/enums.js#MissingChargeInfo',
+          TransactionDirection: '../shared/enums.js#TransactionDirection',
         },
         mappers: {
           AdminBusiness: '@modules/financial-entities/types.js#IGetAllAdminBusinessesResult',
