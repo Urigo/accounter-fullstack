@@ -2,7 +2,7 @@ name: Server Tests
 
 on:
   push:
-    branches: [main, dev-test-data]
+    branches: [main]
   pull_request:
     paths:
       - 'packages/server/**'
