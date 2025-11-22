@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 export default async function globalSetup() {
   // Create isolated env file for test runs (seedAdminCore writes here)
@@ -25,7 +26,7 @@ export default async function globalSetup() {
   }
 
   // Ensure core reference data exists outside per-test transactions
-  // Specifically: countries table must contain 'ISR' and 'USA' for FK defaults
+  // Specifically: countries table populated from CountryCode enum
   try {
     const { connectTestDb, closeTestDb } = await import(
       '../packages/server/src/__tests__/helpers/db-connection.js'
@@ -33,22 +34,10 @@ export default async function globalSetup() {
     const pool = await connectTestDb();
     const client = await pool.connect();
     try {
-      // Insert ISR (Israel)
-      await client.query(
-        `INSERT INTO accounter_schema.countries (code, name)
-         VALUES ($1, $2)
-         ON CONFLICT (code) DO NOTHING`,
-        ['ISR', 'Israel'],
-      );
-      // Insert USA (United States)
-      await client.query(
-        `INSERT INTO accounter_schema.countries (code, name)
-         VALUES ($1, $2)
-         ON CONFLICT (code) DO NOTHING`,
-        ['USA', 'United States'],
-      );
+      // Use the shared utility to seed all countries from CountryCode enum
+      await seedCountries(client);
       // eslint-disable-next-line no-console
-      console.log('[test-setup] Ensured countries contains ISR and USA');
+      console.log('[test-setup] Ensured all countries populated from enum');
     } finally {
       client.release();
       await closeTestDb();
