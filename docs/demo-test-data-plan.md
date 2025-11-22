@@ -448,7 +448,20 @@ maintenance as ledger logic evolves.
 
 **Extensibility patterns:**
 
-- For exchange rate mocking: override `ExchangeProvider.getExchangeRates()` method in injector
+- **Exchange rate mocking**: Use `mockExchangeRate(from, to, rate)` from `exchange-mock.ts` and pass
+  to injector:
+
+  ```typescript
+  import { mockExchangeRate } from '@/__tests__/helpers/exchange-mock.js';
+  import { Currency } from '@shared/gql-types';
+
+  const context = createLedgerTestContext({
+    pool,
+    adminContext,
+    mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
+  });
+  ```
+
 - For non-critical dependencies: inject minimal stubs with no-op methods
 - For context-dependent providers: use `contextRef` pattern to inject context after creation
 
@@ -463,7 +476,7 @@ const businessesOperationStub = {
 
 ## 22. Developer Workflow Summary
 
-```
+```bash
 # Spin up DB
 docker compose -f docker/docker-compose.dev.yml up -d postgres
 
@@ -475,6 +488,9 @@ yarn workspace @accounter/server tsx packages/server/scripts/seed-admin-context.
 
 # Run full test suite (includes schema guard + coverage)
 yarn workspace @accounter/server vitest run
+
+# Run specific test file
+yarn workspace @accounter/server vitest run exchange-mock.test.ts
 ```
 
 ## 23. Open Questions (To Address Before Phase 2)

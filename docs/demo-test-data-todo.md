@@ -658,13 +658,45 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 ### S22: Exchange Rate Mock Strategy
 
-- [ ] Create `packages/server/src/__tests__/helpers/exchange-mock.ts`
-- [ ] Implement function to override `ExchangeProvider.getExchangeRates`
-  - [ ] Return specified rate (e.g., USD→ILS)
-  - [ ] Wire into admin context/injector
-- [ ] Create test proving mock works
-  - [ ] Test: `getExchangeRates` returns mocked value
-- [ ] Test passes ✅
+- [x] Create `packages/server/src/__tests__/helpers/exchange-mock.ts`
+- [x] Implement function to override `ExchangeProvider.getExchangeRates`
+  - [x] Return specified rate (e.g., USD→ILS)
+  - [x] Wire into admin context/injector via `mockExchangeRates` parameter
+  - [x] Support inverse rates (automatic calculation)
+  - [x] Throw error for unmocked pairs (prevents fallthrough to real API)
+- [x] Create test proving mock works
+  - [x] Test: `getExchangeRates` returns mocked value (exchange-mock.test.ts - 8 tests)
+  - [x] Test: Integration with ledger test context (exchange-mock-integration.test.ts - 4 tests)
+  - [x] Test: Inverse rate calculation
+  - [x] Test: Error for unmocked pairs
+  - [x] Test: Default behavior without mock
+- [x] Tests pass ✅ (12/12 tests passing)
+
+**Implementation Details:**
+
+- **Helper functions**: `mockExchangeRate(from, to, rate)` for single pair,
+  `createMockExchangeRates([mocks])` for multiple pairs
+- **Injector wiring**: `createLedgerTestContext({ mockExchangeRates })` accepts optional mock
+  function
+- **Automatic features**: Inverse rate calculation (ILS→USD when USD→ILS mocked), same currency
+  returns 1
+- **Error handling**: Clear error messages listing available mocks when unmocked pair requested
+- **Integration pattern**: ExchangeProvider.getExchangeRates overridden after provider instantiation
+- **Documentation**: Added usage example to demo-test-data-plan.md Section 21 (Provider Harness)
+
+**Test Results:**
+
+- `exchange-mock.test.ts`: 8 unit tests (basic mocking, same currency, inverse rates, unmocked
+  pairs, multiple pairs)
+- `exchange-mock-integration.test.ts`: 4 integration tests (ledger context integration, inverse
+  calculation, error throwing, default behavior)
+
+**Files Created:**
+
+- `packages/server/src/__tests__/helpers/exchange-mock.ts`: Mock implementation
+- `packages/server/src/__tests__/helpers/exchange-mock.test.ts`: Unit tests
+- `packages/server/src/__tests__/helpers/exchange-mock-integration.test.ts`: Integration tests
+- Updated `packages/server/src/test-utils/ledger-injector.ts`: Added `mockExchangeRates` parameter
 
 ### S23: Expense Scenario B Fixture
 

@@ -59,6 +59,33 @@ describe('Ledger Generation - Expense Scenario A', () => {
         `DELETE FROM ${qualifyTable('charges')} WHERE id = $1`,
         [chargeId],
       );
+      // Clean up fixture-specific entities to prevent count inflation
+      await client.query(
+        `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')} 
+         WHERE tax_category_id IN ($1, $2)`,
+        [makeUUID('expense-general'), makeUUID('bank-account-tax-category')],
+      );
+      await client.query(
+        `DELETE FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
+        ['BANK-ACCOUNT-001'],
+      );
+      await client.query(
+        `DELETE FROM ${qualifyTable('tax_categories')} WHERE id IN ($1, $2)`,
+        [makeUUID('expense-general'), makeUUID('bank-account-tax-category')],
+      );
+      await client.query(
+        `DELETE FROM ${qualifyTable('businesses')} WHERE id IN ($1, $2)`,
+        [makeUUID('admin-business'), makeUUID('supplier-local-ltd')],
+      );
+      await client.query(
+        `DELETE FROM ${qualifyTable('financial_entities')} WHERE id IN ($1, $2, $3, $4)`,
+        [
+          makeUUID('admin-business'),
+          makeUUID('supplier-local-ltd'),
+          makeUUID('expense-general'),
+          makeUUID('bank-account-tax-category'),
+        ],
+      );
     } finally {
       client.release();
     }
