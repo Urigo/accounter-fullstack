@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { assertValidFixture, validateFixture } from '../../helpers/fixture-validation';
 import { expenseScenarioA } from './expense-scenario-a';
+import { Currency } from '../../../shared/enums.js';
 
 describe('Expense Scenario A Fixture', () => {
   it('should compile and be properly typed', () => {
@@ -79,8 +80,8 @@ describe('Expense Scenario A Fixture', () => {
     const transaction = expenseScenarioA.transactions?.transactions[0];
     const document = expenseScenarioA.documents?.documents[0];
 
-    expect(transaction?.currency).toBe('ILS');
-    expect(document?.currency_code).toBe('ILS');
+    expect(transaction?.currency).toBe(Currency.Ils);
+    expect(document?.currency_code).toBe(Currency.Ils);
   });
 
   it('should have matching dates between transaction and document', () => {

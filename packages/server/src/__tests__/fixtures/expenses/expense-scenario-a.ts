@@ -25,6 +25,8 @@ import {
 } from '../../factories';
 import { makeUUID } from '../../factories/ids';
 import type { Fixture } from '../../helpers/fixture-types';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { Currency } from '../../../shared/enums.js';
 
 /**
  * Expense Scenario A: ILS Receipt Expense
@@ -55,13 +57,13 @@ export const expenseScenarioA: Fixture = {
       createBusiness({
         id: makeUUID('admin-business'),
         hebrewName: 'חשבונאות ניהול',
-        country: 'ISR',
+        country: CountryCode.Israel,
       }),
       // Supplier business
       createBusiness({
         id: makeUUID('supplier-local-ltd'),
         hebrewName: 'ספק מקומי בע"מ',
-        country: 'ISR',
+        country: CountryCode.Israel,
         exemptDealer: false,
         isReceiptEnough: true, // Can provide receipts for small purchases
       }),
@@ -95,7 +97,7 @@ export const expenseScenarioA: Fixture = {
     mappings: [
       {
         accountNumber: 'BANK-ACCOUNT-001',
-        currency: 'ILS',
+          currency: Currency.Ils,
         taxCategoryId: makeUUID('bank-account-tax-category'),
       },
     ],
@@ -123,7 +125,7 @@ export const expenseScenarioA: Fixture = {
           charge_id: makeUUID('charge-office-supplies'),
           business_id: makeUUID('supplier-local-ltd'),
           amount: '-500.00', // Negative = expense/outflow
-          currency: 'ILS',
+            currency: Currency.Ils,
           event_date: '2024-01-15',
           is_fee: false,
         },
@@ -147,7 +149,7 @@ export const expenseScenarioA: Fixture = {
           debtor_id: makeUUID('admin-business'), // Admin is debtor (owes money)
           type: 'RECEIPT',
           total_amount: 500.0, // Matches transaction amount (positive in document)
-          currency_code: 'ILS',
+            currency_code: Currency.Ils,
           date: '2024-01-15', // Receipt date matches transaction
         },
         {

@@ -28,6 +28,8 @@ import {
 } from '../../factories';
 import { makeUUID } from '../../factories/ids';
 import type { Fixture } from '../../helpers/fixture-types';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { Currency } from '../../../shared/enums.js';
 
 /**
  * Expense Scenario B: USD Invoice Expense
@@ -67,13 +69,13 @@ export const expenseScenarioB: Fixture = {
       createBusiness({
         id: makeUUID('admin-business-usd'),
         hebrewName: 'חשבונאות ניהול',
-        country: 'ISR',
+        country: CountryCode.Israel,
       }),
       // US Supplier business
       createBusiness({
         id: makeUUID('supplier-us-vendor-llc'),
         hebrewName: 'ספק אמריקאי',
-        country: 'USA',
+        country: CountryCode['United States of America (the)'],
         exemptDealer: false,
         isReceiptEnough: false, // Requires invoice for foreign transactions
       }),
@@ -107,7 +109,7 @@ export const expenseScenarioB: Fixture = {
     mappings: [
       {
         accountNumber: 'USD-ACCOUNT-001',
-        currency: 'USD',
+          currency: Currency.Usd,
         taxCategoryId: makeUUID('usd-account-tax-category'),
       },
     ],
@@ -135,7 +137,7 @@ export const expenseScenarioB: Fixture = {
           charge_id: makeUUID('charge-consulting-services'),
           business_id: makeUUID('supplier-us-vendor-llc'),
           amount: '-200.00', // Negative = expense/outflow in USD
-          currency: 'USD',
+            currency: Currency.Usd,
           event_date: '2024-01-20',
           is_fee: false,
         },
@@ -159,7 +161,7 @@ export const expenseScenarioB: Fixture = {
           debtor_id: makeUUID('admin-business-usd'), // Admin is debtor
           type: 'INVOICE',
           total_amount: 200.0, // Amount in USD
-          currency_code: 'USD',
+            currency_code: Currency.Usd,
           date: '2024-01-20', // Invoice date matches transaction
         },
         {
@@ -183,7 +185,7 @@ export const expenseScenarioB: Fixture = {
         totalDebitLocal: 1400.0,
         totalCreditLocal: 1400.0,
         balanced: true,
-        foreignCurrency: 'USD',
+          foreignCurrency: Currency.Usd,
         foreignAmount: 200.0,
         exchangeRate: 3.5, // Mocked deterministic rate
       },

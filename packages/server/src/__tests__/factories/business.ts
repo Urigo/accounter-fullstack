@@ -1,5 +1,6 @@
 import type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
 import { makeUUID } from './ids.js';
+import { CountryCode } from '../../modules/countries/types.js';
 
 /**
  * Business factory for test fixtures
@@ -44,7 +45,7 @@ export function createBusiness(
     exemptDealer: false,
     suggestions: null,
     optionalVat: false, // Database requires NOT NULL
-    country: 'ISR', // Database requires NOT NULL, default to Israel
+    country: CountryCode.Israel, // Database requires NOT NULL, default to Israel
     pcn874RecordTypeOverride: null,
     isReceiptEnough: false,
     isDocumentsOptional: false,

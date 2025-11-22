@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createBusiness } from './business.js';
 import { makeUUID } from './ids.js';
+import { CountryCode } from '@modules/countries/types.js';
 
 describe('Factory: Business', () => {
   describe('createBusiness', () => {
@@ -42,7 +43,7 @@ describe('Factory: Business', () => {
       const business = createBusiness({
         id: customId,
         hebrewName: 'עסק ישראלי',
-        country: 'ISR',
+          country: CountryCode.Israel,
         exemptDealer: true,
         isReceiptEnough: true,
         isDocumentsOptional: true,
@@ -50,7 +51,7 @@ describe('Factory: Business', () => {
 
       expect(business.id).toBe(customId);
       expect(business.hebrewName).toBe('עסק ישראלי');
-      expect(business.country).toBe('ISR');
+        expect(business.country).toBe(CountryCode.Israel);
       expect(business.exemptDealer).toBe(true);
       expect(business.isReceiptEnough).toBe(true);
       expect(business.isDocumentsOptional).toBe(true);
@@ -64,7 +65,7 @@ describe('Factory: Business', () => {
       expect(business.hebrewName).toBe('ספק מקומי');
       expect(business.id).toBeDefined();
       expect(business.exemptDealer).toBe(false);
-      expect(business.country).toBe('ISR'); // Default value, not null
+        expect(business.country).toBe(CountryCode.Israel); // Default value, not null
     });
 
     it('should preserve all required fields', () => {

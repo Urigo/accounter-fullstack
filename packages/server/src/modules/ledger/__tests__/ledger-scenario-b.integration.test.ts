@@ -118,7 +118,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       );
       expect(transactionsResult.rows).toHaveLength(1);
       expect(transactionsResult.rows[0].amount).toBe('-200.00');
-      expect(transactionsResult.rows[0].currency).toBe('USD');
+      expect(transactionsResult.rows[0].currency).toBe(Currency.Usd);
 
       const documentsResult = await insertClient.query(
         `SELECT * FROM ${qualifyTable('documents')} WHERE charge_id = $1`,
@@ -127,7 +127,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       expect(documentsResult.rows).toHaveLength(1);
       expect(documentsResult.rows[0].type).toBe('INVOICE');
       expect(Number(documentsResult.rows[0].total_amount)).toBe(200.0);
-      expect(documentsResult.rows[0].currency_code).toBe('USD');
+      expect(documentsResult.rows[0].currency_code).toBe(Currency.Usd);
 
       await insertClient.query('COMMIT');
     } catch (e) {
@@ -241,7 +241,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     // Verify account tax category mapping
     const accountMapping = expenseScenarioB.accountTaxCategories?.mappings[0];
     expect(accountMapping?.accountNumber).toBe('USD-ACCOUNT-001');
-    expect(accountMapping?.currency).toBe('USD');
+    expect(accountMapping?.currency).toBe(Currency.Usd);
     expect(accountMapping?.taxCategoryId).toBe(makeUUID('usd-account-tax-category'));
 
     // Verify expectations are defined
@@ -281,7 +281,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     const document = expenseScenarioB.documents?.documents[0];
     expect(document?.type).toBe('INVOICE');
     expect(document?.serial_number).toBe('INV-US-2024-001');
-    expect(document?.currency_code).toBe('USD');
+    expect(document?.currency_code).toBe(Currency.Usd);
     
     // US invoices should not have Israeli VAT
     expect(document?.vat_amount).toBeNull();

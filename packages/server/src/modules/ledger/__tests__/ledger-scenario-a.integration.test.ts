@@ -9,6 +9,7 @@ import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
 import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
+import { Currency } from '../../../shared/enums.js';
 
 /**
  * Ledger Integration Test for Expense Scenario A
@@ -114,7 +115,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       expect(transactionsResult.rows).toHaveLength(1);
       expect(transactionsResult.rows[0].amount).toBe('-500.00');
-      expect(transactionsResult.rows[0].currency).toBe('ILS');
+      expect(transactionsResult.rows[0].currency).toBe(Currency.Ils);
 
       const documentsResult = await insertClient.query(
         `SELECT * FROM ${qualifyTable('documents')} WHERE charge_id = $1`,

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { expenseScenarioB } from './expense-scenario-b';
 import { validateFixture } from '../../helpers/fixture-validation';
 import { makeUUID } from '../../factories/ids';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { Currency } from '../../../shared/enums.js';
 
 describe('Expense Scenario B - USD Invoice', () => {
   it('fixture should compile and be well-formed', () => {
@@ -41,10 +43,10 @@ describe('Expense Scenario B - USD Invoice', () => {
     const supplier = businesses.find(b => b.id === makeUUID('supplier-us-vendor-llc'));
 
     expect(admin).toBeDefined();
-    expect(admin?.country).toBe('ISR');
+    expect(admin?.country).toBe(CountryCode.Israel);
 
     expect(supplier).toBeDefined();
-    expect(supplier?.country).toBe('USA');
+    expect(supplier?.country).toBe(CountryCode['United States of America (the)']);
     expect(supplier?.isReceiptEnough).toBe(false); // Requires invoice
   });
 
@@ -63,8 +65,8 @@ describe('Expense Scenario B - USD Invoice', () => {
     const transaction = expenseScenarioB.transactions!.transactions[0];
     const document = expenseScenarioB.documents!.documents[0];
 
-    expect(transaction.currency).toBe('USD');
-    expect(document.currency_code).toBe('USD');
+    expect(transaction.currency).toBe(Currency.Usd);
+    expect(document.currency_code).toBe(Currency.Usd);
   });
 
   it('should have matching USD amounts', () => {
@@ -119,10 +121,9 @@ describe('Expense Scenario B - USD Invoice', () => {
   });
 
   it('should have USD account mapped to tax category', () => {
-    const mapping = expenseScenarioB.accountTaxCategories!.mappings[0];
-
-    expect(mapping.accountNumber).toBe('USD-ACCOUNT-001');
-    expect(mapping.currency).toBe('USD');
-    expect(mapping.taxCategoryId).toBe(makeUUID('usd-account-tax-category'));
+    const accountMapping = expenseScenarioB.accountTaxCategories?.mappings[0];
+    expect(accountMapping?.accountNumber).toBe('USD-ACCOUNT-001');
+    expect(accountMapping?.currency).toBe(Currency.Usd);
+      expect(accountMapping?.taxCategoryId).toBe(makeUUID('usd-account-tax-category'));
   });
 });
