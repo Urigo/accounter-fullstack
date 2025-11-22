@@ -6,11 +6,14 @@
 import type { PoolClient } from 'pg';
 import { CountryCode } from '../types.js';
 
+const countryEntries = Object.entries(CountryCode);
+const countryCodeToNameMap = new Map(countryEntries.map(([name, code]) => [code, name]));
+
 /**
  * Get all countries from the CountryCode enum as an array of {name, code} objects.
  */
 export function getAllCountries(): Array<{ name: string; code: string }> {
-  return Object.entries(CountryCode).map(([name, code]) => ({
+  return countryEntries.map(([name, code]) => ({
     name,
     code,
   }));
@@ -19,7 +22,7 @@ export function getAllCountries(): Array<{ name: string; code: string }> {
 /**
  * Insert all countries from CountryCode enum into the countries table.
  * Uses ON CONFLICT DO NOTHING to make it idempotent.
- * 
+ *
  * @param client - PostgreSQL client (from pool.connect() or standalone client)
  * @param schema - Schema name (default: 'accounter_schema')
  */
@@ -28,6 +31,10 @@ export async function seedCountries(
   schema = 'accounter_schema',
 ): Promise<void> {
   const countries = getAllCountries();
+
+  if (countries.length === 0) {
+    return;
+  }
 
   // Build VALUES clause dynamically
   const values = countries
@@ -51,7 +58,9 @@ export async function seedCountries(
  * Get a specific country by code from the CountryCode enum.
  */
 export function getCountryByCode(code: string): { name: string; code: string } | null {
-  const entry = Object.entries(CountryCode).find(([_, countryCode]) => countryCode === code);
-  if (!entry) return null;
-  return { name: entry[0], code: entry[1] };
+  const name = countryCodeToNameMap.get(code as CountryCode);
+  if (!name) {
+    return null;
+  }
+  return { name, code };
 }
