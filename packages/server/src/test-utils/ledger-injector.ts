@@ -10,6 +10,7 @@ import { CryptoExchangeProvider } from '@modules/exchange-rates/providers/crypto
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import { FiatExchangeProvider } from '@modules/exchange-rates/providers/fiat-exchange.provider.js';
 import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
+import { BusinessesOperationProvider } from '@modules/financial-entities/providers/businesses-operation.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
@@ -25,18 +26,18 @@ export type ModuleContextLike = {
   injector: Injector;
   adminContext: AdminContext;
   // Keep optional fields for compatibility with resolvers/helpers
-  moduleId?: string;
+  moduleId: string;
   env?: unknown;
   currentUser?: unknown;
 };
 
 class SimpleInjector implements Injector {
-  private instances = new Map<any, any>();
+  private instances = new Map<unknown, unknown>();
 
-  constructor(private factory: (token: any) => any) {}
+  constructor(private factory: (token: unknown) => unknown) {}
 
-  get<T>(token: any): T {
-    if (this.instances.has(token)) return this.instances.get(token);
+  get<T>(token: unknown): T {
+    if (this.instances.has(token)) return this.instances.get(token) as T;
     const instance = this.factory(token);
     this.instances.set(token, instance);
     return instance as T;
@@ -67,21 +68,28 @@ export function createLedgerTestContext(options: {
         return new FiatExchangeProvider(dbProvider);
       case CryptoExchangeProvider:
         return new CryptoExchangeProvider(
-          contextRef.current as any,
+          contextRef.current as unknown as GraphQLModules.Context,
           dbProvider,
           new CoinMarketCapProvider(),
         );
       case ExchangeProvider: {
         const crypto = new CryptoExchangeProvider(
-          contextRef.current as any,
+          contextRef.current as unknown as GraphQLModules.Context,
           dbProvider,
           new CoinMarketCapProvider(),
         );
         const fiat = new FiatExchangeProvider(dbProvider);
-        return new ExchangeProvider(contextRef.current as any, crypto, fiat);
+        return new ExchangeProvider(
+          contextRef.current as unknown as GraphQLModules.Context,
+          crypto,
+          fiat,
+        );
       }
       case LedgerProvider:
-        return new LedgerProvider(contextRef.current as any, dbProvider);
+        return new LedgerProvider(
+          contextRef.current as unknown as GraphQLModules.Context,
+          dbProvider,
+        );
       case UnbalancedBusinessesProvider:
         return new UnbalancedBusinessesProvider(dbProvider);
       case BalanceCancellationProvider:
@@ -105,13 +113,13 @@ export function createLedgerTestContext(options: {
       case FinancialEntitiesProvider: {
         const businessesProvider = new BusinessesProvider(dbProvider);
         const taxCategoriesProvider = new TaxCategoriesProvider(dbProvider);
-        const businessesOperationStub = {
+        const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
           deleteBusinessById: async (_businessId: string) => {},
-        } as any;
+        };
         return new FinancialEntitiesProvider(
           dbProvider,
           businessesProvider,
-          businessesOperationStub,
+          businessesOperationStub as unknown as BusinessesOperationProvider,
           taxCategoriesProvider,
         );
       }
@@ -120,7 +128,11 @@ export function createLedgerTestContext(options: {
       case ChargeSpreadProvider:
         return new ChargeSpreadProvider(dbProvider);
       default:
-        throw new Error(`Unsupported provider requested by injector: ${token?.name || token}`);
+        throw new Error(
+          `Unsupported provider requested by injector: ${
+            (token as { name?: string })?.name ?? String(token)
+          }`,
+        );
     }
   });
 
