@@ -90,7 +90,7 @@ jobs:
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
         run: |
-          node - <<'EOF'
+          node --experimental-specifier-resolution=node --import ./scripts/register-esm.js - <<'EOF'
           import { Client } from 'pg';
           import { LATEST_MIGRATION_NAME } from './packages/migrations/src/run-pg-migrations.ts';
           const client = new Client({
