@@ -375,8 +375,10 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 
 **Milestone 4 Progress:** Fixture types, validation, and loader with transaction support complete ✅
 **Total Tests (Milestone 4):** 28 passing (18 fixture-validation + 10 fixture-loader) **Total Tests
-(Milestone 5 - S19):** 11 passing (expense-scenario-a validation) **Total Tests (All):** 213 passing
-(factories + helpers + fixtures)
+(Milestone 5):** 11 passing (expense-scenario-a validation) **Total Tests (Milestone 6 - S22):** 12
+passing (8 exchange-mock unit + 4 exchange-mock integration) **Total Tests (Milestone 6 - S23):** 13
+passing (expense-scenario-b validation) **Total Tests (All):** 238+ passing (factories + helpers +
+fixtures + exchange mocking + scenarios)
 
 ### S14: Factory Integration
 
@@ -694,23 +696,65 @@ financial-account + 9 charge + 12 transaction + 12 document + 7 integration)
 **Files Created:**
 
 - `packages/server/src/__tests__/helpers/exchange-mock.ts`: Mock implementation
-- `packages/server/src/__tests__/helpers/exchange-mock.test.ts`: Unit tests
-- `packages/server/src/__tests__/helpers/exchange-mock-integration.test.ts`: Integration tests
+- `packages/server/src/__tests__/helpers/exchange-mock.test.ts`: Unit tests (8 tests)
+- `packages/server/src/__tests__/helpers/exchange-mock-integration.test.ts`: Integration tests (4
+  tests)
 - Updated `packages/server/src/test-utils/ledger-injector.ts`: Added `mockExchangeRates` parameter
+- Updated `packages/server/src/__tests__/helpers/fixture-types.ts`: Extended `LedgerExpectation`
+  with foreign currency fields
 
-### S23: Expense Scenario B Fixture
+**Fixes Applied:**
 
-- [ ] Create `packages/server/src/__tests__/fixtures/expenses/expense-scenario-b.ts`
-  - [ ] Define supplier "US Vendor LLC"
-  - [ ] Define charge (owner_id = admin, tax_category = expense category)
-  - [ ] Define transaction (USD negative amount, business_id = supplier)
-  - [ ] Define document (Invoice in USD)
-  - [ ] Define expectations: ledger with local currency conversion + exchange record (if applicable)
-  - [ ] Export as `expenseScenarioB`
-- [ ] Create validation test
-  - [ ] Test: fixture compiles
-  - [ ] Test: fixture validates
-- [ ] Validation test passes ✅
+- ✅ Fixed exchange-mock integration tests: Changed business name from "Test Business" to "Admin
+  Business" (matches seedAdminCore)
+- ✅ Fixed db-bootstrap test: Enhanced cleanup in ledger-scenario-a to prevent tax category leakage
+  (afterEach deletes all fixture entities)
+- ✅ Documentation updates: Changed workflow commands from pnpm to yarn in demo-test-data-plan.md
+
+### S23: Expense Scenario B Fixture ✅
+
+- [x] Create `packages/server/src/__tests__/fixtures/expenses/expense-scenario-b.ts`
+  - [x] Define supplier "US Vendor LLC" (country: USA)
+  - [x] Define charge with foreign currency (USD)
+  - [x] Define transaction (-200 USD, date 2024-01-20)
+  - [x] Define document (Invoice for 200 USD)
+  - [x] Define USD financial account (BANK_ACCOUNT type, owner: admin)
+  - [x] Define account tax category mapping (USD account → tax category)
+  - [x] Define expectations: ledger records balanced in ILS (700 ILS at 3.5 rate)
+  - [x] Export as `expenseScenarioB`
+- [x] Create validation test (`expense-scenario-b.test.ts`)
+  - [x] Test: fixture compiles
+  - [x] Test: fixture validates
+  - [x] Test: structure verification (2 businesses, 2 tax categories, 1 account, 1 charge, 1
+        transaction, 1 document)
+  - [x] Test: referential integrity (IDs match between charge/transaction/document)
+  - [x] Test: USD currency consistency (transaction and document both USD)
+  - [x] Test: amount matching (transaction -200 USD, document 200 USD)
+  - [x] Test: date matching (both 2024-01-20)
+  - [x] Test: document type is INVOICE (not RECEIPT for foreign vendors)
+  - [x] Test: exchange rate expectation (3.5 ILS/USD)
+  - [x] Test: ILS conversion accuracy (200 USD × 3.5 = 700 ILS)
+  - [x] Test: tax categories present (consulting expense + USD account)
+  - [x] Test: account tax category mapping defined
+- [x] Validation test passes ✅ (13/13 tests passing)
+
+**Implementation Details:**
+
+- Created complete USD expense fixture with admin business + US Vendor LLC (USA country)
+- Transaction: -200 USD (expense/outflow) on 2024-01-20
+- Document: Invoice for 200 USD matching transaction date (INVOICE type required for foreign
+  transactions)
+- Tax categories: Consulting Expense (debit) + USD Account (credit)
+- Financial account: USD-ACCOUNT-001 (type: BANK_ACCOUNT, owner: admin, currency: USD)
+- Account tax category mapping: USD account → USD account tax category (required for ledger
+  generation)
+- Ledger expectations: balanced at 700 ILS (200 USD × 3.5 exchange rate), 2+ records
+- Deterministic UUIDs via makeUUID for reproducible tests
+- Extended `LedgerExpectation` interface with `foreignCurrency?`, `foreignAmount?`, `exchangeRate?`
+  fields
+- All factories used: createBusiness, createTaxCategory, createFinancialAccount, createCharge,
+  createTransaction, createDocument
+- Total tests: 24/24 passing (11 Scenario A + 13 Scenario B)
 
 ### S24: Ledger Integration Test for Scenario B
 
