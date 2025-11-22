@@ -167,12 +167,12 @@ export interface LedgerExpectation {
   /**
    * Expected debit entities (financial entity IDs)
    */
-  debitEntities: string[];
+  debitEntities?: string[];
 
   /**
    * Expected credit entities (financial entity IDs)
    */
-  creditEntities: string[];
+  creditEntities?: string[];
 
   /**
    * Expected total debit amount in local currency
@@ -189,6 +189,21 @@ export interface LedgerExpectation {
    * @default true
    */
   balanced?: boolean;
+
+  /**
+   * Foreign currency code (if transaction is in foreign currency)
+   */
+  foreignCurrency?: string;
+
+  /**
+   * Foreign currency amount (before conversion to local currency)
+   */
+  foreignAmount?: number;
+
+  /**
+   * Exchange rate used for conversion (foreign → local)
+   */
+  exchangeRate?: number;
 }
 
 /**
