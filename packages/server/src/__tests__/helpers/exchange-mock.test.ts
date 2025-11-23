@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Currency } from '@shared/gql-types';
 import { mockExchangeRate, createMockExchangeRates } from './exchange-mock.js';
+import { Currency } from '@shared/enums';
 
 describe('exchange-mock', () => {
   describe('mockExchangeRate', () => {
