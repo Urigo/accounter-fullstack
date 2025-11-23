@@ -5,7 +5,7 @@ import {
   getChargeTransactionsMeta,
 } from '@modules/charges/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import { TimelessDateString } from '@shared/types';
 import { defineConversionBaseAndQuote, getFiatExchangeRate } from '../helpers/exchange.helper.js';

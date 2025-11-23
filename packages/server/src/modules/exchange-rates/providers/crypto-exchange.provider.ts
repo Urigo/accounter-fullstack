@@ -5,7 +5,7 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { CoinMarketCapProvider } from '@modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { getCacheInstance } from '@shared/helpers';
 import {
   IGetCryptoCurrenciesBySymbolQuery,

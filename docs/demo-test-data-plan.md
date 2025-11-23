@@ -453,7 +453,7 @@ maintenance as ledger logic evolves.
 
   ```typescript
   import { mockExchangeRate } from '@/__tests__/helpers/exchange-mock.js';
-  import { Currency } from '@shared/gql-types';
+  import { Currency } from '@shared/enums';
 
   const context = createLedgerTestContext({
     pool,

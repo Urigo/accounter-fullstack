@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { NoOptionalField, TimelessDateString } from '@shared/types';
 import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';

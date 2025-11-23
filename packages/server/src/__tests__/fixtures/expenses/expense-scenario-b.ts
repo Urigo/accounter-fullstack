@@ -43,7 +43,7 @@ import { Currency } from '../../../shared/enums.js';
  * import { expenseScenarioB } from './fixtures/expenses/expense-scenario-b';
  * import { insertFixture } from './helpers/fixture-loader';
  * import { mockExchangeRate } from './helpers/exchange-mock';
- * import { Currency } from '@shared/gql-types';
+ * import { Currency } from '@shared/enums';
  *
  * await withTestTransaction(pool, async (client) => {
  *   await seedAdminCore(client); // Ensure admin context exists

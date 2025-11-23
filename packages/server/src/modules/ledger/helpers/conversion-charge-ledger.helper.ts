@@ -1,4 +1,4 @@
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import type { LedgerProto } from '@shared/types';
 import { LedgerError } from './utils.helper.js';
 

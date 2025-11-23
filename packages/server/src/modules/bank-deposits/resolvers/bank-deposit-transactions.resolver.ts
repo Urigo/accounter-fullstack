@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import { BankDepositTransactionsProvider } from '../providers/bank-deposit-transactions.provider.js';
 import type { BankDepositsModule } from '../types.js';
