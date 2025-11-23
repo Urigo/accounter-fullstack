@@ -1,5 +1,110 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.8.2
+
+### Patch Changes
+
+- [#2636](https://github.com/Urigo/accounter-fullstack/pull/2636)
+  [`1ae19c6`](https://github.com/Urigo/accounter-fullstack/commit/1ae19c6f8dabd995120862795284dab6e363dc79)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.15)
+    (from `0.108.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.14)
+    (from `0.106.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.15` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.15)
+    (from `0.109.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.14)
+    (from `0.106.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.14` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.14)
+    (from `0.104.13`, in `dependencies`)
+
+- [#2654](https://github.com/Urigo/accounter-fullstack/pull/2654)
+  [`7fef068`](https://github.com/Urigo/accounter-fullstack/commit/7fef0682c7316153ae5ffde42f97ce7284dd4c9a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`graphql@16.12.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.12.0)
+    (from `16.11.0`, in `dependencies`)
+
+- [#2685](https://github.com/Urigo/accounter-fullstack/pull/2685)
+  [`80402e0`](https://github.com/Urigo/accounter-fullstack/commit/80402e07198a7c6bb78aa9402df7ea4ead779411)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.18)
+    (from `0.108.15`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.17)
+    (from `0.106.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.17)
+    (from `0.109.15`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.17)
+    (from `0.106.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.16)
+    (from `0.104.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.16)
+    (from `0.104.14`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.16)
+    (from `0.104.14`, in `dependencies`)
+
+- [#2725](https://github.com/Urigo/accounter-fullstack/pull/2725)
+  [`48c6d16`](https://github.com/Urigo/accounter-fullstack/commit/48c6d1624c696fc23ab82e28860bd9c290abc07d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.19` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.19)
+    (from `0.108.18`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.18)
+    (from `0.109.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.17)
+    (from `0.104.16`, in `dependencies`)
+
+- [#2658](https://github.com/Urigo/accounter-fullstack/pull/2658)
+  [`7a898a0`](https://github.com/Urigo/accounter-fullstack/commit/7a898a0ff1ee15420ab2532370a1d2f618cc86ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Migrated from JSON Schema draft-07 to
+  2020-12
+  - Updated all type references from `definitions` to `$defs` (represented as `_DOLLAR_defs` in
+    TypeScript)
+  - Added client management operations (add, update, delete)
+  - Enhanced JSON schema with better validation constraints and shared type definitions
+
+- [#2649](https://github.com/Urigo/accounter-fullstack/pull/2649)
+  [`15ed6f9`](https://github.com/Urigo/accounter-fullstack/commit/15ed6f982a5d288a1159ccd069fca14b35801a18)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Charges Auto-Matcher Module**: A
+  new GraphQL module `charges-matcher` has been introduced, complete with its directory structure,
+  TypeScript types, and GraphQL schema definitions for single-match and auto-match functionalities.
+  - **Comprehensive Documentation**: Detailed `SPEC.md`, `PROMPT_PLAN.md`, and `TODO.md` documents
+    have been added, outlining the technical specification, a 17-step implementation plan, and a
+    checklist for the transaction-document matching system.
+  - **Core Matching Logic Implemented**: Helper functions for calculating confidence scores based on
+    amount, currency, business ID, and date proximity have been implemented and thoroughly tested.
+  - **Data Aggregation Providers**: Providers for aggregating multiple transactions and documents
+    into single representations, including filtering, currency/business ID validation, and
+    description concatenation, are now in place.
+  - **Single-Match & Auto-Match Core Functions**: The core logic for finding single matches (with
+    date window filtering and tie-breaking) and for processing charges for auto-matching (including
+    merge direction determination and high-confidence thresholding) has been developed.
+  - **Robust Testing Infrastructure**: A comprehensive testing framework, including mock factories
+    and 494 passing unit and integration tests, has been established, ensuring high code coverage.
+  - **GraphQL Integration**: GraphQL resolvers for `findChargeMatches` and `autoMatchCharges`
+    mutations/queries have been added, and the module is registered in the main GraphQL application.
+  - **Type Safety Improvement**: The `amount` type in the `DocumentSuggestionsProto` interface has
+    been updated from `string` to `number` for enhanced type safety.
+
 ## 0.8.1
 
 ### Patch Changes

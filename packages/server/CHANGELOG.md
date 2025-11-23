@@ -1,5 +1,910 @@
 # @accounter/server
 
+## 0.0.8
+
+### Patch Changes
+
+- [#2513](https://github.com/Urigo/accounter-fullstack/pull/2513)
+  [`a2308dc`](https://github.com/Urigo/accounter-fullstack/commit/a2308dc812562b22f290bdd2e638c676fad77ac8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@google-cloud/pubsub@5.2.0` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/5.2.0)
+    (to `dependencies`)
+  - Added dependency [`googleapis@159.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/159.0.0)
+    (to `dependencies`)
+  - Added dependency
+    [`node-html-to-image@5.0.0` ↗︎](https://www.npmjs.com/package/node-html-to-image/v/5.0.0) (to
+    `dependencies`)
+
+- [#2534](https://github.com/Urigo/accounter-fullstack/pull/2534)
+  [`2d56d4e`](https://github.com/Urigo/accounter-fullstack/commit/2d56d4e7a4c38277ba9a9b99843ed4013290ab46)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.22` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.22) (from
+    `2.0.20`, in `dependencies`)
+
+- [#2543](https://github.com/Urigo/accounter-fullstack/pull/2543)
+  [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.23` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.23) (from
+    `2.0.22`, in `dependencies`)
+  - Updated dependency [`ai@5.0.60` ↗︎](https://www.npmjs.com/package/ai/v/5.0.60) (from `5.0.57`,
+    in `dependencies`)
+  - Updated dependency [`dotenv@17.2.3` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.3) (from
+    `17.2.2`, in `dependencies`)
+  - Updated dependency [`zod@4.1.12` ↗︎](https://www.npmjs.com/package/zod/v/4.1.12) (from
+    `4.1.11`, in `dependencies`)
+
+- [#2555](https://github.com/Urigo/accounter-fullstack/pull/2555)
+  [`6143bfe`](https://github.com/Urigo/accounter-fullstack/commit/6143bfeedfaccb56ea7f11f38e58063d9895a923)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Added dependency
+    [`@google-cloud/pubsub@5.2.0` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/5.2.0)
+    (to `dependencies`)
+  - Added dependency [`googleapis@159.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/159.0.0)
+    (to `dependencies`)
+  - Added dependency
+    [`node-html-to-image@5.0.0` ↗︎](https://www.npmjs.com/package/node-html-to-image/v/5.0.0) (to
+    `dependencies`)
+
+- [#2559](https://github.com/Urigo/accounter-fullstack/pull/2559)
+  [`a7fc425`](https://github.com/Urigo/accounter-fullstack/commit/a7fc4250e5f7141b0f64e651c1103f38fae2a3dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.30` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.30) (from
+    `2.0.23`, in `dependencies`)
+  - Updated dependency [`ai@5.0.72` ↗︎](https://www.npmjs.com/package/ai/v/5.0.72) (from `5.0.60`,
+    in `dependencies`)
+  - Updated dependency
+    [`strip-indent@4.1.1` ↗︎](https://www.npmjs.com/package/strip-indent/v/4.1.1) (from `4.1.0`, in
+    `dependencies`)
+
+- [#2570](https://github.com/Urigo/accounter-fullstack/pull/2570)
+  [`584937c`](https://github.com/Urigo/accounter-fullstack/commit/584937c941c0b7d6b325a4384861d8a8c5bb483f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`graphql-scalars@1.25.0` ↗︎](https://www.npmjs.com/package/graphql-scalars/v/1.25.0) (from
+    `1.24.2`, in `dependencies`)
+
+- [#2572](https://github.com/Urigo/accounter-fullstack/pull/2572)
+  [`a5875ad`](https://github.com/Urigo/accounter-fullstack/commit/a5875ad5be33b77938d43050cbb22af23e829b3a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency [`inline-css@4.0.3` ↗︎](https://www.npmjs.com/package/inline-css/v/4.0.3) (to
+    `dependencies`)
+  - Added dependency [`puppeteer@24.25.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.25.0)
+    (to `dependencies`)
+  - Removed dependency
+    [`node-html-to-image@5.0.0` ↗︎](https://www.npmjs.com/package/node-html-to-image/v/5.0.0) (from
+    `dependencies`)
+
+- [#2573](https://github.com/Urigo/accounter-fullstack/pull/2573)
+  [`7d85775`](https://github.com/Urigo/accounter-fullstack/commit/7d85775aaa41c5b9e3bd00df878cd23c0f45cba3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`googleapis@163.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/163.0.0) (from `159.0.0`,
+    in `dependencies`)
+
+- [#2576](https://github.com/Urigo/accounter-fullstack/pull/2576)
+  [`e1d4718`](https://github.com/Urigo/accounter-fullstack/commit/e1d4718af281b6c8c9a988c758187db237757e9c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.31` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.31) (from
+    `2.0.30`, in `dependencies`)
+
+- [#2580](https://github.com/Urigo/accounter-fullstack/pull/2580)
+  [`ff4553b`](https://github.com/Urigo/accounter-fullstack/commit/ff4553b04544d4db0fdfd22799f2f0b8efd8e737)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`googleapis@164.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/164.0.0) (from `163.0.0`,
+    in `dependencies`)
+
+- [#2586](https://github.com/Urigo/accounter-fullstack/pull/2586)
+  [`d0b183f`](https://github.com/Urigo/accounter-fullstack/commit/d0b183f9dce58ecf7a5c7086868a7fd397b2c752)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`cloudinary@2.8.0` ↗︎](https://www.npmjs.com/package/cloudinary/v/2.8.0)
+    (from `2.7.0`, in `dependencies`)
+
+- [#2587](https://github.com/Urigo/accounter-fullstack/pull/2587)
+  [`eaf61c3`](https://github.com/Urigo/accounter-fullstack/commit/eaf61c36d916e8363352d9b18e6b124f0333b437)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.34` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.34) (from
+    `2.0.31`, in `dependencies`)
+  - Updated dependency [`ai@5.0.76` ↗︎](https://www.npmjs.com/package/ai/v/5.0.76) (from `5.0.72`,
+    in `dependencies`)
+
+- [#2590](https://github.com/Urigo/accounter-fullstack/pull/2590)
+  [`dc48475`](https://github.com/Urigo/accounter-fullstack/commit/dc484759c8bc27e54e65d0672702fcce3a65f873)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`googleapis@164.1.0` ↗︎](https://www.npmjs.com/package/googleapis/v/164.1.0) (from `164.0.0`,
+    in `dependencies`)
+
+- [#2594](https://github.com/Urigo/accounter-fullstack/pull/2594)
+  [`d23a9a2`](https://github.com/Urigo/accounter-fullstack/commit/d23a9a29af7c52662e3c07c5286867ea54ca4bd6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.34` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.34) (from
+    `2.0.31`, in `dependencies`)
+  - Updated dependency [`ai@5.0.76` ↗︎](https://www.npmjs.com/package/ai/v/5.0.76) (from `5.0.72`,
+    in `dependencies`)
+  - Updated dependency
+    [`googleapis@164.1.0` ↗︎](https://www.npmjs.com/package/googleapis/v/164.1.0) (from `164.0.0`,
+    in `dependencies`)
+
+- [#2595](https://github.com/Urigo/accounter-fullstack/pull/2595)
+  [`738c3d7`](https://github.com/Urigo/accounter-fullstack/commit/738c3d75046cbd3b6a091b3ede84f292ebf7e12c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.26.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.0)
+    (from `24.25.0`, in `dependencies`)
+
+- [#2597](https://github.com/Urigo/accounter-fullstack/pull/2597)
+  [`8750702`](https://github.com/Urigo/accounter-fullstack/commit/8750702fd33bbf1458cc5facd4508b562fe0a560)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.35` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.35) (from
+    `2.0.34`, in `dependencies`)
+
+- [#2605](https://github.com/Urigo/accounter-fullstack/pull/2605)
+  [`863a592`](https://github.com/Urigo/accounter-fullstack/commit/863a592f83b480a82156c829914b7e7a270a3f96)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.26.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.0)
+    (from `24.25.0`, in `dependencies`)
+
+- [#2612](https://github.com/Urigo/accounter-fullstack/pull/2612)
+  [`232f7c2`](https://github.com/Urigo/accounter-fullstack/commit/232f7c2276aad578000ff99f264ea0b978079906)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.38` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.38) (from
+    `2.0.35`, in `dependencies`)
+  - Updated dependency [`ai@5.0.81` ↗︎](https://www.npmjs.com/package/ai/v/5.0.81) (from `5.0.76`,
+    in `dependencies`)
+  - Updated dependency [`puppeteer@24.26.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.1)
+    (from `24.26.0`, in `dependencies`)
+
+- [#2618](https://github.com/Urigo/accounter-fullstack/pull/2618)
+  [`5d24324`](https://github.com/Urigo/accounter-fullstack/commit/5d24324d9f5ba6e5875a331afe55d999e510451f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.35` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.35) (from
+    `2.0.31`, in `dependencies`)
+  - Updated dependency [`ai@5.0.76` ↗︎](https://www.npmjs.com/package/ai/v/5.0.76) (from `5.0.72`,
+    in `dependencies`)
+  - Updated dependency [`cloudinary@2.8.0` ↗︎](https://www.npmjs.com/package/cloudinary/v/2.8.0)
+    (from `2.7.0`, in `dependencies`)
+  - Updated dependency
+    [`googleapis@164.1.0` ↗︎](https://www.npmjs.com/package/googleapis/v/164.1.0) (from `164.0.0`,
+    in `dependencies`)
+  - Updated dependency [`puppeteer@24.26.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.0)
+    (from `24.25.0`, in `dependencies`)
+
+- [#2626](https://github.com/Urigo/accounter-fullstack/pull/2626)
+  [`b2049c0`](https://github.com/Urigo/accounter-fullstack/commit/b2049c0a242afb4dc1f63366a6e4611050b3c7c0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.38` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.38) (from
+    `2.0.35`, in `dependencies`)
+  - Updated dependency [`ai@5.0.81` ↗︎](https://www.npmjs.com/package/ai/v/5.0.81) (from `5.0.76`,
+    in `dependencies`)
+  - Updated dependency [`puppeteer@24.26.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.1)
+    (from `24.26.0`, in `dependencies`)
+
+- [#2629](https://github.com/Urigo/accounter-fullstack/pull/2629)
+  [`6244c1b`](https://github.com/Urigo/accounter-fullstack/commit/6244c1bbafa7029f426bdaf796d830ff62cee006)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.38` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.38) (from
+    `2.0.35`, in `dependencies`)
+  - Updated dependency [`ai@5.0.81` ↗︎](https://www.npmjs.com/package/ai/v/5.0.81) (from `5.0.76`,
+    in `dependencies`)
+  - Updated dependency [`puppeteer@24.26.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.1)
+    (from `24.26.0`, in `dependencies`)
+
+- [#2634](https://github.com/Urigo/accounter-fullstack/pull/2634)
+  [`b05ab20`](https://github.com/Urigo/accounter-fullstack/commit/b05ab20692349fbc7b74f36d9f0f19c02f5ba9a3)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.38` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.38) (from
+    `2.0.35`, in `dependencies`)
+  - Updated dependency [`ai@5.0.81` ↗︎](https://www.npmjs.com/package/ai/v/5.0.81) (from `5.0.76`,
+    in `dependencies`)
+  - Updated dependency [`puppeteer@24.26.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.26.1)
+    (from `24.26.0`, in `dependencies`)
+
+- [#2638](https://github.com/Urigo/accounter-fullstack/pull/2638)
+  [`cad4ed9`](https://github.com/Urigo/accounter-fullstack/commit/cad4ed9a12ef09c22d0c55715ba1453a73aa0773)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv-cli@11.0.0` ↗︎](https://www.npmjs.com/package/dotenv-cli/v/11.0.0)
+    (from `10.0.0`, in `dependencies`)
+
+- [#2639](https://github.com/Urigo/accounter-fullstack/pull/2639)
+  [`0792f80`](https://github.com/Urigo/accounter-fullstack/commit/0792f80e6c83326e63066e3d51c65cf554cb0a6e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.27.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.27.0)
+    (from `24.26.1`, in `dependencies`)
+
+- [#2643](https://github.com/Urigo/accounter-fullstack/pull/2643)
+  [`485cec8`](https://github.com/Urigo/accounter-fullstack/commit/485cec843689ba4777711231b88d876f1eac7022)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@envelop/generic-auth@10.0.1` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/10.0.1)
+    (from `10.0.0`, in `dependencies`)
+
+- [#2644](https://github.com/Urigo/accounter-fullstack/pull/2644)
+  [`7f9f9be`](https://github.com/Urigo/accounter-fullstack/commit/7f9f9be25556b5f66f430a5f660a71ef1b1b3464)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.39` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.39) (from
+    `2.0.38`, in `dependencies`)
+  - Updated dependency [`ai@5.0.82` ↗︎](https://www.npmjs.com/package/ai/v/5.0.82) (from `5.0.81`,
+    in `dependencies`)
+
+- [#2646](https://github.com/Urigo/accounter-fullstack/pull/2646)
+  [`1c8d288`](https://github.com/Urigo/accounter-fullstack/commit/1c8d28840c2c54a3948cd965695e16f84f0fccf2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.39` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.39) (from
+    `2.0.38`, in `dependencies`)
+  - Updated dependency [`ai@5.0.82` ↗︎](https://www.npmjs.com/package/ai/v/5.0.82) (from `5.0.81`,
+    in `dependencies`)
+
+- [#2647](https://github.com/Urigo/accounter-fullstack/pull/2647)
+  [`f171a4a`](https://github.com/Urigo/accounter-fullstack/commit/f171a4a83c5f30b0135c72991b4796677223ff39)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.40` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.40) (from
+    `2.0.39`, in `dependencies`)
+  - Updated dependency [`ai@5.0.86` ↗︎](https://www.npmjs.com/package/ai/v/5.0.86) (from `5.0.82`,
+    in `dependencies`)
+
+- [#2654](https://github.com/Urigo/accounter-fullstack/pull/2654)
+  [`7fef068`](https://github.com/Urigo/accounter-fullstack/commit/7fef0682c7316153ae5ffde42f97ce7284dd4c9a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`graphql@16.12.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.12.0)
+    (from `16.11.0`, in `dependencies`)
+
+- [#2655](https://github.com/Urigo/accounter-fullstack/pull/2655)
+  [`e3dc806`](https://github.com/Urigo/accounter-fullstack/commit/e3dc80677201cdbdd038953b572486c25119989e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.16.1` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.16.1)
+    (from `3.16.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.16.1` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.16.1) (from `5.16.0`,
+    in `dependencies`)
+
+- [#2662](https://github.com/Urigo/accounter-fullstack/pull/2662)
+  [`fa15c75`](https://github.com/Urigo/accounter-fullstack/commit/fa15c754be3cf82893a3573b4ebe60776c96a296)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.28.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.28.0)
+    (from `24.27.0`, in `dependencies`)
+
+- [#2664](https://github.com/Urigo/accounter-fullstack/pull/2664)
+  [`21a384a`](https://github.com/Urigo/accounter-fullstack/commit/21a384abf59e615d29a5aae591815f6540ab51ac)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency [`playwright@1.56.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.56.1)
+    (to `dependencies`)
+  - Removed dependency [`puppeteer@24.28.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.28.0)
+    (from `dependencies`)
+
+- [#2669](https://github.com/Urigo/accounter-fullstack/pull/2669)
+  [`3d3f443`](https://github.com/Urigo/accounter-fullstack/commit/3d3f4430cae9f6371507a6cfc785213797715405)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.16.1` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.16.1)
+    (from `3.16.0`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.16.1` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.16.1) (from `5.16.0`,
+    in `dependencies`)
+
+- [#2671](https://github.com/Urigo/accounter-fullstack/pull/2671)
+  [`76e0893`](https://github.com/Urigo/accounter-fullstack/commit/76e089345bc7ede786a28a4c93ed0c19f896e980)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`json-bigint-patch@0.0.8` ↗︎](https://www.npmjs.com/package/json-bigint-patch/v/0.0.8) (to
+    `dependencies`)
+
+- [#2677](https://github.com/Urigo/accounter-fullstack/pull/2677)
+  [`88e1537`](https://github.com/Urigo/accounter-fullstack/commit/88e153761668a2c29445b6bcf61b2b85cd28c10b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.41` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.41) (from
+    `2.0.40`, in `dependencies`)
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.12` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.12)
+    (from `0.10.11`, in `dependencies`)
+  - Updated dependency [`ai@5.0.87` ↗︎](https://www.npmjs.com/package/ai/v/5.0.87) (from `5.0.86`,
+    in `dependencies`)
+
+- [#2678](https://github.com/Urigo/accounter-fullstack/pull/2678)
+  [`8a3a1c4`](https://github.com/Urigo/accounter-fullstack/commit/8a3a1c4319709929b6dbdb4281d56309dfc2168c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@envelop/generic-auth@11.0.0` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/11.0.0)
+    (from `10.0.1`, in `dependencies`)
+  - Updated dependency
+    [`@envelop/graphql-modules@9.0.0` ↗︎](https://www.npmjs.com/package/@envelop/graphql-modules/v/9.0.0)
+    (from `8.0.0`, in `dependencies`)
+
+- [#2679](https://github.com/Urigo/accounter-fullstack/pull/2679)
+  [`f2cd908`](https://github.com/Urigo/accounter-fullstack/commit/f2cd908b2e7bc48777fb65aa2c3c3b517f52179c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`googleapis@165.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/165.0.0) (from `164.1.0`,
+    in `dependencies`)
+
+- [#2680](https://github.com/Urigo/accounter-fullstack/pull/2680)
+  [`1b79c90`](https://github.com/Urigo/accounter-fullstack/commit/1b79c90962c177004cdcc2546dcf857210389ab5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.16.2` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.16.2)
+    (from `3.16.1`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.16.2` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.16.2) (from `5.16.1`,
+    in `dependencies`)
+
+- [#2685](https://github.com/Urigo/accounter-fullstack/pull/2685)
+  [`80402e0`](https://github.com/Urigo/accounter-fullstack/commit/80402e07198a7c6bb78aa9402df7ea4ead779411)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.42` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.42) (from
+    `2.0.41`, in `dependencies`)
+  - Updated dependency [`ai@5.0.89` ↗︎](https://www.npmjs.com/package/ai/v/5.0.89) (from `5.0.87`,
+    in `dependencies`)
+
+- [#2687](https://github.com/Urigo/accounter-fullstack/pull/2687)
+  [`051f82a`](https://github.com/Urigo/accounter-fullstack/commit/051f82aaf9f49dc49875a52e18713f6ed7b3408f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.44` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.44) (from
+    `2.0.42`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-hive/yoga@0.42.4` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.42.4)
+    (from `0.42.2`, in `dependencies`)
+  - Updated dependency
+    [`@whatwg-node/fetch@0.10.13` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.10.13)
+    (from `0.10.12`, in `dependencies`)
+  - Updated dependency [`ai@5.0.93` ↗︎](https://www.npmjs.com/package/ai/v/5.0.93) (from `5.0.89`,
+    in `dependencies`)
+  - Updated dependency
+    [`json-bigint-patch@0.0.9` ↗︎](https://www.npmjs.com/package/json-bigint-patch/v/0.0.9) (from
+    `0.0.8`, in `dependencies`)
+
+- [#2720](https://github.com/Urigo/accounter-fullstack/pull/2720)
+  [`5857419`](https://github.com/Urigo/accounter-fullstack/commit/5857419c1c3f5fe685ab7a56fc4e65049415fd19)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-hive/yoga@0.43.0` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.43.0)
+    (from `0.42.4`, in `dependencies`)
+
+- [#2721](https://github.com/Urigo/accounter-fullstack/pull/2721)
+  [`2a5bddd`](https://github.com/Urigo/accounter-fullstack/commit/2a5bddd48ce2ef233d50b4c0c9fc91b94ba01585)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@2.0.45` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/2.0.45) (from
+    `2.0.44`, in `dependencies`)
+  - Updated dependency [`ai@5.0.95` ↗︎](https://www.npmjs.com/package/ai/v/5.0.95) (from `5.0.93`,
+    in `dependencies`)
+
+- [#2729](https://github.com/Urigo/accounter-fullstack/pull/2729)
+  [`543e8f5`](https://github.com/Urigo/accounter-fullstack/commit/543e8f53b215f912fe26811e26f5a9783347e6ef)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@5.0.97` ↗︎](https://www.npmjs.com/package/ai/v/5.0.97) (from `5.0.95`,
+    in `dependencies`)
+
+- [#2735](https://github.com/Urigo/accounter-fullstack/pull/2735)
+  [`5eeb7d4`](https://github.com/Urigo/accounter-fullstack/commit/5eeb7d444c49fd56d61b2916d4770f4c9c9eaf9d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ai@5.0.100` ↗︎](https://www.npmjs.com/package/ai/v/5.0.100) (from
+    `5.0.97`, in `dependencies`)
+
+- [#2631](https://github.com/Urigo/accounter-fullstack/pull/2631)
+  [`86c8b3e`](https://github.com/Urigo/accounter-fullstack/commit/86c8b3ebea4e3be0c0e99a108ec1cdad8b39e5d8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Update**: A new
+  "operations_count" column has been added to the "clients_contracts" table to store the operational
+  limit for each contract.
+  - **GraphQL API Extension**: The GraphQL schema, resolvers, and database providers have been
+    updated to support the "operationsLimit" field for creating, updating, and querying contract
+    data.
+  - **User Interface Integration**: The client application now includes a dedicated input field for
+    setting the "operationsLimit" in the contract modification dialog and displays this value in the
+    contract details section.
+
+- [#2719](https://github.com/Urigo/accounter-fullstack/pull/2719)
+  [`05ffb2d`](https://github.com/Urigo/accounter-fullstack/commit/05ffb2d1247360e54d3b668605410094235fc423)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Refactored Charge Attributes**: The
+  pull request removes the direct usage of 'extended_charge' attributes, which were denormalized
+  fields. Instead, charge-related metadata such as total amounts, document counts, transaction
+  counts, and business IDs are now dynamically computed using new helper functions that query
+  associated entities (transactions, documents, ledger records) on demand.
+  - **Enhanced Data Retrieval Helpers**: New helper functions like 'calculateTotalAmount',
+    'getChargeBusinesses', 'getChargeDocumentsMeta', 'getChargeLedgerMeta',
+    'getChargeTaxCategoryId', 'getTransactionsMeta', and 'getLedgerMeta' have been introduced or
+    significantly updated. These helpers ensure that charge metadata is always derived from the most
+    current source data.
+  - **Updated Resolvers and Logic**: Numerous resolvers and helper functions across various modules
+    (e.g., accountant-approval, business-trips, documents, ledger, reports) have been updated to
+    utilize the new data retrieval helpers. This ensures that all parts of the application correctly
+    fetch and process charge information without relying on the deprecated 'extended_charge'
+    attributes.
+  - **Improved Caching and Type Definitions**: Caching has been added to the 'ChargesProvider' for
+    better performance. Additionally, GraphQL type definitions for 'ChargeMetadata' have been
+    simplified by removing redundant fields like 'invalidDocuments' and 'invalidTransactions', as
+    these are now computed dynamically.
+
+- [#2551](https://github.com/Urigo/accounter-fullstack/pull/2551)
+  [`14900d1`](https://github.com/Urigo/accounter-fullstack/commit/14900d10209272429118ff4bd2e52893c813170b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Error Handling Standardization**: The
+  primary goal of this PR is to standardize and enhance error handling across various modules. This
+  involves ensuring that error messages are more descriptive, consistent, and that the original
+  error context is preserved in logs.
+
+- [#2734](https://github.com/Urigo/accounter-fullstack/pull/2734)
+  [`d6ea553`](https://github.com/Urigo/accounter-fullstack/commit/d6ea553a5c5da6d4b552bc09f65ab39ca843c668)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Country Seeding Utility**: A new
+  helper file, `seed-countries.helper.ts`, has been introduced to centralize the logic for managing
+  country data, including retrieval and database seeding.
+  - **Dynamic and Idempotent Country Seeding**: The new utility provides a `seedCountries` function
+    that dynamically inserts country names and codes from an enum into the database, utilizing
+    `ON CONFLICT (code) DO NOTHING` to ensure idempotency.
+  - **Refactored Seed Script**: The main `scripts/seed.ts` file has been updated to use the new
+    `seedCountries` utility, replacing a large, hardcoded SQL `INSERT` statement with a cleaner,
+    more maintainable function call.
+
+- [#2584](https://github.com/Urigo/accounter-fullstack/pull/2584)
+  [`549a2a6`](https://github.com/Urigo/accounter-fullstack/commit/549a2a6fed7959795d7ca130b0ad567c5f4f62c8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Update**: Introduced a
+  'locality' column to the 'user_context' table and established foreign key relationships for
+  country codes in both 'user_context' and 'businesses' tables, linking them to a 'countries' table.
+  - **Dynamic Country Selection**: The 'Locality' field in the 'ModifyBusinessFields' component now
+    dynamically fetches and displays a list of all countries, replacing previous hardcoded options.
+  - **User-Contextual Default Country**: New businesses created via the 'InsertBusiness' modal will
+    now default their country based on the user's 'locality' from their 'userContext'.
+  - **Centralized Locality Management**: The 'admin-context' and 'user-context' modules on the
+    server-side have been updated to store and retrieve the user's 'locality', ensuring consistent
+    access across the application.
+  - **VAT Logic Enhancement**: VAT validation and deduction logic now utilize the dynamically
+    retrieved 'adminContext.locality' instead of a hardcoded country name, improving flexibility and
+    accuracy.
+
+- [#2697](https://github.com/Urigo/accounter-fullstack/pull/2697)
+  [`e2cc7b8`](https://github.com/Urigo/accounter-fullstack/commit/e2cc7b80dbd798f8639e0a67b367c67e719e7891)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Annual Revenue Report**: A new
+  report screen has been added to display annual revenue data, categorized by country and client.
+  - **Interactive User Interface**: The report features an interactive user interface allowing users
+    to expand and collapse country and client details to view underlying transactions.
+  - **Data Filtering and Export**: Users can filter the report by year using a dedicated year picker
+    and export the displayed data into a CSV format.
+  - **GraphQL API Integration**: New GraphQL types and a query have been introduced on the
+    server-side to fetch the structured annual revenue data.
+  - **Navigation Integration**: The new Annual Revenue Report is now accessible via a new entry in
+    the application's sidebar navigation.
+
+- [#2649](https://github.com/Urigo/accounter-fullstack/pull/2649)
+  [`15ed6f9`](https://github.com/Urigo/accounter-fullstack/commit/15ed6f982a5d288a1159ccd069fca14b35801a18)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - \* **New Charges Auto-Matcher Module**: A
+  new GraphQL module `charges-matcher` has been introduced, complete with its directory structure,
+  TypeScript types, and GraphQL schema definitions for single-match and auto-match functionalities.
+  - **Comprehensive Documentation**: Detailed `SPEC.md`, `PROMPT_PLAN.md`, and `TODO.md` documents
+    have been added, outlining the technical specification, a 17-step implementation plan, and a
+    checklist for the transaction-document matching system.
+  - **Core Matching Logic Implemented**: Helper functions for calculating confidence scores based on
+    amount, currency, business ID, and date proximity have been implemented and thoroughly tested.
+  - **Data Aggregation Providers**: Providers for aggregating multiple transactions and documents
+    into single representations, including filtering, currency/business ID validation, and
+    description concatenation, are now in place.
+  - **Single-Match & Auto-Match Core Functions**: The core logic for finding single matches (with
+    date window filtering and tie-breaking) and for processing charges for auto-matching (including
+    merge direction determination and high-confidence thresholding) has been developed.
+  - **Robust Testing Infrastructure**: A comprehensive testing framework, including mock factories
+    and 494 passing unit and integration tests, has been established, ensuring high code coverage.
+  - **GraphQL Integration**: GraphQL resolvers for `findChargeMatches` and `autoMatchCharges`
+    mutations/queries have been added, and the module is registered in the main GraphQL application.
+  - **Type Safety Improvement**: The `amount` type in the `DocumentSuggestionsProto` interface has
+    been updated from `string` to `number` for enhanced type safety.
+
+- [#2664](https://github.com/Urigo/accounter-fullstack/pull/2664)
+  [`21a384a`](https://github.com/Urigo/accounter-fullstack/commit/21a384abf59e615d29a5aae591815f6540ab51ac)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Puppeteer Replacement**: This PR
+  replaces Puppeteer with Playwright for generating PDFs from HTML in the
+  `gmail-service.provider.ts` file.
+  - **Dependency Updates**: The PR adds `playwright` as a dependency to
+    `packages/server/package.json` and removes Puppeteer configurations.
+
+- [#2714](https://github.com/Urigo/accounter-fullstack/pull/2714)
+  [`4e3dd01`](https://github.com/Urigo/accounter-fullstack/commit/4e3dd01eb2215d09ece496f25456bec76c3bf9d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Function Signature Refactor**: The
+  `ledgerGenerationByCharge` function has been refactored from a higher-order function that returned
+  another function, to a direct `async` function that accepts all its parameters at once.
+  - **Simplified Call Sites**: All instances where `ledgerGenerationByCharge` was called have been
+    updated across various resolvers and reports to reflect its new, simplified signature, removing
+    the double-invocation pattern.
+  - **Improved Type Safety**: The function's return type and parameters have been explicitly defined
+    with `Promise<Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>>` and
+    `GraphQLResolveInfo`, enhancing type safety and clarity.
+
+- [#2629](https://github.com/Urigo/accounter-fullstack/pull/2629)
+  [`6244c1b`](https://github.com/Urigo/accounter-fullstack/commit/6244c1bbafa7029f426bdaf796d830ff62cee006)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Update**: The
+  `clients_contracts` table in the database has been updated to replace the single `purchase_order`
+  column (string) with a new `purchase_orders` column, which is an array of text (`text[]`),
+  allowing multiple POs per contract.
+  - **GraphQL API Evolution**: The GraphQL schema has been modified to reflect this change, updating
+    `purchaseOrder: String` to `purchaseOrders: [String!]!` across the `Contract` type,
+    `CreateContractInput`, and `UpdateContractInput`.
+  - **Frontend User Interface**: The client-side application now supports displaying and managing
+    multiple Purchase Orders. Users can add new POs, view all associated POs (with the latest one
+    highlighted), and remove POs directly from the contract modification dialog.
+  - **Backend Logic Adaptation**: Server-side resolvers and database providers have been updated to
+    correctly handle the new `purchase_orders` array when creating, updating, and querying
+    contracts.
+  - **Green Invoice Integration**: The integration with Green Invoice has been adjusted to use the
+    first Purchase Order from the `purchase_orders` array when generating document remarks, ensuring
+    compatibility with external systems that might expect a single PO reference.
+
+- [#2513](https://github.com/Urigo/accounter-fullstack/pull/2513)
+  [`a2308dc`](https://github.com/Urigo/accounter-fullstack/commit/a2308dc812562b22f290bdd2e638c676fad77ac8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Gmail Listener Implementation**:
+  Introduced core functionality to listen for Gmail notifications using Google Cloud Pub/Sub,
+  enabling real-time email processing.
+  - **Comprehensive Setup Guide**: Added `GMAIL_LISTENER.md` with detailed steps for Google Cloud
+    project setup, API enablement, service accounts, Pub/Sub topics, OAuth2 credentials, and
+    environment variables.
+  - **Modular Service Architecture**: Implemented `GmailService` for email interaction and
+    `PubSubService` for handling incoming notifications, ensuring a clean separation of concerns.
+  - **OAuth2 Troubleshooting Utility**: Included a `troubleshootOAuth` function to assist with
+    debugging common OAuth2 and Gmail watch permission issues, simplifying the setup process.
+  - **Alternative Polling Mechanism**: Provided a documented fallback polling approach for scenarios
+    where Pub/Sub integration might be overly complex or not feasible.
+
+- [#2661](https://github.com/Urigo/accounter-fullstack/pull/2661)
+  [`bf705b9`](https://github.com/Urigo/accounter-fullstack/commit/bf705b93457bf20b72633f70b5d6782ceaef8a03)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Charge Matching UI**: A
+  comprehensive frontend has been introduced for displaying and interacting with charge matches,
+  including dedicated cell components for various data types like business, date, tags, tax
+  category, and charge type.
+  - **Charge Matches Table Implementation**: A new `ChargeMatchesTable` component has been
+    implemented using `@tanstack/react-table`, featuring sorting, column visibility, and integration
+    with a `MergeChargesButton`.
+  - **Integration with Extended Charge Info**: The new charge matches table is now conditionally
+    displayed within the `ChargeExtendedInfo` component, appearing when a charge is missing
+    accounting documents or transactions.
+  - **GraphQL Schema and Resolver Updates**: The `ChargeMatch` GraphQL type has been extended to
+    include the full `Charge` object, and a corresponding resolver was added on the backend to fetch
+    this related charge data.
+  - **Reusable UI Components**: New generic `DataTableColumnHeader` and `Score` components were
+    developed to standardize table headers and score visualizations across the application,
+    promoting consistency and reusability.
+  - **Improved Merge Charges UX**: The `MergeChargesButton` now requires at least two charges to be
+    selected for merging and utilizes a more modern Shadcn `Dialog` component with tooltips for
+    better user guidance and clarity.
+
+- [#2548](https://github.com/Urigo/accounter-fullstack/pull/2548)
+  [`d72901a`](https://github.com/Urigo/accounter-fullstack/commit/d72901adb3b1dcc3e1e88fc797d8097f49f00cc5)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Intent**: This pull request aims to
+  enhance the backend's business suggestions by introducing a new `emailListener` configuration.
+  This allows for more detailed control over how emails related to a business are processed,
+  including specifying internal email links, whether to process the email body, and which attachment
+  types (PDF, PNG, JPEG) to consider.
+  - **Key Changes**: The core changes involve refactoring the `suggestionDataSchema` from
+    `modules/documents` to `modules/financial-entities`, extending this schema to include a new
+    `emailListener` field, and updating the GraphQL API to expose these new types. Business logic
+    for merging and handling `emailListener` configurations during updates has been implemented.
+    Additionally, a new `getBusinessByEmail` method was added to retrieve businesses based on emails
+    in their suggestion data, along with enhanced cache invalidation for business data.
+  - **Affected Files**: The changes span across multiple files:
+  * `eslint.config.mjs`: Updated to recognize the new `SuggestionsEmailListenerConfig`.
+  * `packages/server/src/modules/charges/resolvers/charge-suggestions/charge-suggestions.resolver.ts`:
+    Updated import path for `suggestionDataSchema`.
+  * `packages/server/src/modules/documents/helpers/suggestion-data-schema.helper.ts`: Removed.
+  * `packages/server/src/modules/documents/types.ts`: Removed `SuggestionData` export.
+  * `packages/server/src/modules/financial-entities/helpers/business-suggestion-data-schema.helper.ts`:
+    Added, defining `suggestionDataSchema` with `emailListener` and `EmailListenerConfig`.
+  * `packages/server/src/modules/financial-entities/helpers/businesses.helper.ts`: Modified to
+    handle `emailListener` merging logic and updated suggestion field merging.
+  * `packages/server/src/modules/financial-entities/providers/businesses.provider.ts`: Added
+    `getBusinessByEmail` query and method, renamed `insertBusinessesLoader`, and enhanced cache
+    invalidation for business emails.
+  * `packages/server/src/modules/financial-entities/resolvers/businesses.resolver.ts`: Updated to
+    use the new `emailListener` field in mutations and resolvers, and adjusted DataLoader usage.
+  * `packages/server/src/modules/financial-entities/typeDefs/businesses.graphql.ts`: Modified
+    GraphQL schema to include `SuggestionsEmailListenerConfig`, `EmailAttachmentType` enum, and
+    updated `Suggestion` and `SuggestionInput` types.
+  * `packages/server/src/modules/financial-entities/types.ts`: Exported new `SuggestionData` and
+    `EmailListenerConfig` types.
+  * `packages/server/src/modules/transactions/resolvers/transaction-suggestions.resolver.ts`:
+    Updated import path for `suggestionDataSchema`.
+
+- [#2626](https://github.com/Urigo/accounter-fullstack/pull/2626)
+  [`b2049c0`](https://github.com/Urigo/accounter-fullstack/commit/b2049c0a242afb4dc1f63366a6e4611050b3c7c0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Client Creation Flow Enhancement**: The
+  "Create New Business" dialog now includes an option to immediately create a client associated with
+  the new business. If selected, a `ModifyClientDialog` will automatically open after business
+  creation, streamlining the onboarding process.
+  - **`ModifyClientDialog` Flexibility**: The `ModifyClientDialog` component has been enhanced with
+    a `showTrigger` prop, allowing it to be rendered without its default trigger button, making it
+    suitable for programmatic opening. It also now consistently calls the `onDone` callback when
+    closed, improving callback reliability.
+  - **User Navigation Improvements**: The user dropdown menu now displays the actual logged-in
+    username from the `UserContext` and includes a direct link to the "Admin Configurations" page
+    for the user's primary business, providing quicker access to administrative settings.
+  - **Form Schema Refinements**: The business creation form schema has been updated to use more
+    direct Zod validators (`z.email()`, `z.url()`) for better type safety and includes a new
+    `isClient` boolean field to indicate if the business is also a client.
+
+- [#2582](https://github.com/Urigo/accounter-fullstack/pull/2582)
+  [`32276b4`](https://github.com/Urigo/accounter-fullstack/commit/32276b47e164f0976fcdd5523fa5e26f0704014f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Business/Client Page**: Introduced
+  a comprehensive new page for businesses and clients, consolidating various details into a single,
+  tabbed interface for improved management and overview.
+  - **Modular UI Components**: Developed several new UI components (`BusinessHeader`,
+    `ChargesSection`, `ChartsSection`, `ConfigurationsSection`, `ContactInfoSection`,
+    `ContractsSection`, `DocumentsSection`, `IntegrationsSection`) to structure and display
+    different aspects of business information.
+  - **Dynamic Routing and Tab Navigation**: Implemented dynamic routing for the new business page
+    (`/businesses/:businessId`) and integrated tab-based navigation to switch between different
+    sections like contact info, configurations, and analytics.
+  - **Business Configuration Form**: Added a detailed configuration form allowing users to manage
+    VAT settings, tax exemptions, default sort codes, tax categories, IRS codes, and auto-matching
+    rules for bank transactions and documents (phrases, emails, attachment types).
+  - **Backend GraphQL Enhancements**: Extended GraphQL types for `Business`, `FinancialEntity`, and
+    `TaxCategory` to include `createdAt` and `updatedAt` fields, providing essential timestamp
+    information.
+  - **UI Library Integration**: Integrated the `@radix-ui/react-progress` component and refactored
+    the `pcn874RecordType` enum definition into a shared helper for better code organization.
+
+- [#2718](https://github.com/Urigo/accounter-fullstack/pull/2718)
+  [`067b2d6`](https://github.com/Urigo/accounter-fullstack/commit/067b2d65d54e94915a0c4fa6577cfe34ba29b686)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Feature Plan Document**: A detailed
+  `bank-deposits-extension-plan.md` is added, outlining the scope, implementation steps, technical
+  decisions, and UI/GraphQL patterns for upcoming bank deposit management features.
+  - **Client-Side Transaction Table Components**: New React components are introduced to display
+    bank deposit transactions, including individual cells for date, amount, cumulative balances
+    (origin and local), and a deposit/withdrawal indicator, laying the groundwork for the UI.
+  - **Core Deposit Transactions Table**: A `DepositsTransactionsTable` component is added,
+    leveraging `@tanstack/react-table` to render transactions for a given deposit, calculate
+    cumulative balances, and display loading states.
+  - **GraphQL Schema Expansion**: The server's GraphQL schema for bank deposits is significantly
+    extended with a new `allDeposits` query, `createDeposit` and `assignTransactionToDeposit`
+    mutations, and enriched `BankDeposit` type fields (e.g., `currency`, `openDate`,
+    `currentBalance`, `currencyError`).
+  - **Authorization and Error Handling**: All new GraphQL operations are secured with
+    `@auth(role: ACCOUNTANT)`, and a minor improvement to error handling in the `deposit` resolver
+    is included to re-throw `GraphQLError` instances directly.
+  - Added ledger generation logic for "breathing deposits" (multi-transaction deposits) with
+    automatic foreign exchange revaluation
+
+- [#2627](https://github.com/Urigo/accounter-fullstack/pull/2627)
+  [`6f775f0`](https://github.com/Urigo/accounter-fullstack/commit/6f775f0670dbabad5b4ce0746b4ad18d349d313f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New 'Accounts' Section in Admin
+  Business View**: A dedicated tab named 'Accounts' has been added to the admin business page,
+  allowing administrators to manage financial accounts associated with a business.
+  - **Comprehensive Financial Account Management**: The new section introduces functionality to
+    view, create, and edit various types of financial accounts, including bank accounts, credit
+    cards, crypto wallets, bank deposit accounts, and foreign securities accounts. This includes a
+    modal for modifying account details.
+  - **Extended Bank Account Details**: Bank accounts can now store a wide array of specific
+    information such as extended bank numbers, party preferred indications, account involvement
+    codes, various dates (deal, update, agreement opening), and other descriptive fields like
+    service authorization and product labels.
+  - **Dynamic Currency and Tax Category Handling**: Financial accounts now support multiple
+    currencies, each linked to its own tax category. The UI allows for dynamic addition and removal
+    of these currency-tax category pairs during account creation or editing.
+  - **Backend CRUD Operations for Financial Accounts**: New GraphQL queries and mutations have been
+    implemented on the server-side to support full Create, Read, Update, and Delete (CRUD)
+    operations for financial accounts, including fetching accounts by owner and by ID.
+  - **Database Migration for Account Name**: A new database migration has been added to introduce an
+    `account_name` column to the `financial_accounts` table, providing more flexibility for account
+    naming.
+
+- [#2572](https://github.com/Urigo/accounter-fullstack/pull/2572)
+  [`a5875ad`](https://github.com/Urigo/accounter-fullstack/commit/a5875ad5be33b77938d43050cbb22af23e829b3a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **HTML to PDF Conversion**: The method
+  for converting HTML content has been upgraded from generating PNG images using
+  `node-html-to-image` to producing high-fidelity PDF documents using `puppeteer`. This change
+  significantly improves the quality and format of generated documents.
+  - **Dependency Management**: The project dependencies have been updated to reflect the new
+    conversion mechanism. `node-html-to-image` was removed, and new packages including `puppeteer`,
+    `handlebars`, and `inline-css` were added to facilitate the enhanced PDF generation.
+  - **Improved Error Handling**: Error messages within the `GmailServiceProvider` have been refined
+    to provide more specific and actionable information, aiding in debugging and troubleshooting
+    document processing failures.
+
+- [#2554](https://github.com/Urigo/accounter-fullstack/pull/2554)
+  [`437352d`](https://github.com/Urigo/accounter-fullstack/commit/437352dfc33e40cb6a6e89e9c3c26df9ece063e1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Intent**: This pull request aims to
+  prevent the creation of duplicate document entries by introducing a file hashing mechanism. It
+  adds a `file_hash` column to the `documents` table and integrates file hash generation and storage
+  into the document upload process.
+  - **Key Changes**: A new database migration adds a `file_hash` column to the
+    `accounter_schema.documents` table. File content is now hashed during the upload process (e.g.,
+    for Deel invoices and general document uploads) and stored in this new column. A new DataLoader
+    is introduced to efficiently retrieve documents by their file hash, and caching is updated to
+    include hash-based lookups. Integrations like Green Invoice and direct document insertion via
+    resolvers are updated to handle the new `fileHash` field, initially setting it to `null` where
+    the hash is not immediately available.
+  - **Database Schema Updates**: A new migration (`2025-09-19T10-06-24.add-documents-hash.ts`) is
+    added to create a `file_hash` column (type `text`) in the `accounter_schema.documents` table.
+    This migration is registered in `run-pg-migrations.ts`.
+  - **File Hashing Logic**: The `hashStringToInt` helper is imported and used to generate an integer
+    hash from file content. This is applied in `deel.helper.ts` when uploading Deel invoices and in
+    `upload.helper.ts` for general document uploads. The hashing process runs in parallel with other
+    asynchronous operations like Cloudinary uploads and OCR data extraction.
+  - **Document Upload and Processing**: The `uploadDeelInvoice` function in `deel.helper.ts` now
+    calculates and stores the file hash. The `getDocumentFromFile` function in `upload.helper.ts` is
+    refactored to use a new helper `getDocumentFromUrlsAndOceData` and also calculates the file
+    hash, passing it to the document creation logic. This ensures the hash is captured for newly
+    uploaded documents.
+  - **Data Access Layer**: The `DocumentsProvider` in `documents.provider.ts` is updated with a new
+    SQL query (`getDocumentsByHashes`) and a `DataLoader` (`getDocumentByHash`) to fetch documents
+    efficiently using their file hash. Cache invalidation in `deleteDocument` now also clears
+    entries based on `file_hash`.
+  - **Integrations and Resolvers**: The `insertDocuments` SQL query and related
+    `IInsertDocumentsParams` are updated to include the `file_hash` field. In
+    `documents.resolver.ts` and `green-invoice.helper.ts`, new document insertions explicitly set
+    `fileHash` to `null` where the hash is not generated at that specific point in the workflow.
+
+- [#2605](https://github.com/Urigo/accounter-fullstack/pull/2605)
+  [`863a592`](https://github.com/Urigo/accounter-fullstack/commit/863a592f83b480a82156c829914b7e7a270a3f96)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Admin Business Configuration Tab**:
+  Introduced a dedicated "Admin" tab within the business details page to manage administrative
+  financial information.
+  - **Frontend Component Development**: A new `AdminBusinessSection` React component was created,
+    featuring a form for various tax and registration details, with client-side validation using
+    `zod` and `react-hook-form`.
+  - **GraphQL API Extension**: New GraphQL types (`CreateAdminBusinessInput`,
+    `UpdateAdminBusinessInput`) and mutations (`createAdminBusiness`, `updateAdminBusiness`,
+    `deleteAdminBusiness`) were added to the backend to support the management of admin business
+    data.
+  - **Data Fetching and Update Logic**: A new `useUpdateAdminBusiness` hook was implemented on the
+    frontend to interact with the new GraphQL mutations, handling data submission and user feedback.
+  - **Backend Resolver Implementation**: Server-side resolvers were updated to expose administrative
+    business fields and handle the logic for fetching and updating this data.
+
+- [#2561](https://github.com/Urigo/accounter-fullstack/pull/2561)
+  [`e853097`](https://github.com/Urigo/accounter-fullstack/commit/e853097bbe987be8292981c527ba49562bf2f28b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Refactored Ledger Storage Helper**: The
+  `storeInitialGeneratedRecords` function in `ledgrer-storage.helper.ts` has been updated to accept
+  a `chargeId` string instead of a full `charge` object. It now internally fetches the `charge`
+  using `ChargesProvider` to ensure the most up-to-date data is used.
+  - **Enhanced Data Integrity**: A null check for the fetched `charge` object has been added within
+    `storeInitialGeneratedRecords`, preventing potential errors and ensuring that ledger records are
+    only processed for existing charges.
+  - **Widespread Resolver Updates**: All relevant ledger generation resolvers across the application
+    have been updated to pass `charge.id` to the refactored `storeInitialGeneratedRecords` function,
+    aligning with the new signature and ensuring consistent behavior.
+
+- [#2608](https://github.com/Urigo/accounter-fullstack/pull/2608)
+  [`b27476e`](https://github.com/Urigo/accounter-fullstack/commit/b27476e4e67717223990c57b990510edbc93d910)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Businesses Screen UI Overhaul**: The
+  main businesses listing screen has been completely redesigned, transitioning from a traditional
+  table layout to a modern, card-like display for improved aesthetics and user experience.
+  - **New BusinessHeader Component**: A dedicated `BusinessHeader` component was introduced to
+    standardize the display of business information, including dynamic status (Active/Inactive) and
+    role (Admin/Client) badges.
+  - **Enhanced Business Navigation**: Each business entry in the list is now clickable, allowing
+    direct navigation to its detailed page, and includes integrated checkboxes for selection,
+    enhancing interactivity.
+  - **Refactored New Business Form**: The 'Insert Business' modal has been significantly refactored,
+    incorporating Zod for robust validation and organizing the form into distinct, user-friendly
+    sections for contact information, default settings, and auto-matching configurations.
+  - **Simplified Business Insertion Logic**: The backend `insertBusiness` resolver was updated to
+    streamline the process of adding new businesses, specifically by simplifying the handling of tax
+    category insertions.
+
+- [#2645](https://github.com/Urigo/accounter-fullstack/pull/2645)
+  [`9d8f87a`](https://github.com/Urigo/accounter-fullstack/commit/9d8f87ad54b583964ba731b8478742c09c5600df)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Refactor**: The
+  `businesses_admin` table is updated to replace single-value fields for tax and social security
+  identifiers with array-based JSONB columns, allowing for multiple annual IDs and historical tax
+  rates.
+  - **GraphQL Schema Update**: The GraphQL `AdminBusiness` type and related input types
+    (`CreateAdminBusinessInput`, `UpdateAdminBusinessInput`) are modified to reflect the new array
+    structures, introducing `AnnualId` and `TaxAdvancesRate` types.
+  - **Frontend Form Overhaul**: The `admin-business-section.tsx` component is refactored to use
+    `react-hook-form`'s `useFieldArray` for dynamic management of annual IDs and tax rates,
+    providing a more flexible user interface.
+  - **Backend Logic Adaptation**: New Zod schemas and resolver logic are implemented on the server
+    to validate and process the updated array-based data for admin business updates.
+
+- [#2640](https://github.com/Urigo/accounter-fullstack/pull/2640)
+  [`26618ff`](https://github.com/Urigo/accounter-fullstack/commit/26618ff2d4a47d63e16ecec59f39887f48df52cf)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Renaming and Restructuring**: Key
+  components and routes related to "Business Transactions" have been renamed to "Business Ledger
+  Records" and moved into a new `business-ledger` directory, improving clarity and organization.
+  - **New Business Detail Tabs**: The business detail page now features new dedicated tabs for
+    "Ledger" and "Balance", providing a more structured view of financial data.
+  - **Enhanced Ledger and Transaction Tables**: Both the `LedgerTable` and `TransactionsTable`
+    components have been updated with pagination, improved sorting capabilities, and clearer column
+    headers for better user experience.
+  - **API Expansion**: New GraphQL queries and resolvers have been introduced on the server-side to
+    support fetching ledger records and transactions specifically by financial entity, catering to
+    the new UI structure.
+
+- [#2646](https://github.com/Urigo/accounter-fullstack/pull/2646)
+  [`1c8d288`](https://github.com/Urigo/accounter-fullstack/commit/1c8d28840c2c54a3948cd965695e16f84f0fccf2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Contracts Screen**: A dedicated
+  user interface has been introduced for viewing and managing client contracts, accessible via a new
+  sidebar link.
+  - **Enhanced Contract Management**: The new screen features a comprehensive data table for
+    contracts, offering functionalities like sorting, filtering by various criteria (product type,
+    billing cycle, subscription plan, active status), column visibility toggling, and pagination.
+  - **Contract Editing Functionality**: Users can now edit existing contracts directly from the
+    contracts table through a modified dialog that fetches and pre-fills contract details for a
+    seamless editing experience.
+  - **Bulk Document Issuance**: A new modal allows users to select multiple contracts and generate
+    document drafts for a specified month, streamlining the process of creating invoices or other
+    contract-related documents.
+  - **Backend API and Caching Improvements**: New GraphQL queries and resolvers have been added to
+    support fetching contracts by administrator ID and individual contract details. The backend also
+    includes refined cache invalidation logic for contract operations, ensuring data consistency and
+    improved performance.
+
+- [#2658](https://github.com/Urigo/accounter-fullstack/pull/2658)
+  [`7a898a0`](https://github.com/Urigo/accounter-fullstack/commit/7a898a0ff1ee15420ab2532370a1d2f618cc86ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Updated all type references from
+  `definitions` to `$defs` (represented as `_DOLLAR_defs` in TypeScript)
+  - Added client management operations (add, update, delete)
+  - Introduced country code conversion utilities
+  - Moved client helper functions to a dedicated module
+
+- [#2547](https://github.com/Urigo/accounter-fullstack/pull/2547)
+  [`fd9fb24`](https://github.com/Urigo/accounter-fullstack/commit/fd9fb2445cba9a450f8c78f8100160d9b7c5c38a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - 1. **Environment Variable Validation**: The
+  `HIVE_TOKEN` and `DEEL_TOKEN` environment variables are now marked as mandatory (`zod.string()`
+  instead of `zod.string().optional()`) within their respective Zod schemas in
+  `packages/server/src/environment.ts`. 2. **Model Renaming**: The `GoogleModel` has been renamed to
+  `GoogleDriveModel` in `packages/server/src/environment.ts`, and all references to it in `configs`
+  and `env` exports have been updated accordingly. 3. **Conditional Configuration Export**: The
+  `env` export in `packages/server/src/environment.ts` now conditionally defines the nested
+  configuration objects for `greenInvoice`, `hive`, `googleDrive`, and `deel`. If the corresponding
+  environment variables are not present, these top-level objects will be `undefined`. 4. **Safe
+  Access to Environment Variables**: Throughout the application, specifically in
+  `packages/server/src/index.ts`,
+  `packages/server/src/modules/app-providers/deel/deel-client.provider.ts`,
+  `packages/server/src/modules/app-providers/google-drive/google-drive.provider.ts`, and
+  `packages/server/src/modules/app-providers/green-invoice-client.ts`, the access patterns for these
+  environment variables have been updated to use optional chaining (`?.`) to safely handle cases
+  where the configuration might be `undefined`.
+
+- [#2655](https://github.com/Urigo/accounter-fullstack/pull/2655)
+  [`e3dc806`](https://github.com/Urigo/accounter-fullstack/commit/e3dc80677201cdbdd038953b572486c25119989e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Introduced a new `ClientIntegrations`
+  GraphQL type with a JSONB-backed structure
+  - Migrated `green_invoice_id` and `hive_id` columns to a unified `integrations` JSONB field
+  - Added validation helper using Zod schema for client integrations
+  - Updated GraphQL resolvers to use the new structure, with `GreenInvoiceClient` now resolving as a
+    string ID
+  - Activate integrations section in the client management UI to reflect backend changes
+
+- [#2684](https://github.com/Urigo/accounter-fullstack/pull/2684)
+  [`34cb4cc`](https://github.com/Urigo/accounter-fullstack/commit/34cb4cce5e64caaa4a689247f6cbe92c400dc75c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Refactor**: A new
+  table, `financial_bank_accounts`, has been introduced to specifically store bank account details,
+  separating them from the general `financial_accounts` table. A migration is included to populate
+  this new table with existing bank account data.
+  - **New GraphQL Module for Bank Accounts**: A dedicated GraphQL module, provider, and resolvers
+    have been created for `financial-bank-accounts`, allowing for more granular management and
+    querying of bank account-specific data.
+  - **Updated Financial Accounts Provider**: The existing `FinancialAccountsProvider` queries have
+    been updated to explicitly select core financial account fields, as bank-specific details are
+    now handled by the new `FinancialBankAccountsProvider`.
+- Updated dependencies
+  [[`1ae19c6`](https://github.com/Urigo/accounter-fullstack/commit/1ae19c6f8dabd995120862795284dab6e363dc79),
+  [`7fef068`](https://github.com/Urigo/accounter-fullstack/commit/7fef0682c7316153ae5ffde42f97ce7284dd4c9a),
+  [`80402e0`](https://github.com/Urigo/accounter-fullstack/commit/80402e07198a7c6bb78aa9402df7ea4ead779411),
+  [`48c6d16`](https://github.com/Urigo/accounter-fullstack/commit/48c6d1624c696fc23ab82e28860bd9c290abc07d),
+  [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6),
+  [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6),
+  [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6),
+  [`7a898a0`](https://github.com/Urigo/accounter-fullstack/commit/7a898a0ff1ee15420ab2532370a1d2f618cc86ab),
+  [`15ed6f9`](https://github.com/Urigo/accounter-fullstack/commit/15ed6f982a5d288a1159ccd069fca14b35801a18)]:
+  - @accounter/green-invoice-graphql@0.8.2
+  - @accounter/pcn874-generator@0.6.3
+  - @accounter/shaam-uniform-format-generator@0.2.2
+  - @accounter/shaam6111-generator@0.1.4
+
 ## 0.0.7
 
 ### Patch Changes
