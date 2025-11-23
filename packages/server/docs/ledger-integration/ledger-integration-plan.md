@@ -1,7 +1,9 @@
 # Ledger Integration & Test Data Plan
 
-Owner: accounter-fullstack team Status: Draft Updated: 2025-11-20 Related PR: Staging/tests data
-(#2727)
+Owner: accounter-fullstack team  
+Status: Draft  
+Updated: 2025-11-20  
+Related PR: Staging/tests data (#2727)
 
 ## 1) Objective
 
@@ -66,14 +68,12 @@ Owner: accounter-fullstack team Status: Draft Updated: 2025-11-20 Related PR: St
       - Fetches `adminContext` from DB for a given `userId`/`businessId`.
       - Returns `{ injector, adminContext }` and utilities.
   - Export types to keep usage strict in tests.
-
 - Phase 2: Refactor Scenario A Integration Test
   - Update `packages/server/src/modules/ledger/__tests__/ledger-scenario-a.integration.test.ts` to:
     - Remove `createApplication` calls.
     - Use the harness to get `{ injector, adminContext }`.
     - Call `ledgerGenerationByCharge` with the charge from the inserted fixture.
     - Assert ledger entries and balances.
-
 - Phase 3: Reusability & Coverage
   - Extract common fixture helpers if needed.
   - Add at least one more scenario to validate VAT/exchange paths.
@@ -106,13 +106,13 @@ Owner: accounter-fullstack team Status: Draft Updated: 2025-11-20 Related PR: St
 
 ## 9) Commands
 
-- Run only the server test with server config:
+Run only the server test with server config:
 
 ```bash
 yarn vitest run -c packages/server/vitest.config.ts packages/server/src/modules/ledger/__tests__/ledger-scenario-a.integration.test.ts
 ```
 
-- Run the entire server test suite:
+Run the entire server test suite:
 
 ```bash
 yarn vitest run -c packages/server/vitest.config.ts packages/server

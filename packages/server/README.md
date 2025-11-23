@@ -52,3 +52,21 @@ TEST_ENV_FILE=/tmp/accounter-test.env DEBUG=accounter:test yarn workspace @accou
 The global Vitest setup may set `TEST_ENV_FILE` automatically to a temporary path; check logs if
 needed. If the write fails, tests continue (non-fatal). To disable writing entirely you can point
 `TEST_ENV_FILE` to a throwaway location.
+
+## Demo Test Data & Ledger Docs
+
+High-level architecture, roadmap and prompts are maintained in root `docs/`:
+
+- `docs/demo-test-data-plan.md` – Overall specification & goals
+- `docs/demo-test-data-prompt-plan.md` – TDD prompt history
+- `docs/demo-test-data-todo.md` – Progress checklist
+
+Server-local implementation details:
+
+- `packages/server/docs/implementation-guide.md` – Seed, harness, injector, fixtures
+- `packages/server/docs/ledger-integration/ledger-integration-plan.md` – Ledger harness plan
+- `packages/server/docs/ledger-integration/ledger-tests-refactor-spec.md` – Semantic assertion
+  refactor
+
+When adding new scenarios or providers, update the implementation guide and (if ledger-specific) the
+ledger integration plan.
