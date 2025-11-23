@@ -594,11 +594,13 @@ Updated Requirements:
 
 Acceptance:
 - Scripts run locally; CI passes with schema guard succeeding when migrations applied.
+```
 
 ---
 
 ### Prompt 19: Precise Migration Name Guard
 
+```text
 Task: Add exact latest migration name assertion.
 
 Requirements:
@@ -652,3 +654,55 @@ Acceptance:
 
 This document will evolve as additional scenarios (income flows, multi-currency, partial payments)
 are added in future phases.
+
+## Milestone 7: Ledger Coverage Hardening (Planned)
+
+Focus on closing identified test gaps to ensure comprehensive ledger correctness before broad
+scenario expansion.
+
+### Chunks
+
+- **Chunk 7.1 Duplicate Prevention**: Implement guard preventing duplicate ledger record insertion
+  when `insertLedgerRecordsIfNotExists: true` is used repeatedly.
+- **Chunk 7.2 VAT Scenario**: Add VAT-inclusive expense fixture + VAT assertion helper verifying tax
+  entity placement and VAT amount correctness.
+- **Chunk 7.3 Foreign Multi-Leg Scenario**: Introduce foreign expense with fee & FX adjustment legs;
+  extend foreign assertions to validate aggregate foreign sum and local reconciliation.
+- **Chunk 7.4 Exchange Rate Date Alignment**: Mock multiple dated rates; assert ledger selects rate
+  matching invoice/value date.
+- **Chunk 7.5 Locked Charge Behavior**: Fixture for locked charge; test retrieval path returns
+  immutable records (no new inserts, `updated_at` unchanged, `locked=true`).
+- **Chunk 7.6 Secondary Entity Logic**: Tests ensuring only allowed secondary entities (fee, VAT, FX
+  adjustment) appear; fail on unexpected entity.
+- **Chunk 7.7 Period Boundary Validation**: Scenario spanning month/year boundary; assert period
+  tagging (stub if not yet implemented).
+- **Chunk 7.8 Description & Reference Semantics**: Assertions requiring non-empty meaningful
+  `description` / `reference1` for multi-leg/complex entries.
+- **Chunk 7.9 Unbalanced Business Exceptions**: Business trip & salary charge tests validating
+  allowed temporary unbalanced entities via `ledgerUnbalancedBusinessesByCharge`.
+- **Chunk 7.10 Post-Lock Immutability**: Attempt mutation after lock; assert failure and unchanged
+  audit fields.
+
+### Acceptance Criteria
+
+- New fixtures (VAT, foreign multi-leg, locked charge) insert and validate.
+- Repeated generation with insertion enabled does not create duplicates.
+- Foreign/local reconciliation passes (total local ≈ foreign × rate across all legs within
+  tolerance).
+- Correct exchange rate picked by date.
+- Locked charge tests confirm immutability.
+- Secondary entity logic and description semantics enforced.
+- Unbalanced exceptions covered for special charge types.
+
+### Follow-Up Prompts (25.x)
+
+- **Prompt 25.1**: Implement duplicate prevention guard.
+- **Prompt 25.2**: Create VAT expense scenario + VAT assertions.
+- **Prompt 25.3**: Add foreign multi-leg scenario + aggregate reconciliation assertions.
+- **Prompt 25.4**: Exchange rate date alignment test with multiple mocked rates.
+- **Prompt 25.5**: Locked charge scenario ensuring immutability.
+- **Prompt 25.6**: Secondary entity logic enforcement tests.
+- **Prompt 25.7**: Period boundary validation scenario (month-end).
+- **Prompt 25.8**: Description/reference semantic assertion enhancements.
+- **Prompt 25.9**: Unbalanced business exceptions for business trip & salary charges.
+- **Prompt 25.10**: Post-lock immutability and audit trail stability test.

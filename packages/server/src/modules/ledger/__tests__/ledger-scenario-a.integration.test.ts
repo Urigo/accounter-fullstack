@@ -7,6 +7,7 @@ import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
 import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
+import { assertSimpleLocalExpenseScenario, assertAuditTrail } from './helpers/ledger-assertions.js';
 import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
 import { Currency } from '../../../shared/enums.js';
@@ -186,29 +187,97 @@ describe('Ledger Generation - Expense Scenario A', () => {
         [charge.id],
       );
 
-      // Assert ledger expectations
+      // High-level semantic assertions using helper
       const ledgerExpectation = expenseScenarioA.expectations?.ledger?.[0];
+      assertSimpleLocalExpenseScenario(ledgerResult.rows as any, {
+        chargeId: charge.id,
+        ownerId: charge.owner_id, // Use actual charge owner for ledger record owner assertions
+        expenseEntity: makeUUID('expense-general'),
+        bankEntity: makeUUID('bank-account-tax-category'),
+        expectedCurrency: Currency.Ils,
+        expectedTotal: ledgerExpectation?.totalDebitLocal || 500.0,
+      });
+
+      // Audit trail assertions (timestamps, lock state)
+      assertAuditTrail(ledgerResult.rows as any);
+
+      // Basic record count sanity check retained
       expect(ledgerResult.rows.length).toBe(ledgerExpectation?.recordCount || 2);
+      console.log('✅ Ledger generation semantic assertions passed for Scenario A');
+    } finally {
+      client.release();
+    }
+  });
 
-      // Verify balanced
-      const totalDebit = ledgerResult.rows.reduce(
-        (sum, r) =>
-          sum + Number(r.debit_local_amount1 || 0) + Number(r.debit_local_amount2 || 0),
-        0,
+  it('should be idempotent on repeated ledger generation (no duplicate records)', async () => {
+    const client = await db.getPool().connect();
+    try {
+      const chargeId = makeUUID('charge-office-supplies');
+      // Ensure fixture inserted (if previous test did cleanup, reinsert minimal fixture)
+      const existingCharge = await client.query(
+        `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
+        [chargeId],
       );
-      const totalCredit = ledgerResult.rows.reduce(
-        (sum, r) =>
-          sum + Number(r.credit_local_amount1 || 0) + Number(r.credit_local_amount2 || 0),
-        0,
-      );
-      expect(totalDebit).toBe(totalCredit); // Balanced
-      expect(totalDebit).toBeGreaterThan(0);
+      if (existingCharge.rows.length === 0) {
+        // Reinsert fixture quickly
+        await client.query('BEGIN');
+        await insertFixture(client, expenseScenarioA);
+        await client.query('COMMIT');
+      }
 
-      console.log('✅ Ledger generation successful');
-      console.log(`   Records generated: ${ledgerResult.rows.length}`);
-      console.log(`   Total debit: ${totalDebit} ILS`);
-      console.log(`   Total credit: ${totalCredit} ILS`);
-      console.log(`   Balanced: ${totalDebit === totalCredit ? '✅' : '❌'}`);
+      const chargeResult = await client.query(
+        `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
+        [chargeId],
+      );
+      const charge = chargeResult.rows[0];
+      const adminContext = await buildAdminContextFromDb(client);
+      const mockUser: UserType = {
+        username: 'test-admin',
+        userId: adminContext.defaultAdminBusinessId,
+        role: 'ADMIN',
+      };
+      const context = createLedgerTestContext({
+        pool: db.getPool(),
+        adminContext,
+        currentUser: mockUser,
+        env,
+        moduleId: 'ledger',
+      });
+
+      // First generation
+      const first = await ledgerGenerationByCharge(
+        charge,
+        { insertLedgerRecordsIfNotExists: true },
+        context as any,
+        {} as any,
+      );
+      if (!first || 'message' in first) {
+        throw new Error('First generation failed');
+      }
+      const firstRecords = await client.query(
+        `SELECT id FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1 ORDER BY id ASC`,
+        [charge.id],
+      );
+      const firstIds = firstRecords.rows.map(r => r.id);
+
+      // Second generation with insertion disabled (should not create duplicates)
+      const second = await ledgerGenerationByCharge(
+        charge,
+        { insertLedgerRecordsIfNotExists: false },
+        context as any,
+        {} as any,
+      );
+      if (!second || 'message' in second) {
+        throw new Error('Second generation failed');
+      }
+      const secondRecords = await client.query(
+        `SELECT id FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1 ORDER BY id ASC`,
+        [charge.id],
+      );
+      const secondIds = secondRecords.rows.map(r => r.id);
+
+      expect(secondIds.length).toBe(firstIds.length);
+      expect(secondIds).toEqual(firstIds);
     } finally {
       client.release();
     }

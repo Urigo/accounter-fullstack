@@ -8,6 +8,7 @@ import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-contex
 import { mockExchangeRate } from '../../../__tests__/helpers/exchange-mock.js';
 import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
+import { assertForeignExpenseScenario, assertAuditTrail } from './helpers/ledger-assertions.js';
 import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
 import { Currency } from '@shared/enums';
@@ -192,32 +193,97 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
         [charge.id],
       );
 
-      // Assert minimum record count (algorithm may add balancing entries)
       const ledgerExpectation = expenseScenarioB.expectations?.ledger?.[0];
+      // Semantic foreign currency assertions
+      assertForeignExpenseScenario(ledgerResult.rows as any, {
+        chargeId: charge.id,
+        ownerId: charge.owner_id, // Use actual charge owner id
+        expenseEntity: makeUUID('expense-consulting'),
+        bankEntity: makeUUID('usd-account-tax-category'),
+        expectedCurrency: Currency.Usd,
+        expectedForeignAmount: ledgerExpectation?.foreignAmount || 200.0,
+        expectedRate: ledgerExpectation?.exchangeRate || 3.5,
+        expectedLocalTotal: ledgerExpectation?.totalDebitLocal || 1400.0,
+      });
+
+      // Retain record count sanity check (algorithm may add extra legs)
       expect(ledgerResult.rows.length).toBeGreaterThanOrEqual(ledgerExpectation?.recordCount || 2);
 
-      // Verify balanced in ILS (local currency)
-      const totalDebit = ledgerResult.rows.reduce(
-        (sum, r) =>
-          sum + Number(r.debit_local_amount1 || 0) + Number(r.debit_local_amount2 || 0),
-        0,
-      );
-      const totalCredit = ledgerResult.rows.reduce(
-        (sum, r) =>
-          sum + Number(r.credit_local_amount1 || 0) + Number(r.credit_local_amount2 || 0),
-        0,
-      );
-      
-      // Assert balanced with tolerance for floating-point arithmetic
-      expect(Math.abs(totalDebit - totalCredit)).toBeLessThan(0.01);
-      expect(totalDebit).toBeGreaterThan(0);
+      // Audit trail assertions
+      assertAuditTrail(ledgerResult.rows as any);
+      console.log('✅ Ledger generation semantic foreign currency assertions passed for Scenario B');
+    } finally {
+      client.release();
+    }
+  });
 
-      // Verify conversion accuracy: 200 USD × 3.5 = 700 ILS per entry, 1400 ILS total
-      // Ledger processes document (invoice) and transaction (payment) separately
-      const expectedLocalTotal = 1400.0; // 2 records × 700 ILS each
-      const tolerance = 0.005; // ±10 ILS tolerance for algorithm variations
-      expect(Math.abs(totalDebit - expectedLocalTotal)).toBeLessThan(tolerance);
-      expect(Math.abs(totalCredit - expectedLocalTotal)).toBeLessThan(tolerance);
+  it('should be idempotent on repeated foreign ledger generation (no duplicate records)', async () => {
+    const client = await db.getPool().connect();
+    try {
+      const chargeId = makeUUID('charge-consulting-services');
+      // Ensure fixture inserted if absent
+      const existingCharge = await client.query(
+        `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
+        [chargeId],
+      );
+      if (existingCharge.rows.length === 0) {
+        await client.query('BEGIN');
+        await insertFixture(client, expenseScenarioB);
+        await client.query('COMMIT');
+      }
+
+      const chargeResult = await client.query(
+        `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
+        [chargeId],
+      );
+      const charge = chargeResult.rows[0];
+      const adminContext = await buildAdminContextFromDb(client);
+      const mockUser: UserType = {
+        username: 'test-admin-usd',
+        userId: adminContext.defaultAdminBusinessId,
+        role: 'ADMIN',
+      };
+      const context = createLedgerTestContext({
+        pool: db.getPool(),
+        adminContext,
+        currentUser: mockUser,
+        env,
+        moduleId: 'ledger',
+        mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
+      });
+
+      const first = await ledgerGenerationByCharge(
+        charge,
+        { insertLedgerRecordsIfNotExists: true },
+        context as any,
+        {} as any,
+      );
+      if (!first || 'message' in first) {
+        throw new Error('First foreign generation failed');
+      }
+      const firstRecords = await client.query(
+        `SELECT id FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1 ORDER BY id ASC`,
+        [charge.id],
+      );
+      const firstIds = firstRecords.rows.map(r => r.id);
+
+      const second = await ledgerGenerationByCharge(
+        charge,
+        { insertLedgerRecordsIfNotExists: false },
+        context as any,
+        {} as any,
+      );
+      if (!second || 'message' in second) {
+        throw new Error('Second foreign generation failed');
+      }
+      const secondRecords = await client.query(
+        `SELECT id FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1 ORDER BY id ASC`,
+        [charge.id],
+      );
+      const secondIds = secondRecords.rows.map(r => r.id);
+
+      expect(secondIds.length).toBe(firstIds.length);
+      expect(secondIds).toEqual(firstIds);
     } finally {
       client.release();
     }

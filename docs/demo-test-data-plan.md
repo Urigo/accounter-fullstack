@@ -508,3 +508,60 @@ yarn workspace @accounter/server vitest run exchange-mock.test.ts
 ---
 
 Prepared for implementation. This document will evolve with subsequent phases.
+
+## 24. Ledger Test Coverage Gaps (Planned Enhancements)
+
+The current ledger integration tests (Expense Scenarios A & B) establish a strong baseline. The
+following gaps have been identified for hardening overall financial correctness and audit
+robustness:
+
+- Duplicate prevention: Re-running generation with `insertLedgerRecordsIfNotExists: true` currently
+  allows duplicate inserts. Need uniqueness constraint or re-generation guard.
+- VAT handling: Introduce scenarios with explicit VAT ledger legs and assertions validating tax
+  entity presence and positioning.
+- Rounding edge cases: Foreign currency conversions with > 2 decimal precision; verify rounding
+  rules and tolerance.
+- Exchange rate date alignment: Ensure rate selected corresponds to invoice/transaction value date;
+  add test comparing mismatched dates.
+- Secondary entity logic: Multi-leg charges (fees, taxes, FX adjustments) should assert acceptable
+  secondary entity sets.
+- Charge lock behavior: Add locked-charge scenario validating retrieval path vs generation path (no
+  mutation).
+- Description/reference semantics: Assert non-empty meaningful `description` / `reference1` fields
+  where business logic requires them.
+- Fiscal period boundaries: Validate ledger record dates fall within expected accounting period for
+  given scenario (e.g., month-end tests).
+- Post-lock immutability: After locking a charge, `updated_at` must remain unchanged and
+  `locked=true`; test mutation attempts are rejected.
+- Foreign/local reconciliation: Sum of local amounts must equal foreign × rate across all legs
+  within tolerance (aggregate validation in addition to per-leg checks).
+- Unbalanced-business exceptions: Special charge types (business trips, salaries) may allow
+  temporary unbalanced entities; add explicit tests for allowed exceptions.
+
+## 25. Recommended Next Steps (Execution Roadmap)
+
+Priority actionable items to close the above gaps:
+
+1. New fixtures: VAT expense, multi-leg foreign expense with fees, locked charge scenario.
+2. Uniqueness / guard: Implement check preventing duplicate ledger insertion when generation is
+   re-invoked with insertion enabled.
+3. Foreign aggregation assertion: Extend `assertForeignExpenseScenario` to validate total foreign
+   sum matches `expectedForeignAmount * legCount`.
+4. VAT helper assertions: Add reusable helper asserting tax entity appears only on correct side and
+   totals match expected VAT amount.
+5. Exchange rate date test: Mock multiple dated rates; assert ledger picks correct rate based on
+   charge or document date.
+6. Lock scenario test: Generate ledger, lock charge, re-run generation verifying no changes and
+   audit immutability.
+7. Period boundary test: Introduce scenario straddling month-end to verify classification and period
+   tagging (future extension).
+8. Secondary leg logic: Add tests for fee & FX adjustment legs ensuring entity classification and
+   zero orphan amounts.
+9. Description/reference validation: Add assertions checking presence of human-readable description
+   for non-system-generated entries.
+10. Unbalanced exceptions: Implement tests for business trip and salary charges using
+    `ledgerUnbalancedBusinessesByCharge` allowances.
+
+These improvements should be scheduled as a "Ledger Coverage Hardening" milestone after initial demo
+stability, enabling broader charge type confidence before expanding to income and partial payment
+flows.
