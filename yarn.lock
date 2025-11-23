@@ -35,7 +35,7 @@ __metadata:
   resolution: "@accounter-helper/old-accounter@workspace:packages/old-accounter"
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
-    "@types/lodash": "npm:4.17.20"
+    "@types/lodash": "npm:4.17.21"
     "@types/pg": "npm:8.15.6"
     "@types/uuid": "npm:11.0.0"
     date-fns: "npm:4.1.0"
@@ -317,7 +317,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.15.6"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:5.0.97"
+    ai: "npm:5.0.100"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -383,16 +383,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.12":
-  version: 2.0.12
-  resolution: "@ai-sdk/gateway@npm:2.0.12"
+"@ai-sdk/gateway@npm:2.0.14":
+  version: 2.0.14
+  resolution: "@ai-sdk/gateway@npm:2.0.14"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/da3392ece5cf64f7dc1806dd5099e19709095cc3467b579129da0432617fdcf3611197d68d0414478cc54c93d2c7103febf8123f93f3cb502f5662c4b9f43040
+  checksum: 10c0/9ce0fcb9016f919bd6c6d73ba8c3b811c7446490338b3f85297e7c760e27411e9a3ce0ee691a0064c18865e70b0f337e5c23970bb6958656ed9b5579295ba410
   languageName: node
   linkType: hard
 
@@ -8587,7 +8587,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:4.17.20, @types/lodash@npm:^4.17.7":
+"@types/lodash@npm:4.17.21":
+  version: 4.17.21
+  resolution: "@types/lodash@npm:4.17.21"
+  checksum: 10c0/73cb006e047d8871e9d63f3a165543bf16c44a5b6fe3f9f6299e37cb8d67a7b1d55ac730959a81f9def510fd07232ff7e30e05413e5d5a12793baad84ebe36c3
+  languageName: node
+  linkType: hard
+
+"@types/lodash@npm:^4.17.7":
   version: 4.17.20
   resolution: "@types/lodash@npm:4.17.20"
   checksum: 10c0/98cdd0faae22cbb8079a01a3bb65aa8f8c41143367486c1cbf5adc83f16c9272a2a5d2c1f541f61d0d73da543c16ee1d21cf2ef86cb93cd0cc0ac3bced6dd88f
@@ -9413,17 +9420,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.97":
-  version: 5.0.97
-  resolution: "ai@npm:5.0.97"
+"ai@npm:5.0.100":
+  version: 5.0.100
+  resolution: "ai@npm:5.0.100"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.12"
+    "@ai-sdk/gateway": "npm:2.0.14"
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/6fc8b184e4790f7c3ebb7f27d70201b07048bbfab10951245f1b94ab72ce3cfe4f475de96495c74f31c21b8294f17a80c72d62be90a16eafedc8c906b734cd84
+  checksum: 10c0/513eeba8308b0eff57532d6eb2d90f1708a69b9bd05eb6f2b40934b1097f13f79eaebe7fb4d3879dc4ccd86c42a73197fb20fdc9e68e55abc84abee2356e5839
   languageName: node
   linkType: hard
 
