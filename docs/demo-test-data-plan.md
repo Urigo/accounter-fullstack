@@ -90,11 +90,19 @@ Enhance `scripts/seed.ts` by splitting responsibilities:
    feasible.
 4. Output: write `DEFAULT_FINANCIAL_ENTITY_ID` & others into `.env` if missing.
 
-New Script Commands (added to `@accounter/server/package.json`):
+New Script Commands (added to package.json):
+
+**Root package.json:**
 
 ```
-"seed:admin": "ts-node scripts/seed-admin-context.ts",
-"seed:demo-expenses": "ts-node scripts/seed-demo-expenses.ts",
+"seed:admin": "yarn workspace @accounter/server seed:admin",
+"test": "vitest run"
+```
+
+**packages/server/package.json:**
+
+```
+"seed:admin": "tsx scripts/seed-admin-context.ts"
 ```
 
 **Implementation Progress (S1-S5)**:
@@ -160,7 +168,12 @@ Conventions:
 
 - Date strings use ISO `YYYY-MM-DD` converted to `Date` at insertion.
 - Numeric values stored as string when required by pgtyped types (e.g. `numeric` in transactions).
-- Currency enumerations reused from `@shared/enums`.
+- **Currency and Country enums**: Use `Currency` enum from `@shared/enums` and `CountryCode` enum
+  from `packages/server/src/modules/countries/types.ts` instead of string literals for type safety
+  and consistency.
+  - Example: `Currency.Ils`, `Currency.Usd` instead of `'ILS'`, `'USD'`
+  - Example: `CountryCode.Israel`, `CountryCode['United States of America (the)']` instead of
+    `'ISR'`, `'USA'`
 
 ## 10. Fixture Format & Storage
 
@@ -484,16 +497,66 @@ docker compose -f docker/docker-compose.dev.yml up -d postgres
 yarn workspace @accounter/migrations migration:run
 
 # (Optional) Seed admin for manual exploration
-yarn workspace @accounter/server tsx packages/server/scripts/seed-admin-context.ts
+yarn seed:admin
 
 # Run full test suite (includes schema guard + coverage)
-yarn workspace @accounter/server vitest run
+yarn test
 
 # Run specific test file
-yarn workspace @accounter/server vitest run exchange-mock.test.ts
+yarn workspace @accounter/server vitest run expense-scenario
 ```
 
-## 23. Open Questions (To Address Before Phase 2)
+## 23. Recent Improvements
+
+### CountryCode and Currency Enum Consistency (2025-11-23)
+
+**Problem**: Tests and fixtures used string literals for currencies and countries, risking typos and
+inconsistency.
+
+**Solution**: Standardized all test code to use enum values:
+
+- `Currency` enum from `@shared/enums` (`Currency.Ils`, `Currency.Usd`)
+- `CountryCode` enum from `packages/server/src/modules/countries/types.ts` (`CountryCode.Israel`,
+  `CountryCode['United States of America (the)']`)
+
+**Files Updated**:
+
+- Fixtures: `expense-scenario-a.ts`, `expense-scenario-b.ts`
+- Factories: `business.ts` (default country)
+- Tests: `expense-scenario-a.test.ts`, `expense-scenario-b.test.ts`, `business.test.ts`,
+  `ledger-scenario-a.integration.test.ts`, `ledger-scenario-b.integration.test.ts`
+
+**Benefits**:
+
+- Compile-time type safety prevents invalid currency/country codes
+- IDE autocomplete for valid values
+- Consistent with production code patterns
+- Eliminates magic strings
+
+**Test Results**: All 238+ tests passing with enum usage.
+
+### Countries Table Normalization (2025-11-22)
+
+**Problem**: Countries table population duplicated between seed script and vitest setup; USA added
+manually.
+
+**Solution**: Created `seed-countries.ts` utility using `CountryCode` enum as single source of
+truth:
+
+- `getAllCountries()`: Returns all 249 countries from enum
+- `seedCountries(client, schema)`: Dynamically builds INSERT with ON CONFLICT DO NOTHING
+- Updated both `seed.ts` and `vitest-global-setup.ts` to use utility
+
+**Benefits**:
+
+- DRY principle: enum is single source of truth
+- Consistency across dev seeding and test setup
+- Easier maintenance (add country to enum, automatically available everywhere)
+- Parameterized queries prevent SQL injection
+
+**Test Results**: Countries seeding verified in global setup logs; all integration tests passing.
+
+## 24. Open Questions (To Address Before Phase 2)
 
 - Standardized exchange rate seeding vs. runtime provider mock?
   - **Current approach**: Seed static rates in DB for determinism; use provider mocks for edge cases
@@ -509,7 +572,7 @@ yarn workspace @accounter/server vitest run exchange-mock.test.ts
 
 Prepared for implementation. This document will evolve with subsequent phases.
 
-## 24. Ledger Test Coverage Gaps (Planned Enhancements)
+## 25. Ledger Test Coverage Gaps (Planned Enhancements)
 
 The current ledger integration tests (Expense Scenarios A & B) establish a strong baseline. The
 following gaps have been identified for hardening overall financial correctness and audit
@@ -538,7 +601,7 @@ robustness:
 - Unbalanced-business exceptions: Special charge types (business trips, salaries) may allow
   temporary unbalanced entities; add explicit tests for allowed exceptions.
 
-## 25. Recommended Next Steps (Execution Roadmap)
+## 26. Recommended Next Steps (Execution Roadmap)
 
 Priority actionable items to close the above gaps:
 

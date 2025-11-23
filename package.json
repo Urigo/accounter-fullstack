@@ -35,8 +35,9 @@
     "release": "yarn build && changeset publish",
     "scrape": "yarn workspace @accounter-helper/scraper-local-app start",
     "seed": "tsx scripts/seed.ts",
+    "seed:admin": "yarn workspace @accounter/server seed:admin",
     "setup": "yarn db:init && yarn generate",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@changesets/changelog-github": "0.5.1",

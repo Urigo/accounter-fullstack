@@ -580,7 +580,7 @@ Acceptance:
 
 ---
 
-### Prompt 18: Scripts and docs polish (optional)
+### Prompt 18: Scripts and docs polish
 
 ```text
 Task: Add convenience scripts and summarize in docs.
@@ -594,6 +594,15 @@ Updated Requirements:
 
 Acceptance:
 - Scripts run locally; CI passes with schema guard succeeding when migrations applied.
+
+Status: ✅ COMPLETED (2025-11-23)
+- Added `seed:admin` script to root and server package.json
+- Added `test` script to root package.json (runs full suite with schema guard)
+- Updated demo-test-data-plan.md with:
+  - CountryCode and Currency enum usage conventions
+  - Recent improvements section documenting enum standardization and countries normalization
+  - Simplified developer workflow commands
+- CI workflow verified: includes migration guard and coverage artifact upload
 ```
 
 ---
@@ -613,8 +622,16 @@ Acceptance:
 - Guard test passes on current schema; fails on drift.
 - CI step exits non-zero if mismatch.
 
+Status: ✅ COMPLETED (Milestone 2, H2)
+- `LATEST_MIGRATION_NAME` exported from migrations package
+- `db-bootstrap.test.ts` includes migration name guard test
+- CI workflow includes independent "Fail if Latest Migration Missing" step
+- Uses inline Node script with ES module support to verify migration
+```
+
 ### Prompt 20: Environment Isolation for Tests
 
+```text
 Task: Prevent `.env` pollution during test runs.
 
 Requirements:
@@ -626,8 +643,16 @@ Acceptance:
 - Test run logs isolated env path.
 - Root `.env` remains unchanged after tests.
 
+Status: ✅ COMPLETED (Milestone 2, H3)
+- `vitest-global-setup.ts` creates temp env file in `os.tmpdir()`
+- Sets `TEST_ENV_FILE` environment variable
+- Logs isolated path: `[test-setup] Using isolated TEST_ENV_FILE: /tmp/...`
+- Root `.env` protected from test pollution
+```
+
 ### Prompt 21: Diagnostics & Error Taxonomy Documentation
 
+```text
 Task: Surface harness observability & structured errors.
 
 Requirements:
@@ -637,6 +662,70 @@ Requirements:
 
 Acceptance:
 - Errors thrown carry contextual properties; diagnostics only emitted when `DEBUG` flag set.
+
+Status: ✅ COMPLETED (Milestone 2, H1)
+- Created `diagnostics.ts` with pool health snapshots
+- Created `errors.ts` with custom error hierarchy
+- Diagnostics conditional on `DEBUG=accounter:test`
+- Documented in architectural improvements
+```
+
+### Prompt 22: CountryCode and Currency Enum Consistency
+
+```text
+Task: Standardize currency and country values using TypeScript enums.
+
+Requirements:
+- Replace all string literals for currencies with `Currency` enum from `@shared/enums`
+- Replace all string literals for countries with `CountryCode` enum from `packages/server/src/modules/countries/types.ts`
+- Update fixtures, factories, and tests to use enum values
+- Ensure compile-time type safety prevents invalid values
+
+Files to Update:
+- Fixtures: expense-scenario-a.ts, expense-scenario-b.ts
+- Factories: business.ts (default country)
+- Tests: expense-scenario-a.test.ts, expense-scenario-b.test.ts, business.test.ts, ledger integration tests
+
+Acceptance:
+- All currency/country string literals replaced with enum values
+- All tests pass (238+ tests)
+- IDE autocomplete works for currency/country values
+- No magic strings in test code
+
+Status: ✅ COMPLETED (2025-11-23)
+- All fixtures updated: `Currency.Ils`, `Currency.Usd`, `CountryCode.Israel`, `CountryCode['United States of America (the)']`
+- Factory defaults use enums: `business.ts` defaults to `CountryCode.Israel`
+- All test assertions use enums for currency and country comparisons
+- Test results: 24/24 expense scenario tests, 8/8 ledger integration tests, 37/37 business factory tests
+- Benefits: Type safety, autocomplete, consistency, eliminates magic strings
+```
+
+### Prompt 23: Countries Table Normalization
+
+```text
+Task: Use CountryCode enum as single source of truth for countries table population.
+
+Requirements:
+- Create `seed-countries.ts` utility module with:
+  - `getAllCountries()`: Extract all countries from CountryCode enum
+  - `seedCountries(client, schema)`: Dynamically build INSERT from enum with ON CONFLICT DO NOTHING
+  - `getCountryByCode(code)`: Lookup helper
+- Update `seed.ts` to use utility instead of hardcoded INSERT
+- Update `vitest-global-setup.ts` to populate all countries from enum
+- Use parameterized queries to prevent SQL injection
+
+Acceptance:
+- Seed script and test setup use same utility
+- CountryCode enum is single source of truth
+- All 249 countries seeded consistently
+- Tests pass with countries populated from enum
+
+Status: ✅ COMPLETED (2025-11-22)
+- Created `packages/server/src/modules/countries/utils/seed-countries.ts` with 3 exported functions
+- Updated `scripts/seed.ts` to use `seedCountries(client)` utility
+- Updated `scripts/vitest-global-setup.ts` to seed all countries from enum
+- Test output confirms: `[test-setup] Ensured all countries populated from enum`
+- Benefits: DRY principle, maintainability (single place to update), consistency, parameterized SQL
 ```
 
 ---

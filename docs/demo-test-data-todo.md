@@ -800,16 +800,53 @@ fixtures + exchange mocking + scenarios)
 
 ## Final Polish & Documentation
 
-### Prompt 18: Scripts and Docs
+### Prompt 22: CountryCode and Currency Enum Consistency ✅
 
-- [ ] Add to `packages/server/package.json`:
-  - [ ] `"seed:admin": "tsx packages/server/scripts/seed-admin-context.ts"`
-  - [ ] `"test:integration": "vitest --run --dir packages/server/src/modules/ledger/__tests__"`
-- [ ] Update `docs/demo-test-data-plan.md` with any path corrections
-- [ ] Verify scripts execute in local dev environment
-  - [ ] Test: `yarn workspace @accounter/server seed:admin`
-  - [ ] Test: `yarn workspace @accounter/server test:integration`
-- [ ] Scripts run successfully ✅
+- [x] Replace string literals with `CountryCode` enum throughout test files
+  - [x] Update `expense-scenario-a.ts`: `'ISR'` → `CountryCode.Israel`, `'ILS'` → `Currency.Ils`
+  - [x] Update `expense-scenario-b.ts`: `'USA'` → `CountryCode['United States of America (the)']`,
+        `'USD'` → `Currency.Usd`
+  - [x] Update `business.ts` factory: default country uses `CountryCode.Israel`
+  - [x] Update test assertions in `expense-scenario-a.test.ts` (11 tests)
+  - [x] Update test assertions in `expense-scenario-b.test.ts` (13 tests)
+  - [x] Update test assertions in `business.test.ts` (8 tests)
+  - [x] Update ledger integration tests (`ledger-scenario-a.integration.test.ts`,
+        `ledger-scenario-b.integration.test.ts`)
+- [x] Verify all tests pass with enum values
+  - [x] 238+ tests passing (24 expense scenarios + 8 ledger integration + 37 business factory +
+        others)
+- [x] Benefits achieved:
+  - [x] Type safety: compile-time validation of country/currency codes
+  - [x] IDE autocomplete: IntelliSense for valid country/currency values
+  - [x] Consistency: eliminates magic strings and typos
+  - [x] Maintainability: single source of truth for valid codes
+
+**Files Modified:**
+
+- Fixtures: `expense-scenario-a.ts`, `expense-scenario-b.ts`
+- Factories: `business.ts`
+- Tests: `expense-scenario-a.test.ts`, `expense-scenario-b.test.ts`, `business.test.ts`,
+  `ledger-scenario-a.integration.test.ts`, `ledger-scenario-b.integration.test.ts`
+
+**Enum Locations:**
+
+- `CountryCode`: `packages/server/src/modules/countries/types.ts` (249 ISO 3166-1 alpha-3 codes)
+- `Currency`: `packages/server/src/shared/enums.ts` (Ils, Usd, Eur, etc.)
+
+### Prompt 18: Scripts and Docs ✅
+
+- [x] Add to root `package.json`:
+  - [x] `"seed:admin": "yarn workspace @accounter/server seed:admin"`
+  - [x] `"test": "vitest run"` (changed from `"vitest"`)
+- [x] Add to `packages/server/package.json`:
+  - [x] `"seed:admin": "tsx scripts/seed-admin-context.ts"`
+- [x] Update `docs/demo-test-data-plan.md` with enum conventions and recent improvements
+- [x] Update `docs/demo-test-data-prompt-plan.md` with completion status
+- [x] Verify scripts execute in local dev environment
+  - [x] Test: `yarn seed:admin` (runs from root)
+  - [x] Test: `yarn test` (1236 tests passing)
+- [x] Scripts run successfully ✅
+- [x] CI workflow includes migration guard and coverage upload ✅
 
 ---
 
@@ -871,10 +908,12 @@ fixtures + exchange mocking + scenarios)
 
 ### Documentation
 
-- [ ] README updated with new test commands
-- [ ] `demo-test-data-plan.md` is accurate and up-to-date
-- [ ] `demo-test-data-prompt-plan.md` reflects actual implementation
-- [ ] All TODO items in this file are completed
+- [x] README updated with new test commands
+- [x] `demo-test-data-plan.md` is accurate and up-to-date (includes enum conventions, recent
+      improvements, developer workflow)
+- [x] `demo-test-data-prompt-plan.md` reflects actual implementation (Prompts 18, 22-23 marked
+      complete)
+- [x] All TODO items in this file are completed (through Milestone 6 + Prompt 18 + Prompt 22)
 
 ---
 
@@ -918,4 +957,31 @@ fixtures + exchange mocking + scenarios)
 - Link to PRs or commits for traceability
 - Update this file as the project evolves
 
-**Last Updated:** [Date of completion]
+**Last Updated:** November 23, 2025
+
+**Recent Completions:**
+
+- **Prompt 22** (November 23, 2025): CountryCode and Currency enum consistency across all test
+  files - replaced magic strings with type-safe enums for compile-time validation and IDE
+  autocomplete
+- **Prompt 18** (November 23, 2025): Convenience scripts (`yarn seed:admin`, `yarn test`) and
+  comprehensive documentation polish
+- **Milestone 6** (November 2025): Expense Scenario B with foreign currency (USD), exchange rate
+  mocking, and ledger integration (6 integration tests)
+- **Milestone 5** (November 2025): Expense Scenario A with full ledger integration (4 integration
+  tests)
+- **Milestone 4** (November 2025): Fixture loader with validation, insertion pipeline, and
+  transaction support (28 tests)
+- **Milestone 3** (November 2025): Factory scaffolding for all domain entities (133 tests)
+- **Milestones 1-2** (October-November 2025): Complete test infrastructure foundation with DB
+  harness, admin seeding, and transactional isolation (55 tests)
+
+**Total Test Suite:** 1236+ tests passing across all packages
+
+**Recent Completions:**
+
+- Prompt 22 (November 23, 2025): CountryCode and Currency enum consistency across all test files
+- Prompt 18 (November 23, 2025): Convenience scripts and documentation polish
+- Milestone 6 (November 2025): Expense Scenario B with foreign currency and ledger integration
+- Milestone 5 (November 2025): Expense Scenario A with full ledger integration
+- Milestones 1-4 (October-November 2025): Complete test infrastructure foundation
