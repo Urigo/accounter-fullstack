@@ -25,7 +25,7 @@ You can replace markers as work progresses.
   - [x] Compile TS after creation (no errors)
 - [x] 3. Add `helpers/deterministic-uuid.ts` (UUID v5 utility)
   - [ ] Smoke test deterministic output (same inputs => same UUID)
-- [ ] 4. Add `helpers/placeholder.ts` (admin placeholder resolver)
+- [x] 4. Add `helpers/placeholder.ts` (admin placeholder resolver)
   - [ ] Test placeholder replacement with sample object
 - [ ] 5. Create `use-cases/index.ts` registry skeleton (empty arrays)
   - [ ] Confirm `getAllUseCases()` returns `[]`
