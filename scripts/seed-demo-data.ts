@@ -1,5 +1,8 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { config } from 'dotenv';
 import pg from 'pg';
+import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import { createAdminBusinessContext } from '../packages/server/src/demo-fixtures/helpers/admin-context.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
@@ -74,13 +77,13 @@ async function seedDemoData() {
     for (const useCase of useCases) {
       console.log(`  ➡️  ${useCase.name} (${useCase.id})`);
       const resolvedFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId);
-      // TODO: await insertFixture(client, resolvedFixtures);
+      await insertFixture(client, resolvedFixtures);
     }
 
     console.log('✅ All use-cases seeded successfully');
 
     // 6. Write env vars (if not already set)
-    // TODO: await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId);
+    await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId);
 
     console.log('🎉 Demo data seed complete');
   } catch (error) {
@@ -88,6 +91,28 @@ async function seedDemoData() {
     throw error;
   } finally {
     await client.end();
+  }
+}
+
+async function updateEnvFile(key: string, value: string) {
+  const envPath = path.resolve(process.cwd(), '.env');
+
+  try {
+    let envContent = fs.readFileSync(envPath, 'utf8');
+
+    // Check if the variable already exists
+    if (envContent.match(new RegExp(`^${key}=`, 'm'))) {
+      // Replace existing value
+      envContent = envContent.replace(new RegExp(`^${key}=.*`, 'm'), `${key}=${value}`);
+    } else {
+      // Add new value
+      envContent += `\n${key}=${value}`;
+    }
+
+    fs.writeFileSync(envPath, envContent);
+    console.log(`✅ Updated .env file with ${key}`);
+  } catch (error) {
+    console.warn(`⚠️ Failed to update .env file for ${key}:`, error);
   }
 }
 
