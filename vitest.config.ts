@@ -7,7 +7,7 @@ export default defineConfig({
   test: {
     globals: true,
     alias: {},
-    exclude: [...defaultExclude],
+    exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
     globalSetup: ['./scripts/vitest-global-setup.ts'],
   },
