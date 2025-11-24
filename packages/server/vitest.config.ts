@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    exclude: [...defaultExclude],
+    exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: [path.resolve(__dirname, '../../scripts/vitest-setup.ts')],
     globalSetup: [path.resolve(__dirname, '../../scripts/vitest-global-setup.ts')],
   },
