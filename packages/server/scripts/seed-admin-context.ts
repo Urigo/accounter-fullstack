@@ -47,6 +47,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
   const existingAdmin = await client.query(
     `SELECT id FROM accounter_schema.financial_entities 
      WHERE name = $1 AND type = $2 
+     ORDER BY created_at ASC
      LIMIT 1`,
     ['Admin Business', 'business'],
   );
