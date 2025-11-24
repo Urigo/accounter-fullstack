@@ -37,11 +37,11 @@ You can replace markers as work progresses.
   - [x] Include expectations.ledgerRecordCount
 - [x] 7. Add equity use-case: `shareholder-dividend.ts`
   - [x] Include basic ledger expectations
-- [ ] 8. Add income use-case: `client-payment-with-refund.ts`
-  - [ ] Two charges, two transactions, two documents
-- [ ] 9. Update registry to include all three use-cases
-  - [ ] Verify `getAllUseCases().length === 3`
-  - [ ] Check for duplicate IDs
+- [x] 8. Add income use-case: `client-payment-with-refund.ts`
+  - [x] Two charges, two transactions, two documents
+- [x] 9. Update registry to include all three use-cases
+  - [x] Verify `getAllUseCases().length === 3`
+  - [x] Check for duplicate IDs
 
 ## Phase 3: Foundation Helpers
 

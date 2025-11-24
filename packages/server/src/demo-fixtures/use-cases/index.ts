@@ -1,4 +1,7 @@
 import type { UseCaseSpec } from '../types.js';
+import { shareholderDividend } from './equity/shareholder-dividend.js';
+import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js';
+import { clientPaymentWithRefund } from './income/client-payment-with-refund.js';
 
 /**
  * Central registry of all demo use-cases organized by category.
@@ -20,9 +23,9 @@ import type { UseCaseSpec } from '../types.js';
  * ```
  */
 export const USE_CASE_REGISTRY: Record<string, UseCaseSpec[]> = {
-  expenses: [],
-  income: [],
-  equity: [],
+  expenses: [monthlyExpenseForeignCurrency],
+  equity: [shareholderDividend],
+  income: [clientPaymentWithRefund],
 };
 
 /**
