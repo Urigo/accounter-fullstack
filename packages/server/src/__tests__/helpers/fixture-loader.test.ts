@@ -6,7 +6,7 @@
 
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import type { Pool } from 'pg';
-import { insertFixture, FixtureInsertionError } from './fixture-loader.js';
+import { insertFixture } from './fixture-loader.js';
 import { withTestTransaction } from './test-transaction.js';
 import { connectTestDb, closeTestDb } from './db-connection.js';
 import { qualifyTable } from './test-db-config.js';

@@ -10,7 +10,7 @@
 
 import type { PoolClient } from 'pg';
 import type { Fixture } from './fixture-types.js';
-import { validateFixture, assertValidFixture } from './fixture-validation.js';
+import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
 import { makeUUID } from '../factories/ids.js';
 

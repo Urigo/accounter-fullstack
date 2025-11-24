@@ -12,7 +12,6 @@
  */
 
 import { makeUUID } from './ids.js';
-import { formatNumeric } from './money.js';
 
 /**
  * Document insert parameters shape

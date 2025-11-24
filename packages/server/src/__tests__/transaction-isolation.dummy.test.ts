@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'vitest';
-import crypto from 'crypto';
 import { setupDbHooks, getTestClient } from './helpers/test-hooks.js';
 import { qualifyTable } from './helpers/test-db-config.js';
 

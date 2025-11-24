@@ -131,7 +131,7 @@ describe('ensureTaxCategoryForEntity', () => {
 
   it('should work with entities that have owner_id', async () => {
     // Create owner business entity (without owner_id requirement)
-    const { id: ownerId } = await ensureFinancialEntity(client, {
+    const { id: _ownerId } = await ensureFinancialEntity(client, {
       name: 'Owner Business',
       type: 'business',
     });

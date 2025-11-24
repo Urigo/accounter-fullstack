@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pg from 'pg';
 import { ensureFinancialEntity } from './seed-helpers.js';
-import { testDbConfig, qualifyTable } from './test-db-config.js';
+import { testDbConfig } from './test-db-config.js';
 import { withConcurrentTransactions } from './test-transaction.js';
 
 describe('ensureFinancialEntity - Concurrent Access', () => {
