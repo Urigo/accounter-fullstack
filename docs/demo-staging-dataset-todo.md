@@ -45,8 +45,8 @@ You can replace markers as work progresses.
 
 ## Phase 3: Foundation Helpers
 
-- [ ] 10. Extract `admin-context.ts` helper (create / fetch Admin Business)
-  - [ ] Returns stable admin business entity ID
+- [x] 10. Extract `admin-context.ts` helper (create / fetch Admin Business)
+  - [x] Returns stable admin business entity ID
 - [ ] 11. Implement `seed-exchange-rates.ts` (USD/EUR/GBP → ILS)
   - [ ] Uses ON CONFLICT upsert pattern
 - [ ] 12. Implement `seed-vat.ts` (VAT 17% default row)
