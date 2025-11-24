@@ -63,9 +63,9 @@ You can replace markers as work progresses.
   - [x] Log each step success
 - [x] 16. Iterate registry use-cases, resolve placeholders, insert fixtures
   - [x] Add per-use-case logging
-- [ ] 17. Implement inline `updateEnvFile` for `DEFAULT_FINANCIAL_ENTITY_ID`
-  - [ ] Ensure id written / updated idempotently
-- [ ] 18. Finalize script with error handling + clean shutdown
+- [x] 17. Implement inline `updateEnvFile` for `DEFAULT_FINANCIAL_ENTITY_ID`
+  - [x] Ensure id written / updated idempotently
+- [x] 18. Finalize script with error handling + clean shutdown
 
 ## Phase 5: Validation Layer
 
