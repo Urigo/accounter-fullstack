@@ -54,15 +54,15 @@ You can replace markers as work progresses.
 
 ## Phase 4: Seed Orchestrator
 
-- [ ] 13. Create `scripts/seed-demo-data.ts` skeleton (env guards + DB connect)
-  - [ ] Guard: refuse if `NODE_ENV=production`
-  - [ ] Guard: require `ALLOW_DEMO_SEED=1`
-- [ ] 14. Add destructive reset TRUNCATE block (domain tables only)
-  - [ ] Verify reset does not drop schema
-- [ ] 15. Integrate foundation seeders (countries, FX rates, VAT, admin context)
-  - [ ] Log each step success
-- [ ] 16. Iterate registry use-cases, resolve placeholders, insert fixtures
-  - [ ] Add per-use-case logging
+- [x] 13. Create `scripts/seed-demo-data.ts` skeleton (env guards + DB connect)
+  - [x] Guard: refuse if `NODE_ENV=production`
+  - [x] Guard: require `ALLOW_DEMO_SEED=1`
+- [x] 14. Add destructive reset TRUNCATE block (domain tables only)
+  - [x] Verify reset does not drop schema
+- [x] 15. Integrate foundation seeders (countries, FX rates, VAT, admin context)
+  - [x] Log each step success
+- [x] 16. Iterate registry use-cases, resolve placeholders, insert fixtures
+  - [x] Add per-use-case logging
 - [ ] 17. Implement inline `updateEnvFile` for `DEFAULT_FINANCIAL_ENTITY_ID`
   - [ ] Ensure id written / updated idempotently
 - [ ] 18. Finalize script with error handling + clean shutdown
