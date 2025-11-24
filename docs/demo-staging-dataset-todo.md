@@ -24,17 +24,17 @@ You can replace markers as work progresses.
 - [x] 2. Implement `types.ts` with all fixture & `UseCaseSpec` interfaces
   - [x] Compile TS after creation (no errors)
 - [x] 3. Add `helpers/deterministic-uuid.ts` (UUID v5 utility)
-  - [ ] Smoke test deterministic output (same inputs => same UUID)
+  - [x] Smoke test deterministic output (same inputs => same UUID)
 - [x] 4. Add `helpers/placeholder.ts` (admin placeholder resolver)
-  - [ ] Test placeholder replacement with sample object
+  - [x] Test placeholder replacement with sample object
 - [x] 5. Create `use-cases/index.ts` registry skeleton (empty arrays)
   - [x] Confirm `getAllUseCases()` returns `[]`
 
 ## Phase 2: Use-Case Implementations
 
-- [ ] 6. Add expense use-case: `monthly-expense-foreign-currency.ts`
-  - [ ] Ensure all IDs via `makeUUID`
-  - [ ] Include expectations.ledgerRecordCount
+- [x] 6. Add expense use-case: `monthly-expense-foreign-currency.ts`
+  - [x] Ensure all IDs via `makeUUID`
+  - [x] Include expectations.ledgerRecordCount
 - [ ] 7. Add equity use-case: `shareholder-dividend.ts`
   - [ ] Include basic ledger expectations
 - [ ] 8. Add income use-case: `client-payment-with-refund.ts`
