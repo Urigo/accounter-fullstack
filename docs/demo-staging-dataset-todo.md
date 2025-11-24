@@ -27,8 +27,8 @@ You can replace markers as work progresses.
   - [ ] Smoke test deterministic output (same inputs => same UUID)
 - [x] 4. Add `helpers/placeholder.ts` (admin placeholder resolver)
   - [ ] Test placeholder replacement with sample object
-- [ ] 5. Create `use-cases/index.ts` registry skeleton (empty arrays)
-  - [ ] Confirm `getAllUseCases()` returns `[]`
+- [x] 5. Create `use-cases/index.ts` registry skeleton (empty arrays)
+  - [x] Confirm `getAllUseCases()` returns `[]`
 
 ## Phase 2: Use-Case Implementations
 
