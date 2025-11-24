@@ -23,7 +23,7 @@ You can replace markers as work progresses.
      `packages/server/src/demo-fixtures/{helpers,use-cases/expenses,use-cases/income,use-cases/equity}`
 - [x] 2. Implement `types.ts` with all fixture & `UseCaseSpec` interfaces
   - [x] Compile TS after creation (no errors)
-- [ ] 3. Add `helpers/deterministic-uuid.ts` (UUID v5 utility)
+- [x] 3. Add `helpers/deterministic-uuid.ts` (UUID v5 utility)
   - [ ] Smoke test deterministic output (same inputs => same UUID)
 - [ ] 4. Add `helpers/placeholder.ts` (admin placeholder resolver)
   - [ ] Test placeholder replacement with sample object
