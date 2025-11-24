@@ -83,9 +83,9 @@ You can replace markers as work progresses.
 - [ ] 26. Add `__tests__/deterministic-uuid.test.ts`
   - [ ] Same inputs produce same UUID
   - [ ] Different namespaces differ
-- [ ] 27. Add `__tests__/use-case-registry.test.ts`
-  - [ ] No duplicate IDs
-  - [ ] All required fields present
+- [x] 27. Add `__tests__/use-case-registry.test.ts`
+  - [x] No duplicate IDs
+  - [x] All required fields present
 - [ ] 28. Optional integration test `seed-and-validate.test.ts`
   - [ ] Run seed then validate (expect both exit 0)
 
