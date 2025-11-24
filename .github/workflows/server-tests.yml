@@ -1,0 +1,117 @@
+name: Server Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'packages/server/**'
+      - 'packages/migrations/**'
+      - '.github/workflows/server-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+        ports:
+          - 5432:5432
+        # Health check to ensure DB is ready
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install Dependencies
+        run: |
+          yarn install --frozen-lockfile
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && exit 0
+            echo "Postgres not ready yet..."
+            sleep 2
+          done
+          echo "Postgres failed to start" >&2
+          exit 1
+
+      - name: Run Migrations (Up)
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+          POSTGRES_SSL: '0'
+        run: |
+          yarn workspace @accounter-helper/migrations migration:run
+
+      - name: Run Server Tests
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+          POSTGRES_SSL: '0'
+          DEBUG: ''
+        run: |
+          npx vitest run packages/server/src/__tests__ --reporter=default --coverage
+
+      - name: Upload Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+      - name: Fail if Latest Migration Missing
+        if: always()
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+          POSTGRES_SSL: '0'
+        run: |
+          node --experimental-specifier-resolution=node --import ./scripts/register-esm.js - <<'EOF'
+          import { Client } from 'pg';
+          import { LATEST_MIGRATION_NAME } from './packages/migrations/src/run-pg-migrations.ts';
+          const client = new Client({
+            host: process.env.POSTGRES_HOST,
+            port: Number(process.env.POSTGRES_PORT),
+            user: process.env.POSTGRES_USER,
+            password: process.env.POSTGRES_PASSWORD,
+            database: process.env.POSTGRES_DB,
+          });
+          (async () => {
+            await client.connect();
+            const res = await client.query(
+              `SELECT 1 FROM accounter_schema.migration WHERE name = $1 LIMIT 1`,
+              [LATEST_MIGRATION_NAME]
+            );
+            await client.end();
+            if (res.rowCount !== 1) {
+              console.error('Latest migration NOT applied:', LATEST_MIGRATION_NAME);
+              process.exit(1);
+            } else {
+              console.log('Latest migration verified:', LATEST_MIGRATION_NAME);
+            }
+          })();
+          EOF

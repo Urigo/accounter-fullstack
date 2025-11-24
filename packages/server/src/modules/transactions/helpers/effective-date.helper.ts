@@ -1,5 +1,5 @@
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 
 export function effectiveDateSupplement(transaction: IGetTransactionsByIdsResult) {

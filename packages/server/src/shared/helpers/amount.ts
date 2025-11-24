@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { Currency, FinancialAmount, FinancialIntAmount } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
+import type { FinancialAmount, FinancialIntAmount } from '@shared/gql-types';
 
 export const addCommasToStringifiedInt = (rawAmount: string | number): string => {
   // add commas

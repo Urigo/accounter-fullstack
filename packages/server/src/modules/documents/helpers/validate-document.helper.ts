@@ -1,5 +1,5 @@
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { Currency, DocumentType } from '@shared/gql-types';
+import { Currency, DocumentType } from '@shared/enums';
 import type { IGetAllDocumentsResult } from '../types.js';
 import { isInvoice } from './common.helper.js';
 

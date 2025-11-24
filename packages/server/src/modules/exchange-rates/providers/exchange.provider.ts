@@ -1,5 +1,5 @@
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
-import { Currency } from '@shared/gql-types';
+import { Currency } from '@shared/enums';
 import { getRateForCurrency, isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from './crypto-exchange.provider.js';
 import { FiatExchangeProvider } from './fiat-exchange.provider.js';
