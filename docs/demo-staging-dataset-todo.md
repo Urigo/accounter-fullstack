@@ -49,8 +49,8 @@ You can replace markers as work progresses.
   - [x] Returns stable admin business entity ID
 - [x] 11. Implement `seed-exchange-rates.ts` (USD/EUR/GBP → ILS)
   - [x] Uses ON CONFLICT upsert pattern
-- [ ] 12. Implement `seed-vat.ts` (VAT 17% default row)
-  - [ ] ON CONFLICT DO NOTHING
+- [x] 12. Implement `seed-vat.ts` (VAT 17% default row)
+  - [x] ON CONFLICT DO NOTHING
 
 ## Phase 4: Seed Orchestrator
 
