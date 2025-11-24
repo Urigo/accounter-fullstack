@@ -35,8 +35,8 @@ You can replace markers as work progresses.
 - [x] 6. Add expense use-case: `monthly-expense-foreign-currency.ts`
   - [x] Ensure all IDs via `makeUUID`
   - [x] Include expectations.ledgerRecordCount
-- [ ] 7. Add equity use-case: `shareholder-dividend.ts`
-  - [ ] Include basic ledger expectations
+- [x] 7. Add equity use-case: `shareholder-dividend.ts`
+  - [x] Include basic ledger expectations
 - [ ] 8. Add income use-case: `client-payment-with-refund.ts`
   - [ ] Two charges, two transactions, two documents
 - [ ] 9. Update registry to include all three use-cases
