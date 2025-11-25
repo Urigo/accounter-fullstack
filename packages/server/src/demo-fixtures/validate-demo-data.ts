@@ -38,7 +38,42 @@ async function validateDemoData() {
     }
 
     // 3. Sample ledger balance checks (for use-cases with expectations)
-    // TODO: Verify ledger record counts and balance
+    const useCaseWithExpectations = useCases.find(uc => uc.expectations);
+    if (useCaseWithExpectations) {
+      const chargeId = useCaseWithExpectations.fixtures.charges[0].id;
+      const ledgerRecords = await client.query(
+        `SELECT * FROM accounter_schema.ledger_records WHERE charge_id = $1`,
+        [chargeId],
+      );
+
+      if (ledgerRecords.rows.length !== useCaseWithExpectations.expectations!.ledgerRecordCount) {
+        errors.push(
+          `${useCaseWithExpectations.id}: ledger record count mismatch (expected ${useCaseWithExpectations.expectations!.ledgerRecordCount}, got ${ledgerRecords.rows.length})`,
+        );
+      }
+
+      const totalDebit = ledgerRecords.rows.reduce((sum, rec) => {
+        return (
+          sum +
+          parseFloat(rec.debit_local_amount1 || '0') +
+          parseFloat(rec.debit_local_amount2 || '0')
+        );
+      }, 0);
+
+      const totalCredit = ledgerRecords.rows.reduce((sum, rec) => {
+        return (
+          sum +
+          parseFloat(rec.credit_local_amount1 || '0') +
+          parseFloat(rec.credit_local_amount2 || '0')
+        );
+      }, 0);
+
+      if (Math.abs(totalDebit - totalCredit) > 0.01) {
+        errors.push(
+          `${useCaseWithExpectations.id}: ledger not balanced (debit ${totalDebit.toFixed(2)}, credit ${totalCredit.toFixed(2)})`,
+        );
+      }
+    }
 
     // 4. VAT row present
     // TODO: Check vat_value table for default percentage
