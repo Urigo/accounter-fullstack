@@ -69,7 +69,7 @@ You can replace markers as work progresses.
 
 ## Phase 5: Validation Layer
 
-- [ ] 19. Create `validate-demo-data.ts` skeleton (connect + try/finally)
+- [x] 19. Create `validate-demo-data.ts` skeleton (connect + try/finally)
 - [ ] 20. Admin business existence check
 - [ ] 21. Charge count reconciliation vs registry
 - [ ] 22. Single ledger balance check (initial)
