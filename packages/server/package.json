@@ -17,7 +17,8 @@
     "server:build": "yarn build",
     "server:build:prod": "yarn generate && yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build && yarn build",
     "server:dev": "yarn dev",
-    "start": "node dist/server/src/index.js"
+    "start": "node dist/server/src/index.js",
+    "validate:demo": "tsx src/demo-fixtures/validate-demo-data.ts"
   },
   "dependencies": {
     "@accounter/green-invoice-graphql": "workspace:^",
@@ -67,6 +68,7 @@
     "rimraf": "6.1.2",
     "slonik": "48.4.1",
     "tsc-alias": "1.8.16",
+    "tsx": "4.20.6",
     "typescript": "5.9.3"
   },
   "publishConfig": {
