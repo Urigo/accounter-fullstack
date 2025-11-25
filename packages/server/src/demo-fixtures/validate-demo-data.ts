@@ -116,7 +116,12 @@ async function validateDemoData() {
     }
 
     // 4. VAT row present
-    // TODO: Check vat_value table for default percentage
+    const vatCheck = await client.query(
+      `SELECT 1 FROM accounter_schema.vat_value WHERE percentage = 17`,
+    );
+    if (vatCheck.rows.length === 0) {
+      errors.push('VAT default (17%) missing');
+    }
 
     // Report errors or success
     if (errors.length > 0) {

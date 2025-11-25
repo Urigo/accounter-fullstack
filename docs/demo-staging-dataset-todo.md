@@ -73,17 +73,17 @@ You can replace markers as work progresses.
 - [x] 20. Admin business existence check
 - [x] 21. Charge count reconciliation vs registry
 - [x] 22. Single ledger balance check (initial)
-- [ ] 23. Expand to all use-cases with expectations
-- [ ] 24. VAT presence check (percentage=17)
-- [ ] 25. Aggregate errors and exit with code 1 if any
+- [x] 23. Expand to all use-cases with expectations
+- [x] 24. VAT presence check (percentage=17)
+- [~] 25. Aggregate errors and exit with code 1 if any
   - [ ] Log success with ✅ when all pass
 
 ### Phase 5b: Ledger Validation Enhancements (Side-Task)
 
-- [ ] E1. Create validators directory `packages/server/src/demo-fixtures/validators/`
-- [ ] E2. Add `types.ts` for `LedgerRecord`, `ValidationContext`, `EntityBalance`
-- [ ] E3. Implement `ledger-validators.ts` with:
-  - [ ] FR1: Per-record internal balance (±0.01)
+- [x] E1. Create validators directory `packages/server/src/demo-fixtures/validators/`
+- [x] E2. Add `types.ts` for `LedgerRecord`, `ValidationContext`, `EntityBalance`
+- [x] E3. Implement `ledger-validators.ts` with:
+  - [ ] FR1: Per-record internal balance (±0.005)
   - [ ] FR2: Aggregate balance per charge (apply to all use-cases with expectations)
   - [ ] FR3: Entity-level balance validation
   - [ ] FR4: Orphaned amount detection (primary/secondary rules)
@@ -92,8 +92,8 @@ You can replace markers as work progresses.
   - [ ] FR7: Date validation (invoice/value dates in range)
   - [ ] FR8: Record count validation (exact/min configurable)
   - [ ] FR10: Empty ledger detection
-- [ ] E4. Wire validators into `validate-demo-data.ts` and iterate all use-cases with expectations
-- [ ] E5. Group errors by use-case and aggregate before failing
+- [x] E4. Wire validators into `validate-demo-data.ts` and iterate all use-cases with expectations
+- [~] E5. Group errors by use-case and aggregate before failing
 - [ ] E6. Confirm performance target < 5s on typical dataset
 
 ## Phase 6: Testing
