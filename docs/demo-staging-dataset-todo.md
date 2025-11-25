@@ -71,7 +71,7 @@ You can replace markers as work progresses.
 
 - [x] 19. Create `validate-demo-data.ts` skeleton (connect + try/finally)
 - [x] 20. Admin business existence check
-- [ ] 21. Charge count reconciliation vs registry
+- [x] 21. Charge count reconciliation vs registry
 - [ ] 22. Single ledger balance check (initial)
 - [ ] 23. Expand to all use-cases with expectations
 - [ ] 24. VAT presence check (percentage=17)
