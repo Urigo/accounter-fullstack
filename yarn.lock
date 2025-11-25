@@ -324,6 +324,7 @@ __metadata:
     slonik: "npm:48.4.1"
     strip-indent: "npm:4.1.1"
     tsc-alias: "npm:1.8.16"
+    tsx: "npm:4.20.6"
     typescript: "npm:5.9.3"
     zod: "npm:4.2.1"
   languageName: unknown

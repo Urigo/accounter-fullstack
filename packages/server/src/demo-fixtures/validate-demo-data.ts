@@ -1,9 +1,41 @@
+/**
+ * Demo Data Validation Script
+ *
+ * Validates the integrity of seeded demo data with comprehensive ledger validation.
+ *
+ * Validation Checks:
+ * - Admin business entity exists
+ * - Charge count matches expected
+ * - Ledger records for each use-case:
+ *   - Per-record internal balance (FR1)
+ *   - Aggregate balance (FR2)
+ *   - Entity-level balance (FR3)
+ *   - No orphaned amounts (FR4)
+ *   - Positive amounts only (FR5)
+ *   - Foreign currency consistency (FR6)
+ *   - Valid dates (FR7)
+ *   - Record count matches (FR8)
+ *
+ * Exit codes:
+ * - 0: All validations passed
+ * - 1: Validation errors found or database connection failed
+ */
 import { config } from 'dotenv';
 import pg from 'pg';
 import { getAllUseCases } from './use-cases/index.js';
+import { validateLedgerRecords } from './validators/ledger-validators.js';
+import type { LedgerRecord, ValidationContext } from './validators/types.js';
 
-config();
+config({
+  path: '../../.env',
+});
 
+const DEFAULT_CURRENCY = 'ILS';
+const BALANCE_TOLERANCE = 0.005;
+
+/**
+ * Main validation function - connects to DB and runs all checks
+ */
 async function validateDemoData() {
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
@@ -37,41 +69,49 @@ async function validateDemoData() {
       );
     }
 
-    // 3. Sample ledger balance checks (for use-cases with expectations)
-    const useCaseWithExpectations = useCases.find(uc => uc.expectations);
-    if (useCaseWithExpectations) {
-      const chargeId = useCaseWithExpectations.fixtures.charges[0].id;
-      const ledgerRecords = await client.query(
-        `SELECT * FROM accounter_schema.ledger_records WHERE charge_id = $1`,
-        [chargeId],
+    // 3. Comprehensive ledger validation for all use-cases with expectations (FR9)
+    const useCasesWithExpectations = useCases.filter(uc => uc.expectations);
+
+    console.log(
+      `\nValidating ledger records for ${useCasesWithExpectations.length} use-case(s)...`,
+    );
+
+    for (const useCase of useCasesWithExpectations) {
+      // Get all charges for this use-case
+      const chargeIds = useCase.fixtures.charges.map(c => c.id);
+
+      // Fetch all ledger records for these charges
+      const ledgerRecords = await client.query<LedgerRecord>(
+        `SELECT * FROM accounter_schema.ledger_records WHERE charge_id = ANY($1) ORDER BY created_at`,
+        [chargeIds],
       );
 
-      if (ledgerRecords.rows.length !== useCaseWithExpectations.expectations!.ledgerRecordCount) {
-        errors.push(
-          `${useCaseWithExpectations.id}: ledger record count mismatch (expected ${useCaseWithExpectations.expectations!.ledgerRecordCount}, got ${ledgerRecords.rows.length})`,
-        );
+      if (ledgerRecords.rows.length === 0) {
+        errors.push(`${useCase.id}: no ledger records found`);
+        continue;
       }
 
-      const totalDebit = ledgerRecords.rows.reduce((sum, rec) => {
-        return (
-          sum +
-          parseFloat(rec.debit_local_amount1 || '0') +
-          parseFloat(rec.debit_local_amount2 || '0')
-        );
-      }, 0);
+      // Create validation context
+      const context: ValidationContext = {
+        useCaseId: useCase.id,
+        defaultCurrency: DEFAULT_CURRENCY,
+        tolerance: BALANCE_TOLERANCE,
+      };
 
-      const totalCredit = ledgerRecords.rows.reduce((sum, rec) => {
-        return (
-          sum +
-          parseFloat(rec.credit_local_amount1 || '0') +
-          parseFloat(rec.credit_local_amount2 || '0')
-        );
-      }, 0);
+      // Run comprehensive validation
+      const validationErrors = validateLedgerRecords(
+        ledgerRecords.rows,
+        useCase.expectations!.ledgerRecordCount,
+        context,
+      );
 
-      if (Math.abs(totalDebit - totalCredit) > 0.01) {
-        errors.push(
-          `${useCaseWithExpectations.id}: ledger not balanced (debit ${totalDebit.toFixed(2)}, credit ${totalCredit.toFixed(2)})`,
-        );
+      errors.push(...validationErrors);
+
+      // Log progress
+      if (validationErrors.length === 0) {
+        console.log(`  ✓ ${useCase.id} (${ledgerRecords.rows.length} records)`);
+      } else {
+        console.log(`  ✗ ${useCase.id} (${validationErrors.length} error(s))`);
       }
     }
 
