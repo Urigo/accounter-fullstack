@@ -28,7 +28,14 @@ async function validateDemoData() {
     }
 
     // 2. Use-case charge count reconciliation
-    // TODO: Compare expected vs actual charge count
+    const useCases = getAllUseCases();
+    const expectedChargeCount = useCases.reduce((sum, uc) => sum + uc.fixtures.charges.length, 0);
+    const actualChargeCount = await client.query(`SELECT COUNT(*) FROM accounter_schema.charges`);
+    if (parseInt(actualChargeCount.rows[0].count) !== expectedChargeCount) {
+      errors.push(
+        `Charge count mismatch: expected ${expectedChargeCount}, got ${actualChargeCount.rows[0].count}`,
+      );
+    }
 
     // 3. Sample ledger balance checks (for use-cases with expectations)
     // TODO: Verify ledger record counts and balance
