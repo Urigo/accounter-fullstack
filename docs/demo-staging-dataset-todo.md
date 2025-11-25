@@ -78,6 +78,24 @@ You can replace markers as work progresses.
 - [ ] 25. Aggregate errors and exit with code 1 if any
   - [ ] Log success with ✅ when all pass
 
+### Phase 5b: Ledger Validation Enhancements (Side-Task)
+
+- [ ] E1. Create validators directory `packages/server/src/demo-fixtures/validators/`
+- [ ] E2. Add `types.ts` for `LedgerRecord`, `ValidationContext`, `EntityBalance`
+- [ ] E3. Implement `ledger-validators.ts` with:
+  - [ ] FR1: Per-record internal balance (±0.01)
+  - [ ] FR2: Aggregate balance per charge (apply to all use-cases with expectations)
+  - [ ] FR3: Entity-level balance validation
+  - [ ] FR4: Orphaned amount detection (primary/secondary rules)
+  - [ ] FR5: Positive amount validation (local/foreign amounts ≥ 0)
+  - [ ] FR6: Foreign currency handling + exchange rate consistency
+  - [ ] FR7: Date validation (invoice/value dates in range)
+  - [ ] FR8: Record count validation (exact/min configurable)
+  - [ ] FR10: Empty ledger detection
+- [ ] E4. Wire validators into `validate-demo-data.ts` and iterate all use-cases with expectations
+- [ ] E5. Group errors by use-case and aggregate before failing
+- [ ] E6. Confirm performance target < 5s on typical dataset
+
 ## Phase 6: Testing
 
 - [ ] 26. Add `__tests__/deterministic-uuid.test.ts`
@@ -113,7 +131,8 @@ You can replace markers as work progresses.
 - [ ] Deterministic UUID utility stable across runs
 - [ ] Seed script refuses production
 - [ ] Seed performance < 60s (target) on clean staging DB
-- [ ] Validation catches: missing admin, charge mismatch, unbalanced ledger
+- [ ] Validation implements comprehensive ledger checks (per-record, aggregate, entity-level,
+      integrity) and catches: missing admin, charge mismatch, unbalanced ledger
 - [ ] Exchange rates seeded (USD/EUR/GBP → ILS)
 - [ ] VAT default (17%) present
 - [ ] Use-cases use enums (`Currency`, `CountryCode`) where applicable

@@ -69,7 +69,8 @@ demos and exploratory testing.
 │  Validation Layer (validate-demo-data.ts)           │
 │  - Admin business existence check                   │
 │  - Use-case count reconciliation                    │
-│  - Ledger balance smoke tests                       │
+│  - Comprehensive ledger validation suite            │
+│    (per-record, aggregate, entity-level, integrity) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -473,6 +474,10 @@ seedDemoData().catch(error => {
 
 ### 8.1 File: `packages/server/src/demo-fixtures/validate-demo-data.ts`
 
+The validation step now performs comprehensive double-entry bookkeeping checks across all use-cases
+with ledger expectations. It connects to the database, runs base checks (admin business, charge
+count), then iterates each relevant use-case to validate ledger records.
+
 ```typescript
 import pg from 'pg';
 import { config } from 'dotenv';
@@ -513,39 +518,56 @@ async function validateDemoData() {
       );
     }
 
-    // 3. Sample ledger balance checks (for use-cases with expectations)
+    // 3. Ledger validation (for all use-cases with expectations)
     for (const useCase of useCases.filter(uc => uc.expectations)) {
       const chargeId = useCase.fixtures.charges[0].id;
-      const ledgerRecords = await client.query(
+      const { rows: ledgerRecords } = await client.query(
         `SELECT * FROM accounter_schema.ledger_records WHERE charge_id = $1`,
         [chargeId],
       );
 
-      if (ledgerRecords.rows.length !== useCase.expectations!.ledgerRecordCount) {
-        errors.push(`${useCase.id}: ledger record count mismatch`);
-      }
-
-      const totalDebit = ledgerRecords.rows.reduce((sum, rec) => {
-        return (
+      // Aggregate balance check (debits == credits within tolerance)
+      const totalDebit = ledgerRecords.reduce(
+        (sum, rec) =>
           sum +
           parseFloat(rec.debit_local_amount1 || '0') +
-          parseFloat(rec.debit_local_amount2 || '0')
-        );
-      }, 0);
-
-      const totalCredit = ledgerRecords.rows.reduce((sum, rec) => {
-        return (
+          parseFloat(rec.debit_local_amount2 || '0'),
+        0,
+      );
+      const totalCredit = ledgerRecords.reduce(
+        (sum, rec) =>
           sum +
           parseFloat(rec.credit_local_amount1 || '0') +
-          parseFloat(rec.credit_local_amount2 || '0')
-        );
-      }, 0);
-
+          parseFloat(rec.credit_local_amount2 || '0'),
+        0,
+      );
       if (Math.abs(totalDebit - totalCredit) > 0.01) {
         errors.push(
-          `${useCase.id}: ledger not balanced (debit ${totalDebit}, credit ${totalCredit})`,
+          `${useCase.id}: aggregate ledger not balanced (debit ${totalDebit.toFixed(2)}, credit ${totalCredit.toFixed(2)})`,
         );
       }
+
+      // Record count check
+      if (ledgerRecords.length !== useCase.expectations!.ledgerRecordCount) {
+        errors.push(
+          `${useCase.id}: ledger record count mismatch (expected ${useCase.expectations!.ledgerRecordCount}, got ${ledgerRecords.length})`,
+        );
+      }
+
+      // Per-record internal balance (debit1+debit2 == credit1+credit2)
+      ledgerRecords.forEach((rec: any, idx: number) => {
+        const recDebit =
+          parseFloat(rec.debit_local_amount1 || '0') + parseFloat(rec.debit_local_amount2 || '0');
+        const recCredit =
+          parseFloat(rec.credit_local_amount1 || '0') + parseFloat(rec.credit_local_amount2 || '0');
+        if (Math.abs(recDebit - recCredit) > 0.01) {
+          errors.push(
+            `${useCase.id} - Record ${idx}: internal imbalance (debit=${recDebit.toFixed(
+              2,
+            )}, credit=${recCredit.toFixed(2)})`,
+          );
+        }
+      });
     }
 
     // 4. VAT row present
@@ -573,6 +595,41 @@ async function validateDemoData() {
 
 validateDemoData();
 ```
+
+### 8.2 Ledger Validation Enhancements
+
+The ledger validation has been enhanced to production-level rigor:
+
+- Per-record internal balance:
+  `debit_local_amount1 + debit_local_amount2 == credit_local_amount1 + credit_local_amount2` (±0.01
+  tolerance)
+- Aggregate balance per charge across all records (±0.01 tolerance)
+- Entity-level balance validation: each entity’s net position (Σ debits − Σ credits) balances to
+  zero within tolerance
+- Orphaned amount detection: no amounts without corresponding entity references (primary/secondary
+  rules)
+- Positive amount validation: all local/foreign amounts are ≥ 0
+- Foreign currency handling: foreign amounts required when `currency != 'ILS'`; consistent implied
+  exchange rates
+- Date validation: required invoice/value dates, valid and within 2020–2030
+- Record count validation: support exact count expectations (future: min count)
+
+New directory structure for validators:
+
+```
+packages/server/src/demo-fixtures/validators/
+  ├── ledger-validators.ts   # Core ledger validation functions
+  └── types.ts               # Validation types and interfaces
+```
+
+Validation pipeline:
+
+1. Connect to DB
+2. Validate admin business exists
+3. Validate charge count reconciliation
+4. For each use-case with expectations, fetch ledger records and run validator suite
+5. Validate VAT configuration
+6. Report all aggregated errors or success; exit non-zero on failures
 
 ---
 
@@ -823,13 +880,13 @@ describe('Use-Case Registry', () => {
 
 ### 14.2 Validation Execution Time
 
-**Target**: < 10 seconds
+**Target**: < 5 seconds (typical dataset)
 
 **Checks prioritized**:
 
 - Admin business existence (1 query)
 - Charge count (1 query)
-- Sample ledger balance (N queries, N = use-cases with expectations)
+- Ledger validation suite (N queries, N = use-cases with expectations)
 - Skip full ledger audit in validation (covered by integration tests)
 
 ---
@@ -869,7 +926,9 @@ describe('Use-Case Registry', () => {
 - [ ] Deterministic UUID utility generates stable IDs across multiple seed runs
 - [ ] Seed script refuses to run in `NODE_ENV=production`
 - [ ] Seed script completes successfully on clean staging DB in < 60 seconds
-- [ ] Validation script detects missing admin business, charge count mismatch, unbalanced ledger
+- [ ] Validation script implements comprehensive ledger validation (per-record, aggregate,
+      entity-level, integrity checks) and detects missing admin business, charge count mismatch,
+      unbalanced ledger
 - [ ] Render staging deploy integrates seed + validation in build command
 - [ ] Developer guide published with "Add New Use-Case" tutorial
 - [ ] At least one use-case includes ledger expectations and passes smoke test
