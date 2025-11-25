@@ -55,6 +55,34 @@ incrementally without creating orphaned code.
 - Ledger balance validation
 - VAT presence check
 
+### Phase 5b: Ledger Validation Enhancements (Prompts 21a–21f)
+
+- Create validators directory and types
+  - Prompt 21a: Create `packages/server/src/demo-fixtures/validators/types.ts` with `LedgerRecord`,
+    `ValidationContext`, `EntityBalance`
+- Implement core ledger validators
+  - Prompt 21b: Create `packages/server/src/demo-fixtures/validators/ledger-validators.ts` with
+    functions:
+    - `validateRecordInternalBalance` (FR1)
+    - `validateAggregateBalance` (FR2)
+    - `validateEntityBalance` (FR3)
+    - `validateNoOrphanedAmounts` (FR4)
+    - `validatePositiveAmounts` (FR5)
+    - `validateForeignCurrency` (FR6)
+    - `validateDates` (FR7)
+    - `validateRecordCount` (FR8)
+    - `validateLedgerRecords` master orchestrator
+- Wire validators into validation script
+  - Prompt 21c: Update `packages/server/src/demo-fixtures/validate-demo-data.ts` to fetch ledger
+    records per use-case and run validator suite
+- Multi-use-case validation
+  - Prompt 21d: Iterate ALL use-cases with expectations, aggregate errors, do not fail-fast
+- Performance target & error reporting
+  - Prompt 21e: Ensure validation completes < 5s; group errors by use-case and provide actionable
+    messages
+- VAT check remains
+  - Prompt 21f: Keep VAT presence check and final exit code handling
+
 ### Phase 6: Testing (Prompts 22-24)
 
 - UUID determinism tests
@@ -454,6 +482,9 @@ Return updated file.
 
 **Verification**: Arithmetic correct; tolerance applied.
 
+Note: This is the initial check. Comprehensive ledger validation is covered in Phase 5b (Prompts
+21a–21f).
+
 ---
 
 ### Prompt 20: Expand Ledger Balance to All With Expectations
@@ -775,20 +806,20 @@ Return updated helper with API integration.
 
 ## Acceptance Criteria Mapping
 
-| Acceptance Criterion                            | Covered by Prompts                       |
-| ----------------------------------------------- | ---------------------------------------- |
-| Use-case registry supports 3+ categories        | 4, 5–8                                   |
-| MVP includes 5+ use-cases                       | 5–7 (3 initial; add 2+ via same pattern) |
-| Deterministic UUID utility stable               | 2, 22                                    |
-| Seed script refuses production                  | 12                                       |
-| Seed completes in < 60 seconds                  | 15 (monitor during execution)            |
-| Validation detects missing admin/charges/ledger | 17–21                                    |
-| Render staging deploy integrates seed+validate  | 29 (scripts), 27 (guide)                 |
-| Developer guide published                       | 27                                       |
-| At least one use-case has ledger expectations   | 5, 6, 7                                  |
-| Exchange rates seeded                           | 10, 14                                   |
-| VAT default seeded                              | 11, 14                                   |
-| All fixtures use enums (Currency, CountryCode)  | 5–7 (enforce in use-case prompts)        |
+| Acceptance Criterion                                                                                                      | Covered by Prompts                       |
+| ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Use-case registry supports 3+ categories                                                                                  | 4, 5–8                                   |
+| MVP includes 5+ use-cases                                                                                                 | 5–7 (3 initial; add 2+ via same pattern) |
+| Deterministic UUID utility stable                                                                                         | 2, 22                                    |
+| Seed script refuses production                                                                                            | 12                                       |
+| Seed completes in < 60 seconds                                                                                            | 15 (monitor during execution)            |
+| Validation detects missing admin/charges and implements comprehensive ledger checks (per-record, aggregate, entity-level) | 17–21, 21a–21f                           |
+| Render staging deploy integrates seed+validate                                                                            | 29 (scripts), 27 (guide)                 |
+| Developer guide published                                                                                                 | 27                                       |
+| At least one use-case has ledger expectations                                                                             | 5, 6, 7                                  |
+| Exchange rates seeded                                                                                                     | 10, 14                                   |
+| VAT default seeded                                                                                                        | 11, 14                                   |
+| All fixtures use enums (Currency, CountryCode)                                                                            | 5–7 (enforce in use-case prompts)        |
 
 ---
 
@@ -797,6 +828,7 @@ Return updated helper with API integration.
 - **Prompts 1–11**: ~2–3 hours (foundation + helpers)
 - **Prompts 12–15**: ~1–2 hours (seed orchestrator)
 - **Prompts 16–21**: ~1–2 hours (validation layer)
+- **Prompts 21a–21f**: ~2–3 hours (ledger validation enhancements)
 - **Prompts 22–26**: ~1 hour (tests + hardening)
 - **Prompts 27–30**: ~1 hour (docs + wiring)
 - **Total**: ~6–9 hours for sequential implementation + verification
