@@ -20,7 +20,12 @@ async function validateDemoData() {
     await client.connect();
 
     // 1. Admin business exists
-    // TODO: Query financial_entities for Admin Business
+    const adminCheck = await client.query(
+      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Admin Business'`,
+    );
+    if (adminCheck.rows.length === 0) {
+      errors.push('Admin business entity missing');
+    }
 
     // 2. Use-case charge count reconciliation
     // TODO: Compare expected vs actual charge count
