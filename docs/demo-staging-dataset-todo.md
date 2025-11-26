@@ -98,9 +98,9 @@ You can replace markers as work progresses.
 
 ## Phase 6: Testing
 
-- [ ] 26. Add `__tests__/deterministic-uuid.test.ts`
-  - [ ] Same inputs produce same UUID
-  - [ ] Different namespaces differ
+- [x] 26. Add `__tests__/deterministic-uuid.test.ts`
+  - [x] Same inputs produce same UUID
+  - [x] Different namespaces differ
 - [x] 27. Add `__tests__/use-case-registry.test.ts`
   - [x] No duplicate IDs
   - [x] All required fields present
