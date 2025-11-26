@@ -1,5 +1,5 @@
-import { CountryCode } from '@modules/countries/types.js';
-import { Currency } from '@shared/enums';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { Currency } from '../../../shared/enums.js';
 import { makeUUID } from '../../helpers/deterministic-uuid.js';
 import type { UseCaseSpec } from '../../types.js';
 
@@ -71,7 +71,7 @@ export const shareholderDividend: UseCaseSpec = {
         creditorId: makeUUID('business', 'dividends-withholding-tax'),
         debtorId: '{{ADMIN_BUSINESS_ID}}',
         serialNumber: 'DIV-2024-Q4',
-        type: 'STATEMENT',
+        type: 'INVOICE',
         date: '2024-12-31',
         totalAmount: '10000.00',
         currencyCode: Currency.Ils,

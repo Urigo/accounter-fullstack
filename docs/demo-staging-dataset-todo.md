@@ -45,7 +45,7 @@ You can replace markers as work progresses.
 
 ## Phase 3: Foundation Helpers
 
-- [x] 10. Extract `admin-context.ts` helper (create / fetch Admin Business)
+- [x] 10. Extract `admin-context.ts` helper (create / fetch Accounter Admin Business)
   - [x] Returns stable admin business entity ID
 - [x] 11. Implement `seed-exchange-rates.ts` (USD/EUR/GBP → ILS)
   - [x] Uses ON CONFLICT upsert pattern
@@ -70,7 +70,7 @@ You can replace markers as work progresses.
 ## Phase 5: Validation Layer
 
 - [x] 19. Create `validate-demo-data.ts` skeleton (connect + try/finally)
-- [x] 20. Admin business existence check
+- [x] 20. Accounter Admin Business existence check
 - [x] 21. Charge count reconciliation vs registry
 - [x] 22. Single ledger balance check (initial)
 - [x] 23. Expand to all use-cases with expectations
@@ -104,8 +104,8 @@ You can replace markers as work progresses.
 - [x] 27. Add `__tests__/use-case-registry.test.ts`
   - [x] No duplicate IDs
   - [x] All required fields present
-- [ ] 28. Optional integration test `seed-and-validate.test.ts`
-  - [ ] Run seed then validate (expect both exit 0)
+- [x] 28. Optional integration test `seed-and-validate.test.ts`
+  - [x] Run seed then validate (expect both exit 0)
 
 ## Phase 7: Hardening
 
@@ -132,7 +132,7 @@ You can replace markers as work progresses.
 - [ ] Seed script refuses production
 - [ ] Seed performance < 60s (target) on clean staging DB
 - [ ] Validation implements comprehensive ledger checks (per-record, aggregate, entity-level,
-      integrity) and catches: missing admin, charge mismatch, unbalanced ledger
+      integrity) and catches: missing Accounter Admin Business, charge mismatch, unbalanced ledger
 - [ ] Exchange rates seeded (USD/EUR/GBP → ILS)
 - [ ] VAT default (17%) present
 - [ ] Use-cases use enums (`Currency`, `CountryCode`) where applicable
@@ -211,7 +211,23 @@ yarn validate:demo
 
 Use this section to record decisions, blockers, and clarifications as you progress.
 
-- (Add dated entries here)
+- **2024-11-26**: Completed factory and fixture type improvements
+  - Extracted fixture types from pgtyped-generated types to maintain test independence
+  - Updated all factories (business, tax-category, financial-account, charge, transaction) to use
+    fixture types
+  - Added `name` field to business/tax-category factories with fallback to id for better defaults
+  - Added `is_property` and `currency_rate` fields to charge/transaction types
+  - Improved fixture-loader to handle null defaults and optional fields robustly
+  - Fixed seed-demo-data script to properly convert use-case fixtures to test fixture format
+  - Fixed import paths in use-case files (equity/shareholder-dividend,
+    income/client-payment-with-refund)
+  - Fixed admin context helper to use proper name 'Accounter Admin Business'
+  - Fixed exchange rates seeder to use correct table schema (exchange_date column, usd/eur/gbp
+    columns)
+  - Fixed VAT seeder to use correct column names (percentage, date) and proper decimal values (0.17,
+    0.18)
+  - Completed integration test (seed-and-validate.test.ts) with 30s timeout
+  - All changes maintain backward compatibility with existing test suites
 
 ---
 

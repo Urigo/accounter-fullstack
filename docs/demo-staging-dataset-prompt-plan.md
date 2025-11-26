@@ -50,7 +50,7 @@ incrementally without creating orphaned code.
 ### Phase 5: Validation Layer (Prompts 16-21)
 
 - Script skeleton
-- Admin business check
+- Accounter Admin Business check
 - Charge count reconciliation
 - Ledger balance validation
 - VAT presence check
@@ -293,7 +293,7 @@ Goal:
 - Extract minimal logic from existing scripts/seed.ts to create admin business context.
 - Export async function createAdminBusinessContext(client): Promise<string> returning admin business entity id.
 Simplifications:
-- Insert 'Admin Business' financial entity if missing, set owner_id to itself.
+- Insert 'Accounter Admin Business' financial entity if missing, set owner_id to itself.
 - Return its id.
 
 Do not yet migrate the full context from seed.ts (postponed).
@@ -432,18 +432,18 @@ Return file.
 
 ---
 
-### Prompt 17: Implement Admin Business Check
+### Prompt 17: Implement Accounter Admin Business Check
 
 ```text
 Update validate-demo-data.ts:
-- Query financial_entities for Admin Business.
+- Query financial_entities for Accounter Admin Business.
 - If missing, push error.
 - If no errors yet, log progress.
 
 Return updated file.
 ```
 
-**Expected Output**: Admin business existence check added.
+**Expected Output**: Accounter Admin Business existence check added.
 
 **Verification**: Query runs; error accumulation works.
 
