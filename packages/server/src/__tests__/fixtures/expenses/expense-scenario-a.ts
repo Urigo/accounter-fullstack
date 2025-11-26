@@ -56,7 +56,7 @@ export const expenseScenarioA: Fixture = {
       // Admin business (owner of the expense)
       createBusiness({
         id: makeUUID('admin-business'),
-        hebrewName: 'חשבונאות ניהול',
+        name: 'Accountancy Management',
         country: CountryCode.Israel,
       }),
       // Supplier business
