@@ -3,14 +3,157 @@ import * as path from 'node:path';
 import { config } from 'dotenv';
 import pg from 'pg';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
+import type {
+  Fixture,
+  FixtureAccountTaxCategories,
+} from '../packages/server/src/__tests__/helpers/fixture-types.js';
 import { createAdminBusinessContext } from '../packages/server/src/demo-fixtures/helpers/admin-context.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
 import { seedVATDefault } from '../packages/server/src/demo-fixtures/helpers/seed-vat.js';
+import type { UseCaseFixtures } from '../packages/server/src/demo-fixtures/types.js';
 import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 config();
+
+/**
+ * Convert use-case fixtures to the format expected by insertFixture
+ *
+ * This function bridges the semantic use-case fixture format (optimized for
+ * demo data authoring) and the test fixture format (optimized for database
+ * insertion). The conversion handles:
+ *
+ * - Field name mapping (e.g., ownerId → owner_id, canSettleWithReceipt → isReceiptEnough)
+ * - Nested structure flattening (e.g., taxCategoryMappings array)
+ * - Type conversions (string → number for amounts)
+ * - Default value injection for NOT NULL database columns
+ *
+ * @param useCaseFixtures - Use-case format fixtures from registry
+ * @returns Fixture object ready for insertFixture() helper
+ *
+ * @example
+ * ```typescript
+ * const useCase = getAllUseCases()[0];
+ * const testFixture = convertUseCaseFixtureToFixture(useCase.fixtures);
+ * await insertFixture(client, testFixture);
+ * ```
+ *
+ * @remarks
+ * - Admin business is NOT included by default; caller must inject it
+ * - Account numbers are used for account_id references (resolved by fixture-loader)
+ * - All optional fields receive safe defaults to satisfy database constraints
+ */
+function convertUseCaseFixtureToFixture(useCaseFixtures: UseCaseFixtures): Fixture {
+  const fixture: Fixture = {};
+
+  if (useCaseFixtures.businesses && useCaseFixtures.businesses.length > 0) {
+    fixture.businesses = {
+      businesses: useCaseFixtures.businesses.map(b => ({
+        id: b.id,
+        name: b.name || b.id,
+        hebrewName: b.name,
+        country: b.country,
+        isReceiptEnough: b.canSettleWithReceipt,
+        isDocumentsOptional: false,
+        exemptDealer: false,
+        optionalVat: false,
+        address: null,
+        email: null,
+        website: null,
+        phoneNumber: null,
+        governmentId: null,
+        suggestions: null,
+        pcn874RecordTypeOverride: null,
+      })),
+    };
+  }
+
+  if (useCaseFixtures.taxCategories && useCaseFixtures.taxCategories.length > 0) {
+    fixture.taxCategories = {
+      taxCategories: useCaseFixtures.taxCategories.map(tc => ({
+        id: tc.id,
+        name: tc.name,
+        hashavshevetName: null,
+        taxExcluded: false,
+      })),
+    };
+  }
+
+  if (useCaseFixtures.financialAccounts && useCaseFixtures.financialAccounts.length > 0) {
+    fixture.accounts = {
+      accounts: useCaseFixtures.financialAccounts.map(fa => ({
+        accountNumber: fa.accountNumber,
+        type: fa.type,
+        privateBusiness: 'Private',
+        ownerId: null,
+      })),
+    };
+
+    const mappings: FixtureAccountTaxCategories['mappings'] =
+      useCaseFixtures.financialAccounts.flatMap(fa =>
+        (fa.taxCategoryMappings || []).map(tcm => ({
+          accountNumber: fa.accountNumber,
+          currency: tcm.currency,
+          taxCategoryId: tcm.taxCategoryId,
+        })),
+      );
+
+    if (mappings.length > 0) {
+      fixture.accountTaxCategories = { mappings };
+    }
+  }
+
+  if (useCaseFixtures.charges && useCaseFixtures.charges.length > 0) {
+    fixture.charges = {
+      charges: useCaseFixtures.charges.map(c => ({
+        id: c.id,
+        owner_id: c.ownerId,
+        user_description: c.userDescription,
+        is_property: false,
+        type: null,
+        optional_vat: false,
+        accountant_status: 'PENDING',
+        documents_optional_flag: false,
+        tax_category_id: null,
+      })),
+    };
+  }
+
+  if (useCaseFixtures.transactions && useCaseFixtures.transactions.length > 0) {
+    fixture.transactions = {
+      transactions: useCaseFixtures.transactions.map(t => ({
+        id: t.id,
+        charge_id: t.chargeId,
+        business_id: t.businessId,
+        account_id: t.accountNumber, // Will be resolved to UUID by fixture-loader
+        amount: t.amount,
+        currency: t.currency,
+        event_date: t.eventDate,
+        debit_date: t.debitDate,
+        source_id: 'DEMO_SEED',
+      })),
+    };
+  }
+
+  if (useCaseFixtures.documents && useCaseFixtures.documents.length > 0) {
+    fixture.documents = {
+      documents: useCaseFixtures.documents.map(d => ({
+        id: d.id,
+        charge_id: d.chargeId,
+        creditor_id: d.creditorId,
+        debtor_id: d.debtorId,
+        serial_number: d.serialNumber,
+        type: d.type,
+        date: d.date,
+        total_amount: Number(d.totalAmount),
+        currency_code: d.currencyCode,
+      })),
+    };
+  }
+
+  return fixture;
+}
 
 async function seedDemoData() {
   // 1. Guard checks
@@ -74,10 +217,48 @@ async function seedDemoData() {
     const useCases = getAllUseCases();
     console.log(`📦 Loading ${useCases.length} use-cases...`);
 
-    for (const useCase of useCases) {
-      console.log(`  ➡️  ${useCase.name} (${useCase.id})`);
-      const resolvedFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId);
-      await insertFixture(client, resolvedFixtures);
+    // Begin transaction for fixture insertion
+    await client.query('BEGIN');
+    try {
+      for (const useCase of useCases) {
+        console.log(`  ➡️  ${useCase.name} (${useCase.id})`);
+        const resolvedUseCaseFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId);
+        const fixture = convertUseCaseFixtureToFixture(resolvedUseCaseFixtures);
+
+        // Inject admin business into every fixture to satisfy foreign key constraints
+        // (charges.owner_id, documents.creditor_id/debtor_id may reference admin business)
+        fixture.businesses ||= {
+          businesses: [],
+        };
+
+        // Check if admin business is already in the list (avoid duplicate insertions)
+        // Some use-cases may define admin explicitly; most rely on injection here
+        const adminExists = fixture.businesses.businesses.some(b => b.id === adminBusinessId);
+        if (!adminExists) {
+          fixture.businesses.businesses.push({
+            id: adminBusinessId,
+            name: 'Accounter Admin Business',
+            country: 'ISR',
+            isReceiptEnough: false,
+            isDocumentsOptional: false,
+            exemptDealer: false,
+            optionalVat: false,
+            address: null,
+            email: null,
+            website: null,
+            phoneNumber: null,
+            governmentId: null,
+            suggestions: null,
+            pcn874RecordTypeOverride: null,
+          });
+        }
+
+        await insertFixture(client, fixture);
+      }
+      await client.query('COMMIT');
+    } catch (fixtureError) {
+      await client.query('ROLLBACK');
+      throw fixtureError;
     }
 
     console.log('✅ All use-cases seeded successfully');
@@ -87,7 +268,15 @@ async function seedDemoData() {
 
     console.log('🎉 Demo data seed complete');
   } catch (error) {
-    console.error('❌ Seed failed:', error);
+    console.error('❌ Seed failed:');
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
+    if (error && typeof error === 'object' && 'cause' in error) {
+      console.error('Error cause:', error.cause);
+    }
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     throw error;
   } finally {
     await client.end();
@@ -117,6 +306,14 @@ async function updateEnvFile(key: string, value: string) {
 }
 
 seedDemoData().catch(error => {
-  console.error('Fatal seed error:', error);
+  console.error('Fatal seed error caught in main handler:');
+  console.error('Error type:', typeof error);
+  console.error('Error constructor:', error?.constructor?.name);
+  console.error('Error message:', error instanceof Error ? error.message : String(error));
+  console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
+  if (error && typeof error === 'object') {
+    console.error('Error keys:', Object.keys(error));
+    console.error('Full error:', error);
+  }
   process.exit(1);
 });
