@@ -67,7 +67,7 @@ demos and exploratory testing.
                        ▼
 ┌─────────────────────────────────────────────────────┐
 │  Validation Layer (validate-demo-data.ts)           │
-│  - Admin business existence check                   │
+│  - Accounter Admin Business existence check         │
 │  - Use-case count reconciliation                    │
 │  - Comprehensive ledger validation suite            │
 │    (per-record, aggregate, entity-level, integrity) │
@@ -392,7 +392,7 @@ async function seedDemoData() {
     // 4. Create admin business context (reuse existing seed.ts logic)
     console.log('🏢 Creating admin business context...');
     const adminBusinessId = await createAdminBusinessContext(client);
-    console.log(`✅ Admin Business ID: ${adminBusinessId}`);
+    console.log(`✅ Accounter Admin Business ID: ${adminBusinessId}`);
 
     // 5. Load all use-cases
     const useCases = getAllUseCases();
@@ -475,8 +475,8 @@ seedDemoData().catch(error => {
 ### 8.1 File: `packages/server/src/demo-fixtures/validate-demo-data.ts`
 
 The validation step now performs comprehensive double-entry bookkeeping checks across all use-cases
-with ledger expectations. It connects to the database, runs base checks (admin business, charge
-count), then iterates each relevant use-case to validate ledger records.
+with ledger expectations. It connects to the database, runs base checks (Accounter Admin Business,
+charge count), then iterates each relevant use-case to validate ledger records.
 
 ```typescript
 import pg from 'pg';
@@ -500,12 +500,12 @@ async function validateDemoData() {
   try {
     await client.connect();
 
-    // 1. Admin business exists
+    // 1. Accounter Admin Business exists
     const adminCheck = await client.query(
-      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Admin Business'`,
+      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Accounter Admin Business'`,
     );
     if (adminCheck.rows.length === 0) {
-      errors.push('Admin business entity missing');
+      errors.push('Accounter Admin Business entity missing');
     }
 
     // 2. Use-case charge count reconciliation
@@ -625,7 +625,7 @@ packages/server/src/demo-fixtures/validators/
 Validation pipeline:
 
 1. Connect to DB
-2. Validate admin business exists
+2. Validate Accounter Admin Business exists
 3. Validate charge count reconciliation
 4. For each use-case with expectations, fetch ledger records and run validator suite
 5. Validate VAT configuration
@@ -690,12 +690,12 @@ Add to root `package.json`:
 
 ### 10.2 Validation Errors
 
-| Check Failure          | Action                            |
-| ---------------------- | --------------------------------- |
-| Admin business missing | Log error, exit 1 (blocks deploy) |
-| Charge count mismatch  | Log delta, exit 1                 |
-| Ledger unbalanced      | Log charge ID + amounts, exit 1   |
-| VAT row missing        | Log error, exit 1                 |
+| Check Failure                    | Action                            |
+| -------------------------------- | --------------------------------- |
+| Accounter Admin Business missing | Log error, exit 1 (blocks deploy) |
+| Charge count mismatch            | Log delta, exit 1                 |
+| Ledger unbalanced                | Log charge ID + amounts, exit 1   |
+| VAT row missing                  | Log error, exit 1                 |
 
 ### 10.3 Logging Standards
 
@@ -884,7 +884,7 @@ describe('Use-Case Registry', () => {
 
 **Checks prioritized**:
 
-- Admin business existence (1 query)
+- Accounter Admin Business existence (1 query)
 - Charge count (1 query)
 - Ledger validation suite (N queries, N = use-cases with expectations)
 - Skip full ledger audit in validation (covered by integration tests)
@@ -927,8 +927,8 @@ describe('Use-Case Registry', () => {
 - [ ] Seed script refuses to run in `NODE_ENV=production`
 - [ ] Seed script completes successfully on clean staging DB in < 60 seconds
 - [ ] Validation script implements comprehensive ledger validation (per-record, aggregate,
-      entity-level, integrity checks) and detects missing admin business, charge count mismatch,
-      unbalanced ledger
+      entity-level, integrity checks) and detects missing Accounter Admin Business, charge count
+      mismatch, unbalanced ledger
 - [ ] Render staging deploy integrates seed + validation in build command
 - [ ] Developer guide published with "Add New Use-Case" tutorial
 - [ ] At least one use-case includes ledger expectations and passes smoke test
@@ -980,17 +980,17 @@ Export ledger records as JSON snapshots; regression tests compare new seeds to b
 
 ## 18. Glossary
 
-| Term                   | Definition                                                                 |
-| ---------------------- | -------------------------------------------------------------------------- |
-| **Use-case**           | Self-contained financial scenario fixture bundle (e.g., "monthly expense") |
-| **Deterministic UUID** | UUID v5 generated from semantic name; stable across deploys                |
-| **Fixture**            | Data object representing DB entity (business, charge, transaction, etc.)   |
-| **Registry**           | Central TypeScript module exporting all use-cases by category              |
-| **Semantic name**      | Human-readable identifier used to generate deterministic UUIDs             |
-| **Destructive reset**  | `TRUNCATE` operation clearing domain table data while preserving schema    |
-| **Smoke test**         | Quick validation ensuring critical data seeded correctly                   |
-| **Admin business**     | Primary financial entity owning all demo use-case data                     |
-| **Foundation data**    | Countries, VAT, exchange rates seeded before use-cases                     |
+| Term                         | Definition                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| **Use-case**                 | Self-contained financial scenario fixture bundle (e.g., "monthly expense") |
+| **Deterministic UUID**       | UUID v5 generated from semantic name; stable across deploys                |
+| **Fixture**                  | Data object representing DB entity (business, charge, transaction, etc.)   |
+| **Registry**                 | Central TypeScript module exporting all use-cases by category              |
+| **Semantic name**            | Human-readable identifier used to generate deterministic UUIDs             |
+| **Destructive reset**        | `TRUNCATE` operation clearing domain table data while preserving schema    |
+| **Smoke test**               | Quick validation ensuring critical data seeded correctly                   |
+| **Accounter Admin Business** | Primary financial entity owning all demo use-case data                     |
+| **Foundation data**          | Countries, VAT, exchange rates seeded before use-cases                     |
 
 ---
 

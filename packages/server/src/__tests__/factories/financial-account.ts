@@ -1,8 +1,8 @@
 import type {
   financial_account_type,
-  IInsertFinancialAccountsParams,
 } from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
 import { makeUUID } from './ids.js';
+import { FixtureAccounts } from '__tests__/helpers/fixture-types.js';
 
 /**
  * Valid financial account types
@@ -56,8 +56,8 @@ export const FINANCIAL_ACCOUNT_TYPES = [
  * ```
  */
 export function createFinancialAccount(
-  overrides?: Partial<IInsertFinancialAccountsParams['bankAccounts'][number]>,
-): IInsertFinancialAccountsParams['bankAccounts'][number] {
+  overrides?: Partial<FixtureAccounts['accounts'][number]>,
+): FixtureAccounts['accounts'][number] {
   return {
     accountNumber: makeUUID().slice(0, 13), // Default: unique short string
     name: null,
