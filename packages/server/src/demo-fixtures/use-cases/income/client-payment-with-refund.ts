@@ -1,5 +1,5 @@
-import { CountryCode } from '@modules/countries/types.js';
-import { Currency } from '@shared/enums';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { Currency } from '../../../shared/enums.js';
 import { makeUUID } from '../../helpers/deterministic-uuid.js';
 import type { UseCaseSpec } from '../../types.js';
 
