@@ -49,6 +49,7 @@ function validateRequestUser(user: BasicAuthResult) {
 
 async function getUserInfo(
   user: BasicAuthResult,
+  pool: pg.Pool,
 ): Promise<{ role: Role; adminBusinessId: string } | undefined> {
   const validate = validateRequestUser(user);
   if (!validate) {
@@ -57,18 +58,8 @@ async function getUserInfo(
 
   const userName = user.name;
 
-  const client = new pg.Client({
-    user: env.postgres.user,
-    password: env.postgres.password,
-    host: env.postgres.host,
-    port: Number(env.postgres.port),
-    database: env.postgres.db,
-    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
-  });
-
   try {
-    await client.connect();
-    const [user] = await getUserByName.run({ userName }, client);
+    const [user] = await getUserByName.run({ userName }, pool);
     if (!user) {
       throw new Error('User not found');
     }
@@ -85,34 +76,8 @@ async function getUserInfo(
   } catch (error) {
     console.error('Error fetching user:', error);
     throw new Error('Error fetching user info');
-  } finally {
-    await client.end();
   }
 }
-
-const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
-  try {
-    const user = getUserFromRequest(context.request);
-    if (!user) {
-      throw new Error('User not valid');
-    }
-
-    const userInfo = await getUserInfo(user);
-    if (!userInfo) {
-      throw new Error('User role not valid');
-    }
-
-    return {
-      username: user.name,
-      userId: userInfo.adminBusinessId,
-      role: userInfo.role,
-    };
-  } catch (e) {
-    console.error('Failed to validate token', e);
-
-    return null;
-  }
-};
 
 const getAcceptableRoles = (role?: string) => {
   switch (role) {
@@ -144,10 +109,35 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentT
   return new GraphQLError(`No permissions!`);
 };
 
-export const authPlugin = () =>
-  useGenericAuth({
-    resolveUserFn,
+export const authPlugin = (pool: pg.Pool) => {
+  const resolveUserFnWithPool: ResolveUserFn<UserType, AccounterContext> = async context => {
+    try {
+      const user = getUserFromRequest(context.request);
+      if (!user) {
+        throw new Error('User not valid');
+      }
+
+      const userInfo = await getUserInfo(user, pool);
+      if (!userInfo) {
+        throw new Error('User role not valid');
+      }
+
+      return {
+        username: user.name,
+        userId: userInfo.adminBusinessId,
+        role: userInfo.role,
+      };
+    } catch (e) {
+      console.error('Failed to validate token', e);
+
+      return null;
+    }
+  };
+
+  return useGenericAuth({
+    resolveUserFn: resolveUserFnWithPool,
     validateUser,
     mode: 'protect-granular',
     extractScopes: user => getAcceptableRoles(user?.role),
   });
+};

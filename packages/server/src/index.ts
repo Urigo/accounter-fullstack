@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
+import postgres from 'pg';
 import 'reflect-metadata';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
@@ -10,12 +11,24 @@ import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 
+const { Pool } = postgres;
+
 async function main() {
+  // Create a shared connection pool for the entire application
+  const pool = new Pool({
+    user: env.postgres.user,
+    password: env.postgres.password,
+    host: env.postgres.host,
+    port: Number(env.postgres.port),
+    database: env.postgres.db,
+    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
+  });
+
   const application = await createGraphQLApp(env);
 
   const yoga = createYoga({
     plugins: [
-      authPlugin(),
+      authPlugin(pool),
       adminContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
