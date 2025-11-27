@@ -60,7 +60,7 @@
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
     "eslint": "9.39.1",
-    "vitest": "4.0.13"
+    "vitest": "4.0.14"
   },
   "publishConfig": {
     "directory": "dist",
