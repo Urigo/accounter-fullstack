@@ -55,7 +55,7 @@ declare global {
   }
 }
 
-export async function createGraphQLApp(env: Environment) {
+export async function createGraphQLApp(env: Environment, pool: postgres.Pool) {
   return createApplication({
     modules: [
       commonModule,
@@ -90,15 +90,7 @@ export async function createGraphQLApp(env: Environment) {
     providers: [
       {
         provide: Pool,
-        useFactory: () =>
-          new Pool({
-            user: env.postgres.user,
-            password: env.postgres.password,
-            host: env.postgres.host,
-            port: Number(env.postgres.port),
-            database: env.postgres.db,
-            ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
-          }),
+        useFactory: () => pool,
       },
       DBProvider,
       CloudinaryProvider,

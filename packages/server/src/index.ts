@@ -24,11 +24,16 @@ async function main() {
     ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
   });
 
-  const application = await createGraphQLApp(env);
+  pool.on('error', err => {
+    console.error('Unexpected error on idle client', err);
+    process.exit(-1);
+  });
+
+  const application = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
     plugins: [
-      authPlugin(pool),
+      authPlugin(),
       adminContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
@@ -42,6 +47,7 @@ async function main() {
       return {
         ...yogaContext,
         env,
+        pool,
       };
     },
   });
