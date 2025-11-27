@@ -1,10 +1,26 @@
-import auth from 'basic-auth';
+import auth, { type BasicAuthResult } from 'basic-auth';
 import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
+import pg from 'pg';
 import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
+import { sql } from '@pgtyped/runtime';
 import type { Role } from '@shared/gql-types';
+import { getCacheInstance } from '@shared/helpers';
 import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
+import type {
+  IGetUserByNameQuery,
+  IGetUserByNameResult,
+} from './__generated__/auth-plugin.types.js';
+
+const getUserByName = sql<IGetUserByNameQuery>`
+  SELECT *
+  FROM accounter_schema.users
+  WHERE name = $userName`;
+
+const cache = getCacheInstance({
+  stdTTL: 60,
+});
 
 export type UserType = {
   username: string;
@@ -28,51 +44,50 @@ function getUserFromRequest(request: Request) {
   return auth({ headers: { authorization } });
 }
 
-function validateRequestUser(user: ReturnType<typeof auth>) {
-  if (!user) {
-    return false;
-  }
+function validateRequestUser(user: BasicAuthResult) {
   const { name, pass } = user;
   const storedPass = authorizedUsers[name] ?? '';
   return bcrypt.compareSync(pass, storedPass);
 }
 
-function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
+async function getUserInfo(
+  user: BasicAuthResult,
+  pool: pg.Pool,
+): Promise<{ role: Role; adminBusinessId: string } | undefined> {
   const validate = validateRequestUser(user);
   if (!validate) {
     return undefined;
   }
 
-  switch (user!.name) {
-    case 'accountant':
-      return 'ACCOUNTANT';
-    case 'admin':
-      return 'ADMIN';
-    default:
-      return undefined;
-  }
-}
+  const userName = user.name;
 
-const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
   try {
-    const user = getUserFromRequest(context.request);
-    const role = getUserRole(user);
+    let user = cache.get<IGetUserByNameResult>(userName);
+    if (!user) {
+      const userRes = await getUserByName.run({ userName }, pool);
+      if (userRes.length === 1) {
+        cache.set(userName, userRes[0]);
+        user = userRes[0];
+      }
+    }
 
-    if (!user || !role) {
-      throw new Error('User not valid');
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.role || !user.id) {
+      return undefined;
     }
 
     return {
-      username: user.name,
-      userId: env.authorization.adminBusinessId, // TODO: replace with actual authentication
-      role,
+      role: user.role as Role,
+      adminBusinessId: user.id,
     };
-  } catch (e) {
-    console.error('Failed to validate token', e);
-
-    return null;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw new Error('Error fetching user info');
   }
-};
+}
 
 const getAcceptableRoles = (role?: string) => {
   switch (role) {
@@ -104,10 +119,35 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentT
   return new GraphQLError(`No permissions!`);
 };
 
-export const authPlugin = () =>
-  useGenericAuth({
-    resolveUserFn,
+export const authPlugin = (pool: pg.Pool) => {
+  const resolveUserFnWithPool: ResolveUserFn<UserType, AccounterContext> = async context => {
+    try {
+      const user = getUserFromRequest(context.request);
+      if (!user) {
+        throw new Error('User not valid');
+      }
+
+      const userInfo = await getUserInfo(user, pool);
+      if (!userInfo) {
+        throw new Error('User role not valid');
+      }
+
+      return {
+        username: user.name,
+        userId: userInfo.adminBusinessId,
+        role: userInfo.role,
+      };
+    } catch (e) {
+      console.error('Failed to validate token', e);
+
+      return null;
+    }
+  };
+
+  return useGenericAuth({
+    resolveUserFn: resolveUserFnWithPool,
     validateUser,
     mode: 'protect-granular',
     extractScopes: user => getAcceptableRoles(user?.role),
   });
+};
