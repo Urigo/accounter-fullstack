@@ -18,6 +18,24 @@ import { seedCountries } from '../packages/server/src/modules/countries/helpers/
 config();
 
 /**
+ * Custom error class for demo seeding failures
+ * Preserves stack trace and provides context for debugging
+ */
+class DemoSeedError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'DemoSeedError';
+    // Preserve original stack if available
+    if (cause instanceof Error && cause.stack) {
+      this.stack = `${this.stack}\nCaused by: ${cause.stack}`;
+    }
+  }
+}
+
+/**
  * Convert use-case fixtures to the format expected by insertFixture
  *
  * This function bridges the semantic use-case fixture format (optimized for
@@ -178,7 +196,7 @@ async function seedDemoData() {
 
   try {
     await client.connect();
-    console.log('🔗 Connected to database');
+    console.log('✅ Connected to database');
 
     // 2. Destructive reset (domain tables only; preserve schema/migrations/countries)
     console.log('🧹 Clearing existing demo data...');
@@ -199,17 +217,17 @@ async function seedDemoData() {
     console.log('✅ Domain tables cleared');
 
     // 3. Seed foundation data
-    console.log('🌍 Seeding countries...');
+    console.log('✅ Seeding countries...');
     await seedCountries(client);
 
-    console.log('💱 Seeding FIAT exchange rates...');
+    console.log('✅ Seeding FIAT exchange rates...');
     await seedExchangeRates(client);
 
-    console.log('📊 Seeding VAT defaults...');
+    console.log('✅ Seeding VAT defaults...');
     await seedVATDefault(client);
 
     // 4. Create admin business context
-    console.log('🏢 Creating admin business context...');
+    console.log('✅ Creating admin business context...');
     const adminBusinessId = await createAdminBusinessContext(client);
     console.log(`✅ Admin Business ID: ${adminBusinessId}`);
 
@@ -221,7 +239,7 @@ async function seedDemoData() {
     await client.query('BEGIN');
     try {
       for (const useCase of useCases) {
-        console.log(`  ➡️  ${useCase.name} (${useCase.id})`);
+        console.log(`📦 ${useCase.name} (${useCase.id})`);
         const resolvedUseCaseFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId);
         const fixture = convertUseCaseFixtureToFixture(resolvedUseCaseFixtures);
 
@@ -256,28 +274,28 @@ async function seedDemoData() {
         await insertFixture(client, fixture);
       }
       await client.query('COMMIT');
+      console.log('✅ All use-cases seeded successfully');
     } catch (fixtureError) {
       await client.query('ROLLBACK');
-      throw fixtureError;
+      throw new DemoSeedError('Fixture insertion failed', fixtureError);
     }
-
-    console.log('✅ All use-cases seeded successfully');
 
     // 6. Write env vars (if not already set)
     await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId);
 
-    console.log('🎉 Demo data seed complete');
+    console.log('✅ Demo data seed complete');
   } catch (error) {
     console.error('❌ Seed failed:');
-    console.error('Error type:', typeof error);
-    console.error('Error constructor:', error?.constructor?.name);
-    console.error('Error message:', error instanceof Error ? error.message : String(error));
-    console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
-    if (error && typeof error === 'object' && 'cause' in error) {
-      console.error('Error cause:', error.cause);
+    if (error instanceof DemoSeedError) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    } else if (error instanceof Error) {
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+    } else {
+      console.error('Unknown error:', error);
     }
-    console.error('Full error object:', JSON.stringify(error, null, 2));
-    throw error;
+    throw new DemoSeedError('Demo data seed failed', error);
   } finally {
     await client.end();
   }
@@ -306,14 +324,14 @@ async function updateEnvFile(key: string, value: string) {
 }
 
 seedDemoData().catch(error => {
-  console.error('Fatal seed error caught in main handler:');
-  console.error('Error type:', typeof error);
-  console.error('Error constructor:', error?.constructor?.name);
-  console.error('Error message:', error instanceof Error ? error.message : String(error));
-  console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
-  if (error && typeof error === 'object') {
-    console.error('Error keys:', Object.keys(error));
-    console.error('Full error:', error);
+  console.error('❌ Fatal seed error');
+  if (error instanceof DemoSeedError) {
+    console.error('Stack:', error.stack);
+  } else if (error instanceof Error) {
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+  } else {
+    console.error('Unknown error:', error);
   }
   process.exit(1);
 });

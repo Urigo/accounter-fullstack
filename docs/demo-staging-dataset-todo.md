@@ -109,9 +109,9 @@ You can replace markers as work progresses.
 
 ## Phase 7: Hardening
 
-- [ ] 29. Enhance logging prefixes (✅ / ❌ / 📦 / 🧹 / 💱 / 📊)
-- [ ] 30. Add `DemoSeedError` class and wrap critical sections
-  - [ ] Ensure original stack preserved
+- [x] 29. Enhance logging prefixes (✅ / ❌ / 📦 / 🧹 / 💱 / 📊)
+- [x] 30. Add `DemoSeedError` class and wrap critical sections
+  - [x] Ensure original stack preserved
 
 ## Phase 8: Documentation & Wiring
 
