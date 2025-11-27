@@ -26,7 +26,7 @@ __metadata:
     pg-promise: "npm:12.3.0"
     slonik: "npm:48.4.1"
     tslib: "npm:2.8.1"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -107,7 +107,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.2.6"
+    "@types/react": "npm:19.2.7"
     "@types/react-dom": "npm:19.2.3"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.1.1"
@@ -150,7 +150,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:7.2.4"
     vite-plugin-node-polyfills: "npm:0.24.0"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
     zustand: "npm:5.0.8"
   languageName: unknown
   linkType: soft
@@ -263,7 +263,7 @@ __metadata:
     puppeteer: "npm:24.31.0"
     typescript: "npm:5.9.3"
     uuid: "npm:13.0.0"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -292,7 +292,7 @@ __metadata:
   dependencies:
     bob-the-bundler: "npm:7.0.1"
     eslint: "npm:9.39.1"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -308,7 +308,7 @@ __metadata:
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
-    "@graphql-hive/yoga": "npm:0.43.0"
+    "@graphql-hive/yoga": "npm:0.43.1"
     "@graphql-yoga/plugin-defer-stream": "npm:3.16.2"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
@@ -318,7 +318,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.15.6"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:5.0.100"
+    ai: "npm:5.0.101"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -345,7 +345,7 @@ __metadata:
     strip-indent: "npm:4.1.1"
     tsc-alias: "npm:1.8.16"
     typescript: "npm:5.9.3"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -357,7 +357,7 @@ __metadata:
     eslint: "npm:9.39.1"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:4.0.13"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -369,7 +369,7 @@ __metadata:
     eslint: "npm:9.39.1"
     iconv-lite: "npm:0.7.0"
     vitest: "npm:4.0.13"
-    zod: "npm:4.1.12"
+    zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
@@ -385,16 +385,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.14":
-  version: 2.0.14
-  resolution: "@ai-sdk/gateway@npm:2.0.14"
+"@ai-sdk/gateway@npm:2.0.15":
+  version: 2.0.15
+  resolution: "@ai-sdk/gateway@npm:2.0.15"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/9ce0fcb9016f919bd6c6d73ba8c3b811c7446490338b3f85297e7c760e27411e9a3ce0ee691a0064c18865e70b0f337e5c23970bb6958656ed9b5579295ba410
+  checksum: 10c0/36cbd8a23d3d9c70f274f808b4efc23867b96476a1195b96d9a65e4b19bd19a2120b70d790338734cab91941bab4bca5613a11236b999706103053d7e6992082
   languageName: node
   linkType: hard
 
@@ -2692,11 +2692,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.53.4":
-  version: 0.53.4
-  resolution: "@graphql-hive/cli@npm:0.53.4"
+"@graphql-hive/cli@npm:0.53.5":
+  version: 0.53.5
+  resolution: "@graphql-hive/cli@npm:0.53.5"
   dependencies:
-    "@graphql-hive/core": "npm:0.15.0"
+    "@graphql-hive/core": "npm:0.15.1"
     "@graphql-inspector/core": "npm:6.4.1"
     "@graphql-tools/code-file-loader": "npm:~8.1.0"
     "@graphql-tools/graphql-file-loader": "npm:~8.1.0"
@@ -2718,17 +2718,17 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/340b2891f764e1dc71985cae20d44fb5c17fa600ed2f576649d7739d5e20ec5568c561282ec48b4a5cef9434a166ff5e977e8efb18fdc27c86ea6c916c063a09
+  checksum: 10c0/6ed8cabebde6c496fcb12b4905036deffcca255a59a6e11d5c447edca24b22d3658d002384ff59aaf30b8e5fcc35074cbef042cc02f9c5f33e41d185aaf27330
   languageName: node
   linkType: hard
 
-"@graphql-hive/core@npm:0.15.0":
-  version: 0.15.0
-  resolution: "@graphql-hive/core@npm:0.15.0"
+"@graphql-hive/core@npm:0.15.1":
+  version: 0.15.1
+  resolution: "@graphql-hive/core@npm:0.15.1"
   dependencies:
     "@graphql-hive/signal": "npm:^2.0.0"
     "@graphql-tools/utils": "npm:^10.0.0"
-    "@whatwg-node/fetch": "npm:^0.10.6"
+    "@whatwg-node/fetch": "npm:^0.10.13"
     async-retry: "npm:^1.3.3"
     events: "npm:^3.3.0"
     js-md5: "npm:0.8.3"
@@ -2736,7 +2736,7 @@ __metadata:
     tiny-lru: "npm:^8.0.2"
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/de8dd43d8b1216977556726344562c6273308706cd8f7e22a3197eef89836a8540eb0d16dae31b022d6ed23e77010db4b1b8dc96e412f2957bef0c03f32799c1
+  checksum: 10c0/53db4014cc7517c55050f71b7aafa32c157f8c11036ba96f9a03f736dd0a7ea859af7ca2ae2f53471e188856d227d92c362766eaa9347e485134036f63a88912
   languageName: node
   linkType: hard
 
@@ -2790,16 +2790,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/yoga@npm:0.43.0":
-  version: 0.43.0
-  resolution: "@graphql-hive/yoga@npm:0.43.0"
+"@graphql-hive/yoga@npm:0.43.1":
+  version: 0.43.1
+  resolution: "@graphql-hive/yoga@npm:0.43.1"
   dependencies:
-    "@graphql-hive/core": "npm:0.15.0"
+    "@graphql-hive/core": "npm:0.15.1"
     "@graphql-yoga/plugin-persisted-operations": "npm:^3.9.0"
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-yoga: ^5.10.8
-  checksum: 10c0/464ba1a4816ae0dfd292a594c82f83e4c1431d219cb239de5d9c46a9f7ac940bfc202507f2e547eba5eb70686c3b79659948159f6bd9a78a840068eee947441b
+  checksum: 10c0/88f5569d814a5c429375ba68dde6ebf766dad1bacdf862f7b1ef0a6b7259cc18584bd4f55cd602f092eec69d38d03331db990af6f8a699d880113af79338a3c0
   languageName: node
   linkType: hard
 
@@ -8651,12 +8651,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.2.6":
-  version: 19.2.6
-  resolution: "@types/react@npm:19.2.6"
+"@types/react@npm:19.2.7":
+  version: 19.2.7
+  resolution: "@types/react@npm:19.2.7"
   dependencies:
     csstype: "npm:^3.2.2"
-  checksum: 10c0/23b1100f88662ce9f9e4fcca3a2b4ef9fff1ecde24ede2b2dcbd07731e48d6946fd7fd156cd133f5b25321694b0569cd9b8dd30b22c4e076d1cf4c8cdd9a75cb
+  checksum: 10c0/a7b75f1f9fcb34badd6f84098be5e35a0aeca614bc91f93d2698664c0b2ba5ad128422bd470ada598238cebe4f9e604a752aead7dc6f5a92261d0c7f9b27cfd1
   languageName: node
   linkType: hard
 
@@ -9242,7 +9242,7 @@ __metadata:
     "@graphql-codegen/typescript": "npm:5.0.5"
     "@graphql-codegen/typescript-resolvers": "npm:4.5.2"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
-    "@graphql-hive/cli": "npm:0.53.4"
+    "@graphql-hive/cli": "npm:0.53.5"
     "@graphql-inspector/cli": "npm:6.0.3"
     "@parcel/watcher": "npm:2.5.1"
     "@pgtyped/cli": "npm:2.4.3"
@@ -9318,17 +9318,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.100":
-  version: 5.0.100
-  resolution: "ai@npm:5.0.100"
+"ai@npm:5.0.101":
+  version: 5.0.101
+  resolution: "ai@npm:5.0.101"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.14"
+    "@ai-sdk/gateway": "npm:2.0.15"
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.17"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/513eeba8308b0eff57532d6eb2d90f1708a69b9bd05eb6f2b40934b1097f13f79eaebe7fb4d3879dc4ccd86c42a73197fb20fdc9e68e55abc84abee2356e5839
+  checksum: 10c0/331aa19d099e8461e63cb03fdd70824ed0c05bce0fe07b1cd0179405a5620bc55367e8f4bfe4357a2415e32c842bf281ec41f453b32ba77db9f3be229c1a833e
   languageName: node
   linkType: hard
 
@@ -23656,7 +23656,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:4.1.12, zod@npm:^4.1.12":
+"zod@npm:4.1.13":
+  version: 4.1.13
+  resolution: "zod@npm:4.1.13"
+  checksum: 10c0/d7e74e82dba81a91ffc3239cd85bc034abe193a28f7087a94ab258a3e48e9a7ca4141920cac979a0d781495b48fc547777394149f26be04c3dc642f58bbc3941
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.1.12":
   version: 4.1.12
   resolution: "zod@npm:4.1.12"
   checksum: 10c0/b64c1feb19e99d77075261eaf613e0b2be4dfcd3551eff65ad8b4f2a079b61e379854d066f7d447491fcf193f45babd8095551a9d47973d30b46b6d8e2c46774
