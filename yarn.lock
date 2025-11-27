@@ -2692,9 +2692,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.53.5":
-  version: 0.53.5
-  resolution: "@graphql-hive/cli@npm:0.53.5"
+"@graphql-hive/cli@npm:0.54.0":
+  version: 0.54.0
+  resolution: "@graphql-hive/cli@npm:0.54.0"
   dependencies:
     "@graphql-hive/core": "npm:0.15.1"
     "@graphql-inspector/core": "npm:6.4.1"
@@ -2708,7 +2708,7 @@ __metadata:
     "@oclif/core": "npm:^3.26.6"
     "@oclif/plugin-help": "npm:6.0.22"
     "@oclif/plugin-update": "npm:4.2.13"
-    "@theguild/federation-composition": "npm:0.20.2"
+    "@theguild/federation-composition": "npm:0.21.0"
     cli-table3: "npm:0.6.5"
     colors: "npm:1.4.0"
     env-ci: "npm:7.3.0"
@@ -2718,7 +2718,7 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/6ed8cabebde6c496fcb12b4905036deffcca255a59a6e11d5c447edca24b22d3658d002384ff59aaf30b8e5fcc35074cbef042cc02f9c5f33e41d185aaf27330
+  checksum: 10c0/81b4b4549dba3334b60539c0e4246528ef35b97e70f9af507bf40ccaaa659067df06c986197faa796e73cb73f2b6719681b58f3f27f74ea4def73444ba09804c
   languageName: node
   linkType: hard
 
@@ -8133,7 +8133,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@theguild/federation-composition@npm:0.20.2, @theguild/federation-composition@npm:^0.20.2":
+"@theguild/federation-composition@npm:0.21.0":
+  version: 0.21.0
+  resolution: "@theguild/federation-composition@npm:0.21.0"
+  dependencies:
+    constant-case: "npm:^3.0.4"
+    debug: "npm:4.4.3"
+    json5: "npm:^2.2.3"
+    lodash.sortby: "npm:^4.7.0"
+  peerDependencies:
+    graphql: ^16.0.0
+  checksum: 10c0/5f2b45f986cf9e341d3c5b2e89d1ef7bb54051a455c56babca81ac2c1c81829d207c892fe482c1ae10cd7c53e34d8d32bb4f8d27435d9901e532328e2ac22d98
+  languageName: node
+  linkType: hard
+
+"@theguild/federation-composition@npm:^0.20.2":
   version: 0.20.2
   resolution: "@theguild/federation-composition@npm:0.20.2"
   dependencies:
@@ -9242,7 +9256,7 @@ __metadata:
     "@graphql-codegen/typescript": "npm:5.0.5"
     "@graphql-codegen/typescript-resolvers": "npm:4.5.2"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
-    "@graphql-hive/cli": "npm:0.53.5"
+    "@graphql-hive/cli": "npm:0.54.0"
     "@graphql-inspector/cli": "npm:6.0.3"
     "@parcel/watcher": "npm:2.5.1"
     "@pgtyped/cli": "npm:2.4.3"
