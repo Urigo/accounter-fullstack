@@ -24,11 +24,6 @@ async function main() {
     ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
   });
 
-  pool.on('error', err => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
-  });
-
   const application = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
@@ -54,12 +49,63 @@ async function main() {
 
   const server = createServer(yoga);
 
+  // Graceful shutdown handler
+  let isShuttingDown = false;
+  const gracefulShutdown = async (
+    reason: string,
+    err?: unknown,
+    exitCode: number = 1,
+  ): Promise<void> => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
+    if (err) {
+      process.stderr.write(`[shutdown] Reason: ${reason} ${String(err)}\n`);
+    } else {
+      process.stderr.write(`[shutdown] Reason: ${reason}\n`);
+    }
+
+    // Stop accepting new connections
+    await new Promise<void>(resolve => {
+      server.close(() => resolve());
+    });
+
+    // Allow in-flight requests some time to complete, then close the pool
+    const FORCE_EXIT_TIMEOUT_MS = 10_000;
+    const forceExitTimer = setTimeout(() => {
+      process.stderr.write('[shutdown] Force exiting after timeout\n');
+      process.exit(exitCode);
+    }, FORCE_EXIT_TIMEOUT_MS);
+    // Do not keep the event loop alive just for the timer
+    (forceExitTimer as unknown as { unref?: () => void }).unref?.();
+
+    try {
+      await pool.end();
+    } catch (e) {
+      process.stderr.write(`[shutdown] Error while closing DB pool ${String(e)}\n`);
+    } finally {
+      clearTimeout(forceExitTimer);
+      process.exit(exitCode);
+    }
+  };
+
+  // Pool errors: trigger graceful shutdown instead of hard exit
+  pool.on('error', err => gracefulShutdown('pg pool error', err, 1));
+
+  // OS signals
+  process.on('SIGINT', () => void gracefulShutdown('SIGINT', undefined, 0));
+  process.on('SIGTERM', () => void gracefulShutdown('SIGTERM', undefined, 0));
+
+  // Unhandled errors
+  process.on('unhandledRejection', reason => gracefulShutdown('unhandledRejection', reason, 1));
+  process.on('uncaughtException', err => gracefulShutdown('uncaughtException', err, 1));
+
   server.listen(
     {
       port: 4000,
     },
     () => {
-      console.log('GraphQL API located at http://localhost:4000/graphql');
+      process.stdout.write('GraphQL API located at http://localhost:4000/graphql\n');
     },
   );
 }
