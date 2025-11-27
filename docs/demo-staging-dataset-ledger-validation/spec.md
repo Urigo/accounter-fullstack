@@ -685,7 +685,7 @@ async function validateDemoData() {
 
     // 1. Admin business exists
     const adminCheck = await client.query(
-      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Admin Business'`,
+      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Accounter Admin Business'`,
     );
     if (adminCheck.rows.length === 0) {
       errors.push('Admin business entity missing');

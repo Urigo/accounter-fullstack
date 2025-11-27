@@ -53,7 +53,7 @@ async function validateDemoData() {
 
     // 1. Admin business exists
     const adminCheck = await client.query(
-      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Admin Business'`,
+      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Accounter Admin Business'`,
     );
     if (adminCheck.rows.length === 0) {
       errors.push('Admin business entity missing');
@@ -115,9 +115,9 @@ async function validateDemoData() {
       }
     }
 
-    // 4. VAT row present
+    // 4. VAT row present (percentage stored as decimal 0.17 for 17%)
     const vatCheck = await client.query(
-      `SELECT 1 FROM accounter_schema.vat_value WHERE percentage = 17`,
+      `SELECT 1 FROM accounter_schema.vat_value WHERE percentage = 0.17`,
     );
     if (vatCheck.rows.length === 0) {
       errors.push('VAT default (17%) missing');
@@ -126,7 +126,7 @@ async function validateDemoData() {
     // Report errors or success
     if (errors.length > 0) {
       console.error('❌ Validation failed:');
-      errors.forEach(err => console.error(`  - ${err}`));
+      for (const err of errors) console.error(`  - ${err}`);
       process.exit(1);
     }
 
