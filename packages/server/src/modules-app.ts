@@ -55,7 +55,7 @@ declare global {
   }
 }
 
-export async function createGraphQLApp(env: Environment, pool: postgres.Pool) {
+export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
   return createApplication({
     modules: [
       commonModule,
