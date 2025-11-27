@@ -119,7 +119,7 @@ const validateUser: ValidateUserFn<UserType> = ({ user, fieldDirectives, parentT
   return new GraphQLError(`No permissions!`);
 };
 
-export const authPlugin = (pool: pg.Pool) => {
+export const authPlugin = () => {
   const resolveUserFnWithPool: ResolveUserFn<UserType, AccounterContext> = async context => {
     try {
       const user = getUserFromRequest(context.request);
@@ -127,7 +127,7 @@ export const authPlugin = (pool: pg.Pool) => {
         throw new Error('User not valid');
       }
 
-      const userInfo = await getUserInfo(user, pool);
+      const userInfo = await getUserInfo(user, context.pool);
       if (!userInfo) {
         throw new Error('User role not valid');
       }

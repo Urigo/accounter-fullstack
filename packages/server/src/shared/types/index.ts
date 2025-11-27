@@ -1,4 +1,5 @@
 import type { YogaInitialContext } from 'graphql-yoga';
+import pg from 'pg';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
 import type { CorporateTaxRulingComplianceReport, Currency, Role } from '@shared/gql-types';
 import type { env } from '../../environment.js';
@@ -54,6 +55,7 @@ export type BusinessTransactionProto = {
 
 export type AccounterContext = YogaInitialContext & {
   env: Environment;
+  pool: pg.Pool;
   session?: {
     role?: Role;
   };

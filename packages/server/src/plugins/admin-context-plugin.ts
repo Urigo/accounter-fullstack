@@ -9,7 +9,6 @@ import {
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
 import type { Environment, TimelessDateString } from '@shared/types';
-import { env } from '../environment.js';
 import type {
   IGetAdminBusinessContextQuery,
   IGetAdminBusinessContextResult,
@@ -121,24 +120,14 @@ const cache = getCacheInstance({
   stdTTL: 60,
 });
 
-async function fetchContext(adminBusinessId: string) {
+async function fetchContext(adminBusinessId: string, pool: pg.Pool) {
   const context = cache.get<IGetAdminBusinessContextResult>(adminBusinessId);
   if (context) {
     return context;
   }
 
-  const client = new pg.Client({
-    user: env.postgres.user,
-    password: env.postgres.password,
-    host: env.postgres.host,
-    port: Number(env.postgres.port),
-    database: env.postgres.db,
-    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
-  });
-
   try {
-    await client.connect();
-    const [context] = await getAdminBusinessContext.run({ adminBusinessId }, client);
+    const [context] = await getAdminBusinessContext.run({ adminBusinessId }, pool);
     if (!context) {
       throw new Error('Admin business context not found');
     }
@@ -148,8 +137,6 @@ async function fetchContext(adminBusinessId: string) {
   } catch (error) {
     console.error('Error fetching context:', error);
     throw 'Error fetching admin context';
-  } finally {
-    await client.end();
   }
 }
 
@@ -291,10 +278,12 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
 }
 
 export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = () =>
-  useExtendContext(async (contextSoFar: { env: Environment; currentUser: UserType }) => {
-    const rawContext = await fetchContext(contextSoFar.currentUser.userId);
-    const adminContext = normalizeContext(rawContext);
-    return {
-      adminContext,
-    };
-  });
+  useExtendContext(
+    async (contextSoFar: { env: Environment; currentUser: UserType; pool: pg.Pool }) => {
+      const rawContext = await fetchContext(contextSoFar.currentUser.userId, contextSoFar.pool);
+      const adminContext = normalizeContext(rawContext);
+      return {
+        adminContext,
+      };
+    },
+  );

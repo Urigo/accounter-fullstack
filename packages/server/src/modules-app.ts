@@ -1,5 +1,5 @@
 import { createApplication, Scope } from 'graphql-modules';
-import postgres from 'pg';
+import pg from 'pg';
 import { adminContextModule } from '@modules/admin-context/index.js';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
@@ -42,7 +42,7 @@ import type { UserType } from './plugins/auth-plugin.js';
 import { ENVIRONMENT } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
-const { Pool } = postgres;
+const { Pool } = pg;
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -55,7 +55,7 @@ declare global {
   }
 }
 
-export async function createGraphQLApp(env: Environment) {
+export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
   return createApplication({
     modules: [
       commonModule,
@@ -90,15 +90,7 @@ export async function createGraphQLApp(env: Environment) {
     providers: [
       {
         provide: Pool,
-        useFactory: () =>
-          new Pool({
-            user: env.postgres.user,
-            password: env.postgres.password,
-            host: env.postgres.host,
-            port: Number(env.postgres.port),
-            database: env.postgres.db,
-            ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
-          }),
+        useFactory: () => pool,
       },
       DBProvider,
       CloudinaryProvider,
