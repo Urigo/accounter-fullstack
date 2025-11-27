@@ -7,7 +7,7 @@
     },
     {
       "mode": "ts",
-      "include": "src/plugins/admin-context-plugin.ts",
+      "include": "src/plugins/*.ts",
       "emitTemplate": "{{dir}}/__generated__/{{name}}.types.ts"
     }
   ],

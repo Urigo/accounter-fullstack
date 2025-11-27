@@ -130,6 +130,7 @@ import migration_2025_10_30T18_57_58_client_integrations from './actions/2025-10
 import migration_2025_11_09T10_03_45_financial_accounts_refactor_by_type from './actions/2025-11-09T10-03-45.financial-accounts-refactor-by-type.js';
 import migration_2025_11_09T17_03_45_financial_accounts_name from './actions/2025-11-09T17-03-45.financial-accounts-name.js';
 import migration_2025_11_12T18_21_06_bank_deposits_accounts from './actions/2025-11-12T18-21-06.bank-deposits-accounts.js';
+import migration_2025_11_27T10_39_53_user_roles from './actions/2025-11-27T10-39-53.user-roles.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -264,6 +265,7 @@ export const MIGRATIONS = [
   migration_2025_11_09T10_03_45_financial_accounts_refactor_by_type,
   migration_2025_11_09T17_03_45_financial_accounts_name,
   migration_2025_11_12T18_21_06_bank_deposits_accounts,
+  migration_2025_11_27T10_39_53_user_roles,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

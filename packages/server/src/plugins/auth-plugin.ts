@@ -1,10 +1,23 @@
-import auth from 'basic-auth';
+import auth, { type BasicAuthResult } from 'basic-auth';
 import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
+import pg from 'pg';
 import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
+import { sql } from '@pgtyped/runtime';
 import type { Role } from '@shared/gql-types';
+import { getCacheInstance } from '@shared/helpers';
 import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
+import type { IGetUserByNameQuery } from './__generated__/auth-plugin.types.js';
+
+const getUserByName = sql<IGetUserByNameQuery>`
+  SELECT *
+  FROM accounter_schema.users
+  WHERE name = $userName`;
+
+const cache = getCacheInstance({
+  stdTTL: 60,
+});
 
 export type UserType = {
   username: string;
@@ -28,44 +41,71 @@ function getUserFromRequest(request: Request) {
   return auth({ headers: { authorization } });
 }
 
-function validateRequestUser(user: ReturnType<typeof auth>) {
-  if (!user) {
-    return false;
-  }
+function validateRequestUser(user: BasicAuthResult) {
   const { name, pass } = user;
   const storedPass = authorizedUsers[name] ?? '';
   return bcrypt.compareSync(pass, storedPass);
 }
 
-function getUserRole(user: ReturnType<typeof auth>): Role | undefined {
+async function getUserInfo(
+  user: BasicAuthResult,
+): Promise<{ role: Role; adminBusinessId: string } | undefined> {
   const validate = validateRequestUser(user);
   if (!validate) {
     return undefined;
   }
 
-  switch (user!.name) {
-    case 'accountant':
-      return 'ACCOUNTANT';
-    case 'admin':
-      return 'ADMIN';
-    default:
+  const userName = user.name;
+
+  const client = new pg.Client({
+    user: env.postgres.user,
+    password: env.postgres.password,
+    host: env.postgres.host,
+    port: Number(env.postgres.port),
+    database: env.postgres.db,
+    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
+  });
+
+  try {
+    await client.connect();
+    const [user] = await getUserByName.run({ userName }, client);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    cache.set(userName, user);
+
+    if (!user.role || !user.id) {
       return undefined;
+    }
+
+    return {
+      role: user.role as Role,
+      adminBusinessId: user.id,
+    };
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw new Error('Error fetching user info');
+  } finally {
+    await client.end();
   }
 }
 
 const resolveUserFn: ResolveUserFn<UserType, AccounterContext> = async context => {
   try {
     const user = getUserFromRequest(context.request);
-    const role = getUserRole(user);
-
-    if (!user || !role) {
+    if (!user) {
       throw new Error('User not valid');
+    }
+
+    const userInfo = await getUserInfo(user);
+    if (!userInfo) {
+      throw new Error('User role not valid');
     }
 
     return {
       username: user.name,
-      userId: env.authorization.adminBusinessId, // TODO: replace with actual authentication
-      role,
+      userId: userInfo.adminBusinessId,
+      role: userInfo.role,
     };
   } catch (e) {
     console.error('Failed to validate token', e);
