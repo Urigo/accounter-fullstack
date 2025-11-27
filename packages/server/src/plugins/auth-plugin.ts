@@ -8,7 +8,10 @@ import type { Role } from '@shared/gql-types';
 import { getCacheInstance } from '@shared/helpers';
 import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
-import type { IGetUserByNameQuery } from './__generated__/auth-plugin.types.js';
+import type {
+  IGetUserByNameQuery,
+  IGetUserByNameResult,
+} from './__generated__/auth-plugin.types.js';
 
 const getUserByName = sql<IGetUserByNameQuery>`
   SELECT *
@@ -59,11 +62,18 @@ async function getUserInfo(
   const userName = user.name;
 
   try {
-    const [user] = await getUserByName.run({ userName }, pool);
+    let user = cache.get<IGetUserByNameResult>(userName);
+    if (!user) {
+      const userRes = await getUserByName.run({ userName }, pool);
+      if (userRes.length === 1) {
+        cache.set(userName, userRes[0]);
+        user = userRes[0];
+      }
+    }
+
     if (!user) {
       throw new Error('User not found');
     }
-    cache.set(userName, user);
 
     if (!user.role || !user.id) {
       return undefined;
