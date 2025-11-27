@@ -1,5 +1,5 @@
 import { createApplication, Scope } from 'graphql-modules';
-import postgres from 'pg';
+import pg from 'pg';
 import { adminContextModule } from '@modules/admin-context/index.js';
 import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
 import { DeelClientProvider } from '@modules/app-providers/deel/deel-client.provider.js';
@@ -42,7 +42,7 @@ import type { UserType } from './plugins/auth-plugin.js';
 import { ENVIRONMENT } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
-const { Pool } = postgres;
+const { Pool } = pg;
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

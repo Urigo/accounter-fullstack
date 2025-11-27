@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
-import postgres from 'pg';
+import pg from 'pg';
 import 'reflect-metadata';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
@@ -11,7 +11,7 @@ import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 
-const { Pool } = postgres;
+const { Pool } = pg;
 
 async function main() {
   // Create a shared connection pool for the entire application
@@ -77,7 +77,7 @@ async function main() {
       process.exit(exitCode);
     }, FORCE_EXIT_TIMEOUT_MS);
     // Do not keep the event loop alive just for the timer
-    (forceExitTimer as unknown as { unref?: () => void }).unref?.();
+    forceExitTimer.unref();
 
     try {
       await pool.end();
@@ -89,16 +89,38 @@ async function main() {
     }
   };
 
-  // Pool errors: trigger graceful shutdown instead of hard exit
-  pool.on('error', err => gracefulShutdown('pg pool error', err, 1));
+  // Pool errors: log but don't shutdown on transient errors
+  // The pool will attempt to recover from connection issues automatically
+  pool.on('error', err => {
+    process.stderr.write(`[pool] Unexpected error on idle client: ${String(err)}\n`);
+    // Only shutdown on critical errors that indicate the pool is permanently broken
+    // For now, log and let the pool attempt recovery
+    // If queries start failing consistently, they'll be caught by application error handlers
+  });
 
   // OS signals
-  process.on('SIGINT', () => void gracefulShutdown('SIGINT', undefined, 0));
-  process.on('SIGTERM', () => void gracefulShutdown('SIGTERM', undefined, 0));
+  process.on('SIGINT', () =>
+    gracefulShutdown('SIGINT', undefined, 0).catch(e =>
+      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+    ),
+  );
+  process.on('SIGTERM', () =>
+    gracefulShutdown('SIGTERM', undefined, 0).catch(e =>
+      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+    ),
+  );
 
   // Unhandled errors
-  process.on('unhandledRejection', reason => gracefulShutdown('unhandledRejection', reason, 1));
-  process.on('uncaughtException', err => gracefulShutdown('uncaughtException', err, 1));
+  process.on('unhandledRejection', reason =>
+    gracefulShutdown('unhandledRejection', reason, 1).catch(e =>
+      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+    ),
+  );
+  process.on('uncaughtException', err =>
+    gracefulShutdown('uncaughtException', err, 1).catch(e =>
+      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+    ),
+  );
 
   server.listen(
     {
