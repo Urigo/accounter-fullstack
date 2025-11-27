@@ -1,6 +1,7 @@
 import type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
 import { makeUUID } from './ids.js';
 import { CountryCode } from '../../modules/countries/types.js';
+import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
 
 /**
  * Business factory for test fixtures
@@ -12,6 +13,7 @@ import { CountryCode } from '../../modules/countries/types.js';
  *
  * @remarks
  * - id defaults to deterministic UUID if not provided
+ * - name defaults to overrides.id ?? defaultId (intelligent fallback for display)
  * - All other fields default to null/void (database will use defaults or accept nulls)
  * - exemptDealer defaults to false for typical scenarios
  * - isReceiptEnough defaults to false (invoices required by default)
@@ -25,17 +27,21 @@ import { CountryCode } from '../../modules/countries/types.js';
  * // Business with custom fields
  * const supplier = createBusiness({
  *   id: makeUUID('supplier-usd'),
- *   hebrewName: 'ספק אמריקאי',
+ *   name: 'American Supplier',
  *   country: 'USA',
  *   isReceiptEnough: true,
  * });
  * ```
  */
 export function createBusiness(
-  overrides?: Partial<IInsertBusinessesParams['businesses'][number]>,
-): IInsertBusinessesParams['businesses'][number] {
+  overrides?: Partial<FixtureBusinesses['businesses'][number]>,
+): FixtureBusinesses['businesses'][number] {
+  const defaultId = makeUUID();
   return {
-    id: makeUUID(),
+    id: defaultId,
+    // Intelligent name defaulting: use provided id, or use generated UUID
+    // This ensures display name is always meaningful even when only id is specified
+    name: overrides?.id ?? defaultId,
     hebrewName: null,
     address: null,
     email: null,
