@@ -628,7 +628,7 @@ Return file.
 ```text
 Update packages/server/README.md:
 - Add new section 'Demo Staging Dataset'
-- Reference commands: yarn seed:demo, yarn validate:demo
+- Reference commands: yarn seed:staging-demo, yarn validate:demo
 - Link to spec and guide files.
 
 Return diff only.
@@ -644,7 +644,7 @@ Return diff only.
 
 ```text
 Update root package.json:
-- Add "seed:demo": "tsx scripts/seed-demo-data.ts"
+- Add "seed:staging-demo": "tsx scripts/seed-demo-data.ts"
 - Add "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
 
 Return modified snippet.
@@ -652,7 +652,7 @@ Return modified snippet.
 
 **Expected Output**: Package.json scripts section with new entries.
 
-**Verification**: `yarn seed:demo --help` shows script exists.
+**Verification**: `yarn seed:staging-demo --help` shows script exists.
 
 ---
 
@@ -698,7 +698,7 @@ After completing all prompts:
 - [ ] Seed script guards prevent production runs
 - [ ] Validation script exits 0 on success, 1 on failures
 - [ ] Developer guide accessible and accurate
-- [ ] Package.json scripts callable via `yarn seed:demo` / `yarn validate:demo`
+- [ ] Package.json scripts callable via `yarn seed:staging-demo` / `yarn validate:demo`
 - [ ] All imports use correct relative paths with `.js` extensions if ESM
 - [ ] No orphaned code or unused files
 - [ ] Documentation references match actual file locations

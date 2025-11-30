@@ -189,3 +189,12 @@ per seed topic, and consistent import locations across scripts and docs.
 
 **This spec is ready for direct implementation. All architectural, data, error, and testing
 requirements are included.**
+
+**Progress Update:**
+
+- `FixtureSpec` file created at `packages/server/src/fixtures/fixture-spec.ts` and one fixture
+  updated to use it.
+- A short-lived compatibility adapter `makeUUIDLegacy(seed?)` was added to
+  `packages/server/src/demo-fixtures/helpers/deterministic-uuid.ts` and the legacy
+  `__tests__/factories/ids.ts` now delegates to it.
+- `scripts/seed-demo-data.ts` was updated to call canonical `seedAdminCore()`.

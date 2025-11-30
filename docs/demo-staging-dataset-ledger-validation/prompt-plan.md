@@ -1241,7 +1241,7 @@ Return just the scripts section with the new entry added, with context showing n
 yarn vitest run packages/server/src/demo-fixtures/validators
 
 # 2. Seed demo data (if not already seeded)
-yarn seed:demo
+yarn seed:staging-demo
 
 # 3. Run validation (should pass)
 yarn validate:demo
@@ -1263,7 +1263,7 @@ yarn validate:demo
 # Expected: Exit code 1 with detailed error messages
 
 # 6. Restore data
-yarn seed:demo
+yarn seed:staging-demo
 ```
 
 **Success Criteria:**

@@ -1093,7 +1093,7 @@ describe('Demo Data Validation Integration', () => {
 yarn db:test:setup
 
 # 2. Seed demo data
-yarn seed:demo
+yarn seed:staging-demo
 
 # 3. Run validation
 tsx packages/server/src/demo-fixtures/validate-demo-data.ts
@@ -1188,7 +1188,7 @@ jobs:
       - uses: actions/setup-node@v3
       - run: yarn install
       - run: yarn db:test:setup
-      - run: yarn seed:demo
+      - run: yarn seed:staging-demo
       - run: yarn validate:demo
 ```
 
@@ -1259,7 +1259,7 @@ yarn vitest run packages/server/src/demo-fixtures/validators
 
 # 6. Test integration
 yarn db:test:setup
-yarn seed:demo
+yarn seed:staging-demo
 tsx packages/server/src/demo-fixtures/validate-demo-data.ts
 
 # 7. Commit and push
