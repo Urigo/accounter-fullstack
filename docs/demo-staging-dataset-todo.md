@@ -115,8 +115,9 @@ You can replace markers as work progresses.
 
 ## Phase 8: Documentation & Wiring
 
-- [ ] 31. Create developer guide `packages/server/docs/demo-staging-guide.md`
-  - [ ] Sections: Overview, Quick Start, Adding Use-Case, UUID Best Practices, Troubleshooting
+- [x] 31. Create developer guide `packages/server/docs/demo-staging-guide.md`
+  - [x] Sections: Overview, Quick Start, Adding Use-Case, UUID Best Practices, Troubleshooting
+  - [x] Render Build Command Example section
 - [ ] 32. Update `packages/server/README.md` with Demo Dataset section
   - [ ] Link to spec & guide
 - [ ] 33. Add scripts to root `package.json` (`seed:demo`, `validate:demo`)
