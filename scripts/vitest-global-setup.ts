@@ -28,9 +28,8 @@ export default async function globalSetup() {
   // Ensure core reference data exists outside per-test transactions
   // Specifically: countries table populated from CountryCode enum
   try {
-    const { connectTestDb, closeTestDb } = await import(
-      '../packages/server/src/__tests__/helpers/db-connection.js'
-    );
+    const { connectTestDb, closeTestDb } =
+      await import('../packages/server/src/__tests__/helpers/db-connection.js');
     const pool = await connectTestDb();
     const client = await pool.connect();
     try {
