@@ -87,6 +87,52 @@ The global Vitest setup may set `TEST_ENV_FILE` automatically to a temporary pat
 needed. If the write fails, tests continue (non-fatal). To disable writing entirely you can point
 `TEST_ENV_FILE` to a throwaway location.
 
+## Demo Staging Dataset
+
+The demo staging dataset system provides **use-case-driven financial scenarios** for staging
+environments. Each use-case represents a complete financial scenario (expense, income, equity, etc.)
+that can be seeded with deterministic UUIDs for stable demo data across deployments.
+
+### Quick Start
+
+```bash
+# Seed demo data (staging/local only - requires explicit flag)
+ALLOW_DEMO_SEED=1 yarn seed:demo
+
+# Validate seeded data integrity
+yarn validate:demo
+
+# Combined workflow (recommended)
+ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo
+```
+
+### Key Features
+
+- **Deterministic UUIDs**: Stable entity IDs via UUID v5 generation
+- **Modular Registry**: Self-contained use-case fixtures with metadata
+- **Production Safeguards**: Hard refusal to run in production environments
+- **Comprehensive Validation**: Ledger balance checks, entity reconciliation
+
+### Documentation
+
+- **Specification**: `docs/demo-staging-dataset-spec.md` – Complete technical specification
+- **Developer Guide**: `packages/server/docs/demo-staging-guide.md` – Quick start, adding use-cases,
+  troubleshooting
+- **Implementation Plan**: `docs/demo-staging-dataset-prompt-plan.md` – Step-by-step prompts
+- **Progress Tracking**: `docs/demo-staging-dataset-todo.md` – Implementation checklist
+
+### Architecture
+
+```
+Use-Case Registry → Seed Orchestrator → Validation Layer
+(TypeScript modules)  (seed-demo-data)   (validate-demo)
+```
+
+See the [Developer Guide](./docs/demo-staging-guide.md) for detailed instructions on adding new
+use-cases and troubleshooting.
+
+---
+
 ## Demo Test Data & Ledger Docs
 
 High-level architecture, roadmap and prompts are maintained in root `docs/`:
