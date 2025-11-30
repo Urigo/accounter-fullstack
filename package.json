@@ -36,10 +36,12 @@
     "scrape": "yarn workspace @accounter-helper/scraper-local-app start",
     "seed": "tsx scripts/seed.ts",
     "seed:admin": "yarn workspace @accounter/server seed:admin",
+    "seed:demo": "tsx scripts/seed-demo-data.ts",
     "setup": "yarn db:init && yarn generate",
     "test": "vitest run --project unit",
     "test:all": "vitest run --project unit --project integration",
-    "test:integration": "vitest run --project unit --project integration"
+    "test:integration": "vitest run --project unit --project integration",
+    "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
   },
   "devDependencies": {
     "@changesets/changelog-github": "0.5.2",
