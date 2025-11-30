@@ -1,6 +1,6 @@
 import { expect } from 'vitest';
 // Adjusted relative path: helper is one directory deeper than scenario tests
-import { makeUUID } from '../../../../__tests__/factories/ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../../../demo-fixtures/helpers/deterministic-uuid.js';
 
 // Minimal ledger record type based on DB result interface
 export interface LedgerRecord {

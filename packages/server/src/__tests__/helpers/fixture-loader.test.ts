@@ -18,8 +18,8 @@ import {
   createCharge,
   createTransaction,
   createDocument,
-  makeUUID,
 } from '../factories/index.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Fixture Loader', () => {
   let pool: Pool;

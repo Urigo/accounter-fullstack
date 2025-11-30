@@ -12,7 +12,7 @@ import type { Client, PoolClient } from 'pg';
 import type { Fixture } from './fixture-types.js';
 import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
-import { makeUUID } from '../factories/ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Custom error for fixture insertion failures

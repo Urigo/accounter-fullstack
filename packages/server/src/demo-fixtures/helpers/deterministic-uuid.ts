@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { v5 as uuidv5 } from 'uuid';
 
 /**
@@ -52,4 +53,16 @@ const DEMO_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 export function makeUUID(namespace: string, name: string): string {
   const composite = `${namespace}:${name}`;
   return uuidv5(composite, DEMO_NAMESPACE);
+}
+
+/**
+ * Backward compatible adapter for legacy single-argument API.
+ * - When seed is provided, returns deterministic UUID v5 scoped under 'legacy' namespace
+ * - When seed omitted, returns a random UUID to preserve previous behavior
+ */
+export function makeUUIDLegacy(seed?: string): string {
+  if (seed === undefined || seed === null) {
+    return randomUUID();
+  }
+  return makeUUID('legacy', seed);
 }

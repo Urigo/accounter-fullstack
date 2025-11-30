@@ -3,7 +3,7 @@ import {
   createFinancialAccount,
   FINANCIAL_ACCOUNT_TYPES,
 } from './financial-account.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Financial Account', () => {
   describe('FINANCIAL_ACCOUNT_TYPES', () => {

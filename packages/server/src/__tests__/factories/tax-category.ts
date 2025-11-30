@@ -1,4 +1,4 @@
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
 
 /**

@@ -10,7 +10,7 @@
  * @see packages/migrations/src/actions/2024-01-29T13-15-23.initial.ts (transactions table)
  */
 
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { formatNumeric } from './money.js';
 
 /**

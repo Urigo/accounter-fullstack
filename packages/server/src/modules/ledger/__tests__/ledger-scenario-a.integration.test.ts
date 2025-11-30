@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { TestDatabase } from '../../../__tests__/helpers/db-setup.js';
 import { insertFixture } from '../../../__tests__/helpers/fixture-loader.js';
 import { expenseScenarioA } from '../../../__tests__/fixtures/expenses/expense-scenario-a.js';
-import { makeUUID } from '../../../__tests__/factories/ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
 import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { env } from '../../../environment.js';

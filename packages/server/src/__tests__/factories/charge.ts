@@ -11,7 +11,7 @@
  * @see packages/migrations/src/actions/*-charges-*.ts (migrations)
  */
 
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Charge insert parameters shape

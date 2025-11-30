@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { createTaxCategory } from './tax-category.js';
 
 describe('Factory: Tax Category', () => {

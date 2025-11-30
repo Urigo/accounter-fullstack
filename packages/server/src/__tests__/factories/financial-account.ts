@@ -1,7 +1,7 @@
 import type {
   financial_account_type,
 } from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { FixtureAccounts } from '__tests__/helpers/fixture-types.js';
 
 /**

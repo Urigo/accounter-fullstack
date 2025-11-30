@@ -23,7 +23,7 @@ import {
   createTaxCategory,
   createFinancialAccount,
 } from '../../factories';
-import { makeUUID } from '../../factories/ids';
+import { makeUUIDLegacy as makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { Currency } from '../../../shared/enums.js';

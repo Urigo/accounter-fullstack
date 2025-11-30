@@ -11,7 +11,7 @@
  * @see packages/server/src/modules/documents/providers/documents.provider.ts (insertDocuments query)
  */
 
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Document insert parameters shape

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createTransaction } from './transaction.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Transaction', () => {
   describe('createTransaction', () => {

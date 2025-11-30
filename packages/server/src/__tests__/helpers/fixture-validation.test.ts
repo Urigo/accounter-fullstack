@@ -5,7 +5,7 @@ import { createDocument } from '../factories/document.js';
 import { createFinancialAccount } from '../factories/financial-account.js';
 import { createTaxCategory } from '../factories/tax-category.js';
 import { createTransaction } from '../factories/transaction.js';
-import { makeUUID } from '../factories/ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from './fixture-types.js';
 import { assertValidFixture, validateFixture } from './fixture-validation.js';
 

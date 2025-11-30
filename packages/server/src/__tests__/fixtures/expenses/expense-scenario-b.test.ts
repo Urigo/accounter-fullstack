@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { expenseScenarioB } from './expense-scenario-b';
 import { validateFixture } from '../../helpers/fixture-validation';
-import { makeUUID } from '../../factories/ids';
+import { makeUUIDLegacy as makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { Currency } from '../../../shared/enums.js';
 

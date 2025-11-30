@@ -51,6 +51,6 @@ export { createDocument } from './document.js';
 export type { DocumentInsertParams } from './document.js';
 
 // Helper utilities
-export { makeUUID } from './ids.js';
+export { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 export { iso, isoToday, addDays } from './dates.js';
 export { formatNumeric, formatMoney, formatDecimal, parseNumeric } from './money.js';

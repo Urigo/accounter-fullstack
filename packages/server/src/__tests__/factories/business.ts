@@ -1,5 +1,4 @@
-import type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../modules/countries/types.js';
 import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
 
@@ -9,7 +8,7 @@ import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
  * Creates a minimal business object ready for insertion via pgtyped.
  *
  * @param overrides - Optional overrides for any business field
- * @returns Business object matching IInsertBusinessesParams.businesses[0] shape
+ * @returns Business object matching FixtureBusinesses['businesses'][0] shape
  *
  * @remarks
  * - id defaults to deterministic UUID if not provided
