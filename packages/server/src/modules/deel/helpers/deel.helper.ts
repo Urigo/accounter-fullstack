@@ -406,13 +406,14 @@ export async function getChargeMatchesForPayments(
   const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
   const invoiceChargeMap = new Map<string, string>();
 
-  const newReceipts = receipts.filter(receipt => {
+  const newReceipts: PaymentReceipts[] = [];
+  receipts.map(receipt => {
     const chargeId = receiptChargeMap.get(receipt.id);
     if (chargeId) {
       receipt.invoices?.map(invoiceId => invoiceChargeMap.set(invoiceId.id, chargeId));
-      return false;
+    } else {
+      newReceipts.push(receipt);
     }
-    return true;
   });
 
   await Promise.all(
@@ -425,7 +426,7 @@ export async function getChargeMatchesForPayments(
 
       receiptChargeMap.set(receipt.id, charge.id);
 
-      // TODO: upload receipt file whenever available via Deel API
+      // TODO: upload receipt file (currently not available from Deel API)
     }),
   );
 
