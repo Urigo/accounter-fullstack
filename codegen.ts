@@ -29,6 +29,7 @@ const config: CodegenConfig = {
         immutableTypes: true,
         contextType: 'GraphQLModules.Context',
         optionalResolveType: true,
+        addInterfaceFieldResolverTypes: true,
         scalars: {
           TimelessDate: '@shared/types#TimelessDateString',
           FileScalar: {
