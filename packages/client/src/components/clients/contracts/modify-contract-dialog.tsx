@@ -305,7 +305,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                           <Input
                             placeholder="500"
                             {...field}
-                            value={field.value.toLocaleString()}
+                            value={field.value?.toLocaleString()}
                             onChange={event => {
                               const rawValue = event.target.value.replace(/[^0-9]/g, '');
                               field.onChange(rawValue ? BigInt(rawValue) : BigInt(0));
@@ -346,7 +346,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                               className="gap-1 max-w-xs truncate"
                             >
                               {link}
-                              {index === field.value.length - 1 && (
+                              {index === (field.value?.length ?? 0) - 1 && (
                                 <Button
                                   variant="ghost"
                                   size="icon"

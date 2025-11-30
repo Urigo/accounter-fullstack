@@ -46,7 +46,7 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
           <MonthPickerInput
             {...field}
             label="From Date"
-            value={new Date(field.value)}
+            value={field.value ? new Date(field.value) : null}
             onChange={date => {
               trigger('fromDate');
               field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);
@@ -69,7 +69,7 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
           <MonthPickerInput
             {...field}
             label="To Date"
-            value={new Date(field.value)}
+            value={field.value ? new Date(field.value) : null}
             onChange={date => {
               trigger('toDate');
               field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);

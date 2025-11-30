@@ -63,7 +63,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
                     <YearPickerInput
                       {...field}
                       label="Year of relevance"
-                      value={new Date(value)}
+                      value={value ? new Date(value) : null}
                       error={fieldState.error?.message}
                       popoverProps={{ withinPortal: true }}
                       required
