@@ -7,6 +7,12 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
 
 ## Progress (2025-11-30)
 
+- Created `FixtureSpec` and annotated a demo use-case fixture.
+- Replaced `any` types in `FixtureSpec` with strict fixture types (BusinessFixture,
+  TaxCategoryFixture, etc.) and added `tags` and typed `expectations.ledger`.
+- Server package builds and type-checks after fixture/type changes.
+- All use-case fixture files under `packages/server/src/demo-fixtures/use-cases/` are exported as
+  `UseCaseSpec` and rely on the shared `FixtureSpec` (no cast `as FixtureSpec`).
 - Added canonical `makeUUID(namespace, name)` helper and back-compat `makeUUIDLegacy(seed?)`.
 - Updated `__tests__/factories/ids.ts` to delegate to `makeUUIDLegacy` (legacy compatibility).
 - Added `seed:staging-demo` alias and updated many docs references to `seed:staging-demo`.
@@ -14,12 +20,17 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
 - Replaced some test imports to use `makeUUIDLegacy` adapter.
 - Updated many test files to delegate to `makeUUIDLegacy` (adapter) rather than the old ad-hoc
   helper.
+- Note: `seed-demo-data.ts` still calls `createAdminBusinessContext` (migration pending).
+- Ledger assertion helpers have not yet been migrated to call `validateLedgerRecords()` (pending).
+- CI/ESLint checks to block legacy helper imports not yet added (pending).
+
+---
 
 ---
 
 ## High-Level Acceptance Criteria
 
-- [ ] All fixtures conform to `FixtureSpec` and are type-checked.
+- [x] All fixtures conform to `FixtureSpec` and are type-checked.
 - [x] All code uses canonical deterministic UUID (`makeUUID(namespace,name)`) from
       `demo-fixtures/helpers/deterministic-uuid.ts`. (Partial: canonical helper and adapter added;
       many tests still import legacy helper or adapter)
@@ -37,12 +48,12 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
 
 ### Chunk 1: Shared `FixtureSpec` Interface
 
-- [ ] 1.1 Create `packages/server/src/fixtures/fixture-spec.ts`.
+- [x] 1.1 Create `packages/server/src/fixtures/fixture-spec.ts`.
   - Acceptance: file exists and exports `FixtureSpec` exactly as agreed in `spec.md`.
-- [ ] 1.2 Pick one demo fixture (e.g., `monthly-expense-foreign-currency.ts`) and annotate its
+- [x] 1.2 Pick one demo fixture (e.g., `monthly-expense-foreign-currency.ts`) and annotate its
       `fixtures` as `FixtureSpec`.
   - Acceptance: file compiles, type errors fixed.
-- [ ] 1.3 Validate `use-cases/index.ts` can still import and work with the refactored fixture.
+- [x] 1.3 Validate `use-cases/index.ts` can still import and work with the refactored fixture.
   - Acceptance: `getAllUseCases()` returns consistent results and `validate-demo-data.ts` runs.
 
 ### Chunk 2: Deterministic UUID Consolidation
@@ -71,15 +82,17 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
 
 ### Chunk 3: Admin Context Standardization
 
-- [ ] 3.1 Verify `seedAdminCore(client)` implementation in `scripts/seed-admin-context.ts`.
+- [x] 3.1 Verify `seedAdminCore(client)` implementation in `scripts/seed-admin-context.ts`.
   - Acceptance: `seedAdminCore` provides idempotent admin fixture creation and updates
     `user_context`/env file.
 - [ ] 3.2 Migrate one script — e.g., `scripts/seed-demo-data.ts` — to import and call
-      `seedAdminCore()`.
-  - Acceptance: script continues to work locally under `ALLOW_DEMO_SEED=1`.
+      `seedAdminCore()`. (Pending: `seed-demo-data.ts` still references
+      `createAdminBusinessContext`)
+- Acceptance: script continues to work locally under `ALLOW_DEMO_SEED=1`.
 - [ ] 3.3 Deprecate/remove `createAdminBusinessContext` in `demo-fixtures/helpers/admin-context.ts`,
-      and update tests to use `seedAdminCore`.
-  - Acceptance: `createAdminBusinessContext` should be removed once all callers are migrated.
+      and update tests to use `seedAdminCore`. (Note: `createAdminBusinessContext` remains in the
+      codebase; tests and `seed.ts` still reference it.)
+- Acceptance: `createAdminBusinessContext` should be removed once all callers are migrated.
 
 ### Chunk 4: Canonical Ledger Validation
 
@@ -108,8 +121,8 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
 
 ### Chunk 6: Expand Fixture/Factory Refactoring
 
-- [ ] 6.1 Iterate over `packages/server/src/demo-fixtures/use-cases/*` and refactor to use
-      `FixtureSpec` and the canonical `makeUUID` pattern.
+- [x] 6.1 Iterate over `packages/server/src/demo-fixtures/use-cases/*` and refactor to use
+      `FixtureSpec` via `UseCaseSpec` and the canonical `makeUUID` pattern.
 - [ ] 6.2 Update factories in `packages/server/src/__tests__/factories/*` to import canonical
       `makeUUID` from `demo-fixtures/helpers/deterministic-uuid.ts` and remove direct usage of
       `__tests__/factories/ids.ts`.
@@ -127,7 +140,8 @@ steps in the `prompt_plan.md` and `spec.md`. Mark items checked as they're imple
   - End-to-end seeding and ledger generation using canonical validator
   - Idempotency and deterministic UUID tests across runs
   - End-to-end tests for both staging/demo and test usage patterns
-- [ ] 7.3 Validation that test suite runs: run `yarn test` and fix regressions
+- [ ] 7.3 Validation that test suite runs: run `yarn test` and fix regressions - Note: Specific
+      tests for `makeUUID` and `makeUUIDLegacy` were added to `deterministic-uuid.test.ts`.
 
 ### Chunk 8: Remove Deprecated Code
 

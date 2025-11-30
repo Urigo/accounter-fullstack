@@ -1,3 +1,4 @@
+import type { FixtureSpec } from 'fixtures/fixture-spec';
 import type { CountryCode } from '@modules/countries/types.js';
 import type { Currency } from '@shared/enums';
 
@@ -86,19 +87,6 @@ export interface TagFixture {
 }
 
 /**
- * Fixture Collection for a Use-Case
- */
-export interface UseCaseFixtures {
-  businesses: BusinessFixture[];
-  taxCategories: TaxCategoryFixture[];
-  financialAccounts: FinancialAccountFixture[];
-  charges: ChargeFixture[];
-  transactions: TransactionFixture[];
-  documents: DocumentFixture[];
-  tags?: TagFixture[];
-}
-
-/**
  * Use-Case Metadata
  */
 export interface UseCaseMetadata {
@@ -130,7 +118,7 @@ export interface UseCaseSpec {
   name: string; // Display name: 'Monthly Expense (Foreign Currency)'
   description: string; // Long-form explanation for docs
   category: UseCaseCategory;
-  fixtures: UseCaseFixtures;
+  fixtures: FixtureSpec;
   metadata: UseCaseMetadata;
   expectations?: UseCaseExpectations;
 }
