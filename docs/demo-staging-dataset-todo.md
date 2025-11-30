@@ -120,7 +120,7 @@ You can replace markers as work progresses.
   - [x] Render Build Command Example section
 - [x] 32. Update `packages/server/README.md` with Demo Dataset section
   - [x] Link to spec & guide
-- [ ] 33. Add scripts to root `package.json` (`seed:demo`, `validate:demo`)
+- [x] 33. Add scripts to root `package.json` (`seed:demo`, `validate:demo`)
   - [ ] Test scripts locally
 - [ ] 34. Consistency pass (imports, `.js` extensions if needed under ESM)
   - [ ] Confirm `tsc` and `vitest` pass cleanly
