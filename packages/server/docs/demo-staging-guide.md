@@ -45,13 +45,13 @@ Use-Case Registry → Seed Orchestrator → Validation Layer
 
 ```bash
 # Seed demo data (requires explicit flag)
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 # Validate seeded data
 yarn validate:demo
 
 # Combined workflow (recommended)
-ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 ```
 
 ### Expected Output
@@ -338,7 +338,7 @@ ownerId: 'e153a289-b7e7-5735-8379-e62e859c88ab', // Don't hardcode
 
 ```bash
 # For local/staging only
-NODE_ENV=development ALLOW_DEMO_SEED=1 yarn seed:demo
+NODE_ENV=development ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 ```
 
 ---
@@ -413,7 +413,7 @@ fixtures: {
 
 ```bash
 # Re-run seed with verbose logging
-ALLOW_DEMO_SEED=1 yarn seed:demo 2>&1 | grep -i "admin"
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo 2>&1 | grep -i "admin"
 
 # Should see:
 # ✅ Creating admin business context...
@@ -523,7 +523,7 @@ cat .env | grep POSTGRES
 yarn install \
   && yarn build \
   && yarn workspace @accounter/migrations migration:run \
-  && ALLOW_DEMO_SEED=1 yarn seed:demo \
+  && ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
   && yarn validate:demo
 ```
 
@@ -532,7 +532,7 @@ yarn install \
 1. `yarn install` - Install dependencies
 2. `yarn build` - Compile TypeScript
 3. `yarn workspace @accounter/migrations migration:run` - Apply schema migrations
-4. `ALLOW_DEMO_SEED=1 yarn seed:demo` - Seed demo data (with safety flag)
+4. `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flag)
 5. `yarn validate:demo` - Verify data integrity (fails deploy if validation errors)
 
 ### Environment Variables

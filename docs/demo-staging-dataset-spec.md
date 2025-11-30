@@ -81,7 +81,7 @@ Render Build Command Sequence:
 1. yarn install
 2. yarn build
 3. yarn workspace @accounter-helper/migrations migration:run
-4. ALLOW_DEMO_SEED=1 yarn seed:demo  ──┐
+4. ALLOW_DEMO_SEED=1 yarn seed:staging-demo  ──┐
 5. yarn validate:demo                   │
                                         │
    ┌────────────────────────────────────┘
@@ -642,7 +642,7 @@ In Render dashboard for staging environment:
 **Build Command**:
 
 ```bash
-yarn install && yarn build && yarn workspace @accounter-helper/migrations migration:run && ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo
+yarn install && yarn build && yarn workspace @accounter-helper/migrations migration:run && ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 ```
 
 **Environment Variables** (set in Render dashboard):
@@ -767,7 +767,7 @@ describe('Use-Case Registry', () => {
 
 ### 11.2 Integration Tests (Local)
 
-**Command**: `ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo`
+**Command**: `ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo`
 
 **Pre-conditions**:
 
@@ -943,8 +943,8 @@ describe('Use-Case Registry', () => {
 ### 17.1 Selective Use-Case Loading
 
 ```bash
-yarn seed:demo --include=expenses,income
-yarn seed:demo --exclude=payroll
+yarn seed:staging-demo --include=expenses,income
+yarn seed:staging-demo --exclude=payroll
 ```
 
 ### 17.2 Volume Multipliers

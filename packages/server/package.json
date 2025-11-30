@@ -14,6 +14,7 @@
     "pgtyped": "yarn rimraf **/__generated__/*.types.ts; DATABASE_URL=$(node scripts/set-db-url.cjs) pgtyped -c $(node scripts/generate-local-pgconfig.cjs)",
     "pgtyped:watch": "yarn pgtyped -w",
     "seed:admin": "tsx scripts/seed-admin-context.ts",
+    "seed:admin-context": "tsx scripts/seed-admin-context.ts",
     "server:build": "yarn build",
     "server:build:prod": "yarn generate && yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build && yarn build",
     "server:dev": "yarn dev",
