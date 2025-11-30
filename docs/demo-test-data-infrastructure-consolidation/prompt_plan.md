@@ -18,6 +18,19 @@ are separated and clearly tagged.
 9. **Wire everything together and validate with a full test suite.**
 10. **Document migration/upgrade notes for developers.**
 
+**Progress Update (automated):**
+
+- Created `packages/server/src/fixtures/fixture-spec.ts` and annotated one use-case fixture to
+  `FixtureSpec`.
+- Added a short-lived adapter `makeUUIDLegacy(seed?)` in
+  `demo-fixtures/helpers/deterministic-uuid.ts` and re-exported via `__tests__/factories/ids.ts` for
+  backward compatibility.
+- Updated `scripts/seed-demo-data.ts` to use canonical `seedAdminCore()` from
+  `packages/server/scripts/seed-admin-context.ts` and left legacy helper imported for compatibility.
+- Replaced several test imports to use `makeUUIDLegacy` adapter.
+- Updated documentation references from `yarn seed:demo` to `yarn seed:staging-demo` across docs;
+  root `package.json` scripts still require renaming.
+
 ---
 
 ## 2. Iterative Chunks

@@ -97,13 +97,13 @@ that can be seeded with deterministic UUIDs for stable demo data across deployme
 
 ```bash
 # Seed demo data (staging/local only - requires explicit flag)
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 # Validate seeded data integrity
 yarn validate:demo
 
 # Combined workflow (recommended)
-ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 ```
 
 ### Key Features

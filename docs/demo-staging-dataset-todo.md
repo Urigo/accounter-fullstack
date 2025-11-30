@@ -196,13 +196,13 @@ You can replace markers as work progresses.
 
 ```
 # Local seed & validate
-ALLOW_DEMO_SEED=1 yarn seed:demo && yarn validate:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 
 # Run tests
 yarn test
 
 # Single script
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 yarn validate:demo
 ```
 
