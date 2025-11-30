@@ -132,17 +132,12 @@ export type PrefixedBreakdown = Prefixer<PaymentBreakdownRecord & { receipt_id: 
 export type DeelInvoiceMatch = Invoice & PrefixedBreakdown;
 
 export async function uploadDeelInvoice(
-  receiptChargeMap: Map<string, string>,
+  chargeId: string,
   match: DeelInvoiceMatch,
   injector: Injector,
   ownerId: string,
 ): Promise<string> {
   try {
-    const chargeId = receiptChargeMap.get(match.breakdown_receipt_id as string);
-    if (!chargeId) {
-      throw new Error('Charge not found for invoice');
-    }
-
     // fetch file from Deel
     const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
 
@@ -254,7 +249,10 @@ export function convertMatchToDeelInvoiceRecord(
   };
 }
 
-export async function getDeelChargeDescription(injector: Injector, workers?: DeelWorker[]) {
+export async function getDeelChargeDescription(
+  injector: Injector,
+  workers?: DeelWorker[],
+): Promise<string> {
   const contractIds = (workers?.map(w => w.contract_id).filter(id => !!id) as string[]) ?? [];
   const contracts = await injector
     .get(DeelContractsProvider)
@@ -325,14 +323,98 @@ export async function fetchPaymentBreakdowns(injector: Injector, receipts: Payme
   return receiptsBreakDown;
 }
 
+type ContractInfo = {
+  contract_country: string;
+  contract_start_date: string;
+  contract_type: string;
+  contractor_email: string;
+  contractor_employee_name: string;
+  contractor_unique_identifier: string;
+};
+
+export function getContractsFromPaymentBreakdowns(matches: DeelInvoiceMatch[]) {
+  const contractsMap = new Map<string, ContractInfo>();
+  for (const match of matches) {
+    if (!match.contract_id) {
+      continue;
+    }
+    const existing = contractsMap.get(match.contract_id);
+    if (existing) {
+      // verify consistency
+      if (
+        existing.contract_country !== match.breakdown_contract_country ||
+        existing.contract_start_date !== match.breakdown_contract_start_date ||
+        existing.contract_type !== match.breakdown_contract_type ||
+        existing.contractor_email !== match.breakdown_contractor_email ||
+        existing.contractor_employee_name !== match.breakdown_contractor_employee_name ||
+        existing.contractor_unique_identifier !== match.breakdown_contractor_unique_identifier
+      ) {
+        throw new Error(`Inconsistent contract info for contract_id [${match.contract_id}]`);
+      }
+    } else {
+      contractsMap.set(match.contract_id, {
+        contract_country: match.breakdown_contract_country,
+        contract_start_date: match.breakdown_contract_start_date,
+        contract_type: match.breakdown_contract_type,
+        contractor_email: match.breakdown_contractor_email,
+        contractor_employee_name: match.breakdown_contractor_employee_name,
+        contractor_unique_identifier: match.breakdown_contractor_unique_identifier,
+      });
+    }
+  }
+  return contractsMap;
+}
+
+export async function validateContracts(
+  contractsInfo: Map<string, ContractInfo>,
+  injector: Injector,
+) {
+  await Promise.all(
+    Array.from(contractsInfo.keys()).map(async contractId => {
+      try {
+        const deelEmployee = await injector
+          .get(DeelContractsProvider)
+          .getEmployeeByContractIdLoader.load(contractId);
+        if (!deelEmployee) {
+          throw new Error(`Deel contract ID [${contractId}] not found in DB`);
+        }
+      } catch {
+        try {
+          const contractInfo = contractsInfo.get(contractId)!;
+          await injector.get(DeelContractsProvider).insertDeelContract({
+            contractId,
+            contractorId: contractInfo.contractor_unique_identifier,
+            contractorName: contractInfo.contractor_employee_name,
+            contractStartDate: contractInfo.contract_start_date,
+            businessId: DEEL_BUSINESS_ID, // TODO: replace with DB based business id
+          });
+        } catch (error) {
+          const message = `Error adding Deel contract [${contractId}] during validation`;
+          console.error(message, error);
+          throw new Error(message);
+        }
+      }
+    }),
+  );
+}
+
 export async function getChargeMatchesForPayments(
   injector: Injector,
   ownerId: string,
   receipts: PaymentReceipts[],
 ) {
   const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
+  const invoiceChargeMap = new Map<string, string>();
 
-  const newReceipts = receipts.filter(receipt => !receiptChargeMap.has(receipt.id));
+  const newReceipts: PaymentReceipts[] = [];
+  receipts.map(receipt => {
+    const chargeId = receiptChargeMap.get(receipt.id);
+    if (chargeId) {
+      receipt.invoices?.map(invoiceId => invoiceChargeMap.set(invoiceId.id, chargeId));
+    } else {
+      newReceipts.push(receipt);
+    }
+  });
 
   await Promise.all(
     newReceipts.map(async receipt => {
@@ -344,11 +426,11 @@ export async function getChargeMatchesForPayments(
 
       receiptChargeMap.set(receipt.id, charge.id);
 
-      // TODO: upload receipt file whenever available via Deel API
+      // TODO: upload receipt file (currently not available from Deel API)
     }),
   );
 
-  return receiptChargeMap;
+  return { receiptChargeMap, invoiceChargeMap };
 }
 
 export function matchInvoicesWithPayments(

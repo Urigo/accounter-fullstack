@@ -9,6 +9,6 @@ export default gql`
       contractorName: String!
       businessId: UUID!
     ): Boolean! @auth(role: ACCOUNTANT)
-    fetchDeelDocuments: Boolean! @auth(role: ACCOUNTANT)
+    fetchDeelDocuments: [Charge!]! @auth(role: ACCOUNTANT)
   }
 `;
