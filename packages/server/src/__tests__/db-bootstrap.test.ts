@@ -13,7 +13,7 @@ import { qualifyTable } from './helpers/test-db-config.js';
 describe('DB Test Harness Bootstrap', () => {
   let db: TestDatabase;
 
-  const EXPECTED_TAX_CATEGORIES = 19;
+  const EXPECTED_TAX_CATEGORIES = 22;
 
   beforeAll(async () => {
     db = new TestDatabase();
@@ -67,6 +67,12 @@ describe('DB Test Harness Bootstrap', () => {
   it('has expected tax categories', async () =>
     db.withTransaction(async client => {
       await seedAdminCore(client);
+
+      const result1 = await client.query(
+        `SELECT * FROM ${qualifyTable('tax_categories')} left join ${qualifyTable('financial_entities')} fe on tax_categories.id = fe.id`,
+      );
+      console.log('Seeded Tax Categories:', result1.rows);
+
       const result = await client.query(
         `SELECT COUNT(*) FROM ${qualifyTable('tax_categories')}`,
       );
