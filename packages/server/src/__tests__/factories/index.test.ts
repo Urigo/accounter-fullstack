@@ -36,18 +36,18 @@ describe('Factory Integration', () => {
 
   it('should create a complete expense scenario using factories', () => {
     // Setup: Create supporting entities
-    const supplierId = makeUUID('supplier-local');
+    const supplierId = makeUUID('business', 'supplier-local');
     const supplier = createBusiness({
       id: supplierId,
       hebrewName: 'ספק מקומי',
     });
 
-    const taxCategoryId = makeUUID('tax-expense');
+    const taxCategoryId = makeUUID('tax-category', 'tax-expense');
     const taxCategory = createTaxCategory({
       id: taxCategoryId,
     });
 
-    const accountId = makeUUID('bank-account');
+    const accountId = makeUUID('financial-account', 'bank-account');
     const account = createFinancialAccount({
       accountNumber: accountId,
       type: 'BANK_ACCOUNT',
@@ -55,7 +55,7 @@ describe('Factory Integration', () => {
     });
 
     // Act: Create charge with transaction and document
-    const chargeId = makeUUID('expense-charge');
+    const chargeId = makeUUID('charge', 'expense-charge');
     const charge = createCharge(
       {
         owner_id: supplierId,
@@ -106,8 +106,8 @@ describe('Factory Integration', () => {
 
   it('should create deterministic UUIDs with seeds', () => {
     // Create same entities twice with same seeds
-    const business1 = createBusiness({ id: makeUUID('biz-1') });
-    const business2 = createBusiness({ id: makeUUID('biz-1') });
+    const business1 = createBusiness({ id: makeUUID('business', 'biz-1') });
+    const business2 = createBusiness({ id: makeUUID('business', 'biz-1') });
 
     expect(business1.id).toBe(business2.id);
   });
@@ -118,7 +118,7 @@ describe('Factory Integration', () => {
     types.forEach((type, index) => {
       const account = createFinancialAccount({
         type,
-        ownerId: makeUUID(`owner-${index}`),
+        ownerId: makeUUID('business', `owner-${index}`),
       });
 
       expect(account.type).toBe(type);
@@ -128,8 +128,8 @@ describe('Factory Integration', () => {
 
   it('should handle numeric conversions correctly', () => {
     const transaction = createTransaction({
-      charge_id: makeUUID('charge-1'),
-      business_id: makeUUID('business-1'),
+      charge_id: makeUUID('charge', 'charge-1'),
+      business_id: makeUUID('business', 'business-1'),
       amount: -123.45, // Number input
       currency: 'USD',
       event_date: '2024-01-15',
@@ -140,9 +140,9 @@ describe('Factory Integration', () => {
   });
 
   it('should create documents with different types', () => {
-    const chargeId = makeUUID('charge-doc');
-    const creditorId = makeUUID('creditor');
-    const debtorId = makeUUID('debtor');
+    const chargeId = makeUUID('charge', 'charge-doc');
+    const creditorId = makeUUID('business', 'creditor');
+    const debtorId = makeUUID('business', 'debtor');
 
     const invoice = createDocument({
       charge_id: chargeId,

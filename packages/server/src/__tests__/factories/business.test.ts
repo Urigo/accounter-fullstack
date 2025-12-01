@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createBusiness } from './business.js';
-import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '@modules/countries/types.js';
 
 describe('Factory: Business', () => {
@@ -39,7 +39,7 @@ describe('Factory: Business', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const customId = makeUUID('custom-business');
+      const customId = makeUUID('business', 'custom-business');
       const business = createBusiness({
         id: customId,
         hebrewName: 'עסק ישראלי',

@@ -1,4 +1,4 @@
-import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
 
 /**
@@ -18,17 +18,17 @@ import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
  * @example
  * ```typescript
  * // Minimal tax category
- * const category = createTaxCategory({ id: makeUUID('expense-general') });
+ * const category = createTaxCategory({ id: makeUUID('tax-category', 'expense-general') });
  *
  * // Tax category with Hashavshevet integration
  * const integrated = createTaxCategory({
- *   id: makeUUID('expense-office'),
+ *   id: makeUUID('tax-category', 'expense-office'),
  *   hashavshevetName: 'משרדיות',
  * });
  *
  * // Tax-excluded category
  * const excluded = createTaxCategory({
- *   id: makeUUID('income-exempt'),
+ *   id: makeUUID('tax-category', 'income-exempt'),
  *   taxExcluded: true,
  * });
  * ```
@@ -36,7 +36,7 @@ import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
 export function createTaxCategory(
   overrides?: Partial<FixtureTaxCategories['taxCategories'][number]>,
 ): FixtureTaxCategories['taxCategories'][number] {
-  const defaultId = makeUUID();
+  const defaultId = makeUUIDLegacy();
   return {
     id: defaultId,
     // Intelligent name defaulting: use provided id, or use generated UUID

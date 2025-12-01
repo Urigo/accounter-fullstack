@@ -1,7 +1,7 @@
 import type {
   financial_account_type,
 } from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
-import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { FixtureAccounts } from '__tests__/helpers/fixture-types.js';
 
 /**
@@ -59,7 +59,7 @@ export function createFinancialAccount(
   overrides?: Partial<FixtureAccounts['accounts'][number]>,
 ): FixtureAccounts['accounts'][number] {
   return {
-    accountNumber: makeUUID().slice(0, 13), // Default: unique short string
+    accountNumber: makeUUIDLegacy().slice(0, 13), // Default: unique short string
     name: null,
     privateBusiness: 'PRIVATE',
     ownerId: null,

@@ -1,4 +1,4 @@
-import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../modules/countries/types.js';
 import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
 
@@ -21,11 +21,11 @@ import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
  * @example
  * ```typescript
  * // Minimal business (uses defaults)
- * const business = createBusiness({ id: makeUUID('supplier-1') });
+ * const business = createBusiness({ id: makeUUID('business', 'supplier-1') });
  *
  * // Business with custom fields
  * const supplier = createBusiness({
- *   id: makeUUID('supplier-usd'),
+ *   id: makeUUID('business', 'supplier-usd'),
  *   name: 'American Supplier',
  *   country: 'USA',
  *   isReceiptEnough: true,
@@ -35,7 +35,7 @@ import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
 export function createBusiness(
   overrides?: Partial<FixtureBusinesses['businesses'][number]>,
 ): FixtureBusinesses['businesses'][number] {
-  const defaultId = makeUUID();
+  const defaultId = makeUUIDLegacy();
   return {
     id: defaultId,
     // Intelligent name defaulting: use provided id, or use generated UUID

@@ -11,7 +11,7 @@
  * @see packages/migrations/src/actions/*-charges-*.ts (migrations)
  */
 
-import { makeUUIDLegacy as makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Charge insert parameters shape
@@ -53,15 +53,15 @@ export interface ChargeInsertParams {
  * ```typescript
  * // Minimal charge with required fields
  * const charge = createCharge({
- *   owner_id: makeUUID('test-owner'),
- *   tax_category_id: makeUUID('tax-cat-1'),
+ *   owner_id: makeUUID('business', 'test-owner'),
+ *   tax_category_id: makeUUID('tax-category', 'tax-cat-1'),
  * });
  *
  * // Charge with user description
  * const descCharge = createCharge(
  *   {
- *     owner_id: makeUUID('test-owner'),
- *     tax_category_id: makeUUID('tax-cat-1'),
+ *     owner_id: makeUUID('business', 'test-owner'),
+ *     tax_category_id: makeUUID('tax-category', 'tax-cat-1'),
  *     user_description: 'Office supplies purchase',
  *   }
  * );
@@ -69,8 +69,8 @@ export interface ChargeInsertParams {
  * // Charge with overrides
  * const customCharge = createCharge(
  *   {
- *     owner_id: makeUUID('test-owner'),
- *     tax_category_id: makeUUID('tax-cat-1'),
+ *     owner_id: makeUUID('business', 'test-owner'),
+ *     tax_category_id: makeUUID('tax-category', 'tax-cat-1'),
  *   },
  *   {
  *     type: 'PAYROLL',
@@ -89,12 +89,12 @@ export function createCharge(
   overrides?: Partial<ChargeInsertParams>,
 ): ChargeInsertParams {
   return {
-    id: makeUUID(),
+    id: makeUUIDLegacy(),
     owner_id: params.owner_id,
     type: null,
     accountant_status: 'PENDING', // Database requires NOT NULL, default to PENDING
     user_description: params.user_description ?? null,
-    tax_category_id: params.tax_category_id ?? makeUUID('default-tax-category'),
+    tax_category_id: params.tax_category_id ?? makeUUID('tax-category', 'default-tax-category'),
     optional_vat: false, // Database requires NOT NULL
     documents_optional_flag: false, // Database requires NOT NULL
     ...overrides,

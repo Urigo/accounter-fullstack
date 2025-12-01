@@ -245,7 +245,7 @@ export interface LedgerExpectation {
  * const expenseScenarioA: Fixture = {
  *   businesses: {
  *     businesses: [
- *       createBusiness({ id: makeUUID('supplier-1'), hebrewName: 'Local Supplier Ltd' }),
+ *       createBusiness({ id: makeUUID('business', 'supplier-1'), hebrewName: 'Local Supplier Ltd' }),
  *     ],
  *   },
  *   charges: {
@@ -256,8 +256,8 @@ export interface LedgerExpectation {
  *   transactions: {
  *     transactions: [
  *       createTransaction({
- *         charge_id: makeUUID('charge-1'),
- *         business_id: makeUUID('supplier-1'),
+ *         charge_id: makeUUID('charge', 'charge-1'),
+ *         business_id: makeUUID('business', 'supplier-1'),
  *         amount: '-1000.00',
  *         currency: 'ILS',
  *         event_date: '2024-01-15',
@@ -267,8 +267,8 @@ export interface LedgerExpectation {
  *   documents: {
  *     documents: [
  *       createDocument({
- *         charge_id: makeUUID('charge-1'),
- *         creditor_id: makeUUID('supplier-1'),
+ *         charge_id: makeUUID('charge', 'charge-1'),
+ *         creditor_id: makeUUID('business', 'supplier-1'),
  *         debtor_id: ADMIN_ID,
  *         type: 'RECEIPT',
  *         total_amount: 1000.0,
@@ -280,7 +280,7 @@ export interface LedgerExpectation {
  *   expectations: {
  *     ledger: [
  *       {
- *         chargeId: makeUUID('charge-1'),
+ *         chargeId: makeUUID('charge', 'charge-1'),
  *         recordCount: 2,
  *         debitEntities: [EXPENSE_TAX_CATEGORY_ID],
  *         creditEntities: [BANK_TAX_CATEGORY_ID],

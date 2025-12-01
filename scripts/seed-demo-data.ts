@@ -11,8 +11,8 @@ import { createAdminBusinessContext } from '../packages/server/src/demo-fixtures
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
 import { seedVATDefault } from '../packages/server/src/demo-fixtures/helpers/seed-vat.js';
-import type { UseCaseFixtures } from '../packages/server/src/demo-fixtures/types.js';
 import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
+import type { FixtureSpec } from '../packages/server/src/fixtures/fixture-spec.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 config();
@@ -62,7 +62,7 @@ class DemoSeedError extends Error {
  * - Account numbers are used for account_id references (resolved by fixture-loader)
  * - All optional fields receive safe defaults to satisfy database constraints
  */
-function convertUseCaseFixtureToFixture(useCaseFixtures: UseCaseFixtures): Fixture {
+function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
   const fixture: Fixture = {};
 
   if (useCaseFixtures.businesses && useCaseFixtures.businesses.length > 0) {
