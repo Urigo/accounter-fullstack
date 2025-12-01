@@ -77,12 +77,12 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       await client.query(
         `DELETE FROM ${qualifyTable('businesses')} WHERE id IN ($1, $2)`,
-        [makeUUID('business', 'admin-business'), makeUUID('business', 'supplier-local-ltd')],
+        [makeUUID('business', 'admin-business-scenario-a'), makeUUID('business', 'supplier-local-ltd')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('financial_entities')} WHERE id IN ($1, $2, $3, $4)`,
         [
-          makeUUID('business', 'admin-business'),
+          makeUUID('business', 'admin-business-scenario-a'),
           makeUUID('business', 'supplier-local-ltd'),
           makeUUID('tax-category', 'expense-general'),
           makeUUID('tax-category', 'bank-account-tax-category'),
@@ -307,7 +307,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
 
   it('should create deterministic UUIDs for reproducible tests', () => {
     // Verify all IDs are deterministic and match expected values
-    const adminBusinessId = makeUUID('business', 'admin-business');
+    const adminBusinessId = makeUUID('business', 'admin-business-scenario-a');
     const supplierId = makeUUID('business', 'supplier-local-ltd');
     const chargeId = makeUUID('charge', 'charge-office-supplies');
     const transactionId = makeUUID('transaction', 'transaction-supplies-payment');
