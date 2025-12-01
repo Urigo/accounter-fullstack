@@ -21,12 +21,12 @@ describe('Fixture Validation', () => {
       const fixture: Fixture = {
         businesses: {
           businesses: [
-            createBusiness({ id: adminId }),
-            createBusiness({ id: supplierId }),
+            createBusiness({ id: adminId, name: 'Admin' }),
+            createBusiness({ id: supplierId, name: 'Supplier' }),
           ],
         },
         taxCategories: {
-          taxCategories: [createTaxCategory({ id: taxCatId })],
+          taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         accounts: {
           accounts: [createFinancialAccount({ accountNumber: accountId, ownerId: adminId })],
@@ -73,10 +73,10 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         taxCategories: {
-          taxCategories: [createTaxCategory({ id: taxCatId })],
+          taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         charges: {
           charges: [
@@ -96,7 +96,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId }), createBusiness({ id: supplierId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         transactions: {
           transactions: [
@@ -127,7 +127,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId }), createBusiness({ id: supplierId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         documents: {
           documents: [
@@ -181,7 +181,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [
@@ -209,7 +209,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
@@ -243,7 +243,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
@@ -280,7 +280,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId }), createBusiness({ id: supplierId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         charges: {
           charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
@@ -342,7 +342,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
@@ -384,7 +384,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
@@ -435,8 +435,8 @@ describe('Fixture Validation', () => {
       const fixture: Fixture = {
         businesses: {
           businesses: [
-            createBusiness({ id: duplicateId }),
-            createBusiness({ id: duplicateId }), // Duplicate
+            createBusiness({ id: duplicateId, name: 'Duplicate Business' }),
+            createBusiness({ id: duplicateId, name: 'Duplicate Business' }), // Duplicate
           ],
         },
       };
@@ -454,7 +454,7 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         charges: {
           charges: [
@@ -514,10 +514,10 @@ describe('Fixture Validation', () => {
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId })],
+          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
         },
         taxCategories: {
-          taxCategories: [createTaxCategory({ id: taxCatId })],
+          taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         charges: {
           charges: [
