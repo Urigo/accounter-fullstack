@@ -301,6 +301,7 @@ const CardsTransactionsListBeanSchema = z
       '2023',
       '2024',
       '2025',
+      '2026',
     ]),
     bcKey: z.null(),
     requestNumber: z.null(),
