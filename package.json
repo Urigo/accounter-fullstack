@@ -60,7 +60,7 @@
     "@theguild/prettier-config": "3.0.1",
     "@types/node": "24.10.1",
     "@types/pg": "8.15.6",
-    "@vitest/coverage-v8": "4.0.14",
+    "@vitest/coverage-v8": "4.0.15",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.2.1",
     "dotenv": "17.2.3",
@@ -80,7 +80,7 @@
     "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "4.0.14"
+    "vitest": "4.0.15"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^48.4.1": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch",
