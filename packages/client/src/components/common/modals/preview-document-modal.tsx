@@ -70,6 +70,10 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
     maxPayments
     client {
       id
+      greenInvoiceId
+      businessId
+      name
+      emails
       ...IssueDocumentClientFields
     }
     income {

@@ -169,8 +169,8 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                         <TableCell>
                           <Link
                             to={
-                              row.client?.id
-                                ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
+                              row.client?.businessId
+                                ? ROUTES.BUSINESSES.DETAIL(row.client?.businessId)
                                 : ROUTES.BUSINESSES.ALL
                             }
                             target="_blank"
@@ -216,7 +216,12 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                               </TooltipContent>
                             </Tooltip>
                             <EditIssueDocumentModal
-                              draft={row}
+                              draft={{
+                                ...row,
+                                client: row.client
+                                  ? { id: row.client.businessId, ...row.client }
+                                  : null,
+                              }}
                               onApprove={document => {
                                 form.setValue(`generateDocumentsInfo.${index}`, document, {
                                   shouldDirty: true,

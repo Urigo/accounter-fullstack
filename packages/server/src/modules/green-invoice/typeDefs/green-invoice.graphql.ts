@@ -74,9 +74,11 @@ export default gql`
 
   " client info "
   type GreenInvoiceClient {
+    id: ID!
     country: GreenInvoiceCountry
     emails: [String!]
-    id: ID!
+    greenInvoiceId: ID
+    businessId: UUID!
     name: String
     phone: String
     taxId: String
@@ -156,7 +158,8 @@ export default gql`
   input GreenInvoiceClientInput {
     country: GreenInvoiceCountry
     emails: [String!]
-    id: String!
+    greenInvoiceId: String
+    businessId: UUID!
     name: String
     phone: String
     taxId: String

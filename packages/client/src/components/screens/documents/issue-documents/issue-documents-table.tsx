@@ -14,7 +14,6 @@ import {
   NewDocumentInfoFragmentDoc,
   type IssueMonthlyDocumentsMutationVariables,
   type NewDocumentInfoFragment,
-  type NewDocumentInput,
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
@@ -55,7 +54,10 @@ export type IssueDocumentsVariables = Omit<
   IssueMonthlyDocumentsMutationVariables,
   'generateDocumentsInfo'
 > & {
-  generateDocumentsInfo: NewDocumentInput[];
+  generateDocumentsInfo: Extract<
+    IssueMonthlyDocumentsMutationVariables['generateDocumentsInfo'],
+    unknown[]
+  >;
 };
 
 type IssueDocumentsTableProps = {
@@ -64,12 +66,7 @@ type IssueDocumentsTableProps = {
 
 export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): ReactElement => {
   const [documentDrafts, setDocumentDrafts] = useState(
-    drafts.map(draft => getFragmentData(NewDocumentInfoFragmentDoc, draft)) as (Omit<
-      NewDocumentInfoFragment,
-      'client'
-    > & {
-      client: NewDocumentInfoFragment['client'] & { id: string };
-    })[],
+    drafts.map(draft => getFragmentData(NewDocumentInfoFragmentDoc, draft)),
   );
 
   const defaultIssueMonth = format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString;
@@ -89,9 +86,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
       setDocumentDrafts(
         data.clientMonthlyChargesDrafts.map(draft =>
           getFragmentData(NewDocumentInfoFragmentDoc, draft),
-        ) as (Omit<NewDocumentInfoFragment, 'client'> & {
-          client: NewDocumentInfoFragment['client'] & { id: string };
-        })[],
+        ),
       );
     }
   }, [data, setDocumentDrafts]);
@@ -100,7 +95,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
     fetchNewDrafts();
   }, [issueMonth, fetchNewDrafts]);
 
-  const form = useForm<IssueDocumentsVariables>({
+  const form = useForm<{ generateDocumentsInfo: NewDocumentInfoFragment[] }>({
     values: {
       generateDocumentsInfo: documentDrafts,
     },
@@ -122,7 +117,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
       return {
         ...field,
         ...watchFieldArray[index],
-        id: field.client?.id,
+        id: field.client?.businessId,
       };
     });
   }, [fields, watchFieldArray]);
@@ -140,7 +135,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
         openContract =>
           openContract.billingCycle === BillingCycle.Monthly &&
           !controlledFields.some(
-            controlled => controlled.client?.id === openContract.client.originalBusiness.id,
+            controlled => controlled.client?.businessId === openContract.client.originalBusiness.id,
           ),
       ),
     // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
@@ -180,11 +175,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
                   <TableRow key={id}>
                     <TableCell>
                       <Link
-                        to={
-                          row.client?.id
-                            ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
-                            : ROUTES.BUSINESSES.ALL
-                        }
+                        to={id ? ROUTES.BUSINESSES.DETAIL(id) : ROUTES.BUSINESSES.ALL}
                         target="_blank"
                         rel="noreferrer"
                         onClick={event => event.stopPropagation()}

@@ -202,9 +202,9 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
                 </Card>
 
                 {/* Previous business documents */}
-                {document.client?.id && (
+                {document.client && (
                   <RecentBusinessDocs
-                    businessId={document.client?.id}
+                    businessId={document.client?.businessId}
                     linkedDocumentIds={document.linkedDocumentIds ?? []}
                   />
                 )}

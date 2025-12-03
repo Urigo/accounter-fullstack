@@ -1244,9 +1244,9 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
   if (initialInput.client) {
     const clientInfo = await injector
       .get(ClientsProvider)
-      .getClientByIdLoader.load(initialInput.client.id);
+      .getClientByIdLoader.load(initialInput.client.businessId);
     if (!clientInfo) {
-      throw new GraphQLError(`Client with ID ${initialInput.client.id} not found`);
+      throw new GraphQLError(`Client with ID ${initialInput.client.greenInvoiceId} not found`);
     }
     let greenInvoiceId: string | null = null;
     try {
@@ -1254,10 +1254,14 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
         validateClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;
     } catch (error) {
       console.error('Failed to validate client integrations', error);
-      throw new GraphQLError(`Client with ID ${initialInput.client.id} has invalid integrations`);
+      throw new GraphQLError(
+        `Client with ID ${initialInput.client.greenInvoiceId} has invalid integrations`,
+      );
     }
     if (!greenInvoiceId) {
-      throw new GraphQLError(`Client with ID ${initialInput.client.id} not found in Green Invoice`);
+      throw new GraphQLError(
+        `Client with ID ${initialInput.client.greenInvoiceId} not found in Green Invoice`,
+      );
     }
     const greenInvoiceClient = await injector
       .get(GreenInvoiceClientProvider)
