@@ -138,7 +138,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       // New client selected - reset client data
       const id = `temp-${crypto.randomUUID()}`;
       updateFormData('client', {
-        id: id,
+        id,
         businessId: id,
         name: '',
       });
