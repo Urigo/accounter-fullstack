@@ -77,7 +77,7 @@
     "prettier-plugin-sql": "0.19.2",
     "rimraf": "6.1.2",
     "ts-node": "10.9.2",
-    "tsx": "4.20.6",
+    "tsx": "4.21.0",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "4.0.15"
