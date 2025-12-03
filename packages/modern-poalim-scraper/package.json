@@ -20,7 +20,7 @@
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "date-fns": "4.1.0",
-    "inquirer": "13.0.1",
+    "inquirer": "13.0.2",
     "node-fetch": "3.3.2",
     "puppeteer": "24.31.0",
     "uuid": "13.0.0",
