@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createBusiness } from './business.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '@modules/countries/types.js';
 
 describe('Factory: Business', () => {
@@ -39,18 +39,18 @@ describe('Factory: Business', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const customId = makeUUID('custom-business');
+      const customId = makeUUID('business', 'custom-business');
       const business = createBusiness({
         id: customId,
-        hebrewName: 'עסק ישראלי',
-          country: CountryCode.Israel,
+        name: 'עסק ישראלי',
+        country: CountryCode.Israel,
         exemptDealer: true,
         isReceiptEnough: true,
         isDocumentsOptional: true,
       });
 
       expect(business.id).toBe(customId);
-      expect(business.hebrewName).toBe('עסק ישראלי');
+      expect(business.name).toBe('עסק ישראלי');
         expect(business.country).toBe(CountryCode.Israel);
       expect(business.exemptDealer).toBe(true);
       expect(business.isReceiptEnough).toBe(true);
@@ -59,10 +59,10 @@ describe('Factory: Business', () => {
 
     it('should allow partial overrides', () => {
       const business = createBusiness({
-        hebrewName: 'ספק מקומי',
+        name: 'ספק מקומי',
       });
 
-      expect(business.hebrewName).toBe('ספק מקומי');
+      expect(business.name).toBe('ספק מקומי');
       expect(business.id).toBeDefined();
       expect(business.exemptDealer).toBe(false);
         expect(business.country).toBe(CountryCode.Israel); // Default value, not null

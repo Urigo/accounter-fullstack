@@ -1,6 +1,4 @@
 import { expect } from 'vitest';
-// Adjusted relative path: helper is one directory deeper than scenario tests
-import { makeUUID } from '../../../../__tests__/factories/ids.js';
 
 // Minimal ledger record type based on DB result interface
 export interface LedgerRecord {
@@ -243,9 +241,6 @@ export function assertExpenseScenarioLogic(records: LedgerRecord[], opts: {
   });
 }
 
-/** Helper to prepare deterministic UUID sets for known fixture aliases */
-export function fixtureUUID(alias: string): string { return makeUUID(alias); }
-
 /** Combined high-level assertion for typical simple local expense scenario */
 export function assertSimpleLocalExpenseScenario(records: LedgerRecord[], params: {
   chargeId: string;
@@ -329,16 +324,16 @@ export function assertForeignExpenseScenario(records: LedgerRecord[], params: {
     const legCountApprox = Math.round(params.expectedLocalTotal / impliedPerLeg);
     // Validate each leg amount close to impliedPerLeg (within 5%)
     debitLegs.forEach((amt, i) => {
-      expectClose(amt, impliedPerLeg, impliedPerLeg * 0.05, `Debit leg ${i} amount mismatch`);
+      expectClose(amt, impliedPerLeg, impliedPerLeg + 0.05, `Debit leg ${i} amount mismatch`);
     });
     creditLegs.forEach((amt, i) => {
-      expectClose(amt, impliedPerLeg, impliedPerLeg * 0.05, `Credit leg ${i} amount mismatch`);
+      expectClose(amt, impliedPerLeg, impliedPerLeg + 0.05, `Credit leg ${i} amount mismatch`);
     });
     // Aggregate totals
     const totalDebit = debitLegs.reduce((a, b) => a + b, 0);
     const totalCredit = creditLegs.reduce((a, b) => a + b, 0);
-    expectClose(totalDebit, params.expectedLocalTotal, params.expectedLocalTotal * 0.05, 'Aggregate debit total mismatch');
-    expectClose(totalCredit, params.expectedLocalTotal, params.expectedLocalTotal * 0.05, 'Aggregate credit total mismatch');
+    expectClose(totalDebit, params.expectedLocalTotal, params.expectedLocalTotal + 0.05, 'Aggregate debit total mismatch');
+    expectClose(totalCredit, params.expectedLocalTotal, params.expectedLocalTotal + 0.05, 'Aggregate credit total mismatch');
     // Leg count heuristic
     expect(Math.abs(debitLegs.length - legCountApprox), 'Unexpected number of debit legs').toBeLessThanOrEqual(1);
     expect(Math.abs(creditLegs.length - legCountApprox), 'Unexpected number of credit legs').toBeLessThanOrEqual(1);

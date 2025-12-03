@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createCharge } from './charge.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Charge', () => {
   describe('createCharge', () => {
     it('should create charge with required fields', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge = createCharge({ owner_id: ownerId });
 
       // Required field
@@ -27,7 +27,7 @@ describe('Factory: Charge', () => {
     });
 
     it('should generate unique IDs by default', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge1 = createCharge({ owner_id: ownerId });
       const charge2 = createCharge({ owner_id: ownerId });
 
@@ -35,8 +35,8 @@ describe('Factory: Charge', () => {
     });
 
     it('should accept tax_category_id in params', () => {
-      const ownerId = makeUUID('test-owner');
-      const taxCategoryId = makeUUID('tax-cat-1');
+      const ownerId = makeUUID('business', 'test-owner');
+      const taxCategoryId = makeUUID('tax-category', 'tax-cat-1');
       const charge = createCharge({
         owner_id: ownerId,
         tax_category_id: taxCategoryId,
@@ -46,7 +46,7 @@ describe('Factory: Charge', () => {
     });
 
     it('should accept user_description in params', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge = createCharge({
         owner_id: ownerId,
         user_description: 'Office supplies',
@@ -56,8 +56,8 @@ describe('Factory: Charge', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const ownerId = makeUUID('test-owner');
-      const customId = makeUUID('custom-charge');
+      const ownerId = makeUUID('business', 'test-owner');
+      const customId = makeUUID('charge', 'custom-charge');
       const charge = createCharge(
         { owner_id: ownerId },
         {
@@ -77,7 +77,7 @@ describe('Factory: Charge', () => {
     });
 
     it('should allow partial overrides', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge = createCharge(
         {
           owner_id: ownerId,
@@ -95,7 +95,7 @@ describe('Factory: Charge', () => {
     });
 
     it('should preserve all required fields', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge = createCharge({ owner_id: ownerId });
 
       // Verify structure matches expected interface
@@ -110,9 +110,9 @@ describe('Factory: Charge', () => {
     });
 
     it('should handle all params and overrides together', () => {
-      const ownerId = makeUUID('test-owner');
-      const taxCategoryId = makeUUID('tax-cat-2');
-      const customId = makeUUID('custom-charge-2');
+      const ownerId = makeUUID('business', 'test-owner');
+      const taxCategoryId = makeUUID('tax-category', 'tax-cat-2');
+      const customId = makeUUID('charge', 'custom-charge-2');
 
       const charge = createCharge(
         {
@@ -140,7 +140,7 @@ describe('Factory: Charge', () => {
     });
 
     it('should allow explicit null overrides', () => {
-      const ownerId = makeUUID('test-owner');
+      const ownerId = makeUUID('business', 'test-owner');
       const charge = createCharge(
         { owner_id: ownerId },
         {

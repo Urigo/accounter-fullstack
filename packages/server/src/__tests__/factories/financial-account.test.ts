@@ -3,7 +3,7 @@ import {
   createFinancialAccount,
   FINANCIAL_ACCOUNT_TYPES,
 } from './financial-account.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Financial Account', () => {
   describe('FINANCIAL_ACCOUNT_TYPES', () => {
@@ -47,7 +47,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const ownerId = makeUUID('business-owner');
+      const ownerId = makeUUID('business', 'business-owner');
       const account = createFinancialAccount({
         accountNumber: '123456789',
         name: 'Main Business Account',
@@ -96,7 +96,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should create bank account scenario', () => {
-      const ownerId = makeUUID('business');
+      const ownerId = makeUUID('business', 'business');
       const account = createFinancialAccount({
         accountNumber: '12-345-6789',
         type: 'BANK_ACCOUNT',
@@ -113,7 +113,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should create credit card scenario', () => {
-      const ownerId = makeUUID('business');
+      const ownerId = makeUUID('business', 'business');
       const account = createFinancialAccount({
         accountNumber: '4580-****-****-1234',
         type: 'CREDIT_CARD',
@@ -127,7 +127,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should create crypto wallet scenario', () => {
-      const ownerId = makeUUID('business');
+      const ownerId = makeUUID('business', 'business');
       const account = createFinancialAccount({
         accountNumber: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
         type: 'CRYPTO_WALLET',
@@ -141,7 +141,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should create bank deposit account scenario', () => {
-      const ownerId = makeUUID('business');
+      const ownerId = makeUUID('business', 'business');
       const account = createFinancialAccount({
         accountNumber: 'DEP-123456',
         type: 'BANK_DEPOSIT_ACCOUNT',
@@ -154,7 +154,7 @@ describe('Factory: Financial Account', () => {
     });
 
     it('should create foreign securities account scenario', () => {
-      const ownerId = makeUUID('business');
+      const ownerId = makeUUID('business', 'business');
       const account = createFinancialAccount({
         accountNumber: 'SEC-US-789',
         type: 'FOREIGN_SECURITIES',

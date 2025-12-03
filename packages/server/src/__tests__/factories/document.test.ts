@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createDocument } from './document.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Document', () => {
   describe('createDocument', () => {
     it('should create document with required fields', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument({
         charge_id: chargeId,
@@ -46,9 +46,9 @@ describe('Factory: Document', () => {
     });
 
     it('should generate unique IDs by default', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document1 = createDocument({
         charge_id: chargeId,
@@ -74,9 +74,9 @@ describe('Factory: Document', () => {
     });
 
     it('should accept Date object for date field', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
       const date = new Date('2024-03-15T12:00:00Z');
 
       const document = createDocument({
@@ -93,9 +93,9 @@ describe('Factory: Document', () => {
     });
 
     it('should handle different document types', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const invoice = createDocument({
         charge_id: chargeId,
@@ -133,10 +133,10 @@ describe('Factory: Document', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
-      const customId = makeUUID('custom-doc');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
+      const customId = makeUUID('document', 'custom-doc');
 
       const document = createDocument(
         {
@@ -165,9 +165,9 @@ describe('Factory: Document', () => {
     });
 
     it('should allow partial overrides', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('customer-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'customer-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument(
         {
@@ -192,9 +192,9 @@ describe('Factory: Document', () => {
     });
 
     it('should preserve all required fields', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'customer-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument({
         charge_id: chargeId,
@@ -227,9 +227,9 @@ describe('Factory: Document', () => {
     });
 
     it('should handle different currency codes', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const ilsDoc = createDocument({
         charge_id: chargeId,
@@ -267,9 +267,9 @@ describe('Factory: Document', () => {
     });
 
     it('should handle VAT amount', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument(
         {
@@ -291,9 +291,9 @@ describe('Factory: Document', () => {
     });
 
     it('should handle file URLs and image URLs', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument(
         {
@@ -316,9 +316,9 @@ describe('Factory: Document', () => {
     });
 
     it('should handle negative amounts for credit invoices', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const creditInvoice = createDocument({
         charge_id: chargeId,
@@ -335,9 +335,9 @@ describe('Factory: Document', () => {
     });
 
     it('should allow explicit null overrides', () => {
-      const chargeId = makeUUID('charge-1');
-      const creditorId = makeUUID('supplier-1');
-      const debtorId = makeUUID('my-business');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const creditorId = makeUUID('business', 'supplier-1');
+      const debtorId = makeUUID('business', 'my-business');
 
       const document = createDocument(
         {

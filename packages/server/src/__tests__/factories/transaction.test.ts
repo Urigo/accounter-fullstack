@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createTransaction } from './transaction.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Factory: Transaction', () => {
   describe('createTransaction', () => {
     it('should create transaction with required fields', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -40,8 +40,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should generate unique IDs by default', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction1 = createTransaction({
         charge_id: chargeId,
@@ -63,8 +63,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should accept numeric amount and convert to string', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -78,8 +78,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should accept Date object for event_date and convert to ISO string', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
       const date = new Date('2024-03-15T12:00:00Z');
 
       const transaction = createTransaction({
@@ -94,8 +94,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should handle is_fee parameter', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('bank');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'bank');
 
       const feeTransaction = createTransaction({
         charge_id: chargeId,
@@ -110,10 +110,10 @@ describe('Factory: Transaction', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
-      const customId = makeUUID('custom-tx');
-      const accountId = makeUUID('eur-account');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
+      const customId = makeUUID('transaction', 'custom-tx');
+      const accountId = makeUUID('financial-account', 'eur-account');
 
       const transaction = createTransaction(
         {
@@ -140,8 +140,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should allow partial overrides', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction = createTransaction(
         {
@@ -162,8 +162,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should preserve all required fields', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -189,8 +189,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should handle different currency types', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const ilsTransaction = createTransaction({
         charge_id: chargeId,
@@ -222,8 +222,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should handle negative amounts (expenses)', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('supplier');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'supplier');
 
       const expense = createTransaction({
         charge_id: chargeId,
@@ -237,8 +237,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should handle positive amounts (income)', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('customer');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'customer');
 
       const income = createTransaction({
         charge_id: chargeId,
@@ -252,8 +252,8 @@ describe('Factory: Transaction', () => {
     });
 
     it('should allow explicit null overrides', () => {
-      const chargeId = makeUUID('charge-1');
-      const businessId = makeUUID('business-1');
+      const chargeId = makeUUID('charge', 'charge-1');
+      const businessId = makeUUID('business', 'business-1');
 
       const transaction = createTransaction(
         {

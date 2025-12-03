@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { expenseScenarioB } from './expense-scenario-b';
 import { validateFixture } from '../../helpers/fixture-validation';
-import { makeUUID } from '../../factories/ids';
+import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { Currency } from '../../../shared/enums.js';
 
@@ -39,8 +39,8 @@ describe('Expense Scenario B - USD Invoice', () => {
 
   it('should have correct business entities', () => {
     const businesses = expenseScenarioB.businesses!.businesses;
-    const admin = businesses.find(b => b.id === makeUUID('admin-business-usd'));
-    const supplier = businesses.find(b => b.id === makeUUID('supplier-us-vendor-llc'));
+    const admin = businesses.find(b => b.id === makeUUID('business', 'admin-business-usd'));
+    const supplier = businesses.find(b => b.id === makeUUID('business', 'supplier-us-vendor-llc'));
 
     expect(admin).toBeDefined();
     expect(admin?.country).toBe(CountryCode.Israel);
@@ -51,7 +51,7 @@ describe('Expense Scenario B - USD Invoice', () => {
   });
 
   it('should have referential integrity between charge, transaction, and document', () => {
-    const chargeId = makeUUID('charge-consulting-services');
+    const chargeId = makeUUID('charge', 'charge-consulting-services');
     const charge = expenseScenarioB.charges!.charges[0];
     const transaction = expenseScenarioB.transactions!.transactions[0];
     const document = expenseScenarioB.documents!.documents[0];
@@ -94,7 +94,7 @@ describe('Expense Scenario B - USD Invoice', () => {
   it('should have ledger expectations with exchange rate', () => {
     const ledgerExpectation = expenseScenarioB.expectations!.ledger![0];
 
-    expect(ledgerExpectation.chargeId).toBe(makeUUID('charge-consulting-services'));
+    expect(ledgerExpectation.chargeId).toBe(makeUUID('charge', 'charge-consulting-services'));
     expect(ledgerExpectation.recordCount).toBe(2);
     expect(ledgerExpectation.balanced).toBe(true);
     expect(ledgerExpectation.foreignCurrency).toBe('USD');
@@ -116,14 +116,14 @@ describe('Expense Scenario B - USD Invoice', () => {
     const debitEntity = ledgerExpectation.debitEntities![0];
     const creditEntity = ledgerExpectation.creditEntities![0];
 
-    expect(debitEntity).toBe(makeUUID('expense-consulting'));
-    expect(creditEntity).toBe(makeUUID('usd-account-tax-category'));
+    expect(debitEntity).toBe(makeUUID('tax-category', 'expense-consulting'));
+    expect(creditEntity).toBe(makeUUID('tax-category', 'usd-account-tax-category'));
   });
 
   it('should have USD account mapped to tax category', () => {
     const accountMapping = expenseScenarioB.accountTaxCategories?.mappings[0];
     expect(accountMapping?.accountNumber).toBe('USD-ACCOUNT-001');
     expect(accountMapping?.currency).toBe(Currency.Usd);
-      expect(accountMapping?.taxCategoryId).toBe(makeUUID('usd-account-tax-category'));
+      expect(accountMapping?.taxCategoryId).toBe(makeUUID('tax-category', 'usd-account-tax-category'));
   });
 });
