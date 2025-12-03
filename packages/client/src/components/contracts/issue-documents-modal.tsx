@@ -216,7 +216,12 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                               </TooltipContent>
                             </Tooltip>
                             <EditIssueDocumentModal
-                              draft={row}
+                              draft={{
+                                ...row,
+                                client: row.client
+                                  ? { id: row.client.businessId, ...row.client }
+                                  : null,
+                              }}
                               onApprove={document => {
                                 form.setValue(`generateDocumentsInfo.${index}`, document, {
                                   shouldDirty: true,

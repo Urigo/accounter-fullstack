@@ -5,6 +5,7 @@ import { useQuery } from 'urql';
 import {
   MonthlyDocumentDraftByClientDocument,
   NewDocumentInfoFragmentDoc,
+  type NewDocumentInfoFragment,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
@@ -23,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
-import type { IssueDocumentsVariables } from './issue-documents-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,7 +41,12 @@ export function AddDocumentToIssue({
 }: {
   issueMonth: TimelessDateString;
   clients: { id: string; name: string }[];
-  onAdd: UseFieldArrayAppend<IssueDocumentsVariables, 'generateDocumentsInfo'>;
+  onAdd: UseFieldArrayAppend<
+    {
+      generateDocumentsInfo: NewDocumentInfoFragment[];
+    },
+    'generateDocumentsInfo'
+  >;
 }): ReactElement {
   const [open, setOpen] = useState(false);
   const [clientId, setClientId] = useState<string>('');

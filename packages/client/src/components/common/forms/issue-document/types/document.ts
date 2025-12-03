@@ -19,6 +19,7 @@ type Discount = {
 };
 
 type GreenInvoiceClient = {
+  id: string;
   country?: GreenInvoiceCountry;
   emails?: Array<string>;
   greenInvoiceId?: string;
