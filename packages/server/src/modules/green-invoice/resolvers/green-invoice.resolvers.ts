@@ -684,17 +684,16 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       validateClientIntegrations(business.integrations).greenInvoiceId ?? null,
   },
   GreenInvoiceClient: {
+    id: clientId => clientId,
     greenInvoiceId: clientId => clientId,
     businessId: async (clientId, _, { injector }) => {
-      return injector
+      const client = await injector
         .get(ClientsProvider)
-        .getClientByGreenInvoiceIdLoader.load(clientId)
-        .then(client => {
-          if (!client) {
-            throw new GraphQLError(`Client not found for Green Invoice ID="${clientId}"`);
-          }
-          return client.business_id;
-        });
+        .getClientByGreenInvoiceIdLoader.load(clientId);
+      if (!client) {
+        throw new GraphQLError(`Client not found for Green Invoice ID="${clientId}"`);
+      }
+      return client.business_id;
     },
     country: async (clientId, _, { injector }) => {
       return injector

@@ -56,7 +56,7 @@ export type IssueDocumentsVariables = Omit<
 > & {
   generateDocumentsInfo: Extract<
     IssueMonthlyDocumentsMutationVariables['generateDocumentsInfo'],
-    any[]
+    unknown[]
   >;
 };
 

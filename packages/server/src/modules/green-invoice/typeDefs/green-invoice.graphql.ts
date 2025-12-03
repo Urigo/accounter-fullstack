@@ -74,6 +74,7 @@ export default gql`
 
   " client info "
   type GreenInvoiceClient {
+    id: ID!
     country: GreenInvoiceCountry
     emails: [String!]
     greenInvoiceId: ID
