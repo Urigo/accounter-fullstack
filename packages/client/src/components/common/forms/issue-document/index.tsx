@@ -47,6 +47,7 @@ export * from './types/document.js';
       integrations {
         id
         greenInvoiceInfo {
+          id
           greenInvoiceId
           businessId
           name
