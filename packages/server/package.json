@@ -28,7 +28,7 @@
     "@envelop/generic-auth": "11.0.0",
     "@envelop/graphql-modules": "9.0.0",
     "@google-cloud/pubsub": "5.2.0",
-    "@graphql-hive/yoga": "0.43.1",
+    "@graphql-hive/yoga": "0.46.0",
     "@graphql-yoga/plugin-defer-stream": "3.17.1",
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
