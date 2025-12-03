@@ -610,7 +610,9 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
             true,
           ).catch(e => {
             console.error(e);
-            errors.push(`${document.client?.name ?? document.client?.id}: ${e.message}`);
+            errors.push(
+              `${document.client?.name ?? document.client?.greenInvoiceId}: ${e.message}`,
+            );
           });
         }),
       );
@@ -682,7 +684,18 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       validateClientIntegrations(business.integrations).greenInvoiceId ?? null,
   },
   GreenInvoiceClient: {
-    id: clientId => clientId,
+    greenInvoiceId: clientId => clientId,
+    businessId: async (clientId, _, { injector }) => {
+      return injector
+        .get(ClientsProvider)
+        .getClientByGreenInvoiceIdLoader.load(clientId)
+        .then(client => {
+          if (!client) {
+            throw new GraphQLError(`Client not found for Green Invoice ID="${clientId}"`);
+          }
+          return client.business_id;
+        });
+    },
     country: async (clientId, _, { injector }) => {
       return injector
         .get(GreenInvoiceClientProvider)

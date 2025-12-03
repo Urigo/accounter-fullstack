@@ -48,7 +48,7 @@ import { Label } from '../../ui/label.jsx';
       integrations {
         id
         greenInvoiceInfo {
-          id
+          greenInvoiceId
         }
         hiveId
         linearId
@@ -64,7 +64,7 @@ import { Label } from '../../ui/label.jsx';
 /* GraphQL */ `
   query ClientIntegrationsSectionGreenInvoice($clientId: UUID!) {
     greenInvoiceClient(clientId: $clientId) {
-      id
+      greenInvoiceId
       country
       emails
       name
@@ -126,14 +126,15 @@ export function IntegrationsSection({ data }: Props) {
   const integrations = business?.clientInfo?.integrations;
   const { updateClient } = useUpdateClient();
 
-  const [{ data: greenInvoiceData, fetching: fetchingGreenInvoice }, fetchGreenInvoice] = useQuery({
-    query: ClientIntegrationsSectionGreenInvoiceDocument,
-    variables: {
-      clientId: business?.id ?? '',
-    },
-    pause:
-      !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
-  });
+  const [{ data: greenInvoiceData, fetching: fetchingGreenInvoice }, fetchGreenInvoiceClient] =
+    useQuery({
+      query: ClientIntegrationsSectionGreenInvoiceDocument,
+      variables: {
+        clientId: business?.id ?? '',
+      },
+      pause:
+        !integrations?.greenInvoiceInfo || !business?.id || !openSections.includes('green-invoice'),
+    });
   const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
   const hiveClient = integrations?.hiveId;
 
@@ -159,13 +160,18 @@ export function IntegrationsSection({ data }: Props) {
 
   useEffect(() => {
     if (
-      integrations?.greenInvoiceInfo?.id &&
+      integrations?.greenInvoiceInfo?.greenInvoiceId &&
       business?.id &&
       openSections.includes('green-invoice')
     ) {
-      fetchGreenInvoice();
+      fetchGreenInvoiceClient();
     }
-  }, [integrations?.greenInvoiceInfo?.id, business?.id, fetchGreenInvoice, openSections]);
+  }, [
+    integrations?.greenInvoiceInfo?.greenInvoiceId,
+    business?.id,
+    fetchGreenInvoiceClient,
+    openSections,
+  ]);
 
   return (
     <Card>
@@ -301,7 +307,10 @@ export function IntegrationsSection({ data }: Props) {
                   </div>
                   <div className="flex items-center gap-2">
                     <UpdateIntegrationConfigDialog
-                      id={business?.clientInfo?.integrations.greenInvoiceInfo?.id ?? undefined}
+                      id={
+                        business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId ??
+                        undefined
+                      }
                       provider="Green Invoice"
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
@@ -324,7 +333,7 @@ export function IntegrationsSection({ data }: Props) {
                             Integration ID
                           </span>
                           <p className="text-sm font-mono">
-                            {business?.clientInfo?.integrations.greenInvoiceInfo?.id}
+                            {business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId}
                           </p>
                         </div>
                         <div className="space-y-1">

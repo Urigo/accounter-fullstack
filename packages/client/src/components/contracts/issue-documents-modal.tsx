@@ -169,8 +169,8 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                         <TableCell>
                           <Link
                             to={
-                              row.client?.id
-                                ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
+                              row.client?.businessId
+                                ? ROUTES.BUSINESSES.DETAIL(row.client?.businessId)
                                 : ROUTES.BUSINESSES.ALL
                             }
                             target="_blank"

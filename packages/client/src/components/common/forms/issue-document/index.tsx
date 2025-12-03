@@ -47,7 +47,9 @@ export * from './types/document.js';
       integrations {
         id
         greenInvoiceInfo {
-          id
+          greenInvoiceId
+          businessId
+          name
           ...IssueDocumentClientFields
         }
       }
@@ -71,7 +73,9 @@ const vatTypes = getVatTypeOptions();
 
 export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDocumentProps) {
   // Add state for selected client
-  const [selectedClientId, setSelectedClientId] = useState<string>(formData.client?.id || '');
+  const [selectedClientId, setSelectedClientId] = useState<string>(
+    formData.client?.businessId || '',
+  );
   const { selectableClients } = useGetAllClients();
 
   const [clientInfo, setClientInfo] = useState<IssueDocumentClientFieldsFragment | null>(
@@ -109,7 +113,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
         IssueDocumentClientFieldsFragmentDoc,
         clientInfoData.client.integrations.greenInvoiceInfo,
       );
-      updateClient({ ...clientInfo, id: selectedClientId });
+      updateClient(clientInfo);
     }
   }, [clientInfoData?.client?.integrations.greenInvoiceInfo, updateClient, selectedClientId]);
 
@@ -131,8 +135,10 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
 
     if (clientId === 'new') {
       // New client selected - reset client data
+      const id = `temp-${crypto.randomUUID()}`;
       updateFormData('client', {
-        id: `temp-${crypto.randomUUID()}`,
+        greenInvoiceId: id,
+        businessId: id,
         name: '',
       });
     } else if (clientId) {
@@ -140,7 +146,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       const selectedClient = selectableClients.find(c => c.value === clientId);
       if (selectedClient) {
         updateFormData('client', {
-          id: selectedClient.value,
+          businessId: selectedClient.value,
           name: selectedClient.label,
         });
       }

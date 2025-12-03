@@ -18,10 +18,11 @@ type Discount = {
   type: GreenInvoiceDiscountType;
 };
 
-type Client = {
+type GreenInvoiceClient = {
   country?: GreenInvoiceCountry;
   emails?: Array<string>;
-  id: string;
+  greenInvoiceId?: string;
+  businessId: string;
   name?: string;
   phone?: string;
   taxId?: string;
@@ -84,7 +85,7 @@ export type PreviewDocumentInput = {
   rounding?: boolean;
   signed?: boolean;
   maxPayments?: number;
-  client?: Client;
+  client?: GreenInvoiceClient;
   income?: Array<Income>;
   payment?: Array<Payment>;
   linkedDocumentIds?: Array<string>;
@@ -92,4 +93,4 @@ export type PreviewDocumentInput = {
   linkType?: GreenInvoiceLinkType;
 };
 
-export type { Discount, Client, Income, Payment };
+export type { Discount, GreenInvoiceClient, Income, Payment };

@@ -73,13 +73,13 @@ export function GenerateDocument({
   }, [formData]);
 
   useEffect(() => {
-    if (initialFormData.client?.id && formData.client?.id !== initialFormData.client.id) {
-      updateFormData('client', {
-        ...formData.client,
-        id: initialFormData.client.id,
-      });
+    if (
+      initialFormData.client?.businessId &&
+      formData.client?.businessId !== initialFormData.client.businessId
+    ) {
+      updateFormData('client', formData.client?.businessId ? formData.client : undefined);
     }
-  }, [updateFormData, formData, initialFormData.client?.id]);
+  }, [updateFormData, formData, initialFormData.client?.businessId]);
 
   const handlePreview = async () => {
     try {
@@ -234,9 +234,9 @@ export function GenerateDocument({
             </Card>
 
             {/* Previous client documents */}
-            {formData.client?.id && (
+            {formData.client?.businessId && (
               <RecentBusinessDocs
-                businessId={formData.client?.id}
+                businessId={formData.client?.businessId}
                 linkedDocumentIds={formData.linkedDocumentIds ?? []}
               />
             )}

@@ -21,6 +21,7 @@ type Props = {
 };
 
 export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElement {
+  console.log(draft);
   const [open, setOpen] = useState(false);
   const [isPreviewCurrent, setIsPreviewCurrent] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -202,9 +203,9 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
                 </Card>
 
                 {/* Previous business documents */}
-                {document.client?.id && (
+                {document.client && (
                   <RecentBusinessDocs
-                    businessId={document.client?.id}
+                    businessId={document.client?.businessId}
                     linkedDocumentIds={document.linkedDocumentIds ?? []}
                   />
                 )}

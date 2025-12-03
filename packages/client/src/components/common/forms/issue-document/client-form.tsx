@@ -15,13 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
-import type { Client } from './types/document.js';
+import type { GreenInvoiceClient } from './types/document.js';
 import { getCountryOptions } from './utils/enum-helpers.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment IssueDocumentClientFields on GreenInvoiceClient {
-    id
+    greenInvoiceId
+    businessId
     country
     emails
     name
@@ -35,9 +36,12 @@ import { getCountryOptions } from './utils/enum-helpers.js';
   }
 `;
 
-export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragment): Client {
-  const client: Client = {
+export function normalizeClientInfo(
+  clientInfo: IssueDocumentClientFieldsFragment,
+): GreenInvoiceClient {
+  const client: GreenInvoiceClient = {
     ...clientInfo,
+    greenInvoiceId: clientInfo.greenInvoiceId || undefined,
     country: clientInfo.country || undefined,
     emails: clientInfo.emails || undefined,
     name: clientInfo.name || undefined,
@@ -61,7 +65,10 @@ interface ClientFormProps {
 const countries = getCountryOptions();
 
 export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
-  const updateClient = <T extends keyof Client>(field: T, value: Client[T]) => {
+  const updateClient = <T extends keyof GreenInvoiceClient>(
+    field: T,
+    value: GreenInvoiceClient[T],
+  ) => {
     onChange({ ...client, [field]: value });
   };
 
