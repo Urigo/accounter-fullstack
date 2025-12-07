@@ -496,7 +496,7 @@ async function getLoginOptions(page: Page, credentials: MaxCredentials): Promise
       await clickButton(page, '.personal-area > a.go-to-personal-area');
       await waitUntilElementFound(page, '#private', true);
       await clickButton(page, '#private');
-      await waitUntilElementFound(page, '#login-password-link');
+      await waitUntilElementFound(page, '#login-password-link', true);
       await clickButton(page, '#login-password-link');
       await waitUntilElementFound(
         page,

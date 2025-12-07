@@ -1,7 +1,4 @@
-import {
-  // differenceInMonths,
-  format,
-} from 'date-fns';
+import { differenceInMonths, format } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import type { init } from '@accounter/modern-poalim-scraper';
@@ -362,10 +359,10 @@ async function insertTransactions(
     IInsertMaxCreditcardTransactionsParams['transactions'][number]
   > = [];
   for (const transaction of transactions) {
-    // if (differenceInMonths(new Date(), new Date(transaction.purchaseDate)) > 2) {
-    //   logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
-    //   throw new Error('Old transaction');
-    // }
+    if (differenceInMonths(new Date(), new Date(transaction.purchaseDate)) > 2) {
+      logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
+      throw new Error('Old transaction');
+    }
 
     const transactionToInsert: IInsertMaxCreditcardTransactionsParams['transactions'][number] = {
       ...transaction,
