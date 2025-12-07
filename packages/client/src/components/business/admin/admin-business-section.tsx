@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { LinkIcon, Plus, Save, Shield, X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Link } from 'react-router';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -100,6 +99,28 @@ const adminBusinessFormSchema = z.object({
     }),
   ),
 });
+
+const INTEGRATION_LINKS = {
+  WITHHOLDING_TAX: 'https://secapp.taxes.gov.il/NikPay/StartPage.aspx#/Home',
+  TAX_ADVANCES: 'https://secapp.taxes.gov.il/gmftashmh/main/entrance',
+  SOCIAL_SECURITY: 'https://b2b.btl.gov.il/BTL.ILG.Payments/ChovDochMaasikInfo.aspx',
+  VAT: 'https://secapp.taxes.gov.il/emdvhmfrt/wLogOnMenu.aspx',
+};
+
+const LinkedSectionHeader = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      onClick={event => event.stopPropagation()}
+      className="inline-flex items-center font-semibold"
+    >
+      <LinkIcon size={12} />
+    </a>
+    <span>{children}</span>
+  </h3>
+);
 
 type AdminBusinessFormValues = z.infer<typeof adminBusinessFormSchema>;
 
@@ -261,33 +282,19 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
-                <Link
-                  to={'https://secapp.taxes.gov.il/NikPay/StartPage.aspx#/Home'}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={event => event.stopPropagation()}
-                  className="inline-flex items-center font-semibold"
-                >
-                  <LinkIcon size={12} />
-                </Link>
-                <span>VAT</span>
-              </h3>
+              <LinkedSectionHeader href={INTEGRATION_LINKS.VAT}>VAT</LinkedSectionHeader>
 
               <Separator className="md:col-span-2" />
 
-              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
-                <Link
-                  to={'https://secapp.taxes.gov.il/NikPay/StartPage.aspx#/Home'}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={event => event.stopPropagation()}
-                  className="inline-flex items-center font-semibold"
-                >
-                  <LinkIcon size={12} />
-                </Link>
-                <span>Withholding Tax</span>
-              </h3>
+              <LinkedSectionHeader href={INTEGRATION_LINKS.TAX_ADVANCES}>
+                Tax Advances
+              </LinkedSectionHeader>
+
+              <Separator className="md:col-span-2" />
+
+              <LinkedSectionHeader href={INTEGRATION_LINKS.WITHHOLDING_TAX}>
+                Withholding Tax
+              </LinkedSectionHeader>
 
               <FormField
                 control={form.control}
@@ -350,18 +357,9 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <Separator className="md:col-span-2" />
 
-              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
-                <Link
-                  to={'https://secapp.taxes.gov.il/emdvhmfrt/wLogOnMenu.aspx'}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={event => event.stopPropagation()}
-                  className="inline-flex items-center font-semibold"
-                >
-                  <LinkIcon size={12} />
-                </Link>
-                <span>Tax Advances</span>
-              </h3>
+              <LinkedSectionHeader href={INTEGRATION_LINKS.TAX_ADVANCES}>
+                Tax Advances
+              </LinkedSectionHeader>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -442,18 +440,9 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <Separator className="md:col-span-2" />
 
-              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
-                <Link
-                  to={'https://b2b.btl.gov.il/BTL.ILG.Payments/ChovDochMaasikInfo.aspx'}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={event => event.stopPropagation()}
-                  className="inline-flex items-center font-semibold"
-                >
-                  <LinkIcon size={12} />
-                </Link>
-                <span>Social Security</span>
-              </h3>
+              <LinkedSectionHeader href={INTEGRATION_LINKS.SOCIAL_SECURITY}>
+                Social Security
+              </LinkedSectionHeader>
 
               <FormField
                 control={form.control}
