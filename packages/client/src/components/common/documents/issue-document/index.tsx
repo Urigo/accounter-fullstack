@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Eye, FileText, Loader2, Send } from 'lucide-react';
 import {
@@ -31,22 +31,23 @@ interface GenerateDocumentProps {
 
 const documentTypes = getDocumentTypeOptions();
 
-export function GenerateDocument({
-  initialFormData = {},
-  onDone,
-  chargeId,
-}: GenerateDocumentProps) {
+const formDefaults: PreviewDocumentInput = {
+  type: DocumentType.Invoice,
+  lang: GreenInvoiceDocumentLang.English,
+  currency: Currency.Usd,
+  vatType: GreenInvoiceVatType.Default,
+  date: format(new Date(), 'yyyy-MM-dd'),
+  rounding: false,
+  signed: true,
+  income: [],
+  payment: [],
+};
+
+export function GenerateDocument({ initialFormData, onDone, chargeId }: GenerateDocumentProps) {
+  console.log('GenerateDocument initialized with initialFormData:', initialFormData);
   const [formData, setFormData] = useState<PreviewDocumentInput>({
-    type: DocumentType.Invoice,
-    lang: GreenInvoiceDocumentLang.English,
-    currency: Currency.Usd,
-    vatType: GreenInvoiceVatType.Default,
-    date: format(new Date(), 'yyyy-MM-dd'),
-    rounding: false,
-    signed: true,
-    income: [],
-    payment: [],
-    ...initialFormData,
+    ...formDefaults,
+    ...(initialFormData ?? {}),
   });
 
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -72,18 +73,13 @@ export function GenerateDocument({
     setIsPreviewCurrent(false);
   }, [formData]);
 
+  // reset form data when initialFormData changes
   useEffect(() => {
-    if (
-      initialFormData.client?.businessId &&
-      formData.client?.businessId !== initialFormData.client.businessId
-    ) {
-      updateFormData('client', formData.client?.businessId ? formData.client : undefined);
-    }
-  }, [updateFormData, formData, initialFormData.client?.businessId]);
+    setFormData({ ...formDefaults, ...initialFormData });
+  }, [initialFormData]);
 
-  const handlePreview = async () => {
+  const handlePreview = useCallback(async () => {
     try {
-      // Simulate API call to generate document preview
       const fileText = await previewDocument({
         input: formData,
       });
@@ -98,34 +94,38 @@ export function GenerateDocument({
     } catch (error) {
       console.error('Failed to generate preview:', error);
     }
-  };
+  }, [formData, previewDocument]);
 
-  const handleIssueClick = () => {
+  const handleIssueClick = useCallback(() => {
     if (onDone) {
       onDone(formData);
     } else {
       setIsIssueModalOpen(true);
     }
-  };
+  }, [onDone, formData]);
 
-  const handleIssue = async (issueData: IssueDocumentData) => {
-    console.log('Issuing document with data:', formData, issueData);
-
-    await issueDocument({
-      input: formData,
-      chargeId,
-      ...issueData,
-    });
-  };
+  const handleIssue = useCallback(
+    async (issueData: IssueDocumentData) => {
+      await issueDocument({
+        input: formData,
+        chargeId,
+        ...issueData,
+      });
+    },
+    [formData, chargeId, issueDocument],
+  );
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;
 
-  const totalAmount =
-    formData.income?.reduce((total, item) => {
-      const subtotal = item.price * item.quantity;
-      const vatAmount = subtotal * ((item.vatRate || 0) / 100);
-      return total + subtotal + vatAmount;
-    }, 0) || 0;
+  const totalAmount = useMemo(
+    () =>
+      formData.income?.reduce((total, item) => {
+        const subtotal = item.price * item.quantity;
+        const vatAmount = subtotal * ((item.vatRate || 0) / 100);
+        return total + subtotal + vatAmount;
+      }, 0) || 0,
+    [formData.income],
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">

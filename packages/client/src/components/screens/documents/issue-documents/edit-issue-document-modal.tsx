@@ -46,7 +46,6 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
 
   const handlePreview = useCallback(async () => {
     try {
-      // Simulate API call to generate document preview
       const fileText = await previewDocument({
         input: document,
       });

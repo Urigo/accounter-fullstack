@@ -124,6 +124,7 @@ export default [
               'FinancialIntAmount',
               'FlagForeignFeeTransactionsResult',
               'GeneratedLedgerRecords',
+              'GreenInvoiceClient',
               'GreenInvoiceIncome',
               'GreenInvoicePayment',
               'IncomeExpenseChart',

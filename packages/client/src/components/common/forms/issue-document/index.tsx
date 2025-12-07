@@ -47,7 +47,6 @@ export * from './types/document.js';
       integrations {
         id
         greenInvoiceInfo {
-          id
           greenInvoiceId
           businessId
           name
@@ -138,7 +137,6 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       // New client selected - reset client data
       const id = `temp-${crypto.randomUUID()}`;
       updateFormData('client', {
-        id,
         businessId: id,
         name: '',
       });
@@ -147,7 +145,6 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       const selectedClient = selectableClients.find(c => c.value === clientId);
       if (selectedClient) {
         updateFormData('client', {
-          id: selectedClient.value,
           businessId: selectedClient.value,
           name: selectedClient.label,
         });
