@@ -69,7 +69,6 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
     signed
     maxPayments
     client {
-      id
       greenInvoiceId
       businessId
       name

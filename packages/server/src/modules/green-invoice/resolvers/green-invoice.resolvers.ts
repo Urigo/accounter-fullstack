@@ -208,7 +208,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client: mainBusinessId,
+        client: greenInvoiceClientId,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -368,7 +368,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
         vatType,
         rounding: false,
         signed: true,
-        client: chargeBusinessId,
+        client: greenInvoiceClientId,
         income,
         payment,
         // linkedPaymentId: ____,
@@ -684,7 +684,6 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       validateClientIntegrations(business.integrations).greenInvoiceId ?? null,
   },
   GreenInvoiceClient: {
-    id: clientId => clientId,
     greenInvoiceId: clientId => clientId,
     businessId: async (clientId, _, { injector }) => {
       const client = await injector

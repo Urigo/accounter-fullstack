@@ -21,7 +21,6 @@ import { getCountryOptions } from './utils/enum-helpers.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment IssueDocumentClientFields on GreenInvoiceClient {
-    id
     greenInvoiceId
     businessId
     country

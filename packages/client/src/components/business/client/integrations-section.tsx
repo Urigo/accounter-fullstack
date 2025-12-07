@@ -48,7 +48,7 @@ import { Label } from '../../ui/label.jsx';
       integrations {
         id
         greenInvoiceInfo {
-          id
+          businessId
           greenInvoiceId
         }
         hiveId
@@ -65,7 +65,7 @@ import { Label } from '../../ui/label.jsx';
 /* GraphQL */ `
   query ClientIntegrationsSectionGreenInvoice($clientId: UUID!) {
     greenInvoiceClient(clientId: $clientId) {
-      id
+      businessId
       greenInvoiceId
       country
       emails
