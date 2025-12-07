@@ -164,9 +164,9 @@ async function seed() {
       }
 
       console.log(`✅ Created financial account ${account.account_number}`);
-
-      await seedCountries(client);
     }
+
+    await seedCountries(client);
 
     console.log('✅ Financial accounts created successfully');
     console.log('✅ Admin business entity created successfully');
