@@ -1,4 +1,7 @@
-import { differenceInMonths, format } from 'date-fns';
+import {
+  // differenceInMonths,
+  format,
+} from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import type { init } from '@accounter/modern-poalim-scraper';
@@ -54,8 +57,8 @@ type NormalizedTransaction = Omit<Transaction, 'dealData' | 'merchantData' | 'ru
   dealDataAmountLeft: number | null;
   dealDataArn: string | null;
   dealDataAuthorizationNumber: string | null;
-  dealDataCardName: null;
-  dealDataCardToken: null;
+  dealDataCardName: string | null;
+  dealDataCardToken: string | null;
   dealDataCommissionVat: number | null;
   dealDataDirectExchange: null;
   dealDataExchangeCommissionAmount: null;
@@ -69,7 +72,7 @@ type NormalizedTransaction = Omit<Transaction, 'dealData' | 'merchantData' | 'ru
   dealDataIsAllowedSpreadWithBenefit: boolean | null;
   dealDataIssuerCurrency: string | null;
   dealDataIssuerExchangeRate: null;
-  dealDataOriginalTerm: null;
+  dealDataOriginalTerm: string | null;
   dealDataPercentMaam: number | null;
   dealDataPlan: number | null;
   dealDataPosEntryEmv: number | null;
@@ -308,7 +311,7 @@ async function isTransactionNew(
     const res = await getMaxCreditcardTransactions.run(
       {
         card: transaction.shortCardNumber,
-        actualPaymentAmount: transaction.actualPaymentAmount,
+        actualPaymentAmount: transaction.actualPaymentAmount ?? 0,
         arn: transaction.arn,
         paymentDate: transaction.paymentDate
           ? format(new Date(transaction.paymentDate), 'yyyy-MM-dd')
@@ -359,13 +362,14 @@ async function insertTransactions(
     IInsertMaxCreditcardTransactionsParams['transactions'][number]
   > = [];
   for (const transaction of transactions) {
-    if (differenceInMonths(new Date(), new Date(transaction.purchaseDate)) > 2) {
-      logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
-      throw new Error('Old transaction');
-    }
+    // if (differenceInMonths(new Date(), new Date(transaction.purchaseDate)) > 2) {
+    //   logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
+    //   throw new Error('Old transaction');
+    // }
 
     const transactionToInsert: IInsertMaxCreditcardTransactionsParams['transactions'][number] = {
       ...transaction,
+      actualPaymentAmount: transaction.actualPaymentAmount ?? 0,
       ethocaInd: transaction.ethocaInd ?? null,
       receiptPDF: transaction.receiptPDF ?? null,
       fundsTransferComment: transaction.fundsTransferComment ?? null,
@@ -377,7 +381,30 @@ async function insertTransactions(
   if (transactionsToInsert.length > 0) {
     try {
       const res = await insertMaxCreditcardTransactions.run(
-        { transactions: transactionsToInsert },
+        {
+          transactions: transactionsToInsert.map(t => ({
+            ...t,
+            actualPaymentAmount: t.actualPaymentAmount ?? 0,
+            arn: t.arn ?? '',
+            ethocaInd: t.ethocaInd ?? false,
+            paymentDate: t.paymentDate ?? '1900-01-01',
+            promotionClub: t.promotionClub ?? '',
+            dealDataAcq: t.dealDataAcq ?? '',
+            dealDataAmount: t.dealDataAmount ?? 0,
+            dealDataAmountIls: t.dealDataAmountIls ?? 0,
+            dealDataAmountLeft: t.dealDataAmountLeft ?? 0,
+            dealDataArn: t.dealDataArn ?? '',
+            dealDataCommissionVat: t.dealDataCommissionVat ?? 0,
+            dealDataExchangeDirect: t.dealDataExchangeDirect ?? '',
+            dealDataExchangeRate: t.dealDataExchangeRate ?? 0,
+            dealDataInterestAmount: t.dealDataInterestAmount ?? 0,
+            dealDataIssuerCurrency: t.dealDataIssuerCurrency ?? '',
+            dealDataPlan: t.dealDataPlan ?? 0,
+            dealDataProcessingDate: t.dealDataProcessingDate ?? '1900-01-01',
+            dealDataRefNbr: t.dealDataRefNbr ?? '',
+            dealDataTdmCardToken: t.dealDataTdmCardToken ?? '',
+          })),
+        },
         pool,
       );
       res.map(transaction => {
@@ -514,7 +541,7 @@ export async function getMaxData(
                 : ((dealData.isAllowedSpreadWithBenefit ? 1 : 0) as unknown as boolean),
             dealDataIssuerCurrency: dealData?.issuerCurrency ?? null,
             dealDataIssuerExchangeRate: dealData?.issuerExchangeRate ?? null,
-            dealDataOriginalTerm: dealData?.originalTerm ?? null,
+            dealDataOriginalTerm: dealData?.originalTerm ? dealData?.originalTerm.toString() : null,
             dealDataPercentMaam: dealData?.percentMaam ?? null,
             dealDataPlan: dealData?.plan ?? null,
             dealDataPosEntryEmv: dealData?.posEntryEmv ?? null,
@@ -556,7 +583,7 @@ export async function getMaxData(
             merchantCommercialName: merchantData.merchantCommercialName,
             merchantNumber: merchantData.merchantNumber,
             merchantPhone: merchantData.merchantPhone,
-            merchantTaxId: merchantData.merchantTaxId,
+            merchantTaxId: merchantData.merchantTaxId ?? '',
 
             runtimeReferenceInternalId: runtimeReference.id,
             runtimeReferenceType: runtimeReference.type,

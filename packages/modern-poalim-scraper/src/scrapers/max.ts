@@ -483,7 +483,7 @@ async function getKeyByValue(
   return Promise.resolve(LoginResults.UnknownError);
 }
 
-function getLoginOptions(page: Page, credentials: MaxCredentials): LoginOptions {
+async function getLoginOptions(page: Page, credentials: MaxCredentials): Promise<LoginOptions> {
   return {
     loginUrl: LOGIN_URL,
     fields: createLoginFields(credentials),
@@ -496,7 +496,7 @@ function getLoginOptions(page: Page, credentials: MaxCredentials): LoginOptions 
       await clickButton(page, '.personal-area > a.go-to-personal-area');
       await waitUntilElementFound(page, '#private', true);
       await clickButton(page, '#private');
-      await waitUntilElementFound(page, '#login-password-link', true);
+      await waitUntilElementFound(page, '#login-password-link');
       await clickButton(page, '#login-password-link');
       await waitUntilElementFound(
         page,
@@ -568,7 +568,7 @@ async function login(page: Page, credentials: MaxCredentials): Promise<boolean> 
   }
 
   console.debug('execute login process');
-  const loginOptions = getLoginOptions(page, credentials);
+  const loginOptions = await getLoginOptions(page, credentials);
 
   if (loginOptions.userAgent) {
     console.debug('set custom user agent provided in options');
