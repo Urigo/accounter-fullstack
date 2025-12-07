@@ -3,8 +3,9 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, Save, Shield, X } from 'lucide-react';
+import { LinkIcon, Plus, Save, Shield, X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { Link } from 'react-router';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -260,8 +261,36 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
-              <h3 className="text-sm font-semibold text-foreground md:col-span-2">
-                Withholding Tax
+              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
+                <Link
+                  to={'https://secapp.taxes.gov.il/NikPay/StartPage.aspx#/Home'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={event => event.stopPropagation()}
+                  className="inline-flex items-center font-semibold"
+                >
+                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
+                  <LinkIcon size={12} />
+                  {/* </div> */}
+                </Link>
+                <span>VAT</span>
+              </h3>
+
+              <Separator className="md:col-span-2" />
+
+              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
+                <Link
+                  to={'https://secapp.taxes.gov.il/NikPay/StartPage.aspx#/Home'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={event => event.stopPropagation()}
+                  className="inline-flex items-center font-semibold"
+                >
+                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
+                  <LinkIcon size={12} />
+                  {/* </div> */}
+                </Link>
+                <span>Withholding Tax</span>
               </h3>
 
               <FormField
@@ -325,7 +354,20 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <Separator className="md:col-span-2" />
 
-              <h3 className="text-sm font-semibold text-foreground md:col-span-2">Tax Advances</h3>
+              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
+                <Link
+                  to={'https://secapp.taxes.gov.il/emdvhmfrt/wLogOnMenu.aspx'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={event => event.stopPropagation()}
+                  className="inline-flex items-center font-semibold"
+                >
+                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
+                  <LinkIcon size={12} />
+                  {/* </div> */}
+                </Link>
+                <span>Tax Advances</span>
+              </h3>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -406,8 +448,19 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
 
               <Separator className="md:col-span-2" />
 
-              <h3 className="text-sm font-semibold text-foreground md:col-span-2">
-                Social Security
+              <h3 className="flex flex-row gap-2 text-sm font-semibold text-foreground md:col-span-2">
+                <Link
+                  to={'https://b2b.btl.gov.il/BTL.ILG.Payments/ChovDochMaasikInfo.aspx'}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={event => event.stopPropagation()}
+                  className="inline-flex items-center font-semibold"
+                >
+                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
+                  <LinkIcon size={12} />
+                  {/* </div> */}
+                </Link>
+                <span>Social Security</span>
               </h3>
 
               <FormField
