@@ -44,10 +44,9 @@ const formDefaults: PreviewDocumentInput = {
 };
 
 export function GenerateDocument({ initialFormData, onDone, chargeId }: GenerateDocumentProps) {
-  console.log('GenerateDocument initialized with initialFormData:', initialFormData);
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     ...formDefaults,
-    ...(initialFormData ?? {}),
+    ...initialFormData,
   });
 
   const [previewContent, setPreviewContent] = useState<string | null>(null);
@@ -76,7 +75,7 @@ export function GenerateDocument({ initialFormData, onDone, chargeId }: Generate
   // reset form data when initialFormData changes
   useEffect(() => {
     setFormData({ ...formDefaults, ...initialFormData });
-  }, [initialFormData]);
+  }, [JSON.stringify(initialFormData)]);
 
   const handlePreview = useCallback(async () => {
     try {
