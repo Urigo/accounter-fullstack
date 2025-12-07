@@ -269,9 +269,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                   onClick={event => event.stopPropagation()}
                   className="inline-flex items-center font-semibold"
                 >
-                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
                   <LinkIcon size={12} />
-                  {/* </div> */}
                 </Link>
                 <span>VAT</span>
               </h3>
@@ -286,9 +284,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                   onClick={event => event.stopPropagation()}
                   className="inline-flex items-center font-semibold"
                 >
-                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
                   <LinkIcon size={12} />
-                  {/* </div> */}
                 </Link>
                 <span>Withholding Tax</span>
               </h3>
@@ -362,9 +358,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                   onClick={event => event.stopPropagation()}
                   className="inline-flex items-center font-semibold"
                 >
-                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
                   <LinkIcon size={12} />
-                  {/* </div> */}
                 </Link>
                 <span>Tax Advances</span>
               </h3>
@@ -456,9 +450,7 @@ export function AdminBusinessSection({ data, refetchBusiness }: Props): React.Re
                   onClick={event => event.stopPropagation()}
                   className="inline-flex items-center font-semibold"
                 >
-                  {/* <div className="h-10 w-10 rounded-lg bg-gray-500 flex items-center justify-center text-white font-bold"> */}
                   <LinkIcon size={12} />
-                  {/* </div> */}
                 </Link>
                 <span>Social Security</span>
               </h3>
