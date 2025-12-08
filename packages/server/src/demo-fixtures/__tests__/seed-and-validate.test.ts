@@ -27,6 +27,13 @@ describe('Seed and Validate Integration', () => {
   it(
     'seeds demo data and passes validation',
     async () => {
+      // Check for stale migrations before running the test
+      if (process.env.SKIP_DEMO_SEED_STALE_MIGRATIONS === '1') {
+        throw new Error(
+          'Demo-seed test failed: migrations are stale. Run: yarn workspace @accounter/migrations migration:run',
+        );
+      }
+
       const workspaceRoot = resolve(__dirname, '../../../../../');
       const seedScriptPath = resolve(workspaceRoot, 'scripts/seed-demo-data.ts');
       const validateScriptPath = resolve(

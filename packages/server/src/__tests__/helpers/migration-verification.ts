@@ -1,4 +1,4 @@
-import { Client, Pool, PoolClient } from 'pg';
+import { type Client, Pool, type PoolClient } from 'pg';
 import { LATEST_MIGRATION_NAME } from '../../../../migrations/src/run-pg-migrations.js';
 
 export { LATEST_MIGRATION_NAME };
