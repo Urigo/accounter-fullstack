@@ -94,6 +94,7 @@ The test suite is organized into three projects for efficiency:
 - **Unit tests** (`yarn test`): Fast, isolated tests with no external dependencies
 - **Integration tests** (`yarn test:integration`): DB-backed tests requiring PostgreSQL and
   migrations
+- **Demo seed E2E** (`yarn test:demo-seed`): Full seed-and-validate pipeline (slow, ~10-30s)
 
 ### Running Tests
 
@@ -104,17 +105,23 @@ yarn test
 # Unit + integration tests (requires DB + migrations)
 yarn test:integration
 
-# All suites
-yarn test:all
+# Demo seed E2E (requires DB + migrations + ALLOW_DEMO_SEED=1)
+ALLOW_DEMO_SEED=1 yarn test:demo-seed
+
+# All three suites
+ALLOW_DEMO_SEED=1 yarn test:all
 ```
 
 ### Prerequisites for Integration/Demo Tests
 
-Integration tests require:
+Integration and demo-seed tests require:
 
 1. **PostgreSQL running**: Start with
    `docker compose -f docker/docker-compose.dev.yml up -d postgres`
 2. **Migrations applied**: Run `yarn workspace @accounter/migrations migration:run`
+3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` environment variable
+
+If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.
 
 See [`packages/server/README.md`](packages/server/README.md) for detailed test harness
 documentation.

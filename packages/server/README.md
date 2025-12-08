@@ -2,7 +2,7 @@
 
 ## Test Suites
 
-The test suite is split into two Vitest projects for efficiency and isolation:
+The test suite is split into three Vitest projects for efficiency and isolation:
 
 ### 1. Unit Tests (`yarn test`)
 
@@ -21,6 +21,23 @@ DB-backed tests including:
 - PostgreSQL running
 - Migrations applied (see below)
 
+### 3. Demo Seed E2E (`yarn test:demo-seed`)
+
+Full seed-and-validate pipeline test that:
+
+- Seeds complete demo dataset
+- Validates data integrity and ledger balance
+- Takes 10-30 seconds to complete
+
+**Prerequisites:**
+
+- PostgreSQL running
+- Migrations applied
+- `ALLOW_DEMO_SEED=1` environment variable
+
+**Graceful Failure**: If migrations are stale, the test fails with a clear error message directing
+you to run migrations, rather than hanging or producing cryptic errors.
+
 ### Running Tests
 
 ```bash
@@ -30,8 +47,11 @@ yarn test
 # Unit + integration tests (for PRs)
 yarn test:integration
 
-# All suites (for main branch merges)
-yarn test:all
+# Demo seed E2E only
+ALLOW_DEMO_SEED=1 yarn test:demo-seed
+
+# All three suites (for main branch merges)
+ALLOW_DEMO_SEED=1 yarn test:all
 ```
 
 ## Test DB Harness
