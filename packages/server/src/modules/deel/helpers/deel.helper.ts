@@ -15,8 +15,8 @@ import type {
   IInsertDocumentsParams,
 } from '@modules/documents/types';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { Currency, DocumentType } from '@shared/enums';
 import { dateToTimelessDateString, hashStringToInt } from '@shared/helpers';
+import { Currency, DocumentType } from '../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';

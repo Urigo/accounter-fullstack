@@ -2,7 +2,6 @@ import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { BusinessTripAttendeesProvider } from '@modules/business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '@modules/charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { ChargeTypeEnum } from '@shared/enums';
 import {
   CommonError,
   Maybe,
@@ -11,6 +10,7 @@ import {
   ResolversTypes,
   ResolverTypeWrapper,
 } from '../../../__generated__/types.js';
+import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { LedgerRecordsProto } from '../../../shared/types/index.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';

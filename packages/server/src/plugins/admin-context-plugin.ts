@@ -2,12 +2,12 @@ import { useExtendContext } from 'graphql-yoga';
 import pg from 'pg';
 import type { Plugin } from '@envelop/types';
 import { sql } from '@pgtyped/runtime';
-import type { Currency } from '@shared/enums';
 import {
   formatCurrency,
   getCacheInstance,
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
+import type { Currency } from '../shared/enums.js';
 import type { Environment, TimelessDateString } from '../shared/types/index.js';
 import type {
   IGetAdminBusinessContextQuery,

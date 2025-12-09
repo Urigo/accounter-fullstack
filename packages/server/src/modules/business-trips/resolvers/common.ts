@@ -7,8 +7,8 @@ import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils
 import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { Currency } from '@shared/enums';
 import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
+import { Currency } from '../../../shared/enums.js';
 import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';

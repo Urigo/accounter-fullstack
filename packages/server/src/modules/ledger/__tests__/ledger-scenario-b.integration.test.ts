@@ -11,7 +11,7 @@ import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helpe
 import { assertForeignExpenseScenario, assertAuditTrail } from './helpers/ledger-assertions.js';
 import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
-import { Currency } from '@shared/enums';
+import { Currency } from '../../../shared/enums.js';
 
 /**
  * Ledger Integration Test for Expense Scenario B

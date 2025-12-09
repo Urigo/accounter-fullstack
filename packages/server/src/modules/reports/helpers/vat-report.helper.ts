@@ -9,10 +9,10 @@ import type { IGetDocumentsByFiltersResult } from '@modules/documents/types.js';
 import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '@modules/financial-entities/types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
-import { DocumentType, type Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/types.js';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
+import { DocumentType, type Currency } from '../../../shared/enums.js';
 
 export type VatReportRecordSources = {
   charge: IGetChargesByIdsResult;

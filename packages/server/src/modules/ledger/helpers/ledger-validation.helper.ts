@@ -1,4 +1,4 @@
-import { Currency } from '@shared/enums';
+import { Currency } from '../../../shared/enums.js';
 import type { IInsertLedgerRecordsParams } from '../types.js';
 
 export function validateLedgerRecordParams(

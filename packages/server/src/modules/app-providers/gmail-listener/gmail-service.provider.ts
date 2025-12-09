@@ -13,10 +13,10 @@ import {
   suggestionDataSchema,
 } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { DocumentType } from '@shared/enums';
 import { hashStringToInt } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
 import { EmailAttachmentType } from '../../../__generated__/types.js';
+import { DocumentType } from '../../../shared/enums.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { AnthropicProvider } from '../anthropic.js';
 import { CloudinaryProvider } from '../cloudinary.js';

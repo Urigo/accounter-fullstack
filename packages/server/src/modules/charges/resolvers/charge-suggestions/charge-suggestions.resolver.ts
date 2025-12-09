@@ -10,7 +10,6 @@ import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { IGetTagsByIDsResult } from '@modules/tags/types.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { ChargeTypeEnum } from '@shared/enums';
 import type {
   ChargeResolvers,
   Maybe,
@@ -19,6 +18,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../../shared/constants.js';
+import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { getChargeType } from '../../helpers/charge-type.js';
 import type { ChargesModule } from '../../types.js';
 import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';

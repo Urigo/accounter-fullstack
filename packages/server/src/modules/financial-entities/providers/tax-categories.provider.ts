@@ -2,8 +2,8 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { Currency } from '@shared/enums';
 import { getCacheInstance } from '@shared/helpers';
+import { Currency } from '../../../shared/enums.js';
 import type {
   IDeleteBusinessTaxCategoryParams,
   IDeleteBusinessTaxCategoryQuery,

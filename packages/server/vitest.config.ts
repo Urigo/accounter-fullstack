@@ -20,7 +20,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@modules': path.resolve(__dirname, './src/modules'),
-      '@shared/enums': path.resolve(__dirname, './src/shared/enums.js'),
       '@shared/tokens': path.resolve(__dirname, './src/shared/tokens.js'),
       '@shared/helpers': path.resolve(__dirname, './src/shared/helpers/index.js'),
       '@shared/errors': path.resolve(__dirname, './src/shared/errors.js'),

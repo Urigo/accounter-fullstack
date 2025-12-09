@@ -168,9 +168,9 @@ Conventions:
 
 - Date strings use ISO `YYYY-MM-DD` converted to `Date` at insertion.
 - Numeric values stored as string when required by pgtyped types (e.g. `numeric` in transactions).
-- **Currency and Country enums**: Use `Currency` enum from `@shared/enums` and `CountryCode` enum
-  from `packages/server/src/modules/countries/types.ts` instead of string literals for type safety
-  and consistency.
+- **Currency and Country enums**: Use `Currency` enum from `packages/server/src/shared/enums.js` and
+  `CountryCode` enum from `packages/server/src/modules/countries/types.ts` instead of string
+  literals for type safety and consistency.
   - Example: `Currency.Ils`, `Currency.Usd` instead of `'ILS'`, `'USD'`
   - Example: `CountryCode.Israel`, `CountryCode['United States of America (the)']` instead of
     `'ISR'`, `'USA'`
@@ -466,7 +466,7 @@ maintenance as ledger logic evolves.
 
   ```typescript
   import { mockExchangeRate } from '@/__tests__/helpers/exchange-mock.js';
-  import { Currency } from '@shared/enums';
+  import { Currency } from 'packages/server/src/shared/enums.js';
 
   const context = createLedgerTestContext({
     pool,
@@ -515,7 +515,7 @@ inconsistency.
 
 **Solution**: Standardized all test code to use enum values:
 
-- `Currency` enum from `@shared/enums` (`Currency.Ils`, `Currency.Usd`)
+- `Currency` enum from `packages/server/src/shared/enums.js` (`Currency.Ils`, `Currency.Usd`)
 - `CountryCode` enum from `packages/server/src/modules/countries/types.ts` (`CountryCode.Israel`,
   `CountryCode['United States of America (the)']`)
 

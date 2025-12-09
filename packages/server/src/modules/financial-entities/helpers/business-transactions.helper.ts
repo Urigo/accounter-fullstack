@@ -1,5 +1,5 @@
 import { IGetLedgerRecordsByChargesIdsResult } from '@modules/ledger/types';
-import { Currency } from '@shared/enums';
+import { Currency } from '../../../shared/enums.js';
 import type {
   BusinessTransactionProto,
   RawBusinessTransactionsSum,

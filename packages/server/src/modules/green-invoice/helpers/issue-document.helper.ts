@@ -13,7 +13,6 @@ import { FinancialBankAccountsProvider } from '@modules/financial-accounts/provi
 import { IGetFinancialBankAccountsByIdsResult } from '@modules/financial-accounts/types.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
-import { DocumentType } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import {
   Currency,
@@ -25,6 +24,7 @@ import {
   NewDocumentInfo,
   NewDocumentInput,
 } from '../../../__generated__/types.js';
+import { DocumentType } from '../../../shared/enums.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,

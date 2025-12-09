@@ -7,7 +7,6 @@
 
     "paths": {
       "@modules/*": ["./modules/*"],
-      "@shared/enums": ["./shared/enums.js"],
       "@shared/tokens": ["./shared/tokens.js"],
       "@shared/helpers": ["./shared/helpers/index.js"],
       "@shared/errors": ["./shared/errors.js"],

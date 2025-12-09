@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
+import { Currency } from '../../../shared/enums.js';
 import { fetchBusiness, fetchTaxCategory } from '../heplers/admin-context.helper.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import type { AdminContextModule } from '../types.js';
