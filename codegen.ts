@@ -31,7 +31,7 @@ const config: CodegenConfig = {
         optionalResolveType: true,
         addInterfaceFieldResolverTypes: true,
         scalars: {
-          TimelessDate: '@shared/types#TimelessDateString',
+          TimelessDate: '../shared/types#TimelessDateString',
           FileScalar: {
             input: 'File | Blob',
             output: 'string',
@@ -68,8 +68,8 @@ const config: CodegenConfig = {
           BankDepositFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           Business: '../modules/financial-entities/types.js#IGetBusinessesByIdsResult',
-          BusinessTransaction: '@shared/types#BusinessTransactionProto',
-          BusinessTransactionSum: '@shared/types#RawBusinessTransactionsSum',
+          BusinessTransaction: '../shared/types#BusinessTransactionProto',
+          BusinessTransactionSum: '../shared/types#RawBusinessTransactionsSum',
           BusinessTrip: '../modules/business-trips/types.js#BusinessTripProto',
           BusinessTripAccommodationExpense:
             '../modules/business-trips/types.js#IGetBusinessTripsAccommodationsExpensesByIdsResult',
@@ -97,7 +97,7 @@ const config: CodegenConfig = {
           CorporateTax:
             '../modules/corporate-taxes/types.js#IGetCorporateTaxesByCorporateIdsResult',
           CorporateTaxRulingComplianceReport:
-            '@shared/types#CorporateTaxRulingComplianceReportProto',
+            '../shared/types#CorporateTaxRulingComplianceReportProto',
           Contract: '../modules/contracts/types.js#IGetAllOpenContractsResult',
           Country: '../modules/countries/types.js#IGetAllCountriesResult',
           CreditcardBankCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
@@ -108,7 +108,7 @@ const config: CodegenConfig = {
             '../modules/depreciation/types.js#IGetAllDepreciationCategoriesResult',
           DepreciationRecord: '../modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
-          DocumentSuggestions: '@shared/types#DocumentSuggestionsProto',
+          DocumentSuggestions: '../shared/types#DocumentSuggestionsProto',
           DynamicReportInfo: '../modules/reports/types.js#IGetTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity:
@@ -122,9 +122,9 @@ const config: CodegenConfig = {
           Invoice: '../modules/documents/types.js#IGetAllDocumentsResult',
           InvoiceReceipt: '../modules/documents/types.js#IGetAllDocumentsResult',
           IssuedDocumentInfo: '../modules/documents/types.js#IssuedDocumentInfoProto',
-          LedgerBalanceUnbalancedEntity: '@shared/types#LedgerBalanceUnbalancedEntityProto',
+          LedgerBalanceUnbalancedEntity: '../shared/types#LedgerBalanceUnbalancedEntityProto',
           LedgerRecord: '../modules/ledger/types.js#IGetLedgerRecordsByChargesIdsResult',
-          Ledger: '@shared/types#LedgerRecordsProto',
+          Ledger: '../shared/types#LedgerRecordsProto',
           LtdFinancialEntity: '../modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           MiscExpense: '../modules/misc-expenses/types.js#IGetExpensesByChargeIdsResult',
           MonthlyVatCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
