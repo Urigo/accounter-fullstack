@@ -7,7 +7,7 @@ import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-c
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
 import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
 import {

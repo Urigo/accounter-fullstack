@@ -16,7 +16,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 
 export async function businessForUniformFormat(
   context: GraphQLModules.ModuleContext,

@@ -4,7 +4,7 @@ import { businessTripSummary } from '@modules/business-trips/resolvers/business-
 import { BusinessTripProto } from '@modules/business-trips/types.js';
 import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import {
   amountByFinancialEntityIdAndSortCodeValidations,
   FilteringOptions,

@@ -7,7 +7,7 @@ import {
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import { defineConversionBaseAndQuote, getFiatExchangeRate } from '../helpers/exchange.helper.js';
 import { ExchangeProvider } from '../providers/exchange.provider.js';
 import type { ExchangeRatesModule } from '../types.js';

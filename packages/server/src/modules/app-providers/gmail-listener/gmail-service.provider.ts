@@ -17,7 +17,7 @@ import { DocumentType } from '@shared/enums';
 import { EmailAttachmentType } from '@shared/gql-types';
 import { hashStringToInt } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+import type { Environment } from '../../../shared/types/index.js';
 import { AnthropicProvider } from '../anthropic.js';
 import { CloudinaryProvider } from '../cloudinary.js';
 import { troubleshootOAuth } from './config.js';

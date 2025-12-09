@@ -1,6 +1,6 @@
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+import type { Environment } from '../../../shared/types/index.js';
 import {
   folderContentSchema,
   type DriveFileContent,

@@ -1,5 +1,5 @@
 import { Currency } from '@shared/enums';
-import type { TimelessDateString } from '@shared/types';
+import type { TimelessDateString } from '../../shared/types/index.js';
 
 export * from './__generated__/types.js';
 

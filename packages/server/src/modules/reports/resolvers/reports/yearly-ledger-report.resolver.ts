@@ -15,7 +15,7 @@ import {
   SingleSidedLedgerRecord,
 } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
+import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { sortEntityRecordsAndAddBalance } from '../../helpers/yearly-ledger-report.helper.js';
 
 export const yearlyLedgerReport: ResolverFn<

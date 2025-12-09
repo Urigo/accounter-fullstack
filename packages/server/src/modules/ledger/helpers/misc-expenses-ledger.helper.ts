@@ -3,7 +3,7 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../shared/types/index.js';
 
 export async function generateMiscExpensesLedger(
   charge: IGetChargesByIdsResult,

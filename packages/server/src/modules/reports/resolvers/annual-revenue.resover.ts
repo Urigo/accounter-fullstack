@@ -4,7 +4,7 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import { AnnualRevenueReportProvider } from '../providers/annual-revenue-report.provider.js';
 import type { ReportsModule } from '../types.js';
 

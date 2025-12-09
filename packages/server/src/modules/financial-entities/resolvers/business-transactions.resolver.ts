@@ -4,7 +4,7 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { Currency } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import type { BusinessTransactionProto } from '@shared/types';
+import type { BusinessTransactionProto } from '../../../shared/types/index.js';
 import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';

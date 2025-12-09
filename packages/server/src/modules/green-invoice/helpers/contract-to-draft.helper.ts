@@ -9,7 +9,7 @@ import { ClientsProvider } from '@modules/financial-entities/providers/clients.p
 import { Currency } from '@shared/enums';
 import { NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,

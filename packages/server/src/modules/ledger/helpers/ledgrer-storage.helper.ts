@@ -1,7 +1,7 @@
 import { startOfDay } from 'date-fns';
 import { EMPTY_UUID } from '@shared/constants';
 import { formatCurrency } from '@shared/helpers';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../shared/types/index.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import type {
   IGetLedgerRecordsByChargesIdsResult,

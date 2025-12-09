@@ -11,7 +11,7 @@ import {
 import type { Currency } from '@shared/enums';
 import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+import type { Environment } from '../../shared/types/index.js';
 
 export type ExpenseDraft = NonNullable<
   Extract<

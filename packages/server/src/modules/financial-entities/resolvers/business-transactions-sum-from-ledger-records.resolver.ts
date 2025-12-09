@@ -9,7 +9,7 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { RawBusinessTransactionsSum } from '@shared/types';
+import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
 import { handleBusinessLedgerRecord } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { IGetFinancialEntitiesByIdsResult } from '../types.js';

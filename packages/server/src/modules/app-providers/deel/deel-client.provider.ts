@@ -3,7 +3,7 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString } from '@shared/helpers';
 import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment, TimelessDateString } from '@shared/types';
+import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import {
   downloadInvoicePdfSchema,
   retrieveInvoicesSchema,

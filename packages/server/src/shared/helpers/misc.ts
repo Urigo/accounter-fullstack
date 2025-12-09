@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import type { TimelessDateString } from '@shared/types';
+import type { TimelessDateString } from '../types/index.js';
 
 function parseIntRound(v: number) {
   return Math.trunc(v + Math.sign(v) / 2);

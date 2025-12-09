@@ -15,7 +15,10 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { formatFinancialAmount, hashStringToInt } from '@shared/helpers';
-import type { CorporateTaxRulingComplianceReportProto, LedgerRecordsProto } from '@shared/types';
+import type {
+  CorporateTaxRulingComplianceReportProto,
+  LedgerRecordsProto,
+} from '../../../../shared/types/index.js';
 
 type ReportYearlyInfo = {
   totalIncome: number;

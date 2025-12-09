@@ -9,7 +9,7 @@ import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolv
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString, getMonthFromDescription } from '@shared/helpers';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../../shared/types/index.js';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,

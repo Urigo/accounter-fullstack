@@ -8,7 +8,7 @@ import {
   getCacheInstance,
   optionalDateToTimelessDateString,
 } from '@shared/helpers';
-import type { Environment, TimelessDateString } from '@shared/types';
+import type { Environment, TimelessDateString } from '../shared/types/index.js';
 import type {
   IGetAdminBusinessContextQuery,
   IGetAdminBusinessContextResult,

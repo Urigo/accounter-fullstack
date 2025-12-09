@@ -3,7 +3,7 @@ import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-st
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForBalance: ResolverFn<

@@ -16,7 +16,7 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   convertLedgerRecordToProto,
   storeInitialGeneratedRecords,

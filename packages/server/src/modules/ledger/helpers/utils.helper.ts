@@ -9,7 +9,11 @@ import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
-import type { LedgerBalanceInfoType, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type {
+  LedgerBalanceInfoType,
+  LedgerProto,
+  StrictLedgerProto,
+} from '../../../shared/types/index.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export class LedgerError extends Error {

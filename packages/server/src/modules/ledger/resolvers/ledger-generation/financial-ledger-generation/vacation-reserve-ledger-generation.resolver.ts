@@ -3,7 +3,7 @@ import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expense
 import { calculateVacationReserveAmount } from '@modules/ledger/helpers/vacation-reserve.helper.js';
 import { EMPTY_UUID } from '@shared/constants';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<

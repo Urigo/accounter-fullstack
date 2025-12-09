@@ -6,8 +6,8 @@ import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-
 import { sql } from '@pgtyped/runtime';
 import type { Role } from '@shared/gql-types';
 import { getCacheInstance } from '@shared/helpers';
-import { AccounterContext } from '@shared/types';
 import { env } from '../environment.js';
+import { AccounterContext } from '../shared/types/index.js';
 import type {
   IGetUserByNameQuery,
   IGetUserByNameResult,

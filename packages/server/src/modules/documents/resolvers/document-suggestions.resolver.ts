@@ -17,7 +17,7 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import type { DocumentSuggestionsProto } from '@shared/types';
+import type { DocumentSuggestionsProto } from '../../../shared/types/index.js';
 import type { DocumentsModule } from '../types.js';
 
 type Suggestion = Awaited<ResolversTypes['DocumentSuggestions']>;

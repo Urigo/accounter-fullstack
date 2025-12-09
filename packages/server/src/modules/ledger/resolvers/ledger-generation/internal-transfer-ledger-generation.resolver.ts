@@ -4,7 +4,7 @@ import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expense
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
 import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import type { LedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,

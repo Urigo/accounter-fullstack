@@ -8,7 +8,7 @@ import { FinancialAccountsProvider } from '@modules/financial-accounts/providers
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
 import {
   getFinancialAccountTaxCategoryId,

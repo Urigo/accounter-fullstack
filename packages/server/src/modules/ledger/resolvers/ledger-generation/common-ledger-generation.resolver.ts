@@ -27,7 +27,7 @@ import type {
   ResolversTypes,
 } from '@shared/gql-types';
 import { formatStringifyAmount } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,

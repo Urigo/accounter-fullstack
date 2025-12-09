@@ -25,7 +25,7 @@ import {
   NewDocumentInput,
 } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
   getGreenInvoiceDocumentType,

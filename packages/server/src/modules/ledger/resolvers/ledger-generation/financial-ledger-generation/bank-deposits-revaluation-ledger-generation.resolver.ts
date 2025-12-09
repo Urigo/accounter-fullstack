@@ -13,7 +13,11 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
-import type { CurrencySum, LedgerProto, TimelessDateString } from '@shared/types';
+import type {
+  CurrencySum,
+  LedgerProto,
+  TimelessDateString,
+} from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION = 'Bank deposits revaluation of currency';

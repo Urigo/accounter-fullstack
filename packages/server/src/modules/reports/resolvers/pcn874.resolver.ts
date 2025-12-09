@@ -4,7 +4,7 @@ import { Repeater } from 'graphql-yoga';
 import { validatePcn874 } from '@accounter/pcn874-generator';
 import { ResolversTypes } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import { getPcn874String } from '../helpers/pcn.helper.js';
 import { VatReportProvider } from '../providers/vat-report.provider.js';
 import type { ReportsModule } from '../types.js';

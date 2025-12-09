@@ -4,7 +4,7 @@ import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-dat
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/enums';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import type { ChartsModule, MonthDataProto } from '../types.js';
 
 export const chartsResolvers: ChartsModule.Resolvers = {

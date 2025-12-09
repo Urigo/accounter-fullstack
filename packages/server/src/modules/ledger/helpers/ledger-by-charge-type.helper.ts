@@ -11,7 +11,7 @@ import {
   ResolversTypes,
   ResolverTypeWrapper,
 } from '@shared/gql-types';
-import { LedgerRecordsProto } from '@shared/types';
+import { LedgerRecordsProto } from '../../../shared/types/index.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForBankDeposit } from '../resolvers/ledger-generation/bank-deposit-ledger-generation.resolver.js';

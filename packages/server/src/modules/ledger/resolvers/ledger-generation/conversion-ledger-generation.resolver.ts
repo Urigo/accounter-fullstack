@@ -8,7 +8,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
 import {
   isSupplementalFeeTransaction,
