@@ -1,12 +1,17 @@
-// @ts-check
-import pgpFactory from 'pg-promise';
-import cn from './db-connection-string.cjs';
+/* eslint-disable @typescript-eslint/no-require-imports */
+const dotenv = require('dotenv');
+const pgpFactory = require('pg-promise');
+const cn = require('./db-connection-string.cjs');
+
+dotenv.config({
+  path: '../../.env',
+});
 
 const pgp = pgpFactory();
 // Connect to the default 'postgres' database to manage other databases
 const db = pgp(cn('postgres'));
 
-const dbName = 'accounter';
+const dbName = process.env.POSTGRES_DB ?? 'accounter';
 
 // eslint-disable-next-line no-undef
 const log = console.log;
