@@ -114,7 +114,9 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   let invoiceAmount = 0;
   let invoiceVatAmount: number | null = null;
   let invoiceCount = 0;
+  let proformaAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
+  const proformaCurrencySet = new Set<Currency>();
   let documentsMinAccountancyDate: Date | null = null;
   let documentsMinAnyDate: Date | null = null;
 
@@ -148,6 +150,9 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
           documentsMinAccountancyDate = d.date;
         }
       }
+      if (d.currency_code) {
+        currenciesSet.add(d.currency_code as Currency);
+      }
     }
     if (isReceipt(d.type)) {
       receiptCount++;
@@ -162,16 +167,28 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
           documentsMinAccountancyDate = d.date;
         }
       }
+      if (d.currency_code) {
+        currenciesSet.add(d.currency_code as Currency);
+      }
     }
-    currenciesSet.add(d.currency_code as Currency);
+    if (d.type === DocumentType.Proforma) {
+      proformaAmount ??= 0;
+      proformaAmount += amount * factor;
+
+      if (d.currency_code) {
+        proformaCurrencySet.add(d.currency_code as Currency);
+      }
+    }
 
     if (!basicDocumentValidation(d)) {
       invalidDocuments = true;
     }
   });
 
-  const currencies = Array.from(currenciesSet);
-  const documentsAmount = invoiceAmount == null ? receiptAmount : invoiceAmount;
+  const currencies =
+    currenciesSet.size > 0 ? Array.from(currenciesSet) : Array.from(proformaCurrencySet);
+  const documentsAmount =
+    invoiceCount > 0 ? invoiceAmount : receiptCount > 0 ? receiptAmount : proformaAmount;
 
   return {
     receiptAmount,
