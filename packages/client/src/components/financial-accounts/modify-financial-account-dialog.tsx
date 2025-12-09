@@ -65,7 +65,7 @@ const financialAccountSchema = z.object({
   currencies: z.array(currencyTaxCategorySchema),
   bankNumber: optionalInt,
   branchNumber: optionalInt,
-  iban: z.string().optional(),
+  iban: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
   extendedBankNumber: optionalInt,
   partyPreferredIndication: optionalInt,
   partyAccountInvolvementCode: optionalInt,
