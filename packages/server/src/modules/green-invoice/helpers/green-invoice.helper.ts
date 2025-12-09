@@ -1072,7 +1072,12 @@ export async function insertNewDocumentFromGreenInvoice(
   const documentType = normalizeDocumentType(greenInvoiceDoc.type);
   const isOwnerCreditor = greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
 
-  const fileUrl = greenInvoiceDoc.url.en ?? greenInvoiceDoc.url.origin;
+  const links = await injector.get(GreenInvoiceClientProvider).getDocumentLinks(greenInvoiceDoc.id);
+  if (!links) {
+    throw new GraphQLError(`No links found for Green Invoice document ID: ${greenInvoiceDoc.id}`);
+  }
+
+  const fileUrl = links.en ?? links.origin;
 
   try {
     // generate preview image via cloudinary

@@ -205,6 +205,13 @@ export class GreenInvoiceClientProvider {
     return sdk.getLinkedDocuments_query({ id: documentId }).then(res => res.getLinkedDocuments);
   }
 
+  public async getDocumentLinks(documentId: string) {
+    const sdk = await this.getSDK();
+    return sdk
+      .getDocumentsDownloadLinks_query({ id: documentId })
+      .then(res => res.getDocumentsDownloadLinks);
+  }
+
   private async _batchLoadByIds<T extends { id?: string | null }>(
     ids: readonly string[],
     fetcher: (sdk: Sdk, id: string) => Promise<T | null | undefined>,
