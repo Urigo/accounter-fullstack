@@ -43,6 +43,16 @@ sources:
                 nullable: false
             responseSchema: ../json-schemas/greenInvoice.json#/$defs/getLinkedDocumentsResponse
 
+          - type: Query
+            field: getDocumentsDownloadLinks
+            path: /documents/{args.id}/download/links
+            method: GET
+            argTypeMap:
+              id:
+                type: string
+                nullable: false
+            responseSchema: ../json-schemas/greenInvoice.json#/$defs/getDocumentsDownloadLinksResponse
+
           - type: Mutation
             field: addDocument
             path: /documents
