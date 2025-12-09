@@ -1,5 +1,8 @@
-import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
 import { DocumentType } from '../../../shared/enums.js';
+import {
+  formatFinancialAmount,
+  optionalDateToTimelessDateString,
+} from '../../../shared/helpers/index.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { document_type, DocumentsModule } from '../types.js';
 

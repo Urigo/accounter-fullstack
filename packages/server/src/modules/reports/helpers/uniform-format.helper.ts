@@ -14,8 +14,8 @@ import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-ent
 import { IGetBusinessesByIdsResult } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
-import { dateToTimelessDateString } from '@shared/helpers';
 import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 
 export async function businessForUniformFormat(

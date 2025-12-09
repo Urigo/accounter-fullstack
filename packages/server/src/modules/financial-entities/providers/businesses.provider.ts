@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '@shared/helpers';
+import { getCacheInstance } from '../../../shared/helpers/index.js';
 import type {
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,

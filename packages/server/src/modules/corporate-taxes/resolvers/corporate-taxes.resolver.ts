@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { CorporateTaxesProvider } from '../providers/corporate-taxes.provider.js';
 import type { CorporateTaxesModule } from '../types.js';
 

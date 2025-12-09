@@ -5,10 +5,14 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
 import type { FinancialAmount } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { Currency } from '../../../shared/enums.js';
+import {
+  formatCurrency,
+  formatFinancialAmount,
+  getCurrencySymbol,
+} from '../../../shared/helpers/index.js';
 import type {
   LedgerBalanceInfoType,
   LedgerProto,

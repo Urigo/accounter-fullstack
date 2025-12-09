@@ -1,6 +1,6 @@
 import { startOfDay } from 'date-fns';
-import { formatCurrency } from '@shared/helpers';
 import { EMPTY_UUID } from '../../../shared/constants.js';
+import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import type {

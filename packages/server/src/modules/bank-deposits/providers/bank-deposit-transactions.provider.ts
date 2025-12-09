@@ -4,7 +4,7 @@ import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type {
   IGetAllDepositsWithTransactionsQuery,
   IGetDepositTransactionsByChargeIdQuery,

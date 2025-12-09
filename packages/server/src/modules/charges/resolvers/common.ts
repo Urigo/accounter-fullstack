@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import {
   calculateTotalAmount,
   getChargeDocumentsMeta,

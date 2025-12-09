@@ -1,6 +1,6 @@
 import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { dateToTimelessDateString } from '@shared/helpers';
 import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 
 export function effectiveDateSupplement(transaction: IGetTransactionsByIdsResult) {
   if (transaction.debit_date_override) {

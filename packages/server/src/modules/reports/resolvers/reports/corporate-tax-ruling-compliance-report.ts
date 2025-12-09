@@ -5,7 +5,6 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import type { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types';
 import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { formatFinancialAmount, hashStringToInt } from '@shared/helpers';
 import {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReportDifferences,
@@ -15,6 +14,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import { formatFinancialAmount, hashStringToInt } from '../../../../shared/helpers/index.js';
 import type {
   CorporateTaxRulingComplianceReportProto,
   LedgerRecordsProto,

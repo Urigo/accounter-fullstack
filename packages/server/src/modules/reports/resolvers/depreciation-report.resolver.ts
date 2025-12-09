@@ -5,7 +5,7 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
 import { IGetAllDepreciationCategoriesResult } from '@modules/depreciation/types.js';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { calculateDepreciation } from '../helpers/depreciation-report.helper.js';
 import type { ReportsModule } from '../types.js';

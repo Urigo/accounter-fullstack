@@ -6,7 +6,7 @@ import {
   formatFinancialAmount,
   formatFinancialIntAmount,
   optionalDateToTimelessDateString,
-} from '@shared/helpers';
+} from '../../../shared/helpers/index.js';
 import {
   accountsForUniformFormat,
   businessForUniformFormat,

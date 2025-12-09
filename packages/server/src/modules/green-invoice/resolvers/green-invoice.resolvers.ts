@@ -31,9 +31,9 @@ import {
   insertNewDocumentFromGreenInvoice,
 } from '@modules/green-invoice/helpers/green-invoice.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { dateToTimelessDateString } from '@shared/helpers';
 import { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
 import {
   deduceVatTypeFromBusiness,

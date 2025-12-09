@@ -7,7 +7,6 @@
 
     "paths": {
       "@modules/*": ["./modules/*"],
-      "@shared/helpers": ["./shared/helpers/index.js"],
       "@shared/errors": ["./shared/errors.js"],
       "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/index.js"],
       "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"],

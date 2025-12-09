@@ -4,9 +4,9 @@ import { GraphQLError } from 'graphql';
 import pg from 'pg';
 import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '@shared/helpers';
 import type { Role } from '../__generated__/types.js';
 import { env } from '../environment.js';
+import { getCacheInstance } from '../shared/helpers/index.js';
 import { AccounterContext } from '../shared/types/index.js';
 import type {
   IGetUserByNameQuery,

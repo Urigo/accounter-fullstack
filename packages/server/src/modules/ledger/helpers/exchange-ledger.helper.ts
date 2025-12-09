@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { getCurrencySymbol } from '@shared/helpers';
 import { Currency } from '../../../shared/enums.js';
+import { getCurrencySymbol } from '../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 
 export function validateExchangeRate(

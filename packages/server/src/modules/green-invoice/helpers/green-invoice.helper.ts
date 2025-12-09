@@ -27,7 +27,6 @@ import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-doc
 import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
 import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
-import { formatCurrency, hashStringToInt } from '@shared/helpers';
 import {
   Currency,
   DocumentType,
@@ -44,6 +43,7 @@ import {
   type GreenInvoicePaymentSubType,
   type GreenInvoiceVatType,
 } from '../../../__generated__/types.js';
+import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | _DOLLAR_defs_ExpenseDocumentType | number | null,

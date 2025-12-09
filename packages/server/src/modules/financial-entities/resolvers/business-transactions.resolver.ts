@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { BusinessTransactionProto } from '../../../shared/types/index.js';
 import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';

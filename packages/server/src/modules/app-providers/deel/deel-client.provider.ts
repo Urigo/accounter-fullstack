@@ -1,7 +1,7 @@
 import { addHours, subYears } from 'date-fns';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import { dateToTimelessDateString } from '@shared/helpers';
 import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import {

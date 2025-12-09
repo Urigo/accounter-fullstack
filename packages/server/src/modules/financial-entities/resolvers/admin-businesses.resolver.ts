@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { taxAdvancesRatesSchema, yearlyIdsSchema } from '../helpers/admin-businesses.helper.js';
 import { AdminBusinessesProvider } from '../providers/admin-businesses.provider.js';

@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { formatFinancialAmount } from '@shared/helpers';
 import {
   QueryTaxReportArgs,
   RequireFields,
@@ -10,6 +9,7 @@ import {
   ResolversTypes,
   TaxReportYearResolvers,
 } from '../../../../__generated__/types.js';
+import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
 import {
   DecoratedLedgerRecord,
   decorateLedgerRecords,

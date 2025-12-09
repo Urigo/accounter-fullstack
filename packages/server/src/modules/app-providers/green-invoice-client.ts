@@ -8,8 +8,8 @@ import {
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
-import { dateToTimelessDateString, getCacheInstance } from '@shared/helpers';
 import type { Currency } from '../../shared/enums.js';
+import { dateToTimelessDateString, getCacheInstance } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 

@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '@shared/helpers';
+import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
   IDeleteClientQuery,

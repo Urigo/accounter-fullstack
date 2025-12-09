@@ -24,7 +24,7 @@ vi.mock('@modules/charges/helpers/merge-charges.hepler.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 
-vi.mock('@shared/helpers', () => ({
+vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
 

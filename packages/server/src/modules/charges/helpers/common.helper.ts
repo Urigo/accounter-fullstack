@@ -8,9 +8,9 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { getTransactionsMeta } from '@modules/transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { formatFinancialAmount } from '@shared/helpers';
 import type { FinancialAmount } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function calculateTotalAmount(

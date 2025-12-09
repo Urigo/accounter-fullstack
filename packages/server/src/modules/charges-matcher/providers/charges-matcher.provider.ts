@@ -11,7 +11,7 @@ import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hep
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { dateToTimelessDateString } from '@shared/helpers';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
 import {
   ChargeType,

@@ -13,9 +13,9 @@ import {
   suggestionDataSchema,
 } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { hashStringToInt } from '@shared/helpers';
 import { EmailAttachmentType } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
+import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { AnthropicProvider } from '../anthropic.js';

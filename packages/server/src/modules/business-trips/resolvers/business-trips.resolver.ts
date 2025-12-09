@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { CountriesProvider } from '@modules/countries/providers/countries.provider.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
