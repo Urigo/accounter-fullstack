@@ -58,7 +58,7 @@
     "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
-    "@types/node": "24.10.1",
+    "@types/node": "24.10.2",
     "@types/pg": "8.15.6",
     "@vitest/coverage-v8": "4.0.15",
     "bob-the-bundler": "7.0.1",
