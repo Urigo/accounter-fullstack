@@ -4,7 +4,7 @@ import { DocumentsProvider } from '@modules/documents/providers/documents.provid
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '@shared/enums';
-import { MissingChargeInfo, ResolversTypes } from '@shared/gql-types';
+import { MissingChargeInfo, ResolversTypes } from '../../../__generated__/types.js';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
 import {

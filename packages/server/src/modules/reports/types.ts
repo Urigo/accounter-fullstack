@@ -1,4 +1,4 @@
-import type { Shaam6111Data } from '@shared/gql-types';
+import type { Shaam6111Data } from '../../__generated__/types.js';
 
 export type { DateOrString, currency } from './__generated__/balance-report.types.js';
 export * from './__generated__/types.js';

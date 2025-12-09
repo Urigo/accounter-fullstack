@@ -5,6 +5,7 @@ import type {
   IGetFinancialEntitiesByIdsResult,
 } from '@modules/financial-entities/types';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
+import { formatFinancialAmount } from '@shared/helpers';
 import {
   FinancialAmount,
   QueryYearlyLedgerReportArgs,
@@ -13,8 +14,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
   SingleSidedLedgerRecord,
-} from '@shared/gql-types';
-import { formatFinancialAmount } from '@shared/helpers';
+} from '../../../../__generated__/types.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { sortEntityRecordsAndAddBalance } from '../../helpers/yearly-ledger-report.helper.js';
 

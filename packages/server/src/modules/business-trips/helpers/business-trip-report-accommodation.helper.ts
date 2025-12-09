@@ -1,5 +1,5 @@
 import { Injector } from 'graphql-modules';
-import type { BusinessTripAttendeeStayInput } from '@shared/gql-types';
+import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';

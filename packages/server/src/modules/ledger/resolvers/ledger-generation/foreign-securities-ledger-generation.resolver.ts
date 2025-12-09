@@ -12,7 +12,7 @@ import type {
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
+} from '../../../../__generated__/types.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {

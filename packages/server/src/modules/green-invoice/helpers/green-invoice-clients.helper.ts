@@ -12,7 +12,7 @@ import {
   IGetBusinessesByIdsResult,
   IGetClientsByIdsResult,
 } from '@modules/financial-entities/types.js';
-import { ClientUpdateInput, UpdateBusinessInput } from '@shared/gql-types';
+import { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
 import { countryCodeToGreenInvoiceCountry } from './green-invoice.helper.js';
 
 function convertLocalClientToGreenInvoiceCreateClientInput(

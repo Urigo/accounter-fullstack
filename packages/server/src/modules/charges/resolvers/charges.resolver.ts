@@ -11,7 +11,7 @@ import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expe
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
-import type { Resolvers } from '@shared/gql-types';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import {
   batchUpdateChargesBusinessTrip,

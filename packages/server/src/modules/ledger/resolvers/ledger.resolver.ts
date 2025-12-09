@@ -4,8 +4,8 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { accountant_statusArray } from '@modules/charges/types.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-import { ChargeSortByField, Resolvers, ResolversTypes } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
+import { ChargeSortByField, Resolvers, ResolversTypes } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import {
   ledgerGenerationByCharge,

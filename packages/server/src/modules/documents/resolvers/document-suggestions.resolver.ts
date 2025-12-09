@@ -6,6 +6,7 @@ import {
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
 import {
   CreditInvoiceResolvers,
   InvoiceReceiptResolvers,
@@ -15,8 +16,7 @@ import {
   Resolver,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+} from '../../../__generated__/types.js';
 import type { DocumentSuggestionsProto } from '../../../shared/types/index.js';
 import type { DocumentsModule } from '../types.js';
 

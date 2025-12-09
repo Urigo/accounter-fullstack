@@ -5,7 +5,7 @@ import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { DocumentType } from '@shared/enums';
-import { Resolvers } from '@shared/gql-types';
+import { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';

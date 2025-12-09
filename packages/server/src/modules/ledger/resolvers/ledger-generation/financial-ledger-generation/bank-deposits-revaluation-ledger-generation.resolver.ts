@@ -4,14 +4,14 @@ import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.pro
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
 import {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
+} from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type {
   CurrencySum,

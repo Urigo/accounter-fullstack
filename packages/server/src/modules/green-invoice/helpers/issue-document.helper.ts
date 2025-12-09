@@ -14,6 +14,7 @@ import { IGetFinancialBankAccountsByIdsResult } from '@modules/financial-account
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import { DocumentType } from '@shared/enums';
+import { dateToTimelessDateString } from '@shared/helpers';
 import {
   Currency,
   GreenInvoiceIncome,
@@ -23,8 +24,7 @@ import {
   GreenInvoiceVatType,
   NewDocumentInfo,
   NewDocumentInput,
-} from '@shared/gql-types';
-import { dateToTimelessDateString } from '@shared/helpers';
+} from '../../../__generated__/types.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,

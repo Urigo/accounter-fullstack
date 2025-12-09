@@ -1,5 +1,5 @@
-import { TransactionDirection } from '@shared/gql-types';
 import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { TransactionDirection } from '../../../__generated__/types.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';

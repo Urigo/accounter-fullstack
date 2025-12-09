@@ -6,8 +6,8 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { Currency } from '@shared/enums';
-import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
+import type { FinancialAmount } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type {
   LedgerBalanceInfoType,

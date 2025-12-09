@@ -3,8 +3,13 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
 import { formatAmount } from '@shared/helpers';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../__generated__/types.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 

@@ -4,7 +4,12 @@ import {
   getChargeTaxCategoryId,
 } from '@modules/charges/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import type {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../__generated__/types.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';

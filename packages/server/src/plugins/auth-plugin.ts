@@ -4,8 +4,8 @@ import { GraphQLError } from 'graphql';
 import pg from 'pg';
 import { ResolveUserFn, useGenericAuth, ValidateUserFn } from '@envelop/generic-auth';
 import { sql } from '@pgtyped/runtime';
-import type { Role } from '@shared/gql-types';
 import { getCacheInstance } from '@shared/helpers';
+import type { Role } from '../__generated__/types.js';
 import { env } from '../environment.js';
 import { AccounterContext } from '../shared/types/index.js';
 import type {

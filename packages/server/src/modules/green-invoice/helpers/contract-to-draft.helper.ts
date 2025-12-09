@@ -7,8 +7,8 @@ import { validateClientIntegrations } from '@modules/financial-entities/helpers/
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import { Currency } from '@shared/enums';
-import { NewDocumentInfo } from '@shared/gql-types';
 import { dateToTimelessDateString } from '@shared/helpers';
+import { NewDocumentInfo } from '../../../__generated__/types.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 
 export const convertContractToDraft = async (

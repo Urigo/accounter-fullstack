@@ -2,13 +2,13 @@ import { ChargesProvider } from '@modules/charges/providers/charges.provider.js'
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { REVALUATION_LEDGER_DESCRIPTION } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
+import { dateToTimelessDateString } from '@shared/helpers';
 import {
   Currency,
   QueryBusinessTransactionsSumFromLedgerRecordsArgs,
   ResolverFn,
   ResolversTypes,
-} from '@shared/gql-types';
-import { dateToTimelessDateString } from '@shared/helpers';
+} from '../../../__generated__/types.js';
 import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
 import { handleBusinessLedgerRecord } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';

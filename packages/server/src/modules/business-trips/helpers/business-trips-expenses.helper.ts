@@ -10,7 +10,7 @@ import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/ty
 import type {
   AddBusinessTripTravelAndSubsistenceExpenseInput,
   BusinessTripExpenseCategories,
-} from '@shared/gql-types';
+} from '../../../__generated__/types.js';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';

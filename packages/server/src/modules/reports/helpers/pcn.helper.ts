@@ -1,8 +1,8 @@
 import { format, startOfMonth } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { Pcn874RecordType } from '@shared/gql-types';
 import { dateToTimelessDateString, idValidator, yearMonthValidator } from '@shared/helpers';
+import { Pcn874RecordType } from '../../../__generated__/types.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { getVatRecords } from '../resolvers/get-vat-records.resolver.js';
 import type { RawVatReportRecord } from './vat-report.helper.js';

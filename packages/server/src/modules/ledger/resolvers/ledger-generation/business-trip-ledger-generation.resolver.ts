@@ -29,7 +29,7 @@ import {
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
+} from '../../../../__generated__/types.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,

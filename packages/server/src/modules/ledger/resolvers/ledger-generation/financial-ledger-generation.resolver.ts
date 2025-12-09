@@ -1,6 +1,11 @@
 import { getChargeTaxCategoryId } from '@modules/charges/helpers/common.helper.js';
 import { isChargeLocked } from '@modules/ledger/helpers/ledger-lock.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../../__generated__/types.js';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
 import { generateLedgerRecordsForBankDepositsRevaluation } from './financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { generateLedgerRecordsForDepreciationExpenses } from './financial-ledger-generation/depreciation-expenses-ledger-generation.resolver.js';

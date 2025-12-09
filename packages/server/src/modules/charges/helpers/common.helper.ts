@@ -9,8 +9,8 @@ import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expe
 import { getTransactionsMeta } from '@modules/transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '@shared/enums';
-import type { FinancialAmount } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
+import type { FinancialAmount } from '../../../__generated__/types.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function calculateTotalAmount(

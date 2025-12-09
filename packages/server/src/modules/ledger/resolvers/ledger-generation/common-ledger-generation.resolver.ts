@@ -19,14 +19,14 @@ import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.he
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
+import { formatStringifyAmount } from '@shared/helpers';
 import type {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { formatStringifyAmount } from '@shared/helpers';
+} from '../../../../__generated__/types.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,

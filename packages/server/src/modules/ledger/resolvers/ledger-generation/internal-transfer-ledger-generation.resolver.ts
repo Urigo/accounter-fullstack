@@ -3,7 +3,12 @@ import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-st
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { currency } from '@modules/transactions/types.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../../__generated__/types.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,

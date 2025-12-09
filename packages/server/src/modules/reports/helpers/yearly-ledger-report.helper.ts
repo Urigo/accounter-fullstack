@@ -1,5 +1,5 @@
 import type { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types';
-import type { SingleSidedLedgerRecord } from '@shared/gql-types';
+import type { SingleSidedLedgerRecord } from '../../../__generated__/types.js';
 
 export function sortEntityRecordsAndAddBalance(
   openingBalance: number,

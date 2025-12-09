@@ -17,7 +17,7 @@ import type {
   Resolver,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
+} from '../../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../../shared/constants.js';
 import { getChargeType } from '../../helpers/charge-type.js';
 import type { ChargesModule } from '../../types.js';

@@ -48,8 +48,8 @@ import { BusinessesProvider } from '@modules/financial-entities/providers/busine
 import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types.js';
 import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import * as SchemaTypes from '@shared/gql-types';
-import { Shaam6111ReportEntry } from '@shared/gql-types';
+import * as SchemaTypes from '../../../__generated__/types.js';
+import { Shaam6111ReportEntry } from '../../../__generated__/types.js';
 import { amountByFinancialEntityIdAndSortCodeValidations } from './misc.helper.js';
 import {
   DecoratedLedgerRecord,

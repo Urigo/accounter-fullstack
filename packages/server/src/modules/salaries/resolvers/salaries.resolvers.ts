@@ -1,8 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { Resolvers } from '@shared/gql-types';
 import { formatFinancialAmount } from '@shared/helpers';
+import { Resolvers } from '../../../__generated__/types.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 import { insertSalaryRecordsFromFile } from './insert-salary-records-from-file.resolvers.js';

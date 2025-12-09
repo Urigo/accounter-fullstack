@@ -20,7 +20,7 @@ import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanc
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '@modules/vat/providers/vat.provider.js';
-import type { Currency } from '@shared/gql-types';
+import type { Currency } from '../__generated__/types.js';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
 
 export type ModuleContextLike = {

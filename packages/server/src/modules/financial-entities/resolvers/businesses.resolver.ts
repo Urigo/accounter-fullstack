@@ -7,7 +7,7 @@ import { updateGreenInvoiceClient } from '@modules/green-invoice/helpers/green-i
 import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { Resolvers } from '@shared/gql-types';
+import { Resolvers } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';

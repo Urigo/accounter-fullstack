@@ -4,7 +4,7 @@ import {
   addGreenInvoiceClient,
   updateGreenInvoiceClient,
 } from '@modules/green-invoice/helpers/green-invoice-clients.helper.js';
-import { ClientIntegrationsInput, Resolvers } from '@shared/gql-types';
+import { ClientIntegrationsInput, Resolvers } from '../../../__generated__/types.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {

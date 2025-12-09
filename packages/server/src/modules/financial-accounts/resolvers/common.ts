@@ -1,7 +1,7 @@
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Currency } from '@shared/enums';
-import type { PrivateOrBusinessType } from '@shared/gql-types';
+import type { PrivateOrBusinessType } from '../../../__generated__/types.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule, IGetFinancialAccountsByAccountIDsResult } from '../types.js';
 

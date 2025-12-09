@@ -10,7 +10,7 @@ import {
   ResolversParentTypes,
   ResolversTypes,
   ResolverTypeWrapper,
-} from '@shared/gql-types';
+} from '../../../__generated__/types.js';
 import { LedgerRecordsProto } from '../../../shared/types/index.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../providers/unbalanced-businesses.provider.js';

@@ -10,7 +10,12 @@ import { EmployeesProvider } from '@modules/salaries/providers/employees.provide
 import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
 import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../../__generated__/types.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,

@@ -1,5 +1,8 @@
 import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { SuggestionsEmailListenerConfigInput, UpdateBusinessInput } from '@shared/gql-types';
+import {
+  SuggestionsEmailListenerConfigInput,
+  UpdateBusinessInput,
+} from '../../../__generated__/types.js';
 import type { Json, SuggestionData } from '../types.js';
 
 function mergeEmailListenerConfig(
