@@ -20,7 +20,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@modules': path.resolve(__dirname, './src/modules'),
-      '@shared/errors': path.resolve(__dirname, './src/shared/errors.js'),
       '@accounter/green-invoice-graphql': path.resolve(
         __dirname,
         '../green-invoice-graphql/src/index.js',
