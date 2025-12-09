@@ -15,6 +15,7 @@ export interface FinancialAccount {
   // Bank-specific fields
   bankNumber?: number;
   branchNumber?: number;
+  iban?: string;
   extendedBankNumber?: number;
   partyPreferredIndication?: number;
   partyAccountInvolvementCode?: number;

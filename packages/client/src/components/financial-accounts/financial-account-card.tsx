@@ -103,6 +103,10 @@ export function FinancialAccountCard({
                 <p className="font-medium">{account.extendedBankNumber}</p>
               </div>
               <div>
+                <span className="text-muted-foreground text-xs">IBAN:</span>
+                <p className="font-medium">{account.iban}</p>
+              </div>
+              <div>
                 <span className="text-muted-foreground text-xs">Party Preferred Indication:</span>
                 <p className="font-medium">{account.partyPreferredIndication}</p>
               </div>

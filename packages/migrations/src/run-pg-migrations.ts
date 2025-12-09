@@ -132,6 +132,7 @@ import migration_2025_11_09T17_03_45_financial_accounts_name from './actions/202
 import migration_2025_11_12T18_21_06_bank_deposits_accounts from './actions/2025-11-12T18-21-06.bank-deposits-accounts.js';
 import migration_2025_11_27T10_39_53_user_roles from './actions/2025-11-27T10-39-53.user-roles.js';
 import migration_2025_11_27T18_45_21_deel_cleanup from './actions/2025-11-27T18-45-21.deel-cleanup.js';
+import migration_2025_12_09T18_28_13_bank_account_iban from './actions/2025-12-09T18-28-13.bank-account-iban.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -268,6 +269,7 @@ export const MIGRATIONS = [
   migration_2025_11_12T18_21_06_bank_deposits_accounts,
   migration_2025_11_27T10_39_53_user_roles,
   migration_2025_11_27T18_45_21_deel_cleanup,
+  migration_2025_12_09T18_28_13_bank_account_iban,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

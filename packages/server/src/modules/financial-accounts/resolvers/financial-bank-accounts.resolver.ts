@@ -34,6 +34,8 @@ export const financialBankAccountsResolvers: FinancialAccountsModule.Resolvers =
       getBankAccountByFinancialAccount(DbAccount, injector).then(
         bankAccount => bankAccount.branch_number,
       ),
+    iban: async (DbAccount, _, { injector }) =>
+      getBankAccountByFinancialAccount(DbAccount, injector).then(bankAccount => bankAccount.iban),
     name: async (DbAccount, _, { injector }) =>
       DbAccount.account_name ??
       getBankAccountByFinancialAccount(DbAccount, injector).then(

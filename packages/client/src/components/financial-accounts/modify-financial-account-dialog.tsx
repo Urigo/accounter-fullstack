@@ -65,6 +65,7 @@ const financialAccountSchema = z.object({
   currencies: z.array(currencyTaxCategorySchema),
   bankNumber: optionalInt,
   branchNumber: optionalInt,
+  iban: z.string().optional(),
   extendedBankNumber: optionalInt,
   partyPreferredIndication: optionalInt,
   partyAccountInvolvementCode: optionalInt,
@@ -107,6 +108,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
         currencies: [],
         bankNumber: undefined,
         branchNumber: undefined,
+        iban: undefined,
         extendedBankNumber: undefined,
         partyPreferredIndication: undefined,
         partyAccountInvolvementCode: undefined,
@@ -165,6 +167,9 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
             ? {
                 bankNumber: values.bankNumber,
                 branchNumber: values.branchNumber,
+                ...(values.iban !== undefined && {
+                  iban: values.iban,
+                }),
                 ...(values.extendedBankNumber !== undefined && {
                   extendedBankNumber: values.extendedBankNumber,
                 }),
@@ -422,6 +427,20 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                               value={field.value ?? ''}
                               onChange={field.onChange}
                             />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="iban"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>IBAN</FormLabel>
+                          <FormControl>
+                            <Input value={field.value ?? ''} onChange={field.onChange} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
