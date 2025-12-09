@@ -23,7 +23,6 @@ export default defineConfig({
       '@shared/gql-types': path.resolve(__dirname, './src/__generated__/types.js'),
       '@shared/enums': path.resolve(__dirname, './src/shared/enums.js'),
       '@shared/tokens': path.resolve(__dirname, './src/shared/tokens.js'),
-      '@shared/constants': path.resolve(__dirname, './src/shared/constants.js'),
       '@shared/helpers': path.resolve(__dirname, './src/shared/helpers/index.js'),
       '@shared/errors': path.resolve(__dirname, './src/shared/errors.js'),
       '@accounter/green-invoice-graphql': path.resolve(

@@ -5,10 +5,10 @@ import { FinancialEntitiesProvider } from '@modules/financial-entities/providers
 import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
 import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { EMPTY_UUID } from '@shared/constants';
 import { Currency } from '@shared/enums';
 import type { FinancialAmount } from '@shared/gql-types';
 import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
+import { EMPTY_UUID } from '../../../shared/constants.js';
 import type {
   LedgerBalanceInfoType,
   LedgerProto,

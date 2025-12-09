@@ -6,7 +6,10 @@ import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
 } from '@modules/salaries/types';
-import { AVERAGE_MONTHLY_WORK_DAYS, AVERAGE_MONTHLY_WORK_HOURS } from '@shared/constants';
+import {
+  AVERAGE_MONTHLY_WORK_DAYS,
+  AVERAGE_MONTHLY_WORK_HOURS,
+} from '../../../shared/constants.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function roundHalf(n: number) {

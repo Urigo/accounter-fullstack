@@ -10,9 +10,9 @@ import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { EMPTY_UUID } from '@shared/constants';
 import { ChargeSortByField, ChargeTypeEnum } from '@shared/enums';
 import type { Resolvers } from '@shared/gql-types';
+import { EMPTY_UUID } from '../../../shared/constants.js';
 import {
   batchUpdateChargesBusinessTrip,
   batchUpdateChargesTags,

@@ -5,7 +5,6 @@ import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax
 import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
@@ -14,6 +13,7 @@ import {
   ResolversTypes,
 } from '@shared/gql-types';
 import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
+import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { LedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
