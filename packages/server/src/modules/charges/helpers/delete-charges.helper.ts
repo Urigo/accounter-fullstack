@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
+import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
+import { UnbalancedBusinessesProvider } from '../../../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';

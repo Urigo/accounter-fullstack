@@ -1,20 +1,20 @@
 import { endOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { businessTransactionsSumFromLedgerRecords } from '@modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { EMPTY_UUID } from '@shared/constants';
 import {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { dateToTimelessDateString, formatCurrency } from '@shared/helpers';
-import type { LedgerProto, TimelessDateString } from '@shared/types';
+} from '../../../../../__generated__/types.js';
+import { ExchangeProvider } from '../../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../../../../modules/financial-entities/providers/tax-categories.provider.js';
+import { businessTransactionsSumFromLedgerRecords } from '../../../../../modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
+import { storeInitialGeneratedRecords } from '../../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import { dateToTimelessDateString, formatCurrency } from '../../../../../shared/helpers/index.js';
+import type { LedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const REVALUATION_LEDGER_DESCRIPTION = 'Revaluation of account';

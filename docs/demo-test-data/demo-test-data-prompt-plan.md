@@ -676,7 +676,7 @@ Status: ✅ COMPLETED (Milestone 2, H1)
 Task: Standardize currency and country values using TypeScript enums.
 
 Requirements:
-- Replace all string literals for currencies with `Currency` enum from `@shared/enums`
+- Replace all string literals for currencies with `Currency` enum from `packages/server/src/shared/enums.js`
 - Replace all string literals for countries with `CountryCode` enum from `packages/server/src/modules/countries/types.ts`
 - Update fixtures, factories, and tests to use enum values
 - Ensure compile-time type safety prevents invalid values

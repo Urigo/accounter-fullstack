@@ -1,4 +1,4 @@
-import { DocumentType } from '@shared/enums';
+import { DocumentType } from '../../../shared/enums.js';
 import { document_type } from '../types.js';
 
 export function isInvoice(type: document_type): boolean {

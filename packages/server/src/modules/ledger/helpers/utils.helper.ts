@@ -1,15 +1,23 @@
 import { Injector } from 'graphql-modules';
-import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
-import { EMPTY_UUID } from '@shared/constants';
-import { Currency } from '@shared/enums';
-import type { FinancialAmount } from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount, getCurrencySymbol } from '@shared/helpers';
-import type { LedgerBalanceInfoType, LedgerProto, StrictLedgerProto } from '@shared/types';
+import type { FinancialAmount } from '../../../__generated__/types.js';
+import { getChargeBusinesses } from '../../../modules/charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
+import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
+import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
+import type { IGetFinancialEntitiesByIdsResult } from '../../../modules/financial-entities/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
+import { EMPTY_UUID } from '../../../shared/constants.js';
+import { Currency } from '../../../shared/enums.js';
+import {
+  formatCurrency,
+  formatFinancialAmount,
+  getCurrencySymbol,
+} from '../../../shared/helpers/index.js';
+import type {
+  LedgerBalanceInfoType,
+  LedgerProto,
+  StrictLedgerProto,
+} from '../../../shared/types/index.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export class LedgerError extends Error {

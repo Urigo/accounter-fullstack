@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { DynamicReportNode } from '@shared/gql-types';
+import { DynamicReportNode } from '../../../__generated__/types.js';
 import { parseTemplate, validateTemplate } from '../helpers/dynamic-report.helper.js';
 import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';

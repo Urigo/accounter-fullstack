@@ -1,12 +1,4 @@
 import {
-  getChargeBusinesses,
-  getChargeDocumentsMeta,
-  getChargeTransactionsMeta,
-} from '@modules/charges/helpers/common.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import {
   CreditInvoiceResolvers,
   InvoiceReceiptResolvers,
   InvoiceResolvers,
@@ -15,9 +7,17 @@ import {
   Resolver,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
-import type { DocumentSuggestionsProto } from '@shared/types';
+} from '../../../__generated__/types.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from '../../../modules/charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
+import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { DocumentSuggestionsProto } from '../../../shared/types/index.js';
 import type { DocumentsModule } from '../types.js';
 
 type Suggestion = Awaited<ResolversTypes['DocumentSuggestions']>;

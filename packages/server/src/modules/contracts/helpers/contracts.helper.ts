@@ -1,4 +1,4 @@
-import { BillingCycle, Product, SubscriptionPlan } from '@shared/gql-types';
+import { BillingCycle, Product, SubscriptionPlan } from '../../../__generated__/types.js';
 
 export function normalizeSubscriptionPlan(raw?: string | null): SubscriptionPlan | null {
   if (!raw) {

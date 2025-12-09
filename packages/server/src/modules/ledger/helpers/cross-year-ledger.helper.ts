@@ -1,12 +1,12 @@
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
-} from '@modules/charges/helpers/common.helper.js';
-import { ChargeSpreadProvider } from '@modules/charges/providers/charge-spread.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import { Currency } from '@shared/enums';
-import type { LedgerProto } from '@shared/types';
+} from '../../../modules/charges/helpers/common.helper.js';
+import { ChargeSpreadProvider } from '../../../modules/charges/providers/charge-spread.provider.js';
+import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
+import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
+import { Currency } from '../../../shared/enums.js';
+import type { LedgerProto } from '../../../shared/types/index.js';
 import { LedgerError } from './utils.helper.js';
 
 function divideAmount(yearsCount: number, amount?: number): number | undefined {

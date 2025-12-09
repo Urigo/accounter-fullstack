@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { Environment } from '@shared/types';
+import { Environment } from '../../../shared/types/index.js';
 
 export async function troubleshootOAuth(gmailEnv: Environment['gmail']) {
   console.log('🔍 OAuth2 Configuration Troubleshooter\n');

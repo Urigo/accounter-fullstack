@@ -1,14 +1,17 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { validateTransactionBasicVariables } from '@modules/ledger/helpers/utils.helper.js';
-import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
-import { Currency } from '@shared/enums';
-import { formatFinancialAmount, optionalDateToTimelessDateString } from '@shared/helpers';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
+import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { validateTransactionBasicVariables } from '../../../modules/ledger/helpers/utils.helper.js';
+import { getTransactionDebitDate } from '../../../modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '../../../modules/transactions/types.js';
+import { Currency } from '../../../shared/enums.js';
+import {
+  formatFinancialAmount,
+  optionalDateToTimelessDateString,
+} from '../../../shared/helpers/index.js';
 import { BusinessTripExpensesTransactionsMatchProvider } from '../providers/business-trips-expenses-transactions-match.provider.js';
 import { BusinessTripsProvider } from '../providers/business-trips.provider.js';
 import type { BusinessTripsModule } from '../types.js';

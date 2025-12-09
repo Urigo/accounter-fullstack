@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { Currency } from '@shared/enums';
-import { getCurrencySymbol } from '@shared/helpers';
-import type { LedgerProto } from '@shared/types';
+import { Currency } from '../../../shared/enums.js';
+import { getCurrencySymbol } from '../../../shared/helpers/index.js';
+import type { LedgerProto } from '../../../shared/types/index.js';
 
 export function validateExchangeRate(
   businessId: string,

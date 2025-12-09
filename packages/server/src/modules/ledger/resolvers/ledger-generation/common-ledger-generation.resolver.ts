@@ -1,33 +1,33 @@
-import {
-  calculateTotalAmount,
-  getChargeBusinesses,
-  getChargeDocumentsMeta,
-  getChargeTaxCategoryId,
-} from '@modules/charges/helpers/common.helper.js';
-import { getDeelEmployeeId, isDeelDocument } from '@modules/deel/helpers/deel.helper.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import {
-  getExchangeDates,
-  isRefundCharge,
-  ledgerEntryFromBalanceCancellation,
-  ledgerEntryFromDocument,
-  ledgerEntryFromMainTransaction,
-} from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import { handleCrossYearLedgerEntries } from '@modules/ledger/helpers/cross-year-ledger.helper.js';
-import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { currency } from '@modules/transactions/types.js';
 import type {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { formatStringifyAmount } from '@shared/helpers';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+} from '../../../../__generated__/types.js';
+import {
+  calculateTotalAmount,
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+  getChargeTaxCategoryId,
+} from '../../../../modules/charges/helpers/common.helper.js';
+import { getDeelEmployeeId, isDeelDocument } from '../../../../modules/deel/helpers/deel.helper.js';
+import { DocumentsProvider } from '../../../../modules/documents/providers/documents.provider.js';
+import { BusinessesProvider } from '../../../../modules/financial-entities/providers/businesses.provider.js';
+import {
+  getExchangeDates,
+  isRefundCharge,
+  ledgerEntryFromBalanceCancellation,
+  ledgerEntryFromDocument,
+  ledgerEntryFromMainTransaction,
+} from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
+import { handleCrossYearLedgerEntries } from '../../../../modules/ledger/helpers/cross-year-ledger.helper.js';
+import { validateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { currency } from '../../../../modules/transactions/types.js';
+import { formatStringifyAmount } from '../../../../shared/helpers/index.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,

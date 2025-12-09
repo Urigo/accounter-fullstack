@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
-import { Currency } from '@shared/enums';
-import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
+import { identifyInterestTransactionIds } from '../../../modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
+import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { BankDepositTransactionsProvider } from '../providers/bank-deposit-transactions.provider.js';
 import type { BankDepositsModule } from '../types.js';
 

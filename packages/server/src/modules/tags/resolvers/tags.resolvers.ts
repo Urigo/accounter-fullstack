@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { EMPTY_UUID } from '@shared/constants';
+import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeTagsProvider } from '../providers/charge-tags.provider.js';
 import { TagsProvider } from '../providers/tags.provider.js';
 import type { TagsModule } from '../types.js';

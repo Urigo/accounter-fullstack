@@ -1,5 +1,5 @@
-import { Currency } from '@shared/enums';
-import type { LedgerProto } from '@shared/types';
+import { Currency } from '../../../shared/enums.js';
+import type { LedgerProto } from '../../../shared/types/index.js';
 import { LedgerError } from './utils.helper.js';
 
 export function conversionFeeCalculator(

@@ -1,6 +1,9 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import type { BusinessTripSummary, BusinessTripSummaryCategories } from '@shared/gql-types';
+import type {
+  BusinessTripSummary,
+  BusinessTripSummaryCategories,
+} from '../../../__generated__/types.js';
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,

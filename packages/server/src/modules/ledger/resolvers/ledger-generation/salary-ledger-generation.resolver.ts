@@ -1,17 +1,22 @@
 import { lastDayOfMonth } from 'date-fns';
-import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { validateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
-import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
-import { FundsProvider } from '@modules/salaries/providers/funds.provider.js';
-import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../../__generated__/types.js';
+import { getChargeBusinesses } from '../../../../modules/charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../../../modules/financial-entities/providers/tax-categories.provider.js';
+import { validateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
+import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { BalanceCancellationProvider } from '../../../../modules/ledger/providers/balance-cancellation.provider.js';
+import { EmployeesProvider } from '../../../../modules/salaries/providers/employees.provider.js';
+import { FundsProvider } from '../../../../modules/salaries/providers/funds.provider.js';
+import { SalariesProvider } from '../../../../modules/salaries/providers/salaries.provider.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,

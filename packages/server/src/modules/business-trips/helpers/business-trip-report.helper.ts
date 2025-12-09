@@ -1,14 +1,14 @@
-import { CountryCode } from '@modules/countries/types.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
 import {
   Currency,
   type BusinessTripSummaryCategories,
   type BusinessTripSummaryRow,
-} from '@shared/gql-types';
-import { formatCurrency, formatFinancialAmount } from '@shared/helpers';
+} from '../../../__generated__/types.js';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
+import { getTransactionDebitDate } from '../../../modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '../../../modules/transactions/types.js';
+import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';
 import type {
   flight_class,

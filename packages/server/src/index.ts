@@ -5,11 +5,11 @@ import 'reflect-metadata';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
-import { AccounterContext } from '@shared/types';
 import { env } from './environment.js';
 import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
+import { AccounterContext } from './shared/types/index.js';
 
 const { Pool } = pg;
 

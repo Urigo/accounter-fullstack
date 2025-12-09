@@ -1,9 +1,14 @@
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { calculateRecoveryReserveAmount } from '@modules/ledger/helpers/recovery-reserve.helper.js';
-import { EMPTY_UUID } from '@shared/constants';
-import { Maybe, ResolverFn, ResolversParentTypes, ResolversTypes } from '@shared/gql-types';
-import type { LedgerProto } from '@shared/types';
+import {
+  Maybe,
+  ResolverFn,
+  ResolversParentTypes,
+  ResolversTypes,
+} from '../../../../../__generated__/types.js';
+import { storeInitialGeneratedRecords } from '../../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { calculateRecoveryReserveAmount } from '../../../../../modules/ledger/helpers/recovery-reserve.helper.js';
+import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<

@@ -1,4 +1,4 @@
-import type { Currency } from '@shared/gql-types';
+import type { Currency } from '../../../__generated__/types.js';
 import type { IGetTransactionsByIdsResult } from '../types.js';
 import { isTransactionsValid } from './validation.helper.js';
 

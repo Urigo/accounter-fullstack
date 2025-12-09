@@ -1,9 +1,6 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
-import type { IGetEmployeesByIdResult } from '@modules/salaries/types';
 import {
   Currency,
   type AddBusinessTripTravelAndSubsistenceExpenseInput,
@@ -12,8 +9,11 @@ import {
   type RequireFields,
   type Resolver,
   type ResolverTypeWrapper,
-} from '@shared/gql-types';
-import { dateToTimelessDateString } from '@shared/helpers';
+} from '../../../__generated__/types.js';
+import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
+import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
+import type { IGetEmployeesByIdResult } from '../../../modules/salaries/types.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import {
   getAttendeeTravelAndSubsistenceMaxTax,
   getExpenseCoreData,

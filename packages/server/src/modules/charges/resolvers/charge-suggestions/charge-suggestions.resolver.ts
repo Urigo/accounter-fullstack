@@ -1,24 +1,24 @@
 import { GraphQLError } from 'graphql';
-import {
-  calculateTotalAmount,
-  getChargeBusinesses,
-} from '@modules/charges/helpers/common.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { suggestionDataSchema } from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
-import { IGetTagsByIDsResult } from '@modules/tags/types.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { UUID_REGEX } from '@shared/constants';
-import { ChargeTypeEnum } from '@shared/enums';
 import type {
   ChargeResolvers,
   Maybe,
   Resolver,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
+} from '../../../../__generated__/types.js';
+import {
+  calculateTotalAmount,
+  getChargeBusinesses,
+} from '../../../../modules/charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../../../modules/charges/providers/charges.provider.js';
+import { suggestionDataSchema } from '../../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { BusinessesProvider } from '../../../../modules/financial-entities/providers/businesses.provider.js';
+import { ChargeTagsProvider } from '../../../../modules/tags/providers/charge-tags.provider.js';
+import { TagsProvider } from '../../../../modules/tags/providers/tags.provider.js';
+import { IGetTagsByIDsResult } from '../../../../modules/tags/types.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import { UUID_REGEX } from '../../../../shared/constants.js';
+import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { getChargeType } from '../../helpers/charge-type.js';
 import type { ChargesModule } from '../../types.js';
 import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';

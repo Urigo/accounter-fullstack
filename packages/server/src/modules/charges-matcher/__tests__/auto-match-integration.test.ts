@@ -8,30 +8,30 @@ vi.mock('graphql-modules', () => ({
   Scope: { Operation: 'Operation' },
 }));
 
-vi.mock('@modules/charges/providers/charges.provider.js', () => ({
+vi.mock('../../../modules/charges/providers/charges.provider.js', () => ({
   ChargesProvider: class {},
 }));
 
-vi.mock('@modules/documents/providers/documents.provider.js', () => ({
+vi.mock('../../../modules/documents/providers/documents.provider.js', () => ({
   DocumentsProvider: class {},
 }));
 
-vi.mock('@modules/transactions/providers/transactions.provider.js', () => ({
+vi.mock('../../../modules/transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 
-vi.mock('@modules/charges/helpers/merge-charges.hepler.js', () => ({
+vi.mock('../../../modules/charges/helpers/merge-charges.hepler.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 
-vi.mock('@shared/helpers', () => ({
+vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
 
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
 const { mergeChargesExecutor } = await import(
-  '@modules/charges/helpers/merge-charges.hepler.js'
+  '../../../modules/charges/helpers/merge-charges.hepler.js'
 );
 
 type Injector = {

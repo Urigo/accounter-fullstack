@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { BusinessTripAttendeeStayInput } from '@shared/gql-types';
+import { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import {
   coreExpenseUpdate,
   createTravelAndSubsistenceExpense,

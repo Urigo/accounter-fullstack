@@ -1,10 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import type { IGetAllFinancialEntitiesResult } from '@modules/financial-entities/types';
-import { ledgerGenerationByCharge } from '@modules/ledger/helpers/ledger-by-charge-type.helper.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReportDifferences,
@@ -13,9 +7,18 @@ import {
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import { formatFinancialAmount, hashStringToInt } from '@shared/helpers';
-import type { CorporateTaxRulingComplianceReportProto, LedgerRecordsProto } from '@shared/types';
+} from '../../../../__generated__/types.js';
+import { ChargesProvider } from '../../../../modules/charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../../../modules/charges/types.js';
+import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
+import type { IGetAllFinancialEntitiesResult } from '../../../../modules/financial-entities/types.js';
+import { ledgerGenerationByCharge } from '../../../../modules/ledger/helpers/ledger-by-charge-type.helper.js';
+import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
+import { formatFinancialAmount, hashStringToInt } from '../../../../shared/helpers/index.js';
+import type {
+  CorporateTaxRulingComplianceReportProto,
+  LedgerRecordsProto,
+} from '../../../../shared/types/index.js';
 
 type ReportYearlyInfo = {
   totalIncome: number;

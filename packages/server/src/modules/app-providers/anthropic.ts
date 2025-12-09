@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
 import { z } from 'zod';
 import { anthropic } from '@ai-sdk/anthropic';
-import { Currency, DocumentType } from '@shared/enums';
+import { Currency, DocumentType } from '../../shared/enums.js';
 
 const documentDataSchema = z.object({
   type: z.nativeEnum(DocumentType).nullable().describe('The type of financial document'),

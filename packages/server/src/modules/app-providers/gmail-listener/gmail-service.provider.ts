@@ -2,22 +2,22 @@ import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { EmailAttachmentType } from '../../../__generated__/types.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import {
   getDocumentFromUrlsAndOcrData,
   type OcrData,
-} from '@modules/documents/helpers/upload.helper.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
+} from '../../../modules/documents/helpers/upload.helper.js';
+import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
 import {
   EmailListenerConfig,
   suggestionDataSchema,
-} from '@modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { DocumentType } from '@shared/enums';
-import { EmailAttachmentType } from '@shared/gql-types';
-import { hashStringToInt } from '@shared/helpers';
-import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+} from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { DocumentType } from '../../../shared/enums.js';
+import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { ENVIRONMENT } from '../../../shared/tokens.js';
+import type { Environment } from '../../../shared/types/index.js';
 import { AnthropicProvider } from '../anthropic.js';
 import { CloudinaryProvider } from '../cloudinary.js';
 import { troubleshootOAuth } from './config.js';

@@ -1,15 +1,15 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import type { IGetContractsByIdsResult } from '@modules/contracts/types.js';
-import { normalizeDocumentType } from '@modules/documents/resolvers/common.js';
-import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
-import { Currency } from '@shared/enums';
-import { NewDocumentInfo } from '@shared/gql-types';
-import { dateToTimelessDateString } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { NewDocumentInfo } from '../../../__generated__/types.js';
+import type { IGetContractsByIdsResult } from '../../../modules/contracts/types.js';
+import { normalizeDocumentType } from '../../../modules/documents/resolvers/common.js';
+import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
+import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { TimelessDateString } from '../../../shared/types/index.js';
 
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,

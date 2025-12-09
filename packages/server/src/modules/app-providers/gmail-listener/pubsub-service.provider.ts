@@ -1,7 +1,7 @@
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { PubSub, Topic, type Message, type Subscription } from '@google-cloud/pubsub';
-import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment } from '@shared/types';
+import { ENVIRONMENT } from '../../../shared/tokens.js';
+import type { Environment } from '../../../shared/types/index.js';
 import { GmailServiceProvider } from './gmail-service.provider.js';
 
 @Injectable({

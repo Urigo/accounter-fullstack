@@ -595,7 +595,7 @@ fixtures + exchange mocking + scenarios)
 - [x] **Fixed**: Vitest path resolution for @shared/\* imports
   - **Solution**: Created `packages/server/vitest.config.ts` with explicit resolve.alias mappings
   - **Config**: Maps all @shared/_ and @modules/_ paths to absolute paths
-  - **Result**: @shared/enums and other imports now resolve correctly ✅
+  - **Result**: packages/server/src/shared/enums.js and other imports now resolve correctly ✅
 - [x] **Implemented**: Provider-level DI test harness (bypasses GraphQL schema)
   - **Solution**: Created `packages/server/src/test-utils/ledger-injector.ts` with SimpleInjector
     pattern

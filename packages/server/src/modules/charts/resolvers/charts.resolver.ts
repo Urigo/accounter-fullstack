@@ -1,10 +1,10 @@
 import { GraphQLError } from 'graphql';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { getTransactionDebitDate } from '@modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import { Currency } from '@shared/enums';
-import { dateToTimelessDateString, formatFinancialAmount } from '@shared/helpers';
-import { TimelessDateString } from '@shared/types';
+import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
+import { getTransactionDebitDate } from '../../../modules/transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
+import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { TimelessDateString } from '../../../shared/types/index.js';
 import type { ChartsModule, MonthDataProto } from '../types.js';
 
 export const chartsResolvers: ChartsModule.Resolvers = {

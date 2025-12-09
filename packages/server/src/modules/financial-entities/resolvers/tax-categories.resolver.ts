@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
+import { SortCodesProvider } from '../../../modules/sort-codes/providers/sort-codes.provider.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';

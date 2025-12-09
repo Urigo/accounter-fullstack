@@ -1,10 +1,10 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { TestDatabase } from './db-setup.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { ExchangeProvider } from '../../modules/exchange-rates/providers/exchange.provider.js';
 import { createLedgerTestContext } from '../../test-utils/ledger-injector.js';
 import { buildAdminContextFromDb } from './admin-context-builder.js';
 import { mockExchangeRate } from './exchange-mock.js';
-import { Currency } from '@shared/enums';
+import { Currency } from '../../shared/enums.js';
 
 describe('exchange-mock integration', () => {
   let db: TestDatabase;

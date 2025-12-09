@@ -1,7 +1,7 @@
 import { GraphQLError, GraphQLScalarType, Kind, ValueNode } from 'graphql';
-import { TIMELESS_DATE_REGEX } from '@shared/constants';
-import { dateToTimelessDateString } from '@shared/helpers';
-import type { TimelessDateString } from '@shared/types';
+import { TIMELESS_DATE_REGEX } from '../../../shared/constants.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 
 function validateTimelessDateFormat(raw: string) {
   if (TIMELESS_DATE_REGEX.test(raw)) {

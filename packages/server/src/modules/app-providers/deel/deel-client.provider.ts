@@ -1,9 +1,9 @@
 import { addHours, subYears } from 'date-fns';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import { Currency } from '@shared/enums';
-import { dateToTimelessDateString } from '@shared/helpers';
-import { ENVIRONMENT } from '@shared/tokens';
-import type { Environment, TimelessDateString } from '@shared/types';
+import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { ENVIRONMENT } from '../../../shared/tokens.js';
+import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import {
   downloadInvoicePdfSchema,
   retrieveInvoicesSchema,

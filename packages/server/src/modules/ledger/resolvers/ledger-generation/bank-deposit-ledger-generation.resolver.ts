@@ -1,22 +1,22 @@
-import { BankDepositTransactionsProvider } from '@modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
-import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
-import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
-import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import { calculateExchangeRate } from '@modules/ledger/helpers/exchange-ledger.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import type {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+} from '../../../../__generated__/types.js';
+import { BankDepositTransactionsProvider } from '../../../../modules/bank-deposits/providers/bank-deposit-transactions.provider.js';
+import { getChargeBusinesses } from '../../../../modules/charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../../../modules/financial-entities/providers/tax-categories.provider.js';
+import { identifyInterestTransactionIds } from '../../../../modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
+import { ledgerEntryFromMainTransaction } from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
+import { calculateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../../../modules/transactions/types.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   convertLedgerRecordToProto,
   storeInitialGeneratedRecords,

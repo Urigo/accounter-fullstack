@@ -1,14 +1,14 @@
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
-} from '@shared/gql-types';
-import type { LedgerProto, StrictLedgerProto } from '@shared/types';
+} from '../../../../__generated__/types.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
 import {
   isSupplementalFeeTransaction,
