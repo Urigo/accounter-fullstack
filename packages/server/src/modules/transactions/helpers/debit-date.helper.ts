@@ -1,4 +1,4 @@
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByIdsResult } from '../../../modules/transactions/types.js';
 
 export function getTransactionDebitDate(transaction: IGetTransactionsByIdsResult) {
   return (

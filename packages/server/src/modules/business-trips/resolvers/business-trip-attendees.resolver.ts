@@ -1,5 +1,5 @@
-import { IGetBusinessesByIdsResult } from '@modules/financial-entities/types.js';
 import { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import { IGetBusinessesByIdsResult } from '../../../modules/financial-entities/types.js';
 import { optionalDateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';

@@ -1,10 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
-import type {
-  IGetAllFinancialEntitiesResult,
-  IGetFinancialEntitiesByIdsResult,
-} from '@modules/financial-entities/types';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import {
   FinancialAmount,
   QueryYearlyLedgerReportArgs,
@@ -14,6 +8,12 @@ import {
   ResolversTypes,
   SingleSidedLedgerRecord,
 } from '../../../../__generated__/types.js';
+import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
+import type {
+  IGetAllFinancialEntitiesResult,
+  IGetFinancialEntitiesByIdsResult,
+} from '../../../../modules/financial-entities/types';
+import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { sortEntityRecordsAndAddBalance } from '../../helpers/yearly-ledger-report.helper.js';

@@ -1,10 +1,10 @@
 import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types.js';
 import { sql } from '@pgtyped/runtime';
+import { DBProvider } from '../../../modules/app-providers/db.provider.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
 import type {
   IDeleteBusinessTripExpenseParams,

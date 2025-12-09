@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { LedgerProvider } from '@modules/ledger/providers/ledger.provider.js';
 import type { Resolvers } from '../../../__generated__/types.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { BusinessTransactionProto } from '../../../shared/types/index.js';

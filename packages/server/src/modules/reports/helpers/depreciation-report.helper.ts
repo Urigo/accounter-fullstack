@@ -10,8 +10,8 @@ import {
 } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
-import { DepreciationCategoriesProvider } from '@modules/depreciation/providers/depreciation-categories.provider.js';
-import { DepreciationProvider } from '@modules/depreciation/providers/depreciation.provider.js';
+import { DepreciationCategoriesProvider } from '../../../modules/depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationProvider } from '../../../modules/depreciation/providers/depreciation.provider.js';
 
 /**
  * Calculates depreciation amounts for accounting purposes

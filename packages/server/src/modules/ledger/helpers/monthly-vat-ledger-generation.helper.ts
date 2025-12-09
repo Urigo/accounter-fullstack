@@ -1,4 +1,4 @@
-import type { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper';
+import type { RawVatReportRecord } from '../../../modules/reports/helpers/vat-report.helper';
 
 export function getVatDataFromVatReportRecords(records: Array<RawVatReportRecord>) {
   return records.reduce(

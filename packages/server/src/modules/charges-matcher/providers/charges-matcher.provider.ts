@@ -7,10 +7,10 @@
 
 import { subYears } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
-import { mergeChargesExecutor } from '@modules/charges/helpers/merge-charges.hepler.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { mergeChargesExecutor } from '../../../modules/charges/helpers/merge-charges.hepler.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
 import {

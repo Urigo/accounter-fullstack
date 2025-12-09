@@ -1,4 +1,4 @@
-import type { IGetTransactionsByIdsResult } from '@modules/transactions/types.js';
+import type { IGetTransactionsByIdsResult } from '../../../modules/transactions/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 

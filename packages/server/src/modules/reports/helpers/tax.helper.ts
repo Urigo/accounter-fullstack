@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { BusinessTripsProvider } from '@modules/business-trips/providers/business-trips.provider.js';
-import { businessTripSummary } from '@modules/business-trips/resolvers/business-trip-summary.resolver.js';
-import { BusinessTripProto } from '@modules/business-trips/types.js';
-import { CorporateTaxesProvider } from '@modules/corporate-taxes/providers/corporate-taxes.provider.js';
-import { TaxCategoriesProvider } from '@modules/financial-entities/providers/tax-categories.provider.js';
+import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
+import { businessTripSummary } from '../../../modules/business-trips/resolvers/business-trip-summary.resolver.js';
+import { BusinessTripProto } from '../../../modules/business-trips/types.js';
+import { CorporateTaxesProvider } from '../../../modules/corporate-taxes/providers/corporate-taxes.provider.js';
+import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import {
   amountByFinancialEntityIdAndSortCodeValidations,

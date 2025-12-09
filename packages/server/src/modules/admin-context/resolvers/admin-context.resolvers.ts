@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TagsProvider } from '@modules/tags/providers/tags.provider.js';
+import { TagsProvider } from '../../../modules/tags/providers/tags.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { fetchBusiness, fetchTaxCategory } from '../heplers/admin-context.helper.js';

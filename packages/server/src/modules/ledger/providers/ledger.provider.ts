@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import type { Currency } from '../../../shared/enums.js';
 import { LedgerLockError } from '../../../shared/errors.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';

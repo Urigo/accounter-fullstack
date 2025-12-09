@@ -1,18 +1,18 @@
 import { format } from 'date-fns';
-import { getChargeTransactionsMeta } from '@modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { UnbalancedBusinessesProvider } from '@modules/ledger/providers/unbalanced-businesses.provider.js';
-import { RawVatReportRecord } from '@modules/reports/helpers/vat-report.helper.js';
-import { getVatRecords } from '@modules/reports/resolvers/get-vat-records.resolver.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import { getChargeTransactionsMeta } from '../../../../modules/charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { UnbalancedBusinessesProvider } from '../../../../modules/ledger/providers/unbalanced-businesses.provider.js';
+import { RawVatReportRecord } from '../../../../modules/reports/helpers/vat-report.helper.js';
+import { getVatRecords } from '../../../../modules/reports/resolvers/get-vat-records.resolver.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import {
   dateToTimelessDateString,
   getMonthFromDescription,

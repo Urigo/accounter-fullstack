@@ -1,4 +1,4 @@
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import type { IGetAllDocumentsResult } from '../types.js';
 import { isInvoice } from './common.helper.js';

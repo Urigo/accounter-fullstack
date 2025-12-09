@@ -1,6 +1,6 @@
 import { generateUniformFormatReport } from '@accounter/shaam-uniform-format-generator';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
 import {
   dateToTimelessDateString,
   formatFinancialAmount,

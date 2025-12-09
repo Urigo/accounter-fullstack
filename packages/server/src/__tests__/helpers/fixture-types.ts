@@ -9,9 +9,9 @@
  * @see packages/server/src/__tests__/helpers/fixture-loader.ts for insertion logic
  */
 
-import type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
-import type { IInsertTaxCategoryParams } from '@modules/financial-entities/__generated__/tax-categories.types.js';
-import type { IInsertFinancialAccountsParams } from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
+import type { IInsertBusinessesParams } from '../../modules/financial-entities/__generated__/businesses.types.js';
+import type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
+import type { IInsertFinancialAccountsParams } from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
 import type { ChargeInsertParams } from '../factories/charge.js';
 import type { TransactionInsertParams } from '../factories/transaction.js';
 import type { DocumentInsertParams } from '../factories/document.js';

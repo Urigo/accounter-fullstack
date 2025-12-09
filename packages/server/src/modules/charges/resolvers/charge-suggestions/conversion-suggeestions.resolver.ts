@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type { Maybe, ResolverFn, ResolversParentTypes } from '../../../../__generated__/types.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import { formatAmount } from '../../../../shared/helpers/index.js';
 import { Suggestion } from './charge-suggestions.resolver.js';
 

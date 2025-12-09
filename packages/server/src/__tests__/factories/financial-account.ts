@@ -1,7 +1,7 @@
 import type {
   financial_account_type,
   IInsertFinancialAccountsParams,
-} from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
+} from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
 import { makeUUID } from './ids.js';
 
 /**

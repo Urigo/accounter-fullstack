@@ -18,15 +18,6 @@ import type {
   queryInput_previewDocument_input_discount_type,
   queryInput_previewDocument_input_linkType,
 } from '@accounter/green-invoice-graphql';
-import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
-import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { CountryCode } from '@modules/countries/types.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
-import type { document_status, IInsertDocumentsParams } from '@modules/documents/types';
-import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
 import {
   Currency,
   DocumentType,
@@ -43,6 +34,15 @@ import {
   type GreenInvoicePaymentSubType,
   type GreenInvoiceVatType,
 } from '../../../__generated__/types.js';
+import { CloudinaryProvider } from '../../../modules/app-providers/cloudinary.js';
+import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
+import type { document_status, IInsertDocumentsParams } from '../../../modules/documents/types';
+import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
+import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
 import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
 
 export function normalizeDocumentType(

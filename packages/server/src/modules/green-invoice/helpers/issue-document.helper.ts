@@ -1,18 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
-import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IssuedDocumentsProvider } from '@modules/documents/providers/issued-documents.provider.js';
-import {
-  IGetDocumentsByChargeIdResult,
-  IGetIssuedDocumentsByIdsResult,
-} from '@modules/documents/types';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { FinancialBankAccountsProvider } from '@modules/financial-accounts/providers/financial-bank-accounts.provider.js';
-import { IGetFinancialBankAccountsByIdsResult } from '@modules/financial-accounts/types.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '@modules/transactions/types';
 import {
   Currency,
   GreenInvoiceIncome,
@@ -23,6 +11,18 @@ import {
   NewDocumentInfo,
   NewDocumentInput,
 } from '../../../__generated__/types.js';
+import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
+import {
+  IGetDocumentsByChargeIdResult,
+  IGetIssuedDocumentsByIdsResult,
+} from '../../../modules/documents/types';
+import { FinancialAccountsProvider } from '../../../modules/financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialBankAccountsProvider } from '../../../modules/financial-accounts/providers/financial-bank-accounts.provider.js';
+import { IGetFinancialBankAccountsByIdsResult } from '../../../modules/financial-accounts/types.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types';
 import { DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';

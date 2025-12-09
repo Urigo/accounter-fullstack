@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import xlsx from 'node-xlsx';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import { EmployeesProvider } from '../providers/employees.provider.js';
 import { FundsProvider } from '../providers/funds.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';

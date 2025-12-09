@@ -1,6 +1,6 @@
 import type { Injector } from 'graphql-modules';
-import { AnthropicProvider } from '@modules/app-providers/anthropic.js';
-import { CloudinaryProvider } from '@modules/app-providers/cloudinary.js';
+import { AnthropicProvider } from '../../../modules/app-providers/anthropic.js';
+import { CloudinaryProvider } from '../../../modules/app-providers/cloudinary.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import type { IInsertDocumentsParams } from '../types.js';

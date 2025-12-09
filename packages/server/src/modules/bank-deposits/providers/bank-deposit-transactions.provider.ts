@@ -1,9 +1,9 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from '@modules/app-providers/db.provider.js';
-import { identifyInterestTransactionIds } from '@modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { DBProvider } from '../../../modules/app-providers/db.provider.js';
+import { identifyInterestTransactionIds } from '../../../modules/ledger/helpers/bank-deposit-ledger-generation.helper.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type {
   IGetAllDepositsWithTransactionsQuery,

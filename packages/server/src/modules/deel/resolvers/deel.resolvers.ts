@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { IGetChargesByIdsResult } from '@modules/charges/types.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { deleteCharges } from '../../../modules/charges/helpers/delete-charges.helper.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
+import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import {
   convertMatchToDeelInvoiceRecord,
   fetchAndFilterInvoices,

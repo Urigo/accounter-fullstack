@@ -1,5 +1,5 @@
-import type { IGetFinancialEntitiesByIdsResult } from '@modules/financial-entities/types.js';
-import type { IGetLedgerRecordsByDatesResult } from '@modules/ledger/types.js';
+import type { IGetFinancialEntitiesByIdsResult } from '../../../modules/financial-entities/types.js';
+import type { IGetLedgerRecordsByDatesResult } from '../../../modules/ledger/types.js';
 import {
   FilteringOptions,
   recordsByFinancialEntityIdAndSortCodeValidations,

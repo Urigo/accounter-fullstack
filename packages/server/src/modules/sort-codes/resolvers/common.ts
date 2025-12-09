@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { SortCodesProvider } from '@modules/sort-codes/providers/sort-codes.provider.js';
+import { SortCodesProvider } from '../../../modules/sort-codes/providers/sort-codes.provider.js';
 import type { SortCodesModule } from '../types.js';
 
 export const commonFinancialEntityFields:

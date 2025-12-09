@@ -33,13 +33,13 @@
 
 // Core data factories
 export { createBusiness } from './business.js';
-export type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
+export type { IInsertBusinessesParams } from '../../modules/financial-entities/__generated__/businesses.types.js';
 
 export { createTaxCategory } from './tax-category.js';
-export type { IInsertTaxCategoryParams } from '@modules/financial-entities/__generated__/tax-categories.types.js';
+export type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
 
 export { createFinancialAccount, FINANCIAL_ACCOUNT_TYPES } from './financial-account.js';
-export type { IInsertFinancialAccountsParams } from '@modules/financial-accounts/__generated__/financial-accounts.types.js';
+export type { IInsertFinancialAccountsParams } from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
 
 export { createCharge } from './charge.js';
 export type { ChargeInsertParams } from './charge.js';

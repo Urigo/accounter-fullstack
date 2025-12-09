@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { FinancialEntitiesProvider } from '@modules/financial-entities/providers/financial-entities.provider.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { BalanceReportProvider } from '../providers/balance-report.provider.js';

@@ -3,16 +3,16 @@ import {
   _DOLLAR_defs_addClientRequest_Input,
   _DOLLAR_defs_updateClientRequest_Input,
 } from '@accounter/green-invoice-graphql';
-import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { CountryCode } from '@modules/countries/types.js';
-import { validateClientIntegrations } from '@modules/financial-entities/helpers/clients.helper.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ClientsProvider } from '@modules/financial-entities/providers/clients.provider.js';
+import { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
+import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
+import { CountryCode } from '../../../modules/countries/types.js';
+import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
 import {
   IGetBusinessesByIdsResult,
   IGetClientsByIdsResult,
-} from '@modules/financial-entities/types.js';
-import { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
+} from '../../../modules/financial-entities/types.js';
 import { countryCodeToGreenInvoiceCountry } from './green-invoice.helper.js';
 
 function convertLocalClientToGreenInvoiceCreateClientInput(

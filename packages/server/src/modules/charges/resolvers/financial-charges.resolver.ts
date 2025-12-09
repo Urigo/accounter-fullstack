@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { getMinDate } from '@modules/ledger/helpers/ledger-lock.js';
-import { generateLedgerRecordsForFinancialCharge } from '@modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
-import { MiscExpensesProvider } from '@modules/misc-expenses/providers/misc-expenses.provider.js';
+import { getMinDate } from '../../../modules/ledger/helpers/ledger-lock.js';
+import { generateLedgerRecordsForFinancialCharge } from '../../../modules/ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
+import { MiscExpensesProvider } from '../../../modules/misc-expenses/providers/misc-expenses.provider.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { getChargeType } from '../helpers/charge-type.js';

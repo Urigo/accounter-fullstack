@@ -1,7 +1,7 @@
 import { format, startOfMonth } from 'date-fns';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
 import { Pcn874RecordType } from '../../../__generated__/types.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import {
   dateToTimelessDateString,
   idValidator,

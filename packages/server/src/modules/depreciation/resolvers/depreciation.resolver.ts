@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { calculateTotalAmount } from '@modules/charges/helpers/common.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
 import type { Resolvers } from '../../../__generated__/types.js';
+import { calculateTotalAmount } from '../../../modules/charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { DepreciationCategoriesProvider } from '../providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '../providers/depreciation.provider.js';

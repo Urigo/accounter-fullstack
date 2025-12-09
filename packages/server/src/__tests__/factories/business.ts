@@ -1,4 +1,4 @@
-import type { IInsertBusinessesParams } from '@modules/financial-entities/__generated__/businesses.types.js';
+import type { IInsertBusinessesParams } from '../../modules/financial-entities/__generated__/businesses.types.js';
 import { makeUUID } from './ids.js';
 import { CountryCode } from '../../modules/countries/types.js';
 

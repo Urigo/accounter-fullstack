@@ -3,8 +3,8 @@ import {
   getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
-} from '@modules/charges/helpers/common.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+} from '../../../modules/charges/helpers/common.helper.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';

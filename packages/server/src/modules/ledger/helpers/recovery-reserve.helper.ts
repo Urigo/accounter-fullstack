@@ -1,12 +1,12 @@
 import { differenceInYears, endOfDay, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { EmployeesProvider } from '@modules/salaries/providers/employees.provider.js';
-import { RecoveryProvider } from '@modules/salaries/providers/recovery.provider.js';
-import { SalariesProvider } from '@modules/salaries/providers/salaries.provider.js';
+import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
+import { RecoveryProvider } from '../../../modules/salaries/providers/recovery.provider.js';
+import { SalariesProvider } from '../../../modules/salaries/providers/salaries.provider.js';
 import {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
-} from '@modules/salaries/types';
+} from '../../../modules/salaries/types';
 import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 

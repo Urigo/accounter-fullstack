@@ -1,11 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { getChargeBusinesses } from '@modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '@modules/financial-accounts/providers/financial-accounts.provider.js';
-import { ledgerEntryFromMainTransaction } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import { splitFeeTransactions } from '@modules/ledger/helpers/fee-transactions.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import type {
   Currency,
   Maybe,
@@ -13,6 +6,13 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import { getChargeBusinesses } from '../../../../modules/charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '../../../../modules/financial-accounts/providers/financial-accounts.provider.js';
+import { ledgerEntryFromMainTransaction } from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
+import { splitFeeTransactions } from '../../../../modules/ledger/helpers/fee-transactions.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {

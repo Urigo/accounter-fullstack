@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';

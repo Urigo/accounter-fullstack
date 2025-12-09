@@ -1,10 +1,10 @@
 import { GraphQLError } from 'graphql';
-import { GoogleDriveProvider } from '@modules/app-providers/google-drive/google-drive.provider.js';
-import { GreenInvoiceClientProvider } from '@modules/app-providers/green-invoice-client.js';
-import { deleteCharges } from '@modules/charges/helpers/delete-charges.helper.js';
-import { ChargesProvider } from '@modules/charges/providers/charges.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import { Resolvers } from '../../../__generated__/types.js';
+import { GoogleDriveProvider } from '../../../modules/app-providers/google-drive/google-drive.provider.js';
+import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
+import { deleteCharges } from '../../../modules/charges/helpers/delete-charges.helper.js';
+import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';

@@ -1,16 +1,16 @@
-import { DividendsProvider } from '@modules/dividends/providers/dividends.provider.js';
-import { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
-import { ledgerEntryFromBalanceCancellation } from '@modules/ledger/helpers/common-charge-ledger.helper.js';
-import { storeInitialGeneratedRecords } from '@modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '@modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { BalanceCancellationProvider } from '@modules/ledger/providers/balance-cancellation.provider.js';
-import { TransactionsProvider } from '@modules/transactions/providers/transactions.provider.js';
 import {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import { DividendsProvider } from '../../../../modules/dividends/providers/dividends.provider.js';
+import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
+import { ledgerEntryFromBalanceCancellation } from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
+import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
+import { BalanceCancellationProvider } from '../../../../modules/ledger/providers/balance-cancellation.provider.js';
+import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import { DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '../../../../shared/constants.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';

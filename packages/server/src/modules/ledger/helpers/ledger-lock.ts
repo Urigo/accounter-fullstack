@@ -3,8 +3,8 @@ import {
   getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
-} from '@modules/charges/helpers/common.helper.js';
-import type { IGetChargesByIdsResult } from '@modules/charges/types.js';
+} from '../../../modules/charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 

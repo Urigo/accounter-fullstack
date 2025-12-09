@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
 import type { IGetAllCountriesQuery, IGetAllCountriesResult } from '../types.js';
 

@@ -1,5 +1,5 @@
 import type { Currency } from '../../__generated__/types.js';
-import type { ExchangeProvider } from '@modules/exchange-rates/providers/exchange.provider.js';
+import type { ExchangeProvider } from '../../modules/exchange-rates/providers/exchange.provider.js';
 
 /**
  * Configuration for a mocked exchange rate.

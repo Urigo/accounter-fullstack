@@ -1,4 +1,4 @@
-import type { IInsertTaxCategoryParams } from '@modules/financial-entities/__generated__/tax-categories.types.js';
+import type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
 import { makeUUID } from './ids.js';
 
 /**

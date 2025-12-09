@@ -1,9 +1,9 @@
-import { isInvoice } from '@modules/documents/helpers/common.helper.js';
-import { validateDocumentAllocation } from '@modules/documents/helpers/validate-document.helper.js';
-import { DocumentsProvider } from '@modules/documents/providers/documents.provider.js';
-import { BusinessesProvider } from '@modules/financial-entities/providers/businesses.provider.js';
-import { ChargeTagsProvider } from '@modules/tags/providers/charge-tags.provider.js';
 import { MissingChargeInfo, ResolversTypes } from '../../../__generated__/types.js';
+import { isInvoice } from '../../../modules/documents/helpers/common.helper.js';
+import { validateDocumentAllocation } from '../../../modules/documents/helpers/validate-document.helper.js';
+import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
+import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { ChargeTagsProvider } from '../../../modules/tags/providers/charge-tags.provider.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
