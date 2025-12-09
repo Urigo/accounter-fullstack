@@ -483,7 +483,7 @@ async function getKeyByValue(
   return Promise.resolve(LoginResults.UnknownError);
 }
 
-function getLoginOptions(page: Page, credentials: MaxCredentials): LoginOptions {
+async function getLoginOptions(page: Page, credentials: MaxCredentials): Promise<LoginOptions> {
   return {
     loginUrl: LOGIN_URL,
     fields: createLoginFields(credentials),
@@ -568,7 +568,7 @@ async function login(page: Page, credentials: MaxCredentials): Promise<boolean> 
   }
 
   console.debug('execute login process');
-  const loginOptions = getLoginOptions(page, credentials);
+  const loginOptions = await getLoginOptions(page, credentials);
 
   if (loginOptions.userAgent) {
     console.debug('set custom user agent provided in options');
