@@ -1,5 +1,5 @@
 import { lastDayOfMonth } from 'date-fns';
-import type { IGetChargesByIdsResult } from '../../../modules/charges/types';
+import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
 import type { IGetSalaryRecordsByChargeIdsResult } from '../../../modules/salaries/types.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 import { LedgerError } from './utils.helper.js';

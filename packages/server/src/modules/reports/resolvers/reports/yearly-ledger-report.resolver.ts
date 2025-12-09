@@ -12,7 +12,7 @@ import { FinancialEntitiesProvider } from '../../../../modules/financial-entitie
 import type {
   IGetAllFinancialEntitiesResult,
   IGetFinancialEntitiesByIdsResult,
-} from '../../../../modules/financial-entities/types';
+} from '../../../../modules/financial-entities/types.js';
 import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';

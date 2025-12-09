@@ -1,4 +1,4 @@
-import { IGetLedgerRecordsByChargesIdsResult } from '../../../modules/ledger/types';
+import type { IGetLedgerRecordsByChargesIdsResult } from '../../../modules/ledger/types.js';
 import { Currency } from '../../../shared/enums.js';
 import type {
   BusinessTransactionProto,

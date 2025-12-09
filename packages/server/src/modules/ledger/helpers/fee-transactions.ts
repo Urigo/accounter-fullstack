@@ -2,7 +2,7 @@ import {
   getChargeBusinesses,
   getChargeTaxCategoryId,
 } from '../../../modules/charges/helpers/common.helper.js';
-import type { IGetChargesByIdsResult } from '../../../modules/charges/types';
+import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
 import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import type { LedgerProto } from '../../../shared/types/index.js';

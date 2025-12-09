@@ -13,7 +13,7 @@ import { DocumentsProvider } from '../../../modules/documents/providers/document
 import type {
   IGetDocumentsByChargeIdResult,
   IInsertDocumentsParams,
-} from '../../../modules/documents/types';
+} from '../../../modules/documents/types.js';
 import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';

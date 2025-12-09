@@ -2,7 +2,7 @@ import {
   validateDocumentAllocation,
   validateDocumentVat,
 } from '../../../modules/documents/helpers/validate-document.helper.js';
-import type { IGetDocumentsByChargeIdResult } from '../../../modules/documents/types';
+import type { IGetDocumentsByChargeIdResult } from '../../../modules/documents/types.js';
 import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../modules/financial-accounts/providers/financial-accounts.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
