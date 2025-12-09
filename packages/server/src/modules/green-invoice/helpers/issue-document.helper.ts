@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
-import {
+import type {
   Currency,
   GreenInvoiceIncome,
   GreenInvoiceLinkType,
@@ -14,15 +14,15 @@ import {
 import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
-import {
+import type {
   IGetDocumentsByChargeIdResult,
   IGetIssuedDocumentsByIdsResult,
-} from '../../../modules/documents/types';
+} from '../../../modules/documents/types.js';
 import { FinancialAccountsProvider } from '../../../modules/financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../../modules/financial-accounts/providers/financial-bank-accounts.provider.js';
-import { IGetFinancialBankAccountsByIdsResult } from '../../../modules/financial-accounts/types.js';
+import type { IGetFinancialBankAccountsByIdsResult } from '../../../modules/financial-accounts/types.js';
 import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types';
+import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
