@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import { ENVIRONMENT } from '@shared/tokens';
+import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 
 @Injectable({
