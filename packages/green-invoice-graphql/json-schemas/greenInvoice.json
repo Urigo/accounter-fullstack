@@ -119,6 +119,9 @@
     "getLinkedDocumentsResponse": {
       "$ref": "#/$defs/GetLinkedDocuments"
     },
+    "getDocumentsDownloadLinksResponse": {
+      "$ref": "#/$defs/Url"
+    },
     "addDocumentRequest": {
       "description": "Add a document to the current business",
       "allOf": [
