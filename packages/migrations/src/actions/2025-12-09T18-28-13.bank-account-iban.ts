@@ -6,6 +6,6 @@ export default {
     ALTER TABLE
       "accounter_schema"."financial_bank_accounts"
     ADD COLUMN
-      "iban" VARCHAR(23) NULL;
+      "iban" VARCHAR(34) NULL;
   `,
 } satisfies MigrationExecutor;
