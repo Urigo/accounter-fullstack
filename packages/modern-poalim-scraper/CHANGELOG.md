@@ -1,5 +1,33 @@
 # @accounter/modern-poalim-scraper
 
+## 0.10.3
+
+### Patch Changes
+
+- [#2744](https://github.com/Urigo/accounter-fullstack/pull/2744)
+  [`ef68321`](https://github.com/Urigo/accounter-fullstack/commit/ef68321608d60a7208e82a2c413f27beb502e3cc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.1.13` ↗︎](https://www.npmjs.com/package/zod/v/4.1.13) (from `4.1.12`,
+    in `dependencies`)
+
+- [#2765](https://github.com/Urigo/accounter-fullstack/pull/2765)
+  [`cbf2717`](https://github.com/Urigo/accounter-fullstack/commit/cbf27175d72499a6f7509eecee351f4831227f12)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.0.2` ↗︎](https://www.npmjs.com/package/inquirer/v/13.0.2) (from
+    `13.0.1`, in `dependencies`)
+
+- [#2775](https://github.com/Urigo/accounter-fullstack/pull/2775)
+  [`3ace155`](https://github.com/Urigo/accounter-fullstack/commit/3ace1558465d4246a815b238543beb68527c4be0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.32.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.32.0)
+    (from `24.31.0`, in `dependencies`)
+
+- [#2778](https://github.com/Urigo/accounter-fullstack/pull/2778)
+  [`eb4e853`](https://github.com/Urigo/accounter-fullstack/commit/eb4e853581ac5cded01c5c804ee4894f9fb7dff6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.32.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.32.1)
+    (from `24.32.0`, in `dependencies`)
+
 ## 0.10.2
 
 ### Patch Changes
@@ -13,8 +41,8 @@
 - [#2543](https://github.com/Urigo/accounter-fullstack/pull/2543)
   [`65e3c7f`](https://github.com/Urigo/accounter-fullstack/commit/65e3c7f01993eb4f41244a40feefefa08b31a4e6)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.12` ↗︎](https://www.npmjs.com/package/zod/v/4.1.12) (from
-    `4.1.11`, in `dependencies`)
+  - Updated dependency [`zod@4.1.12` ↗︎](https://www.npmjs.com/package/zod/v/4.1.12) (from `4.1.11`,
+    in `dependencies`)
 
 - [#2564](https://github.com/Urigo/accounter-fullstack/pull/2564)
   [`db6907d`](https://github.com/Urigo/accounter-fullstack/commit/db6907d59f233df4059ab3de1b4ece3735ae02f1)
@@ -121,8 +149,8 @@
 - [#2709](https://github.com/Urigo/accounter-fullstack/pull/2709)
   [`031f013`](https://github.com/Urigo/accounter-fullstack/commit/031f013dbad4ed669d758c32258aeb489e46f8bd)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@13.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/13.0.1)
-    (from `12.11.1`, in `dependencies`)
+  - Updated dependency [`inquirer@13.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/13.0.1) (from
+    `12.11.1`, in `dependencies`)
 
 - [#2731](https://github.com/Urigo/accounter-fullstack/pull/2731)
   [`1c5fbf5`](https://github.com/Urigo/accounter-fullstack/commit/1c5fbf58f10dab080c9a47897c15d320fda79560)
@@ -137,12 +165,12 @@
 - [#2431](https://github.com/Urigo/accounter-fullstack/pull/2431)
   [`ba17ccf`](https://github.com/Urigo/accounter-fullstack/commit/ba17ccf0b15293482de55a1cc7a61ff96c1fc757)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.9.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.3)
-    (from `12.9.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.9.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.3) (from
+    `12.9.1`, in `dependencies`)
   - Updated dependency [`puppeteer@24.16.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.16.2)
     (from `24.16.1`, in `dependencies`)
-  - Updated dependency [`zod@4.0.17` ↗︎](https://www.npmjs.com/package/zod/v/4.0.17) (from
-    `4.0.13`, in `dependencies`)
+  - Updated dependency [`zod@4.0.17` ↗︎](https://www.npmjs.com/package/zod/v/4.0.17) (from `4.0.13`,
+    in `dependencies`)
 
 - [#2447](https://github.com/Urigo/accounter-fullstack/pull/2447)
   [`bea6736`](https://github.com/Urigo/accounter-fullstack/commit/bea67367a767eed5cb9680953bf04a3f21f168eb)
@@ -153,20 +181,20 @@
 - [#2456](https://github.com/Urigo/accounter-fullstack/pull/2456)
   [`3fe961a`](https://github.com/Urigo/accounter-fullstack/commit/3fe961a8338359ed544ce4de5730a1898fb1cc43)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.0` ↗︎](https://www.npmjs.com/package/zod/v/4.1.0) (from `4.0.17`,
-    in `dependencies`)
+  - Updated dependency [`zod@4.1.0` ↗︎](https://www.npmjs.com/package/zod/v/4.1.0) (from `4.0.17`, in
+    `dependencies`)
 
 - [#2457](https://github.com/Urigo/accounter-fullstack/pull/2457)
   [`16b0040`](https://github.com/Urigo/accounter-fullstack/commit/16b0040862d1bf9d65eb9829e8eb33117d60a1c2)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.1` ↗︎](https://www.npmjs.com/package/zod/v/4.1.1) (from `4.1.0`,
-    in `dependencies`)
+  - Updated dependency [`zod@4.1.1` ↗︎](https://www.npmjs.com/package/zod/v/4.1.1) (from `4.1.0`, in
+    `dependencies`)
 
 - [#2469](https://github.com/Urigo/accounter-fullstack/pull/2469)
   [`7176d0d`](https://github.com/Urigo/accounter-fullstack/commit/7176d0d3e1808cc1800e1cabe121b380f0480d63)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.3` ↗︎](https://www.npmjs.com/package/zod/v/4.1.3) (from `4.1.1`,
-    in `dependencies`)
+  - Updated dependency [`zod@4.1.3` ↗︎](https://www.npmjs.com/package/zod/v/4.1.3) (from `4.1.1`, in
+    `dependencies`)
 
 - [#2477](https://github.com/Urigo/accounter-fullstack/pull/2477)
   [`b735a60`](https://github.com/Urigo/accounter-fullstack/commit/b735a605ecd10bf153a9015873e3a09a96696e49)
@@ -177,16 +205,16 @@
 - [#2478](https://github.com/Urigo/accounter-fullstack/pull/2478)
   [`86e628e`](https://github.com/Urigo/accounter-fullstack/commit/86e628e40cc0d8fac239cfea2563326094013df4)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.5` ↗︎](https://www.npmjs.com/package/zod/v/4.1.5) (from `4.1.3`,
-    in `dependencies`)
+  - Updated dependency [`zod@4.1.5` ↗︎](https://www.npmjs.com/package/zod/v/4.1.5) (from `4.1.3`, in
+    `dependencies`)
 
 - [#2483](https://github.com/Urigo/accounter-fullstack/pull/2483)
   [`43760d7`](https://github.com/Urigo/accounter-fullstack/commit/43760d77cb29ea44257d37ca0bc7a97e17aa1c89)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.9.6` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.6)
-    (from `12.9.4`, in `dependencies`)
-  - Updated dependency [`zod@4.1.8` ↗︎](https://www.npmjs.com/package/zod/v/4.1.8) (from `4.1.5`,
-    in `dependencies`)
+  - Updated dependency [`inquirer@12.9.6` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.6) (from
+    `12.9.4`, in `dependencies`)
+  - Updated dependency [`zod@4.1.8` ↗︎](https://www.npmjs.com/package/zod/v/4.1.8) (from `4.1.5`, in
+    `dependencies`)
 
 - [#2487](https://github.com/Urigo/accounter-fullstack/pull/2487)
   [`b271a72`](https://github.com/Urigo/accounter-fullstack/commit/b271a727016449234cb6f83f1cadf4696816b018)
@@ -225,8 +253,8 @@
 - [#2512](https://github.com/Urigo/accounter-fullstack/pull/2512)
   [`590823c`](https://github.com/Urigo/accounter-fullstack/commit/590823cf7105b018a3127abc2343ac714f2845ac)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`zod@4.1.9` ↗︎](https://www.npmjs.com/package/zod/v/4.1.9) (from `4.1.8`,
-    in `dependencies`)
+  - Updated dependency [`zod@4.1.9` ↗︎](https://www.npmjs.com/package/zod/v/4.1.9) (from `4.1.8`, in
+    `dependencies`)
 
 - [#2515](https://github.com/Urigo/accounter-fullstack/pull/2515)
   [`ce8be3d`](https://github.com/Urigo/accounter-fullstack/commit/ce8be3d02d7add80e30bcac39facd4b775e1dc76)
@@ -262,8 +290,8 @@
 - [#2265](https://github.com/Urigo/accounter-fullstack/pull/2265)
   [`4c651e4`](https://github.com/Urigo/accounter-fullstack/commit/4c651e43a1e59e2ce9414ca45bbcdbfa0f699a92)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.7.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.7.0)
-    (from `12.6.3`, in `dependencies`)
+  - Updated dependency [`inquirer@12.7.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.7.0) (from
+    `12.6.3`, in `dependencies`)
 
 - [#2282](https://github.com/Urigo/accounter-fullstack/pull/2282)
   [`4cb0e51`](https://github.com/Urigo/accounter-fullstack/commit/4cb0e5157c86afa4f0463678497aac95a2d745e3)
@@ -292,20 +320,20 @@
 - [#2325](https://github.com/Urigo/accounter-fullstack/pull/2325)
   [`407a763`](https://github.com/Urigo/accounter-fullstack/commit/407a7632092ee4571fb27781f7da9f9251240f34)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.8.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.0)
-    (from `12.7.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.8.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.0) (from
+    `12.7.0`, in `dependencies`)
 
 - [#2331](https://github.com/Urigo/accounter-fullstack/pull/2331)
   [`dd85a17`](https://github.com/Urigo/accounter-fullstack/commit/dd85a1724bd8a262d0e072e93b53015662d7f987)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.8.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.1)
-    (from `12.8.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.8.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.1) (from
+    `12.8.0`, in `dependencies`)
 
 - [#2335](https://github.com/Urigo/accounter-fullstack/pull/2335)
   [`a51a0d9`](https://github.com/Urigo/accounter-fullstack/commit/a51a0d95a5cf6e4346ac131ec90ee172fe9b02ef)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.8.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.2)
-    (from `12.8.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.8.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.8.2) (from
+    `12.8.1`, in `dependencies`)
 
 - [#2340](https://github.com/Urigo/accounter-fullstack/pull/2340)
   [`c780752`](https://github.com/Urigo/accounter-fullstack/commit/c7807521d63627f4013fd76df546a038df484c05)
@@ -316,8 +344,8 @@
 - [#2350](https://github.com/Urigo/accounter-fullstack/pull/2350)
   [`38349f1`](https://github.com/Urigo/accounter-fullstack/commit/38349f10ccc4194e6c433fde5291d7fe828d98af)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.9.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.0)
-    (from `12.8.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.9.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.0) (from
+    `12.8.2`, in `dependencies`)
 
 - [#2401](https://github.com/Urigo/accounter-fullstack/pull/2401)
   [`1e77823`](https://github.com/Urigo/accounter-fullstack/commit/1e7782360c45edcce414b9f0ed69e2edf7ef572c)
@@ -328,8 +356,8 @@
 - [#2402](https://github.com/Urigo/accounter-fullstack/pull/2402)
   [`b1352c4`](https://github.com/Urigo/accounter-fullstack/commit/b1352c4190bad2d93d1be823d96ff2b53df7387a)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.9.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.1)
-    (from `12.9.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.9.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.9.1) (from
+    `12.9.0`, in `dependencies`)
 
 - [#2434](https://github.com/Urigo/accounter-fullstack/pull/2434)
   [`a177bab`](https://github.com/Urigo/accounter-fullstack/commit/a177babe10e956c1b5d21406ce158c1390519d5f)
@@ -379,14 +407,14 @@
 - [#2020](https://github.com/Urigo/accounter-fullstack/pull/2020)
   [`b242f4c`](https://github.com/Urigo/accounter-fullstack/commit/b242f4cfccadcc6dae83c7c6055ba8795ce4c770)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2)
-    (from `12.5.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2) (from
+    `12.5.0`, in `dependencies`)
 
 - [#2021](https://github.com/Urigo/accounter-fullstack/pull/2021)
   [`026df05`](https://github.com/Urigo/accounter-fullstack/commit/026df059d7ccb8ef67602106b01d5020e936b418)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2)
-    (from `12.5.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.5.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.2) (from
+    `12.5.0`, in `dependencies`)
 
 - [#2042](https://github.com/Urigo/accounter-fullstack/pull/2042)
   [`68f2f27`](https://github.com/Urigo/accounter-fullstack/commit/68f2f2712ad7342e03394b55118c5797fcc7d7e9)
@@ -403,16 +431,16 @@
 - [#2086](https://github.com/Urigo/accounter-fullstack/pull/2086)
   [`5308911`](https://github.com/Urigo/accounter-fullstack/commit/530891185ab33f53299fa7fc8c623104e1b1dc94)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`inquirer@12.6.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.0)
-    (from `12.5.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.6.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.0) (from
+    `12.5.2`, in `dependencies`)
   - Updated dependency [`puppeteer@24.8.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.8.0)
     (from `24.7.1`, in `dependencies`)
 
 - [#2100](https://github.com/Urigo/accounter-fullstack/pull/2100)
   [`8af4bdb`](https://github.com/Urigo/accounter-fullstack/commit/8af4bdb8abc2ae36c8c3e2e3a75a201f9071c8d1)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.6.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.1)
-    (from `12.6.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.6.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.1) (from
+    `12.6.0`, in `dependencies`)
   - Updated dependency [`puppeteer@24.8.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.8.2)
     (from `24.8.0`, in `dependencies`)
 
@@ -425,8 +453,8 @@
 - [#2159](https://github.com/Urigo/accounter-fullstack/pull/2159)
   [`f850fb6`](https://github.com/Urigo/accounter-fullstack/commit/f850fb62ba36ed46344b937e790a8cccb80e9f7d)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.6.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.2)
-    (from `12.6.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.6.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.2) (from
+    `12.6.1`, in `dependencies`)
 
 - [#2160](https://github.com/Urigo/accounter-fullstack/pull/2160)
   [`433c1b8`](https://github.com/Urigo/accounter-fullstack/commit/433c1b8c272980f9ba3fa1f39ef731d642ae80c1)
@@ -437,8 +465,8 @@
 - [#2171](https://github.com/Urigo/accounter-fullstack/pull/2171)
   [`d873ff8`](https://github.com/Urigo/accounter-fullstack/commit/d873ff800da448fbed8a8d8149408e4133e40999)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.6.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.3)
-    (from `12.6.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.6.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.6.3) (from
+    `12.6.2`, in `dependencies`)
 
 - [#2182](https://github.com/Urigo/accounter-fullstack/pull/2182)
   [`a271789`](https://github.com/Urigo/accounter-fullstack/commit/a2717899d25c4b476ac1e12cd70a08a39ad2b924)
@@ -482,8 +510,8 @@
 - [#1246](https://github.com/Urigo/accounter-fullstack/pull/1246)
   [`f4a1c28`](https://github.com/Urigo/accounter-fullstack/commit/f4a1c28419d6960a5dcecd09592a59b4c6595cbe)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.2.0)
-    (from `10.2.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.2.0) (from
+    `10.2.2`, in `dependencies`)
 
 - [#1377](https://github.com/Urigo/accounter-fullstack/pull/1377)
   [`2d08623`](https://github.com/Urigo/accounter-fullstack/commit/2d0862346bfdd883862b245ba6c4655bdadffcba)
@@ -506,14 +534,14 @@
 - [#1532](https://github.com/Urigo/accounter-fullstack/pull/1532)
   [`58c2009`](https://github.com/Urigo/accounter-fullstack/commit/58c20096ebb13f62b1fe32a4c578e30f9b4c7ed4)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.0)
-    (from `12.2.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.0) (from
+    `12.2.0`, in `dependencies`)
 
 - [#1537](https://github.com/Urigo/accounter-fullstack/pull/1537)
   [`cce465e`](https://github.com/Urigo/accounter-fullstack/commit/cce465e84cc756e882aac932f3fbc912c8dd214e)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.0)
-    (from `12.2.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.0) (from
+    `12.2.0`, in `dependencies`)
 
 - [#1558](https://github.com/Urigo/accounter-fullstack/pull/1558)
   [`d2bbb2a`](https://github.com/Urigo/accounter-fullstack/commit/d2bbb2a42056f54c59993b3a8a34daa9d7612cbc)
@@ -530,16 +558,16 @@
 - [#1587](https://github.com/Urigo/accounter-fullstack/pull/1587)
   [`6d56b87`](https://github.com/Urigo/accounter-fullstack/commit/6d56b87180d569a263fc382b1614a0f27145a3ba)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.1)
-    (from `12.3.0`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.1) (from
+    `12.3.0`, in `dependencies`)
   - Updated dependency [`uuid@11.0.5` ↗︎](https://www.npmjs.com/package/uuid/v/11.0.5) (from
     `11.0.4`, in `dependencies`)
 
 - [#1596](https://github.com/Urigo/accounter-fullstack/pull/1596)
   [`c845a24`](https://github.com/Urigo/accounter-fullstack/commit/c845a24450cecedf40b9e32568a5008cd0d63da9)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.2)
-    (from `12.3.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.2) (from
+    `12.3.1`, in `dependencies`)
   - Updated dependency [`puppeteer@24.1.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.1.0)
     (from `24.0.0`, in `dependencies`)
 
@@ -552,8 +580,8 @@
 - [#1600](https://github.com/Urigo/accounter-fullstack/pull/1600)
   [`6c9a985`](https://github.com/Urigo/accounter-fullstack/commit/6c9a98525f1423b46f90b66baea71a0c8705df72)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.2)
-    (from `12.3.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.2) (from
+    `12.3.1`, in `dependencies`)
 
 - [#1629](https://github.com/Urigo/accounter-fullstack/pull/1629)
   [`424065e`](https://github.com/Urigo/accounter-fullstack/commit/424065ea0311f8293b3b5f00d69b0fc561e47442)
@@ -564,14 +592,14 @@
 - [#1646](https://github.com/Urigo/accounter-fullstack/pull/1646)
   [`a637011`](https://github.com/Urigo/accounter-fullstack/commit/a637011c1c51bff71c240ab4e7e795bfd6fa5f13)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.3.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.3)
-    (from `12.3.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.3.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.3.3) (from
+    `12.3.2`, in `dependencies`)
 
 - [#1669](https://github.com/Urigo/accounter-fullstack/pull/1669)
   [`2fa0b7e`](https://github.com/Urigo/accounter-fullstack/commit/2fa0b7e1ddc4243ef0ea5783f0875e672fbc0c05)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.4.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.1)
-    (from `12.3.3`, in `dependencies`)
+  - Updated dependency [`inquirer@12.4.1` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.1) (from
+    `12.3.3`, in `dependencies`)
 
 - [#1677](https://github.com/Urigo/accounter-fullstack/pull/1677)
   [`8fac177`](https://github.com/Urigo/accounter-fullstack/commit/8fac1774d963db56ebfbbee0b7d1d1c02af3cced)
@@ -582,8 +610,8 @@
 - [#1706](https://github.com/Urigo/accounter-fullstack/pull/1706)
   [`eaf31e9`](https://github.com/Urigo/accounter-fullstack/commit/eaf31e9cfe56ac1f2a954dc986148fcb38d1e63b)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.4.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.2)
-    (from `12.4.1`, in `dependencies`)
+  - Updated dependency [`inquirer@12.4.2` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.2) (from
+    `12.4.1`, in `dependencies`)
   - Updated dependency [`puppeteer@24.2.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.2.1)
     (from `24.2.0`, in `dependencies`)
 
@@ -620,20 +648,20 @@
 - [#1871](https://github.com/Urigo/accounter-fullstack/pull/1871)
   [`fb3fc0a`](https://github.com/Urigo/accounter-fullstack/commit/fb3fc0a1b409c088561d1aa4197221c5559f5763)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.4.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.3)
-    (from `12.4.2`, in `dependencies`)
+  - Updated dependency [`inquirer@12.4.3` ↗︎](https://www.npmjs.com/package/inquirer/v/12.4.3) (from
+    `12.4.2`, in `dependencies`)
 
 - [#1911](https://github.com/Urigo/accounter-fullstack/pull/1911)
   [`7de124b`](https://github.com/Urigo/accounter-fullstack/commit/7de124b4003e3b2e8de60d2991f681a3f3e53462)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.5.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.0)
-    (from `12.4.3`, in `dependencies`)
+  - Updated dependency [`inquirer@12.5.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.0) (from
+    `12.4.3`, in `dependencies`)
 
 - [#1918](https://github.com/Urigo/accounter-fullstack/pull/1918)
   [`588cf4a`](https://github.com/Urigo/accounter-fullstack/commit/588cf4abd6260fd296af15d70d105c56320b4131)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@12.5.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.0)
-    (from `12.4.3`, in `dependencies`)
+  - Updated dependency [`inquirer@12.5.0` ↗︎](https://www.npmjs.com/package/inquirer/v/12.5.0) (from
+    `12.4.3`, in `dependencies`)
 
 ## 0.9.14
 
@@ -778,8 +806,8 @@
 - [#1153](https://github.com/Urigo/accounter-fullstack/pull/1153)
   [`ac91f3f`](https://github.com/Urigo/accounter-fullstack/commit/ac91f3f8e278027172a44dffba141ab3fe1163ec)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.2.0)
-    (from `10.1.8`, in `dependencies`)
+  - Updated dependency [`inquirer@10.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.2.0) (from
+    `10.1.8`, in `dependencies`)
 
 - [#1156](https://github.com/Urigo/accounter-fullstack/pull/1156)
   [`c2144ab`](https://github.com/Urigo/accounter-fullstack/commit/c2144abb23d5f45465ea5b1d3bad22c5595cd490)
@@ -796,8 +824,8 @@
 - [#1178](https://github.com/Urigo/accounter-fullstack/pull/1178)
   [`d67572c`](https://github.com/Urigo/accounter-fullstack/commit/d67572cbc82d7da308e7f37430c0d05ef8573915)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.2.2` ↗︎](https://www.npmjs.com/package/inquirer/v/10.2.2)
-    (from `10.2.0`, in `dependencies`)
+  - Updated dependency [`inquirer@10.2.2` ↗︎](https://www.npmjs.com/package/inquirer/v/10.2.2) (from
+    `10.2.0`, in `dependencies`)
   - Updated dependency [`puppeteer@23.3.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/23.3.1)
     (from `23.3.0`, in `dependencies`)
 
@@ -820,14 +848,14 @@
 - [#1017](https://github.com/Urigo/accounter-fullstack/pull/1017)
   [`7d8656c`](https://github.com/Urigo/accounter-fullstack/commit/7d8656c7a71b8a32f9c5e57b6d3f34d4a10b0f14)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.7` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.7)
-    (from `10.1.6`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.7` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.7) (from
+    `10.1.6`, in `dependencies`)
 
 - [#1025](https://github.com/Urigo/accounter-fullstack/pull/1025)
   [`41322e0`](https://github.com/Urigo/accounter-fullstack/commit/41322e07ff2da95eba52021531346aeb0c0515f0)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.8` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.8)
-    (from `10.1.7`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.8` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.8) (from
+    `10.1.7`, in `dependencies`)
 
 - [#1029](https://github.com/Urigo/accounter-fullstack/pull/1029)
   [`fd4e46f`](https://github.com/Urigo/accounter-fullstack/commit/fd4e46fa007790936fa71acd65a55f9d1e068940)
@@ -862,8 +890,8 @@
 - [#485](https://github.com/Urigo/accounter-fullstack/pull/485)
   [`1fce494`](https://github.com/Urigo/accounter-fullstack/commit/1fce494a31b12738439a9bb021bc7f39617ec622)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.16` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.16)
-    (from `9.2.15`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.16` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.16) (from
+    `9.2.15`, in `dependencies`)
 
 - [#493](https://github.com/Urigo/accounter-fullstack/pull/493)
   [`8f9129d`](https://github.com/Urigo/accounter-fullstack/commit/8f9129da17b6880770a701ba08c95bc9a6e505af)
@@ -880,8 +908,8 @@
 - [#522](https://github.com/Urigo/accounter-fullstack/pull/522)
   [`0c0b2e2`](https://github.com/Urigo/accounter-fullstack/commit/0c0b2e24ddf9777262ced77f75f8044a0ad6990d)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.17` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.17)
-    (from `9.2.16`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.17` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.17) (from
+    `9.2.16`, in `dependencies`)
 
 - [#525](https://github.com/Urigo/accounter-fullstack/pull/525)
   [`a82e289`](https://github.com/Urigo/accounter-fullstack/commit/a82e289b9f11ee91f17f04997c1168c24ffd50b7)
@@ -910,8 +938,8 @@
 - [#604](https://github.com/Urigo/accounter-fullstack/pull/604)
   [`3d84bf4`](https://github.com/Urigo/accounter-fullstack/commit/3d84bf4fadf8a7d92b16f3117db5064857a9ce29)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.19` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.19)
-    (from `9.2.17`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.19` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.19) (from
+    `9.2.17`, in `dependencies`)
   - Updated dependency [`puppeteer@22.6.5` ↗︎](https://www.npmjs.com/package/puppeteer/v/22.6.5)
     (from `22.6.3`, in `dependencies`)
 
@@ -930,14 +958,14 @@
 - [#627](https://github.com/Urigo/accounter-fullstack/pull/627)
   [`2c7e966`](https://github.com/Urigo/accounter-fullstack/commit/2c7e96669df9997cee868089fcd53213c35e3bf2)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.20` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.20)
-    (from `9.2.19`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.20` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.20) (from
+    `9.2.19`, in `dependencies`)
 
 - [#630](https://github.com/Urigo/accounter-fullstack/pull/630)
   [`c14a717`](https://github.com/Urigo/accounter-fullstack/commit/c14a7177450ed1356c1207def795b91322306593)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.13.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.13.0) (from
-    `8.12.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.13.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.13.0) (from `8.12.0`,
+    in `dependencies`)
 
 - [#638](https://github.com/Urigo/accounter-fullstack/pull/638)
   [`d4c95ce`](https://github.com/Urigo/accounter-fullstack/commit/d4c95ce52f0558ae0a8721291a9c42165d1ea81d)
@@ -954,8 +982,8 @@
 - [#669](https://github.com/Urigo/accounter-fullstack/pull/669)
   [`589ec6b`](https://github.com/Urigo/accounter-fullstack/commit/589ec6bc3e987c8bc670b05b0022d59422131934)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.21` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.21)
-    (from `9.2.20`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.21` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.21) (from
+    `9.2.20`, in `dependencies`)
 
 - [#670](https://github.com/Urigo/accounter-fullstack/pull/670)
   [`76bae0d`](https://github.com/Urigo/accounter-fullstack/commit/76bae0d19642fa9837ad44287809798f37dbfc25)
@@ -966,8 +994,8 @@
 - [#673](https://github.com/Urigo/accounter-fullstack/pull/673)
   [`3566a2e`](https://github.com/Urigo/accounter-fullstack/commit/3566a2e313af504d3a770ce52eeaa28f540f9766)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.22` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.22)
-    (from `9.2.21`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.22` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.22) (from
+    `9.2.21`, in `dependencies`)
 
 - [#699](https://github.com/Urigo/accounter-fullstack/pull/699)
   [`8d09ef1`](https://github.com/Urigo/accounter-fullstack/commit/8d09ef1946fb078429504fd519366ddd32869bf8)
@@ -978,26 +1006,26 @@
 - [#703](https://github.com/Urigo/accounter-fullstack/pull/703)
   [`a7c92f9`](https://github.com/Urigo/accounter-fullstack/commit/a7c92f994d22b4d6b058523576efc207ef7327c1)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.14.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.14.0) (from
-    `8.13.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.14.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.14.0) (from `8.13.0`,
+    in `dependencies`)
 
 - [#727](https://github.com/Urigo/accounter-fullstack/pull/727)
   [`a55189c`](https://github.com/Urigo/accounter-fullstack/commit/a55189c8ac1f6a2dc789b0350aa312b076461505)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@9.2.23` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.23)
-    (from `9.2.22`, in `dependencies`)
+  - Updated dependency [`inquirer@9.2.23` ↗︎](https://www.npmjs.com/package/inquirer/v/9.2.23) (from
+    `9.2.22`, in `dependencies`)
 
 - [#743](https://github.com/Urigo/accounter-fullstack/pull/743)
   [`061976d`](https://github.com/Urigo/accounter-fullstack/commit/061976d60098b21b8a5a5aef7c7746f27fb58a66)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.16.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.16.0) (from
-    `8.14.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.16.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.16.0) (from `8.14.0`,
+    in `dependencies`)
 
 - [#758](https://github.com/Urigo/accounter-fullstack/pull/758)
   [`d7e28b5`](https://github.com/Urigo/accounter-fullstack/commit/d7e28b51c744fe0e8653c5f985eb479426f38caa)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`uuid@10.0.0` ↗︎](https://www.npmjs.com/package/uuid/v/10.0.0) (from
-    `9.0.1`, in `dependencies`)
+  - Updated dependency [`uuid@10.0.0` ↗︎](https://www.npmjs.com/package/uuid/v/10.0.0) (from `9.0.1`,
+    in `dependencies`)
 
 - [#768](https://github.com/Urigo/accounter-fullstack/pull/768)
   [`29fb7ae`](https://github.com/Urigo/accounter-fullstack/commit/29fb7aec6783d3c022ab172d0d62fe8bca9273df)
@@ -1068,14 +1096,14 @@
 - [#862](https://github.com/Urigo/accounter-fullstack/pull/862)
   [`e8f6c24`](https://github.com/Urigo/accounter-fullstack/commit/e8f6c24f0f8e65c2a3c86c2d28bb18586a7e27d1)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.0.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.0)
-    (from `9.3.5`, in `dependencies`)
+  - Updated dependency [`inquirer@10.0.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.0) (from
+    `9.3.5`, in `dependencies`)
 
 - [#891](https://github.com/Urigo/accounter-fullstack/pull/891)
   [`31a5422`](https://github.com/Urigo/accounter-fullstack/commit/31a5422f9fc8c53bbb6b685bb6a980eac5cd2991)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.1)
-    (from `10.0.0`, in `dependencies`)
+  - Updated dependency [`inquirer@10.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.1) (from
+    `10.0.0`, in `dependencies`)
 
 - [#897](https://github.com/Urigo/accounter-fullstack/pull/897)
   [`5a4d273`](https://github.com/Urigo/accounter-fullstack/commit/5a4d27306a45298c8d2d9518a84ea31fc9f3e70a)
@@ -1086,28 +1114,28 @@
 - [#901](https://github.com/Urigo/accounter-fullstack/pull/901)
   [`52a41f4`](https://github.com/Urigo/accounter-fullstack/commit/52a41f4f81c53ebde729bc15ff209a1d6eb8a7fe)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.17.1` ↗︎](https://www.npmjs.com/package/ajv/v/8.17.1) (from
-    `8.16.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.17.1` ↗︎](https://www.npmjs.com/package/ajv/v/8.17.1) (from `8.16.0`,
+    in `dependencies`)
 
 - [#931](https://github.com/Urigo/accounter-fullstack/pull/931)
   [`666bb07`](https://github.com/Urigo/accounter-fullstack/commit/666bb0718426deb854d52603585f16b4c69feae6)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.0.3` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.3)
-    (from `10.0.1`, in `dependencies`)
+  - Updated dependency [`inquirer@10.0.3` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.3) (from
+    `10.0.1`, in `dependencies`)
   - Updated dependency [`puppeteer@22.13.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/22.13.1)
     (from `22.13.0`, in `dependencies`)
 
 - [#932](https://github.com/Urigo/accounter-fullstack/pull/932)
   [`ef42bdc`](https://github.com/Urigo/accounter-fullstack/commit/ef42bdc3774e4ac4b797fb74f237157bf52315c3)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`inquirer@10.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.1)
-    (from `10.0.2`, in `dependencies`)
+  - Updated dependency [`inquirer@10.0.1` ↗︎](https://www.npmjs.com/package/inquirer/v/10.0.1) (from
+    `10.0.2`, in `dependencies`)
 
 - [#949](https://github.com/Urigo/accounter-fullstack/pull/949)
   [`dd98233`](https://github.com/Urigo/accounter-fullstack/commit/dd98233cea5142000c5c1d54767b85edbded432b)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.0)
-    (from `10.0.1`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.0` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.0) (from
+    `10.0.1`, in `dependencies`)
 
 - [#969](https://github.com/Urigo/accounter-fullstack/pull/969)
   [`7694d53`](https://github.com/Urigo/accounter-fullstack/commit/7694d53f200b349096afd06f2a17ef5cbef0e94c)
@@ -1118,26 +1146,26 @@
 - [#974](https://github.com/Urigo/accounter-fullstack/pull/974)
   [`5671d0c`](https://github.com/Urigo/accounter-fullstack/commit/5671d0c74be8fd10028120ffda7cd9b0fc15416e)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.2` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.2)
-    (from `10.1.0`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.2` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.2) (from
+    `10.1.0`, in `dependencies`)
 
 - [#982](https://github.com/Urigo/accounter-fullstack/pull/982)
   [`22884b3`](https://github.com/Urigo/accounter-fullstack/commit/22884b37545d431dc731145ebb98b247a7b8a18b)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.4` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.4)
-    (from `10.1.2`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.4` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.4) (from
+    `10.1.2`, in `dependencies`)
 
 - [#990](https://github.com/Urigo/accounter-fullstack/pull/990)
   [`bd1a4b5`](https://github.com/Urigo/accounter-fullstack/commit/bd1a4b56c5a4b70345f7d3ee01512c04da08742d)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.5` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.5)
-    (from `10.1.4`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.5` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.5) (from
+    `10.1.4`, in `dependencies`)
 
 - [#992](https://github.com/Urigo/accounter-fullstack/pull/992)
   [`c023486`](https://github.com/Urigo/accounter-fullstack/commit/c023486f82181bc6e7c2725a18d99cdf2ebeb40f)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`inquirer@10.1.6` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.6)
-    (from `10.1.5`, in `dependencies`)
+  - Updated dependency [`inquirer@10.1.6` ↗︎](https://www.npmjs.com/package/inquirer/v/10.1.6) (from
+    `10.1.5`, in `dependencies`)
 
 - [#996](https://github.com/Urigo/accounter-fullstack/pull/996)
   [`c4fc0ff`](https://github.com/Urigo/accounter-fullstack/commit/c4fc0ffc061c54b31b2ea94e14aa2c59e6dc8a3c)

@@ -1,6 +1,6 @@
 {
   "name": "@accounter/shaam-uniform-format-generator",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "description": "Fully typed application that generates, parses, and validates SHAAM uniform format tax reports (INI.TXT and BKMVDATA.TXT).",
   "repository": {

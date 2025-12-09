@@ -1,5 +1,21 @@
 # @accounter-toolkit/israeli-vat-scraper
 
+## 0.1.9
+
+### Patch Changes
+
+- [#2775](https://github.com/Urigo/accounter-fullstack/pull/2775)
+  [`3ace155`](https://github.com/Urigo/accounter-fullstack/commit/3ace1558465d4246a815b238543beb68527c4be0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.32.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.32.0)
+    (from `24.31.0`, in `dependencies`)
+
+- [#2778](https://github.com/Urigo/accounter-fullstack/pull/2778)
+  [`eb4e853`](https://github.com/Urigo/accounter-fullstack/commit/eb4e853581ac5cded01c5c804ee4894f9fb7dff6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.32.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.32.1)
+    (from `24.32.0`, in `dependencies`)
+
 ## 0.1.8
 
 ### Patch Changes
@@ -581,8 +597,8 @@
 - [#630](https://github.com/Urigo/accounter-fullstack/pull/630)
   [`c14a717`](https://github.com/Urigo/accounter-fullstack/commit/c14a7177450ed1356c1207def795b91322306593)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.13.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.13.0) (from
-    `8.12.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.13.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.13.0) (from `8.12.0`,
+    in `dependencies`)
 
 - [#638](https://github.com/Urigo/accounter-fullstack/pull/638)
   [`d4c95ce`](https://github.com/Urigo/accounter-fullstack/commit/d4c95ce52f0558ae0a8721291a9c42165d1ea81d)
@@ -611,14 +627,14 @@
 - [#703](https://github.com/Urigo/accounter-fullstack/pull/703)
   [`a7c92f9`](https://github.com/Urigo/accounter-fullstack/commit/a7c92f994d22b4d6b058523576efc207ef7327c1)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.14.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.14.0) (from
-    `8.13.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.14.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.14.0) (from `8.13.0`,
+    in `dependencies`)
 
 - [#743](https://github.com/Urigo/accounter-fullstack/pull/743)
   [`061976d`](https://github.com/Urigo/accounter-fullstack/commit/061976d60098b21b8a5a5aef7c7746f27fb58a66)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.16.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.16.0) (from
-    `8.14.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.16.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.16.0) (from `8.14.0`,
+    in `dependencies`)
 
 - [#768](https://github.com/Urigo/accounter-fullstack/pull/768)
   [`29fb7ae`](https://github.com/Urigo/accounter-fullstack/commit/29fb7aec6783d3c022ab172d0d62fe8bca9273df)
@@ -659,8 +675,8 @@
 - [#901](https://github.com/Urigo/accounter-fullstack/pull/901)
   [`52a41f4`](https://github.com/Urigo/accounter-fullstack/commit/52a41f4f81c53ebde729bc15ff209a1d6eb8a7fe)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`ajv@8.17.1` ↗︎](https://www.npmjs.com/package/ajv/v/8.17.1) (from
-    `8.16.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.17.1` ↗︎](https://www.npmjs.com/package/ajv/v/8.17.1) (from `8.16.0`,
+    in `dependencies`)
 
 - [#931](https://github.com/Urigo/accounter-fullstack/pull/931)
   [`666bb07`](https://github.com/Urigo/accounter-fullstack/commit/666bb0718426deb854d52603585f16b4c69feae6)
@@ -773,8 +789,8 @@
 - [#97](https://github.com/gilgardosh/accounter-toolkit/pull/97)
   [`685e751`](https://github.com/gilgardosh/accounter-toolkit/commit/685e751eabfc584ddf0d96c96ee1203a3a5f84b5)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`ajv@8.11.2` ↗︎](https://www.npmjs.com/package/ajv/v/8.11.2) (from
-    `8.11.0`, in `dependencies`)
+  - Updated dependency [`ajv@8.11.2` ↗︎](https://www.npmjs.com/package/ajv/v/8.11.2) (from `8.11.0`,
+    in `dependencies`)
 
 ## 0.0.2
 
