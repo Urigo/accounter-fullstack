@@ -5,9 +5,9 @@ on:
     branches: [main]
   pull_request:
     paths:
-      - 'packages/server/**'
-      - 'packages/migrations/**'
-      - '.github/workflows/server-tests.yml'
+      - "packages/server/**"
+      - "packages/migrations/**"
+      - ".github/workflows/server-tests.yml"
 
 jobs:
   test:
@@ -33,8 +33,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
         with:
-          node-version: '24.11.1'
-          cache: 'yarn'
+          node-version: "24.11.1"
+          cache: "yarn"
 
       - name: Install Dependencies
         run: |
@@ -57,9 +57,48 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
+          POSTGRES_SSL: "0"
         run: |
           yarn workspace @accounter-helper/migrations migration:run
+
+      - name: Cache GraphQL Generated Types
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+        id: graphql-cache
+        with:
+          path: |
+            schema.graphql
+            packages/server/src/modules/**/__generated__
+            packages/client/src/gql
+          key:
+            graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
+            'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
+            'yarn.lock') }}
+          restore-keys: |
+            graphql-codegen-${{ runner.os }}-
+
+      - name: Generate GraphQL Types
+        if: ${{ steps.graphql-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: yarn generate:graphql
+
+      - name: Cache PgTyped Generated Types
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+        id: pgtyped-cache
+        with:
+          path: |
+            packages/server/src/**/*.types.ts
+            packages/migrations/src/**/*.types.ts
+          key:
+            pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
+            'packages/server/src/**/providers/*.provider.ts',
+            'packages/server/src/plugins/admin-context-plugin.ts') }}
+          restore-keys: |
+            pgtyped-${{ runner.os }}-
+
+      - name: Generate Postgres Types
+        if: ${{ steps.pgtyped-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: yarn pgtyped -c docker/pgconfig.json
 
       - name: Run Server Tests (Integration)
         if: github.event_name == 'pull_request'
@@ -69,8 +108,8 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
-          DEBUG: ''
+          POSTGRES_SSL: "0"
+          DEBUG: ""
         run: |
           yarn test:integration --reporter=default --coverage
       - name: Run Server Tests (All)
@@ -81,9 +120,9 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
-          ALLOW_DEMO_SEED: '1'
-          DEBUG: ''
+          POSTGRES_SSL: "0"
+          ALLOW_DEMO_SEED: "1"
+          DEBUG: ""
         run: |
           yarn test:all --reporter=default --coverage
 
@@ -102,7 +141,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
+          POSTGRES_SSL: "0"
         run: |
           node --experimental-specifier-resolution=node --import ./scripts/register-esm.js - <<'EOF'
           import { Client } from 'pg';
