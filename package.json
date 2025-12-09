@@ -37,7 +37,9 @@
     "seed": "tsx scripts/seed.ts",
     "seed:admin": "yarn workspace @accounter/server seed:admin",
     "setup": "yarn db:init && yarn generate",
-    "test": "vitest run"
+    "test": "vitest run --project unit",
+    "test:all": "vitest run --project unit --project integration",
+    "test:integration": "vitest run --project unit --project integration"
   },
   "devDependencies": {
     "@changesets/changelog-github": "0.5.2",
