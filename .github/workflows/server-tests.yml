@@ -5,9 +5,9 @@ on:
     branches: [main]
   pull_request:
     paths:
-      - 'packages/server/**'
-      - 'packages/migrations/**'
-      - '.github/workflows/server-tests.yml'
+      - "packages/server/**"
+      - "packages/migrations/**"
+      - ".github/workflows/server-tests.yml"
 
 jobs:
   test:
@@ -33,8 +33,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
         with:
-          node-version: '24.11.1'
-          cache: 'yarn'
+          node-version: "24.11.1"
+          cache: "yarn"
 
       - name: Install Dependencies
         run: |
@@ -57,7 +57,20 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
+          POSTGRES_SSL: "0"
+        run: |
+          yarn workspace @accounter-helper/migrations migration:run
+
+      - name: Run Server Tests (Integration)
+        if: github.event_name == 'pull_request'
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+          POSTGRES_SSL: "0"
+          DEBUG: ""
         run: |
           yarn test:integration --reporter=default --coverage
       - name: Run Server Tests (All)
@@ -68,24 +81,11 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
-          ALLOW_DEMO_SEED: '1'
-          DEBUG: ''
+          POSTGRES_SSL: "0"
+          ALLOW_DEMO_SEED: "1"
+          DEBUG: ""
         run: |
           yarn test:all --reporter=default --coverage
-
-      - name: Run Server Tests (Integration)
-        if: github.event_name == 'pull_request'
-        env:
-          POSTGRES_HOST: 127.0.0.1
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
-          DEBUG: ''
-        run: |
-          npx vitest run packages/server/src/__tests__ --reporter=default --coverage
 
       - name: Upload Coverage
         if: always()
@@ -102,7 +102,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
-          POSTGRES_SSL: '0'
+          POSTGRES_SSL: "0"
         run: |
           node --experimental-specifier-resolution=node --import ./scripts/register-esm.js - <<'EOF'
           import { Client } from 'pg';
