@@ -97,6 +97,13 @@ jobs:
 
       - name: Generate Postgres Types
         if: ${{ steps.pgtyped-cache.outputs.cache-hit != 'true' }}
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: accounter_test
+          POSTGRES_SSL: '0'
         shell: bash
         run: yarn pgtyped -c docker/pgconfig.json
 
