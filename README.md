@@ -87,6 +87,38 @@ mutation {
 }
 ```
 
+## Testing
+
+The test suite is organized into three projects for efficiency:
+
+- **Unit tests** (`yarn test`): Fast, isolated tests with no external dependencies
+- **Integration tests** (`yarn test:integration`): DB-backed tests requiring PostgreSQL and
+  migrations
+
+### Running Tests
+
+```bash
+# Fast unit tests only (default, no DB required)
+yarn test
+
+# Unit + integration tests (requires DB + migrations)
+yarn test:integration
+
+# All suites
+yarn test:all
+```
+
+### Prerequisites for Integration/Demo Tests
+
+Integration tests require:
+
+1. **PostgreSQL running**: Start with
+   `docker compose -f docker/docker-compose.dev.yml up -d postgres`
+2. **Migrations applied**: Run `yarn workspace @accounter/migrations migration:run`
+
+See [`packages/server/README.md`](packages/server/README.md) for detailed test harness
+documentation.
+
 ## Miscellaneous
 
 ### Multiple Bank Branches

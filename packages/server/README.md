@@ -1,5 +1,39 @@
 # @accounter-helper/server
 
+## Test Suites
+
+The test suite is split into two Vitest projects for efficiency and isolation:
+
+### 1. Unit Tests (`yarn test`)
+
+Fast, isolated tests with no external dependencies. Runs by default and excludes DB-backed tests and
+demo fixtures.
+
+### 2. Integration Tests (`yarn test:integration`)
+
+DB-backed tests including:
+
+- Server helpers and test harness (`packages/server/src/__tests__/**`)
+- Module integration tests (`packages/server/src/modules/**/*.integration.test.ts`)
+
+**Prerequisites:**
+
+- PostgreSQL running
+- Migrations applied (see below)
+
+### Running Tests
+
+```bash
+# Fast unit tests only (default)
+yarn test
+
+# Unit + integration tests (for PRs)
+yarn test:integration
+
+# All suites (for main branch merges)
+yarn test:all
+```
+
 ## Test DB Harness
 
 This package includes a Vitest-friendly PostgreSQL test harness with:
