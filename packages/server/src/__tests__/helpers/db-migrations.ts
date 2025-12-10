@@ -5,8 +5,6 @@ import { debugLog, emitMetrics } from './diagnostics.js';
 import { TestDbMigrationError } from './errors.js';
 import type { Pool } from 'pg';
 
-export { LATEST_MIGRATION_NAME } from '../../../../migrations/src/run-pg-migrations.js';
-
 export async function runMigrationsIfNeeded(pgPool: Pool): Promise<void> {
   let needToRun = false;
   const client = await pgPool.connect();

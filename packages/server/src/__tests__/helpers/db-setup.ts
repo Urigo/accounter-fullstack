@@ -1,5 +1,5 @@
 export { connectTestDb, closeTestDb } from './db-connection.js';
-export { runMigrationsIfNeeded, LATEST_MIGRATION_NAME } from './db-migrations.js';
+export { runMigrationsIfNeeded } from './db-migrations.js';
 export { seedAdminOnce } from './db-fixtures.js';
 export { withTestTransaction, withConcurrentTransactions } from './test-transaction.js';
 export { isPoolHealthy, debugLog, emitMetrics } from './diagnostics.js';
