@@ -26,7 +26,7 @@ export async function checkLatestMigration(
     shouldRelease = true;
   } else {
     // It's already a Client or PoolClient
-    client = clientOrPool as PoolClient | Client;
+    client = clientOrPool;
   }
 
   try {
@@ -61,7 +61,7 @@ export async function checkLatestMigration(
  * Throws an error with helpful message if not.
  */
 export async function assertLatestMigrationApplied(
-  clientOrPool: Pool | PoolClient,
+  clientOrPool: Pool | PoolClient | Client,
   schema = 'accounter_schema',
 ): Promise<void> {
   const result = await checkLatestMigration(clientOrPool, schema);
