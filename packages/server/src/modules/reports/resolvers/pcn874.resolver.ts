@@ -2,7 +2,7 @@ import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { validatePcn874 } from '@accounter/pcn874-generator';
-import { ResolversTypes } from '../../../__generated__/types.js';
+import type { ResolversTypes } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { getPcn874String } from '../helpers/pcn.helper.js';

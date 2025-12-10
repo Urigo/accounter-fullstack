@@ -1,5 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
-import {
+import type {
   CommonError,
   Maybe,
   ResolverFn,

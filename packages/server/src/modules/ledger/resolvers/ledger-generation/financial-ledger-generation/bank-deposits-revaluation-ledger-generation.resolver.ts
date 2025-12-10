@@ -1,7 +1,6 @@
 import { sub } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import {
-  Currency,
+import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
@@ -12,6 +11,7 @@ import { businessTransactionsSumFromLedgerRecords } from '../../../../../modules
 import { storeInitialGeneratedRecords } from '../../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import { Currency } from '../../../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../../../shared/helpers/index.js';
 import type {
   CurrencySum,

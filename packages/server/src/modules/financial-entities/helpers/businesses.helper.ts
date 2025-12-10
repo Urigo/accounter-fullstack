@@ -1,4 +1,4 @@
-import {
+import type {
   SuggestionsEmailListenerConfigInput,
   UpdateBusinessInput,
 } from '../../../__generated__/types.js';

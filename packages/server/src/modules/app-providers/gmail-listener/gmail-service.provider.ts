@@ -2,7 +2,7 @@ import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
-import { EmailAttachmentType } from '../../../__generated__/types.js';
+import type { EmailAttachmentType } from '../../../__generated__/types.js';
 import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import {
   getDocumentFromUrlsAndOcrData,

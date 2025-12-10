@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { ResolverFn } from '../../../__generated__/types.js';
+import type { ResolverFn } from '../../../__generated__/types.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
 import type { DocumentsModule, IGetAllDocumentsResult, IssuedDocumentInfoProto } from '../types.js';

@@ -1,5 +1,4 @@
-import {
-  Currency,
+import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
@@ -30,6 +29,7 @@ import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers
 import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { UnbalancedBusinessesProvider } from '../../../../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   getEntriesFromFeeTransaction,

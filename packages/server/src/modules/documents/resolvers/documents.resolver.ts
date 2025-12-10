@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { Resolvers } from '../../../__generated__/types.js';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { GoogleDriveProvider } from '../../../modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
 import { deleteCharges } from '../../../modules/charges/helpers/delete-charges.helper.js';

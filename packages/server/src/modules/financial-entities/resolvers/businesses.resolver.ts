@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { Resolvers } from '../../../__generated__/types.js';
+import type { Resolvers } from '../../../__generated__/types.js';
 import {
   SuggestionData,
   suggestionDataSchema,

@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
 import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import {
   coreExpenseUpdate,

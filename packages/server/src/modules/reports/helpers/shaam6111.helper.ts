@@ -44,8 +44,7 @@ import {
   TAX_ADJUSTMENT_CODE_NAMES,
   YesNo,
 } from '@accounter/shaam6111-generator';
-import * as SchemaTypes from '../../../__generated__/types.js';
-import { Shaam6111ReportEntry } from '../../../__generated__/types.js';
+import type * as SchemaTypes from '../../../__generated__/types.js';
 import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '../../../modules/financial-entities/types.js';
@@ -81,7 +80,7 @@ function cumulativeCodeFormula(
 function getProfitAndLossEntries(
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   financialEntitiesByIrsCodeDict: Map<number, IGetAllFinancialEntitiesResult[]>,
-): Shaam6111ReportEntry[] {
+): SchemaTypes.Shaam6111ReportEntry[] {
   const profitAndLossAmounts = amountByFinancialEntityIdAndSortCodeValidations(
     decoratedLedgerRecords,
     Object.entries(PROFIT_LOSS_CODE_NAMES).map(([code]) => {
@@ -229,7 +228,7 @@ async function getTaxAdjustmentEntries(
   context: GraphQLModules.Context,
   year: number,
   decoratedLedgerByYear: Map<number, DecoratedLedgerRecord[]>,
-): Promise<Shaam6111ReportEntry[]> {
+): Promise<SchemaTypes.Shaam6111ReportEntry[]> {
   const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
   const profitLossByYear = new Map<number, ReturnType<typeof getProfitLossReportAmounts>>();
   let profitAndLoss = profitLossByYear.get(year);
@@ -377,7 +376,7 @@ async function getTaxAdjustmentEntries(
 function getBalanceSheetEntries(
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   financialEntitiesByIrsCodeDict: Map<number, IGetAllFinancialEntitiesResult[]>,
-): Shaam6111ReportEntry[] {
+): SchemaTypes.Shaam6111ReportEntry[] {
   const balanceSheetAmounts = amountByFinancialEntityIdAndSortCodeValidations(
     decoratedLedgerRecords,
     Object.entries(BALANCE_SHEET_CODE_NAMES).map(([stringCode]) => {

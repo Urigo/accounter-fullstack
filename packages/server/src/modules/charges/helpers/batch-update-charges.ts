@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { YearOfRelevanceInput } from '../../../__generated__/types.js';
+import type { YearOfRelevanceInput } from '../../../__generated__/types.js';
 import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeTagsProvider } from '../../../modules/tags/providers/charge-tags.provider.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';

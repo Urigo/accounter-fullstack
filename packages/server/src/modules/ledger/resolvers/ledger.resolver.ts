@@ -1,6 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
-import { ChargeSortByField, Resolvers, ResolversTypes } from '../../../__generated__/types.js';
+import {
+  ChargeSortByField,
+  type Resolvers,
+  type ResolversTypes,
+} from '../../../__generated__/types.js';
 import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import { accountant_statusArray } from '../../../modules/charges/types.js';
 import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';

@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { ClientIntegrationsInput, Resolvers } from '../../../__generated__/types.js';
+import type { ClientIntegrationsInput, Resolvers } from '../../../__generated__/types.js';
 import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import {
   addGreenInvoiceClient,

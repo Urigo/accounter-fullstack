@@ -1,11 +1,11 @@
 import type { Shaam6111Data } from '../../__generated__/types.js';
 
 export type { DateOrString, currency } from './__generated__/balance-report.types.js';
-export * from './__generated__/types.js';
-export * from './__generated__/dynamic-report.types.js';
-export * from './__generated__/balance-report.types.js';
-export * from './__generated__/vat-report.types.js';
-export * from './__generated__/annual-revenue-report.types.js';
+export type * from './__generated__/types.js';
+export type * from './__generated__/dynamic-report.types.js';
+export type * from './__generated__/balance-report.types.js';
+export type * from './__generated__/vat-report.types.js';
+export type * from './__generated__/annual-revenue-report.types.js';
 
 export type CommentaryProto = {
   amount: number;

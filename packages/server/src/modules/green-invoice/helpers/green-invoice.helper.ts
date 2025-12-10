@@ -18,21 +18,19 @@ import type {
   queryInput_previewDocument_input_discount_type,
   queryInput_previewDocument_input_linkType,
 } from '@accounter/green-invoice-graphql';
-import {
-  Currency,
-  DocumentType,
+import type {
   GreenInvoiceCountry,
+  GreenInvoiceDiscountType,
+  GreenInvoiceDocumentLang,
+  GreenInvoiceLinkType,
+  GreenInvoicePaymentAppType,
+  GreenInvoicePaymentCardType,
+  GreenInvoicePaymentDealType,
+  GreenInvoicePaymentSubType,
   GreenInvoicePaymentType,
+  GreenInvoiceVatType,
   NewDocumentInput,
   ResolversTypes,
-  type GreenInvoiceDiscountType,
-  type GreenInvoiceDocumentLang,
-  type GreenInvoiceLinkType,
-  type GreenInvoicePaymentAppType,
-  type GreenInvoicePaymentCardType,
-  type GreenInvoicePaymentDealType,
-  type GreenInvoicePaymentSubType,
-  type GreenInvoiceVatType,
 } from '../../../__generated__/types.js';
 import { CloudinaryProvider } from '../../../modules/app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
@@ -43,6 +41,7 @@ import { IssuedDocumentsProvider } from '../../../modules/documents/providers/is
 import type { document_status, IInsertDocumentsParams } from '../../../modules/documents/types.js';
 import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
+import { Currency, DocumentType } from '../../../shared/enums.js';
 import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
 
 export function normalizeDocumentType(
