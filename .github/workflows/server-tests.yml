@@ -143,28 +143,4 @@ jobs:
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
         run: |
-          node --experimental-specifier-resolution=node --import ./scripts/register-esm.js - <<'EOF'
-          import { Client } from 'pg';
-          import { LATEST_MIGRATION_NAME } from './packages/migrations/src/run-pg-migrations.ts';
-          const client = new Client({
-            host: process.env.POSTGRES_HOST,
-            port: Number(process.env.POSTGRES_PORT),
-            user: process.env.POSTGRES_USER,
-            password: process.env.POSTGRES_PASSWORD,
-            database: process.env.POSTGRES_DB,
-          });
-          (async () => {
-            await client.connect();
-            const res = await client.query(
-              `SELECT 1 FROM accounter_schema.migration WHERE name = $1 LIMIT 1`,
-              [LATEST_MIGRATION_NAME]
-            );
-            await client.end();
-            if (res.rowCount !== 1) {
-              console.error('Latest migration NOT applied:', LATEST_MIGRATION_NAME);
-              process.exit(1);
-            } else {
-              console.log('Latest migration verified:', LATEST_MIGRATION_NAME);
-            }
-          })();
-          EOF
+          node --import ./scripts/register-esm.js ./scripts/verify-migrations.ts

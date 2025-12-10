@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import { connectTestDb, closeTestDb } from './db-connection.js';
-import { runMigrationsIfNeeded, LATEST_MIGRATION_NAME } from './db-migrations.js';
+import { runMigrationsIfNeeded } from './db-migrations.js';
 import { seedAdminOnce } from './db-fixtures.js';
 import { withTestTransaction } from './test-transaction.js';
 
@@ -37,5 +37,3 @@ export class TestDatabase {
     this.pool = null;
   }
 }
-
-export { LATEST_MIGRATION_NAME };
