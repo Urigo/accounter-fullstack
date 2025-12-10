@@ -1,176 +1,174 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import pg from 'pg';
-import { testDbConfig, qualifyTable } from './test-db-config.js';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { qualifyTable } from './test-db-config.js';
 import { ensureFinancialEntity, ensureTaxCategoryForEntity } from './seed-helpers.js';
 import { EntityValidationError } from './seed-errors.js';
+import { TestDatabase } from './db-setup.js';
 
 describe('ensureTaxCategoryForEntity', () => {
-  let pool: pg.Pool;
-  let client: pg.PoolClient;
+  let db: TestDatabase;
 
   beforeAll(async () => {
-    pool = new pg.Pool(testDbConfig);
-    client = await pool.connect();
+    db = new TestDatabase();
+    await db.connect();
   });
 
   afterAll(async () => {
-    client.release();
-    await pool.end();
+    await db.close();
   });
 
-  beforeEach(async () => {
-    await client.query('BEGIN');
-  });
+  it('should create tax category on first call', async () =>
+    db.withTransaction(async client => {
+      // Create financial entity
+      const { id: entityId } = await ensureFinancialEntity(client, {
+        name: 'VAT Category',
+        type: 'tax_category',
+      });
 
-  afterEach(async () => {
-    await client.query('ROLLBACK');
-  });
+      // Create tax category
+      await ensureTaxCategoryForEntity(client, entityId);
 
-  it('should create tax category on first call', async () => {
-    // Create financial entity
-    const { id: entityId } = await ensureFinancialEntity(client, {
-      name: 'VAT Category',
-      type: 'tax_category',
-    });
+      // Verify tax category exists
+      const result = await client.query(
+        `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [entityId],
+      );
 
-    // Create tax category
-    await ensureTaxCategoryForEntity(client, entityId);
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].id).toBe(entityId);
+    }));
 
-    // Verify tax category exists
-    const result = await client.query(
-      `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [entityId],
-    );
+  it('should be idempotent (no-op on repeated calls)', async () =>
+    db.withTransaction(async client => {
+      // Create financial entity
+      const { id: entityId } = await ensureFinancialEntity(client, {
+        name: 'Income Tax',
+        type: 'tax_category',
+      });
 
-    expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].id).toBe(entityId);
-  });
+      // Create tax category twice
+      await ensureTaxCategoryForEntity(client, entityId);
+      await ensureTaxCategoryForEntity(client, entityId);
 
-  it('should be idempotent (no-op on repeated calls)', async () => {
-    // Create financial entity
-    const { id: entityId } = await ensureFinancialEntity(client, {
-      name: 'Income Tax',
-      type: 'tax_category',
-    });
+      // Verify only one row exists
+      const result = await client.query(
+        `SELECT COUNT(*) as count FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [entityId],
+      );
 
-    // Create tax category twice
-    await ensureTaxCategoryForEntity(client, entityId);
-    await ensureTaxCategoryForEntity(client, entityId);
+      expect(result.rows[0].count).toBe('1');
+    }));
 
-    // Verify only one row exists
-    const result = await client.query(
-      `SELECT COUNT(*) as count FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [entityId],
-    );
+  it('should preserve existing values on subsequent calls', async () =>
+    db.withTransaction(async client => {
+      // Create financial entity
+      const { id: entityId } = await ensureFinancialEntity(client, {
+        name: 'Expense Category',
+        type: 'tax_category',
+      });
 
-    expect(result.rows[0].count).toBe('1');
-  });
+      // Create tax category
+      await ensureTaxCategoryForEntity(client, entityId);
 
-  it('should preserve existing values on subsequent calls', async () => {
-    // Create financial entity
-    const { id: entityId } = await ensureFinancialEntity(client, {
-      name: 'Expense Category',
-      type: 'tax_category',
-    });
+      // Get initial state
+      const initialResult = await client.query(
+        `SELECT * FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [entityId],
+      );
+      const initialRow = initialResult.rows[0];
 
-    // Create tax category
-    await ensureTaxCategoryForEntity(client, entityId);
+      // Call again (should not modify)
+      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 999 });
 
-    // Get initial state
-    const initialResult = await client.query(
-      `SELECT * FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [entityId],
-    );
-    const initialRow = initialResult.rows[0];
+      // Verify unchanged
+      const finalResult = await client.query(
+        `SELECT * FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [entityId],
+      );
+      const finalRow = finalResult.rows[0];
 
-    // Call again (should not modify)
-    await ensureTaxCategoryForEntity(client, entityId, { sortCode: 999 });
+      expect(finalRow).toEqual(initialRow);
+    }));
 
-    // Verify unchanged
-    const finalResult = await client.query(
-      `SELECT * FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [entityId],
-    );
-    const finalRow = finalResult.rows[0];
+  it('should reject invalid UUID format', async () =>
+    db.withTransaction(async client => {
+      await expect(ensureTaxCategoryForEntity(client, 'not-a-uuid')).rejects.toThrow(
+        EntityValidationError,
+      );
 
-    expect(finalRow).toEqual(initialRow);
-  });
+      await expect(ensureTaxCategoryForEntity(client, '')).rejects.toThrow(
+        EntityValidationError,
+      );
 
-  it('should reject invalid UUID format', async () => {
-    await expect(
-      ensureTaxCategoryForEntity(client, 'not-a-uuid'),
-    ).rejects.toThrow(EntityValidationError);
+      await expect(ensureTaxCategoryForEntity(client, '12345')).rejects.toThrow(
+        EntityValidationError,
+      );
+    }));
 
-    await expect(
-      ensureTaxCategoryForEntity(client, ''),
-    ).rejects.toThrow(EntityValidationError);
+  it('should reject non-existent financial entity', async () =>
+    db.withTransaction(async client => {
+      const fakeUuid = '00000000-0000-0000-0000-000000000001';
 
-    await expect(
-      ensureTaxCategoryForEntity(client, '12345'),
-    ).rejects.toThrow(EntityValidationError);
-  });
+      await expect(ensureTaxCategoryForEntity(client, fakeUuid)).rejects.toThrow(
+        EntityValidationError,
+      );
+    }));
 
-  it('should reject non-existent financial entity', async () => {
-    const fakeUuid = '00000000-0000-0000-0000-000000000001';
+  it('should not leak data between tests', async () =>
+    db.withTransaction(async client => {
+      // This test verifies transactional isolation by checking that data
+      // from previous tests is not visible
+      const result = await client.query(
+        `SELECT COUNT(*) as count FROM ${qualifyTable('tax_categories')} WHERE id IN (SELECT id FROM ${qualifyTable('financial_entities')} WHERE name LIKE 'VAT Category' OR name LIKE 'Income Tax' OR name LIKE 'Expense Category')`,
+      );
 
-    await expect(
-      ensureTaxCategoryForEntity(client, fakeUuid),
-    ).rejects.toThrow(EntityValidationError);
-  });
+      // Due to ROLLBACK after each test, count should be 0
+      expect(parseInt(result.rows[0].count)).toBe(0);
+    }));
 
-  it('should not leak data between tests', async () => {
-    // This test verifies transactional isolation by checking that data
-    // from previous tests is not visible
-    const result = await client.query(
-      `SELECT COUNT(*) as count FROM ${qualifyTable('tax_categories')} WHERE id IN (SELECT id FROM ${qualifyTable('financial_entities')} WHERE name LIKE 'VAT Category' OR name LIKE 'Income Tax' OR name LIKE 'Expense Category')`,
-    );
+  it('should work with entities that have owner_id', async () =>
+    db.withTransaction(async client => {
+      // Create owner business entity (without owner_id requirement)
+      const { id: _ownerId } = await ensureFinancialEntity(client, {
+        name: 'Owner Business',
+        type: 'business',
+      });
 
-    // Due to ROLLBACK after each test, count should be 0
-    expect(parseInt(result.rows[0].count)).toBe(0);
-  });
+      // Create owned tax category entity (tax categories can have owner_id)
+      const { id: taxCatId } = await ensureFinancialEntity(client, {
+        name: 'Owned Tax Category',
+        type: 'tax_category',
+      });
 
-  it('should work with entities that have owner_id', async () => {
-    // Create owner business entity (without owner_id requirement)
-    const { id: _ownerId } = await ensureFinancialEntity(client, {
-      name: 'Owner Business',
-      type: 'business',
-    });
+      // Create tax category
+      await ensureTaxCategoryForEntity(client, taxCatId);
 
-    // Create owned tax category entity (tax categories can have owner_id)
-    const { id: taxCatId } = await ensureFinancialEntity(client, {
-      name: 'Owned Tax Category',
-      type: 'tax_category',
-    });
+      // Verify tax category exists
+      const result = await client.query(
+        `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [taxCatId],
+      );
 
-    // Create tax category
-    await ensureTaxCategoryForEntity(client, taxCatId);
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0].id).toBe(taxCatId);
+    }));
 
-    // Verify tax category exists
-    const result = await client.query(
-      `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [taxCatId],
-    );
+  it('should handle options parameter gracefully (future-proofing)', async () =>
+    db.withTransaction(async client => {
+      // Create financial entity
+      const { id: entityId } = await ensureFinancialEntity(client, {
+        name: 'Category with Options',
+        type: 'tax_category',
+      });
 
-    expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].id).toBe(taxCatId);
-  });
+      // Create tax category with options
+      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 1000 });
 
-  it('should handle options parameter gracefully (future-proofing)', async () => {
-    // Create financial entity
-    const { id: entityId } = await ensureFinancialEntity(client, {
-      name: 'Category with Options',
-      type: 'tax_category',
-    });
+      // Verify tax category exists
+      const result = await client.query(
+        `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
+        [entityId],
+      );
 
-    // Create tax category with options
-    await ensureTaxCategoryForEntity(client, entityId, { sortCode: 1000 });
-
-    // Verify tax category exists
-    const result = await client.query(
-      `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-      [entityId],
-    );
-
-    expect(result.rows).toHaveLength(1);
-  });
+      expect(result.rows).toHaveLength(1);
+    }));
 });

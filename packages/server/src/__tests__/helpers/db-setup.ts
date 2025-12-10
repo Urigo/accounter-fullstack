@@ -5,6 +5,3 @@ export { withTestTransaction, withConcurrentTransactions } from './test-transact
 export { isPoolHealthy, debugLog, emitMetrics } from './diagnostics.js';
 export { TestDbConnectionError, TestDbMigrationError, TestDbSeedError } from './errors.js';
 export { TestDatabase } from './test-database.js';
-
-// Backward-compatible no-op reset (seed flag lives in db-fixtures now)
-export function resetSetupFlags(): void {}
