@@ -32,6 +32,8 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
   let db: TestDatabase;
 
   beforeAll(async () => {
+    // stale for 0.1 sec to avoid test flakiness
+    await new Promise(resolve => setTimeout(resolve, 100));
     db = new TestDatabase();
     await db.connect();
     await db.ensureLatestSchema();
