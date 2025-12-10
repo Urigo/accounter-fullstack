@@ -1,5 +1,5 @@
 import type { IInsertBusinessesParams } from '../../modules/financial-entities/__generated__/businesses.types.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../modules/countries/types.js';
 
 /**
@@ -20,11 +20,11 @@ import { CountryCode } from '../../modules/countries/types.js';
  * @example
  * ```typescript
  * // Minimal business (uses defaults)
- * const business = createBusiness({ id: makeUUID('supplier-1') });
+ * const business = createBusiness({ id: makeUUID('business', 'supplier-1') });
  *
  * // Business with custom fields
  * const supplier = createBusiness({
- *   id: makeUUID('supplier-usd'),
+ *   id: makeUUID('business', 'supplier-usd'),
  *   hebrewName: 'ספק אמריקאי',
  *   country: 'USA',
  *   isReceiptEnough: true,
@@ -34,8 +34,9 @@ import { CountryCode } from '../../modules/countries/types.js';
 export function createBusiness(
   overrides?: Partial<IInsertBusinessesParams['businesses'][number]>,
 ): IInsertBusinessesParams['businesses'][number] {
+  const defaultId = makeUUIDLegacy();
   return {
-    id: makeUUID(),
+    id: defaultId,
     hebrewName: null,
     address: null,
     email: null,

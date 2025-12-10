@@ -2,7 +2,7 @@ import type {
   financial_account_type,
   IInsertFinancialAccountsParams,
 } from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Valid financial account types
@@ -59,7 +59,7 @@ export function createFinancialAccount(
   overrides?: Partial<IInsertFinancialAccountsParams['bankAccounts'][number]>,
 ): IInsertFinancialAccountsParams['bankAccounts'][number] {
   return {
-    accountNumber: makeUUID().slice(0, 13), // Default: unique short string
+    accountNumber: makeUUIDLegacy().slice(0, 13), // Default: unique short string
     name: null,
     privateBusiness: 'PRIVATE',
     ownerId: null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
-import { makeUUID } from './ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { createTaxCategory } from './tax-category.js';
 
 describe('Factory: Tax Category', () => {
@@ -27,7 +27,7 @@ describe('Factory: Tax Category', () => {
     });
 
     it('should apply overrides correctly', () => {
-      const customId = makeUUID('tax-cat-expense');
+      const customId = makeUUID('tax-category', 'tax-cat-expense');
       const category = createTaxCategory({
         id: customId,
         hashavshevetName: 'משרדיות',
@@ -84,8 +84,8 @@ describe('Factory: Tax Category', () => {
     });
 
     it('should create deterministic categories with seed', () => {
-      const category1 = createTaxCategory({ id: makeUUID('default-category') });
-      const category2 = createTaxCategory({ id: makeUUID('default-category') });
+      const category1 = createTaxCategory({ id: makeUUID('tax-category', 'default-category') });
+      const category2 = createTaxCategory({ id: makeUUID('tax-category', 'default-category') });
 
       expect(category1.id).toBe(category2.id);
     });

@@ -26,7 +26,7 @@ import {
   createTaxCategory,
   createFinancialAccount,
 } from '../../factories';
-import { makeUUID } from '../../factories/ids';
+import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { Currency } from '../../../shared/enums.js';
@@ -67,13 +67,13 @@ export const expenseScenarioB: Fixture = {
     businesses: [
       // Admin business (owner of the expense)
       createBusiness({
-        id: makeUUID('admin-business-usd'),
+        id: makeUUID('business', 'admin-business-usd'),
         hebrewName: 'חשבונאות ניהול',
         country: CountryCode.Israel,
       }),
       // US Supplier business
       createBusiness({
-        id: makeUUID('supplier-us-vendor-llc'),
+        id: makeUUID('business', 'supplier-us-vendor-llc'),
         hebrewName: 'ספק אמריקאי',
         country: CountryCode['United States of America (the)'],
         exemptDealer: false,
@@ -85,11 +85,11 @@ export const expenseScenarioB: Fixture = {
   taxCategories: {
     taxCategories: [
       createTaxCategory({
-        id: makeUUID('expense-consulting'),
+        id: makeUUID('tax-category', 'expense-consulting'),
         hashavshevetName: 'Consulting Expenses',
       }),
       createTaxCategory({
-        id: makeUUID('usd-account-tax-category'),
+        id: makeUUID('tax-category', 'usd-account-tax-category'),
         hashavshevetName: 'Foreign Currency Account',
       }),
     ],
@@ -100,7 +100,7 @@ export const expenseScenarioB: Fixture = {
       createFinancialAccount({
         accountNumber: 'USD-ACCOUNT-001',
         type: 'BANK_ACCOUNT',
-        ownerId: makeUUID('admin-business-usd'),
+        ownerId: makeUUID('business', 'admin-business-usd'),
       }),
     ],
   },
@@ -110,7 +110,7 @@ export const expenseScenarioB: Fixture = {
       {
         accountNumber: 'USD-ACCOUNT-001',
           currency: Currency.Usd,
-        taxCategoryId: makeUUID('usd-account-tax-category'),
+        taxCategoryId: makeUUID('tax-category', 'usd-account-tax-category'),
       },
     ],
   },
@@ -119,12 +119,12 @@ export const expenseScenarioB: Fixture = {
     charges: [
       createCharge(
         {
-          owner_id: makeUUID('admin-business-usd'),
-          tax_category_id: makeUUID('expense-consulting'),
+          owner_id: makeUUID('business', 'admin-business-usd'),
+          tax_category_id: makeUUID('tax-category', 'expense-consulting'),
           user_description: 'Consulting services from US vendor',
         },
         {
-          id: makeUUID('charge-consulting-services'),
+          id: makeUUID('charge', 'charge-consulting-services'),
         },
       ),
     ],
@@ -134,15 +134,15 @@ export const expenseScenarioB: Fixture = {
     transactions: [
       createTransaction(
         {
-          charge_id: makeUUID('charge-consulting-services'),
-          business_id: makeUUID('supplier-us-vendor-llc'),
+          charge_id: makeUUID('charge', 'charge-consulting-services'),
+          business_id: makeUUID('business', 'supplier-us-vendor-llc'),
           amount: '-200.00', // Negative = expense/outflow in USD
             currency: Currency.Usd,
           event_date: '2024-01-20',
           is_fee: false,
         },
         {
-          id: makeUUID('transaction-consulting-payment'),
+          id: makeUUID('transaction', 'transaction-consulting-payment'),
           account_id: 'USD-ACCOUNT-001', // Will be resolved to UUID by loader
           source_description: 'Consulting services - US Vendor LLC',
           debit_date: '2024-01-20',
@@ -156,16 +156,16 @@ export const expenseScenarioB: Fixture = {
     documents: [
       createDocument(
         {
-          charge_id: makeUUID('charge-consulting-services'),
-          creditor_id: makeUUID('supplier-us-vendor-llc'), // Supplier is creditor
-          debtor_id: makeUUID('admin-business-usd'), // Admin is debtor
+          charge_id: makeUUID('charge', 'charge-consulting-services'),
+          creditor_id: makeUUID('business', 'supplier-us-vendor-llc'), // Supplier is creditor
+          debtor_id: makeUUID('business', 'admin-business-usd'), // Admin is debtor
           type: 'INVOICE',
           total_amount: 200.0, // Amount in USD
             currency_code: Currency.Usd,
           date: '2024-01-20', // Invoice date matches transaction
         },
         {
-          id: makeUUID('document-consulting-invoice'),
+          id: makeUUID('document', 'document-consulting-invoice'),
           serial_number: 'INV-US-2024-001',
           vat_amount: null, // US invoice - no Israeli VAT
         },
@@ -176,10 +176,10 @@ export const expenseScenarioB: Fixture = {
   expectations: {
     ledger: [
       {
-        chargeId: makeUUID('charge-consulting-services'),
+        chargeId: makeUUID('charge', 'charge-consulting-services'),
         recordCount: 2, // Document + transaction entries
-        debitEntities: [makeUUID('expense-consulting'), makeUUID('usd-account-tax-category')],
-        creditEntities: [makeUUID('usd-account-tax-category'), makeUUID('supplier-us-vendor-llc')],
+        debitEntities: [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')],
+        creditEntities: [makeUUID('tax-category', 'usd-account-tax-category'), makeUUID('business', 'supplier-us-vendor-llc')],
         // Ledger processes document (700 ILS) + transaction (700 ILS) = 1400 ILS total
         // With exchange rate of 3.5 ILS/USD: 200 USD × 3.5 = 700 ILS per entry
         totalDebitLocal: 1400.0,

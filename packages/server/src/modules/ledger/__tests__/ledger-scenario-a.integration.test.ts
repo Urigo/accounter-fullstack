@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { TestDatabase } from '../../../__tests__/helpers/db-setup.js';
 import { insertFixture } from '../../../__tests__/helpers/fixture-loader.js';
 import { expenseScenarioA } from '../../../__tests__/fixtures/expenses/expense-scenario-a.js';
-import { makeUUID } from '../../../__tests__/factories/ids.js';
+import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
 import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { env } from '../../../environment.js';
@@ -43,7 +43,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
   afterEach(async () => {
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-office-supplies');
+      const chargeId = makeUUID('charge', 'charge-office-supplies');
       await client.query(
         `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
         [chargeId],
@@ -65,7 +65,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       await client.query(
         `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')} 
          WHERE tax_category_id IN ($1, $2)`,
-        [makeUUID('expense-general'), makeUUID('bank-account-tax-category')],
+        [makeUUID('tax-category', 'expense-general'), makeUUID('tax-category', 'bank-account-tax-category')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
@@ -73,19 +73,19 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       await client.query(
         `DELETE FROM ${qualifyTable('tax_categories')} WHERE id IN ($1, $2)`,
-        [makeUUID('expense-general'), makeUUID('bank-account-tax-category')],
+        [makeUUID('tax-category', 'expense-general'), makeUUID('tax-category', 'bank-account-tax-category')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('businesses')} WHERE id IN ($1, $2)`,
-        [makeUUID('admin-business'), makeUUID('supplier-local-ltd')],
+        [makeUUID('business', 'admin-business-scenario-a'), makeUUID('business', 'supplier-local-ltd')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('financial_entities')} WHERE id IN ($1, $2, $3, $4)`,
         [
-          makeUUID('admin-business'),
-          makeUUID('supplier-local-ltd'),
-          makeUUID('expense-general'),
-          makeUUID('bank-account-tax-category'),
+          makeUUID('business', 'admin-business-scenario-a'),
+          makeUUID('business', 'supplier-local-ltd'),
+          makeUUID('tax-category', 'expense-general'),
+          makeUUID('tax-category', 'bank-account-tax-category'),
         ],
       );
     } finally {
@@ -101,7 +101,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
 
       await insertFixture(insertClient, expenseScenarioA);
 
-      const chargeId = makeUUID('charge-office-supplies');
+      const chargeId = makeUUID('charge', 'charge-office-supplies');
 
       // Verify inserts within the same transaction
       const chargeResult = await insertClient.query(
@@ -137,7 +137,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-office-supplies');
+      const chargeId = makeUUID('charge', 'charge-office-supplies');
       const chargeResult = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
         [chargeId],
@@ -192,8 +192,8 @@ describe('Ledger Generation - Expense Scenario A', () => {
       assertSimpleLocalExpenseScenario(ledgerResult.rows as any, {
         chargeId: charge.id,
         ownerId: charge.owner_id, // Use actual charge owner for ledger record owner assertions
-        expenseEntity: makeUUID('expense-general'),
-        bankEntity: makeUUID('bank-account-tax-category'),
+        expenseEntity: makeUUID('tax-category', 'expense-general'),
+        bankEntity: makeUUID('tax-category', 'bank-account-tax-category'),
         expectedCurrency: Currency.Ils,
         expectedTotal: ledgerExpectation?.totalDebitLocal || 500.0,
       });
@@ -212,7 +212,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
   it('should be idempotent on repeated ledger generation (no duplicate records)', async () => {
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-office-supplies');
+      const chargeId = makeUUID('charge', 'charge-office-supplies');
       // Ensure fixture inserted (if previous test did cleanup, reinsert minimal fixture)
       const existingCharge = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -296,7 +296,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
     expect(expenseScenarioA.expectations?.ledger).toHaveLength(1);
 
     const ledgerExpectation = expenseScenarioA.expectations?.ledger?.[0];
-    expect(ledgerExpectation?.chargeId).toBe(makeUUID('charge-office-supplies'));
+    expect(ledgerExpectation?.chargeId).toBe(makeUUID('charge', 'charge-office-supplies'));
     expect(ledgerExpectation?.recordCount).toBe(2);
     expect(ledgerExpectation?.balanced).toBe(true);
     expect(ledgerExpectation?.totalDebitLocal).toBe(500.0);
@@ -307,11 +307,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
 
   it('should create deterministic UUIDs for reproducible tests', () => {
     // Verify all IDs are deterministic and match expected values
-    const adminBusinessId = makeUUID('admin-business');
-    const supplierId = makeUUID('supplier-local-ltd');
-    const chargeId = makeUUID('charge-office-supplies');
-    const transactionId = makeUUID('transaction-supplies-payment');
-    const documentId = makeUUID('document-supplies-receipt');
+    const adminBusinessId = makeUUID('business', 'admin-business-scenario-a');
+    const supplierId = makeUUID('business', 'supplier-local-ltd');
+    const chargeId = makeUUID('charge', 'charge-office-supplies');
+    const transactionId = makeUUID('transaction', 'transaction-supplies-payment');
+    const documentId = makeUUID('document', 'document-supplies-receipt');
 
     expect(adminBusinessId).toBe(expenseScenarioA.businesses?.businesses[0]?.id);
     expect(supplierId).toBe(expenseScenarioA.businesses?.businesses[1]?.id);

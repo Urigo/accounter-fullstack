@@ -1,6 +1,4 @@
 import { expect } from 'vitest';
-// Adjusted relative path: helper is one directory deeper than scenario tests
-import { makeUUID } from '../../../../__tests__/factories/ids.js';
 
 // Minimal ledger record type based on DB result interface
 export interface LedgerRecord {
@@ -242,9 +240,6 @@ export function assertExpenseScenarioLogic(records: LedgerRecord[], opts: {
     expect(t.debit, `Bank/cash entity ${id} should not be debited (simple expense)` ).toBe(0);
   });
 }
-
-/** Helper to prepare deterministic UUID sets for known fixture aliases */
-export function fixtureUUID(alias: string): string { return makeUUID(alias); }
 
 /** Combined high-level assertion for typical simple local expense scenario */
 export function assertSimpleLocalExpenseScenario(records: LedgerRecord[], params: {

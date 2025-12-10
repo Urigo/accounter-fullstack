@@ -12,7 +12,7 @@ import type { PoolClient } from 'pg';
 import type { Fixture } from './fixture-types.js';
 import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
-import { makeUUID } from '../factories/ids.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Custom error for fixture insertion failures
@@ -334,7 +334,7 @@ export async function insertFixture(
         // Insert directly into transactions_raw_list with etherscan_id to satisfy check constraint
         // This avoids triggering any creditcard/bank transaction handlers which would auto-create charges
         // etherscan_id is used because it has no INSERT trigger and is a simple UUID reference
-        const dummyEtherscanId = transaction.id ? makeUUID(`etherscan-${transaction.id}`) : makeUUID();
+        const dummyEtherscanId = transaction.id ? makeUUID('raw-transaction', `etherscan-${transaction.id}`) : makeUUID('raw-transaction', 'etherscan-dummy');
         const rawListResult = await client.query(
           `INSERT INTO ${qualifyTable('transactions_raw_list')} (etherscan_id)
            VALUES ($1)

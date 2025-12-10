@@ -18,7 +18,7 @@
  * } from '../factories';
  *
  * // Create a complete charge scenario
- * const businessId = makeUUID('supplier-1');
+ * const businessId = makeUUID('business', 'supplier-1');
  * const business = createBusiness({ id: businessId });
  * const charge = createCharge({ owner_id: businessId });
  * const transaction = createTransaction({
@@ -51,6 +51,6 @@ export { createDocument } from './document.js';
 export type { DocumentInsertParams } from './document.js';
 
 // Helper utilities
-export { makeUUID } from './ids.js';
+export { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 export { iso, isoToday, addDays } from './dates.js';
 export { formatNumeric, formatMoney, formatDecimal, parseNumeric } from './money.js';
