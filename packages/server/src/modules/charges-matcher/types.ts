@@ -1,17 +1,10 @@
-import type {
-  currency,
-  document_type,
-  IGetAllDocumentsResult,
-} from '../../modules/documents/types.js';
-import type { IGetTransactionsByIdsResult } from '../../modules/transactions/types.js';
+import type { currency, document_type, IGetAllDocumentsResult } from '../documents/types.js';
+import type { IGetTransactionsByIdsResult } from '../transactions/types.js';
 
 /**
  * Re-export shared types from other modules
  */
-export type {
-  currency as Currency,
-  document_type as DocumentType,
-} from '../../modules/documents/types.js';
+export type { currency as Currency, document_type as DocumentType } from '../documents/types.js';
 
 /**
  * Transaction interface matching the database schema

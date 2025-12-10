@@ -4,35 +4,35 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import type { Currency } from '../../../../shared/enums.js';
+import { formatStringifyAmount } from '../../../../shared/helpers/index.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   calculateTotalAmount,
   getChargeBusinesses,
   getChargeDocumentsMeta,
   getChargeTaxCategoryId,
-} from '../../../../modules/charges/helpers/common.helper.js';
-import { getDeelEmployeeId, isDeelDocument } from '../../../../modules/deel/helpers/deel.helper.js';
-import { DocumentsProvider } from '../../../../modules/documents/providers/documents.provider.js';
-import { BusinessesProvider } from '../../../../modules/financial-entities/providers/businesses.provider.js';
+} from '../../../charges/helpers/common.helper.js';
+import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
+import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import type { currency } from '../../../transactions/types.js';
 import {
   getExchangeDates,
   isRefundCharge,
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
   ledgerEntryFromMainTransaction,
-} from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
-import { handleCrossYearLedgerEntries } from '../../../../modules/ledger/helpers/cross-year-ledger.helper.js';
-import { validateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
-import type { currency } from '../../../../modules/transactions/types.js';
-import type { Currency } from '../../../../shared/enums.js';
-import { formatStringifyAmount } from '../../../../shared/helpers/index.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+} from '../../helpers/common-charge-ledger.helper.js';
+import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
+import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import {
   getLedgerBalanceInfo,
   LedgerError,

@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { generateReport } from '@accounter/shaam6111-generator';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
   getShaam6111Data,

@@ -2,7 +2,7 @@ import type {
   SuggestionsEmailListenerConfigInput,
   UpdateBusinessInput,
 } from '../../../__generated__/types.js';
-import { suggestionDataSchema } from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { suggestionDataSchema } from '../helpers/business-suggestion-data-schema.helper.js';
 import type { Json, SuggestionData } from '../types.js';
 
 function mergeEmailListenerConfig(

@@ -1,23 +1,23 @@
 import { endOfDay, startOfDay } from 'date-fns';
 import type { Injector } from 'graphql-modules';
-import { DeelClientProvider } from '../../../modules/app-providers/deel/deel-client.provider.js';
+import { Currency, DocumentType } from '../../../shared/enums.js';
+import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import { DeelClientProvider } from '../../app-providers/deel/deel-client.provider.js';
 import type {
   DeelWorker,
   Invoice,
   PaymentBreakdownRecord,
   PaymentReceipts,
-} from '../../../modules/app-providers/deel/schemas.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { uploadToCloudinary } from '../../../modules/documents/helpers/upload.helper.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
+} from '../../app-providers/deel/schemas.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { uploadToCloudinary } from '../../documents/helpers/upload.helper.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import type {
   IGetDocumentsByChargeIdResult,
   IInsertDocumentsParams,
-} from '../../../modules/documents/types.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
-import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+} from '../../documents/types.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type {

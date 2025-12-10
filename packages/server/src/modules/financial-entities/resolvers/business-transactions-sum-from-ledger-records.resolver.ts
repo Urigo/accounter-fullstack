@@ -3,13 +3,13 @@ import type {
   ResolverFn,
   ResolversTypes,
 } from '../../../__generated__/types.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
-import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '../../../modules/ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
-import { REVALUATION_LEDGER_DESCRIPTION } from '../../../modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
+import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
+import { REVALUATION_LEDGER_DESCRIPTION } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { handleBusinessLedgerRecord } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { IGetFinancialEntitiesByIdsResult } from '../types.js';

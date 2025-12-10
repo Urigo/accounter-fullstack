@@ -1,14 +1,14 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
+import { UUID_REGEX } from '../../../shared/constants.js';
+import { updateGreenInvoiceClient } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
+import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
+import { TagsProvider } from '../../tags/providers/tags.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   SuggestionData,
   suggestionDataSchema,
-} from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { updateGreenInvoiceClient } from '../../../modules/green-invoice/helpers/green-invoice-clients.helper.js';
-import { SortCodesProvider } from '../../../modules/sort-codes/providers/sort-codes.provider.js';
-import { TagsProvider } from '../../../modules/tags/providers/tags.provider.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
-import { UUID_REGEX } from '../../../shared/constants.js';
+} from '../helpers/business-suggestion-data-schema.helper.js';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';

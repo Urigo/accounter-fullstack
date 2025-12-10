@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { ChargeTagsProvider } from '../../../modules/tags/providers/charge-tags.provider.js';
-import { TagsProvider } from '../../../modules/tags/providers/tags.provider.js';
+import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
+import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 import { IGetChargesByIdsResult } from '../types.js';
 

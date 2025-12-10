@@ -3,10 +3,10 @@ import { format, subHours } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { CoinMarketCapProvider } from '../../../modules/app-providers/coinmarketcap.js';
-import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
+import { CoinMarketCapProvider } from '../../app-providers/coinmarketcap.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import {
   IGetCryptoCurrenciesBySymbolQuery,
   IGetCryptoCurrenciesBySymbolResult,

@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
 import { ExchangeRatesModule } from '../types.js';

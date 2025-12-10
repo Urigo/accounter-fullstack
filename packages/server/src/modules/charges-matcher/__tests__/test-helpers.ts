@@ -6,7 +6,7 @@ import type {
   AggregatedDocument,
   ConfidenceScores,
 } from '../types.js';
-import type { currency, document_type } from '../../../modules/documents/types.js';
+import type { currency, document_type } from '../../documents/types.js';
 
 /**
  * Factory for creating mock transactions for testing

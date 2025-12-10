@@ -8,14 +8,14 @@ import type {
   ResolversTypes,
   SingleSidedLedgerRecord,
 } from '../../../../__generated__/types.js';
-import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
+import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../../shared/types/index.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import type {
   IGetAllFinancialEntitiesResult,
   IGetFinancialEntitiesByIdsResult,
-} from '../../../../modules/financial-entities/types.js';
-import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
-import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
-import type { TimelessDateString } from '../../../../shared/types/index.js';
+} from '../../../financial-entities/types.js';
+import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
 import { sortEntityRecordsAndAddBalance } from '../../helpers/yearly-ledger-report.helper.js';
 
 export const yearlyLedgerReport: ResolverFn<

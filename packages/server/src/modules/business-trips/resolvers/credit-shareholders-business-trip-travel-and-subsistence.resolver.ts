@@ -9,11 +9,11 @@ import type {
   Resolver,
   ResolverTypeWrapper,
 } from '../../../__generated__/types.js';
-import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
-import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
-import type { IGetEmployeesByIdResult } from '../../../modules/salaries/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
+import type { IGetEmployeesByIdResult } from '../../salaries/types.js';
 import {
   getAttendeeTravelAndSubsistenceMaxTax,
   getExpenseCoreData,

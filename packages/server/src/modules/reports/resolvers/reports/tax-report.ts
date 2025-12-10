@@ -7,9 +7,9 @@ import type {
   ResolversTypes,
   TaxReportYearResolvers,
 } from '../../../../__generated__/types.js';
-import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
+import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
 import {
   DecoratedLedgerRecord,
   decorateLedgerRecords,

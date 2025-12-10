@@ -1,5 +1,5 @@
-import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
+import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import type { IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
 

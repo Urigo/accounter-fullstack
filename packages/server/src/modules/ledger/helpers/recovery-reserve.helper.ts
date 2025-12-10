@@ -1,13 +1,13 @@
 import { differenceInYears, endOfDay, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
-import { RecoveryProvider } from '../../../modules/salaries/providers/recovery.provider.js';
-import { SalariesProvider } from '../../../modules/salaries/providers/salaries.provider.js';
+import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
+import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
+import { RecoveryProvider } from '../../salaries/providers/recovery.provider.js';
+import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
 import type {
   IGetEmployeesByEmployerResult,
   IGetSalaryRecordsByDatesResult,
-} from '../../../modules/salaries/types.js';
-import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
+} from '../../salaries/types.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function recoveryDaysPerYearsOfExperience(years: number) {

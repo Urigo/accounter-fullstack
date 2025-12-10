@@ -1,11 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { ClientIntegrationsInput, Resolvers } from '../../../__generated__/types.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import {
   addGreenInvoiceClient,
   updateGreenInvoiceClient,
-} from '../../../modules/green-invoice/helpers/green-invoice-clients.helper.js';
+} from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
   FinancialEntitiesModule,

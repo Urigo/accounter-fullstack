@@ -10,15 +10,15 @@ vi.mock('graphql-modules', () => ({
   CONTEXT: Symbol('CONTEXT'),
 }));
 
-vi.mock('../../../modules/charges/providers/charges.provider.js', () => ({
+vi.mock('../../charges/providers/charges.provider.js', () => ({
   ChargesProvider: class {},
 }));
 
-vi.mock('../../../modules/documents/providers/documents.provider.js', () => ({
+vi.mock('../../documents/providers/documents.provider.js', () => ({
   DocumentsProvider: class {},
 }));
 
-vi.mock('../../../modules/transactions/providers/transactions.provider.js', () => ({
+vi.mock('../../transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 

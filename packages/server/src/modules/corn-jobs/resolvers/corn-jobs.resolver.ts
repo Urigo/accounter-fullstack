@@ -1,8 +1,8 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import { CornJobsProvider } from '../providers/corn-jobs.provider.js';
 import type { CornJobsModule } from '../types.js';
 

@@ -2,8 +2,8 @@ import DataLoader from 'dataloader';
 import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import {
   IGetReportByBusinessIdAndDatesQuery,
   IInsertReportParams,

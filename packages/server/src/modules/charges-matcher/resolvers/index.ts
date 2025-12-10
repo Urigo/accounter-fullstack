@@ -1,4 +1,4 @@
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { ChargesMatcherModule } from '../types.js';
 import { autoMatchChargesResolver } from './auto-match-charges.resolver.js';
 import { findChargeMatchesResolver } from './find-charge-matches.resolver.js';

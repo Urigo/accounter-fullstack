@@ -5,22 +5,21 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { getChargeBusinesses } from '../../../../modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { TaxCategoriesProvider } from '../../../../modules/financial-entities/providers/tax-categories.provider.js';
-import { validateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { BalanceCancellationProvider } from '../../../../modules/ledger/providers/balance-cancellation.provider.js';
-import { EmployeesProvider } from '../../../../modules/salaries/providers/employees.provider.js';
-import { FundsProvider } from '../../../../modules/salaries/providers/funds.provider.js';
-import { SalariesProvider } from '../../../../modules/salaries/providers/salaries.provider.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
+import { EmployeesProvider } from '../../../salaries/providers/employees.provider.js';
+import { FundsProvider } from '../../../salaries/providers/funds.provider.js';
+import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import { generateEntriesFromSalaryRecords } from '../../helpers/salary-charge-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
@@ -32,6 +31,7 @@ import {
   ValidateTransaction,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
+import { BalanceCancellationProvider } from '../../providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '../../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForCommonCharge } from './common-ledger-generation.resolver.js';
 

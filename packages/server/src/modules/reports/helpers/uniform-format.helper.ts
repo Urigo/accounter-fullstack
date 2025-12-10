@@ -6,17 +6,17 @@ import type {
   CurrencyCode,
   JournalEntry,
 } from '@accounter/shaam-uniform-format-generator';
-import { isCryptoCurrency } from '../../../modules/exchange-rates/helpers/exchange.helper.js';
-import { AdminBusinessesProvider } from '../../../modules/financial-entities/providers/admin-businesses.provider.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { businessTransactionsSumFromLedgerRecords } from '../../../modules/financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
-import type { IGetBusinessesByIdsResult } from '../../../modules/financial-entities/types.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
-import { SortCodesProvider } from '../../../modules/sort-codes/providers/sort-codes.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { isCryptoCurrency } from '../../exchange-rates/helpers/exchange.helper.js';
+import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { businessTransactionsSumFromLedgerRecords } from '../../financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
+import type { IGetBusinessesByIdsResult } from '../../financial-entities/types.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
+import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 
 export async function businessForUniformFormat(
   context: GraphQLModules.ModuleContext,

@@ -1,7 +1,7 @@
 import type { PrivateOrBusinessType } from '../../../__generated__/types.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { Currency } from '../../../shared/enums.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { FinancialAccountsModule, IGetFinancialAccountsByAccountIDsResult } from '../types.js';
 

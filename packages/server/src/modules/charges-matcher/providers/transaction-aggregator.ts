@@ -6,7 +6,7 @@
  * validation, amount summation, date selection, and description concatenation.
  */
 
-import type { currency } from '../../../modules/documents/types.js';
+import type { currency } from '../../documents/types.js';
 import type { AggregatedTransaction } from '../types.js';
 
 /**

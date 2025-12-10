@@ -4,13 +4,13 @@ import type {
   AddBusinessTripTravelAndSubsistenceExpenseInput,
   BusinessTripExpenseCategories,
 } from '../../../__generated__/types.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { isSupplementalFeeTransaction } from '../../../modules/ledger/helpers/fee-transactions.js';
-import { LedgerError } from '../../../modules/ledger/helpers/utils.helper.js';
-import { generateLedgerRecordsForBusinessTrip } from '../../../modules/ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
-import type { IGetExpensesByChargeIdsResult } from '../../../modules/misc-expenses/types.js';
-import { ChargeTagsProvider } from '../../../modules/tags/providers/charge-tags.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { isSupplementalFeeTransaction } from '../../ledger/helpers/fee-transactions.js';
+import { LedgerError } from '../../ledger/helpers/utils.helper.js';
+import { generateLedgerRecordsForBusinessTrip } from '../../ledger/resolvers/ledger-generation/business-trip-ledger-generation.resolver.js';
+import type { IGetExpensesByChargeIdsResult } from '../../misc-expenses/types.js';
+import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import { BusinessTripEmployeePaymentsProvider } from '../providers/business-trips-employee-payments.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import { BusinessTripCarRentalExpensesProvider } from '../providers/business-trips-expenses-car-rental.provider.js';

@@ -5,19 +5,18 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { getChargeTransactionsMeta } from '../../../../modules/charges/helpers/common.helper.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { UnbalancedBusinessesProvider } from '../../../../modules/ledger/providers/unbalanced-businesses.provider.js';
-import { RawVatReportRecord } from '../../../../modules/reports/helpers/vat-report.helper.js';
-import { getVatRecords } from '../../../../modules/reports/resolvers/get-vat-records.resolver.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import {
   dateToTimelessDateString,
   getMonthFromDescription,
 } from '../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
+import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helper.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { RawVatReportRecord } from '../../../reports/helpers/vat-report.helper.js';
+import { getVatRecords } from '../../../reports/resolvers/get-vat-records.resolver.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import { getVatDataFromVatReportRecords } from '../../helpers/monthly-vat-ledger-generation.helper.js';
 import {
   generatePartialLedgerEntry,
@@ -28,6 +27,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
+import { UnbalancedBusinessesProvider } from '../../providers/unbalanced-businesses.provider.js';
 
 export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,

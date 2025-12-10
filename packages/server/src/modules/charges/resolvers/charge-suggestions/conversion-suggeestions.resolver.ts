@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Maybe, ResolverFn, ResolversParentTypes } from '../../../../__generated__/types.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import { formatAmount } from '../../../../shared/helpers/index.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { Suggestion } from './charge-suggestions.resolver.js';
 
 export const missingConversionInfoSuggestions: ResolverFn<

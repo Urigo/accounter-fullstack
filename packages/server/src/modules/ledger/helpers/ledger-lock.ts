@@ -1,12 +1,12 @@
 import type { Injector } from 'graphql-modules';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
-} from '../../../modules/charges/helpers/common.helper.js';
-import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
-import type { TimelessDateString } from '../../../shared/types/index.js';
+} from '../../charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
 
 export function getMinDate(dates: (Date | null | undefined)[]): Date | null {
   const filteredDates = dates.filter(Boolean) as Date[];
