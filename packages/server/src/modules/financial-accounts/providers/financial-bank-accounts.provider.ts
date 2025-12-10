@@ -19,6 +19,7 @@ const getFinancialBankAccountsByIds = sql<IGetFinancialBankAccountsByIdsQuery>`
   SELECT id,
     bank_number,
     branch_number,
+    iban,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -39,6 +40,7 @@ const getAllFinancialBankAccounts = sql<IGetAllFinancialBankAccountsQuery>`
   SELECT id,
     bank_number,
     branch_number,
+    iban,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -64,6 +66,10 @@ const updateBankAccount = sql<IUpdateBankAccountQuery>`
   branch_number =COALESCE(
     $branchNumber,
     branch_number
+  ),
+  iban =COALESCE(
+    $iban,
+    iban
   ),
   extended_bank_number =COALESCE(
     $extendedBankNumber,
@@ -126,6 +132,7 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
   INSERT INTO accounter_schema.financial_bank_accounts (
     bank_number,
     branch_number,
+    iban,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -143,6 +150,7 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
   VALUES $$bankAccounts(
     bankNumber,
     branchNumber,
+    iban,
     extendedBankNumber,
     partyPreferredIndication,
     partyAccountInvolvementCode,

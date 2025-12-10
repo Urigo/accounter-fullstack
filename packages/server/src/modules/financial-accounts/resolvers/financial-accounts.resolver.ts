@@ -63,6 +63,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
               {
                 bankNumber: input.bankAccountDetails.bankNumber,
                 branchNumber: input.bankAccountDetails.branchNumber,
+                iban: input.bankAccountDetails.iban,
                 extendedBankNumber: input.bankAccountDetails.extendedBankNumber,
                 partyPreferredIndication: input.bankAccountDetails.partyPreferredIndication,
                 partyAccountInvolvementCode: input.bankAccountDetails.partyAccountInvolvementCode,
@@ -115,6 +116,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
             branchNumber: fields.bankAccountDetails.branchNumber,
             branchTypeCode: fields.bankAccountDetails.branchTypeCode,
             extendedBankNumber: fields.bankAccountDetails.extendedBankNumber,
+            iban: fields.bankAccountDetails.iban,
             kodHarshaatPeilut: fields.bankAccountDetails.kodHarshaatPeilut,
             metegDoarNet: fields.bankAccountDetails.metegDoarNet,
             mymailEntitlementSwitch: fields.bankAccountDetails.mymailEntitlementSwitch,

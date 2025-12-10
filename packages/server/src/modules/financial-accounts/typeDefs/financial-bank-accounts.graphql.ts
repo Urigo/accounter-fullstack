@@ -13,6 +13,7 @@ export default gql`
     accountNumber: String!
     bankNumber: Int!
     branchNumber: Int!
+    iban: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int
@@ -32,6 +33,7 @@ export default gql`
   input BankAccountInsertInput {
     bankNumber: Int!
     branchNumber: Int!
+    iban: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int
@@ -51,6 +53,7 @@ export default gql`
   input BankAccountUpdateInput {
     bankNumber: Int
     branchNumber: Int
+    iban: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int

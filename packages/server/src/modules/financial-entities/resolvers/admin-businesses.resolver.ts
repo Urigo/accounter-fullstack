@@ -58,6 +58,14 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
+    createAdminBusiness: () => {
+      // TODO
+      throw new Error('Not implemented yet');
+    },
+    deleteAdminBusiness: () => {
+      // TODO
+      throw new Error('Not implemented yet');
+    },
   },
   AdminBusiness: {
     id: admin => admin.id,
