@@ -13,7 +13,7 @@ import { qualifyTable } from './helpers/test-db-config.js';
 describe('DB Test Harness Bootstrap', () => {
   let db: TestDatabase;
 
-  const EXPECTED_TAX_CATEGORIES = 22;
+  const EXPECTED_TAX_CATEGORIES = 19;
 
   beforeAll(async () => {
     db = new TestDatabase();
