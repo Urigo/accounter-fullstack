@@ -1,9 +1,9 @@
-import type { IGetLedgerRecordsByChargesIdsResult } from '../../../modules/ledger/types.js';
 import { Currency } from '../../../shared/enums.js';
 import type {
   BusinessTransactionProto,
   RawBusinessTransactionsSum,
 } from '../../../shared/types/index.js';
+import type { IGetLedgerRecordsByChargesIdsResult } from '../../ledger/types.js';
 
 export function handleBusinessLedgerRecord(
   rawRes: Record<string, RawBusinessTransactionsSum>,

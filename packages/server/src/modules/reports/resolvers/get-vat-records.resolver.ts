@@ -1,16 +1,16 @@
 import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { QueryVatReportArgs, ResolversTypes } from '../../../__generated__/types.js';
-import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
-import { getChargeBusinesses } from '../../../modules/charges/helpers/common.helper.js';
-import { validateCharge } from '../../../modules/charges/helpers/validate.helper.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { isRefundCharge } from '../../../modules/ledger/helpers/common-charge-ledger.helper.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
+import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
+import { validateCharge } from '../../charges/helpers/validate.helper.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { IGetChargesByIdsResult } from '../../charges/types.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper.js';
 import {
   adjustTaxRecord,
   type RawVatReportRecord,

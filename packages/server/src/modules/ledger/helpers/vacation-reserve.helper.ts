@@ -1,15 +1,15 @@
 import { differenceInDays, endOfMonth, endOfYear, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
-import { SalariesProvider } from '../../../modules/salaries/providers/salaries.provider.js';
-import type {
-  IGetEmployeesByEmployerResult,
-  IGetSalaryRecordsByDatesResult,
-} from '../../../modules/salaries/types.js';
 import {
   AVERAGE_MONTHLY_WORK_DAYS,
   AVERAGE_MONTHLY_WORK_HOURS,
 } from '../../../shared/constants.js';
+import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
+import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
+import type {
+  IGetEmployeesByEmployerResult,
+  IGetSalaryRecordsByDatesResult,
+} from '../../salaries/types.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
 function roundHalf(n: number) {

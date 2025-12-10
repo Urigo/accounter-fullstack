@@ -8,8 +8,8 @@ import type {
 import {
   getChargeBusinesses,
   getChargeTaxCategoryId,
-} from '../../../modules/charges/helpers/common.helper.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
+} from '../../charges/helpers/common.helper.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';

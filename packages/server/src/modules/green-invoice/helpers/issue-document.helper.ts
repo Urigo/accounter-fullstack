@@ -10,21 +10,21 @@ import type {
   NewDocumentInfo,
   NewDocumentInput,
 } from '../../../__generated__/types.js';
-import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
-import type {
-  IGetDocumentsByChargeIdResult,
-  IGetIssuedDocumentsByIdsResult,
-} from '../../../modules/documents/types.js';
-import { FinancialAccountsProvider } from '../../../modules/financial-accounts/providers/financial-accounts.provider.js';
-import { FinancialBankAccountsProvider } from '../../../modules/financial-accounts/providers/financial-bank-accounts.provider.js';
-import type { IGetFinancialBankAccountsByIdsResult } from '../../../modules/financial-accounts/types.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
+import type {
+  IGetDocumentsByChargeIdResult,
+  IGetIssuedDocumentsByIdsResult,
+} from '../../documents/types.js';
+import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
+import type { IGetFinancialBankAccountsByIdsResult } from '../../financial-accounts/types.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
   getGreenInvoiceDocumentType,

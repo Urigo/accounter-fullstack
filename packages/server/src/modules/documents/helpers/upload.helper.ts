@@ -1,8 +1,8 @@
 import type { Injector } from 'graphql-modules';
-import { AnthropicProvider } from '../../../modules/app-providers/anthropic.js';
-import { CloudinaryProvider } from '../../../modules/app-providers/cloudinary.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { AnthropicProvider } from '../../app-providers/anthropic.js';
+import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import type { IInsertDocumentsParams } from '../types.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {

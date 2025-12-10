@@ -1,8 +1,8 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
   IDeleteDepreciationRecordByChargeIdQuery,

@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { normalizeDocumentType } from '../../../modules/documents/resolvers/common.js';
-import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { normalizeDocumentType } from '../../documents/resolvers/common.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
   normalizeBillingCycle,
   normalizeProduct,

@@ -1,7 +1,7 @@
-import { BusinessTripsTypes } from '../../../modules/business-trips/index.js';
-import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
-import type { ChargesTypes } from '../../../modules/charges';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
+import { BusinessTripsTypes } from '../../business-trips/index.js';
+import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
+import type { ChargesTypes } from '../../charges';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { AccountantApprovalModule } from '../types.js';
 import { commonChargeFields } from './common.js';
 

@@ -1,9 +1,9 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../../modules/app-providers/db.provider.js';
-import { suggestionDataSchema } from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
+import { suggestionDataSchema } from '../helpers/business-suggestion-data-schema.helper.js';
 import type {
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,

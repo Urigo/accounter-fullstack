@@ -2,26 +2,30 @@ import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
-import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
+import { Currency, DocumentType } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
-} from '../../../modules/charges/helpers/common.helper.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { ContractsProvider } from '../../../modules/contracts/providers/contracts.provider.js';
-import { IGetContractsByIdsResult } from '../../../modules/contracts/types.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
-import { normalizeDocumentType } from '../../../modules/documents/resolvers/common.js';
+} from '../../charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { ContractsProvider } from '../../contracts/providers/contracts.provider.js';
+import { IGetContractsByIdsResult } from '../../contracts/types.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
+import { normalizeDocumentType } from '../../documents/resolvers/common.js';
 import type {
   IGetAllIssuedDocumentsResult,
   IGetIssuedDocumentsByIdsResult,
   IInsertDocumentsResult,
   IUpdateIssuedDocumentParams,
-} from '../../../modules/documents/types.js';
-import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
+} from '../../documents/types.js';
+import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
   convertGreenInvoiceDocumentToLocalDocumentInfo,
@@ -30,11 +34,7 @@ import {
   getLinkedDocuments,
   greenInvoiceToDocumentStatus,
   insertNewDocumentFromGreenInvoice,
-} from '../../../modules/green-invoice/helpers/green-invoice.helper.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
-import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
-import { convertContractToDraft } from '../helpers/contract-to-draft.helper.js';
+} from '../helpers/green-invoice.helper.js';
 import {
   deduceVatTypeFromBusiness,
   executeDocumentIssue,

@@ -32,17 +32,17 @@ import type {
   NewDocumentInput,
   ResolversTypes,
 } from '../../../__generated__/types.js';
-import { CloudinaryProvider } from '../../../modules/app-providers/cloudinary.js';
-import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { CountryCode } from '../../../modules/countries/types.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
-import type { document_status, IInsertDocumentsParams } from '../../../modules/documents/types.js';
-import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';
-import { ClientsProvider } from '../../../modules/financial-entities/providers/clients.provider.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
+import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
+import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { CountryCode } from '../../countries/types.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
+import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';
+import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 
 export function normalizeDocumentType(
   rawType?: GreenInvoiceDocumentType | _DOLLAR_defs_ExpenseDocumentType | number | null,

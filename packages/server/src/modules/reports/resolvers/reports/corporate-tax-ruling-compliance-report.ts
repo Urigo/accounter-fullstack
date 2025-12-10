@@ -8,17 +8,17 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { ChargesProvider } from '../../../../modules/charges/providers/charges.provider.js';
-import type { IGetChargesByIdsResult } from '../../../../modules/charges/types.js';
-import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
-import type { IGetAllFinancialEntitiesResult } from '../../../../modules/financial-entities/types.js';
-import { ledgerGenerationByCharge } from '../../../../modules/ledger/helpers/ledger-by-charge-type.helper.js';
-import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
 import { formatFinancialAmount, hashStringToInt } from '../../../../shared/helpers/index.js';
 import type {
   CorporateTaxRulingComplianceReportProto,
   LedgerRecordsProto,
 } from '../../../../shared/types/index.js';
+import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../../charges/types.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
+import type { IGetAllFinancialEntitiesResult } from '../../../financial-entities/types.js';
+import { ledgerGenerationByCharge } from '../../../ledger/helpers/ledger-by-charge-type.helper.js';
+import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
 
 type ReportYearlyInfo = {
   totalIncome: number;

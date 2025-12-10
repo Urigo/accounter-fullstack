@@ -1,11 +1,11 @@
 import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../../modules/app-providers/db.provider.js';
 import type { Currency } from '../../../shared/enums.js';
 import { LedgerLockError } from '../../../shared/errors.js';
 import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,

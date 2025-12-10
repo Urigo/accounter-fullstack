@@ -1,14 +1,14 @@
+import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
 import {
   validateDocumentAllocation,
   validateDocumentVat,
-} from '../../../modules/documents/helpers/validate-document.helper.js';
-import type { IGetDocumentsByChargeIdResult } from '../../../modules/documents/types.js';
-import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
-import { FinancialAccountsProvider } from '../../../modules/financial-accounts/providers/financial-accounts.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
-import { VatProvider } from '../../../modules/vat/providers/vat.provider.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+} from '../../documents/helpers/validate-document.helper.js';
+import type { IGetDocumentsByChargeIdResult } from '../../documents/types.js';
+import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
+import { VatProvider } from '../../vat/providers/vat.provider.js';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
 import {
   getFinancialAccountTaxCategoryId,

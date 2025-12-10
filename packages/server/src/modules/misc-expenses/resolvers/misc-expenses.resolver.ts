@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
 import type { MiscExpensesModule } from '../types.js';
 import { commonChargeFields } from './common.resolver.js';

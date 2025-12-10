@@ -1,5 +1,5 @@
-import { GmailServiceProvider } from '../../../modules/app-providers/gmail-listener/gmail-service.provider.js';
-import { PubsubServiceProvider } from '../../../modules/app-providers/gmail-listener/pubsub-service.provider.js';
+import { GmailServiceProvider } from '../../app-providers/gmail-listener/gmail-service.provider.js';
+import { PubsubServiceProvider } from '../../app-providers/gmail-listener/pubsub-service.provider.js';
 import type { CommonModule } from '../types.js';
 
 export const gmailListenerResolvers: CommonModule.Resolvers = {

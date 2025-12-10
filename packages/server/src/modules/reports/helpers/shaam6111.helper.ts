@@ -45,10 +45,10 @@ import {
   YesNo,
 } from '@accounter/shaam6111-generator';
 import type * as SchemaTypes from '../../../__generated__/types.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { IGetAllFinancialEntitiesResult } from '../../../modules/financial-entities/types.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { IGetAllFinancialEntitiesResult } from '../../financial-entities/types.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { amountByFinancialEntityIdAndSortCodeValidations } from './misc.helper.js';
 import {
   DecoratedLedgerRecord,

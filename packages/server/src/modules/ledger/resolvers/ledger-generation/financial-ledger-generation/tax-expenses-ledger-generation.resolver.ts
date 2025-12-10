@@ -4,22 +4,22 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
-import { FinancialEntitiesProvider } from '../../../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { storeInitialGeneratedRecords } from '../../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { LedgerProvider } from '../../../../../modules/ledger/providers/ledger.provider.js';
+import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import type { LedgerProto } from '../../../../../shared/types/index.js';
+import { FinancialEntitiesProvider } from '../../../../financial-entities/providers/financial-entities.provider.js';
 import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
   type DecoratedLedgerRecord,
-} from '../../../../../modules/reports/helpers/profit-and-loss.helper.js';
+} from '../../../../reports/helpers/profit-and-loss.helper.js';
 import {
   calculateCumulativeRnDExpenses,
   calculateTaxAmounts,
-} from '../../../../../modules/reports/helpers/tax.helper.js';
-import { EMPTY_UUID } from '../../../../../shared/constants.js';
-import type { LedgerProto } from '../../../../../shared/types/index.js';
+} from '../../../../reports/helpers/tax.helper.js';
+import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
+import { LedgerProvider } from '../../../providers/ledger.provider.js';
 
 export const generateLedgerRecordsForTaxExpenses: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,

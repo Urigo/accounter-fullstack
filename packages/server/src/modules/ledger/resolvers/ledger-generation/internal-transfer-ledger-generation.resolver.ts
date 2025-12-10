@@ -4,16 +4,16 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
-import type { currency } from '../../../../modules/transactions/types.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import type { currency } from '../../../transactions/types.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,

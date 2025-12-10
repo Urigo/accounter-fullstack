@@ -1,11 +1,5 @@
 import { Injector } from 'graphql-modules';
 import type { FinancialAmount } from '../../../__generated__/types.js';
-import { getChargeBusinesses } from '../../../modules/charges/helpers/common.helper.js';
-import type { IGetChargesByIdsResult } from '../../../modules/charges/types.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
-import type { IGetFinancialEntitiesByIdsResult } from '../../../modules/financial-entities/types.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { Currency } from '../../../shared/enums.js';
 import {
@@ -18,6 +12,12 @@ import type {
   LedgerProto,
   StrictLedgerProto,
 } from '../../../shared/types/index.js';
+import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import type { IGetFinancialEntitiesByIdsResult } from '../../financial-entities/types.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
 export class LedgerError extends Error {

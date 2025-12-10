@@ -3,21 +3,21 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
 import type { EmailAttachmentType } from '../../../__generated__/types.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import {
-  getDocumentFromUrlsAndOcrData,
-  type OcrData,
-} from '../../../modules/documents/helpers/upload.helper.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import {
-  EmailListenerConfig,
-  suggestionDataSchema,
-} from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import {
+  getDocumentFromUrlsAndOcrData,
+  type OcrData,
+} from '../../documents/helpers/upload.helper.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import {
+  EmailListenerConfig,
+  suggestionDataSchema,
+} from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { AnthropicProvider } from '../anthropic.js';
 import { CloudinaryProvider } from '../cloudinary.js';
 import { troubleshootOAuth } from './config.js';

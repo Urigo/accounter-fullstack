@@ -6,7 +6,7 @@
  * amount normalization, currency validation, date selection, and description concatenation.
  */
 
-import { currency } from '../../../modules/documents/types.js';
+import { currency } from '../../documents/types.js';
 import { normalizeDocumentAmount, type DocumentType } from '../helpers/document-amount.helper.js';
 import { extractDocumentBusiness } from '../helpers/document-business.helper.js';
 import { AggregatedDocument } from '../types.js';

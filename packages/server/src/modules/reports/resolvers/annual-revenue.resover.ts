@@ -1,10 +1,10 @@
 import { endOfYear, startOfYear } from 'date-fns';
-import { CountriesProvider } from '../../../modules/countries/providers/countries.provider.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { CountriesProvider } from '../../countries/providers/countries.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { AnnualRevenueReportProvider } from '../providers/annual-revenue-report.provider.js';
 import type { ReportsModule } from '../types.js';
 

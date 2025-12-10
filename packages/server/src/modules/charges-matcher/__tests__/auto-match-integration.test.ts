@@ -8,19 +8,19 @@ vi.mock('graphql-modules', () => ({
   Scope: { Operation: 'Operation' },
 }));
 
-vi.mock('../../../modules/charges/providers/charges.provider.js', () => ({
+vi.mock('../../charges/providers/charges.provider.js', () => ({
   ChargesProvider: class {},
 }));
 
-vi.mock('../../../modules/documents/providers/documents.provider.js', () => ({
+vi.mock('../../documents/providers/documents.provider.js', () => ({
   DocumentsProvider: class {},
 }));
 
-vi.mock('../../../modules/transactions/providers/transactions.provider.js', () => ({
+vi.mock('../../transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 
-vi.mock('../../../modules/charges/helpers/merge-charges.helper.js', () => ({
+vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 

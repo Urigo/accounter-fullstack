@@ -5,11 +5,11 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
-import { storeInitialGeneratedRecords } from '../../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { calculateDepreciationAmount } from '../../../../../modules/reports/helpers/depreciation-report.helper.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
+import { calculateDepreciationAmount } from '../../../../reports/helpers/depreciation-report.helper.js';
+import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { ledgerProtoToRecordsConverter } from '../../../helpers/utils.helper.js';
 
 export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<

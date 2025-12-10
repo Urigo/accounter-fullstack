@@ -1,10 +1,10 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { BusinessTransactionProto } from '../../../shared/types/index.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';

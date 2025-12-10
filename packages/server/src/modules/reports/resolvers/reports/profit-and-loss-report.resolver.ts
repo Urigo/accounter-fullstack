@@ -9,12 +9,12 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { FinancialEntitiesProvider } from '../../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
-import { IGetLedgerRecordsByDatesResult } from '../../../../modules/ledger/types.js';
-import { amountByFinancialEntityIdAndSortCodeValidations } from '../../../../modules/reports/helpers/misc.helper.js';
-import { SortCodesProvider } from '../../../../modules/sort-codes/providers/sort-codes.provider.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
+import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
+import { IGetLedgerRecordsByDatesResult } from '../../../ledger/types.js';
+import { SortCodesProvider } from '../../../sort-codes/providers/sort-codes.provider.js';
+import { amountByFinancialEntityIdAndSortCodeValidations } from '../../helpers/misc.helper.js';
 import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,

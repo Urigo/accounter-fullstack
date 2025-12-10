@@ -1,16 +1,16 @@
 import { Injector } from 'graphql-modules';
 import type { FinancialAmount } from '../../../__generated__/types.js';
-import { isInvoice, isReceipt } from '../../../modules/documents/helpers/common.helper.js';
-import { basicDocumentValidation } from '../../../modules/documents/helpers/validate-document.helper.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
-import { getLedgerMeta } from '../../../modules/ledger/helpers/common.helper.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
-import { MiscExpensesProvider } from '../../../modules/misc-expenses/providers/misc-expenses.provider.js';
-import { getTransactionsMeta } from '../../../modules/transactions/helpers/common.helper.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
+import { basicDocumentValidation } from '../../documents/helpers/validate-document.helper.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { getLedgerMeta } from '../../ledger/helpers/common.helper.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
+import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
+import { getTransactionsMeta } from '../../transactions/helpers/common.helper.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function calculateTotalAmount(

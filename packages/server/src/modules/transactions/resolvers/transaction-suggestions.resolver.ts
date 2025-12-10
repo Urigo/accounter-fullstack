@@ -5,11 +5,11 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../__generated__/types.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { suggestionDataSchema } from '../../../modules/financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
 import { formatAmount } from '../../../shared/helpers/index.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 

@@ -4,37 +4,36 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { validateTransactionAgainstBusinessTrips } from '../../../../modules/business-trips/helpers/business-trips-expenses.helper.js';
-import { BusinessTripAttendeesProvider } from '../../../../modules/business-trips/providers/business-trips-attendees.provider.js';
-import { BusinessTripEmployeePaymentsProvider } from '../../../../modules/business-trips/providers/business-trips-employee-payments.provider.js';
-import { BusinessTripExpensesProvider } from '../../../../modules/business-trips/providers/business-trips-expenses.provider.js';
-import { BusinessTripsProvider } from '../../../../modules/business-trips/providers/business-trips.provider.js';
+import type { Currency } from '../../../../shared/enums.js';
+import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { validateTransactionAgainstBusinessTrips } from '../../../business-trips/helpers/business-trips-expenses.helper.js';
+import { BusinessTripAttendeesProvider } from '../../../business-trips/providers/business-trips-attendees.provider.js';
+import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { BusinessTripExpensesProvider } from '../../../business-trips/providers/business-trips-expenses.provider.js';
+import { BusinessTripsProvider } from '../../../business-trips/providers/business-trips.provider.js';
 import {
   calculateTotalAmount,
   getChargeBusinesses,
   getChargeDocumentsMeta,
   getChargeTaxCategoryId,
-} from '../../../../modules/charges/helpers/common.helper.js';
-import { currency } from '../../../../modules/charges/types.js';
-import { DocumentsProvider } from '../../../../modules/documents/providers/documents.provider.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { BusinessesProvider } from '../../../../modules/financial-entities/providers/businesses.provider.js';
+} from '../../../charges/helpers/common.helper.js';
+import { currency } from '../../../charges/types.js';
+import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import {
   getExchangeDates,
   ledgerEntryFromDocument,
-} from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
-import { handleCrossYearLedgerEntries } from '../../../../modules/ledger/helpers/cross-year-ledger.helper.js';
-import { validateExchangeRate } from '../../../../modules/ledger/helpers/exchange-ledger.helper.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { UnbalancedBusinessesProvider } from '../../../../modules/ledger/providers/unbalanced-businesses.provider.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
-import type { Currency } from '../../../../shared/enums.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+} from '../../helpers/common-charge-ledger.helper.js';
+import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
+import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
 import {
   getEntriesFromFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
   getFinancialAccountTaxCategoryId,
@@ -45,6 +44,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
+import { UnbalancedBusinessesProvider } from '../../providers/unbalanced-businesses.provider.js';
 
 const AMOUNT_REQUIRING_DOCUMENT = 1000;
 const AMOUNT_FOR_SELF_CLOSING = 300;

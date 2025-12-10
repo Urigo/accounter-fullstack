@@ -2,13 +2,13 @@ import type {
   BusinessTripSummaryCategories,
   BusinessTripSummaryRow,
 } from '../../../__generated__/types.js';
-import { CountryCode } from '../../../modules/countries/types.js';
-import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
-import { getTransactionDebitDate } from '../../../modules/transactions/helpers/debit-date.helper.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
-import type { IGetTransactionsByIdsResult } from '../../../modules/transactions/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { CountryCode } from '../../countries/types.js';
+import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByIdsResult } from '../../transactions/types.js';
 import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';
 import type {
   flight_class,

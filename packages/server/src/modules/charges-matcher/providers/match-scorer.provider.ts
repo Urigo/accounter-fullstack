@@ -1,4 +1,4 @@
-import type { document_type } from '../../../modules/documents/types.js';
+import type { document_type } from '../../documents/types.js';
 import { calculateAmountConfidence } from '../helpers/amount-confidence.helper.js';
 import { calculateBusinessConfidence } from '../helpers/business-confidence.helper.js';
 import { calculateCurrencyConfidence } from '../helpers/currency-confidence.helper.js';

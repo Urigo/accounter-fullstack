@@ -4,17 +4,16 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { DividendsProvider } from '../../../../modules/dividends/providers/dividends.provider.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { ledgerEntryFromBalanceCancellation } from '../../../../modules/ledger/helpers/common-charge-ledger.helper.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
-import { BalanceCancellationProvider } from '../../../../modules/ledger/providers/balance-cancellation.provider.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import { DIVIDEND_WITHHOLDING_TAX_PERCENTAGE } from '../../../../shared/constants.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { DividendsProvider } from '../../../dividends/providers/dividends.provider.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import { ledgerEntryFromBalanceCancellation } from '../../helpers/common-charge-ledger.helper.js';
 import { splitDividendTransactions } from '../../helpers/dividend-ledger.helper.js';
 import { getEntriesFromFeeTransaction } from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
+import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import {
   generatePartialLedgerEntry,
   getFinancialAccountTaxCategoryId,
@@ -24,6 +23,7 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionRequiredVariables,
 } from '../../helpers/utils.helper.js';
+import { BalanceCancellationProvider } from '../../providers/balance-cancellation.provider.js';
 
 export const generateLedgerRecordsForDividend: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,

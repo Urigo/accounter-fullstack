@@ -8,16 +8,16 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../__generated__/types.js';
+import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { DocumentSuggestionsProto } from '../../../shared/types/index.js';
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
   getChargeTransactionsMeta,
-} from '../../../modules/charges/helpers/common.helper.js';
-import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { FinancialEntitiesProvider } from '../../../modules/financial-entities/providers/financial-entities.provider.js';
-import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
-import type { DocumentSuggestionsProto } from '../../../shared/types/index.js';
+} from '../../charges/helpers/common.helper.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import type { DocumentsModule } from '../types.js';
 
 type Suggestion = Awaited<ResolversTypes['DocumentSuggestions']>;

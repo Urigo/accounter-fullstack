@@ -4,16 +4,16 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
-import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
 import {
   isSupplementalFeeTransaction,
   splitFeeTransactions,
 } from '../../helpers/fee-transactions.js';
+import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,

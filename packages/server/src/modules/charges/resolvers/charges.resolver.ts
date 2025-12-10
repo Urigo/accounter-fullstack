@@ -1,18 +1,18 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
-import { BusinessTripsProvider } from '../../../modules/business-trips/providers/business-trips.provider.js';
-import { isInvoice, isReceipt } from '../../../modules/documents/helpers/common.helper.js';
-import { DocumentsProvider } from '../../../modules/documents/providers/documents.provider.js';
-import { IssuedDocumentsProvider } from '../../../modules/documents/providers/issued-documents.provider.js';
-import { ledgerGenerationByCharge } from '../../../modules/ledger/helpers/ledger-by-charge-type.helper.js';
-import { isChargeLocked } from '../../../modules/ledger/helpers/ledger-lock.js';
-import { ledgerRecordsGenerationFullMatchComparison } from '../../../modules/ledger/helpers/ledgrer-storage.helper.js';
-import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
-import { MiscExpensesProvider } from '../../../modules/misc-expenses/providers/misc-expenses.provider.js';
-import { ChargeTagsProvider } from '../../../modules/tags/providers/charge-tags.provider.js';
-import { TransactionsProvider } from '../../../modules/transactions/providers/transactions.provider.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
+import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
+import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
+import { ledgerGenerationByCharge } from '../../ledger/helpers/ledger-by-charge-type.helper.js';
+import { isChargeLocked } from '../../ledger/helpers/ledger-lock.js';
+import { ledgerRecordsGenerationFullMatchComparison } from '../../ledger/helpers/ledgrer-storage.helper.js';
+import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
+import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
+import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   batchUpdateChargesBusinessTrip,
   batchUpdateChargesTags,
