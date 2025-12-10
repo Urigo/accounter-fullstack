@@ -9,13 +9,19 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
   let transactionsMinDebitDate: Date | null = null;
   let transactionsMinEventDate: Date | null = null;
 
+  const hasFee = transactions.some(t => t.is_fee);
+  const onlyFee = transactions.every(t => t.is_fee);
+  const hasSomeFeeTransactions = hasFee && !onlyFee;
+
   transactions.map(t => {
-    const amountAsNumber = Number(t.amount);
-    const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
-    if (amount != null) {
-      transactionsAmount ??= 0;
-      transactionsAmount += amount;
-      currenciesSet.add(t.currency as Currency);
+    if ((hasSomeFeeTransactions && !t.is_fee) || !hasSomeFeeTransactions) {
+      const amountAsNumber = Number(t.amount);
+      const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
+      if (amount != null) {
+        transactionsAmount ??= 0;
+        transactionsAmount += amount;
+        currenciesSet.add(t.currency as Currency);
+      }
     }
     if (t.debit_timestamp) {
       transactionsMinDebitDate ??= t.debit_timestamp;
