@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/*",
+      "!packages/old-accounter"
     ]
   },
   "packageManager": "yarn@4.12.0",
@@ -17,7 +18,6 @@
     "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server run build",
     "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/server --exclude accounter-monorepo run build",
     "db:migrate": "yarn migration:run",
-    "deploy": "git push heroku master",
     "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
     "generate:all": "yarn generate",
