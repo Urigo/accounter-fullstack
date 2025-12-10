@@ -23,7 +23,7 @@ import {
   createTaxCategory,
   createFinancialAccount,
 } from '../../factories';
-import { makeUUID } from '../../factories/ids';
+import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { Currency } from '../../../shared/enums.js';
@@ -55,13 +55,13 @@ export const expenseScenarioA: Fixture = {
     businesses: [
       // Admin business (owner of the expense)
       createBusiness({
-        id: makeUUID('admin-business'),
+        id: makeUUID('business', 'admin-business-scenario-a'),
         hebrewName: 'חשבונאות ניהול',
         country: CountryCode.Israel,
       }),
       // Supplier business
       createBusiness({
-        id: makeUUID('supplier-local-ltd'),
+        id: makeUUID('business', 'supplier-local-ltd'),
         hebrewName: 'ספק מקומי בע"מ',
         country: CountryCode.Israel,
         exemptDealer: false,
@@ -73,11 +73,11 @@ export const expenseScenarioA: Fixture = {
   taxCategories: {
     taxCategories: [
       createTaxCategory({
-        id: makeUUID('expense-general'),
+        id: makeUUID('tax-category', 'expense-general'),
         hashavshevetName: 'General Expenses',
       }),
       createTaxCategory({
-        id: makeUUID('bank-account-tax-category'),
+        id: makeUUID('tax-category', 'bank-account-tax-category'),
         hashavshevetName: 'Bank Account',
       }),
     ],
@@ -88,7 +88,7 @@ export const expenseScenarioA: Fixture = {
       createFinancialAccount({
         accountNumber: 'BANK-ACCOUNT-001',
         type: 'BANK_ACCOUNT',
-        ownerId: makeUUID('admin-business'),
+        ownerId: makeUUID('business', 'admin-business-scenario-a'),
       }),
     ],
   },
@@ -98,7 +98,7 @@ export const expenseScenarioA: Fixture = {
       {
         accountNumber: 'BANK-ACCOUNT-001',
           currency: Currency.Ils,
-        taxCategoryId: makeUUID('bank-account-tax-category'),
+        taxCategoryId: makeUUID('tax-category', 'bank-account-tax-category'),
       },
     ],
   },
@@ -107,12 +107,12 @@ export const expenseScenarioA: Fixture = {
     charges: [
       createCharge(
         {
-          owner_id: makeUUID('admin-business'),
-          tax_category_id: makeUUID('expense-general'),
+          owner_id: makeUUID('business', 'admin-business-scenario-a'),
+          tax_category_id: makeUUID('tax-category', 'expense-general'),
           user_description: 'Office supplies purchase',
         },
         {
-          id: makeUUID('charge-office-supplies'),
+          id: makeUUID('charge', 'charge-office-supplies'),
         },
       ),
     ],
@@ -122,15 +122,15 @@ export const expenseScenarioA: Fixture = {
     transactions: [
       createTransaction(
         {
-          charge_id: makeUUID('charge-office-supplies'),
-          business_id: makeUUID('supplier-local-ltd'),
+          charge_id: makeUUID('charge', 'charge-office-supplies'),
+          business_id: makeUUID('business', 'supplier-local-ltd'),
           amount: '-500.00', // Negative = expense/outflow
             currency: Currency.Ils,
           event_date: '2024-01-15',
           is_fee: false,
         },
         {
-          id: makeUUID('transaction-supplies-payment'),
+          id: makeUUID('transaction', 'transaction-supplies-payment'),
           account_id: 'BANK-ACCOUNT-001', // Will be resolved to UUID by loader
           source_description: 'Office supplies - Local Supplier Ltd',
           debit_date: '2024-01-15',
@@ -144,16 +144,16 @@ export const expenseScenarioA: Fixture = {
     documents: [
       createDocument(
         {
-          charge_id: makeUUID('charge-office-supplies'),
-          creditor_id: makeUUID('supplier-local-ltd'), // Supplier is creditor
-          debtor_id: makeUUID('admin-business'), // Admin is debtor (owes money)
+          charge_id: makeUUID('charge', 'charge-office-supplies'),
+          creditor_id: makeUUID('business', 'supplier-local-ltd'), // Supplier is creditor
+          debtor_id: makeUUID('business', 'admin-business-scenario-a'), // Admin is debtor (owes money)
           type: 'RECEIPT',
           total_amount: 500.0, // Matches transaction amount (positive in document)
             currency_code: Currency.Ils,
           date: '2024-01-15', // Receipt date matches transaction
         },
         {
-          id: makeUUID('document-supplies-receipt'),
+          id: makeUUID('document', 'document-supplies-receipt'),
           serial_number: 'RCP-2024-001',
           vat_amount: null, // For simplicity, no VAT breakdown on receipt
         },
@@ -164,10 +164,10 @@ export const expenseScenarioA: Fixture = {
   expectations: {
     ledger: [
       {
-        chargeId: makeUUID('charge-office-supplies'),
+        chargeId: makeUUID('charge', 'charge-office-supplies'),
         recordCount: 2, // Debit expense + credit bank
-        debitEntities: [makeUUID('expense-general')],
-        creditEntities: [makeUUID('bank-account-tax-category')],
+        debitEntities: [makeUUID('tax-category', 'expense-general')],
+        creditEntities: [makeUUID('tax-category', 'bank-account-tax-category')],
         totalDebitLocal: 500.0,
         totalCreditLocal: 500.0,
         balanced: true,

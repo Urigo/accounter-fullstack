@@ -11,7 +11,7 @@
  * @see packages/server/src/modules/documents/providers/documents.provider.ts (insertDocuments query)
  */
 
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Document insert parameters shape
@@ -67,9 +67,9 @@ export interface DocumentInsertParams {
  * ```typescript
  * // Minimal invoice document
  * const invoice = createDocument({
- *   charge_id: makeUUID('charge-1'),
- *   creditor_id: makeUUID('supplier-1'),
- *   debtor_id: makeUUID('my-business'),
+ *   charge_id: makeUUID('charge', 'charge-1'),
+ *   creditor_id: makeUUID('business', 'supplier-1'),
+ *   debtor_id: makeUUID('business', 'my-business'),
  *   type: 'INVOICE',
  *   total_amount: 1000.0,
  *   currency_code: 'ILS',
@@ -78,9 +78,9 @@ export interface DocumentInsertParams {
  *
  * // Receipt with VAT
  * const receipt = createDocument({
- *   charge_id: makeUUID('charge-2'),
- *   creditor_id: makeUUID('customer-1'),
- *   debtor_id: makeUUID('my-business'),
+ *   charge_id: makeUUID('charge', 'charge-2'),
+ *   creditor_id: makeUUID('business', 'customer-1'),
+ *   debtor_id: makeUUID('business', 'my-business'),
  *   type: 'RECEIPT',
  *   total_amount: 500.0,
  *   currency_code: 'USD',
@@ -93,9 +93,9 @@ export interface DocumentInsertParams {
  * // Invoice with full metadata
  * const detailedInvoice = createDocument(
  *   {
- *     charge_id: makeUUID('charge-3'),
- *     creditor_id: makeUUID('supplier-2'),
- *     debtor_id: makeUUID('my-business'),
+ *     charge_id: makeUUID('charge', 'charge-3'),
+ *     creditor_id: makeUUID('business', 'supplier-2'),
+ *     debtor_id: makeUUID('business', 'my-business'),
  *     type: 'INVOICE',
  *     total_amount: 2500.0,
  *     currency_code: 'EUR',
@@ -123,7 +123,7 @@ export function createDocument(
   overrides?: Partial<DocumentInsertParams>,
 ): DocumentInsertParams {
   return {
-    id: makeUUID(),
+    id: makeUUIDLegacy(),
     image_url: null,
     file_url: null,
     type: params.type,

@@ -18,8 +18,8 @@ import {
   createCharge,
   createTransaction,
   createDocument,
-  makeUUID,
 } from '../factories/index.js';
+import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 describe('Fixture Loader', () => {
   let pool: Pool;
@@ -35,9 +35,9 @@ describe('Fixture Loader', () => {
   describe('insertFixture', () => {
     it('should insert a complete minimal fixture successfully', () =>
       withTestTransaction(pool, async client => {
-        const businessId = makeUUID('test-business-1');
-        const taxCategoryId = makeUUID('test-tax-cat-1');
-        const chargeId = makeUUID('test-charge-1');
+        const businessId = makeUUID('business', 'test-business-1');
+        const taxCategoryId = makeUUID('tax-category', 'test-tax-cat-1');
+        const chargeId = makeUUID('charge', 'test-charge-1');
 
         const fixture: Fixture = {
           businesses: {
@@ -83,6 +83,7 @@ describe('Fixture Loader', () => {
           [businessId],
         );
         expect(businessResult.rows).toHaveLength(1);
+        expect(businessResult.rows[0].id).toBe(businessId);
         expect(businessResult.rows[0].hebrew_name).toBe('Test Business');
 
         const taxCatResult = await client.query(
@@ -90,6 +91,7 @@ describe('Fixture Loader', () => {
           [taxCategoryId],
         );
         expect(taxCatResult.rows).toHaveLength(1);
+        expect(taxCatResult.rows[0].id).toBe(taxCategoryId);
         expect(taxCatResult.rows[0].hashavshevet_name).toBe('Test Tax Category');
 
         const chargeResult = await client.query(
@@ -102,13 +104,13 @@ describe('Fixture Loader', () => {
 
     it('should insert fixture with transactions and documents', () =>
       withTestTransaction(pool, async client => {
-        const supplierId = makeUUID('supplier-1');
-        const customerId = makeUUID('customer-1');
-        const taxCategoryId = makeUUID('tax-cat-1');
+        const supplierId = makeUUID('business', 'supplier-1');
+        const customerId = makeUUID('business', 'customer-1');
+        const taxCategoryId = makeUUID('tax-category', 'tax-cat-1');
         const accountNumber = 'ACC-12345';
-        const chargeId = makeUUID('charge-1');
-        const transactionId = makeUUID('tx-1');
-        const documentId = makeUUID('doc-1');
+        const chargeId = makeUUID('charge', 'charge-1');
+        const transactionId = makeUUID('transaction', 'tx-1');
+        const documentId = makeUUID('document', 'doc-1');
 
         const fixture: Fixture = {
           businesses: {
@@ -216,7 +218,7 @@ describe('Fixture Loader', () => {
 
     it('should handle fixture with only some sections populated', () =>
       withTestTransaction(pool, async client => {
-        const businessId = makeUUID('lonely-business');
+        const businessId = makeUUID('business', 'lonely-business');
 
         const fixture: Fixture = {
           businesses: {
@@ -238,8 +240,8 @@ describe('Fixture Loader', () => {
 
     it('should throw validation error before insertion for invalid FK references', () =>
       withTestTransaction(pool, async client => {
-        const businessId = makeUUID('test-biz');
-        const invalidChargeId = makeUUID('invalid-charge');
+        const businessId = makeUUID('business', 'test-biz');
+        const invalidChargeId = makeUUID('charge', 'invalid-charge');
 
         const fixture: Fixture = {
           businesses: {
@@ -250,7 +252,7 @@ describe('Fixture Loader', () => {
               createCharge(
                 {
                   owner_id: 'non-existent-owner', // Invalid FK reference
-                  tax_category_id: makeUUID('tax-cat'),
+                  tax_category_id: makeUUID('tax-category', 'tax-cat'),
                 },
                 { id: invalidChargeId },
               ),
@@ -269,7 +271,7 @@ describe('Fixture Loader', () => {
             charges: [
               createCharge({
                 owner_id: 'non-existent-owner',
-                tax_category_id: makeUUID('tax-cat'),
+                tax_category_id: makeUUID('tax-category', 'tax-cat'),
               }),
             ],
           },
@@ -288,7 +290,7 @@ describe('Fixture Loader', () => {
 
     it('should validate fixture before insertion', () =>
       withTestTransaction(pool, async client => {
-        const chargeId = makeUUID('orphan-charge');
+        const chargeId = makeUUID('charge', 'orphan-charge');
 
         const fixture: Fixture = {
           // Missing businesses and tax categories
@@ -296,8 +298,8 @@ describe('Fixture Loader', () => {
             charges: [
               createCharge(
                 {
-                  owner_id: makeUUID('missing-owner'),
-                  tax_category_id: makeUUID('missing-tax'),
+                  owner_id: makeUUID('business', 'missing-owner'),
+                  tax_category_id: makeUUID('tax-category', 'missing-tax'),
                 },
                 { id: chargeId },
               ),
@@ -310,12 +312,12 @@ describe('Fixture Loader', () => {
 
     it('should insert multiple entities in correct order', () =>
       withTestTransaction(pool, async client => {
-        const biz1 = makeUUID('biz-1');
-        const biz2 = makeUUID('biz-2');
-        const tax1 = makeUUID('tax-1');
-        const tax2 = makeUUID('tax-2');
-        const charge1 = makeUUID('charge-1');
-        const charge2 = makeUUID('charge-2');
+        const biz1 = makeUUID('business', 'biz-1');
+        const biz2 = makeUUID('business', 'biz-2');
+        const tax1 = makeUUID('tax-category', 'tax-1');
+        const tax2 = makeUUID('tax-category', 'tax-2');
+        const charge1 = makeUUID('charge', 'charge-1');
+        const charge2 = makeUUID('charge', 'charge-2');
 
         const fixture: Fixture = {
           businesses: {
@@ -360,7 +362,7 @@ describe('Fixture Loader', () => {
 
     it('should handle ON CONFLICT for idempotent insertion', () =>
       withTestTransaction(pool, async client => {
-        const businessId = makeUUID('duplicate-biz');
+        const businessId = makeUUID('business', 'duplicate-biz');
 
         const fixture: Fixture = {
           businesses: {
@@ -392,11 +394,11 @@ describe('Fixture Loader', () => {
 
     it('should insert transactions with generated source_id', () =>
       withTestTransaction(pool, async client => {
-        const businessId = makeUUID('biz-tx');
-        const taxCatId = makeUUID('tax-tx');
-        const chargeId = makeUUID('charge-tx');
+        const businessId = makeUUID('business', 'biz-tx');
+        const taxCatId = makeUUID('tax-category', 'tax-tx');
+        const chargeId = makeUUID('charge', 'charge-tx');
         const accountNumber = 'ACC-TX-001';
-        const transactionId = makeUUID('tx-with-source');
+        const transactionId = makeUUID('transaction', 'tx-with-source');
 
         const fixture: Fixture = {
           businesses: {

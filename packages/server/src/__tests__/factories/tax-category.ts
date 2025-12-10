@@ -1,5 +1,5 @@
 import type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
-import { makeUUID } from './ids.js';
+import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 
 /**
  * Tax category factory for test fixtures
@@ -17,17 +17,17 @@ import { makeUUID } from './ids.js';
  * @example
  * ```typescript
  * // Minimal tax category
- * const category = createTaxCategory({ id: makeUUID('expense-general') });
+ * const category = createTaxCategory({ id: makeUUID('tax-category', 'expense-general') });
  *
  * // Tax category with Hashavshevet integration
  * const integrated = createTaxCategory({
- *   id: makeUUID('expense-office'),
+ *   id: makeUUID('tax-category', 'expense-office'),
  *   hashavshevetName: 'משרדיות',
  * });
  *
  * // Tax-excluded category
  * const excluded = createTaxCategory({
- *   id: makeUUID('income-exempt'),
+ *   id: makeUUID('tax-category', 'income-exempt'),
  *   taxExcluded: true,
  * });
  * ```
@@ -35,8 +35,9 @@ import { makeUUID } from './ids.js';
 export function createTaxCategory(
   overrides?: Partial<IInsertTaxCategoryParams>,
 ): IInsertTaxCategoryParams {
+  const defaultId = makeUUIDLegacy();
   return {
-    id: makeUUID(),
+    id: defaultId,
     hashavshevetName: null,
     taxExcluded: false,
     ...overrides,

@@ -10,7 +10,7 @@
  * @see packages/migrations/src/actions/2024-01-29T13-15-23.initial.ts (transactions table)
  */
 
-import { makeUUID } from './ids.js';
+import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { formatNumeric } from './money.js';
 
 /**
@@ -61,8 +61,8 @@ export interface TransactionInsertParams {
  * ```typescript
  * // Minimal transaction with required fields
  * const transaction = createTransaction({
- *   charge_id: makeUUID('charge-1'),
- *   business_id: makeUUID('supplier-1'),
+ *   charge_id: makeUUID('charge', 'charge-1'),
+ *   business_id: makeUUID('business', 'supplier-1'),
  *   amount: '-100.50',
  *   currency: 'ILS',
  *   event_date: '2024-01-15',
@@ -70,8 +70,8 @@ export interface TransactionInsertParams {
  *
  * // Transaction with optional is_fee flag
  * const feeTransaction = createTransaction({
- *   charge_id: makeUUID('charge-1'),
- *   business_id: makeUUID('bank'),
+ *   charge_id: makeUUID('charge', 'charge-1'),
+ *   business_id: makeUUID('business', 'bank'),
  *   amount: '-5.00',
  *   currency: 'USD',
  *   event_date: '2024-01-15',
@@ -81,14 +81,14 @@ export interface TransactionInsertParams {
  * // Transaction with full overrides
  * const customTransaction = createTransaction(
  *   {
- *     charge_id: makeUUID('charge-1'),
- *     business_id: makeUUID('supplier-1'),
+ *     charge_id: makeUUID('charge', 'charge-1'),
+ *     business_id: makeUUID('business', 'supplier-1'),
  *     amount: '500.00',
  *     currency: 'EUR',
  *     event_date: '2024-03-10',
  *   },
  *   {
- *     account_id: makeUUID('eur-account'),
+ *     account_id: makeUUID('account', 'eur-account'),
  *     source_description: 'Invoice payment EUR',
  *     debit_date: '2024-03-12',
  *     current_balance: '15000.00',
@@ -108,10 +108,10 @@ export function createTransaction(
   overrides?: Partial<TransactionInsertParams>,
 ): TransactionInsertParams {
   return {
-    id: makeUUID(),
-    account_id: makeUUID('default-account'),
+    id: makeUUIDLegacy(),
+    account_id: makeUUID('account', 'default-account'),
     charge_id: params.charge_id,
-    source_id: makeUUID('source-raw-tx'),
+    source_id: makeUUID('transaction-source', 'source-raw-tx'),
     source_description: null,
     currency: params.currency,
     event_date:

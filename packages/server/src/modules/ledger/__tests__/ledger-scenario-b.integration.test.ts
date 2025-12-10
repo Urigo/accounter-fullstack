@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { TestDatabase } from '../../../__tests__/helpers/db-setup.js';
 import { insertFixture } from '../../../__tests__/helpers/fixture-loader.js';
 import { expenseScenarioB } from '../../../__tests__/fixtures/expenses/expense-scenario-b.js';
-import { makeUUID } from '../../../__tests__/factories/ids.js';
+import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
 import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { mockExchangeRate } from '../../../__tests__/helpers/exchange-mock.js';
@@ -48,7 +48,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
   afterEach(async () => {
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-consulting-services');
+      const chargeId = makeUUID('charge', 'charge-consulting-services');
       await client.query(
         `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
         [chargeId],
@@ -70,7 +70,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       await client.query(
         `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')} 
          WHERE tax_category_id IN ($1, $2)`,
-        [makeUUID('expense-consulting'), makeUUID('usd-account-tax-category')],
+        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
@@ -78,19 +78,19 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       );
       await client.query(
         `DELETE FROM ${qualifyTable('tax_categories')} WHERE id IN ($1, $2)`,
-        [makeUUID('expense-consulting'), makeUUID('usd-account-tax-category')],
+        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('businesses')} WHERE id IN ($1, $2)`,
-        [makeUUID('admin-business-usd'), makeUUID('supplier-us-vendor-llc')],
+        [makeUUID('business', 'admin-business-usd'), makeUUID('business', 'supplier-us-vendor-llc')],
       );
       await client.query(
         `DELETE FROM ${qualifyTable('financial_entities')} WHERE id IN ($1, $2, $3, $4)`,
         [
-          makeUUID('admin-business-usd'),
-          makeUUID('supplier-us-vendor-llc'),
-          makeUUID('expense-consulting'),
-          makeUUID('usd-account-tax-category'),
+          makeUUID('business', 'admin-business-usd'),
+          makeUUID('business', 'supplier-us-vendor-llc'),
+          makeUUID('tax-category', 'expense-consulting'),
+          makeUUID('tax-category', 'usd-account-tax-category'),
         ],
       );
     } finally {
@@ -106,7 +106,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
 
       await insertFixture(insertClient, expenseScenarioB);
 
-      const chargeId = makeUUID('charge-consulting-services');
+      const chargeId = makeUUID('charge', 'charge-consulting-services');
 
       // Verify inserts within the same transaction
       const chargeResult = await insertClient.query(
@@ -143,7 +143,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-consulting-services');
+      const chargeId = makeUUID('charge', 'charge-consulting-services');
       const chargeResult = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
         [chargeId],
@@ -200,8 +200,8 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       assertForeignExpenseScenario(ledgerResult.rows as any, {
         chargeId: charge.id,
         ownerId: charge.owner_id, // Use actual charge owner id
-        expenseEntity: makeUUID('expense-consulting'),
-        bankEntity: makeUUID('usd-account-tax-category'),
+        expenseEntity: makeUUID('tax-category', 'expense-consulting'),
+        bankEntity: makeUUID('tax-category', 'usd-account-tax-category'),
         expectedCurrency: Currency.Usd,
         expectedForeignAmount: ledgerExpectation?.foreignAmount || 200.0,
         expectedRate: ledgerExpectation?.exchangeRate || 3.5,
@@ -222,7 +222,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
   it('should be idempotent on repeated foreign ledger generation (no duplicate records)', async () => {
     const client = await db.getPool().connect();
     try {
-      const chargeId = makeUUID('charge-consulting-services');
+      const chargeId = makeUUID('charge', 'charge-consulting-services');
       // Ensure fixture inserted if absent
       const existingCharge = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -310,14 +310,14 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     const accountMapping = expenseScenarioB.accountTaxCategories?.mappings[0];
     expect(accountMapping?.accountNumber).toBe('USD-ACCOUNT-001');
     expect(accountMapping?.currency).toBe(Currency.Usd);
-    expect(accountMapping?.taxCategoryId).toBe(makeUUID('usd-account-tax-category'));
+    expect(accountMapping?.taxCategoryId).toBe(makeUUID('tax-category', 'usd-account-tax-category'));
 
     // Verify expectations are defined
     expect(expenseScenarioB.expectations).toBeDefined();
     expect(expenseScenarioB.expectations?.ledger).toHaveLength(1);
 
     const ledgerExpectation = expenseScenarioB.expectations?.ledger?.[0];
-    expect(ledgerExpectation?.chargeId).toBe(makeUUID('charge-consulting-services'));
+    expect(ledgerExpectation?.chargeId).toBe(makeUUID('charge', 'charge-consulting-services'));
     expect(ledgerExpectation?.recordCount).toBe(2);
     expect(ledgerExpectation?.balanced).toBe(true);
     expect(ledgerExpectation?.totalDebitLocal).toBe(1400.0);
@@ -331,11 +331,11 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
 
   it('should create deterministic UUIDs for reproducible tests', () => {
     // Verify all IDs are deterministic and match expected values
-    const adminBusinessId = makeUUID('admin-business-usd');
-    const supplierId = makeUUID('supplier-us-vendor-llc');
-    const chargeId = makeUUID('charge-consulting-services');
-    const transactionId = makeUUID('transaction-consulting-payment');
-    const documentId = makeUUID('document-consulting-invoice');
+    const adminBusinessId = makeUUID('business', 'admin-business-usd');
+    const supplierId = makeUUID('business', 'supplier-us-vendor-llc');
+    const chargeId = makeUUID('charge', 'charge-consulting-services');
+    const transactionId = makeUUID('transaction', 'transaction-consulting-payment');
+    const documentId = makeUUID('document', 'document-consulting-invoice');
 
     expect(adminBusinessId).toBe(expenseScenarioB.businesses?.businesses[0]?.id);
     expect(supplierId).toBe(expenseScenarioB.businesses?.businesses[1]?.id);
