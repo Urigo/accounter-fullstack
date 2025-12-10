@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { TestDatabase, LATEST_MIGRATION_NAME, isPoolHealthy } from './helpers/db-setup.js';
+import { TestDatabase, isPoolHealthy } from './helpers/db-setup.js';
+import { assertLatestMigrationApplied } from './helpers/migration-verification.js';
 import { seedAdminCore } from '../../scripts/seed-admin-context.js';
 import { qualifyTable } from './helpers/test-db-config.js';
 
@@ -32,11 +33,7 @@ describe('DB Test Harness Bootstrap', () => {
 
   it('is at latest migration (schema ready)', async () =>
     db.withTransaction(async client => {
-      const result = await client.query(
-        `SELECT 1 FROM ${qualifyTable('migration')} WHERE name = $1 LIMIT 1`,
-        [LATEST_MIGRATION_NAME],
-      );
-      expect(result.rowCount).toBe(1);
+      await assertLatestMigrationApplied(client);
     }));
 
   it('has admin business after seeding', async () =>
