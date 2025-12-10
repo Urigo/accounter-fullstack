@@ -26,7 +26,7 @@ import {
   getChargeTransactionsMeta,
 } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
-import { mergeChargesExecutor } from '../helpers/merge-charges.hepler.js';
+import { mergeChargesExecutor } from '../helpers/merge-charges.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
 import type {

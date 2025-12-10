@@ -20,7 +20,7 @@ vi.mock('../../../modules/transactions/providers/transactions.provider.js', () =
   TransactionsProvider: class {},
 }));
 
-vi.mock('../../../modules/charges/helpers/merge-charges.hepler.js', () => ({
+vi.mock('../../../modules/charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 
@@ -31,7 +31,7 @@ vi.mock('../../../shared/helpers/index.js', () => ({
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
 const { mergeChargesExecutor } = await import(
-  '../../../modules/charges/helpers/merge-charges.hepler.js'
+  '../../charges/helpers/merge-charges.helper.js'
 );
 
 type Injector = {

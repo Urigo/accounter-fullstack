@@ -1,11 +1,11 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
-import { TaxCategoriesProvider } from '../../../modules/financial-entities/providers/tax-categories.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import type {
   IGetAllTaxCategoriesResult,
   IGetBusinessesByIdsResult,
-} from '../../../modules/financial-entities/types.js';
+} from '../../financial-entities/types.js';
 
 export function fetchTaxCategory(
   injector: Injector,
