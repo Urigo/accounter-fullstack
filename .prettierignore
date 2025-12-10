@@ -21,6 +21,7 @@ docker/
 yarn.lock
 
 .bob/
+packages/old-accounter/
 
 .changeset/
 CHANGELOG.md
