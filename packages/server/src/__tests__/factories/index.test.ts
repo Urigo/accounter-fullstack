@@ -39,7 +39,7 @@ describe('Factory Integration', () => {
     const supplierId = makeUUID('business', 'supplier-local');
     const supplier = createBusiness({
       id: supplierId,
-      hebrewName: 'ספק מקומי',
+      name: 'Local Supplier',
     });
 
     const taxCategoryId = makeUUID('tax-category', 'tax-expense');
@@ -106,8 +106,8 @@ describe('Factory Integration', () => {
 
   it('should create deterministic UUIDs with seeds', () => {
     // Create same entities twice with same seeds
-    const business1 = createBusiness({ id: makeUUID('business', 'biz-1') });
-    const business2 = createBusiness({ id: makeUUID('business', 'biz-1') });
+    const business1 = createBusiness({ id: makeUUID('business', 'biz-1'), name: 'Business 1' });
+    const business2 = createBusiness({ id: makeUUID('business', 'biz-1'), name: 'Business 1' });
 
     expect(business1.id).toBe(business2.id);
   });
@@ -171,21 +171,21 @@ describe('Factory Integration', () => {
 
   it('should support partial overrides across all factories', () => {
     const business = createBusiness({
-      hebrewName: 'עסק',
+      name: 'Business',
     });
 
     const taxCategory = createTaxCategory({
-      hashavshevetName: 'Category 1',
+      name: 'Category 1',
     });
 
     const account = createFinancialAccount({
       accountNumber: '123456',
     });
 
-    expect(business.hebrewName).toBe('עסק');
+    expect(business.name).toBe('Business');
     expect(business.id).toBeDefined();
 
-    expect(taxCategory.hashavshevetName).toBe('Category 1');
+    expect(taxCategory.name).toBe('Category 1');
     expect(taxCategory.id).toBeDefined();
 
     expect(account.accountNumber).toBe('123456');

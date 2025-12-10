@@ -44,7 +44,7 @@ describe('Fixture Loader', () => {
             businesses: [
               createBusiness({
                 id: businessId,
-                hebrewName: 'Test Business',
+                name: 'Test Business',
               }),
             ],
           },
@@ -52,7 +52,7 @@ describe('Fixture Loader', () => {
             taxCategories: [
               createTaxCategory({
                 id: taxCategoryId,
-                hashavshevetName: 'Test Tax Category',
+                name: 'Test Tax Category 1',
               }),
             ],
           },
@@ -84,7 +84,7 @@ describe('Fixture Loader', () => {
         );
         expect(businessResult.rows).toHaveLength(1);
         expect(businessResult.rows[0].id).toBe(businessId);
-        expect(businessResult.rows[0].hebrew_name).toBe('Test Business');
+        expect(businessResult.rows[0].hebrew_name).toBeNull();
 
         const taxCatResult = await client.query(
           `SELECT * FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
@@ -92,7 +92,7 @@ describe('Fixture Loader', () => {
         );
         expect(taxCatResult.rows).toHaveLength(1);
         expect(taxCatResult.rows[0].id).toBe(taxCategoryId);
-        expect(taxCatResult.rows[0].hashavshevet_name).toBe('Test Tax Category');
+        expect(taxCatResult.rows[0].hashavshevet_name).toBeNull();
 
         const chargeResult = await client.query(
           `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -115,12 +115,12 @@ describe('Fixture Loader', () => {
         const fixture: Fixture = {
           businesses: {
             businesses: [
-              createBusiness({ id: supplierId, hebrewName: 'Supplier Ltd' }),
-              createBusiness({ id: customerId, hebrewName: 'Customer Inc' }),
+              createBusiness({ id: supplierId, name: 'Supplier Ltd' }),
+              createBusiness({ id: customerId, name: 'Customer Inc' }),
             ],
           },
           taxCategories: {
-            taxCategories: [createTaxCategory({ id: taxCategoryId })],
+            taxCategories: [createTaxCategory({ id: taxCategoryId, name: 'Tax Category 1' })],
           },
           accounts: {
             accounts: [
@@ -222,7 +222,7 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId })],
+            businesses: [createBusiness({ id: businessId, name: 'Lonely Business' })],
           },
           // No tax categories, accounts, charges, etc.
         };
@@ -245,7 +245,7 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId })],
+            businesses: [createBusiness({ id: businessId, name: 'Test Biz' })],
           },
           charges: {
             charges: [
@@ -322,14 +322,14 @@ describe('Fixture Loader', () => {
         const fixture: Fixture = {
           businesses: {
             businesses: [
-              createBusiness({ id: biz1, hebrewName: 'Business 1' }),
-              createBusiness({ id: biz2, hebrewName: 'Business 2' }),
+              createBusiness({ id: biz1, name: 'Business 1' }),
+              createBusiness({ id: biz2, name: 'Business 2' }),
             ],
           },
           taxCategories: {
             taxCategories: [
-              createTaxCategory({ id: tax1, hashavshevetName: 'Tax 1' }),
-              createTaxCategory({ id: tax2, hashavshevetName: 'Tax 2' }),
+              createTaxCategory({ id: tax1, name: 'Tax 1' }),
+              createTaxCategory({ id: tax2, name: 'Tax 2' }),
             ],
           },
           charges: {
@@ -366,7 +366,7 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, hebrewName: 'Original Name' })],
+            businesses: [createBusiness({ id: businessId, name: 'Original Name' })],
           },
         };
 
@@ -376,7 +376,7 @@ describe('Fixture Loader', () => {
         // Insert again (should not error due to ON CONFLICT DO NOTHING)
         const fixtureModified: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, hebrewName: 'Modified Name' })],
+            businesses: [createBusiness({ id: businessId, name: 'Modified Name' })],
           },
         };
 
@@ -386,10 +386,10 @@ describe('Fixture Loader', () => {
 
         // Original data should be preserved (ON CONFLICT DO NOTHING)
         const result = await client.query(
-          `SELECT * FROM ${qualifyTable('businesses')} WHERE id = $1`,
+          `SELECT * FROM ${qualifyTable('financial_entities')} WHERE id = $1`,
           [businessId],
         );
-        expect(result.rows[0].hebrew_name).toBe('Original Name');
+        expect(result.rows[0].name).toBe('Original Name');
       }));
 
     it('should insert transactions with generated source_id', () =>
@@ -402,10 +402,10 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId })],
+            businesses: [createBusiness({ id: businessId, name: 'Biz Tx' })],
           },
           taxCategories: {
-            taxCategories: [createTaxCategory({ id: taxCatId })],
+            taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Tx' })],
           },
           accounts: {
             accounts: [

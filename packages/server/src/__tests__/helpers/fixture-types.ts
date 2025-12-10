@@ -5,16 +5,18 @@
  * database state for integration tests. Each fixture represents a complete
  * scenario with all related entities (businesses, charges, transactions, documents, etc.).
  *
+ * **Type Independence**: These types are decoupled from pgtyped-generated database types
+ * to maintain test independence and flexibility. Fixtures define their own minimal interfaces
+ * that are converted to database-specific structures by the fixture-loader.
+ *
  * @see packages/server/src/__tests__/helpers/fixture-validation.ts for validation logic
  * @see packages/server/src/__tests__/helpers/fixture-loader.ts for insertion logic
  */
 
-import type { IInsertBusinessesParams } from '../../modules/financial-entities/__generated__/businesses.types.js';
-import type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
-import type { IInsertFinancialAccountsParams } from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
 import type { ChargeInsertParams } from '../factories/charge.js';
 import type { TransactionInsertParams } from '../factories/transaction.js';
 import type { DocumentInsertParams } from '../factories/document.js';
+import type { financial_account_type } from '../../modules/transactions/types.js';
 
 /**
  * Business entities in a fixture
@@ -29,7 +31,23 @@ export interface FixtureBusinesses {
    * Each business must have a unique id. The id will be referenced by
    * charges (owner_id), transactions (business_id), and documents (creditor_id/debtor_id).
    */
-  businesses: IInsertBusinessesParams['businesses'];
+  businesses: Array<{
+    id: string,
+    name: string,
+    hebrewName?: string | null,
+    address?: string | null,
+    email?: string | null,
+    website?: string | null,
+    phoneNumber?: string | null,
+    governmentId?: string | null,
+    exemptDealer?: boolean | null,
+    suggestions?: object | null,
+    optionalVat?: boolean | null,
+    country?: string | null,
+    pcn874RecordTypeOverride?: unknown | null,
+    isReceiptEnough?: boolean | null,
+    isDocumentsOptional?: boolean | null;
+  }>;
 }
 
 /**
@@ -44,7 +62,12 @@ export interface FixtureTaxCategories {
    * Each tax category must have a unique id. The id will be referenced by
    * charges (tax_category_id) and financial accounts.
    */
-  taxCategories: IInsertTaxCategoryParams[];
+  taxCategories: Array<{
+    id: string;
+    name: string;
+    hashavshevetName?: string | null;
+    taxExcluded?: boolean | null;
+  }>;
 }
 
 /**
@@ -60,7 +83,12 @@ export interface FixtureAccounts {
    * Each account must have a unique id. The id will be referenced by
    * transactions (account_id).
    */
-  accounts: IInsertFinancialAccountsParams['bankAccounts'];
+  accounts: Array<{
+      accountNumber?: string | null,
+      name?: string | null,
+      privateBusiness?: string | null,
+      ownerId?: string | null,
+      type?: financial_account_type | null}>;
 }
 
 /**
@@ -217,7 +245,7 @@ export interface LedgerExpectation {
  * const expenseScenarioA: Fixture = {
  *   businesses: {
  *     businesses: [
- *       createBusiness({ id: makeUUID('supplier-1'), hebrewName: 'Local Supplier Ltd' }),
+ *       createBusiness({ id: makeUUID('business', 'supplier-1'), hebrewName: 'Local Supplier Ltd' }),
  *     ],
  *   },
  *   charges: {
@@ -228,8 +256,8 @@ export interface LedgerExpectation {
  *   transactions: {
  *     transactions: [
  *       createTransaction({
- *         charge_id: makeUUID('charge-1'),
- *         business_id: makeUUID('supplier-1'),
+ *         charge_id: makeUUID('charge', 'charge-1'),
+ *         business_id: makeUUID('business', 'supplier-1'),
  *         amount: '-1000.00',
  *         currency: 'ILS',
  *         event_date: '2024-01-15',
@@ -239,8 +267,8 @@ export interface LedgerExpectation {
  *   documents: {
  *     documents: [
  *       createDocument({
- *         charge_id: makeUUID('charge-1'),
- *         creditor_id: makeUUID('supplier-1'),
+ *         charge_id: makeUUID('charge', 'charge-1'),
+ *         creditor_id: makeUUID('business', 'supplier-1'),
  *         debtor_id: ADMIN_ID,
  *         type: 'RECEIPT',
  *         total_amount: 1000.0,
@@ -252,7 +280,7 @@ export interface LedgerExpectation {
  *   expectations: {
  *     ledger: [
  *       {
- *         chargeId: makeUUID('charge-1'),
+ *         chargeId: makeUUID('charge', 'charge-1'),
  *         recordCount: 2,
  *         debitEntities: [EXPENSE_TAX_CATEGORY_ID],
  *         creditEntities: [BANK_TAX_CATEGORY_ID],

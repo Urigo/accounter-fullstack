@@ -148,12 +148,13 @@ export async function insertFixture(
     await executeSavepointSection('businesses', async () => {
       for (const business of fixture.businesses!.businesses) {
         // Insert financial entity first (type='business')
+        // Field mapping: business.name used for display (required); hebrewName is legacy/optional
         const entityResult = await client.query(
           `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type)
            VALUES ($1, $2, 'business')
            ON CONFLICT (id) DO NOTHING
            RETURNING id`,
-          [business.id, business.hebrewName || business.id],
+          [business.id, business.name || business.id],
         );
 
         // Insert business details - note: vat_number column maps to governmentId field
