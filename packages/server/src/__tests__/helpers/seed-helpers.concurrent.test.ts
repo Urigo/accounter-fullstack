@@ -1,18 +1,18 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import pg from 'pg';
 import { ensureFinancialEntity } from './seed-helpers.js';
-import { testDbConfig } from './test-db-config.js';
 import { withConcurrentTransactions } from './test-transaction.js';
+import { TestDatabase } from './db-setup.js';
 
 describe('ensureFinancialEntity - Concurrent Access', () => {
-  let pool: pg.Pool;
+  let db: TestDatabase;
 
   beforeAll(async () => {
-    pool = new pg.Pool(testDbConfig);
+    db = new TestDatabase();
+    await db.connect();
   });
 
   afterAll(async () => {
-    await pool.end();
+    await db.close();
   });
 
   it('should handle concurrent inserts of same entity gracefully', async () => {
@@ -22,7 +22,7 @@ describe('ensureFinancialEntity - Concurrent Access', () => {
     };
 
     // Two separate transactions attempting to create the same entity
-    const [result1, result2] = await withConcurrentTransactions(pool, [
+    const [result1, result2] = await withConcurrentTransactions(db.getPool(), [
       async client => ensureFinancialEntity(client, params),
       async client => ensureFinancialEntity(client, params),
     ]);
@@ -37,7 +37,7 @@ describe('ensureFinancialEntity - Concurrent Access', () => {
   });
 
   it('should handle concurrent inserts of different entities', async () => {
-    const [result1, result2, result3] = await withConcurrentTransactions(pool, [
+    const [result1, result2, result3] = await withConcurrentTransactions(db.getPool(), [
       async client =>
         ensureFinancialEntity(client, {
           name: 'Concurrent Entity A',
@@ -64,8 +64,8 @@ describe('ensureFinancialEntity - Concurrent Access', () => {
   it('should handle concurrent creation with separate namespaces', async () => {
     // Test that concurrent operations in separate transactions don't interfere
     const timestamp = Date.now();
-    
-    const [result1, result2, result3] = await withConcurrentTransactions(pool, [
+
+    const [result1, result2, result3] = await withConcurrentTransactions(db.getPool(), [
       async client =>
         ensureFinancialEntity(client, {
           name: `Namespace A - ${timestamp}`,
@@ -87,7 +87,7 @@ describe('ensureFinancialEntity - Concurrent Access', () => {
     expect(result1.id).toBeDefined();
     expect(result2.id).toBeDefined();
     expect(result3.id).toBeDefined();
-    
+
     // All should have unique IDs
     expect(result1.id).not.toBe(result2.id);
     expect(result2.id).not.toBe(result3.id);
