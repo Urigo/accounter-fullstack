@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import type {
-  Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
@@ -13,6 +12,7 @@ import { ledgerEntryFromMainTransaction } from '../../../../modules/ledger/helpe
 import { splitFeeTransactions } from '../../../../modules/ledger/helpers/fee-transactions.js';
 import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/misc-expenses-ledger.helper.js';
 import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import {

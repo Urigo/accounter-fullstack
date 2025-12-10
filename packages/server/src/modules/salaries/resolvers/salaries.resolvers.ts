@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { Resolvers } from '../../../__generated__/types.js';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { ChargesProvider } from '../../../modules/charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';

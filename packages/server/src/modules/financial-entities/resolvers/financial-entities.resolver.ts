@@ -1,4 +1,4 @@
-import { Resolvers } from '../../../__generated__/types.js';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';

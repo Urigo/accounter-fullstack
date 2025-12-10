@@ -1,18 +1,18 @@
 import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import {
-  Currency,
-  type AddBusinessTripTravelAndSubsistenceExpenseInput,
-  type BusinessTripAttendeeStayInput,
-  type MutationCreditShareholdersBusinessTripTravelAndSubsistenceArgs,
-  type RequireFields,
-  type Resolver,
-  type ResolverTypeWrapper,
+import type {
+  AddBusinessTripTravelAndSubsistenceExpenseInput,
+  BusinessTripAttendeeStayInput,
+  MutationCreditShareholdersBusinessTripTravelAndSubsistenceArgs,
+  RequireFields,
+  Resolver,
+  ResolverTypeWrapper,
 } from '../../../__generated__/types.js';
 import { ExchangeProvider } from '../../../modules/exchange-rates/providers/exchange.provider.js';
 import { EmployeesProvider } from '../../../modules/salaries/providers/employees.provider.js';
 import type { IGetEmployeesByIdResult } from '../../../modules/salaries/types.js';
+import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import {
   getAttendeeTravelAndSubsistenceMaxTax,

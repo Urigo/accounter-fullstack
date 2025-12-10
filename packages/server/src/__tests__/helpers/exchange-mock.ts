@@ -1,4 +1,4 @@
-import type { Currency } from '../../__generated__/types.js';
+import type { Currency } from '../../shared/enums.js';
 import type { ExchangeProvider } from '../../modules/exchange-rates/providers/exchange.provider.js';
 
 /**

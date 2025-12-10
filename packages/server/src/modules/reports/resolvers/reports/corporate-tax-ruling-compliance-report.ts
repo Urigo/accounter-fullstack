@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import {
+import type {
   CorporateTaxRule,
   CorporateTaxRulingComplianceReportDifferences,
   QueryCorporateTaxRulingComplianceReportArgs,

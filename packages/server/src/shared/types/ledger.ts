@@ -1,6 +1,7 @@
-import type { Currency, FinancialAmount } from '../../__generated__/types.js';
+import type { FinancialAmount } from '../../__generated__/types.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../../modules/ledger/types.js';
+import type { Currency } from '../../shared/enums.js';
 
 export interface EntryForFinancialAccount {
   creditAccount: string | null;

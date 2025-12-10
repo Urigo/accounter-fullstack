@@ -1,5 +1,4 @@
-import {
-  Currency,
+import type {
   QueryBusinessTransactionsSumFromLedgerRecordsArgs,
   ResolverFn,
   ResolversTypes,
@@ -8,6 +7,7 @@ import { ChargesProvider } from '../../../modules/charges/providers/charges.prov
 import { LedgerProvider } from '../../../modules/ledger/providers/ledger.provider.js';
 import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '../../../modules/ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { REVALUATION_LEDGER_DESCRIPTION } from '../../../modules/ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
+import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
 import { handleBusinessLedgerRecord } from '../helpers/business-transactions.helper.js';

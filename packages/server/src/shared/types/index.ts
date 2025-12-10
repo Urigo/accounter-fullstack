@@ -1,12 +1,9 @@
 import type { YogaInitialContext } from 'graphql-yoga';
 import pg from 'pg';
-import type {
-  CorporateTaxRulingComplianceReport,
-  Currency,
-  Role,
-} from '../../__generated__/types.js';
+import type { CorporateTaxRulingComplianceReport, Role } from '../../__generated__/types.js';
 import type { env } from '../../environment.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
+import type { Currency } from '../../shared/enums.js';
 
 export type Environment = typeof env;
 

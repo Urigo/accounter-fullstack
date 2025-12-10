@@ -1,5 +1,4 @@
 import type {
-  Currency,
   Maybe,
   ResolverFn,
   ResolversParentTypes,
@@ -16,6 +15,7 @@ import { generateMiscExpensesLedger } from '../../../../modules/ledger/helpers/m
 import { LedgerProvider } from '../../../../modules/ledger/providers/ledger.provider.js';
 import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../../modules/transactions/types.js';
+import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   convertLedgerRecordToProto,

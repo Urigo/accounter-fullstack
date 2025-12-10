@@ -1,6 +1,5 @@
 import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
-import type { Currency } from '../__generated__/types.js';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
@@ -22,6 +21,7 @@ import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-ex
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
+import type { Currency } from '../shared/enums.js';
 
 export type ModuleContextLike = {
   injector: Injector;

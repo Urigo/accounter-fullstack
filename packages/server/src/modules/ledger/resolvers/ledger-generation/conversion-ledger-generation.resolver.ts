@@ -1,5 +1,4 @@
-import {
-  Currency,
+import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
@@ -8,6 +7,7 @@ import {
 import { ExchangeProvider } from '../../../../modules/exchange-rates/providers/exchange.provider.js';
 import { storeInitialGeneratedRecords } from '../../../../modules/ledger/helpers/ledgrer-storage.helper.js';
 import { TransactionsProvider } from '../../../../modules/transactions/providers/transactions.provider.js';
+import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
 import {

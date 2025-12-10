@@ -1,5 +1,5 @@
 import { lastDayOfMonth } from 'date-fns';
-import {
+import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,

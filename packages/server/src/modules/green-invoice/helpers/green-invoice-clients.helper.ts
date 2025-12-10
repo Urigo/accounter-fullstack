@@ -3,7 +3,7 @@ import {
   _DOLLAR_defs_addClientRequest_Input,
   _DOLLAR_defs_updateClientRequest_Input,
 } from '@accounter/green-invoice-graphql';
-import { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
+import type { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
 import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
 import { CountryCode } from '../../../modules/countries/types.js';
 import { validateClientIntegrations } from '../../../modules/financial-entities/helpers/clients.helper.js';

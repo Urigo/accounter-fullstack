@@ -2,7 +2,6 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type {
-  Currency,
   GreenInvoiceIncome,
   GreenInvoiceLinkType,
   GreenInvoicePayment,
@@ -23,7 +22,7 @@ import { FinancialBankAccountsProvider } from '../../../modules/financial-accoun
 import type { IGetFinancialBankAccountsByIdsResult } from '../../../modules/financial-accounts/types.js';
 import { BusinessesProvider } from '../../../modules/financial-entities/providers/businesses.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../modules/transactions/types.js';
-import { DocumentType } from '../../../shared/enums.js';
+import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import {

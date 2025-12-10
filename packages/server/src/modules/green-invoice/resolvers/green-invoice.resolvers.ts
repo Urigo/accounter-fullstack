@@ -1,7 +1,7 @@
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
-import { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
+import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { GreenInvoiceClientProvider } from '../../../modules/app-providers/green-invoice-client.js';
 import {
   getChargeBusinesses,
