@@ -28,13 +28,13 @@ export async function calculateTotalAmount(
     getChargeDocumentsMeta(chargeId, injector),
   ]);
 
-  if (charge.type === 'PAYROLL' && transactionsAmount != null) {
+  if (charge.type === 'PAYROLL' && transactionsAmount) {
     return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
   }
-  if (documentsAmount != null && documentsCurrency) {
+  if (documentsAmount && documentsCurrency) {
     return formatFinancialAmount(documentsAmount, documentsCurrency);
   }
-  if (transactionsAmount != null && transactionsCurrency) {
+  if (transactionsAmount && transactionsCurrency) {
     return formatFinancialAmount(transactionsAmount, transactionsCurrency);
   }
   return null;
