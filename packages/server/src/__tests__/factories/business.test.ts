@@ -42,7 +42,7 @@ describe('Factory: Business', () => {
       const customId = makeUUID('business', 'custom-business');
       const business = createBusiness({
         id: customId,
-        hebrewName: 'עסק ישראלי',
+        name: 'עסק ישראלי',
         country: CountryCode.Israel,
         exemptDealer: true,
         isReceiptEnough: true,
@@ -50,7 +50,7 @@ describe('Factory: Business', () => {
       });
 
       expect(business.id).toBe(customId);
-      expect(business.hebrewName).toBe('עסק ישראלי');
+      expect(business.name).toBe('עסק ישראלי');
         expect(business.country).toBe(CountryCode.Israel);
       expect(business.exemptDealer).toBe(true);
       expect(business.isReceiptEnough).toBe(true);
@@ -59,10 +59,10 @@ describe('Factory: Business', () => {
 
     it('should allow partial overrides', () => {
       const business = createBusiness({
-        hebrewName: 'ספק מקומי',
+        name: 'ספק מקומי',
       });
 
-      expect(business.hebrewName).toBe('ספק מקומי');
+      expect(business.name).toBe('ספק מקומי');
       expect(business.id).toBeDefined();
       expect(business.exemptDealer).toBe(false);
         expect(business.country).toBe(CountryCode.Israel); // Default value, not null

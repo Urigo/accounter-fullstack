@@ -68,13 +68,13 @@ export const expenseScenarioB: Fixture = {
       // Admin business (owner of the expense)
       createBusiness({
         id: makeUUID('business', 'admin-business-usd'),
-        hebrewName: 'חשבונאות ניהול',
+        name: 'Accounter Admin',
         country: CountryCode.Israel,
       }),
       // US Supplier business
       createBusiness({
         id: makeUUID('business', 'supplier-us-vendor-llc'),
-        hebrewName: 'ספק אמריקאי',
+        name: 'Supplier US Vendor LLC',
         country: CountryCode['United States of America (the)'],
         exemptDealer: false,
         isReceiptEnough: false, // Requires invoice for foreign transactions
@@ -86,11 +86,11 @@ export const expenseScenarioB: Fixture = {
     taxCategories: [
       createTaxCategory({
         id: makeUUID('tax-category', 'expense-consulting'),
-        hashavshevetName: 'Consulting Expenses',
+        name: 'Consulting Expenses',
       }),
       createTaxCategory({
         id: makeUUID('tax-category', 'usd-account-tax-category'),
-        hashavshevetName: 'Foreign Currency Account',
+        name: 'Foreign Currency Account',
       }),
     ],
   },

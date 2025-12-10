@@ -56,13 +56,13 @@ export const expenseScenarioA: Fixture = {
       // Admin business (owner of the expense)
       createBusiness({
         id: makeUUID('business', 'admin-business-scenario-a'),
-        hebrewName: 'חשבונאות ניהול',
+        name: 'Accountancy Management',
         country: CountryCode.Israel,
       }),
       // Supplier business
       createBusiness({
         id: makeUUID('business', 'supplier-local-ltd'),
-        hebrewName: 'ספק מקומי בע"מ',
+        name: 'Local Supplier Ltd',
         country: CountryCode.Israel,
         exemptDealer: false,
         isReceiptEnough: true, // Can provide receipts for small purchases
@@ -74,11 +74,11 @@ export const expenseScenarioA: Fixture = {
     taxCategories: [
       createTaxCategory({
         id: makeUUID('tax-category', 'expense-general'),
-        hashavshevetName: 'General Expenses',
+        name: 'General Expenses',
       }),
       createTaxCategory({
         id: makeUUID('tax-category', 'bank-account-tax-category'),
-        hashavshevetName: 'Bank Account',
+        name: 'Bank Account',
       }),
     ],
   },

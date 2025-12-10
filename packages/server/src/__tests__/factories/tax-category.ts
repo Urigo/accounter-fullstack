@@ -1,5 +1,5 @@
-import type { IInsertTaxCategoryParams } from '../../modules/financial-entities/__generated__/tax-categories.types.js';
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
 
 /**
  * Tax category factory for test fixtures
@@ -11,6 +11,7 @@ import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.j
  *
  * @remarks
  * - id defaults to deterministic UUID if not provided
+ * - name defaults to overrides.id ?? defaultId (intelligent fallback for display)
  * - hashavshevetName defaults to null (not integrated with Hashavshevet)
  * - taxExcluded defaults to false (most categories include tax)
  *
@@ -33,11 +34,14 @@ import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.j
  * ```
  */
 export function createTaxCategory(
-  overrides?: Partial<IInsertTaxCategoryParams>,
-): IInsertTaxCategoryParams {
+  overrides?: Partial<FixtureTaxCategories['taxCategories'][number]>,
+): FixtureTaxCategories['taxCategories'][number] {
   const defaultId = makeUUIDLegacy();
   return {
     id: defaultId,
+    // Intelligent name defaulting: use provided id, or use generated UUID
+    // This ensures display name is always meaningful even when only id is specified
+    name: overrides?.id ?? defaultId,
     hashavshevetName: null,
     taxExcluded: false,
     ...overrides,

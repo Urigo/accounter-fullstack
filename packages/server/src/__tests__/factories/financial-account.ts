@@ -1,8 +1,8 @@
 import type {
   financial_account_type,
-  IInsertFinancialAccountsParams,
 } from '../../modules/financial-accounts/__generated__/financial-accounts.types.js';
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { FixtureAccounts } from '__tests__/helpers/fixture-types.js';
 
 /**
  * Valid financial account types
@@ -21,7 +21,7 @@ export const FINANCIAL_ACCOUNT_TYPES = [
  * Creates a minimal financial account object ready for insertion via pgtyped.
  *
  * @param overrides - Optional overrides for any financial account field
- * @returns Financial account object matching IInsertFinancialAccountsParams.bankAccounts[0] shape
+ * @returns Financial account object matching FixtureAccounts['accounts'][0] shape
  *
  * @remarks
  * - accountNumber defaults to unique numeric string if not provided
@@ -56,8 +56,8 @@ export const FINANCIAL_ACCOUNT_TYPES = [
  * ```
  */
 export function createFinancialAccount(
-  overrides?: Partial<IInsertFinancialAccountsParams['bankAccounts'][number]>,
-): IInsertFinancialAccountsParams['bankAccounts'][number] {
+  overrides?: Partial<FixtureAccounts['accounts'][number]>,
+): FixtureAccounts['accounts'][number] {
   return {
     accountNumber: makeUUIDLegacy().slice(0, 13), // Default: unique short string
     name: null,
