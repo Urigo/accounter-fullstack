@@ -20,7 +20,10 @@ export class PubsubServiceProvider {
     @Inject(ENVIRONMENT) private env: Environment,
     private gmailService: GmailServiceProvider,
   ) {
-    this.gmailEnv = this.env.gmail!;
+    if (!this.env.gmail) {
+      throw new Error('Gmail environment configuration is missing');
+    }
+    this.gmailEnv = this.env.gmail;
     this.pubSubClient = new PubSub({ projectId: this.gmailEnv.cloudProjectId });
 
     this.startListening();

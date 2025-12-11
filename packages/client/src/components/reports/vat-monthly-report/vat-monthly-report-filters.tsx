@@ -7,7 +7,7 @@ import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
 import { ChargeFilterType, type VatReportFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, type TimelessDateString } from '../../../helpers/index.js';
-import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
@@ -28,8 +28,8 @@ function VatMonthlyReportFilterForm({
   const { control, handleSubmit, setValue } = useForm<VatReportFilter>({
     defaultValues: { ...filter },
   });
-  const { selectableFinancialEntities: financialEntities, fetching: feLoading } =
-    useGetFinancialEntities();
+  const { selectableAdminBusinesses: adminBusinesses, fetching: feLoading } =
+    useGetAdminBusinesses();
 
   const onSubmit: SubmitHandler<VatReportFilter> = data => {
     setFilter(data);
@@ -57,10 +57,10 @@ function VatMonthlyReportFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
-              data={financialEntities}
+              data={adminBusinesses}
               value={field.value}
               disabled={feLoading}
-              label="Financial Entities"
+              label="Report Issuer (Admin Business)"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable

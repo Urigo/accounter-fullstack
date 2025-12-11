@@ -72,6 +72,7 @@ export const VatMonthlyReport = (): ReactElement => {
     variables: {
       filters: filter,
     },
+    pause: filter.financialEntityId === '',
   });
 
   const toggleMergeCharge = useCallback(
