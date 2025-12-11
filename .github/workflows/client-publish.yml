@@ -1,8 +1,8 @@
-name: "Client Publish"
+name: 'Client Publish'
 on:
   push:
     paths:
-      - "packages/client/**"
+      - 'packages/client/**'
     branches:
       - main
       - prod
