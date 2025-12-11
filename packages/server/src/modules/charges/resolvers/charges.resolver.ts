@@ -693,14 +693,16 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw errorSimplifier('Error loading documents', err);
       }
     },
-    openDocuments: async (DbCharge, _, { injector }) =>
-      injector
-        .get(IssuedDocumentsProvider)
-        .getIssuedDocumentsStatusByChargeIdLoader.load(DbCharge.id)
-        .catch(error => {
-          throw errorSimplifier('Error loading open documents status', error);
-        })
-        .then(res => res?.open_docs_flag ?? false),
+    openDocuments: async (DbCharge, _, { injector }) => {
+      try {
+        const res = await injector
+          .get(IssuedDocumentsProvider)
+          .getIssuedDocumentsStatusByChargeIdLoader.load(DbCharge.id);
+        return res?.open_docs_flag ?? false;
+      } catch (error) {
+        throw errorSimplifier('Error loading open documents status', error);
+      }
+    },
     transactionsCount: async (DbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
