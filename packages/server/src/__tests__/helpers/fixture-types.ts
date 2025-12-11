@@ -13,9 +13,7 @@
  * @see packages/server/src/__tests__/helpers/fixture-loader.ts for insertion logic
  */
 
-import type { ChargeInsertParams } from '../factories/charge.js';
-import type { TransactionInsertParams } from '../factories/transaction.js';
-import type { DocumentInsertParams } from '../factories/document.js';
+import type { ChargeInsertParams, TransactionInsertParams, DocumentInsertParams } from '../factories/index.js';
 import type { financial_account_type } from '../../modules/transactions/types.js';
 
 /**

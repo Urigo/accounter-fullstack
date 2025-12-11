@@ -31,9 +31,10 @@ export interface TransactionInsertParams {
   event_date: string;
   debit_date?: string | null;
   amount: string; // PostgreSQL numeric -> string
-  current_balance: string; // PostgreSQL numeric -> string
+  current_balance?: string; // PostgreSQL numeric -> string
   business_id?: string | null;
   is_fee?: boolean | null;
+  currency_rate?: number | null;
 }
 
 /**
@@ -50,6 +51,7 @@ export interface TransactionInsertParams {
  * - currency is required (e.g., 'ILS', 'USD', 'EUR')
  * - event_date is required (transaction date)
  * - is_fee defaults to false (regular transaction, not a fee)
+ * - currency_rate defaults to null (foreign currency transactions can specify exchange rate)
  * - account_id defaults to deterministic UUID if not provided
  * - source_id defaults to deterministic UUID (raw transaction reference)
  * - source_description defaults to null

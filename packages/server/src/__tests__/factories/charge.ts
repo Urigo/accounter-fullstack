@@ -5,7 +5,7 @@
  *
  * Based on charges table schema from migrations and charges.provider.ts:
  * - Required: owner_id
- * - Optional: type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag
+ * - Optional: type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag, is_property
  *
  * @see packages/server/src/modules/charges/providers/charges.provider.ts (generateCharge query)
  * @see packages/migrations/src/actions/*-charges-*.ts (migrations)
@@ -22,6 +22,7 @@ import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/determinis
 export interface ChargeInsertParams {
   id?: string;
   owner_id: string;
+  is_property?: boolean | null;
   type?: string | null;
   accountant_status?: string | null;
   user_description?: string | null;
@@ -45,6 +46,7 @@ export interface ChargeInsertParams {
  * - accountant_status defaults to 'PENDING' (database requires NOT NULL)
  * - optional_vat defaults to false (database requires NOT NULL)
  * - documents_optional_flag defaults to false (database requires NOT NULL)
+ * - is_property defaults to null (property-related charges can override to true)
  * - id defaults to deterministic UUID if not provided
  *
  * @example

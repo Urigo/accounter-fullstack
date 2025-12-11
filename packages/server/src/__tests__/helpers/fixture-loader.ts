@@ -8,7 +8,7 @@
  * @see packages/server/src/__tests__/helpers/fixture-validation.ts for validation logic
  */
 
-import type { PoolClient } from 'pg';
+import type { Client, PoolClient } from 'pg';
 import type { Fixture } from './fixture-types.js';
 import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
@@ -85,11 +85,15 @@ export type FixtureIdMapping = Map<string, string>;
  * - Checks referential integrity (charge IDs, business IDs, etc.)
  * - Validates required fields
  *
- * @param client - PostgreSQL client within an active transaction
+ * @param client - PostgreSQL client (PoolClient or standalone Client) within an active transaction
  * @param fixture - Complete fixture to insert
  * @returns Promise resolving to ID mapping (fixture ID → database ID)
  * @throws {Error} If fixture validation fails (via assertValidFixture)
  * @throws {FixtureInsertionError} If any insertion section fails
+ *
+ * @remarks
+ * Type Safety: Accepts both PoolClient and Client to support both test transactions
+ * (pool.connect()) and standalone connections (new pg.Client()) used in seed scripts.
  *
  * @example
  * ```typescript
@@ -112,7 +116,7 @@ export type FixtureIdMapping = Map<string, string>;
  * ```
  */
 export async function insertFixture(
-  client: PoolClient,
+  client: PoolClient | Client,
   fixture: Fixture,
 ): Promise<FixtureIdMapping> {
   // Validate fixture before insertion
@@ -174,13 +178,13 @@ export async function insertFixture(
             business.website,
             business.phoneNumber,
             business.governmentId, // Maps to vat_number column
-            business.exemptDealer,
-            business.suggestions,
-            business.optionalVat,
-            business.country,
-            business.pcn874RecordTypeOverride,
-            business.isReceiptEnough,
-            business.isDocumentsOptional,
+            business.exemptDealer ?? false,
+            business.suggestions ?? null,
+            business.optionalVat ?? false,
+            business.country ?? 'ISR',
+            business.pcn874RecordTypeOverride ?? null,
+            business.isReceiptEnough ?? false,
+            business.isDocumentsOptional ?? false,
           ],
         );
 
@@ -214,7 +218,7 @@ export async function insertFixture(
           )
           VALUES ($1, $2, $3)
           ON CONFLICT (id) DO NOTHING`,
-          [taxCategory.id, taxCategory.hashavshevetName, taxCategory.taxExcluded],
+          [taxCategory.id, taxCategory.hashavshevetName, taxCategory.taxExcluded ?? false],
         );
 
         if (entityResult.rows.length > 0) {
@@ -293,19 +297,21 @@ export async function insertFixture(
         await client.query(
           `INSERT INTO ${qualifyTable('charges')} (
             id, owner_id, type, accountant_status, user_description,
-            tax_category_id, optional_vat, documents_optional_flag
+            tax_category_id, optional_vat, documents_optional_flag,
+            is_property, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
           ON CONFLICT (id) DO NOTHING`,
           [
             charge.id,
             charge.owner_id,
-            charge.type,
-            charge.accountant_status,
+            charge.type ?? null,
+            charge.accountant_status ?? 'PENDING',
             charge.user_description,
-            charge.tax_category_id,
-            charge.optional_vat,
-            charge.documents_optional_flag,
+            charge.tax_category_id ?? null,
+            charge.optional_vat ?? false,
+            charge.documents_optional_flag ?? false,
+            charge.is_property ?? false,
           ],
         );
 
@@ -349,9 +355,10 @@ export async function insertFixture(
           `INSERT INTO ${qualifyTable('transactions')} (
             id, account_id, charge_id, source_id, source_description,
             currency, event_date, debit_date, amount, current_balance,
-            business_id, is_fee, source_reference, source_origin, origin_key
+            business_id, is_fee, source_reference, source_origin, origin_key,
+            currency_rate, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
           ON CONFLICT (id) DO NOTHING`,
           [
             transaction.id,
@@ -363,12 +370,13 @@ export async function insertFixture(
             transaction.event_date,
             transaction.debit_date,
             transaction.amount,
-            transaction.current_balance,
+            transaction.current_balance ?? '0',
             transaction.business_id,
-            transaction.is_fee,
+            transaction.is_fee ?? false,
             'TEST-REF', // source_reference (NOT NULL)
             'TEST', // source_origin (NOT NULL)
             dummyEtherscanId, // origin_key (NOT NULL) - must match etherscan_id in raw list
+            transaction.currency_rate ?? 1,
           ],
         );
 
