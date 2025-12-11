@@ -1,8 +1,8 @@
 import { differenceInMonths, format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/zod-schemas/isracard-cards-transactions-list-schema.js';
 import { sql, type TaggedQuery } from '@pgtyped/runtime';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/zod-schemas/isracard-cards-transactions-list-schema.js';
 import {
   camelCase,
   fillInDefaultValues,

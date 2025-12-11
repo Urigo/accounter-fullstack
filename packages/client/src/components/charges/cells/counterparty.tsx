@@ -1,7 +1,7 @@
 import { useMemo, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { ROUTES } from '@/router/routes.js';
 import { Indicator } from '@mantine/core';
+import { ROUTES } from '@/router/routes.js';
 import { ChargesTableEntityFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 

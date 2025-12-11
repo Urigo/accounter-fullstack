@@ -1,6 +1,15 @@
 import { useMemo, useRef, useState, type ReactElement } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuery } from 'urql';
+import {
+  flexRender,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type SortingState,
+} from '@tanstack/react-table';
 import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -13,15 +22,6 @@ import {
   TableRow,
 } from '@/components/ui/table.js';
 import { AllDepositsDocument } from '@/gql/graphql.js';
-import {
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

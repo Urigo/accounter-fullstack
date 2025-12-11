@@ -1,9 +1,9 @@
 import { differenceInMonths, format } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
+import { sql } from '@pgtyped/runtime';
 import type { init } from '@accounter/modern-poalim-scraper';
 import { MaxTransaction } from '@accounter/modern-poalim-scraper/dist/scrapers/types/max/get-transactions-for-month.js';
-import { sql } from '@pgtyped/runtime';
 import {
   camelCase,
   fillInDefaultValues,

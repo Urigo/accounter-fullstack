@@ -107,17 +107,17 @@ import {
   createMockTransaction,
   createMockDocument,
   createMockAggregatedTransaction,
-  createMockAggregatedDocument,
-} from './__tests__/test-helpers.js';
+  createMockAggregatedDocument
+} from './__tests__/test-helpers.js'
 
 // Create a transaction with defaults
-const transaction = createMockTransaction();
+const transaction = createMockTransaction()
 
 // Create with overrides
 const customTransaction = createMockTransaction({
   amount: '250.00',
-  currency: 'USD',
-});
+  currency: 'USD'
+})
 ```
 
 ### Helper Functions
@@ -128,19 +128,19 @@ import {
   roundConfidence,
   isValidConfidenceScore,
   daysDifference,
-  isWithinDays,
-} from './__tests__/test-helpers.js';
+  isWithinDays
+} from './__tests__/test-helpers.js'
 
 // Calculate weighted confidence
-const scores = { amount: 0.9, currency: 1.0, business: 0.5, date: 0.8 };
-const confidence = calculateExpectedConfidence(scores); // 0.79
+const scores = { amount: 0.9, currency: 1.0, business: 0.5, date: 0.8 }
+const confidence = calculateExpectedConfidence(scores) // 0.79
 
 // Round to 2 decimal places
-const rounded = roundConfidence(0.956789); // 0.96
+const rounded = roundConfidence(0.956789) // 0.96
 
 // Validate score range
-isValidConfidenceScore(0.95); // true
-isValidConfidenceScore(1.5); // false
+isValidConfidenceScore(0.95) // true
+isValidConfidenceScore(1.5) // false
 ```
 
 ## Key Concepts

@@ -1,6 +1,6 @@
-import dividends from './typeDefs/dividends.graphql.js';
 import { createModule } from 'graphql-modules';
 import { DividendsProvider } from './providers/dividends.provider.js';
+import dividends from './typeDefs/dividends.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 

@@ -14,9 +14,9 @@ jobs:
       - name: setup environment
         uses: ./.github/actions/setup
         with:
-          localDB: 'false'
-          codegen: 'false'
-          pgTyped: 'false'
+          localDB: "false"
+          codegen: "false"
+          pgTyped: "false"
 
       - name: Lint ESLint
         run: yarn lint

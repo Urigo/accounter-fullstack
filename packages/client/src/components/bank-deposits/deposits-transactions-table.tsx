@@ -1,8 +1,6 @@
 import { useContext, useMemo, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { getFragmentData } from '@/gql/fragment-masking.js';
-import { UserContext } from '@/providers/user-provider.js';
 import {
   flexRender,
   getCoreRowModel,
@@ -11,6 +9,8 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
+import { getFragmentData } from '@/gql/fragment-masking.js';
+import { UserContext } from '@/providers/user-provider.js';
 import {
   Currency,
   DepositTransactionFieldsFragmentDoc,

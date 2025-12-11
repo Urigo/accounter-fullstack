@@ -1,9 +1,9 @@
-import exchange from './typeDefs/exchange.graphql.js';
 import { createModule } from 'graphql-modules';
 import { CryptoExchangeProvider } from './providers/crypto-exchange.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { FiatExchangeProvider } from './providers/fiat-exchange.provider.js';
 import { exchangeResolvers } from './resolvers/exchange.resolver.js';
+import exchange from './typeDefs/exchange.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 

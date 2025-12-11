@@ -1,4 +1,12 @@
 import { useMemo, useState, type ReactElement } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type SortingState,
+} from '@tanstack/react-table';
 import { Pagination } from '@/components/common/index.js';
 import {
   Table,
@@ -14,14 +22,6 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { EMPTY_UUID } from '@/helpers/consts.js';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-} from '@tanstack/react-table';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

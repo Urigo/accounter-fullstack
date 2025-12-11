@@ -1,10 +1,10 @@
 import { useContext, useState, type JSX } from 'react';
 import { CircleCheckBig, FileDown, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { UserContext } from '@/providers/index.js';
-import { ROUTES } from '@/router/routes.js';
 import { Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { UserContext } from '@/providers/index.js';
+import { ROUTES } from '@/router/routes.js';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
 import { ConfirmationModal, LogoutButton, PullDocumentsModal } from '../common/index.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';

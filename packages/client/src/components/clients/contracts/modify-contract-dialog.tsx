@@ -4,6 +4,7 @@ import { Edit, Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -49,7 +50,6 @@ import {
 } from '@/helpers/index.js';
 import { useCreateContract } from '@/hooks/use-create-contract.js';
 import { useUpdateContract } from '@/hooks/use-update-contract.js';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

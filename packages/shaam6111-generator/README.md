@@ -32,11 +32,7 @@ pnpm add @accounter/shaam6111-generator
 Create a structured report and generate a compliant SHAAM 6111 report string:
 
 ```typescript
-import {
-  generateReport,
-  IndividualOrCompanyEnum,
-  ReportData,
-} from '@accounter/shaam6111-generator';
+import { generateReport, IndividualOrCompanyEnum, ReportData } from '@accounter/shaam6111-generator'
 
 // Create report data structure
 const reportData: ReportData = {
@@ -57,28 +53,28 @@ const reportData: ReportData = {
     taxAdjustmentEntryCount: 2,
     balanceSheetEntryCount: 2,
     currencyType: 1, // Shekels
-    amountsInThousands: 2, // No
+    amountsInThousands: 2 // No
   },
   profitAndLoss: [
     { code: 1001, amount: 500000 }, // Revenue
     { code: 2001, amount: 300000 }, // Expenses
-    { code: 6666, amount: 200000 }, // Profit
+    { code: 6666, amount: 200000 } // Profit
   ],
   taxAdjustment: [
     { code: 100, amount: 200000 }, // Accounting profit
-    { code: 400, amount: 200000 }, // Taxable income
+    { code: 400, amount: 200000 } // Taxable income
   ],
   balanceSheet: [
     { code: 6000, amount: 300000 }, // Assets
-    { code: 7800, amount: 300000 }, // Liabilities + Equity
+    { code: 7800, amount: 300000 } // Liabilities + Equity
   ],
-  individualOrCompany: IndividualOrCompanyEnum.COMPANY,
-};
+  individualOrCompany: IndividualOrCompanyEnum.COMPANY
+}
 
 // Generate the report
-const reportString = generateReport(reportData);
+const reportString = generateReport(reportData)
 
-console.log(reportString);
+console.log(reportString)
 // Output: Properly formatted SHAAM 6111 report string
 ```
 
@@ -87,24 +83,24 @@ console.log(reportString);
 Parse an existing SHAAM 6111 report into structured data:
 
 ```typescript
-import fs from 'fs';
-import { parseReport } from '@accounter/shaam6111-generator';
+import fs from 'fs'
+import { parseReport } from '@accounter/shaam6111-generator'
 
 // Read report content
-const reportContent = fs.readFileSync('path/to/report.txt', 'utf-8');
+const reportContent = fs.readFileSync('path/to/report.txt', 'utf-8')
 
 // Parse the report
 try {
-  const reportData = parseReport(reportContent);
+  const reportData = parseReport(reportContent)
 
-  console.log('Tax File Number:', reportData.header.taxFileNumber);
-  console.log('Tax Year:', reportData.header.taxYear);
-  console.log('Business Type:', reportData.header.businessType);
-  console.log('Profit & Loss Entries:', reportData.profitAndLoss.length);
-  console.log('Tax Adjustment Entries:', reportData.taxAdjustment.length);
-  console.log('Balance Sheet Entries:', reportData.balanceSheet.length);
+  console.log('Tax File Number:', reportData.header.taxFileNumber)
+  console.log('Tax Year:', reportData.header.taxYear)
+  console.log('Business Type:', reportData.header.businessType)
+  console.log('Profit & Loss Entries:', reportData.profitAndLoss.length)
+  console.log('Tax Adjustment Entries:', reportData.taxAdjustment.length)
+  console.log('Balance Sheet Entries:', reportData.balanceSheet.length)
 } catch (error) {
-  console.error('Error parsing report:', error);
+  console.error('Error parsing report:', error)
 }
 ```
 
@@ -113,35 +109,35 @@ try {
 Validate a report against SHAAM 6111 specifications:
 
 ```typescript
-import fs from 'fs';
+import fs from 'fs'
 // Option 2: Validate report data (if you already have parsed data)
-import { ReportData, validateData, validateReport } from '@accounter/shaam6111-generator';
+import { ReportData, validateData, validateReport } from '@accounter/shaam6111-generator'
 
 // Option 1: Validate a report string
-const reportContent = fs.readFileSync('path/to/report.txt', 'utf-8');
-const validationResult = validateReport(reportContent);
+const reportContent = fs.readFileSync('path/to/report.txt', 'utf-8')
+const validationResult = validateReport(reportContent)
 
 if (validationResult.isValid) {
-  console.log('Report is valid!');
+  console.log('Report is valid!')
 } else {
-  console.error('Report validation failed:');
+  console.error('Report validation failed:')
   validationResult.errors.forEach(error => {
-    console.error(`- ${error.path}: ${error.message}`);
-  });
+    console.error(`- ${error.path}: ${error.message}`)
+  })
 }
 
 const reportData: ReportData = {
   /* ... */
-};
-const dataValidationResult = validateData(reportData);
+}
+const dataValidationResult = validateData(reportData)
 
 if (dataValidationResult.isValid) {
-  console.log('Report data is valid!');
+  console.log('Report data is valid!')
 } else {
-  console.error('Report data validation failed:');
+  console.error('Report data validation failed:')
   dataValidationResult.errors.forEach(error => {
-    console.error(`- ${error.path}: ${error.message}`);
-  });
+    console.error(`- ${error.path}: ${error.message}`)
+  })
 }
 ```
 
@@ -150,43 +146,39 @@ if (dataValidationResult.isValid) {
 Save a report to a file or read a report from a file with proper Windows-1255 encoding:
 
 ```typescript
-import fs from 'fs';
-import {
-  convertReportToFile,
-  readReportFromFile,
-  ReportData,
-} from '@accounter/shaam6111-generator';
+import fs from 'fs'
+import { convertReportToFile, readReportFromFile, ReportData } from '@accounter/shaam6111-generator'
 
 // Browser environment: Create a File object from report data
 const reportData: ReportData = {
   /* ... */
-};
-const reportFile = convertReportToFile(reportData, 'SHAAM6111.dat');
+}
+const reportFile = convertReportToFile(reportData, 'SHAAM6111.dat')
 
 // Handle the File object (e.g., in a browser environment)
 // For example, trigger a download:
-const url = URL.createObjectURL(reportFile);
-const a = document.createElement('a');
-a.href = url;
-a.download = reportFile.name;
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-URL.revokeObjectURL(url);
+const url = URL.createObjectURL(reportFile)
+const a = document.createElement('a')
+a.href = url
+a.download = reportFile.name
+document.body.appendChild(a)
+a.click()
+document.body.removeChild(a)
+URL.revokeObjectURL(url)
 
 // Reading a report file (in browser)
-const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+const fileInput = document.getElementById('fileInput') as HTMLInputElement
 fileInput.addEventListener('change', async event => {
-  const file = fileInput.files?.[0];
+  const file = fileInput.files?.[0]
   if (file) {
     try {
-      const reportData = await readReportFromFile(file, true);
-      console.log('Parsed report data:', reportData);
+      const reportData = await readReportFromFile(file, true)
+      console.log('Parsed report data:', reportData)
     } catch (error) {
-      console.error('Error reading report file:', error);
+      console.error('Error reading report file:', error)
     }
   }
-});
+})
 ```
 
 ### Handling Hebrew Text (Windows-1255 Encoding)
@@ -194,21 +186,21 @@ fileInput.addEventListener('change', async event => {
 Working with Hebrew text and Windows-1255 encoding:
 
 ```typescript
-import fs from 'fs';
-import { fromWindows1255, toWindows1255 } from '@accounter/shaam6111-generator';
+import fs from 'fs'
+import { fromWindows1255, toWindows1255 } from '@accounter/shaam6111-generator'
 
 // Convert Hebrew text to Windows-1255 encoding
-const hebrewText = 'חברת תוכנה בע"מ';
-const encoded = toWindows1255(hebrewText);
+const hebrewText = 'חברת תוכנה בע"מ'
+const encoded = toWindows1255(hebrewText)
 
 // Save encoded text to a file
-fs.writeFileSync('hebrew.dat', encoded);
+fs.writeFileSync('hebrew.dat', encoded)
 
 // Read encoded text from a file
-const readBuffer = fs.readFileSync('hebrew.dat');
-const decoded = fromWindows1255(readBuffer);
+const readBuffer = fs.readFileSync('hebrew.dat')
+const decoded = fromWindows1255(readBuffer)
 
-console.log(decoded); // 'חברת תוכנה בע"מ'
+console.log(decoded) // 'חברת תוכנה בע"מ'
 ```
 
 ## API Reference

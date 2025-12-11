@@ -11,6 +11,7 @@ import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
+import { MonthPickerInput } from '@mantine/dates';
 import { AccounterLoader } from '@/components/common/index.js';
 import {
   ContractBasedDocumentDraftsDocument,
@@ -21,7 +22,6 @@ import { getFragmentData } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
 import { useIssueMonthlyDocuments } from '@/hooks/use-issue-monthly-documents.js';
 import { ROUTES } from '@/router/routes.js';
-import { MonthPickerInput } from '@mantine/dates';
 import { ConfirmationModal } from '../common/index.js';
 import { EditIssueDocumentModal } from '../screens/documents/issue-documents/edit-issue-document-modal.js';
 import { type IssueDocumentsVariables } from '../screens/documents/issue-documents/issue-documents-table.js';

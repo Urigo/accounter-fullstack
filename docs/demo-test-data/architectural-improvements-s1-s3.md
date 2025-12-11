@@ -43,15 +43,15 @@ const pool = new pg.Pool({
   password: 'postgres',
   host: 'localhost',
   port: 5432,
-  database: 'accounter',
-});
+  database: 'accounter'
+})
 ```
 
 **After**:
 
 ```typescript
-import { testDbConfig, qualifyTable } from './test-db-config';
-const pool = new pg.Pool(testDbConfig);
+import { testDbConfig, qualifyTable } from './test-db-config'
+const pool = new pg.Pool(testDbConfig)
 ```
 
 ---
@@ -268,7 +268,7 @@ it('should create entity', () =>
 // Before
 'SELECT * FROM accounter_schema.businesses WHERE id = $1'
 // After
-`SELECT * FROM ${qualifyTable('businesses')} WHERE id = $1`;
+`SELECT * FROM ${qualifyTable('businesses')} WHERE id = $1`
 ```
 
 ---

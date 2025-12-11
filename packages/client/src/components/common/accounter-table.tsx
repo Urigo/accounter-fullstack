@@ -1,6 +1,6 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
-import { Button } from '@/components/ui/button.js';
 import { Paper, Table } from '@mantine/core';
+import { Button } from '@/components/ui/button.js';
 
 export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;

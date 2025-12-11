@@ -1,5 +1,5 @@
-import type { ChargeType } from '@/helpers/index.js';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ChargeType } from '@/helpers/index.js';
 import { DataTableColumnHeader, Score } from '../common/index.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { Business } from './cells/business.js';

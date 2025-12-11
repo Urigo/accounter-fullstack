@@ -68,20 +68,20 @@ setInterval(async () => {
   const response = await gmail.users.messages.list({
     userId: 'me',
     q: `label:${TARGET_LABEL} is:unread`,
-    maxResults: 10,
-  });
+    maxResults: 10
+  })
 
   for (const message of response.data.messages || []) {
-    const emailData = await gmailService.getEmailById(message.id!);
+    const emailData = await gmailService.getEmailById(message.id!)
     if (emailData) {
-      await executeCustomFunction(emailData);
+      await executeCustomFunction(emailData)
       // Mark as read to avoid reprocessing
       await gmail.users.messages.modify({
         userId: 'me',
         id: message.id!,
-        requestBody: { removeLabelIds: ['UNREAD'] },
-      });
+        requestBody: { removeLabelIds: ['UNREAD'] }
+      })
     }
   }
-}, 30000); // Poll every 30 seconds
+}, 30000) // Poll every 30 seconds
 ```

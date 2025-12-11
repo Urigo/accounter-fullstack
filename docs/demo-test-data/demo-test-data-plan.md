@@ -241,17 +241,17 @@ generation in another):
 
 ```typescript
 afterEach(async () => {
-  const client = await pool.connect();
+  const client = await pool.connect()
   try {
-    const chargeId = makeUUID('charge-identifier');
-    await client.query('DELETE FROM ledger_records WHERE charge_id = $1', [chargeId]);
-    await client.query('DELETE FROM documents WHERE charge_id = $1', [chargeId]);
-    await client.query('DELETE FROM transactions WHERE charge_id = $1', [chargeId]);
-    await client.query('DELETE FROM charges WHERE id = $1', [chargeId]);
+    const chargeId = makeUUID('charge-identifier')
+    await client.query('DELETE FROM ledger_records WHERE charge_id = $1', [chargeId])
+    await client.query('DELETE FROM documents WHERE charge_id = $1', [chargeId])
+    await client.query('DELETE FROM transactions WHERE charge_id = $1', [chargeId])
+    await client.query('DELETE FROM charges WHERE id = $1', [chargeId])
   } finally {
-    client.release();
+    client.release()
   }
-});
+})
 ```
 
 4. **Separate client for business logic** - use a fresh client connection after committing fixture
@@ -286,12 +286,12 @@ Helper: `assertLedgerBalance(records, expectation)` with updated signature:
 function assertLedgerBalance(
   records: LedgerRecord[],
   expectation: {
-    minRecords: number; // Minimum count (not exact)
-    requiredDebitEntities: string[]; // Must be present
-    requiredCreditEntities: string[]; // Must be present
-    totalTolerance?: number; // Default 0.01
-  },
-): void;
+    minRecords: number // Minimum count (not exact)
+    requiredDebitEntities: string[] // Must be present
+    requiredCreditEntities: string[] // Must be present
+    totalTolerance?: number // Default 0.01
+  }
+): void
 ```
 
 **Key insight**: Ledger generation algorithms may produce additional balancing records beyond the
@@ -465,14 +465,14 @@ maintenance as ledger logic evolves.
   to injector:
 
   ```typescript
-  import { mockExchangeRate } from '@/__tests__/helpers/exchange-mock.js';
-  import { Currency } from 'packages/server/src/shared/enums.js';
+  import { mockExchangeRate } from '@/__tests__/helpers/exchange-mock.js'
+  import { Currency } from 'packages/server/src/shared/enums.js'
 
   const context = createLedgerTestContext({
     pool,
     adminContext,
-    mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
-  });
+    mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5)
+  })
   ```
 
 - For non-critical dependencies: inject minimal stubs with no-op methods
@@ -482,9 +482,9 @@ maintenance as ledger logic evolves.
 
 ```typescript
 const businessesOperationStub = {
-  deleteBusinessById: async (_businessId: string) => {},
+  deleteBusinessById: async (_businessId: string) => {}
   // Add other methods as needed
-} as any;
+} as any
 ```
 
 ## 22. Developer Workflow Summary

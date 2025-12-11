@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
-import type { ChargeType } from '@/helpers/charges.js';
 import {
   flexRender,
   getCoreRowModel,
@@ -10,6 +9,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
+import type { ChargeType } from '@/helpers/charges.js';
 import { ChargeMatchesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { MergeChargesButton } from '../common/index.js';
