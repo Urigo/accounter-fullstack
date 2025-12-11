@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
+import { errorSimplifier } from '../../../shared/errors.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
 import { generateLedgerRecordsForFinancialCharge } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
@@ -34,8 +35,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating revaluation charge');
+        throw errorSimplifier('Error generating revaluation charge', e);
       }
     },
     generateBankDepositsRevaluationCharge: async (_, { date, ownerId }, context, info) => {
@@ -64,8 +64,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating bank deposits revaluation charge');
+        throw errorSimplifier('Error generating bank deposits revaluation charge', e);
       }
     },
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
@@ -96,8 +95,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating tax expenses charge');
+        throw errorSimplifier('Error generating tax expenses charge', e);
       }
     },
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
@@ -131,8 +129,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating depreciation charge');
+        throw errorSimplifier('Error generating depreciation charge', e);
       }
     },
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
@@ -166,8 +163,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating recovery reserve charge');
+        throw errorSimplifier('Error generating recovery reserve charge', e);
       }
     },
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
@@ -202,8 +198,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating vacation reserves charge');
+        throw errorSimplifier('Error generating vacation reserves charge', e);
       }
     },
     generateBalanceCharge: async (_, { description, balanceRecords }, context, info) => {
@@ -218,16 +213,16 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Default tax category missing');
       }
 
-      if (ledgerLock) {
-        const minDate = getMinDate(
-          balanceRecords.map(record => [new Date(record.invoiceDate), record.valueDate]).flat(),
-        );
-        if (minDate && dateToTimelessDateString(minDate) <= ledgerLock) {
-          throw new GraphQLError('Cannot generate balance charge for locked period');
-        }
-      }
-
       try {
+        if (ledgerLock) {
+          const minDate = getMinDate(
+            balanceRecords.map(record => [new Date(record.invoiceDate), record.valueDate]).flat(),
+          );
+          if (minDate && dateToTimelessDateString(minDate) <= ledgerLock) {
+            throw new GraphQLError('Cannot generate balance charge for locked period');
+          }
+        }
+
         const charge = await generateAndTagCharge(
           injector,
           defaultAdminBusinessId,
@@ -260,14 +255,15 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         return charge;
       } catch (e) {
-        console.error(e);
-        throw new GraphQLError('Error generating balance charge');
+        throw errorSimplifier('Error generating balance charge', e);
       }
     },
   },
   FinancialCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Financial,
+      (await getChargeType(DbCharge, context).catch(error => {
+        throw errorSimplifier('Failed to determine charge type', error);
+      })) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
     vat: () => null,
     totalAmount: () => null,
@@ -276,12 +272,20 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     salary: () => false,
     isInvoicePaymentDifferentCurrency: () => false,
     minEventDate: async (DbCharge, _, { injector }) => {
-      const { ledgerMinInvoiceDate } = await getChargeLedgerMeta(DbCharge.id, injector);
-      return ledgerMinInvoiceDate;
+      try {
+        const { ledgerMinInvoiceDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+        return ledgerMinInvoiceDate;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch min event date', error);
+      }
     },
     minDebitDate: async (DbCharge, _, { injector }) => {
-      const { ledgerMinValueDate } = await getChargeLedgerMeta(DbCharge.id, injector);
-      return ledgerMinValueDate;
+      try {
+        const { ledgerMinValueDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+        return ledgerMinValueDate;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch min debit date', error);
+      }
     },
     // minDocumentsDate:
     // validationData:

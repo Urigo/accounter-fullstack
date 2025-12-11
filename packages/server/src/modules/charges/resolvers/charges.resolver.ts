@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
+import { errorSimplifier } from '../../../shared/errors.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -38,38 +39,60 @@ import type {
 } from '../types.js';
 import { commonChargeFields, commonDocumentsFields } from './common.js';
 
+async function chargeTypeChecker(
+  chargeType: ChargeTypeEnum,
+  charge: IGetChargesByIdsResult,
+  context: GraphQLModules.Context,
+) {
+  try {
+    return (await getChargeType(charge, context)) === chargeType;
+  } catch (error) {
+    throw errorSimplifier('Failed to determine charge type', error);
+  }
+}
+
 export const chargesResolvers: ChargesModule.Resolvers &
   Pick<Resolvers, 'UpdateChargeResult' | 'MergeChargeResult' | 'BatchUpdateChargesResult'> = {
   Query: {
     charge: async (_, { chargeId }, { injector }) => {
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+      try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+        }
+        return charge;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch charge by ID', error);
       }
-      return charge;
     },
     chargesByIDs: async (_, { chargeIDs }, { injector }) => {
       if (chargeIDs.length === 0) {
         return [];
       }
 
-      const dbCharges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIDs);
-      if (!dbCharges) {
-        if (chargeIDs.length === 1) {
-          throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
-        } else {
-          throw new GraphQLError(`Couldn't find any charges`);
+      try {
+        const dbCharges = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.loadMany(chargeIDs);
+        if (!dbCharges) {
+          if (chargeIDs.length === 1) {
+            throw new GraphQLError(`Charge ID="${chargeIDs[0]}" not found`);
+          } else {
+            throw new GraphQLError(`Couldn't find any charges`);
+          }
         }
-      }
 
-      const charges = chargeIDs.map(id => {
-        const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
-        if (!charge) {
-          throw new GraphQLError(`Charge ID="${id}" not found`);
-        }
-        return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
-      });
-      return charges;
+        const charges = chargeIDs.map(id => {
+          const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
+          if (!charge) {
+            throw new GraphQLError(`Charge ID="${id}" not found`);
+          }
+          return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
+        });
+        return charges;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch charges by IDs', error);
+      }
     },
     allCharges: async (_, { filters, page, limit }, { injector }) => {
       // handle sort column
@@ -105,13 +128,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
           tags: filters?.byTags,
           accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
         })
-        .catch(e => {
-          const message = 'Error fetching charges';
-          console.error(`${message}: ${e}`);
-          if (e instanceof GraphQLError) {
-            throw e;
-          }
-          throw new GraphQLError(message);
+        .catch(error => {
+          throw errorSimplifier('Error fetching charges', error);
         });
 
       const pageCharges = charges.slice(page * limit, (page + 1) * limit);
@@ -126,121 +144,125 @@ export const chargesResolvers: ChargesModule.Resolvers &
       };
     },
     chargesWithMissingRequiredInfo: async (_, { page, limit }, { injector, adminContext }) => {
-      const chargeIds = new Set<string>();
-      // get by transactions
-      const getByTransactionsPromise = injector
-        .get(TransactionsProvider)
-        .getTransactionsByMissingRequiredInfo()
-        .then(transactions => {
-          transactions.map(transaction => {
-            if (transaction.charge_id) {
-              chargeIds.add(transaction.charge_id);
-            }
+      try {
+        const chargeIds = new Set<string>();
+        // get by transactions
+        const getByTransactionsPromise = injector
+          .get(TransactionsProvider)
+          .getTransactionsByMissingRequiredInfo()
+          .then(transactions => {
+            transactions.map(transaction => {
+              if (transaction.charge_id) {
+                chargeIds.add(transaction.charge_id);
+              }
+            });
           });
-        });
 
-      // get by documents
-      const getByDocumentsPromise = injector
-        .get(DocumentsProvider)
-        .getDocumentsByMissingRequiredInfo()
-        .then(documents => {
-          documents.map(document => {
-            if (document.charge_id) {
-              chargeIds.add(document.charge_id);
-            }
+        // get by documents
+        const getByDocumentsPromise = injector
+          .get(DocumentsProvider)
+          .getDocumentsByMissingRequiredInfo()
+          .then(documents => {
+            documents.map(document => {
+              if (document.charge_id) {
+                chargeIds.add(document.charge_id);
+              }
+            });
           });
-        });
 
-      // get by charge
-      const getByChargesPromise = injector
-        .get(ChargesProvider)
-        .getChargesByMissingRequiredInfo()
-        .then(charges => {
-          charges.map(charge => {
-            if (charge.id) {
-              chargeIds.add(charge.id);
-            }
+        // get by charge
+        const getByChargesPromise = injector
+          .get(ChargesProvider)
+          .getChargesByMissingRequiredInfo()
+          .then(charges => {
+            charges.map(charge => {
+              if (charge.id) {
+                chargeIds.add(charge.id);
+              }
+            });
           });
-        });
 
-      await Promise.all([getByTransactionsPromise, getByDocumentsPromise, getByChargesPromise]);
+        await Promise.all([getByTransactionsPromise, getByDocumentsPromise, getByChargesPromise]);
 
-      const charges = await Promise.all(
-        Array.from(chargeIds).map(async id => {
-          const [
-            charge,
-            { transactionsMinDebitDate, transactionsMinEventDate },
-            { ledgerMinInvoiceDate, ledgerMinValueDate },
-            { documentsMinDate },
-          ] = await Promise.all([
-            injector
-              .get(ChargesProvider)
-              .getChargeByIdLoader.load(id)
-              .then(charge => {
-                if (!charge) {
-                  throw new GraphQLError(`Charge ID="${id}" not found`);
-                }
-                return charge;
-              })
-              .catch(e => {
-                const message = `Error loading charge ID="${id}"`;
-                console.error(`${message}: ${e}`);
-                throw new GraphQLError(message);
-              }),
-            getChargeTransactionsMeta(id, injector),
-            getChargeLedgerMeta(id, injector),
-            getChargeDocumentsMeta(id, injector),
-          ]);
-          return {
-            ...charge,
-            transactionsMinDebitDate,
-            transactionsMinEventDate,
-            ledgerMinInvoiceDate,
-            ledgerMinValueDate,
-            documentsMinDate,
-          };
-        }),
-      );
+        const charges = await Promise.all(
+          Array.from(chargeIds).map(async id => {
+            const [
+              charge,
+              { transactionsMinDebitDate, transactionsMinEventDate },
+              { ledgerMinInvoiceDate, ledgerMinValueDate },
+              { documentsMinDate },
+            ] = await Promise.all([
+              injector
+                .get(ChargesProvider)
+                .getChargeByIdLoader.load(id)
+                .then(charge => {
+                  if (!charge) {
+                    throw new GraphQLError(`Charge ID="${id}" not found`);
+                  }
+                  return charge;
+                })
+                .catch(e => {
+                  const message = `Error loading charge ID="${id}"`;
+                  console.error(`${message}: ${e}`);
+                  throw new GraphQLError(message);
+                }),
+              getChargeTransactionsMeta(id, injector),
+              getChargeLedgerMeta(id, injector),
+              getChargeDocumentsMeta(id, injector),
+            ]);
+            return {
+              ...charge,
+              transactionsMinDebitDate,
+              transactionsMinEventDate,
+              ledgerMinInvoiceDate,
+              ledgerMinValueDate,
+              documentsMinDate,
+            };
+          }),
+        );
 
-      const pageCharges = charges
-        .filter(charge => charge.owner_id === adminContext.defaultAdminBusinessId)
-        .sort((chargeA, chargeB) => {
-          const dateA =
-            (
-              chargeA.documentsMinDate ||
-              chargeA.transactionsMinDebitDate ||
-              chargeA.transactionsMinEventDate ||
-              chargeA.ledgerMinValueDate ||
-              chargeA.ledgerMinInvoiceDate
-            )?.getTime() ?? 0;
-          const dateB =
-            (
-              chargeB.documentsMinDate ||
-              chargeB.transactionsMinDebitDate ||
-              chargeB.transactionsMinEventDate ||
-              chargeB.ledgerMinValueDate ||
-              chargeB.ledgerMinInvoiceDate
-            )?.getTime() ?? 0;
+        const pageCharges = charges
+          .filter(charge => charge.owner_id === adminContext.defaultAdminBusinessId)
+          .sort((chargeA, chargeB) => {
+            const dateA =
+              (
+                chargeA.documentsMinDate ||
+                chargeA.transactionsMinDebitDate ||
+                chargeA.transactionsMinEventDate ||
+                chargeA.ledgerMinValueDate ||
+                chargeA.ledgerMinInvoiceDate
+              )?.getTime() ?? 0;
+            const dateB =
+              (
+                chargeB.documentsMinDate ||
+                chargeB.transactionsMinDebitDate ||
+                chargeB.transactionsMinEventDate ||
+                chargeB.ledgerMinValueDate ||
+                chargeB.ledgerMinInvoiceDate
+              )?.getTime() ?? 0;
 
-          if (dateA > dateB) {
-            return -1;
-          }
-          if (dateA < dateB) {
-            return 1;
-          }
+            if (dateA > dateB) {
+              return -1;
+            }
+            if (dateA < dateB) {
+              return 1;
+            }
 
-          return chargeA.id.localeCompare(chargeB.id);
-        })
-        .slice(page * limit - limit, page * limit);
+            return chargeA.id.localeCompare(chargeB.id);
+          })
+          .slice(page * limit - limit, page * limit);
 
-      return {
-        __typename: 'PaginatedCharges',
-        nodes: pageCharges,
-        pageInfo: {
-          totalPages: Math.ceil(charges.length / limit),
-          totalRecords: charges.length,
-        },
-      };
+        return {
+          __typename: 'PaginatedCharges',
+          nodes: pageCharges,
+          pageInfo: {
+            totalPages: Math.ceil(charges.length / limit),
+            totalRecords: charges.length,
+          },
+        };
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch charges with missing required info', error);
+      }
     },
   },
   Mutation: {
@@ -368,6 +390,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
           message = e.message;
+        } else {
+          console.error(e);
         }
         return {
           __typename: 'CommonError',
@@ -461,6 +485,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         let message = 'Error updating charges';
         if (e instanceof GraphQLError) {
           message = e.message;
+        } else {
+          console.error(e);
         }
         return {
           __typename: 'CommonError',
@@ -507,6 +533,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (e instanceof GraphQLError) {
           throw e;
         }
+        console.error(e);
         return {
           __typename: 'CommonError',
           message:
@@ -564,52 +591,52 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   CommonCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Common,
+      chargeTypeChecker(ChargeTypeEnum.Common, DbCharge, context),
     ...commonChargeFields,
   },
   ConversionCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Conversion,
+      chargeTypeChecker(ChargeTypeEnum.Conversion, DbCharge, context),
     ...commonChargeFields,
   },
   SalaryCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Salary,
+      chargeTypeChecker(ChargeTypeEnum.Salary, DbCharge, context),
     ...commonChargeFields,
   },
   InternalTransferCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.InternalTransfer,
+      chargeTypeChecker(ChargeTypeEnum.InternalTransfer, DbCharge, context),
     ...commonChargeFields,
   },
   DividendCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.Dividend,
+      chargeTypeChecker(ChargeTypeEnum.Dividend, DbCharge, context),
     ...commonChargeFields,
   },
   BusinessTripCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.BusinessTrip,
+      chargeTypeChecker(ChargeTypeEnum.BusinessTrip, DbCharge, context),
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.MonthlyVat,
+      chargeTypeChecker(ChargeTypeEnum.MonthlyVat, DbCharge, context),
     ...commonChargeFields,
   },
   BankDepositCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.BankDeposit,
+      chargeTypeChecker(ChargeTypeEnum.BankDeposit, DbCharge, context),
     ...commonChargeFields,
   },
   ForeignSecuritiesCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.ForeignSecurities,
+      chargeTypeChecker(ChargeTypeEnum.ForeignSecurities, DbCharge, context),
     ...commonChargeFields,
   },
   CreditcardBankCharge: {
     __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context)) === ChargeTypeEnum.CreditcardBankCharge,
+      chargeTypeChecker(ChargeTypeEnum.CreditcardBankCharge, DbCharge, context),
     ...commonChargeFields,
   },
   Invoice: {
@@ -643,9 +670,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           .getDocumentsByChargeIdLoader.load(DbCharge.id)
           .then(docs => docs.filter(doc => isInvoice(doc.type)).length);
       } catch (err) {
-        const message = 'Error loading invoices';
-        console.error(`${message}: ${err}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier('Error loading invoices', err);
       }
     },
     receiptsCount: async (DbCharge, _, { injector }) => {
@@ -655,9 +680,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           .getDocumentsByChargeIdLoader.load(DbCharge.id)
           .then(docs => docs.filter(doc => isReceipt(doc.type)).length);
       } catch (err) {
-        const message = 'Error loading receipts';
-        console.error(`${message}: ${err}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier('Error loading receipts', err);
       }
     },
     documentsCount: async (DbCharge, _, { injector }) => {
@@ -667,26 +690,35 @@ export const chargesResolvers: ChargesModule.Resolvers &
           .getDocumentsByChargeIdLoader.load(DbCharge.id)
           .then(docs => docs.length);
       } catch (err) {
-        const message = 'Error loading documents';
-        console.error(`${message}: ${err}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier('Error loading documents', err);
       }
     },
-    openDocuments: async (DbCharge, _, { injector }) =>
-      injector
-        .get(IssuedDocumentsProvider)
-        .getIssuedDocumentsStatusByChargeIdLoader.load(DbCharge.id)
-        .then(res => res?.open_docs_flag ?? false),
+    openDocuments: async (DbCharge, _, { injector }) => {
+      try {
+        const res = await injector
+          .get(IssuedDocumentsProvider)
+          .getIssuedDocumentsStatusByChargeIdLoader.load(DbCharge.id);
+        return res?.open_docs_flag ?? false;
+      } catch (error) {
+        throw errorSimplifier('Error loading open documents status', error);
+      }
+    },
     transactionsCount: async (DbCharge, _, { injector }) => {
       const transactions = await injector
         .get(TransactionsProvider)
-        .transactionsByChargeIDLoader.load(DbCharge.id);
+        .transactionsByChargeIDLoader.load(DbCharge.id)
+        .catch(error => {
+          throw errorSimplifier('Error loading transactions', error);
+        });
       return transactions.length;
     },
     ledgerCount: async (DbCharge, _, { injector }) =>
       injector
         .get(LedgerProvider)
         .getLedgerRecordsByChargesIdLoader.load(DbCharge.id)
+        .catch(error => {
+          throw errorSimplifier('Error loading ledger records', error);
+        })
         .then(records => records.length),
     invalidLedger: async (DbCharge, _, context, info) => {
       try {
@@ -737,14 +769,16 @@ export const chargesResolvers: ChargesModule.Resolvers &
           .getExpensesByChargeIdLoader.load(DbCharge.id)
           .then(res => res.length);
       } catch (err) {
-        const message = 'Error loading misc expenses';
-        console.error(`${message}: ${err}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier('Error loading misc expenses', err);
       }
     },
     optionalBusinesses: async (DbCharge, _, { injector }) => {
-      const { allBusinessIds } = await getChargeBusinesses(DbCharge.id, injector);
-      return allBusinessIds.length > 1 ? allBusinessIds : [];
+      try {
+        const { allBusinessIds } = await getChargeBusinesses(DbCharge.id, injector);
+        return allBusinessIds.length > 1 ? allBusinessIds : [];
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch optional businesses', error);
+      }
     },
     isSalary: DbCharge => DbCharge.type === 'PAYROLL',
   },
