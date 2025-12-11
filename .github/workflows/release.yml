@@ -5,11 +5,27 @@ on:
       - prod
 
 jobs:
+  resolve-node-version:
+    runs-on: ubuntu-latest
+    outputs:
+      node: ${{ steps.read-node.outputs.node }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - id: read-node
+        name: Read Node version
+        run: |
+          node -e "const fs=require('fs'); const pkg=require('./package.json');
+          const path='.node-version';
+          const version=fs.existsSync(path)?fs.readFileSync(path,'utf8').trim():(pkg.engines&&pkg.engines.node);
+          if(!version) throw new Error('No Node version found'); 
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `node=${version}\n`);"
+
   stable:
+    needs: resolve-node-version
     uses: the-guild-org/shared-config/.github/workflows/release-stable.yml@efca92ebf0309a89e2e1bb69b1f52115ff8ee7d6
     with:
       releaseScript: release # script to run as part of publish command
-      nodeVersion: 24.11.1
+      nodeVersion: ${{ needs.resolve-node-version.outputs.node }}
       packageManagerVersion: modern
     secrets:
       githubToken: ${{ secrets.GITHUB_TOKEN }}
