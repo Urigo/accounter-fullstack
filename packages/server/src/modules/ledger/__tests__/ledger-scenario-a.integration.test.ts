@@ -46,7 +46,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       const chargeId = makeUUID('charge', 'charge-office-supplies');
       await client.query(
         `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
-        [chargeId],
+        [chargeId]
       );
       // Also clear the scenario's fixture rows to keep DB tidy
       await client.query(
@@ -55,7 +55,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       await client.query(
         `DELETE FROM ${qualifyTable('transactions')} WHERE charge_id = $1`,
-        [chargeId],
+        [chargeId]
       );
       await client.query(
         `DELETE FROM ${qualifyTable('charges')} WHERE id = $1`,
