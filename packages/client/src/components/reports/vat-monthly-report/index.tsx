@@ -55,6 +55,19 @@ export const VatMonthlyReport = (): ReactElement => {
   );
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
 
+  // auto default admin business if not set
+  useEffect(() => {
+    if (
+      (!filter.financialEntityId || filter.financialEntityId === '') &&
+      userContext?.context.adminBusinessId
+    ) {
+      setFilter({
+        ...filter,
+        financialEntityId: userContext.context.adminBusinessId,
+      });
+    }
+  }, [filter, userContext?.context.adminBusinessId]);
+
   // modals state
   const [insertDocument, setInsertDocument] = useState<
     { id: string; onChange: () => void } | undefined
@@ -72,6 +85,7 @@ export const VatMonthlyReport = (): ReactElement => {
     variables: {
       filters: filter,
     },
+    pause: filter.financialEntityId === '',
   });
 
   const toggleMergeCharge = useCallback(
