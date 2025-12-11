@@ -72,7 +72,7 @@
     "react-number-format": "5.4.4",
     "react-router-dom": "7.10.1",
     "react-to-pdf": "2.0.3",
-    "recharts": "2.15.4",
+    "recharts": "3.5.1",
     "sonner": "2.0.7",
     "tailwind-merge": "3.4.0",
     "urql": "5.0.1",
