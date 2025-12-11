@@ -9,3 +9,11 @@ export class LedgerLockError extends GraphQLError {
     });
   }
 }
+
+export function errorSimplifier(message: string, error: unknown): GraphQLError {
+  if (error instanceof GraphQLError) {
+    return error;
+  }
+  console.error(`${message}:`, error);
+  return new GraphQLError(message);
+}

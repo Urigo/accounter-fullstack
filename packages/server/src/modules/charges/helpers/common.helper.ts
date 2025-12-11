@@ -18,26 +18,31 @@ export async function calculateTotalAmount(
   injector: Injector,
   defaultLocalCurrency: Currency,
 ): Promise<FinancialAmount | null> {
-  const [
-    charge,
-    { transactionsAmount, transactionsCurrency },
-    { documentsCurrency, documentsAmount },
-  ] = await Promise.all([
-    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-    getChargeTransactionsMeta(chargeId, injector),
-    getChargeDocumentsMeta(chargeId, injector),
-  ]);
+  try {
+    const [
+      charge,
+      { transactionsAmount, transactionsCurrency },
+      { documentsCurrency, documentsAmount },
+    ] = await Promise.all([
+      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+      getChargeTransactionsMeta(chargeId, injector),
+      getChargeDocumentsMeta(chargeId, injector),
+    ]);
 
-  if (charge.type === 'PAYROLL' && transactionsAmount) {
-    return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
+    if (charge.type === 'PAYROLL' && transactionsAmount) {
+      return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
+    }
+    if (documentsAmount && documentsCurrency) {
+      return formatFinancialAmount(documentsAmount, documentsCurrency);
+    }
+    if (transactionsAmount && transactionsCurrency) {
+      return formatFinancialAmount(transactionsAmount, transactionsCurrency);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error calculating total amount for charge:', error);
+    throw new Error('Failed to calculate total amount for charge');
   }
-  if (documentsAmount && documentsCurrency) {
-    return formatFinancialAmount(documentsAmount, documentsCurrency);
-  }
-  if (transactionsAmount && transactionsCurrency) {
-    return formatFinancialAmount(transactionsAmount, transactionsCurrency);
-  }
-  return null;
 }
 
 export async function getChargeBusinesses(chargeId: string, injector: Injector) {
