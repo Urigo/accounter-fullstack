@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllAdminBusinessesDocument, type AllAdminBusinessesQuery } from '../gql/graphql.js';
@@ -27,15 +27,17 @@ export const useGetAdminBusinesses = (): UseGetAdminBusinesses => {
     query: AllAdminBusinessesDocument,
   });
 
-  if (error) {
-    console.error(`Error fetching admin businesses: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch admin businesses',
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      console.error(`Error fetching admin businesses: ${error}`);
+      toast.error('Error', {
+        description: 'Unable to fetch admin businesses',
+      });
+    }
+  }, [error]);
 
   const adminBusinesses = useMemo(() => {
-    return data?.allAdminBusinesses?.sort((a, b) => (a.name > b.name ? 1 : -1)) ?? [];
+    return data?.allAdminBusinesses?.slice().sort((a, b) => a.name.localeCompare(b.name)) ?? [];
   }, [data]);
 
   const selectableAdminBusinesses = useMemo(() => {
