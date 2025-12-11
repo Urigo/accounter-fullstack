@@ -532,9 +532,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
-        } else {
-          console.error(e);
         }
+        console.error(e);
         return {
           __typename: 'CommonError',
           message:
@@ -563,8 +562,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
-        } else {
-          console.error(e);
         }
         console.error(e);
         throw new GraphQLError(`Error deleting charge ID="${chargeId}"`);
