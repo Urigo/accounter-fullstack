@@ -105,7 +105,7 @@ jobs:
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
         shell: bash
-        run: yarn pgtyped -c docker/pgconfig.json
+        run: yarn generate:sql
 
       - name: Run Server Tests (Integration)
         if: github.event_name == 'pull_request'
