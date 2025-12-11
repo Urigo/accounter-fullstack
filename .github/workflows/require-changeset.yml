@@ -12,8 +12,8 @@ on:
 jobs:
   check-changeset:
     runs-on: ubuntu-latest
-    # Skip workflow if PR title includes "(deps)" - as for those changesets are automatically generated
-    if: ${{!contains(github.event.pull_request.title, '(deps)')}}
+    # Skip workflow if PR has "dependencies" label - as for those changesets are automatically generated
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
