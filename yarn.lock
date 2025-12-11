@@ -108,7 +108,7 @@ __metadata:
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.12.0"
     html2canvas-pro: "npm:1.5.13"
-    iconv-lite: "npm:0.7.0"
+    iconv-lite: "npm:0.7.1"
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:0.560.0"
     next-themes: "npm:0.4.6"
@@ -286,7 +286,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.54"
+    "@ai-sdk/anthropic": "npm:2.0.55"
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -300,7 +300,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:5.0.110"
+    ai: "npm:5.0.111"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -337,7 +337,7 @@ __metadata:
   dependencies:
     bob-the-bundler: "npm:7.0.1"
     eslint: "npm:9.39.1"
-    iconv-lite: "npm:0.7.0"
+    iconv-lite: "npm:0.7.1"
     vitest: "npm:4.0.15"
     zod: "npm:4.1.13"
   languageName: unknown
@@ -349,47 +349,47 @@ __metadata:
   dependencies:
     bob-the-bundler: "npm:7.0.1"
     eslint: "npm:9.39.1"
-    iconv-lite: "npm:0.7.0"
+    iconv-lite: "npm:0.7.1"
     vitest: "npm:4.0.15"
     zod: "npm:4.1.13"
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.54":
-  version: 2.0.54
-  resolution: "@ai-sdk/anthropic@npm:2.0.54"
+"@ai-sdk/anthropic@npm:2.0.55":
+  version: 2.0.55
+  resolution: "@ai-sdk/anthropic@npm:2.0.55"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/f52aae7d22110dac70ba1221e4e36f87de2e981c0c861b76a980b6f7b8e091361c8ecb60407bfd61ccb2b52319c6295d3154b6f18bdeae8ce227eb4b19fc2bf7
+  checksum: 10c0/82bcd61ac99c4c7c834443d225c1aac37796096d36439d908b9c8a7c45119f47ecc6827f64e655aeb86d5aeb3e64f767869596cc77e3aab942c85df169f3f455
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.19":
-  version: 2.0.19
-  resolution: "@ai-sdk/gateway@npm:2.0.19"
+"@ai-sdk/gateway@npm:2.0.20":
+  version: 2.0.20
+  resolution: "@ai-sdk/gateway@npm:2.0.20"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/7c1e304404f55060659f32be10450c04ed1e3784d1fe04e992adc7ae0cfb843e41435d88783d1f11f5045bd0d5df26df8929202eeb3077d7747e1c2c263fb0cd
+  checksum: 10c0/4607d23cf0d25895ea96425d9a997d0d33aa7a82bd6725f87cd1903490486d6d782f84a3189a9acb39325bb61e3987c4ad77a1d9d7eba338fa00c78f4c7638df
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:3.0.18":
-  version: 3.0.18
-  resolution: "@ai-sdk/provider-utils@npm:3.0.18"
+"@ai-sdk/provider-utils@npm:3.0.19":
+  version: 3.0.19
+  resolution: "@ai-sdk/provider-utils@npm:3.0.19"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@standard-schema/spec": "npm:^1.0.0"
     eventsource-parser: "npm:^3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/209c15b0dceef0ba95a7d3de544be0a417ad4a0bd5143496b3966a35fedf144156d93a42ff8c3d7db56781b9836bafc8c132c98978c49240e55bc1a36e18a67f
+  checksum: 10c0/e4decb19264067fa1b1642e07d515d25d1509a1a9143f59ccc051e3ca413c9fb1d708e1052a70eaf329ca39ddf6152520cd833dbf8c95d9bf02bbeffae8ea363
   languageName: node
   linkType: hard
 
@@ -9227,17 +9227,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.110":
-  version: 5.0.110
-  resolution: "ai@npm:5.0.110"
+"ai@npm:5.0.111":
+  version: 5.0.111
+  resolution: "ai@npm:5.0.111"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.19"
+    "@ai-sdk/gateway": "npm:2.0.20"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/7fca58424ea2dc577fd7b35a971a31c4247104b17646db4d26b7ba09b271b22e3e7096183240536158f8297428eb937af98e36a78af5539d0a2e1243b98617ee
+  checksum: 10c0/63b6254b89b5da072b5fba9c361a29642e8ab03537b17ed1d222e694e8d44428092b0ea718896b508c8ad10b1cb2d279360c53c846016946f078e7178f50cb0e
   languageName: node
   linkType: hard
 
@@ -14902,7 +14902,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"iconv-lite@npm:0.7.0, iconv-lite@npm:^0.7.0":
+"iconv-lite@npm:0.7.1":
+  version: 0.7.1
+  resolution: "iconv-lite@npm:0.7.1"
+  dependencies:
+    safer-buffer: "npm:>= 2.1.2 < 3.0.0"
+  checksum: 10c0/f5c9e2bddd7101a71b07a381ace44ebdc65ca76a10be0e9e64d372b511132acc4ee41b830962f438840d492cd6f9e08c237289f760d6a7fed754e61cffcb6757
+  languageName: node
+  linkType: hard
+
+"iconv-lite@npm:^0.7.0":
   version: 0.7.0
   resolution: "iconv-lite@npm:0.7.0"
   dependencies:
