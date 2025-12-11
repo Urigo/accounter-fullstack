@@ -1,7 +1,7 @@
-import adminContext from './typeDefs/admin-context.graphql.js';
 import { createModule } from 'graphql-modules';
 import { AdminContextProvider } from './providers/admin-context.provider.js';
 import { adminContextResolvers } from './resolvers/admin-context.resolvers.js';
+import adminContext from './typeDefs/admin-context.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 

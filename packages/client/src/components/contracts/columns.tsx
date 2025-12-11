@@ -1,8 +1,8 @@
 import { LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { ColumnDef } from '@tanstack/react-table';
 import type { BillingCycle, SubscriptionPlan } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
-import type { ColumnDef } from '@tanstack/react-table';
 import { ModifyContractDialog } from '../clients/contracts/modify-contract-dialog.js';
 import { DataTableColumnHeader } from '../common/index.js';
 import { Badge } from '../ui/badge.js';

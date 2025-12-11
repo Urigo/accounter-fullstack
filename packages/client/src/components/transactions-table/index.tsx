@@ -1,4 +1,12 @@
 import { useMemo, useState, type ReactElement } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type SortingState,
+} from '@tanstack/react-table';
 import { EditTransactionModal, Pagination } from '@/components/common/index.js';
 import {
   Table,
@@ -10,14 +18,6 @@ import {
 } from '@/components/ui/table.js';
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-} from '@tanstack/react-table';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {

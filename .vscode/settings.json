@@ -10,5 +10,8 @@
   "editor.formatOnSave": true,
   "cSpell.words": ["Hashavshevet", "mantine"],
   "prettier.configPath": "./prettier.config.mjs",
-  "prettier.useEditorConfig": false
+  "prettier.useEditorConfig": false,
+
+  // Specify Prettier as the default formatter for all file types
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

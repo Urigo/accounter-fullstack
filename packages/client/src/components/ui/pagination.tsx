@@ -1,7 +1,7 @@
 import React, { type ComponentProps } from 'react';
+import { ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
-import { ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 
 const Pagination = ({ className, ...props }: React.ComponentProps<'nav'>) => (
   <nav

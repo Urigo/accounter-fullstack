@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { ChargeMatchesTable } from '@/components/charge-matches/index.js';
 import { Accordion } from '@mantine/core';
+import { ChargeMatchesTable } from '@/components/charge-matches/index.js';
 import { ChargeMatchesDocument } from '../../../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

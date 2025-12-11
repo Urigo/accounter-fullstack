@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'urql';
-import { ChargeExtendedInfoForChargeMatchesDocument } from '@/gql/graphql.js';
 import { type Row } from '@tanstack/react-table';
+import { ChargeExtendedInfoForChargeMatchesDocument } from '@/gql/graphql.js';
 import { TableSkeleton } from '../common/index.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { TransactionsTable } from '../transactions-table/index.js';

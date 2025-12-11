@@ -91,8 +91,8 @@ Avoids full GraphQL application boot:
 Usage Pattern:
 
 ```typescript
-const { injector, adminContext } = createLedgerTestContext({ pool, mockExchangeRates });
-const result = await ledgerGenerationByCharge({ chargeId }, { injector, adminContext });
+const { injector, adminContext } = createLedgerTestContext({ pool, mockExchangeRates })
+const result = await ledgerGenerationByCharge({ chargeId }, { injector, adminContext })
 ```
 
 ## 8. Environment Isolation

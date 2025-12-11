@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnFiltersState,
+  type SortingState,
+} from '@tanstack/react-table';
 import { Pagination } from '@/components/common/index.js';
 import {
   Table,
@@ -12,16 +22,6 @@ import {
 import { ContractForContractsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnFiltersState,
-  type SortingState,
-} from '@tanstack/react-table';
 import type { BillingCycle, Product, SubscriptionPlan } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {

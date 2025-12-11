@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Filter } from 'lucide-react';
+import type { Table } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -18,7 +19,6 @@ import {
 } from '@/components/ui/select.js';
 import { BillingCycle, Product, SubscriptionPlan } from '@/gql/graphql.js';
 import { standardBillingCycle, standardPlan } from '@/helpers/index.js';
-import type { Table } from '@tanstack/react-table';
 import { Label } from '../ui/label.js';
 import type { ContractRow } from './index.js';
 

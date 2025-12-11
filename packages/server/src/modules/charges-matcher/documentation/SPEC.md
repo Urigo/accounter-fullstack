@@ -47,9 +47,9 @@ query FindChargeMatches($chargeId: UUID!) {
 ```typescript
 {
   matches: Array<{
-    chargeId: string; // UUID
-    confidenceScore: number; // 0.00 to 1.00, two decimal precision
-  }>;
+    chargeId: string // UUID
+    confidenceScore: number // 0.00 to 1.00, two decimal precision
+  }>
 }
 ```
 
@@ -211,27 +211,27 @@ CREATE TABLE accounter_schema.documents (
 
 ```typescript
 // types.ts
-import type { IGetTransactionsByIdsResult } from '@modules/transactions';
-import type { IGetAllDocumentsResult } from '@modules/documents';
-import type { Currency, DocumentType } from '@modules/documents';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions'
+import type { IGetAllDocumentsResult } from '@modules/documents'
+import type { Currency, DocumentType } from '@modules/documents'
 
 // Re-export with simpler names
-export type Transaction = IGetTransactionsByIdsResult;
-export type Document = IGetAllDocumentsResult;
+export type Transaction = IGetTransactionsByIdsResult
+export type Document = IGetAllDocumentsResult
 ```
 
 **Simplified Transaction Interface (for matching purposes):**
 
 ```typescript
 interface Transaction {
-  id: string; // UUID
-  charge_id: string; // UUID
-  amount: string; // numeric in DB, returned as string, converted to number
-  business_id: string | null; // UUID
-  currency: string | null;
-  event_date: Date; // Used for date matching (always)
-  source_description: string | null;
-  is_fee: boolean; // Excluded if true
+  id: string // UUID
+  charge_id: string // UUID
+  amount: string // numeric in DB, returned as string, converted to number
+  business_id: string | null // UUID
+  currency: string | null
+  event_date: Date // Used for date matching (always)
+  source_description: string | null
+  is_fee: boolean // Excluded if true
   // Other fields exist but not used in matching
 }
 ```
@@ -240,15 +240,15 @@ interface Transaction {
 
 ```typescript
 interface Document {
-  id: string; // UUID
-  charge_id: string | null; // UUID
-  creditor_id: string | null; // UUID
-  debtor_id: string | null; // UUID
-  currency_code: string | null;
-  date: Date | null;
-  total_amount: number | null; // double precision in DB, returned as number
-  type: DocumentType;
-  serial_number: string | null;
+  id: string // UUID
+  charge_id: string | null // UUID
+  creditor_id: string | null // UUID
+  debtor_id: string | null // UUID
+  currency_code: string | null
+  date: Date | null
+  total_amount: number | null // double precision in DB, returned as number
+  type: DocumentType
+  serial_number: string | null
   // Legacy text fields 'debtor', 'creditor' are IGNORED
 }
 ```
@@ -256,7 +256,7 @@ interface Document {
 **Currency Type:**
 
 ```typescript
-type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH';
+type Currency = 'ILS' | 'USD' | 'EUR' | 'GBP' | 'USDC' | 'GRT' | 'ETH'
 ```
 
 **DocumentType Enum:**
@@ -269,7 +269,7 @@ type DocumentType =
   | 'OTHER'
   | 'PROFORMA'
   | 'RECEIPT'
-  | 'UNPROCESSED';
+  | 'UNPROCESSED'
 ```
 
 **Custom Result Types:**
@@ -277,28 +277,28 @@ type DocumentType =
 ```typescript
 // GraphQL result types
 interface ChargeMatch {
-  chargeId: string;
-  confidence: number;
-  amount: number;
-  currency: string | null;
-  business: string | null;
-  date: Date;
-  description: string;
+  chargeId: string
+  confidence: number
+  amount: number
+  currency: string | null
+  business: string | null
+  date: Date
+  description: string
 }
 
 interface MergedCharge {
-  baseChargeId: string;
-  mergedChargeId: string;
-  confidence: number;
+  baseChargeId: string
+  mergedChargeId: string
+  confidence: number
 }
 
 interface ChargeMatchesResult {
-  matches: ChargeMatch[];
+  matches: ChargeMatch[]
 }
 
 interface AutoMatchChargesResult {
-  merged: MergedCharge[];
-  skipped: string[]; // Charge IDs with multiple high-confidence matches
+  merged: MergedCharge[]
+  skipped: string[] // Charge IDs with multiple high-confidence matches
 }
 ```
 
@@ -307,12 +307,12 @@ interface AutoMatchChargesResult {
 ```typescript
 // Used by aggregation providers
 interface AggregatedData {
-  amount: number;
-  currency: string | null;
-  businessId: string | null;
-  date: Date;
-  description: string;
-  side?: 'debtor' | 'creditor'; // Only for documents
+  amount: number
+  currency: string | null
+  businessId: string | null
+  date: Date
+  description: string
+  side?: 'debtor' | 'creditor' // Only for documents
 }
 ```
 
@@ -1001,7 +1001,7 @@ __tests__/
 1. **Single Charge Lookup:**
 
    ```typescript
-   const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+   const charge = await context.injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId)
    ```
 
 2. **Transactions for Charge:**
@@ -1009,7 +1009,7 @@ __tests__/
    ```typescript
    const transactions = await context.injector
      .get(TransactionsProvider)
-     .transactionsByChargeIDLoader.load(chargeId);
+     .transactionsByChargeIDLoader.load(chargeId)
    ```
 
 3. **Documents for Charge:**
@@ -1017,7 +1017,7 @@ __tests__/
    ```typescript
    const documents = await context.injector
      .get(ChargesProvider)
-     .getDocumentsByChargeIdLoader.load(chargeId);
+     .getDocumentsByChargeIdLoader.load(chargeId)
    ```
 
 4. **Candidate Charges (with filters):**
@@ -1025,8 +1025,8 @@ __tests__/
    const candidates = await chargesProvider.getChargesByFilters({
      ownerIds: [adminBusinessId],
      fromAnyDate: startDate,
-     toAnyDate: endDate,
-   });
+     toAnyDate: endDate
+   })
    ```
 
 **Filter Parameters Used:**
@@ -1068,43 +1068,43 @@ _Documents table:_
 **Imported Types:**
 
 ```typescript
-import type { IGetTransactionsByIdsResult } from '@modules/transactions';
-import type { IGetAllDocumentsResult } from '@modules/documents';
-import type { Currency, DocumentType } from '@modules/documents';
+import type { IGetTransactionsByIdsResult } from '@modules/transactions'
+import type { IGetAllDocumentsResult } from '@modules/documents'
+import type { Currency, DocumentType } from '@modules/documents'
 ```
 
 **Re-exported Types:**
 
 ```typescript
-export type Transaction = IGetTransactionsByIdsResult;
-export type Document = IGetAllDocumentsResult;
+export type Transaction = IGetTransactionsByIdsResult
+export type Document = IGetAllDocumentsResult
 ```
 
 **Custom Types Defined:**
 
 ```typescript
 export interface ChargeMatch {
-  chargeId: string;
-  confidence: number;
-  amount: number;
-  currency: string | null;
-  business: string | null;
-  date: Date;
-  description: string;
+  chargeId: string
+  confidence: number
+  amount: number
+  currency: string | null
+  business: string | null
+  date: Date
+  description: string
 }
 
 export interface MergedCharge {
-  baseChargeId: string;
-  mergedChargeId: string;
-  confidence: number;
+  baseChargeId: string
+  mergedChargeId: string
+  confidence: number
 }
 
 export interface AggregatedData {
-  amount: number;
-  currency: string | null;
-  businessId: string | null;
-  date: Date;
-  description: string;
+  amount: number
+  currency: string | null
+  businessId: string | null
+  date: Date
+  description: string
 }
 ```
 
@@ -1305,29 +1305,29 @@ export default gql`
 
 ```typescript
 // resolvers/find-charge-matches.resolver.ts
-import { GraphQLError } from 'graphql';
-import type { ChargesMatcherResolvers } from '../types.js';
+import { GraphQLError } from 'graphql'
+import type { ChargesMatcherResolvers } from '../types.js'
 
 export const findChargeMatchesResolver: ChargesMatcherResolvers = {
   Query: {
     findChargeMatches: async (_, { chargeId }, context) => {
       try {
-        const adminBusinessId = context.adminContext.defaultAdminBusinessId;
-        const chargesMatcherProvider = context.injector.get(ChargesMatcherProvider);
+        const adminBusinessId = context.adminContext.defaultAdminBusinessId
+        const chargesMatcherProvider = context.injector.get(ChargesMatcherProvider)
 
         const matches = await chargesMatcherProvider.findMatchesForCharge(
           chargeId,
           adminBusinessId,
-          context,
-        );
+          context
+        )
 
-        return { matches };
+        return { matches }
       } catch (error) {
-        throw new GraphQLError(error instanceof Error ? error.message : 'Failed to find matches');
+        throw new GraphQLError(error instanceof Error ? error.message : 'Failed to find matches')
       }
-    },
-  },
-};
+    }
+  }
+}
 ```
 
 ### 13.3 Module Registration (Implemented)
@@ -1336,34 +1336,34 @@ export const findChargeMatchesResolver: ChargesMatcherResolvers = {
 
 ```typescript
 // index.ts
-import { createModule } from 'graphql-modules';
-import { chargesMatcherResolvers } from './resolvers/index.js';
-import { ChargesMatcherProvider } from './providers/charges-matcher.provider.js';
-import typeDefs from './typeDefs/charges-matcher.graphql.js';
+import { createModule } from 'graphql-modules'
+import { chargesMatcherResolvers } from './resolvers/index.js'
+import { ChargesMatcherProvider } from './providers/charges-matcher.provider.js'
+import typeDefs from './typeDefs/charges-matcher.graphql.js'
 
 export const chargesMatcherModule = createModule({
   id: 'chargesMatcherModule',
   dirname: __dirname,
   typeDefs,
   resolvers: [chargesMatcherResolvers],
-  providers: [ChargesMatcherProvider],
-});
+  providers: [ChargesMatcherProvider]
+})
 ```
 
 **Application Integration:**
 
 ```typescript
 // modules-app.ts (added after chargesModule)
-import { chargesMatcherModule } from './modules/charges-matcher/index.js';
+import { chargesMatcherModule } from './modules/charges-matcher/index.js'
 
 export const application = createApplication({
   modules: [
     // ... other modules
     chargesModule,
-    chargesMatcherModule, // Added here
+    chargesMatcherModule // Added here
     // ... more modules
-  ],
-});
+  ]
+})
 ```
 
 ### 13.4 Provider Implementation Pattern (Actual Code)
@@ -1371,20 +1371,20 @@ export const application = createApplication({
 **Injectable Provider:**
 
 ```typescript
-import { Injectable, Scope } from 'graphql-modules';
-import type { GraphQLModules } from '@envelop/core';
+import { Injectable, Scope } from 'graphql-modules'
+import type { GraphQLModules } from '@envelop/core'
 
 @Injectable({
-  scope: Scope.Operation,
+  scope: Scope.Operation
 })
 export class ChargesMatcherProvider {
   async findMatchesForCharge(
     chargeId: string,
     adminBusinessId: string,
-    context: GraphQLModules.AppContext,
+    context: GraphQLModules.AppContext
   ): Promise<ChargeMatch[]> {
-    const chargesProvider = context.injector.get(ChargesProvider);
-    const transactionsProvider = context.injector.get(TransactionsProvider);
+    const chargesProvider = context.injector.get(ChargesProvider)
+    const transactionsProvider = context.injector.get(TransactionsProvider)
 
     // Implementation...
   }
@@ -1404,14 +1404,14 @@ export class ChargesMatcherProvider {
 **Test Pattern Example:**
 
 ```typescript
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest'
 
 describe('amount-confidence.helper', () => {
   it('should return 1.0 for exact match', () => {
-    const result = calculateAmountConfidence(100, 100);
-    expect(result).toBe(1.0);
-  });
-});
+    const result = calculateAmountConfidence(100, 100)
+    expect(result).toBe(1.0)
+  })
+})
 ```
 
 ### 13.6 Completion Status

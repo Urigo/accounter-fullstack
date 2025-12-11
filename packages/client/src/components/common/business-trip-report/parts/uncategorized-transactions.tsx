@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ROUTES } from '@/router/routes.js';
 import { Popover, Table, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { ROUTES } from '@/router/routes.js';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
   UncategorizedTransactionsTableAmountFieldsFragmentDoc,

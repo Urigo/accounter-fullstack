@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -32,7 +33,6 @@ import { DocumentType } from '@/gql/graphql.js';
 import { getDocumentNameFromType } from '@/helpers/index.js';
 import { useInsertClient } from '@/hooks/use-insert-client.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge } from '../ui/badge';
 
 const clientFormSchema = z.object({

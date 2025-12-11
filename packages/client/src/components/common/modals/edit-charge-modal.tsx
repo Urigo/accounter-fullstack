@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { ROUTES } from '@/router/routes.js';
 import { Loader } from '@mantine/core';
+import { ROUTES } from '@/router/routes.js';
 import { EditChargeDocument } from '../../../gql/graphql.js';
 import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
 

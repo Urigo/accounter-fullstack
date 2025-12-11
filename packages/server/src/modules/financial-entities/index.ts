@@ -1,9 +1,3 @@
-import adminBusinesses from './typeDefs/admin-businesses.graphql.js';
-import businessesTransactions from './typeDefs/businesses-transactions.graphql.js';
-import businesses from './typeDefs/businesses.graphql.js';
-import clients from './typeDefs/clients.graphql.js';
-import financialEntities from './typeDefs/financial-entities.graphql.js';
-import taxCategories from './typeDefs/tax-categories.graphql.js';
 import { createModule } from 'graphql-modules';
 import { AdminBusinessesProvider } from './providers/admin-businesses.provider.js';
 import { BusinessesOperationProvider } from './providers/businesses-operation.provider.js';
@@ -17,6 +11,12 @@ import { businessesResolvers } from './resolvers/businesses.resolver.js';
 import { clientsResolvers } from './resolvers/clients.resolvers.js';
 import { financialEntitiesResolvers } from './resolvers/financial-entities.resolver.js';
 import { taxCategoriesResolvers } from './resolvers/tax-categories.resolver.js';
+import adminBusinesses from './typeDefs/admin-businesses.graphql.js';
+import businessesTransactions from './typeDefs/businesses-transactions.graphql.js';
+import businesses from './typeDefs/businesses.graphql.js';
+import clients from './typeDefs/clients.graphql.js';
+import financialEntities from './typeDefs/financial-entities.graphql.js';
+import taxCategories from './typeDefs/tax-categories.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 

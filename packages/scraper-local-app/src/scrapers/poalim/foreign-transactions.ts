@@ -3,9 +3,9 @@ import Listr, { ListrTaskWrapper } from 'listr';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
+import { sql } from '@pgtyped/runtime';
 import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
-import { sql } from '@pgtyped/runtime';
 import {
   camelCase,
   convertNumberDateToString,

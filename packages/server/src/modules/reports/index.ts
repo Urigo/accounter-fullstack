@@ -1,15 +1,3 @@
-import annualRevenue from './typeDefs/annual-revenue.graphql.js';
-import balanceReport from './typeDefs/balance-report.graphql.js';
-import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
-import depreciationReport from './typeDefs/depreciation-report.graphql.js';
-import dynamicReport from './typeDefs/dynamic-report.graphql.js';
-import pcn from './typeDefs/pcn.graphql.js';
-import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
-import shaam6111Report from './typeDefs/shaam6111-report.graphql.js';
-import taxReport from './typeDefs/tax-report.graphql.js';
-import uniformFormat from './typeDefs/uniform-format.graphql.js';
-import vatReport from './typeDefs/vat-report.graphql.js';
-import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 import { createModule } from 'graphql-modules';
 import { AnnualRevenueReportProvider } from './providers/annual-revenue-report.provider.js';
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
@@ -22,6 +10,18 @@ import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
 import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
 import { shaam6111Resolvers } from './resolvers/shaam6111.resolver.js';
+import annualRevenue from './typeDefs/annual-revenue.graphql.js';
+import balanceReport from './typeDefs/balance-report.graphql.js';
+import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
+import depreciationReport from './typeDefs/depreciation-report.graphql.js';
+import dynamicReport from './typeDefs/dynamic-report.graphql.js';
+import pcn from './typeDefs/pcn.graphql.js';
+import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
+import shaam6111Report from './typeDefs/shaam6111-report.graphql.js';
+import taxReport from './typeDefs/tax-report.graphql.js';
+import uniformFormat from './typeDefs/uniform-format.graphql.js';
+import vatReport from './typeDefs/vat-report.graphql.js';
+import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 

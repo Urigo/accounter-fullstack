@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { Indicator } from '@mantine/core';
 import { DocumentType } from '@/gql/graphql.js';
 import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
 import { useUpdateDocument } from '@/hooks/use-update-document.js';
 import { ROUTES } from '@/router/routes.js';
-import { Indicator } from '@mantine/core';
 import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 

@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useState, type JSX } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useFieldArray, useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -33,7 +34,6 @@ import { Switch } from '@/components/ui/switch.js';
 import { Currency, FinancialAccountType, PrivateOrBusinessType } from '@/gql/graphql.js';
 import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.js';
 import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { FinancialAccount } from './types.js';
 import { getAccountTypeLabel } from './utils.js';
 

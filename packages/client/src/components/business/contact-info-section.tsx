@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Globe, Mail, MapPin, Phone, Plus, Save, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -33,7 +34,6 @@ import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ComboBox } from '../common';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

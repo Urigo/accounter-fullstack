@@ -1,6 +1,6 @@
-import accountantApproval from './typeDefs/accountant-approval.graphql.js';
 import { createModule } from 'graphql-modules';
 import { accountantApprovalResolvers } from './resolvers/accountant-approval.resolver.js';
+import accountantApproval from './typeDefs/accountant-approval.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
