@@ -36,7 +36,7 @@ runs:
       run: yarn install
 
     - name: Cache ESLint
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: node_modules/.cache/.eslintcache
         key:
@@ -51,7 +51,7 @@ runs:
 
     - name: Cache Docker layers
       if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       with:
         path: /tmp/.buildx-cache
         key:
@@ -76,7 +76,7 @@ runs:
 
     - name: Cache GraphQL Generated Types
       if: ${{ inputs.codegen == 'true' }}
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       id: graphql-cache
       with:
         path: |
@@ -97,7 +97,7 @@ runs:
 
     - name: Cache PgTyped Generated Types
       if: ${{ inputs.pgTyped == 'true' }}
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       id: pgtyped-cache
       with:
         path: |
