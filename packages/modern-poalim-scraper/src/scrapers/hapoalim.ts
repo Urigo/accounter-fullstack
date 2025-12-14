@@ -1,12 +1,10 @@
 import inquirer from 'inquirer';
 import type { Page } from 'puppeteer';
-import type { AccountDataSchema } from '../__generated__/accountDataSchema.js';
 import type { ForeignTransactionsBusinessSchema } from '../__generated__/foreignTransactionsBusinessSchema.js';
 import type { ForeignTransactionsPersonalSchema } from '../__generated__/foreignTransactionsPersonalSchema.js';
 import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
 import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
 import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
-import accountDataSchemaFile from '../schemas/accountDataSchema.json' with { type: 'json' };
 import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' with { type: 'json' };
 import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' with { type: 'json' };
 import depositsSchema from '../schemas/hapoalimDepositsSchema.json' with { type: 'json' };
@@ -14,6 +12,10 @@ import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSch
 import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
 import { validateSchema } from '../utils/validate-schema.js';
+import {
+  HapoalimAccountDataSchema,
+  type HapoalimAccountData,
+} from '../zod-schemas/hapoalim-account-data-schema.js';
 import {
   SwiftTransactionSchema,
   type SwiftTransaction,
@@ -146,18 +148,19 @@ export async function hapoalim(
 
   return {
     getAccountsData: async (): Promise<{
-      data: AccountDataSchema | null;
+      data: HapoalimAccountData | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const accountDataUrl = `${apiSiteUrl}/general/accounts`;
-      const getAccountsFunction = fetchGetWithinPage<AccountDataSchema>(page, accountDataUrl);
+      const getAccountsFunction = fetchGetWithinPage<HapoalimAccountData>(page, accountDataUrl);
       if (options?.validateSchema) {
         const data = await getAccountsFunction;
-        const validation = await validateSchema(accountDataSchemaFile, data);
+        const validation = HapoalimAccountDataSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 

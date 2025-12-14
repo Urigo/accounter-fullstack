@@ -1,6 +1,6 @@
 import Listr from 'listr';
+import type { HapoalimAccountData } from '@accounter/modern-poalim-scraper/dist/index.js';
 import { sql } from '@pgtyped/runtime';
-import type { AccountDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/accountDataSchema.js';
 import { getTableColumns, insertFinancialAccount } from '../../helpers/sql.js';
 import type {
   IGetAllFinancialAccountsQuery,
@@ -9,7 +9,7 @@ import type {
 import { MainContext } from '../../index.js';
 import { PoalimContext } from './index.js';
 
-export type ScrapedAccount = AccountDataSchema[number];
+export type ScrapedAccount = HapoalimAccountData[number];
 
 type AccountsContext = {
   scrapedAccounts: ScrapedAccount[];
@@ -102,7 +102,7 @@ export async function getPoalimAccounts(bankKey: string) {
 
           if (dbAccount) {
             // Check for differences
-            const diffs: (keyof AccountDataSchema[number])[] = [];
+            const diffs: (keyof HapoalimAccountData[number])[] = [];
             if (dbAccount.account_agreement_opening_date !== account.accountAgreementOpeningDate) {
               diffs.push('accountAgreementOpeningDate');
             }
