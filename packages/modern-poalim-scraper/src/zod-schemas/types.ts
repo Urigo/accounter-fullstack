@@ -5,3 +5,5 @@ export type { SwiftTransactions } from './swift-transactions-schema.js';
 export type { HapoalimAccountData } from './hapoalim-account-data-schema.js';
 export type { HapoalimForeignTransactionsBusiness } from './hapoalim-foreign-transactions-business-schema.js';
 export type { HapoalimForeignTransactionsPersonal } from './hapoalim-foreign-transactions-personal-schema.js';
+export type { HapoalimDeposits } from './hapoalim-deposits-schema.js';
+export type { HapoalimForeignDeposits } from './hapoalim-foreign-deposits-schema.js';
