@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type {
   HapoalimForeignTransactionsBusiness,
   HapoalimForeignTransactionsPersonal,
-} from '@accounter/modern-poalim-scraper/dist/index.js';
+} from '@accounter/modern-poalim-scraper';
 import { sql } from '@pgtyped/runtime';
 import {
   camelCase,
