@@ -3,3 +3,5 @@ export type { IsracardDashboardMonth } from './isracard-dashboard-month-schema.j
 export type { SwiftTransaction } from './swift-transaction-schema.js';
 export type { SwiftTransactions } from './swift-transactions-schema.js';
 export type { HapoalimAccountData } from './hapoalim-account-data-schema.js';
+export type { HapoalimForeignTransactionsBusiness } from './hapoalim-foreign-transactions-business-schema.js';
+export type { HapoalimForeignTransactionsPersonal } from './hapoalim-foreign-transactions-personal-schema.js';

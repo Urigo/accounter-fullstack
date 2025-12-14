@@ -1,12 +1,8 @@
 import inquirer from 'inquirer';
 import type { Page } from 'puppeteer';
-import type { ForeignTransactionsBusinessSchema } from '../__generated__/foreignTransactionsBusinessSchema.js';
-import type { ForeignTransactionsPersonalSchema } from '../__generated__/foreignTransactionsPersonalSchema.js';
 import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
 import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
 import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
-import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' with { type: 'json' };
-import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' with { type: 'json' };
 import depositsSchema from '../schemas/hapoalimDepositsSchema.json' with { type: 'json' };
 import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSchema.json' with { type: 'json' };
 import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: 'json' };
@@ -17,6 +13,14 @@ import {
   type HapoalimAccountData,
 } from '../zod-schemas/hapoalim-account-data-schema.js';
 import {
+  HapoalimForeignTransactionsBusinessSchema,
+  type HapoalimForeignTransactionsBusiness,
+} from '../zod-schemas/hapoalim-foreign-transactions-business-schema.js';
+import {
+  HapoalimForeignTransactionsPersonalSchema,
+  type HapoalimForeignTransactionsPersonal,
+} from '../zod-schemas/hapoalim-foreign-transactions-personal-schema.js';
+import {
   SwiftTransactionSchema,
   type SwiftTransaction,
 } from '../zod-schemas/swift-transaction-schema.js';
@@ -26,9 +30,9 @@ import {
 } from '../zod-schemas/swift-transactions-schema.js';
 
 type ForeignTransactionsSchema<T extends boolean> = T extends true
-  ? ForeignTransactionsBusinessSchema
+  ? HapoalimForeignTransactionsBusiness
   : T extends false
-    ? ForeignTransactionsPersonalSchema
+    ? HapoalimForeignTransactionsPersonal
     : never;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -234,7 +238,7 @@ export async function hapoalim(
       },
       isBusiness: T = true as T,
     ): Promise<{
-      data: ForeignTransactionsBusinessSchema | ForeignTransactionsPersonalSchema | null;
+      data: HapoalimForeignTransactionsBusiness | HapoalimForeignTransactionsPersonal | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
@@ -265,13 +269,19 @@ export async function hapoalim(
             isValid: false,
           };
         }
-        const validation = await validateSchema(
-          isBusiness ? foreignTransactionsBusinessSchema : foreignTransactionsPersonalSchema,
-          data,
-        );
+        if (isBusiness) {
+          const validation = HapoalimForeignTransactionsBusinessSchema.safeParse(data);
+          return {
+            data,
+            isValid: validation.success,
+            errors: validation.success ? null : validation.error.issues,
+          };
+        }
+        const validation = HapoalimForeignTransactionsPersonalSchema.safeParse(data);
         return {
           data,
-          ...validation,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
