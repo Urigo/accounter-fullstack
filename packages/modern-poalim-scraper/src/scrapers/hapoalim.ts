@@ -1,9 +1,6 @@
 import inquirer from 'inquirer';
 import type { Page } from 'puppeteer';
-import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
-import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
-import { validateSchema } from '../utils/validate-schema.js';
 import {
   HapoalimAccountDataSchema,
   type HapoalimAccountData,
@@ -24,6 +21,10 @@ import {
   HapoalimForeignTransactionsPersonalSchema,
   type HapoalimForeignTransactionsPersonal,
 } from '../zod-schemas/hapoalim-foreign-transactions-personal-schema.js';
+import {
+  HapoalimILSTransactionsSchema,
+  type HapoalimILSTransactions,
+} from '../zod-schemas/hapoalim-ils-checking-transactions-schema.js';
 import {
   SwiftTransactionSchema,
   type SwiftTransaction,
@@ -179,18 +180,17 @@ export async function hapoalim(
       branchNumber: number;
       accountNumber: number;
     }): Promise<{
-      data: ILSCheckingTransactionsDataSchema | null;
+      data: HapoalimILSTransactions | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const ILSCheckingTransactionsUrl = `${apiSiteUrl}/current-account/transactions?accountId=${fullAccountNumber}&numItemsPerPage=200&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&sortCode=1`;
-      const getIlsTransactionsFunction =
-        fetchPoalimXSRFWithinPage<ILSCheckingTransactionsDataSchema>(
-          page,
-          ILSCheckingTransactionsUrl,
-          '/current-account/transactions',
-        );
+      const getIlsTransactionsFunction = fetchPoalimXSRFWithinPage<HapoalimILSTransactions>(
+        page,
+        ILSCheckingTransactionsUrl,
+        '/current-account/transactions',
+      );
       if (options?.validateSchema || options?.getTransactionsDetails) {
         const data = await getIlsTransactionsFunction;
 
@@ -225,10 +225,11 @@ export async function hapoalim(
             isValid: true,
           };
         }
-        const validation = await validateSchema(ILSCheckingTransactionsDataSchemaFile, data);
+        const validation = HapoalimILSTransactionsSchema.safeParse(data);
         return {
           data,
-          ...validation,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 

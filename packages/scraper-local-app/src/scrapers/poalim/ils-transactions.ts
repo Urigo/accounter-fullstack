@@ -1,8 +1,8 @@
 import { differenceInMonths } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
+import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
 import { sql } from '@pgtyped/runtime';
-import type { ILSCheckingTransactionsDataSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/ILSCheckingTransactionsDataSchema.js';
 import {
   camelCase,
   convertNumberDateToString,
@@ -21,7 +21,7 @@ import type { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimScraper, PoalimUserContext } from './index.js';
 
-export type IlsTransaction = ILSCheckingTransactionsDataSchema['transactions'][number];
+export type IlsTransaction = HapoalimILSTransactions['transactions'][number];
 export type NormalizedIlsTransaction = IlsTransaction & {
   beneficiaryDetailsDataPartyName?: string | null;
   beneficiaryDetailsDataMessageHeadline?: string | null;

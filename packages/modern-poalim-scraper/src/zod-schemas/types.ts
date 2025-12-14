@@ -7,3 +7,4 @@ export type { HapoalimForeignTransactionsBusiness } from './hapoalim-foreign-tra
 export type { HapoalimForeignTransactionsPersonal } from './hapoalim-foreign-transactions-personal-schema.js';
 export type { HapoalimDeposits } from './hapoalim-deposits-schema.js';
 export type { HapoalimForeignDeposits } from './hapoalim-foreign-deposits-schema.js';
+export type { HapoalimILSTransactions } from './hapoalim-ils-checking-transactions-schema.js';
