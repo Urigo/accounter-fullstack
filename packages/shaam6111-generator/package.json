@@ -54,12 +54,12 @@
     "test:watch": "vitest --watch"
   },
   "dependencies": {
-    "iconv-lite": "0.7.0",
+    "iconv-lite": "0.7.1",
     "zod": "4.2.0"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
-    "eslint": "9.39.1",
+    "eslint": "9.39.2",
     "vitest": "4.0.15"
   },
   "publishConfig": {
