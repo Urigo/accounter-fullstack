@@ -3,11 +3,11 @@ import Listr, { ListrTaskWrapper } from 'listr';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
+import { sql } from '@pgtyped/runtime';
 import type {
   HapoalimForeignTransactionsBusiness,
   HapoalimForeignTransactionsPersonal,
 } from '@accounter/modern-poalim-scraper';
-import { sql } from '@pgtyped/runtime';
 import {
   camelCase,
   convertNumberDateToString,

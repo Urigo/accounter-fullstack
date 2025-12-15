@@ -1,8 +1,8 @@
 import { differenceInMonths } from 'date-fns';
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
 import { sql } from '@pgtyped/runtime';
+import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
 import {
   camelCase,
   convertNumberDateToString,

@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import { sql } from '@pgtyped/runtime';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import { normalizeCurrencySymbol } from '../../helpers/currency.js';
 import type {
   IInsertCalTransactionsParams,
