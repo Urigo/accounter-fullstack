@@ -16,7 +16,8 @@ export default gql`
   }
 
   extend type Mutation {
-    fetchIncomeDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]! @auth(role: ADMIN)
+    syncGreenInvoiceDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]!
+      @auth(role: ADMIN)
     issueGreenInvoiceDocuments(
       generateDocumentsInfo: [NewDocumentInput!]!
     ): GenerateMonthlyClientDocumentsResult! @auth(role: ACCOUNTANT)

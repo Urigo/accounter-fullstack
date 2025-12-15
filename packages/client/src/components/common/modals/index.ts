@@ -17,6 +17,6 @@ export * from './insert-tax-category.js';
 export * from './preview-document-modal.js';
 export * from './match-document-modal.js';
 export * from './modal.js';
-export * from './pull-documents-modal.js';
+export * from './sync-green-invoice-documents-modal.js';
 export * from './similar-charges/index.js';
 export * from './upload-documents-modal.js';
