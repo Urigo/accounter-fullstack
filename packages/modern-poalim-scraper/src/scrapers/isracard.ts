@@ -34,7 +34,7 @@ async function getMonthDashboard(page: Page, monthDate: Date, options?: Isracard
     const data = await getDashboardFunction;
     const validation = IsracardDashboardMonthSchema.safeParse(data);
     return {
-      data: validation.data,
+      data: validation.data ?? null,
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };
@@ -53,7 +53,7 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: Israc
     const data = await getTransactionsFunction;
     const validation = IsracardCardsTransactionsListSchema.safeParse(data);
     return {
-      data,
+      data: validation.data ?? null,
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };

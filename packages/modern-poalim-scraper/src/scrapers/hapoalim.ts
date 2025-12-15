@@ -227,7 +227,7 @@ export async function hapoalim(
         }
         const validation = HapoalimILSTransactionsSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.success ? null : validation.error.issues,
         };
@@ -277,14 +277,14 @@ export async function hapoalim(
         if (isBusiness) {
           const validation = HapoalimForeignTransactionsBusinessSchema.safeParse(data);
           return {
-            data,
+            data: validation.data ?? null,
             isValid: validation.success,
             errors: validation.success ? null : validation.error.issues,
           };
         }
         const validation = HapoalimForeignTransactionsPersonalSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.success ? null : validation.error.issues,
         };
@@ -322,7 +322,7 @@ export async function hapoalim(
         }
         const validation = SwiftTransactionsSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.error,
         };
@@ -395,7 +395,7 @@ export async function hapoalim(
         }
         const validation = HapoalimDepositsSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.success ? null : validation.error.issues,
         };
@@ -419,7 +419,7 @@ export async function hapoalim(
         const data = await getDepositsFunction;
         const validation = HapoalimForeignDepositsSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.success ? null : validation.error.issues,
         };

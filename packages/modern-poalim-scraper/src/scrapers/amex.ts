@@ -33,7 +33,7 @@ async function getMonthDashboard(page: Page, monthDate: Date, options?: AmexOpti
     const data = await getDashboardFunction;
     const validation = IsracardDashboardMonthSchema.safeParse(data);
     return {
-      data: validation.data,
+      data: validation.data ?? null,
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };
@@ -52,7 +52,7 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: AmexO
     const data = await getTransactionsFunction;
     const validation = IsracardCardsTransactionsListSchema.safeParse(data);
     return {
-      data: validation.data,
+      data: validation.data ?? null,
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };
