@@ -4,8 +4,10 @@ import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import { sql } from '@pgtyped/runtime';
-import type { ForeignTransactionsBusinessSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsBusinessSchema.js';
-import type { ForeignTransactionsPersonalSchema } from '@accounter/modern-poalim-scraper/dist/__generated__/foreignTransactionsPersonalSchema.js';
+import type {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+} from '@accounter/modern-poalim-scraper';
 import {
   camelCase,
   convertNumberDateToString,
@@ -25,8 +27,8 @@ import type { ScrapedAccount } from './accounts.js';
 import type { PoalimScraper, PoalimUserContext } from './index.js';
 
 export type ForeignTransaction = (
-  | ForeignTransactionsPersonalSchema
-  | ForeignTransactionsBusinessSchema
+  | HapoalimForeignTransactionsPersonal
+  | HapoalimForeignTransactionsBusiness
 )['balancesAndLimitsDataList'][number]['transactions'][number];
 type ForeignCurrency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'JPY' | 'AUD' | 'SEK';
 export type NormalizedForeignTransaction = ForeignTransaction & {

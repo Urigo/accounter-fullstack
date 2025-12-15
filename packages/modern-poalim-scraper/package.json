@@ -17,8 +17,6 @@
     "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
   },
   "dependencies": {
-    "ajv": "8.17.1",
-    "ajv-formats": "3.0.1",
     "date-fns": "4.1.0",
     "inquirer": "13.1.0",
     "node-fetch": "3.3.2",

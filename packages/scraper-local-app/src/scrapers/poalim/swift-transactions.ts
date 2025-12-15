@@ -1,8 +1,10 @@
 import Listr, { type ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
-import type { SwiftTransaction as ForeignSwiftTransaction } from '@accounter/modern-poalim-scraper/dist/zod-schemas/swift-transaction-schema.js';
-import type { SwiftTransactions } from '@accounter/modern-poalim-scraper/dist/zod-schemas/swift-transactions-schema.js';
+import type {
+  SwiftTransaction as ForeignSwiftTransaction,
+  SwiftTransactions,
+} from '@accounter/modern-poalim-scraper';
 import type {
   ICheckForExistingSwiftTransactionQuery,
   IInsertSwiftTransactionParams,

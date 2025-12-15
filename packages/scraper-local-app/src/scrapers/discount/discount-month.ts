@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import Listr, { ListrTaskWrapper } from 'listr';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper/dist/zod-schemas/isracard-cards-transactions-list-schema.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import { convertNumberDateToString } from '../../helpers/misc.js';
 import type {
   IInsertDiscountTransactionsParams,

@@ -1,12 +1,13 @@
 import type { Page } from 'puppeteer';
-import type { IsracardDashboardMonth } from '../__generated__/isracardDashboardMonth.js';
-import isracardDashboardMonth from '../schemas/isracardDashboardMonth.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPostWithinPage } from '../utils/fetch.js';
-import { validateSchema } from '../utils/validate-schema.js';
 import {
   IsracardCardsTransactionsListSchema,
   type IsracardCardsTransactionsList,
 } from '../zod-schemas/isracard-cards-transactions-list-schema.js';
+import {
+  IsracardDashboardMonthSchema,
+  type IsracardDashboardMonth,
+} from '../zod-schemas/isracard-dashboard-month-schema.js';
 
 const SERVICE_URL = 'https://he.americanexpress.co.il/services/ProxyRequestHandler.ashx';
 
@@ -30,10 +31,11 @@ async function getMonthDashboard(page: Page, monthDate: Date, options?: AmexOpti
 
   if (options?.validateSchema) {
     const data = await getDashboardFunction;
-    const validation = await validateSchema(isracardDashboardMonth, data);
+    const validation = IsracardDashboardMonthSchema.safeParse(data);
     return {
-      data,
-      ...validation,
+      data: validation.data ?? null,
+      isValid: validation.success,
+      errors: validation.success ? null : validation.error.issues,
     };
   }
 
@@ -50,7 +52,7 @@ async function getMonthTransactions(page: Page, monthDate: Date, options?: AmexO
     const data = await getTransactionsFunction;
     const validation = IsracardCardsTransactionsListSchema.safeParse(data);
     return {
-      data,
+      data: validation.data ?? null,
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };

@@ -1,19 +1,30 @@
 import inquirer from 'inquirer';
 import type { Page } from 'puppeteer';
-import type { AccountDataSchema } from '../__generated__/accountDataSchema.js';
-import type { ForeignTransactionsBusinessSchema } from '../__generated__/foreignTransactionsBusinessSchema.js';
-import type { ForeignTransactionsPersonalSchema } from '../__generated__/foreignTransactionsPersonalSchema.js';
-import type { HapoalimDepositsSchema } from '../__generated__/hapoalimDepositsSchema.js';
-import type { HapoalimForeignDepositsSchema } from '../__generated__/hapoalimForeignDepositsSchema.js';
-import type { ILSCheckingTransactionsDataSchema } from '../__generated__/ILSCheckingTransactionsDataSchema.js';
-import accountDataSchemaFile from '../schemas/accountDataSchema.json' with { type: 'json' };
-import foreignTransactionsBusinessSchema from '../schemas/foreignTransactionsBusinessSchema.json' with { type: 'json' };
-import foreignTransactionsPersonalSchema from '../schemas/foreignTransactionsPersonalSchema.json' with { type: 'json' };
-import depositsSchema from '../schemas/hapoalimDepositsSchema.json' with { type: 'json' };
-import hapoalimForeignDepositsSchema from '../schemas/hapoalimForeignDepositsSchema.json' with { type: 'json' };
-import ILSCheckingTransactionsDataSchemaFile from '../schemas/ILSCheckingTransactionsDataSchema.json' with { type: 'json' };
 import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
-import { validateSchema } from '../utils/validate-schema.js';
+import {
+  HapoalimAccountDataSchema,
+  type HapoalimAccountData,
+} from '../zod-schemas/hapoalim-account-data-schema.js';
+import {
+  HapoalimDepositsSchema,
+  type HapoalimDeposits,
+} from '../zod-schemas/hapoalim-deposits-schema.js';
+import {
+  HapoalimForeignDepositsSchema,
+  type HapoalimForeignDeposits,
+} from '../zod-schemas/hapoalim-foreign-deposits-schema.js';
+import {
+  HapoalimForeignTransactionsBusinessSchema,
+  type HapoalimForeignTransactionsBusiness,
+} from '../zod-schemas/hapoalim-foreign-transactions-business-schema.js';
+import {
+  HapoalimForeignTransactionsPersonalSchema,
+  type HapoalimForeignTransactionsPersonal,
+} from '../zod-schemas/hapoalim-foreign-transactions-personal-schema.js';
+import {
+  HapoalimILSTransactionsSchema,
+  type HapoalimILSTransactions,
+} from '../zod-schemas/hapoalim-ils-checking-transactions-schema.js';
 import {
   SwiftTransactionSchema,
   type SwiftTransaction,
@@ -24,9 +35,9 @@ import {
 } from '../zod-schemas/swift-transactions-schema.js';
 
 type ForeignTransactionsSchema<T extends boolean> = T extends true
-  ? ForeignTransactionsBusinessSchema
+  ? HapoalimForeignTransactionsBusiness
   : T extends false
-    ? ForeignTransactionsPersonalSchema
+    ? HapoalimForeignTransactionsPersonal
     : never;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -146,18 +157,19 @@ export async function hapoalim(
 
   return {
     getAccountsData: async (): Promise<{
-      data: AccountDataSchema | null;
+      data: HapoalimAccountData | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const accountDataUrl = `${apiSiteUrl}/general/accounts`;
-      const getAccountsFunction = fetchGetWithinPage<AccountDataSchema>(page, accountDataUrl);
+      const getAccountsFunction = fetchGetWithinPage<HapoalimAccountData>(page, accountDataUrl);
       if (options?.validateSchema) {
         const data = await getAccountsFunction;
-        const validation = await validateSchema(accountDataSchemaFile, data);
+        const validation = HapoalimAccountDataSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
@@ -168,18 +180,17 @@ export async function hapoalim(
       branchNumber: number;
       accountNumber: number;
     }): Promise<{
-      data: ILSCheckingTransactionsDataSchema | null;
+      data: HapoalimILSTransactions | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const ILSCheckingTransactionsUrl = `${apiSiteUrl}/current-account/transactions?accountId=${fullAccountNumber}&numItemsPerPage=200&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&sortCode=1`;
-      const getIlsTransactionsFunction =
-        fetchPoalimXSRFWithinPage<ILSCheckingTransactionsDataSchema>(
-          page,
-          ILSCheckingTransactionsUrl,
-          '/current-account/transactions',
-        );
+      const getIlsTransactionsFunction = fetchPoalimXSRFWithinPage<HapoalimILSTransactions>(
+        page,
+        ILSCheckingTransactionsUrl,
+        '/current-account/transactions',
+      );
       if (options?.validateSchema || options?.getTransactionsDetails) {
         const data = await getIlsTransactionsFunction;
 
@@ -214,10 +225,11 @@ export async function hapoalim(
             isValid: true,
           };
         }
-        const validation = await validateSchema(ILSCheckingTransactionsDataSchemaFile, data);
+        const validation = HapoalimILSTransactionsSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
@@ -231,7 +243,7 @@ export async function hapoalim(
       },
       isBusiness: T = true as T,
     ): Promise<{
-      data: ForeignTransactionsBusinessSchema | ForeignTransactionsPersonalSchema | null;
+      data: HapoalimForeignTransactionsBusiness | HapoalimForeignTransactionsPersonal | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
@@ -262,13 +274,19 @@ export async function hapoalim(
             isValid: false,
           };
         }
-        const validation = await validateSchema(
-          isBusiness ? foreignTransactionsBusinessSchema : foreignTransactionsPersonalSchema,
-          data,
-        );
+        if (isBusiness) {
+          const validation = HapoalimForeignTransactionsBusinessSchema.safeParse(data);
+          return {
+            data: validation.data ?? null,
+            isValid: validation.success,
+            errors: validation.success ? null : validation.error.issues,
+          };
+        }
+        const validation = HapoalimForeignTransactionsPersonalSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
@@ -304,7 +322,7 @@ export async function hapoalim(
         }
         const validation = SwiftTransactionsSchema.safeParse(data);
         return {
-          data,
+          data: validation.data ?? null,
           isValid: validation.success,
           errors: validation.error,
         };
@@ -359,13 +377,13 @@ export async function hapoalim(
       branchNumber: number;
       accountNumber: number;
     }): Promise<{
-      data: HapoalimDepositsSchema | null;
+      data: HapoalimDeposits | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const depositsUrl = `${apiSiteUrl}/deposits-and-savings/deposits?accountId=${fullAccountNumber}&view=details&lang=he`;
-      const getDepositsFunction = fetchGetWithinPage<HapoalimDepositsSchema>(page, depositsUrl);
+      const getDepositsFunction = fetchGetWithinPage<HapoalimDeposits>(page, depositsUrl);
       if (options?.validateSchema) {
         const data = await getDepositsFunction;
         if (!data) {
@@ -375,10 +393,11 @@ export async function hapoalim(
             isValid: true,
           };
         }
-        const validation = await validateSchema(depositsSchema, data);
+        const validation = HapoalimDepositsSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
@@ -389,22 +408,20 @@ export async function hapoalim(
       branchNumber: number;
       accountNumber: number;
     }): Promise<{
-      data: HapoalimForeignDepositsSchema | null;
+      data: HapoalimForeignDeposits | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const depositsUrl = `${apiSiteUrl}/foreign-currency/revaluedDeposit?accountId=${fullAccountNumber}&lang=he`;
-      const getDepositsFunction = fetchGetWithinPage<HapoalimForeignDepositsSchema>(
-        page,
-        depositsUrl,
-      );
+      const getDepositsFunction = fetchGetWithinPage<HapoalimForeignDeposits>(page, depositsUrl);
       if (options?.validateSchema) {
         const data = await getDepositsFunction;
-        const validation = await validateSchema(hapoalimForeignDepositsSchema, data);
+        const validation = HapoalimForeignDepositsSchema.safeParse(data);
         return {
-          data,
-          ...validation,
+          data: validation.data ?? null,
+          isValid: validation.success,
+          errors: validation.success ? null : validation.error.issues,
         };
       }
 
