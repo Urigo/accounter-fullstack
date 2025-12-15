@@ -62,7 +62,7 @@ jobs:
           yarn workspace @accounter-helper/migrations migration:run
 
       - name: Cache GraphQL Generated Types
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         id: graphql-cache
         with:
           path: |
@@ -82,7 +82,7 @@ jobs:
         run: yarn generate:graphql
 
       - name: Cache PgTyped Generated Types
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         id: pgtyped-cache
         with:
           path: |
