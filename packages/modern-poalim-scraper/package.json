@@ -24,7 +24,7 @@
     "node-fetch": "3.3.2",
     "puppeteer": "24.32.1",
     "uuid": "13.0.0",
-    "zod": "4.1.13"
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.9",

@@ -52,7 +52,7 @@
     "start": "node ./dist"
   },
   "dependencies": {
-    "zod": "4.1.13"
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
