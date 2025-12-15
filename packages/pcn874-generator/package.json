@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
-    "eslint": "9.39.1"
+    "eslint": "9.39.2"
   },
   "publishConfig": {
     "directory": "dist",
