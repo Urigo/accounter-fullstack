@@ -3,7 +3,6 @@ import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import {
-  getChargeBusinesses,
   getChargeDocumentsMeta,
   getChargeTransactionsMeta,
 } from '../../charges/helpers/common.helper.js';
@@ -69,16 +68,14 @@ export async function adjustTaxRecord(
       throw new Error(`Date is missing for invoice ID=${doc.id}`);
     }
 
-    const [isProperty, { transactionsMinEventDate }, { mainBusinessId }, { documentsMinDate }] =
-      await Promise.all([
-        injector
-          .get(DepreciationProvider)
-          .getDepreciationRecordsByChargeIdLoader.load(charge.id)
-          .then(records => records.length > 0),
-        getChargeTransactionsMeta(charge.id, injector),
-        getChargeBusinesses(charge.id, injector),
-        getChargeDocumentsMeta(charge.id, injector),
-      ]);
+    const [isProperty, { transactionsMinEventDate }, { documentsMinDate }] = await Promise.all([
+      injector
+        .get(DepreciationProvider)
+        .getDepreciationRecordsByChargeIdLoader.load(charge.id)
+        .then(records => records.length > 0),
+      getChargeTransactionsMeta(charge.id, injector),
+      getChargeDocumentsMeta(charge.id, injector),
+    ]);
 
     // get exchange rate
     let rate = 1;
@@ -96,7 +93,7 @@ export async function adjustTaxRecord(
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
     const partialRecord: RawVatReportRecord = {
-      businessId: mainBusinessId,
+      businessId: business.id,
       chargeAccountantStatus: charge.accountant_status,
       chargeDate: transactionsMinEventDate ?? documentsMinDate!, // must have min_date, as will throw if local doc is missing date
       chargeId: charge.id,
