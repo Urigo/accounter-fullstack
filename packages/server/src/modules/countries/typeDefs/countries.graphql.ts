@@ -9,6 +9,6 @@ export default gql`
   type Country {
     id: ID!
     name: String!
-    code: String!
+    code: CountryCode!
   }
 `;

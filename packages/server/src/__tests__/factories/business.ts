@@ -1,5 +1,5 @@
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
-import { CountryCode } from '../../modules/countries/types.js';
+import { CountryCode } from '../../shared/enums.js';
 import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
 
 /**

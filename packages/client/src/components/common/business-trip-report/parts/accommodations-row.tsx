@@ -24,7 +24,10 @@ import { CoreExpenseRow } from './core-expense-row.js';
     id
     ...BusinessTripReportCoreExpenseRowFields
     payedByEmployee
-    country
+    country {
+      id
+      name
+    }
     nightsCount
     attendeesStay {
       id
@@ -105,7 +108,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               />
             ) : (
               <Text c={accommodationExpense.country ? undefined : 'red'}>
-                {accommodationExpense.country ?? 'Missing'}
+                {accommodationExpense.country?.name ?? 'Missing'}
               </Text>
             )}
           </form>

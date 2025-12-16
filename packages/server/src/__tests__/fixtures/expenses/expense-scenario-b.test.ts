@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { expenseScenarioB } from './expense-scenario-b';
 import { validateFixture } from '../../helpers/fixture-validation';
 import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
-import { CountryCode } from '../../../modules/countries/types.js';
-import { Currency } from '../../../shared/enums.js';
+import { Currency, CountryCode } from '../../../shared/enums.js';
 
 describe('Expense Scenario B - USD Invoice', () => {
   it('fixture should compile and be well-formed', () => {

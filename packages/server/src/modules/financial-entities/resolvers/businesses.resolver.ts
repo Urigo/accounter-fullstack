@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
+import type { CountryCode } from '../../../shared/enums.js';
 import { updateGreenInvoiceClient } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
@@ -522,7 +523,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
-    country: DbBusiness => DbBusiness.country,
+    country: DbBusiness => DbBusiness.country as CountryCode,
     governmentId: DbBusiness => DbBusiness.vat_number,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
 

@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
+import { CountryCode } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { CountriesProvider } from '../../countries/providers/countries.provider.js';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
@@ -124,13 +124,8 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,
-    destination: async (dbBusinessTrip, _, { injector }) =>
-      dbBusinessTrip.destination
-        ? injector
-            .get(CountriesProvider)
-            .getCountryByCodeLoader.load(dbBusinessTrip.destination)
-            .then(res => res ?? null)
-        : null,
+    destination: dbBusinessTrip =>
+      dbBusinessTrip.destination ? (dbBusinessTrip.destination as CountryCode) : null,
     attendees: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripAttendeesProvider)

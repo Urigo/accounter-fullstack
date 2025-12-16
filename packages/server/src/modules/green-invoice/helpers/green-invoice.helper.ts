@@ -32,12 +32,11 @@ import type {
   NewDocumentInput,
   ResolversTypes,
 } from '../../../__generated__/types.js';
-import { Currency, DocumentType } from '../../../shared/enums.js';
+import { CountryCode, Currency, DocumentType } from '../../../shared/enums.js';
 import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { CountryCode } from '../../countries/types.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';

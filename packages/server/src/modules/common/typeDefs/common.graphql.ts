@@ -44,6 +44,8 @@ export default gql`
   scalar UUID
   " BigInt "
   scalar BigInt
+  " Country Code "
+  scalar CountryCode
 
   # Common Types
 
