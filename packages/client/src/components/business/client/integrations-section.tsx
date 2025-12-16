@@ -67,7 +67,10 @@ import { Label } from '../../ui/label.jsx';
     greenInvoiceClient(clientId: $clientId) {
       businessId
       greenInvoiceId
-      country
+      country {
+        id
+        name
+      }
       emails
       name
       phone
@@ -346,7 +349,7 @@ export function IntegrationsSection({ data }: Props) {
                         </div>
                         <div className="space-y-1">
                           <span className="text-sm font-medium text-muted-foreground">Country</span>
-                          <p className="text-sm">{greenInvoiceClient.country}</p>
+                          <p className="text-sm">{greenInvoiceClient.country?.name}</p>
                         </div>
                         <div className="space-y-1">
                           <span className="text-sm font-medium text-muted-foreground">Tax ID</span>

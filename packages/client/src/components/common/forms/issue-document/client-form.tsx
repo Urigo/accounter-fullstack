@@ -23,7 +23,10 @@ import { getCountryOptions } from './utils/enum-helpers.js';
   fragment IssueDocumentClientFields on GreenInvoiceClient {
     greenInvoiceId
     businessId
-    country
+    country {
+      id
+      code
+    }
     emails
     name
     phone
@@ -42,7 +45,7 @@ export function normalizeClientInfo(
   const client: GreenInvoiceClient = {
     ...clientInfo,
     greenInvoiceId: clientInfo.greenInvoiceId || undefined,
-    country: clientInfo.country || undefined,
+    country: clientInfo.country?.code || undefined,
     emails: clientInfo.emails || undefined,
     name: clientInfo.name || undefined,
     phone: clientInfo.phone || undefined,
@@ -173,7 +176,7 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
                 <Select
-                  value={client.country || ''}
+                  value={client.country?.code}
                   onValueChange={(value: GreenInvoiceCountry) => updateClient('country', value)}
                 >
                   <SelectTrigger>
