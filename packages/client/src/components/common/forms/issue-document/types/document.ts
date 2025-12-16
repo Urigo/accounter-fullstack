@@ -18,17 +18,13 @@ type Discount = {
 type DocumentClient = {
   add?: boolean;
   address?: string;
-  city?: string;
   country?: CountryCode;
   emails?: Array<string>;
-  fax?: string;
   id: string;
-  mobile?: string;
   name?: string;
   phone?: string;
   self?: boolean;
   taxId?: string;
-  zip?: string;
 };
 
 type Income = {

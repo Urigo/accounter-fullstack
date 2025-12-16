@@ -102,7 +102,7 @@ export async function getPaymentsFromTransactions(
             //   transactionId: _____,
           };
           break;
-        case 'OTHER1':
+        case 'OTHER':
           paymentTypeSpecificAttributes = {
             //   subType: _____,
             //   accountId: _____,
