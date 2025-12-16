@@ -1,8 +1,8 @@
 import { useEffect, type ReactElement } from 'react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Modal, Select } from '@mantine/core';
-import { useFetchIncomeDocuments } from '../../../hooks/use-fetch-income-documents.js';
-import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
+import { useSyncGreenInvoiceDocuments } from '../../../hooks/use-sync-green-invoice-documents.js';
 
 type ModalProps = {
   opened: boolean;
@@ -10,29 +10,30 @@ type ModalProps = {
   setIsLoading?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
-  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
+export function SyncDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
+  const { selectableAdminBusinesses: adminBusinesses, fetching: fetchingAdminBusinesses } =
+    useGetAdminBusinesses();
 
   const { control, handleSubmit } = useForm<{ ownerId: string }>({
     defaultValues: { ownerId: '6a20aa69-57ff-446e-8d6a-1e96d095e988' },
   });
 
-  const { fetchIncomeDocuments, fetching: fetchingDocuments } = useFetchIncomeDocuments();
+  const { syncGreenInvoiceDocuments, fetching: syncingDocuments } = useSyncGreenInvoiceDocuments();
 
   useEffect(() => {
-    setIsLoading?.(fetchingBusinesses || fetchingDocuments);
-  }, [fetchingBusinesses, fetchingDocuments, setIsLoading]);
+    setIsLoading?.(fetchingAdminBusinesses || syncingDocuments);
+  }, [fetchingAdminBusinesses, syncingDocuments, setIsLoading]);
 
   const onSubmit: SubmitHandler<{ ownerId: string }> = data => {
-    fetchIncomeDocuments(data);
+    syncGreenInvoiceDocuments(data);
     close();
   };
 
   return (
     <Modal opened={opened} onClose={close} size="auto" centered>
-      <Modal.Title>Fetch Income Documents</Modal.Title>
+      <Modal.Title>Sync Green Invoice Documents</Modal.Title>
       <Modal.Body>
-        {fetchingBusinesses ? <div>Loading...</div> : <div />}
+        {fetchingAdminBusinesses ? <div>Loading...</div> : <div />}
         <form onSubmit={handleSubmit(onSubmit)}>
           <Controller
             name="ownerId"
@@ -40,9 +41,9 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
-                data={businesses}
+                data={adminBusinesses}
                 value={field.value}
-                disabled={fetchingBusinesses}
+                disabled={fetchingAdminBusinesses}
                 label="Owner:"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}
@@ -57,7 +58,7 @@ export function PullDocumentsModal({ opened, close, setIsLoading }: ModalProps):
               type="submit"
               className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
             >
-              Fetch
+              Sync
             </button>
           </div>
         </form>

@@ -1,42 +1,50 @@
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { GraphQLError } from 'graphql';
-import { Injector } from 'graphql-modules';
+import type { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type {
-  GreenInvoiceIncome,
-  GreenInvoiceLinkType,
-  GreenInvoicePayment,
-  GreenInvoicePaymentType,
-  GreenInvoiceVatType,
-  NewDocumentInfo,
-  NewDocumentInput,
+  DocumentDraft,
+  DocumentIncomeRecord,
+  DocumentIssueInput,
+  DocumentLinkType,
+  DocumentPaymentRecord,
+  DocumentVatType,
+  PaymentType,
+  ResolversTypes,
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
-import { TimelessDateString } from '../../../shared/types/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
-import type {
-  IGetDocumentsByChargeIdResult,
-  IGetIssuedDocumentsByIdsResult,
-} from '../../documents/types.js';
+import {
+  getProductName,
+  getSubscriptionPlanName,
+  normalizeProduct,
+  normalizeSubscriptionPlan,
+} from '../../contracts/helpers/contracts.helper.js';
+import type { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { IGetFinancialBankAccountsByIdsResult } from '../../financial-accounts/types.js';
+import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
-import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
-  getGreenInvoiceDocumentType,
+  getTypeFromGreenInvoiceDocument,
   getVatTypeFromGreenInvoiceDocument,
   insertNewDocumentFromGreenInvoice,
-  normalizeDocumentType,
-} from './green-invoice.helper.js';
+} from '../../green-invoice/helpers/green-invoice.helper.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
+import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
+import { normalizeDocumentType } from '../resolvers/common.js';
+import type { IGetIssuedDocumentsByIdsResult } from '../types.js';
 
 export async function getPaymentsFromTransactions(
   injector: Injector,
   transactions: IGetTransactionsByChargeIdsResult[],
-): Promise<GreenInvoicePayment[]> {
+): Promise<DocumentPaymentRecord[]> {
   const payments = await Promise.all(
     transactions.map(async transaction => {
       // get account
@@ -48,7 +56,7 @@ export async function getPaymentsFromTransactions(
       }
 
       // get account type
-      let type: GreenInvoicePaymentType = 'OTHER';
+      let type: PaymentType = 'OTHER';
       switch (account.type) {
         case 'BANK_ACCOUNT':
           type = 'WIRE_TRANSFER';
@@ -71,7 +79,7 @@ export async function getPaymentsFromTransactions(
       }
 
       // get further fields
-      let paymentTypeSpecificAttributes: Partial<GreenInvoicePayment> = {};
+      let paymentTypeSpecificAttributes: Partial<DocumentPaymentRecord> = {};
       switch (type as string) {
         case 'CHEQUE':
           paymentTypeSpecificAttributes = {
@@ -82,7 +90,6 @@ export async function getPaymentsFromTransactions(
           paymentTypeSpecificAttributes = {
             cardType: 'MASTERCARD', // TODO: add logic to support other card types
             cardNum: account.account_number,
-            dealType: 'STANDARD', // TODO: add logic to support other deal types
             numPayments: 1,
             firstPayment: transaction.event_date.getTime() / 1000, // assuming first payment is the transaction date
           };
@@ -120,7 +127,7 @@ export async function getPaymentsFromTransactions(
           break;
       }
 
-      const payment: GreenInvoicePayment = {
+      const payment: DocumentPaymentRecord = {
         currency: transaction.currency as Currency,
         currencyRate: undefined,
         date: dateToTimelessDateString(transaction.debit_date ?? transaction.event_date),
@@ -136,20 +143,16 @@ export async function getPaymentsFromTransactions(
   return payments;
 }
 
-export function getIncomeFromDocuments(
-  documents: {
-    document: IGetDocumentsByChargeIdResult;
-    issuedDocument: IGetIssuedDocumentsByIdsResult;
-    greenInvoiceDocument: _DOLLAR_defs_Document;
-  }[],
-): GreenInvoiceIncome[] {
-  const incomes = documents
-    .map(({ greenInvoiceDocument }) => {
+export function getIncomeRecordsFromDocuments(
+  greenInvoiceDocuments: _DOLLAR_defs_Document[],
+): DocumentIncomeRecord[] {
+  const incomes = greenInvoiceDocuments
+    .map(greenInvoiceDocument => {
       return greenInvoiceDocument.income.filter(Boolean).map(originIncome => {
         if (!originIncome?.currency) {
           throw new Error('Income currency is missing');
         }
-        const income: GreenInvoiceIncome = {
+        const income: DocumentIncomeRecord = {
           description: originIncome.description,
           quantity: originIncome.quantity,
           price: originIncome.price,
@@ -167,19 +170,17 @@ export function getIncomeFromDocuments(
 }
 
 export function getTypeFromDocumentsAndTransactions(
-  greenInvoiceDocuments: _DOLLAR_defs_Document[],
+  documents: { type: DocumentType }[],
   transactions: IGetTransactionsByChargeIdsResult[],
 ): DocumentType {
-  if (!greenInvoiceDocuments.length) {
+  if (!documents.length) {
     if (transactions.length) {
       return DocumentType.InvoiceReceipt;
     }
     return DocumentType.Proforma;
   }
 
-  const documentsTypes = new Set<DocumentType>(
-    greenInvoiceDocuments.map(doc => normalizeDocumentType(doc.type)),
-  );
+  const documentsTypes = new Set<DocumentType>(documents.map(doc => doc.type));
 
   if (documentsTypes.size === 1) {
     switch (Array.from(documentsTypes)[0]) {
@@ -230,9 +231,9 @@ export function filterAndHandleSwiftTransactions(
 export function getLinkedDocumentsAttributes(
   issuedDocuments: IGetIssuedDocumentsByIdsResult[],
   shouldCancel: boolean = false,
-): Pick<NewDocumentInfo, 'linkedDocumentIds' | 'linkType'> {
+): Pick<DocumentDraft, 'linkedDocumentIds' | 'linkType'> {
   const linkedDocumentIds = issuedDocuments.map(doc => doc.external_id);
-  let linkType: GreenInvoiceLinkType | undefined = undefined;
+  let linkType: DocumentLinkType | undefined = undefined;
   if (linkedDocumentIds.length) {
     if (shouldCancel) {
       linkType = 'CANCEL';
@@ -266,24 +267,83 @@ export async function deduceVatTypeFromBusiness(
   injector: Injector,
   locality: string,
   businessId?: string | null,
-): Promise<GreenInvoiceVatType> {
+): Promise<DocumentVatType> {
   if (!businessId) return 'DEFAULT';
 
   const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(businessId);
   if (!business) return 'DEFAULT';
 
   // Deduce VAT type based on business information
-  if (business.country === locality) {
+  if (business.country === locality && !business.exempt_dealer) {
     return 'MIXED';
   }
 
   return 'EXEMPT';
 }
 
+export const convertContractToDraft = async (
+  contract: IGetContractsByIdsResult,
+  injector: Injector,
+  issueMonth: TimelessDateString,
+) => {
+  const businessPromise = injector
+    .get(BusinessesProvider)
+    .getBusinessByIdLoader.load(contract.client_id);
+  const clientPromise = injector.get(ClientsProvider).getClientByIdLoader.load(contract.client_id);
+  const [business, client] = await Promise.all([businessPromise, clientPromise]);
+
+  if (!business) {
+    throw new GraphQLError(`Business ID="${contract.client_id}" not found`);
+  }
+
+  if (!client) {
+    throw new GraphQLError(`Client not found for business ID="${contract.client_id}"`);
+  }
+
+  const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+
+  if (!greenInvoiceId) {
+    throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
+  }
+
+  const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
+  const monthStart = dateToTimelessDateString(startOfMonth(today));
+  const monthEnd = dateToTimelessDateString(endOfMonth(today));
+  const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
+  const month = format(subMonths(today, 1), 'MMMM');
+
+  const vatType = await deduceVatTypeFromBusiness(injector, business.country, contract.client_id);
+
+  const documentInput: ResolversTypes['DocumentDraft'] = {
+    remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+    description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+    type: normalizeDocumentType(contract.document_type),
+    date: monthStart,
+    dueDate: monthEnd,
+    language: 'ENGLISH',
+    currency: contract.currency as Currency,
+    vatType,
+    rounding: false,
+    signed: true,
+    client,
+    income: [
+      {
+        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+        quantity: 1,
+        price: contract.amount,
+        currency: contract.currency as Currency,
+        vatType: 'EXEMPT',
+      },
+    ],
+  };
+
+  return documentInput;
+};
+
 export async function executeDocumentIssue(
   injector: Injector,
   adminBusinessId: string,
-  initialInput: NewDocumentInput,
+  initialInput: DocumentIssueInput,
   emailContent?: string,
   attachment = true,
   chargeId?: string,
@@ -365,7 +425,7 @@ export async function executeDocumentIssue(
           }),
         );
       }
-      if (coreInput.type === getGreenInvoiceDocumentType(DocumentType.CreditInvoice)) {
+      if (getTypeFromGreenInvoiceDocument(coreInput.type) === DocumentType.CreditInvoice) {
         // Close origin
       }
 

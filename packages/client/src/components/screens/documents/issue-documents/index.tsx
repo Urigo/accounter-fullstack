@@ -10,8 +10,8 @@ import { IssueDocumentsTable } from './issue-documents-table.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query MonthlyDocumentsDrafts($issueMonth: TimelessDate!) {
-    clientMonthlyChargesDrafts(issueMonth: $issueMonth) {
-      ...NewDocumentInfo
+    periodicalDocumentDrafts(issueMonth: $issueMonth) {
+      ...NewDocumentDraft
     }
   }
 `;
@@ -27,7 +27,7 @@ export const IssueDocuments = (): ReactElement => {
   });
 
   useEffect(() => {
-    if (!data?.clientMonthlyChargesDrafts) {
+    if (!data?.periodicalDocumentDrafts) {
       setFiltersContext(null);
     }
   }, [data, setFiltersContext]);
@@ -35,6 +35,6 @@ export const IssueDocuments = (): ReactElement => {
   return fetching ? (
     <AccounterLoader />
   ) : (
-    <IssueDocumentsTable drafts={data?.clientMonthlyChargesDrafts ?? []} />
+    <IssueDocumentsTable drafts={data?.periodicalDocumentDrafts ?? []} />
   );
 };

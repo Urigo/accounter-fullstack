@@ -1,10 +1,7 @@
 'use client';
 
 import { User } from 'lucide-react';
-import {
-  GreenInvoiceCountry,
-  type IssueDocumentClientFieldsFragment,
-} from '../../../../gql/graphql.js';
+import type { CountryCode } from '@/helpers/countries.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
 import { Label } from '../../../ui/label.js';
@@ -15,60 +12,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
-import type { GreenInvoiceClient } from './types/document.js';
+import type { DocumentClient } from './types/document.js';
 import { getCountryOptions } from './utils/enum-helpers.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment IssueDocumentClientFields on GreenInvoiceClient {
-    greenInvoiceId
-    businessId
-    country
-    emails
-    name
-    phone
-    taxId
-    address
-    city
-    zip
-    fax
-    mobile
-  }
-`;
-
-export function normalizeClientInfo(
-  clientInfo: IssueDocumentClientFieldsFragment,
-): GreenInvoiceClient {
-  const client: GreenInvoiceClient = {
-    ...clientInfo,
-    greenInvoiceId: clientInfo.greenInvoiceId || undefined,
-    country: clientInfo.country || undefined,
-    emails: clientInfo.emails || undefined,
-    name: clientInfo.name || undefined,
-    phone: clientInfo.phone || undefined,
-    taxId: clientInfo.taxId || undefined,
-    address: clientInfo.address || undefined,
-    city: clientInfo.city || undefined,
-    zip: clientInfo.zip || undefined,
-    fax: clientInfo.fax || undefined,
-    mobile: clientInfo.mobile || undefined,
-  };
-  return client;
-}
-
 interface ClientFormProps {
-  client: IssueDocumentClientFieldsFragment;
-  onChange: (client: IssueDocumentClientFieldsFragment) => void;
+  client: DocumentClient;
+  onChange: (client: DocumentClient) => void;
   fetching: boolean;
 }
 
 const countries = getCountryOptions();
 
 export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
-  const updateClient = <T extends keyof GreenInvoiceClient>(
-    field: T,
-    value: GreenInvoiceClient[T],
-  ) => {
+  const updateClient = <T extends keyof DocumentClient>(field: T, value: DocumentClient[T]) => {
     onChange({ ...client, [field]: value });
   };
 
@@ -132,15 +88,6 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
                   placeholder="Phone number"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile</Label>
-                <Input
-                  id="mobile"
-                  value={client.mobile || ''}
-                  onChange={e => updateClient('mobile', e.target.value)}
-                  placeholder="Mobile number"
-                />
-              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
@@ -153,28 +100,10 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={client.city || ''}
-                  onChange={e => updateClient('city', e.target.value)}
-                  placeholder="City"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="zip">ZIP Code</Label>
-                <Input
-                  id="zip"
-                  value={client.zip || ''}
-                  onChange={e => updateClient('zip', e.target.value)}
-                  placeholder="ZIP code"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
                 <Select
-                  value={client.country || ''}
-                  onValueChange={(value: GreenInvoiceCountry) => updateClient('country', value)}
+                  value={client.country}
+                  onValueChange={(value: CountryCode) => updateClient('country', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select country" />

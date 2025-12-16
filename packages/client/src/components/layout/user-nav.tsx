@@ -6,7 +6,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { UserContext } from '@/providers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
-import { ConfirmationModal, LogoutButton, PullDocumentsModal } from '../common/index.js';
+import { ConfirmationModal, LogoutButton, SyncDocumentsModal } from '../common/index.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { Avatar } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
@@ -88,7 +88,7 @@ export function UserNav(): JSX.Element {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <PullDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
+      <SyncDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
 
       <BalanceChargeModal
         open={balanceChargeModalOpen}

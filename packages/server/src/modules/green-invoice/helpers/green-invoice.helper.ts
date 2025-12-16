@@ -2,34 +2,28 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type {
   _DOLLAR_defs_addDocumentRequest_Input,
+  _DOLLAR_defs_Country,
+  _DOLLAR_defs_Currency,
   _DOLLAR_defs_Document,
   _DOLLAR_defs_DocumentInputNew_Input,
   _DOLLAR_defs_DocumentLang,
   _DOLLAR_defs_DocumentLinkedDocument,
+  _DOLLAR_defs_DocumentType,
   _DOLLAR_defs_ExpenseDocumentType,
   _DOLLAR_defs_VatType,
-  _DOLLAR_defs_Currency as GreenInvoiceCurrency,
-  _DOLLAR_defs_DocumentType as GreenInvoiceDocumentType,
-  query_getDocument_payment_items_appType,
   query_getDocument_payment_items_cardType,
-  query_getDocument_payment_items_dealType,
-  query_getDocument_payment_items_subType,
   query_getDocument_payment_items_type,
   queryInput_previewDocument_input_discount_type,
   queryInput_previewDocument_input_linkType,
 } from '@accounter/green-invoice-graphql';
 import type {
-  GreenInvoiceCountry,
-  GreenInvoiceDiscountType,
-  GreenInvoiceDocumentLang,
-  GreenInvoiceLinkType,
-  GreenInvoicePaymentAppType,
-  GreenInvoicePaymentCardType,
-  GreenInvoicePaymentDealType,
-  GreenInvoicePaymentSubType,
-  GreenInvoicePaymentType,
-  GreenInvoiceVatType,
-  NewDocumentInput,
+  DocumentDiscountType,
+  DocumentIssueInput,
+  DocumentLanguage,
+  DocumentLinkType,
+  DocumentPaymentRecordCardType,
+  DocumentVatType,
+  PaymentType,
   ResolversTypes,
 } from '../../../__generated__/types.js';
 import { CountryCode, Currency, DocumentType } from '../../../shared/enums.js';
@@ -43,8 +37,8 @@ import type { document_status, IInsertDocumentsParams } from '../../documents/ty
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 
-export function normalizeDocumentType(
-  rawType?: GreenInvoiceDocumentType | _DOLLAR_defs_ExpenseDocumentType | number | null,
+export function normalizeGreenInvoiceDocumentType(
+  rawType?: _DOLLAR_defs_DocumentType | _DOLLAR_defs_ExpenseDocumentType | number | null,
 ): DocumentType {
   if (!rawType) {
     return DocumentType.Unprocessed;
@@ -85,7 +79,7 @@ export function normalizeDocumentType(
   }
 }
 
-export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenInvoiceDocumentType {
+export function getGreenInvoiceDocumentType(documentType: DocumentType): _DOLLAR_defs_DocumentType {
   switch (documentType) {
     case DocumentType.Invoice:
       return '_305';
@@ -103,7 +97,7 @@ export function getGreenInvoiceDocumentType(documentType: DocumentType): GreenIn
 }
 
 export function getTypeFromGreenInvoiceDocument(
-  documentType: GreenInvoiceDocumentType,
+  documentType: _DOLLAR_defs_DocumentType,
 ): DocumentType {
   switch (documentType) {
     case '_305':
@@ -121,23 +115,18 @@ export function getTypeFromGreenInvoiceDocument(
   }
 }
 
-export function getGreenInvoiceDocumentNameFromType(
-  documentType: DocumentType | GreenInvoiceDocumentType,
+export function getDocumentNameFromGreenInvoiceType(
+  documentType: _DOLLAR_defs_DocumentType,
 ): string {
   switch (documentType) {
-    case DocumentType.Invoice:
     case '_305':
       return 'Tax Invoice';
-    case DocumentType.Proforma:
     case '_300':
       return 'Proforma Invoice';
-    case DocumentType.InvoiceReceipt:
     case '_320':
       return 'Invoice / Receipt';
-    case DocumentType.CreditInvoice:
     case '_330':
       return 'Credit Note';
-    case DocumentType.Receipt:
     case '_400':
       return 'Receipt';
     default:
@@ -146,21 +135,21 @@ export function getGreenInvoiceDocumentNameFromType(
 }
 
 export function getGreenInvoiceDocumentLanguage(
-  lang: GreenInvoiceDocumentLang,
+  language: DocumentLanguage,
 ): _DOLLAR_defs_DocumentLang {
-  switch (lang) {
+  switch (language) {
     case 'HEBREW':
       return 'he';
     case 'ENGLISH':
       return 'en';
     default:
-      throw new Error(`Unsupported document language: ${lang}`);
+      throw new Error(`Unsupported document language: ${language}`);
   }
 }
 
 export function getLanguageFromGreenInvoiceDocument(
   lang: _DOLLAR_defs_DocumentLang,
-): GreenInvoiceDocumentLang {
+): DocumentLanguage {
   switch (lang) {
     case 'he':
       return 'HEBREW';
@@ -171,7 +160,7 @@ export function getLanguageFromGreenInvoiceDocument(
   }
 }
 
-export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): _DOLLAR_defs_VatType {
+export function getGreenInvoiceDocumentVatType(vatType: DocumentVatType): _DOLLAR_defs_VatType {
   switch (vatType) {
     case 'DEFAULT':
       return '_0';
@@ -184,9 +173,7 @@ export function getGreenInvoiceDocumentVatType(vatType: GreenInvoiceVatType): _D
   }
 }
 
-export function getVatTypeFromGreenInvoiceDocument(
-  vatType: _DOLLAR_defs_VatType,
-): GreenInvoiceVatType {
+export function getVatTypeFromGreenInvoiceDocument(vatType: _DOLLAR_defs_VatType): DocumentVatType {
   switch (vatType) {
     case '_0':
       return 'DEFAULT';
@@ -200,7 +187,7 @@ export function getVatTypeFromGreenInvoiceDocument(
 }
 
 export function getGreenInvoiceDocumentDiscountType(
-  discountType: GreenInvoiceDiscountType,
+  discountType: DocumentDiscountType,
 ): queryInput_previewDocument_input_discount_type {
   switch (discountType) {
     case 'PERCENTAGE':
@@ -213,7 +200,7 @@ export function getGreenInvoiceDocumentDiscountType(
 }
 
 export function getGreenInvoiceDocumentPaymentType(
-  type: GreenInvoicePaymentType,
+  type: PaymentType,
 ): query_getDocument_payment_items_type {
   switch (type) {
     case 'TAX_DEDUCTION':
@@ -241,7 +228,7 @@ export function getGreenInvoiceDocumentPaymentType(
 
 export function getTypeFromGreenInvoiceDocumentPayment(
   type: query_getDocument_payment_items_type,
-): GreenInvoicePaymentType {
+): PaymentType {
   switch (type) {
     case 'NEGATIVE_1':
       return 'TAX_DEDUCTION';
@@ -266,100 +253,100 @@ export function getTypeFromGreenInvoiceDocumentPayment(
   }
 }
 
-export function getGreenInvoiceDocumentPaymentSubType(
-  subType: GreenInvoicePaymentSubType,
-): query_getDocument_payment_items_subType {
-  switch (subType) {
-    case 'BITCOIN':
-      return '_1';
-    case 'BUYME_VOUCHER':
-      return '_7';
-    case 'ETHEREUM':
-      return '_6';
-    case 'GIFT_CARD':
-      return '_4';
-    case 'MONEY_EQUAL':
-      return '_2';
-    case 'NII_EMPLOYEE_DEDUCTION':
-      return '_5';
-    case 'PAYONEER':
-      return '_8';
-    case 'V_CHECK':
-      return '_3';
-    default:
-      throw new Error(`Unsupported payment sub-type: ${subType}`);
-  }
-}
+// export function getGreenInvoiceDocumentPaymentSubType(
+//   subType: GreenInvoicePaymentSubType,
+// ): query_getDocument_payment_items_subType {
+//   switch (subType) {
+//     case 'BITCOIN':
+//       return '_1';
+//     case 'BUYME_VOUCHER':
+//       return '_7';
+//     case 'ETHEREUM':
+//       return '_6';
+//     case 'GIFT_CARD':
+//       return '_4';
+//     case 'MONEY_EQUAL':
+//       return '_2';
+//     case 'NII_EMPLOYEE_DEDUCTION':
+//       return '_5';
+//     case 'PAYONEER':
+//       return '_8';
+//     case 'V_CHECK':
+//       return '_3';
+//     default:
+//       throw new Error(`Unsupported payment sub-type: ${subType}`);
+//   }
+// }
 
-export function getSubTypeFromGreenInvoiceDocumentPayment(
-  subType: query_getDocument_payment_items_subType,
-): GreenInvoicePaymentSubType {
-  switch (subType) {
-    case '_1':
-      return 'BITCOIN';
-    case '_7':
-      return 'BUYME_VOUCHER';
-    case '_6':
-      return 'ETHEREUM';
-    case '_4':
-      return 'GIFT_CARD';
-    case '_2':
-      return 'MONEY_EQUAL';
-    case '_5':
-      return 'NII_EMPLOYEE_DEDUCTION';
-    case '_8':
-      return 'PAYONEER';
-    case '_3':
-      return 'V_CHECK';
-    default:
-      throw new Error(`Unsupported payment sub-type: ${subType}`);
-  }
-}
+// export function getSubTypeFromGreenInvoiceDocumentPayment(
+//   subType: query_getDocument_payment_items_subType,
+// ): GreenInvoicePaymentSubType {
+//   switch (subType) {
+//     case '_1':
+//       return 'BITCOIN';
+//     case '_7':
+//       return 'BUYME_VOUCHER';
+//     case '_6':
+//       return 'ETHEREUM';
+//     case '_4':
+//       return 'GIFT_CARD';
+//     case '_2':
+//       return 'MONEY_EQUAL';
+//     case '_5':
+//       return 'NII_EMPLOYEE_DEDUCTION';
+//     case '_8':
+//       return 'PAYONEER';
+//     case '_3':
+//       return 'V_CHECK';
+//     default:
+//       throw new Error(`Unsupported payment sub-type: ${subType}`);
+//   }
+// }
 
-export function getGreenInvoiceDocumentPaymentAppType(
-  appType: GreenInvoicePaymentAppType,
-): query_getDocument_payment_items_appType {
-  switch (appType) {
-    case 'APPLE_PAY':
-      return '_6';
-    case 'BIT':
-      return '_1';
-    case 'CULO':
-      return '_4';
-    case 'GOOGLE_PAY':
-      return '_5';
-    case 'PAYBOX':
-      return '_3';
-    case 'PAY_BY_PEPPER':
-      return '_2';
-    default:
-      throw new Error(`Unsupported payment app type: ${appType}`);
-  }
-}
+// export function getGreenInvoiceDocumentPaymentAppType(
+//   appType: GreenInvoicePaymentAppType,
+// ): query_getDocument_payment_items_appType {
+//   switch (appType) {
+//     case 'APPLE_PAY':
+//       return '_6';
+//     case 'BIT':
+//       return '_1';
+//     case 'CULO':
+//       return '_4';
+//     case 'GOOGLE_PAY':
+//       return '_5';
+//     case 'PAYBOX':
+//       return '_3';
+//     case 'PAY_BY_PEPPER':
+//       return '_2';
+//     default:
+//       throw new Error(`Unsupported payment app type: ${appType}`);
+//   }
+// }
 
-export function getPaymentAppTypeFromGreenInvoiceDocument(
-  appType: query_getDocument_payment_items_appType,
-): GreenInvoicePaymentAppType {
-  switch (appType) {
-    case '_6':
-      return 'APPLE_PAY';
-    case '_1':
-      return 'BIT';
-    case '_4':
-      return 'CULO';
-    case '_5':
-      return 'GOOGLE_PAY';
-    case '_3':
-      return 'PAYBOX';
-    case '_2':
-      return 'PAY_BY_PEPPER';
-    default:
-      throw new Error(`Unsupported payment app type: ${appType}`);
-  }
-}
+// export function getPaymentAppTypeFromGreenInvoiceDocument(
+//   appType: query_getDocument_payment_items_appType,
+// ): GreenInvoicePaymentAppType {
+//   switch (appType) {
+//     case '_6':
+//       return 'APPLE_PAY';
+//     case '_1':
+//       return 'BIT';
+//     case '_4':
+//       return 'CULO';
+//     case '_5':
+//       return 'GOOGLE_PAY';
+//     case '_3':
+//       return 'PAYBOX';
+//     case '_2':
+//       return 'PAY_BY_PEPPER';
+//     default:
+//       throw new Error(`Unsupported payment app type: ${appType}`);
+//   }
+// }
 
 export function getGreenInvoiceDocumentPaymentCardType(
-  cardType: GreenInvoicePaymentCardType,
+  cardType: DocumentPaymentRecordCardType,
 ): query_getDocument_payment_items_cardType {
   switch (cardType) {
     case 'AMERICAN_EXPRESS':
@@ -381,7 +368,7 @@ export function getGreenInvoiceDocumentPaymentCardType(
 
 export function getCardTypeFromGreenInvoiceDocumentPayment(
   cardType: query_getDocument_payment_items_cardType,
-): GreenInvoicePaymentCardType {
+): DocumentPaymentRecordCardType {
   switch (cardType) {
     case '_4':
       return 'AMERICAN_EXPRESS';
@@ -400,50 +387,50 @@ export function getCardTypeFromGreenInvoiceDocumentPayment(
   }
 }
 
-export function getGreenInvoiceDocumentPaymentDealType(
-  dealType: GreenInvoicePaymentDealType,
-): query_getDocument_payment_items_dealType {
-  switch (dealType) {
-    case 'CREDIT':
-      return '_3';
-    case 'DEFERRED':
-      return '_4';
-    case 'OTHER':
-      return '_5';
-    case 'PAYMENTS':
-      return '_2';
-    case 'RECURRING':
-      return '_6';
-    case 'STANDARD':
-      return '_1';
-    default:
-      throw new Error(`Unsupported payment deal type: ${dealType}`);
-  }
-}
+// export function getGreenInvoiceDocumentPaymentDealType(
+//   dealType: GreenInvoicePaymentDealType,
+// ): query_getDocument_payment_items_dealType {
+//   switch (dealType) {
+//     case 'CREDIT':
+//       return '_3';
+//     case 'DEFERRED':
+//       return '_4';
+//     case 'OTHER':
+//       return '_5';
+//     case 'PAYMENTS':
+//       return '_2';
+//     case 'RECURRING':
+//       return '_6';
+//     case 'STANDARD':
+//       return '_1';
+//     default:
+//       throw new Error(`Unsupported payment deal type: ${dealType}`);
+//   }
+// }
 
-export function getDealTypeFromGreenInvoiceDocumentPayment(
-  dealType: query_getDocument_payment_items_dealType,
-): GreenInvoicePaymentDealType {
-  switch (dealType) {
-    case '_3':
-      return 'CREDIT';
-    case '_4':
-      return 'DEFERRED';
-    case '_5':
-      return 'OTHER';
-    case '_2':
-      return 'PAYMENTS';
-    case '_6':
-      return 'RECURRING';
-    case '_1':
-      return 'STANDARD';
-    default:
-      throw new Error(`Unsupported payment deal type: ${dealType}`);
-  }
-}
+// export function getDealTypeFromGreenInvoiceDocumentPayment(
+//   dealType: query_getDocument_payment_items_dealType,
+// ): GreenInvoicePaymentDealType {
+//   switch (dealType) {
+//     case '_3':
+//       return 'CREDIT';
+//     case '_4':
+//       return 'DEFERRED';
+//     case '_5':
+//       return 'OTHER';
+//     case '_2':
+//       return 'PAYMENTS';
+//     case '_6':
+//       return 'RECURRING';
+//     case '_1':
+//       return 'STANDARD';
+//     default:
+//       throw new Error(`Unsupported payment deal type: ${dealType}`);
+//   }
+// }
 
 export function getGreenInvoiceDocumentLinkType(
-  linkType: GreenInvoiceLinkType,
+  linkType: DocumentLinkType,
 ): queryInput_previewDocument_input_linkType {
   switch (linkType) {
     case 'CANCEL':
@@ -455,7 +442,7 @@ export function getGreenInvoiceDocumentLinkType(
   }
 }
 
-export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceCurrency {
+export function convertCurrencyToGreenInvoice(currency: Currency): _DOLLAR_defs_Currency {
   switch (currency) {
     case Currency.Aud:
       return 'AUD';
@@ -482,8 +469,8 @@ export function convertCurrencyToGreenInvoice(currency: Currency): GreenInvoiceC
   }
 }
 
-export function greenInvoiceCountryToCountryCode(country: GreenInvoiceCountry): CountryCode {
-  const greenInvoiceToCountryCodeMap: Partial<Record<GreenInvoiceCountry, CountryCode>> = {
+export function greenInvoiceCountryToCountryCode(country: _DOLLAR_defs_Country): CountryCode {
+  const greenInvoiceToCountryCodeMap: Partial<Record<_DOLLAR_defs_Country, CountryCode>> = {
     AD: CountryCode.Andorra,
     AE: CountryCode['United Arab Emirates (the)'],
     AF: CountryCode.Afghanistan,
@@ -746,8 +733,8 @@ export function greenInvoiceCountryToCountryCode(country: GreenInvoiceCountry): 
   throw new Error(`Unsupported Green Invoice country: ${country}`);
 }
 
-export function countryCodeToGreenInvoiceCountry(countryCode: CountryCode): GreenInvoiceCountry {
-  const countryCodeToGreenInvoiceMap: Partial<Record<CountryCode, GreenInvoiceCountry>> = {
+export function countryCodeToGreenInvoiceCountry(countryCode: CountryCode): _DOLLAR_defs_Country {
+  const countryCodeToGreenInvoiceMap: Partial<Record<CountryCode, _DOLLAR_defs_Country>> = {
     [CountryCode.Afghanistan]: 'AF',
     [CountryCode['Åland Islands']]: 'AX',
     [CountryCode.Albania]: 'AL',
@@ -1067,7 +1054,7 @@ export async function insertNewDocumentFromGreenInvoice(
   ownerId: string,
   preDictatedChargeId?: string | null,
 ) {
-  const documentType = normalizeDocumentType(greenInvoiceDoc.type);
+  const documentType = normalizeGreenInvoiceDocumentType(greenInvoiceDoc.type);
   const isOwnerCreditor = greenInvoiceDoc.amount > 0 && documentType !== DocumentType.CreditInvoice;
 
   const links = await injector.get(GreenInvoiceClientProvider).getDocumentLinks(greenInvoiceDoc.id);
@@ -1240,16 +1227,16 @@ export async function getGreenInvoiceDocuments(injector: Injector, recursive: bo
 }
 
 export async function convertDocumentInputIntoGreenInvoiceInput(
-  initialInput: NewDocumentInput,
+  initialInput: DocumentIssueInput,
   injector: Injector,
 ): Promise<_DOLLAR_defs_DocumentInputNew_Input> {
   let client: _DOLLAR_defs_addDocumentRequest_Input['client'] | undefined = undefined;
   if (initialInput.client) {
     const clientInfo = await injector
       .get(ClientsProvider)
-      .getClientByIdLoader.load(initialInput.client.businessId);
+      .getClientByIdLoader.load(initialInput.client.id);
     if (!clientInfo) {
-      throw new GraphQLError(`Client with ID ${initialInput.client.greenInvoiceId} not found`);
+      throw new GraphQLError(`Client with business ID ${initialInput.client.id} not found`);
     }
     let greenInvoiceId: string | null = null;
     try {
@@ -1258,12 +1245,12 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     } catch (error) {
       console.error('Failed to validate client integrations', error);
       throw new GraphQLError(
-        `Client with ID ${initialInput.client.greenInvoiceId} has invalid integrations`,
+        `Client with business ID ${initialInput.client.id} has invalid integrations`,
       );
     }
     if (!greenInvoiceId) {
       throw new GraphQLError(
-        `Client with ID ${initialInput.client.greenInvoiceId} not found in Green Invoice`,
+        `Client with business ID ${initialInput.client.id} not found in Green Invoice`,
       );
     }
     const greenInvoiceClient = await injector
@@ -1279,6 +1266,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     } else {
       emails.push(...(greenInvoiceClient.emails ?? []));
     }
+    // TODO: use local values
     client = {
       id: greenInvoiceClient.id,
       country: greenInvoiceClient.country,
@@ -1294,11 +1282,18 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       emails,
     };
   }
-  return {
-    ...initialInput,
+
+  // clean input by converting to writeable and removing unwanted properties
+  const cleanedInput: Partial<{
+    -readonly [P in keyof DocumentIssueInput]: DocumentIssueInput[P];
+  }> = { ...initialInput };
+  delete cleanedInput.language;
+
+  const input: _DOLLAR_defs_DocumentInputNew_Input = {
+    ...cleanedInput,
     currency: convertCurrencyToGreenInvoice(initialInput.currency),
     type: getGreenInvoiceDocumentType(initialInput.type),
-    lang: getGreenInvoiceDocumentLanguage(initialInput.lang),
+    lang: getGreenInvoiceDocumentLanguage(initialInput.language),
     vatType: getGreenInvoiceDocumentVatType(initialInput.vatType ?? 'DEFAULT'),
     discount: initialInput.discount
       ? {
@@ -1316,14 +1311,12 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     payment: initialInput.payment?.map(payment => ({
       ...payment,
       type: getGreenInvoiceDocumentPaymentType(payment.type),
-      subType: payment.subType ? getGreenInvoiceDocumentPaymentSubType(payment.subType) : undefined,
-      appType: payment.appType ? getGreenInvoiceDocumentPaymentAppType(payment.appType) : undefined,
+      subType: undefined,
+      appType: undefined,
       cardType: payment.cardType
         ? getGreenInvoiceDocumentPaymentCardType(payment.cardType)
         : undefined,
-      dealType: payment.dealType
-        ? getGreenInvoiceDocumentPaymentDealType(payment.dealType)
-        : undefined,
+      dealType: undefined,
       currency: convertCurrencyToGreenInvoice(payment.currency),
     })),
     linkedDocumentIds: initialInput.linkedDocumentIds?.length
@@ -1333,36 +1326,37 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
       : undefined,
   };
+  return input;
 }
 
-export function convertGreenInvoiceDocumentToLocalDocumentInfo(
+export async function convertGreenInvoiceDocumentToDocumentDraft(
   greenInvoiceDocument: _DOLLAR_defs_Document,
-): ResolversTypes['NewDocumentInfo'] {
+  injector: Injector,
+): Promise<ResolversTypes['DocumentDraft']> {
+  const client = await (greenInvoiceDocument.client?.id
+    ? injector
+        .get(ClientsProvider)
+        .getClientByGreenInvoiceIdLoader.load(greenInvoiceDocument.client?.id)
+    : Promise.resolve(undefined));
   return {
     ...greenInvoiceDocument,
-    client: greenInvoiceDocument.client?.id,
+    client,
     currency: greenInvoiceDocument.currency as Currency,
     income: greenInvoiceDocument.income?.filter(Boolean).map(income => ({
       ...income!,
       currency: income!.currency as Currency,
       vatType: getVatTypeFromGreenInvoiceDocument(income!.vatType),
     })),
-    lang: getLanguageFromGreenInvoiceDocument(greenInvoiceDocument.lang),
+    language: getLanguageFromGreenInvoiceDocument(greenInvoiceDocument.lang),
     payment: greenInvoiceDocument.payment?.filter(Boolean).map(payment => ({
       ...payment!,
-      appType: payment?.appType
-        ? getPaymentAppTypeFromGreenInvoiceDocument(payment.appType)
-        : undefined,
+      appType: undefined,
       cardType: payment?.cardType
         ? getCardTypeFromGreenInvoiceDocumentPayment(payment.cardType)
         : undefined,
       currency: payment!.currency as Currency,
-      dealType: payment?.dealType
-        ? getDealTypeFromGreenInvoiceDocumentPayment(payment.dealType)
-        : undefined,
-      subType: payment?.subType
-        ? getSubTypeFromGreenInvoiceDocumentPayment(payment.subType)
-        : undefined,
+      dealType: undefined,
+      subType: undefined,
       type: getTypeFromGreenInvoiceDocumentPayment(payment!.type),
     })),
     type: getTypeFromGreenInvoiceDocument(greenInvoiceDocument.type),

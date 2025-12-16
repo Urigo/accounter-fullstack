@@ -67,7 +67,10 @@ import { Label } from '../../ui/label.jsx';
     greenInvoiceClient(clientId: $clientId) {
       businessId
       greenInvoiceId
-      country
+      country {
+        id
+        name
+      }
       emails
       name
       phone
@@ -193,100 +196,7 @@ export function IntegrationsSection({ data }: Props) {
           className="space-y-4"
         >
           {/* Green Invoice Integration */}
-          {fetchingGreenInvoice ? (
-            <AccordionItem
-              value="green-invoice"
-              className="rounded-lg border-2 border-green-600/20 bg-green-600/5"
-            >
-              <div className="px-4 py-3 bg-green-600/10 rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-6 w-32" />
-                        <Skeleton className="h-5 w-5 rounded-full" />
-                      </div>
-                      <Skeleton className="h-4 w-64" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-24" />
-                    <Skeleton className="h-8 w-8" />
-                  </div>
-                </div>
-              </div>
-
-              <AccordionContent>
-                <div className="p-6 space-y-6">
-                  {/* Business Information Skeleton */}
-                  <div className="space-y-4">
-                    <Skeleton className="h-4 w-40" />
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contact Information Skeleton */}
-                  <div className="space-y-4">
-                    <Skeleton className="h-4 w-40" />
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-32" />
-                        <Skeleton className="h-6 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Address Information Skeleton */}
-                  <div className="space-y-4">
-                    <Skeleton className="h-4 w-40" />
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2 md:col-span-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-4 w-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ) : (
+          {
             <AccordionItem
               value="green-invoice"
               className="rounded-lg border-2 border-green-600/20 bg-green-600/5"
@@ -316,112 +226,189 @@ export function IntegrationsSection({ data }: Props) {
                       provider="Green Invoice"
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
-                    {greenInvoiceClient && <AccordionTrigger className="hover:no-underline p-2" />}
+                    {business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId && (
+                      <AccordionTrigger className="hover:no-underline p-2" />
+                    )}
                   </div>
                 </div>
               </div>
 
               <AccordionContent>
-                {greenInvoiceClient && (
+                {fetchingGreenInvoice ? (
                   <div className="p-6 space-y-6">
-                    {/* Business Information */}
+                    {/* Business Information Skeleton */}
                     <div className="space-y-4">
-                      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                        Business Information
-                      </h4>
+                      <Skeleton className="h-4 w-40" />
                       <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Integration ID
-                          </span>
-                          <p className="text-sm font-mono">
-                            {business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId}
-                          </p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Business Name
-                          </span>
-                          <p className="text-sm">{greenInvoiceClient.name}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">Country</span>
-                          <p className="text-sm">{greenInvoiceClient.country}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">Tax ID</span>
-                          <p className="text-sm font-mono">{greenInvoiceClient.taxId}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Contact Information */}
+                    {/* Contact Information Skeleton */}
                     <div className="space-y-4">
-                      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                        Contact Information
-                      </h4>
+                      <Skeleton className="h-4 w-40" />
                       <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <Mail className="h-3.5 w-3.5" />
-                            Email Addresses
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {greenInvoiceClient.emails?.map((email, index) => (
-                              <span key={index} className="text-sm px-2 py-1 bg-muted rounded">
-                                {email}
-                              </span>
-                            ))}
-                          </div>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-6 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5" />
-                            Phone
-                          </span>
-                          <p className="text-sm font-mono">{greenInvoiceClient.phone}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">Mobile</span>
-                          <p className="text-sm font-mono">{greenInvoiceClient.mobile}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">Fax</span>
-                          <p className="text-sm font-mono">{greenInvoiceClient.fax}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Address Information */}
+                    {/* Address Information Skeleton */}
                     <div className="space-y-4">
-                      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <MapPin className="h-3.5 w-3.5" />
-                        Address
-                      </h4>
+                      <Skeleton className="h-4 w-40" />
                       <div className="grid gap-4 md:grid-cols-3">
-                        <div className="space-y-1 md:col-span-2">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Street Address
-                          </span>
-                          <p className="text-sm">{greenInvoiceClient.address}</p>
+                        <div className="space-y-2 md:col-span-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">City</span>
-                          <p className="text-sm">{greenInvoiceClient.city}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Zip Code
-                          </span>
-                          <p className="text-sm font-mono">{greenInvoiceClient.zip}</p>
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-24" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
                       </div>
                     </div>
                   </div>
+                ) : (
+                  greenInvoiceClient && (
+                    <div className="p-6 space-y-6">
+                      {/* Business Information */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Business Information
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Integration ID
+                            </span>
+                            <p className="text-sm font-mono">
+                              {business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Business Name
+                            </span>
+                            <p className="text-sm">{greenInvoiceClient.name}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Country
+                            </span>
+                            <p className="text-sm">{greenInvoiceClient.country?.name}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Tax ID
+                            </span>
+                            <p className="text-sm font-mono">{greenInvoiceClient.taxId}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contact Information */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Contact Information
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                              <Mail className="h-3.5 w-3.5" />
+                              Email Addresses
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {greenInvoiceClient.emails?.map((email, index) => (
+                                <span key={index} className="text-sm px-2 py-1 bg-muted rounded">
+                                  {email}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                              <Phone className="h-3.5 w-3.5" />
+                              Phone
+                            </span>
+                            <p className="text-sm font-mono">{greenInvoiceClient.phone}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Mobile
+                            </span>
+                            <p className="text-sm font-mono">{greenInvoiceClient.mobile}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">Fax</span>
+                            <p className="text-sm font-mono">{greenInvoiceClient.fax}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Address Information */}
+                      <div className="space-y-4">
+                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5" />
+                          Address
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div className="space-y-1 md:col-span-2">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Street Address
+                            </span>
+                            <p className="text-sm">{greenInvoiceClient.address}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">City</span>
+                            <p className="text-sm">{greenInvoiceClient.city}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Zip Code
+                            </span>
+                            <p className="text-sm font-mono">{greenInvoiceClient.zip}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 )}
               </AccordionContent>
             </AccordionItem>
-          )}
+          }
 
           {/* Hive / Retool Integration */}
           <AccordionItem

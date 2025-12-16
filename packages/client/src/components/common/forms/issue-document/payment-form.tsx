@@ -2,14 +2,7 @@
 
 import { useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
-import {
-  Currency,
-  GreenInvoicePaymentAppType,
-  GreenInvoicePaymentCardType,
-  GreenInvoicePaymentDealType,
-  GreenInvoicePaymentSubType,
-  GreenInvoicePaymentType,
-} from '../../../../gql/graphql.js';
+import { Currency, DocumentPaymentRecordCardType, PaymentType } from '../../../../gql/graphql.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
@@ -23,12 +16,9 @@ import {
 } from '../../../ui/select.js';
 import type { Payment } from './types/document.js';
 import {
-  getAppTypeOptions,
   getCardTypeOptions,
   getCurrencyOptions,
-  getDealTypeOptions,
   getPaymentTypeOptions,
-  getSubTypeOptions,
 } from './utils/enum-helpers.js';
 
 interface PaymentFormProps {
@@ -39,17 +29,14 @@ interface PaymentFormProps {
 
 const currencies = getCurrencyOptions();
 const paymentTypes = getPaymentTypeOptions();
-const subTypes = getSubTypeOptions();
-const appTypes = getAppTypeOptions();
 const cardTypes = getCardTypeOptions();
-const dealTypes = getDealTypeOptions();
 
 export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) {
   const addPayment = () => {
     const newPayment: Payment = {
       currency,
       price: 0,
-      type: GreenInvoicePaymentType.Cash,
+      type: PaymentType.Cash,
       date: new Date().toISOString().split('T')[0],
     };
     onChange([...payments, newPayment]);
@@ -68,32 +55,24 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
     onChange(payments.filter((_, i) => i !== index));
   };
 
-  const getPaymentTypeLabel = (type: GreenInvoicePaymentType) => {
+  const getPaymentTypeLabel = (type: PaymentType) => {
     return paymentTypes.find(pt => pt.value === type)?.label || type;
   };
 
-  const shouldShowBankFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.WireTransfer || type === GreenInvoicePaymentType.Cheque;
+  const shouldShowBankFields = (type: PaymentType) => {
+    return type === PaymentType.WireTransfer || type === PaymentType.Cheque;
   };
 
-  const shouldShowChequesFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.Cheque;
+  const shouldShowChequesFields = (type: PaymentType) => {
+    return type === PaymentType.Cheque;
   };
 
-  const shouldShowCardFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.CreditCard;
+  const shouldShowCardFields = (type: PaymentType) => {
+    return type === PaymentType.CreditCard;
   };
 
-  const shouldShowPayPalFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.Paypal;
-  };
-
-  const shouldShowAppFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.PaymentApp;
-  };
-
-  const shouldShowOtherFields = (type: GreenInvoicePaymentType) => {
-    return type === GreenInvoicePaymentType.Other;
+  const shouldShowPayPalFields = (type: PaymentType) => {
+    return type === PaymentType.Paypal;
   };
 
   const AccountAndTransaction = useCallback(
@@ -151,9 +130,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                 <Label>Payment Type</Label>
                 <Select
                   value={payment.type}
-                  onValueChange={(value: GreenInvoicePaymentType) =>
-                    updatePayment(index, 'type', value)
-                  }
+                  onValueChange={(value: PaymentType) => updatePayment(index, 'type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -285,7 +262,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                     <Label>Card Type</Label>
                     <Select
                       value={payment.cardType || ''}
-                      onValueChange={(value: GreenInvoicePaymentCardType) =>
+                      onValueChange={(value: DocumentPaymentRecordCardType) =>
                         updatePayment(index, 'cardType', value || undefined)
                       }
                     >
@@ -309,26 +286,6 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                       placeholder="1234"
                       maxLength={4}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Deal Type</Label>
-                    <Select
-                      value={payment.dealType || ''}
-                      onValueChange={(value: GreenInvoicePaymentDealType) =>
-                        updatePayment(index, 'dealType', value || undefined)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select deal type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dealTypes.map(dealType => (
-                          <SelectItem key={dealType.value} value={dealType.value}>
-                            {dealType.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -374,67 +331,6 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
               <div className="space-y-4">
                 <h5 className="font-medium text-sm text-gray-700">PayPal Details</h5>
                 <div className="grid grid-cols-2 gap-4">
-                  {AccountAndTransaction(payment, index)}
-                </div>
-              </div>
-            )}
-
-            {/* Payment App Fields */}
-            {shouldShowAppFields(payment.type) && (
-              <div className="space-y-4">
-                <h5 className="font-medium text-sm text-gray-700">Payment App Details</h5>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>App Type</Label>
-                    <Select
-                      value={payment.appType || ''}
-                      onValueChange={(value: GreenInvoicePaymentAppType) =>
-                        updatePayment(index, 'appType', value || undefined)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select app type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {appTypes.map(appType => (
-                          <SelectItem key={appType.value} value={appType.value}>
-                            {appType.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {AccountAndTransaction(payment, index)}
-                </div>
-              </div>
-            )}
-
-            {/* Other Fields */}
-            {shouldShowOtherFields(payment.type) && (
-              <div className="space-y-4">
-                <h5 className="font-medium text-sm text-gray-700">Other Payment Details</h5>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Sub Type</Label>
-                    <Select
-                      value={payment.subType || ''}
-                      onValueChange={(value: GreenInvoicePaymentSubType) =>
-                        updatePayment(index, 'subType', value || undefined)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select sub type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">None</SelectItem>
-                        {subTypes.map(subType => (
-                          <SelectItem key={subType.value} value={subType.value}>
-                            {subType.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   {AccountAndTransaction(payment, index)}
                 </div>
               </div>

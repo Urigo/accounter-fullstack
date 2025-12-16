@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Receipt, Trash2 } from 'lucide-react';
-import { Currency, GreenInvoiceVatType } from '../../../../gql/graphql.js';
+import { Currency, DocumentVatType } from '../../../../gql/graphql.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
@@ -33,7 +33,7 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
       price: 0,
       quantity: 1,
       currency,
-      vatType: GreenInvoiceVatType.Exempt,
+      vatType: DocumentVatType.Exempt,
     };
     onChange([...income, newItem]);
   };
@@ -150,7 +150,7 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                 <Label>VAT Type</Label>
                 <Select
                   value={item.vatType}
-                  onValueChange={(value: GreenInvoiceVatType) =>
+                  onValueChange={(value: DocumentVatType) =>
                     updateIncomeItem(index, 'vatType', value)
                   }
                 >

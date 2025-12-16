@@ -2,27 +2,24 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
 import {
-  PreviewGreenInvoiceDocumentDocument,
-  type PreviewGreenInvoiceDocumentMutation,
-  type PreviewGreenInvoiceDocumentMutationVariables,
+  PreviewDocumentDocument,
+  type PreviewDocumentMutation,
+  type PreviewDocumentMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation PreviewGreenInvoiceDocument($input: NewDocumentInput!) {
-    previewGreenInvoiceDocument(input: $input)
+  mutation PreviewDocument($input: DocumentIssueInput!) {
+    previewDocument(input: $input)
   }
 `;
 
-type PreviewGreenInvoiceDocument =
-  PreviewGreenInvoiceDocumentMutation['previewGreenInvoiceDocument'];
+type PreviewDocument = PreviewDocumentMutation['previewDocument'];
 
 type UsePreviewDocument = {
   fetching: boolean;
-  previewDocument: (
-    variables: PreviewGreenInvoiceDocumentMutationVariables,
-  ) => Promise<PreviewGreenInvoiceDocument | void>;
+  previewDocument: (variables: PreviewDocumentMutationVariables) => Promise<PreviewDocument | void>;
 };
 
 const NOTIFICATION_ID = 'previewDocument';
@@ -31,10 +28,10 @@ export const usePreviewDocument = (): UsePreviewDocument => {
   // TODO: add authentication
   // TODO: add local caching/optimization if needed
 
-  const [{ fetching }, mutate] = useMutation(PreviewGreenInvoiceDocumentDocument);
+  const [{ fetching }, mutate] = useMutation(PreviewDocumentDocument);
 
   const previewDocument = useCallback(
-    async (variables: PreviewGreenInvoiceDocumentMutationVariables) => {
+    async (variables: PreviewDocumentMutationVariables) => {
       const message = 'Error generating document preview';
       const notificationId = NOTIFICATION_ID;
 
@@ -44,12 +41,7 @@ export const usePreviewDocument = (): UsePreviewDocument => {
 
       try {
         const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          notificationId,
-          'previewGreenInvoiceDocument',
-        );
+        const data = handleCommonErrors(res, message, notificationId, 'previewDocument');
 
         if (data) {
           toast.success('Success', {
@@ -57,7 +49,7 @@ export const usePreviewDocument = (): UsePreviewDocument => {
             description: 'Document preview generated',
             duration: 3000,
           });
-          return data.previewGreenInvoiceDocument;
+          return data.previewDocument;
         }
       } catch (e) {
         console.error(`${message}: ${e}`);

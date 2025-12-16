@@ -11,7 +11,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation IssueGreenInvoiceDocument(
-    $input: NewDocumentInput!
+    $input: DocumentIssueInput!
     $emailContent: String
     $attachment: Boolean
     $chargeId: UUID

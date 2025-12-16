@@ -9,7 +9,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation IssueMonthlyDocuments($generateDocumentsInfo: [NewDocumentInput!]!) {
+  mutation IssueMonthlyDocuments($generateDocumentsInfo: [DocumentIssueInput!]!) {
     issueGreenInvoiceDocuments(generateDocumentsInfo: $generateDocumentsInfo) {
       success
       errors
@@ -22,7 +22,7 @@ type UseIssueMonthlyDocuments = {
   issueDocuments: (variables: IssueMonthlyDocumentsMutationVariables) => Promise<void>;
 };
 
-const NOTIFICATION_ID = 'IssueMonthlyDocuments';
+const NOTIFICATION_ID = 'issue-monthly-documents';
 
 export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
   // TODO: add authentication

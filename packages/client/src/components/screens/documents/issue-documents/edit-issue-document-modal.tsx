@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { Check, Edit, Eye, FileText, Loader2 } from 'lucide-react';
-import type { NewDocumentInfoFragment } from '../../../../gql/graphql.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
 import { PdfViewer } from '../../../common/documents/issue-document/pdf-viewer.js';
 import { RecentBusinessDocs } from '../../../common/documents/issue-document/recent-business-docs.js';
 import { RecentDocsOfSameType } from '../../../common/documents/issue-document/recent-docs-of-same-type.js';
-import {
-  convertNewDocumentInfoFragmentIntoPreviewDocumentInput,
-  EditIssuedDocumentForm,
-  type PreviewDocumentInput,
-} from '../../../common/index.js';
+import { EditIssuedDocumentForm, type PreviewDocumentInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Dialog, DialogContent, DialogTrigger } from '../../../ui/dialog.js';
@@ -17,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../../ui/tooltip.js'
 
 type Props = {
   onApprove: (draft: PreviewDocumentInput) => void;
-  draft: NewDocumentInfoFragment;
+  draft: PreviewDocumentInput;
 };
 
 export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElement {
@@ -25,9 +20,7 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
   const [isPreviewCurrent, setIsPreviewCurrent] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const { previewDocument, fetching: previewFetching } = usePreviewDocument();
-  const [document, setDocument] = useState<PreviewDocumentInput>(
-    convertNewDocumentInfoFragmentIntoPreviewDocumentInput(draft),
-  );
+  const [document, setDocument] = useState<PreviewDocumentInput>(draft);
 
   const updateFormData = useCallback(
     <T extends keyof PreviewDocumentInput>(field: T, value: PreviewDocumentInput[T]) => {
@@ -203,7 +196,7 @@ export function EditIssueDocumentModal({ onApprove, draft }: Props): ReactElemen
                 {/* Previous business documents */}
                 {document.client && (
                   <RecentBusinessDocs
-                    businessId={document.client?.businessId}
+                    businessId={document.client?.id}
                     linkedDocumentIds={document.linkedDocumentIds ?? []}
                   />
                 )}

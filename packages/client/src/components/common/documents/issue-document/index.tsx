@@ -5,9 +5,9 @@ import { format } from 'date-fns';
 import { Eye, FileText, Loader2, Send } from 'lucide-react';
 import {
   Currency,
+  DocumentLanguage,
   DocumentType,
-  GreenInvoiceDocumentLang,
-  GreenInvoiceVatType,
+  DocumentVatType,
 } from '../../../../gql/graphql.js';
 import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
@@ -33,9 +33,9 @@ const documentTypes = getDocumentTypeOptions();
 
 const formDefaults: PreviewDocumentInput = {
   type: DocumentType.Invoice,
-  lang: GreenInvoiceDocumentLang.English,
+  language: DocumentLanguage.English,
   currency: Currency.Usd,
-  vatType: GreenInvoiceVatType.Default,
+  vatType: DocumentVatType.Default,
   date: format(new Date(), 'yyyy-MM-dd'),
   rounding: false,
   signed: true,
@@ -233,9 +233,9 @@ export function GenerateDocument({ initialFormData, onDone, chargeId }: Generate
             </Card>
 
             {/* Previous client documents */}
-            {formData.client?.businessId && (
+            {formData.client?.id && (
               <RecentBusinessDocs
-                businessId={formData.client?.businessId}
+                businessId={formData.client?.id}
                 linkedDocumentIds={formData.linkedDocumentIds ?? []}
               />
             )}
