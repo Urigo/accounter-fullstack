@@ -2,9 +2,8 @@ import type {
   BusinessTripSummaryCategories,
   BusinessTripSummaryRow,
 } from '../../../__generated__/types.js';
-import { Currency } from '../../../shared/enums.js';
+import { CountryCode, Currency } from '../../../shared/enums.js';
 import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
-import { CountryCode } from '../../countries/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';

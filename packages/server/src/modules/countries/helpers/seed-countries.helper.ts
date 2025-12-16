@@ -4,7 +4,7 @@
  */
 
 import type { PoolClient } from 'pg';
-import { CountryCode } from '../types.js';
+import { CountryCode } from '../../../shared/enums.js';
 
 const countryEntries = Object.entries(CountryCode);
 const countryCodeToNameMap = new Map(countryEntries.map(([name, code]) => [code, name]));

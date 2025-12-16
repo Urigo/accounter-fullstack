@@ -27,7 +27,7 @@ export default gql`
     charges: [Charge!]
     payedByEmployee: Boolean
 
-    country: String
+    country: Country
     nightsCount: Int
     attendeesStay: [BusinessTripAttendeeStay!]!
   }
@@ -206,7 +206,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    country: String
+    country: CountryCode
     nightsCount: Int
     attendeesStay: [BusinessTripAttendeeStayInput!]!
   }
@@ -280,7 +280,7 @@ export default gql`
     currency: Currency
     employeeBusinessId: UUID
 
-    country: String
+    country: CountryCode
     nightsCount: Int
     attendeesStay: [BusinessTripAttendeeStayInput!]
   }

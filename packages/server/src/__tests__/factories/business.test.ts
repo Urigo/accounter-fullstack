@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { UUID_REGEX } from '../../shared/constants.js';
 import { createBusiness } from './business.js';
 import { makeUUID } from '../../demo-fixtures/helpers/deterministic-uuid.js';
-import { CountryCode } from '../../modules/countries/types.js';
+import { CountryCode } from '../../shared/enums.js';
 
 describe('Factory: Business', () => {
   describe('createBusiness', () => {

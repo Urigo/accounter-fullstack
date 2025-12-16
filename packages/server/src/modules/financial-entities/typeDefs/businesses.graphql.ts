@@ -28,7 +28,7 @@ export default gql`
   " Financial entity, identifier by ID, can be a company or individual "
   type LtdFinancialEntity implements FinancialEntity & Business {
     id: UUID!
-    country: String!
+    country: Country!
     governmentId: String
     name: String!
     address: String
@@ -108,7 +108,7 @@ export default gql`
     name: String
     sortCode: Int
 
-    country: String
+    country: CountryCode
     hebrewName: String
     address: String
     email: String
@@ -132,7 +132,7 @@ export default gql`
     name: String!
     sortCode: Int
 
-    country: String
+    country: CountryCode
     hebrewName: String
     address: String
     email: String

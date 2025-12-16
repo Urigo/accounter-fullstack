@@ -49,6 +49,10 @@ const config: CodegenConfig = {
             input: 'bigint',
             output: 'bigint',
           },
+          CountryCode: {
+            input: 'string',
+            output: '../shared/enums.js#CountryCode as CountryCodeEnum',
+          },
         },
         enumValues: {
           ChargeSortByField: '../shared/enums.js#ChargeSortByField',
@@ -99,7 +103,7 @@ const config: CodegenConfig = {
           CorporateTaxRulingComplianceReport:
             '../shared/types#CorporateTaxRulingComplianceReportProto',
           Contract: '../modules/contracts/types.js#IGetAllOpenContractsResult',
-          Country: '../modules/countries/types.js#IGetAllCountriesResult',
+          Country: '../shared/enums.js#CountryCode as CountryCodeEnum',
           CreditcardBankCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           CreditInvoice: '../modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:

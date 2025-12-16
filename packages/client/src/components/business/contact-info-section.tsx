@@ -44,7 +44,10 @@ import { ComboBox } from '../common';
     ... on LtdFinancialEntity {
       name
       hebrewName
-      country
+      country {
+        id
+        code
+      }
       governmentId
       address
       email
@@ -83,7 +86,7 @@ function ContactsSectionFragmentToFormValues(
 
   return {
     businessName: business.name,
-    locality: business.country,
+    locality: business.country?.code,
     localName: business.hebrewName ?? undefined,
     govId: business.governmentId ?? undefined,
     address: business.address ?? undefined,

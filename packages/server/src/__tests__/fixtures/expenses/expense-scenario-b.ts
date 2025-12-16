@@ -28,8 +28,7 @@ import {
 } from '../../factories';
 import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
-import { CountryCode } from '../../../modules/countries/types.js';
-import { Currency } from '../../../shared/enums.js';
+import { CountryCode, Currency } from '../../../shared/enums.js';
 
 /**
  * Expense Scenario B: USD Invoice Expense

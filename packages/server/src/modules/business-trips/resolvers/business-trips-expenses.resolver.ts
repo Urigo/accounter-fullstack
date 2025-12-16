@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import type { CountryCode } from '../../../shared/enums.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   coreExpenseUpdate,
@@ -477,7 +478,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
   BusinessTripAccommodationExpense: {
     __isTypeOf: DbExpense => DbExpense.category === 'ACCOMMODATION',
     ...commonBusinessTripExpenseFields,
-    country: dbExpense => dbExpense.country,
+    country: dbExpense => dbExpense.country as CountryCode | null,
     nightsCount: dbExpense => dbExpense.nights_count,
     attendeesStay: async (dbExpense, _, { injector }) => {
       if (dbExpense.attendees_stay.length === 0 || !dbExpense.business_trip_id) {
