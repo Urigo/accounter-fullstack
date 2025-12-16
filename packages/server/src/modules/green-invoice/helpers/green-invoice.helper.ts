@@ -134,14 +134,16 @@ export function getDocumentNameFromGreenInvoiceType(
   }
 }
 
-export function getGreenInvoiceDocumentLanguage(lang: DocumentLanguage): _DOLLAR_defs_DocumentLang {
-  switch (lang) {
+export function getGreenInvoiceDocumentLanguage(
+  language: DocumentLanguage,
+): _DOLLAR_defs_DocumentLang {
+  switch (language) {
     case 'HEBREW':
       return 'he';
     case 'ENGLISH':
       return 'en';
     default:
-      throw new Error(`Unsupported document language: ${lang}`);
+      throw new Error(`Unsupported document language: ${language}`);
   }
 }
 
@@ -1280,8 +1282,15 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       emails,
     };
   }
-  return {
-    ...initialInput,
+
+  // clean input by converting to writeable and removing unwanted properties
+  const cleanedInput: Partial<{
+    -readonly [P in keyof DocumentIssueInput]: DocumentIssueInput[P];
+  }> = { ...initialInput };
+  delete cleanedInput.language;
+
+  const input: _DOLLAR_defs_DocumentInputNew_Input = {
+    ...cleanedInput,
     currency: convertCurrencyToGreenInvoice(initialInput.currency),
     type: getGreenInvoiceDocumentType(initialInput.type),
     lang: getGreenInvoiceDocumentLanguage(initialInput.language),
@@ -1317,6 +1326,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
       ? getGreenInvoiceDocumentLinkType(initialInput.linkType)
       : undefined,
   };
+  return input;
 }
 
 export async function convertGreenInvoiceDocumentToDocumentDraft(

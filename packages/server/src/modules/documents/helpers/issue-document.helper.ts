@@ -17,6 +17,12 @@ import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import {
+  getProductName,
+  getSubscriptionPlanName,
+  normalizeProduct,
+  normalizeSubscriptionPlan,
+} from '../../contracts/helpers/contracts.helper.js';
 import type { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -306,21 +312,23 @@ export const convertContractToDraft = async (
   const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
   const month = format(subMonths(today, 1), 'MMMM');
 
+  const vatType = await deduceVatTypeFromBusiness(injector, business.country, contract.client_id);
+
   const documentInput: ResolversTypes['DocumentDraft'] = {
     remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
-    description: `GraphQL Hive Enterprise License - ${month} ${year}`,
+    description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
     type: normalizeDocumentType(contract.document_type),
     date: monthStart,
     dueDate: monthEnd,
     language: 'ENGLISH',
     currency: contract.currency as Currency,
-    vatType: 'EXEMPT',
+    vatType,
     rounding: false,
     signed: true,
     client,
     income: [
       {
-        description: `GraphQL Hive Enterprise License - ${month} ${year}`,
+        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
         quantity: 1,
         price: contract.amount,
         currency: contract.currency as Currency,

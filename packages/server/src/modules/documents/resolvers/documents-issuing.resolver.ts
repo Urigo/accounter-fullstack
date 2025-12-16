@@ -10,6 +10,12 @@ import {
   getChargeDocumentsMeta,
 } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import {
+  getProductName,
+  getSubscriptionPlanName,
+  normalizeProduct,
+  normalizeSubscriptionPlan,
+} from '../../contracts/helpers/contracts.helper.js';
 import { ContractsProvider } from '../../contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
@@ -395,8 +401,21 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       return drafts;
     },
     clientMonthlyChargeDraft: async (_, { clientId, issueMonth }, { injector }) => {
-      const openContracts = await injector.get(ContractsProvider).getAllOpenContracts();
-      const contract = openContracts.find(openContract => openContract.client_id === clientId);
+      const clientContracts = await injector
+        .get(ContractsProvider)
+        .getContractsByClientIdLoader.load(clientId);
+      const contracts = clientContracts.filter(clientContract => clientContract.is_active);
+
+      if (contracts.length === 0) {
+        throw new GraphQLError(`No active contracts found for client ID="${clientId}"`);
+      }
+      if (contracts.length > 1) {
+        throw new GraphQLError(
+          `Multiple active contracts found for client ID="${clientId}", cannot deduce which one to use`,
+        );
+      }
+
+      const contract = contracts[0];
 
       if (!contract) {
         throw new GraphQLError(`Contract not found for client ID="${clientId}"`);
@@ -432,25 +451,31 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
       const month = format(subMonths(today, 1), 'MMMM');
 
+      const vatType = await deduceVatTypeFromBusiness(
+        injector,
+        business.country,
+        contract.client_id,
+      );
+
       const draft: ResolversTypes['DocumentDraft'] = {
         remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
-        description: `GraphQL Hive Enterprise License - ${month} ${year}`,
+        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
         type: normalizeDocumentType(contract.document_type),
         date: monthStart,
         dueDate: monthEnd,
         language: 'ENGLISH',
         currency: contract.currency as Currency,
-        vatType: 'EXEMPT',
+        vatType,
         rounding: false,
         signed: true,
         client,
         income: [
           {
-            description: `GraphQL Hive Enterprise License - ${month} ${year}`,
+            description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
             quantity: 1,
             price: contract.amount,
             currency: contract.currency as Currency,
-            vatType: 'EXEMPT',
+            vatType,
           },
         ],
       };

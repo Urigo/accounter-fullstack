@@ -14,6 +14,17 @@ export function normalizeSubscriptionPlan(raw?: string | null): SubscriptionPlan
   }
 }
 
+export function getSubscriptionPlanName(plan: SubscriptionPlan): string {
+  switch (plan) {
+    case 'ENTERPRISE':
+      return 'Enterprise License';
+    case 'PRO':
+      return 'Pro Plan';
+    default:
+      throw new Error(`Unknown subscription plan: ${plan}`);
+  }
+}
+
 export function normalizeProduct(raw?: string | null): Product | null {
   if (!raw) {
     return null;
@@ -25,6 +36,17 @@ export function normalizeProduct(raw?: string | null): Product | null {
       return 'STELLATE';
     default:
       throw new Error(`Unknown product: ${raw}`);
+  }
+}
+
+export function getProductName(product: Product): string {
+  switch (product) {
+    case 'HIVE':
+      return 'GraphQL Hive';
+    case 'STELLATE':
+      return 'Stellate';
+    default:
+      throw new Error(`Unknown product: ${product}`);
   }
 }
 

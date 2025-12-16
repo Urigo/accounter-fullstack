@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { Textarea } from '../../../ui/textarea.js';
+import { normalizeClientInfo } from '../../index.js';
 import { ClientForm } from './client-form.js';
 import { IncomeForm } from './income-form.js';
 import { PaymentForm } from './payment-form.js';
@@ -103,13 +104,12 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
   // on client info data change, update form client
   useEffect(() => {
     if (clientInfoData?.client?.integrations.greenInvoiceInfo) {
-      const clientInfo = getFragmentData(
-        IssueDocumentClientFieldsFragmentDoc,
-        clientInfoData.client,
+      const clientInfo = normalizeClientInfo(
+        getFragmentData(IssueDocumentClientFieldsFragmentDoc, clientInfoData.client),
       );
       updateClient(clientInfo);
     }
-  }, [clientInfoData?.client?.integrations.greenInvoiceInfo, updateClient, selectedClientId]);
+  }, [clientInfoData?.client, updateClient, selectedClientId]);
 
   // const updateDiscount = <T extends keyof Discount>(field: T, value: Discount[T]) => {
   //   setFormData(prev => ({
@@ -195,9 +195,9 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {documentLanguages.map(lang => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
+                  {documentLanguages.map(language => (
+                    <SelectItem key={language.value} value={language.value}>
+                      {language.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -310,6 +310,17 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                     className="min-h-[60px]"
                   />
                 </div> */}
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description || ''}
+              onChange={e => updateFormData('description', e.target.value)}
+              placeholder="Main description"
+              className="min-h-[60px]"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="remarks">Remarks</Label>
