@@ -3,9 +3,12 @@ import { Plus } from 'lucide-react';
 import type { UseFieldArrayAppend } from 'react-hook-form';
 import { useQuery } from 'urql';
 import {
+  convertNewDocumentDraftFragmentIntoPreviewDocumentInput,
+  type PreviewDocumentInput,
+} from '@/components/common/index.js';
+import {
   MonthlyDocumentDraftByClientDocument,
-  NewDocumentInfoFragmentDoc,
-  type NewDocumentInfoFragment,
+  NewDocumentDraftFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
@@ -29,7 +32,7 @@ import {
 /* GraphQL */ `
   query MonthlyDocumentDraftByClient($clientId: UUID!, $issueMonth: TimelessDate!) {
     clientMonthlyChargeDraft(clientId: $clientId, issueMonth: $issueMonth) {
-      ...NewDocumentInfo
+      ...NewDocumentDraft
     }
   }
 `;
@@ -43,7 +46,7 @@ export function AddDocumentToIssue({
   clients: { id: string; name: string }[];
   onAdd: UseFieldArrayAppend<
     {
-      generateDocumentsInfo: NewDocumentInfoFragment[];
+      generateDocumentsInfo: PreviewDocumentInput[];
     },
     'generateDocumentsInfo'
   >;
@@ -70,7 +73,11 @@ export function AddDocumentToIssue({
 
   useEffect(() => {
     if (clientId !== '' && data) {
-      onAdd(getFragmentData(NewDocumentInfoFragmentDoc, data.clientMonthlyChargeDraft));
+      onAdd(
+        convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+          getFragmentData(NewDocumentDraftFragmentDoc, data.clientMonthlyChargeDraft),
+        ),
+      );
       setOpen(false);
     }
   }, [clientId, data, onAdd]);

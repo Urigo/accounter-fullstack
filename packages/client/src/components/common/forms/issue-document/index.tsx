@@ -6,11 +6,10 @@ import { useQuery } from 'urql';
 import {
   ClientInfoForDocumentIssuingDocument,
   Currency,
+  DocumentLanguage,
   DocumentType,
-  GreenInvoiceDocumentLang,
-  GreenInvoiceVatType,
+  DocumentVatType,
   IssueDocumentClientFieldsFragmentDoc,
-  type IssueDocumentClientFieldsFragment,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import { useGetAllClients } from '../../../../hooks/use-get-all-clients.js';
@@ -25,10 +24,10 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { Textarea } from '../../../ui/textarea.js';
-import { ClientForm, normalizeClientInfo } from './client-form.js';
+import { ClientForm } from './client-form.js';
 import { IncomeForm } from './income-form.js';
 import { PaymentForm } from './payment-form.js';
-import type { Income, Payment, PreviewDocumentInput } from './types/document.js';
+import type { DocumentClient, Income, Payment, PreviewDocumentInput } from './types/document.js';
 import {
   getCurrencyOptions,
   getDocumentLangOptions,
@@ -50,9 +49,9 @@ export * from './types/document.js';
           greenInvoiceId
           businessId
           name
-          ...IssueDocumentClientFields
         }
       }
+      ...IssueDocumentClientFields
     }
   }
 `;
@@ -67,20 +66,16 @@ interface GenerateDocumentProps {
 
 const currencies = getCurrencyOptions();
 const documentTypes = getDocumentTypeOptions();
-const documentLangs = getDocumentLangOptions();
+const documentLanguages = getDocumentLangOptions();
 const vatTypes = getVatTypeOptions();
 // const discountTypes = getDiscountTypeOptions();
 
 export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDocumentProps) {
   // Add state for selected client
-  const [selectedClientId, setSelectedClientId] = useState<string>(
-    formData.client?.businessId || '',
-  );
+  const [selectedClientId, setSelectedClientId] = useState<string>(formData.client?.id || '');
   const { selectableClients } = useGetAllClients();
 
-  const [clientInfo, setClientInfo] = useState<IssueDocumentClientFieldsFragment | null>(
-    formData.client ?? null,
-  );
+  const [clientInfo, setClientInfo] = useState<DocumentClient | null>(formData.client ?? null);
 
   const [{ data: clientInfoData, fetching: clientFetching }, fetchNewClient] = useQuery({
     pause: true,
@@ -98,8 +93,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
   }, [selectedClientId, fetchNewClient]);
 
   const updateClient = useCallback(
-    (clientInfo: IssueDocumentClientFieldsFragment) => {
-      const client = normalizeClientInfo(clientInfo);
+    (client: DocumentClient) => {
       setClientInfo(client);
       updateFormData('client', client);
     },
@@ -111,7 +105,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
     if (clientInfoData?.client?.integrations.greenInvoiceInfo) {
       const clientInfo = getFragmentData(
         IssueDocumentClientFieldsFragmentDoc,
-        clientInfoData.client.integrations.greenInvoiceInfo,
+        clientInfoData.client,
       );
       updateClient(clientInfo);
     }
@@ -137,7 +131,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       // New client selected - reset client data
       const id = `temp-${crypto.randomUUID()}`;
       updateFormData('client', {
-        businessId: id,
+        id,
         name: '',
       });
     } else if (clientId) {
@@ -145,7 +139,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
       const selectedClient = selectableClients.find(c => c.value === clientId);
       if (selectedClient) {
         updateFormData('client', {
-          businessId: selectedClient.value,
+          id: selectedClient.value,
           name: selectedClient.label,
         });
       }
@@ -194,14 +188,14 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
               <Select
-                value={formData.lang}
-                onValueChange={(value: GreenInvoiceDocumentLang) => updateFormData('lang', value)}
+                value={formData.language}
+                onValueChange={(value: DocumentLanguage) => updateFormData('language', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {documentLangs.map(lang => (
+                  {documentLanguages.map(lang => (
                     <SelectItem key={lang.value} value={lang.value}>
                       {lang.label}
                     </SelectItem>
@@ -234,7 +228,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
               <Label htmlFor="vatType">VAT Type</Label>
               <Select
                 value={formData.vatType}
-                onValueChange={(value: GreenInvoiceVatType) => updateFormData('vatType', value)}
+                onValueChange={(value: DocumentVatType) => updateFormData('vatType', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -258,10 +252,6 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                   <SelectValue placeholder="Choose existing client or create new" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* NOTE: GreenInvoice API supports adding new clients,
-                          but we are not using it here. to enable,
-                          uncomment the next line */}
-                  {/* <SelectItem value="new">+ New Client</SelectItem> */}
                   {selectableClients.map(client => (
                     <SelectItem key={client.value} value={client.value}>
                       {client.label}
@@ -409,7 +399,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
         <ClientForm
           client={clientInfo}
           fetching={clientFetching}
-          onChange={(client: IssueDocumentClientFieldsFragment) => updateClient(client)}
+          onChange={client => updateClient(client)}
         />
       )}
 

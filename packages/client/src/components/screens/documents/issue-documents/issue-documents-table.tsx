@@ -11,13 +11,16 @@ import {
   AllOpenContractsDocument,
   BillingCycle,
   MonthlyDocumentsDraftsDocument,
-  NewDocumentInfoFragmentDoc,
+  NewDocumentDraftFragmentDoc,
   type IssueMonthlyDocumentsMutationVariables,
-  type NewDocumentInfoFragment,
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/index.js';
 import { useIssueMonthlyDocuments } from '../../../../hooks/use-issue-monthly-documents.js';
-import { ConfirmationModal } from '../../../common/index.js';
+import {
+  ConfirmationModal,
+  convertNewDocumentDraftFragmentIntoPreviewDocumentInput,
+  type PreviewDocumentInput,
+} from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
@@ -61,12 +64,16 @@ export type IssueDocumentsVariables = Omit<
 };
 
 type IssueDocumentsTableProps = {
-  drafts: FragmentType<typeof NewDocumentInfoFragmentDoc>[];
+  drafts: FragmentType<typeof NewDocumentDraftFragmentDoc>[];
 };
 
 export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): ReactElement => {
   const [documentDrafts, setDocumentDrafts] = useState(
-    drafts.map(draft => getFragmentData(NewDocumentInfoFragmentDoc, draft)),
+    drafts.map(draft =>
+      convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+        getFragmentData(NewDocumentDraftFragmentDoc, draft),
+      ),
+    ),
   );
 
   const defaultIssueMonth = format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString;
@@ -82,10 +89,12 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
   });
 
   useEffect(() => {
-    if (data?.clientMonthlyChargesDrafts) {
+    if (data?.periodicalDocumentDrafts) {
       setDocumentDrafts(
-        data.clientMonthlyChargesDrafts.map(draft =>
-          getFragmentData(NewDocumentInfoFragmentDoc, draft),
+        data.periodicalDocumentDrafts.map(draft =>
+          convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+            getFragmentData(NewDocumentDraftFragmentDoc, draft),
+          ),
         ),
       );
     }
@@ -95,7 +104,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
     fetchNewDrafts();
   }, [issueMonth, fetchNewDrafts]);
 
-  const form = useForm<{ generateDocumentsInfo: NewDocumentInfoFragment[] }>({
+  const form = useForm<{ generateDocumentsInfo: PreviewDocumentInput[] }>({
     values: {
       generateDocumentsInfo: documentDrafts,
     },
@@ -117,7 +126,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
       return {
         ...field,
         ...watchFieldArray[index],
-        id: field.client?.businessId,
+        id: field.client?.id,
       };
     });
   }, [fields, watchFieldArray]);
@@ -134,9 +143,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
       openContractsData?.allOpenContracts.filter(
         openContract =>
           openContract.billingCycle === BillingCycle.Monthly &&
-          !controlledFields.some(
-            controlled => controlled.client?.businessId === openContract.client.originalBusiness.id,
-          ),
+          !controlledFields.some(controlled => controlled.client?.id === openContract.client.id),
       ),
     // .sort((a, b) => a.client?.name.localeCompare(b.client?.name)),
     [controlledFields, openContractsData],

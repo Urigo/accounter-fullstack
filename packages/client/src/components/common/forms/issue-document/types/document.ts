@@ -1,38 +1,34 @@
-import {
+import type { CountryCode } from '@/helpers/countries.js';
+import type {
   Currency,
+  DocumentDiscountType,
+  DocumentLanguage,
+  DocumentLinkType,
+  DocumentPaymentRecordCardType,
   DocumentType,
-  GreenInvoiceCountry,
-  GreenInvoiceDiscountType,
-  GreenInvoiceDocumentLang,
-  GreenInvoiceLinkType,
-  GreenInvoicePaymentAppType,
-  GreenInvoicePaymentCardType,
-  GreenInvoicePaymentDealType,
-  GreenInvoicePaymentSubType,
-  GreenInvoicePaymentType,
-  GreenInvoiceVatType,
+  DocumentVatType,
+  PaymentType,
 } from '../../../../../gql/graphql.js';
 
 type Discount = {
   amount: number;
-  type: GreenInvoiceDiscountType;
+  type: DocumentDiscountType;
 };
 
-type GreenInvoiceClient = {
-  country?: GreenInvoiceCountry;
-  emails?: Array<string>;
-  greenInvoiceId?: string;
-  businessId: string;
-  name?: string;
-  phone?: string;
-  taxId?: string;
-  self?: boolean;
+type DocumentClient = {
+  add?: boolean;
   address?: string;
   city?: string;
-  zip?: string;
+  country?: CountryCode;
+  emails?: Array<string>;
   fax?: string;
+  id: string;
   mobile?: string;
-  add?: boolean;
+  name?: string;
+  phone?: string;
+  self?: boolean;
+  taxId?: string;
+  zip?: string;
 };
 
 type Income = {
@@ -47,7 +43,7 @@ type Income = {
   quantity: number;
   vat?: number;
   vatRate?: number;
-  vatType: GreenInvoiceVatType;
+  vatType: DocumentVatType;
 };
 
 type Payment = {
@@ -55,42 +51,39 @@ type Payment = {
   currencyRate?: number;
   date?: string;
   price: number;
-  type: GreenInvoicePaymentType;
-  subType?: GreenInvoicePaymentSubType;
+  type: PaymentType;
   bankName?: string;
   bankBranch?: string;
   bankAccount?: string;
   chequeNum?: string;
   accountId?: string;
   transactionId?: string;
-  appType?: GreenInvoicePaymentAppType;
-  cardType?: GreenInvoicePaymentCardType;
+  cardType?: DocumentPaymentRecordCardType;
   cardNum?: string;
-  dealType?: GreenInvoicePaymentDealType;
   numPayments?: number;
   firstPayment?: number;
 };
 
 export type PreviewDocumentInput = {
-  description?: string;
-  remarks?: string;
-  footer?: string;
-  type: DocumentType;
-  date?: string;
-  dueDate?: string;
-  lang: GreenInvoiceDocumentLang;
+  client?: DocumentClient;
   currency: Currency;
-  vatType: GreenInvoiceVatType;
+  date?: string;
+  description?: string;
   discount?: Discount;
-  rounding?: boolean;
-  signed?: boolean;
-  maxPayments?: number;
-  client?: GreenInvoiceClient;
+  dueDate?: string;
+  footer?: string;
   income?: Array<Income>;
-  payment?: Array<Payment>;
+  language: DocumentLanguage;
+  linkType?: DocumentLinkType;
   linkedDocumentIds?: Array<string>;
   linkedPaymentId?: string;
-  linkType?: GreenInvoiceLinkType;
+  maxPayments?: number;
+  payment?: Array<Payment>;
+  remarks?: string;
+  rounding?: boolean;
+  signed?: boolean;
+  type: DocumentType;
+  vatType: DocumentVatType;
 };
 
-export type { Discount, GreenInvoiceClient, Income, Payment };
+export type { Discount, DocumentClient, Income, Payment };

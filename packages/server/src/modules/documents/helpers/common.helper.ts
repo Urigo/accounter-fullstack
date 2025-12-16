@@ -12,3 +12,24 @@ export function isInvoice(type: document_type): boolean {
 export function isReceipt(type: document_type): boolean {
   return type === DocumentType.Receipt || type === DocumentType.InvoiceReceipt;
 }
+
+export function getDocumentNameFromType(documentType: DocumentType): string {
+  switch (documentType) {
+    case DocumentType.Invoice:
+      return 'Tax Invoice';
+    case DocumentType.Proforma:
+      return 'Proforma Invoice';
+    case DocumentType.InvoiceReceipt:
+      return 'Invoice / Receipt';
+    case DocumentType.CreditInvoice:
+      return 'Credit Note';
+    case DocumentType.Receipt:
+      return 'Receipt';
+    case DocumentType.Other:
+      return 'Misc Document';
+    case DocumentType.Unprocessed:
+      return 'Unprocessed Document';
+    default:
+      throw new Error(`Unsupported document type: ${documentType}`);
+  }
+}

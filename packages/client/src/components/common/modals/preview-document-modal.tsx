@@ -15,8 +15,9 @@ import {
   IssueDocumentClientFieldsFragmentDoc,
   NewDocumentDraftByChargeDocument,
   NewDocumentDraftByDocumentDocument,
-  NewDocumentInfoFragmentDoc,
-  type NewDocumentInfoFragment,
+  NewDocumentDraftFragmentDoc,
+  type IssueDocumentClientFieldsFragment,
+  type NewDocumentDraftFragment,
 } from '../../../gql/graphql.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -28,14 +29,58 @@ import {
 } from '../../ui/dialog.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
-import { normalizeClientInfo } from '../forms/issue-document/client-form.js';
-import type { PreviewDocumentInput } from '../forms/issue-document/types/document.js';
+import type {
+  DocumentClient,
+  PreviewDocumentInput,
+} from '../forms/issue-document/types/document.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment IssueDocumentClientFields on Client {
+    id
+    originalBusiness {
+      id
+      address
+      country {
+        id
+        code
+      }
+      governmentId
+      name
+      phoneNumber
+    }
+    emails
+    # city
+    # zip
+    # fax
+    # mobile
+  }
+`;
+
+export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragment): DocumentClient {
+  const client: DocumentClient = {
+    // add: ___;
+    address: clientInfo.originalBusiness.address ?? undefined,
+    // city: ___,
+    country: clientInfo.originalBusiness.country.code,
+    emails: clientInfo.emails,
+    // fax: ___,
+    id: clientInfo.id,
+    // mobile: ___,
+    name: clientInfo.originalBusiness.name,
+    phone: clientInfo.originalBusiness.phoneNumber ?? undefined,
+    // self: ___,
+    taxId: clientInfo.originalBusiness.governmentId ?? undefined,
+    // zip: ___,
+  };
+  return client;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query NewDocumentDraftByCharge($chargeId: UUID!) {
-    newDocumentInfoDraftByCharge(chargeId: $chargeId) {
-      ...NewDocumentInfo
+    newDocumentDraftByCharge(chargeId: $chargeId) {
+      ...NewDocumentDraft
     }
   }
 `;
@@ -43,22 +88,22 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query NewDocumentDraftByDocument($documentId: UUID!) {
-    newDocumentInfoDraftByDocument(documentId: $documentId) {
-      ...NewDocumentInfo
+    newDocumentDraftByDocument(documentId: $documentId) {
+      ...NewDocumentDraft
     }
   }
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment NewDocumentInfo on NewDocumentInfo {
+  fragment NewDocumentDraft on DocumentDraft {
     description
     remarks
     footer
     type
     date
     dueDate
-    lang
+    language
     currency
     vatType
     discount {
@@ -69,9 +114,14 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
     signed
     maxPayments
     client {
-      greenInvoiceId
-      businessId
-      name
+      id
+      originalBusiness {
+        id
+        name
+      }
+      integrations {
+        id
+      }
       emails
       ...IssueDocumentClientFields
     }
@@ -91,17 +141,14 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
       date
       price
       type
-      subType
       bankName
       bankBranch
       bankAccount
       chequeNum
       accountId
       transactionId
-      appType
       cardType
       cardNum
-      dealType
       numPayments
       firstPayment
     }
@@ -110,13 +157,13 @@ import type { PreviewDocumentInput } from '../forms/issue-document/types/documen
   }
 `;
 
-export function convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
-  newDocumentInfo: NewDocumentInfoFragment,
+export function convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+  documentDraft: NewDocumentDraftFragment,
   documentTypeOverride?: DocumentType,
 ): PreviewDocumentInput {
   let remarks: string | undefined = undefined;
-  if (newDocumentInfo.remarks) {
-    remarks = newDocumentInfo.remarks;
+  if (documentDraft.remarks) {
+    remarks = documentDraft.remarks;
     if (documentTypeOverride === DocumentType.CreditInvoice) {
       remarks = remarks.replace(
         getDocumentNameFromType(DocumentType.Receipt),
@@ -125,55 +172,52 @@ export function convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
     }
   }
 
-  let { currency } = newDocumentInfo;
+  let { currency } = documentDraft;
   if (documentTypeOverride === DocumentType.CreditInvoice) {
-    currency = newDocumentInfo.income?.[0]?.currency || currency;
+    currency = documentDraft.income?.[0]?.currency || currency;
   }
 
   return {
-    ...newDocumentInfo,
+    ...documentDraft,
     currency,
-    description: newDocumentInfo.description || undefined,
+    description: documentDraft.description || undefined,
     remarks,
-    footer: newDocumentInfo.footer || undefined,
-    date: newDocumentInfo.date || undefined,
-    dueDate: newDocumentInfo.dueDate || undefined,
-    discount: newDocumentInfo.discount || undefined,
-    rounding: newDocumentInfo.rounding || undefined,
-    signed: newDocumentInfo.signed || undefined,
-    maxPayments: newDocumentInfo.maxPayments || undefined,
-    client: newDocumentInfo.client
+    footer: documentDraft.footer || undefined,
+    date: documentDraft.date || undefined,
+    dueDate: documentDraft.dueDate || undefined,
+    discount: documentDraft.discount || undefined,
+    rounding: documentDraft.rounding || undefined,
+    signed: documentDraft.signed || undefined,
+    maxPayments: documentDraft.maxPayments || undefined,
+    client: documentDraft.client
       ? normalizeClientInfo(
-          getFragmentData(IssueDocumentClientFieldsFragmentDoc, newDocumentInfo.client),
+          getFragmentData(IssueDocumentClientFieldsFragmentDoc, documentDraft.client),
         )
       : undefined,
-    income: newDocumentInfo.income?.map(income => ({
+    income: documentDraft.income?.map(income => ({
       ...income,
       currencyRate: income.currencyRate ?? undefined,
       itemId: income.itemId || undefined,
       vatRate: income.vatRate ?? undefined,
     })),
-    payment: newDocumentInfo.payment?.map(payment => ({
+    payment: documentDraft.payment?.map(payment => ({
       ...payment,
       currencyRate: payment.currencyRate || undefined,
       date: payment.date || undefined,
-      subType: payment.subType || undefined,
       bankName: payment.bankName || undefined,
       bankBranch: payment.bankBranch || undefined,
       bankAccount: payment.bankAccount || undefined,
       chequeNum: payment.chequeNum || undefined,
       accountId: payment.accountId || undefined,
       transactionId: payment.transactionId || undefined,
-      appType: payment.appType || undefined,
       cardType: payment.cardType || undefined,
       cardNum: payment.cardNum || undefined,
-      dealType: payment.dealType || undefined,
       numPayments: payment.numPayments || undefined,
       firstPayment: payment.firstPayment || undefined,
     })),
-    linkedDocumentIds: newDocumentInfo.linkedDocumentIds || undefined,
-    linkedPaymentId: newDocumentInfo.linkedPaymentId || undefined,
-    type: documentTypeOverride || newDocumentInfo.type,
+    linkedDocumentIds: documentDraft.linkedDocumentIds || undefined,
+    linkedPaymentId: documentDraft.linkedPaymentId || undefined,
+    type: documentTypeOverride || documentDraft.type,
   };
 }
 
@@ -262,21 +306,21 @@ export function PreviewDocumentModal({
   ]);
 
   useEffect(() => {
-    let newDocumentInfoDraft: NewDocumentInfoFragment | undefined = undefined;
-    if (dataByCharge?.newDocumentInfoDraftByCharge) {
-      newDocumentInfoDraft = getFragmentData(
-        NewDocumentInfoFragmentDoc,
-        dataByCharge.newDocumentInfoDraftByCharge,
+    let documentDraftDraft: NewDocumentDraftFragment | undefined = undefined;
+    if (dataByCharge?.newDocumentDraftByCharge) {
+      documentDraftDraft = getFragmentData(
+        NewDocumentDraftFragmentDoc,
+        dataByCharge.newDocumentDraftByCharge,
       );
-    } else if (dataByDocument?.newDocumentInfoDraftByDocument) {
-      newDocumentInfoDraft = getFragmentData(
-        NewDocumentInfoFragmentDoc,
-        dataByDocument.newDocumentInfoDraftByDocument,
+    } else if (dataByDocument?.newDocumentDraftByDocument) {
+      documentDraftDraft = getFragmentData(
+        NewDocumentDraftFragmentDoc,
+        dataByDocument.newDocumentDraftByDocument,
       );
     }
-    if (newDocumentInfoDraft) {
-      const draft = convertNewDocumentInfoFragmentIntoPreviewDocumentInput(
-        newDocumentInfoDraft,
+    if (documentDraftDraft) {
+      const draft = convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+        documentDraftDraft,
         documentType,
       );
       setInitialFormData(draft);

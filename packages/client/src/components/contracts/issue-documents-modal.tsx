@@ -12,19 +12,18 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { MonthPickerInput } from '@mantine/dates';
-import { AccounterLoader } from '@/components/common/index.js';
 import {
-  ContractBasedDocumentDraftsDocument,
-  NewDocumentInfoFragmentDoc,
-  type NewDocumentInfoFragment,
-} from '@/gql/graphql.js';
+  AccounterLoader,
+  convertNewDocumentDraftFragmentIntoPreviewDocumentInput,
+  type PreviewDocumentInput,
+} from '@/components/common/index.js';
+import { ContractBasedDocumentDraftsDocument, NewDocumentDraftFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
 import { useIssueMonthlyDocuments } from '@/hooks/use-issue-monthly-documents.js';
 import { ROUTES } from '@/router/routes.js';
 import { ConfirmationModal } from '../common/index.js';
 import { EditIssueDocumentModal } from '../screens/documents/issue-documents/edit-issue-document-modal.js';
-import { type IssueDocumentsVariables } from '../screens/documents/issue-documents/issue-documents-table.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -42,8 +41,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query ContractBasedDocumentDrafts($issueMonth: TimelessDate!, $contractIds: [UUID!]!) {
-    clientChargesDraftsByContracts(issueMonth: $issueMonth, contractIds: $contractIds) {
-      ...NewDocumentInfo
+    periodicalDocumentDraftsByContracts(issueMonth: $issueMonth, contractIds: $contractIds) {
+      ...NewDocumentDraft
     }
   }
 `;
@@ -57,11 +56,7 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
   const [issueMonth, setIssueMonth] = useState<TimelessDateString>(
     format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
   );
-  const [documentDrafts, setDocumentDrafts] = useState<
-    (Omit<NewDocumentInfoFragment, 'client'> & {
-      client: NewDocumentInfoFragment['client'] & { id: string };
-    })[]
-  >([]);
+  const [documentDrafts, setDocumentDrafts] = useState<PreviewDocumentInput[]>([]);
   const { issueDocuments } = useIssueMonthlyDocuments();
 
   const [{ data, fetching }, fetchDrafts] = useQuery({
@@ -73,13 +68,13 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
     pause: !isDialogOpen,
   });
   useEffect(() => {
-    if (data?.clientChargesDraftsByContracts) {
+    if (data?.periodicalDocumentDraftsByContracts) {
       setDocumentDrafts(
-        data.clientChargesDraftsByContracts.map(draft =>
-          getFragmentData(NewDocumentInfoFragmentDoc, draft),
-        ) as (Omit<NewDocumentInfoFragment, 'client'> & {
-          client: NewDocumentInfoFragment['client'] & { id: string };
-        })[],
+        data.periodicalDocumentDraftsByContracts.map(draft =>
+          convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+            getFragmentData(NewDocumentDraftFragmentDoc, draft),
+          ),
+        ),
       );
     }
   }, [data, setDocumentDrafts]);
@@ -90,25 +85,27 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
     }
   }, [isDialogOpen, fetchDrafts]);
 
-  const form = useForm<IssueDocumentsVariables>({
+  const form = useForm<{ drafts: PreviewDocumentInput[] }>({
     values: {
-      generateDocumentsInfo: documentDrafts,
+      drafts: documentDrafts,
     },
   });
 
   const onSubmit = useCallback(
-    (data: IssueDocumentsVariables) => {
-      issueDocuments(data);
+    (data: { drafts: PreviewDocumentInput[] }) => {
+      issueDocuments({
+        generateDocumentsInfo: data.drafts,
+      });
     },
     [issueDocuments],
   );
 
   const { fields, remove, update } = useFieldArray({
     control: form.control,
-    name: 'generateDocumentsInfo',
+    name: 'drafts',
   });
 
-  const watchFieldArray = form.watch('generateDocumentsInfo');
+  const watchFieldArray = form.watch('drafts');
 
   const controlledFields = useMemo(() => {
     return fields.map((field, index) => {
@@ -169,8 +166,8 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                         <TableCell>
                           <Link
                             to={
-                              row.client?.businessId
-                                ? ROUTES.BUSINESSES.DETAIL(row.client?.businessId)
+                              row.client?.id
+                                ? ROUTES.BUSINESSES.DETAIL(row.client?.id)
                                 : ROUTES.BUSINESSES.ALL
                             }
                             target="_blank"
@@ -218,7 +215,7 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                             <EditIssueDocumentModal
                               draft={row}
                               onApprove={document => {
-                                form.setValue(`generateDocumentsInfo.${index}`, document, {
+                                form.setValue(`drafts.${index}`, document, {
                                   shouldDirty: true,
                                   shouldTouch: true,
                                   shouldValidate: true,
