@@ -2,6 +2,35 @@ import { describe, expect, it } from 'vitest';
 import { calculateDateConfidence } from '../helpers/date-confidence.helper.js';
 
 describe('calculateDateConfidence', () => {
+  describe('client-aware flag', () => {
+    it('returns 1.0 for client same-business on same day', () => {
+      const date = new Date('2024-01-15');
+      const result = calculateDateConfidence(date, date, true);
+      expect(result).toBe(1.0);
+    });
+
+    it('returns 1.0 for client same-business 30 days apart', () => {
+      const date1 = new Date('2024-01-01');
+      const date2 = new Date('2024-01-31');
+      const result = calculateDateConfidence(date1, date2, true);
+      expect(result).toBe(1.0);
+    });
+
+    it('returns 1.0 for client same-business 365 days apart', () => {
+      const date1 = new Date('2023-01-01');
+      const date2 = new Date('2024-01-01');
+      const result = calculateDateConfidence(date1, date2, true);
+      expect(result).toBe(1.0);
+    });
+
+    it('uses standard degradation when not a client match', () => {
+      const date1 = new Date('2024-01-01');
+      const date2 = new Date('2024-01-31');
+      const result = calculateDateConfidence(date1, date2, false);
+      expect(result).toBe(0.0);
+    });
+  });
+
   describe('same day', () => {
     it('should return 1.0 for identical dates', () => {
       const date = new Date('2024-01-15T10:30:00Z');

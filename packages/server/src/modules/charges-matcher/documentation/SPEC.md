@@ -501,7 +501,7 @@ Document date: **Uses `date` field**
 
 - Aggregation uses latest document `date`
 
-**Confidence Calculation:**
+**Confidence Calculation (Standard Formula):**
 
 ```
 days_diff = |transaction_date - document_date| in days
@@ -513,9 +513,281 @@ else:
   date_conf = 1.0 - (days_diff / 30)
 ```
 
-**Note:** Simplified from original spec which proposed different date selection per document type.
-Current implementation uses `event_date` for all cases, providing consistent and predictable
-behavior.
+**Note:** This standard formula applies to **cross-business scenarios and non-client same-business
+matches**. For registered clients with same-business matches, see section 4.3.5 below for
+client-aware date confidence behavior.
+
+Simplified from original spec which proposed different date selection per document type. Current
+implementation uses `event_date` for all cases, providing consistent and predictable behavior.
+
+#### 4.3.5 Client-Aware Date Confidence (v3.0 - Gentle Scoring)
+
+**Enhancement Overview:**
+
+Date-confidence calculation now uses "gentle scoring" for eligible client invoices. Instead of
+completely ignoring date differences, the system applies a very subtle linear preference for earlier
+invoices while still maintaining near-maximum confidence. This addresses recurring subscription
+scenarios where clients pay invoices late, while providing a slight edge to match the earliest
+eligible open invoice.
+
+**Business Logic:**
+
+- **Gentle Eligible Client Match:** When ALL conditions are met:
+  - `transaction.business_id` equals `document.creditor_id` or `document.debtor_id` (same business)
+  - Business is found in ClientsProvider (registered client)
+  - Document status is `OPEN` (via IssuedDocumentsProvider)
+  - Document type is `INVOICE` or `PROFORMA`
+  - Document date ≤ transaction date (date-only comparison)
+  - Days between dates ≤ 365
+
+  Apply **gentle linear scoring**: f(d) = a + k·d where d = days between dates
+  - f(365) = 1.00 (one year earlier gets highest score)
+  - f(60) ≈ 0.997 (two months earlier)
+  - f(15) ≈ 0.9966 (half-month earlier)
+  - f(0) ≈ 0.9964 (same day)
+  - If d > 365: return 0.0 (out of boundary)
+
+- **Standard Degradation:** Apply to all other cases:
+  - Non-client same-business matches
+  - Cross-business matches
+  - Client matches with ineligible document types (INVOICE_RECEIPT, RECEIPT, CREDIT_INVOICE)
+  - Client matches where document date > transaction date
+  - Client matches with non-OPEN status
+
+  Standard formula: 1.0 - (days_diff / 30), floor at 0.0 for ≥30 days
+
+**Rationale:**
+
+Same-business matches for registered CLIENTS typically represent recurring subscriptions where the
+earliest open invoice should be matched. The gentle scoring provides near-maximum confidence (all
+round to ~1.00 at 2 decimals) while giving a microscopic edge to earlier invoices. Combined with a
+tie-breaker that prefers earlier dates when scores are equal, this ensures transactions match to the
+earliest eligible invoice rather than the latest.
+
+Non-client (provider) businesses and ineligible document scenarios maintain standard date-based
+ranking to catch timing mismatches.
+
+**Decision Tree:**
+
+```
+┌─────────────────────────────────────────┐
+│ Does transaction.business_id equal      │
+│ document business ID (creditor/debtor)? │
+└──────────────┬──────────────────────────┘
+               │
+       ┌───────┴───────┐
+       │               │
+      YES             NO
+       │               │
+       ▼               ▼
+┌──────────────┐   ┌──────────────────┐
+│ Is business  │   │ Cross-business:  │
+│ a registered │   │ Use standard     │
+│ client?      │   │ degradation      │
+└──────┬───────┘   └──────────────────┘
+       │
+   ┌───┴──------------─┐
+   │                   │
+  YES                 NO
+   │                   │
+   ▼                   ▼
+┌──────────────┐ ┌──────────────────┐
+│ Check gating │ │ Non-client:      │
+│ conditions:  │ │ Use standard     │
+│ • OPEN       │ │ degradation      │
+│ • INV/PROF   │ └──────────────────┘
+│ • docDate≤tx │
+│ • d≤365      │
+└──────┬───────┘
+       │
+   ┌───┴───------------┐
+   │                   │
+  ALL                 ANY
+  MET                FAIL
+   │                   │
+   ▼                   ▼
+┌──────────┐ ┌──────────────────┐
+│ Gentle   │ │ Use standard     │
+│ scoring  │ │ degradation      │
+│ f(d)     │ └──────────────────┘
+└──────────┘
+```
+
+**Formula:**
+
+```typescript
+function calculateDateConfidence(
+  transactionDate: Date,
+  documentDate: Date,
+  isGentleEligible: boolean = false // All gating conditions met
+): number {
+  const daysDiff = calculateDaysDifference(transactionDate, documentDate) // Date-only, absolute
+
+  // Gentle eligible: linear function with very subtle preference for earlier
+  if (isGentleEligible) {
+    if (daysDiff > 365) {
+      return 0.0 // Out of boundary
+    }
+
+    // Linear function: f(d) = a + k*d
+    // Targets: f(365)=1.0, f(60)=0.997
+    const k = (1.0 - 0.997) / (365 - 60) // ≈ 0.0000098360656
+    const a = 1.0 - 365 * k // ≈ 0.9964065574
+    const confidence = a + k * daysDiff
+
+    return Math.round(confidence * 100) / 100 // Round to 2 decimals
+  }
+
+  // Standard degradation for all other cases
+  if (daysDiff >= 30) {
+    return 0.0
+  }
+
+  const confidence = 1.0 - daysDiff / 30
+  return Math.round(confidence * 100) / 100
+}
+```
+
+**Parameter Details:**
+
+- `transactionDate`: Always uses `event_date` from aggregated transaction data
+- `documentDate`: Always uses `date` field from aggregated document data
+- `isGentleEligible`: Boolean flag indicating ALL gating conditions are met:
+  - `businessesMatch`: Transaction's `business_id` equals document's counterparty business ID
+  - `isClient`: Business is registered in ClientsProvider (loaded via DataLoader)
+  - `statusIsOpen`: Document status is 'OPEN' (from IssuedDocumentsProvider by charge ID)
+  - `typeEligible`: Document type is INVOICE or PROFORMA
+  - `dateDirection`: Document date ≤ transaction date (date-only comparison)
+  - Flag is `true` only when ALL conditions are met
+
+**Gating Implementation:**
+
+Gating is performed in `match-scorer.provider.ts` before calling the date confidence helper:
+
+```typescript
+// Check all gating conditions
+const typeIsEligible = document.type === 'INVOICE' || document.type === 'PROFORMA'
+
+const docDate = new Date(
+  document.date.getFullYear(),
+  document.date.getMonth(),
+  document.date.getDate()
+)
+const txDate = new Date(
+  transactionDate.getFullYear(),
+  transactionDate.getMonth(),
+  transactionDate.getDate()
+)
+const dateIsEligible = docDate.getTime() <= txDate.getTime()
+
+const status = await injector
+  .get(IssuedDocumentsProvider)
+  .getIssuedDocumentsStatusByChargeIdLoader.load(chargeId)
+const statusIsEligible = !!(status && status.open_docs_flag === true)
+
+const isGentleEligible = isClientMatch && typeIsEligible && dateIsEligible && statusIsEligible
+```
+
+**Overall Confidence Impact:**
+
+This change affects the date component of the weighted confidence formula, which carries 10% weight:
+
+```
+confidence = (amount × 0.4) + (currency × 0.2) + (business × 0.3) + (date × 0.1)
+```
+
+- **Client same-business matches:** Date contributes +0.1 to overall confidence (always max)
+- **Non-client or cross-business matches:** Date contributes 0.0–0.1 depending on time offset
+
+**Example Scenario: Recurring Monthly Subscription**
+
+**Setup:**
+
+- Recurring monthly subscription for $5,000
+- Three invoices: Nov 1, Dec 1, Jan 1 (all $5,000, same client business)
+- One transaction: Dec 28, amount $5,000
+
+**Without Client-Aware Enhancement (Standard Degradation):**
+
+| Invoice Date | Date Diff | Date Conf | Amount | Currency | Business | **Total** |
+| ------------ | --------- | --------- | ------ | -------- | -------- | --------- |
+| Nov 1        | 57 days   | 0.00      | 1.0    | 1.0      | 1.0      | **0.90**  |
+| Dec 1        | 27 days   | 0.10      | 1.0    | 1.0      | 1.0      | **0.91**  |
+| Jan 1        | 4 days    | 0.87      | 1.0    | 1.0      | 1.0      | **0.99**  |
+
+**Result:** Transaction matches to Jan 1 invoice (future date, closest)
+
+**With Client-Aware Enhancement (Gentle Scoring, assuming all OPEN INVOICEs before tx date):**
+
+| Invoice Date | Days Back | Date Conf | Amount | Currency | Business | **Total** |
+| ------------ | --------- | --------- | ------ | -------- | -------- | --------- |
+| Nov 1        | 57 days   | **1.00**  | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Dec 1        | 27 days   | **1.00**  | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Jan 1\*      | N/A       | 0.87      | 1.0    | 1.0      | 1.0      | **0.99**  |
+
+\*Note: Jan 1 is AFTER tx date (Dec 28), so gentle doesn't apply; uses standard degradation.
+
+**Result:** Nov 1 and Dec 1 both score 1.00. With gentle mode tie-breaker (prefers earlier), Nov 1
+wins as it's further back in time (57 days > 27 days).
+
+**More Realistic Example (all invoices before tx):**
+
+Transaction: Feb 15. Open invoices: Nov 15 (92d), Dec 15 (62d), Jan 15 (31d)
+
+| Invoice Date | Days Back | Raw f(d) | Rounded  | Amount | Currency | Business | **Total** |
+| ------------ | --------- | -------- | -------- | ------ | -------- | -------- | --------- |
+| Nov 15       | 92 days   | 0.99731  | **1.00** | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Dec 15       | 62 days   | 0.99701  | **1.00** | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Jan 15       | 31 days   | 0.99671  | **1.00** | 1.0    | 1.0      | 1.0      | **1.00**  |
+
+**Result:** All round to 1.00 at 2 decimals. Gentle tie-breaker prefers earlier → **Nov 15** wins.
+
+**Comparison Table: Gentle vs Standard Behavior**
+
+| Scenario                          | Gating Met | Days Back | Raw f(d) | Date Conf (2dp) | Logic Applied         |
+| --------------------------------- | ---------- | --------- | -------- | --------------- | --------------------- |
+| Client OPEN INV, docDate≤tx (0)   | ✓          | 0 days    | 0.99641  | 1.00            | Gentle                |
+| Client OPEN INV, docDate≤tx (15)  | ✓          | 15 days   | 0.99656  | 1.00            | Gentle                |
+| Client OPEN INV, docDate≤tx (60)  | ✓          | 60 days   | 0.99700  | 1.00            | Gentle                |
+| Client OPEN INV, docDate≤tx (365) | ✓          | 365 days  | 1.00000  | 1.00            | Gentle (max)          |
+| Client OPEN INV, docDate≤tx (366) | ✗          | 366 days  | N/A      | 0.00            | Gentle (out of bound) |
+| Client OPEN INV, docDate>tx       | ✗          | 15 days   | N/A      | 0.50            | Standard (ineligible) |
+| Client OPEN RECEIPT               | ✗          | 15 days   | N/A      | 0.50            | Standard (wrong type) |
+| Client PAID INV, docDate≤tx       | ✗          | 15 days   | N/A      | 0.50            | Standard (not OPEN)   |
+| Same-Business Provider (0)        | ✗          | 0 days    | N/A      | 1.00            | Standard degradation  |
+| Same-Business Provider (15)       | ✗          | 15 days   | N/A      | 0.50            | Standard degradation  |
+| Same-Business Provider (30+)      | ✗          | 30+ days  | N/A      | 0.00            | Standard degradation  |
+| Cross-Business (0)                | ✗          | 0 days    | N/A      | 1.00            | Standard degradation  |
+| Cross-Business (15)               | ✗          | 15 days   | N/A      | 0.50            | Standard degradation  |
+| Cross-Business (30+)              | ✗          | 30+ days  | N/A      | 0.00            | Standard degradation  |
+
+**Key Observations:**
+
+- **Gentle-eligible matches** (client, OPEN, INVOICE/PROFORMA, docDate≤tx, d≤365) receive ~1.00
+  confidence with microscopic preference for earlier dates
+- **All ineligible scenarios** use standard degradation (1.0 at 0 days → 0.0 at 30+ days)
+- Gentle scoring boundary at >365 days returns 0.0
+- **Tie-breaker:** When gentle scores are equal (both ~1.00), prefer the earlier invoice
+- This enhancement affects only the 10% date component of the overall confidence score
+
+**Implementation Details:**
+
+- **ClientsProvider Integration:** Uses existing `ClientsProvider` from financial-entities module
+- **IssuedDocumentsProvider Integration:** Uses `getIssuedDocumentsStatusByChargeIdLoader` to check
+  OPEN status per charge
+- **DataLoader Pattern:** Business and status lookups use DataLoaders for efficient batch loading
+- **Tie-Breaker:** When both candidates use gentle scoring and confidence scores are equal:
+  - Propagate `gentleMode` flag from scorer to single-match provider
+  - In sorting, flip preference to larger day gaps (earlier documents) instead of smaller gaps
+  - Standard tie-breaker (prefer closer dates) applies to non-gentle or mixed scenarios
+- **Document Type Gating:** PROFORMA removed from accounting document types in charge-validator to
+  enable gentle scoring eligibility
+- **Optimization:** Client check only performed when `businessesMatch = true` (avoids unnecessary
+  lookups)
+- **Default Behavior:** If business not found in ClientsProvider, `isClient = false` (standard
+  degradation)
+- **Backward Compatibility:** Optional parameter ensures existing code continues to work with
+  standard degradation
 
 ### 4.4 Sorting and Selection
 

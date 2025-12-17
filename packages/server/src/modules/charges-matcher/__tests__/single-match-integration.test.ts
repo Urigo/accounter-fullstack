@@ -22,9 +22,42 @@ vi.mock('../../transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 
+
+vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
+  ClientsProvider: class {},
+}));
+
 vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
+
+const getMockInjector = (mockChargesProvider?: {
+    getChargesByFilters?: (filters: any) => Promise<any[]>;
+    getChargeByIdLoader?: { load: (id: string) => Promise<any>};
+  },
+  mockTransactionsProvider?: {
+    transactionsByChargeIDLoader: { load: (id: string) => Promise<any[]>;
+  }},
+  mockDocumentsProvider?: {
+    getDocumentsByChargeIdLoader: { load: (id: string) => Promise<any[]>; };
+}
+) => ({
+  get: vi.fn((token: {name: string}) => {
+    if (token.name === 'ChargesProvider') return mockChargesProvider ?? null;
+    if (token.name === 'TransactionsProvider') return mockTransactionsProvider ?? null;
+    if (token.name === 'DocumentsProvider') return mockDocumentsProvider ?? null;
+    if (token.name === 'ClientsProvider')
+      return {
+        getClientByIdLoader: {
+          load: (businessId: string) => {
+            const isRegisteredClient = businessId.startsWith('client-');
+            return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+          },
+        },
+      };
+    return null;
+  }),
+}) as Injector;
 
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
@@ -118,14 +151,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       // Execute
       const provider = new ChargesMatcherProvider();
@@ -206,14 +232,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       // Execute
       const provider = new ChargesMatcherProvider();
@@ -232,12 +251,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider);
 
       const provider = new ChargesMatcherProvider();
 
@@ -267,14 +281,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
 
@@ -304,14 +311,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
 
@@ -342,14 +342,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
@@ -394,14 +387,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
@@ -465,14 +451,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
@@ -483,9 +462,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
     });
 
     it('should throw error if user ID not in context', async () => {
-      const mockInjector = {
-        get: vi.fn(() => null), // No user
-      } as unknown as Injector;
+      const mockInjector = getMockInjector();
 
       const provider = new ChargesMatcherProvider();
 
@@ -531,14 +508,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);

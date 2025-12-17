@@ -21,11 +21,41 @@ function calculateDaysDifference(date1: Date, date2: Date): number {
 
 /**
  * Calculate confidence score based on date proximity
+ *
+ * Client-Aware Logic:
+ * - Client same-business matches: Always return 1.0
+ *   This allows amount/currency matching to be primary ranking factors for recurring charges from clients
+ * - Non-client or cross-business matches: Apply linear degradation (1.0 same-day to 0.0 at 30+ days)
+ *
  * @param date1 - First date
  * @param date2 - Second date
- * @returns Confidence score from 0.0 (30+ days) to 1.0 (same day)
+ * @param isClientMatch - Whether transaction business matches document business AND is a registered CLIENT (default: false)
+ * @returns Confidence score from 0.0 (30+ days) to 1.0 (same day for non-client, always for client)
  */
-export function calculateDateConfidence(date1: Date, date2: Date): number {
+export function calculateDateConfidence(
+  date1: Date,
+  date2: Date,
+  isGentleEligible: boolean = false,
+): number {
+  // Gentle client-eligible scoring: slight preference for earlier within 365 days
+  // f(d) = a + k*d with f(365)=1.0 and f(60)=0.997
+  if (isGentleEligible) {
+    const daysDiff = calculateDaysDifference(date1, date2);
+
+    // Ineligible beyond 365 days
+    if (daysDiff > 365) {
+      return 0.0;
+    }
+
+    // Compute linear function parameters
+    const k = (1.0 - 0.997) / (365 - 60); // ~9.836e-6
+    const a = 0.997 - k * 60; // ~0.99640984
+    const confidence = a + k * daysDiff;
+
+    // Round to 2 decimal places (will be 1.0 for most practical diffs)
+    return Math.round(confidence * 100) / 100;
+  }
+
   const daysDiff = calculateDaysDifference(date1, date2);
 
   // 30 or more days: return 0.0

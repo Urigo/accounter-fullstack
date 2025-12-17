@@ -1,4 +1,8 @@
-import type { document_type } from '../../documents/types.js';
+import type { Injector } from 'graphql-modules';
+import { DocumentType } from '../../../shared/enums.js';
+import type { IGetIssuedDocumentsStatusByChargeIdsResult } from '../../documents/__generated__/issued-documents.types.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import { calculateAmountConfidence } from '../helpers/amount-confidence.helper.js';
 import { calculateBusinessConfidence } from '../helpers/business-confidence.helper.js';
 import { calculateCurrencyConfidence } from '../helpers/currency-confidence.helper.js';
@@ -28,19 +32,19 @@ import { aggregateTransactions } from './transaction-aggregator.js';
  */
 export function selectTransactionDate(
   transaction: AggregatedTransaction,
-  documentType: document_type,
+  documentType: DocumentType,
 ): Date {
   switch (documentType) {
-    case 'INVOICE':
-    case 'CREDIT_INVOICE':
-    case 'RECEIPT':
-    case 'INVOICE_RECEIPT':
+    case DocumentType.Invoice:
+    case DocumentType.CreditInvoice:
+    case DocumentType.Receipt:
+    case DocumentType.InvoiceReceipt:
       // For invoices, use event_date
       return transaction.date;
 
-    case 'OTHER':
-    case 'PROFORMA':
-    case 'UNPROCESSED':
+    case DocumentType.Other:
+    case DocumentType.Proforma:
+    case DocumentType.Unprocessed:
       // For flexible types, use event_date as default
       // (caller should calculate both and use better score)
       return transaction.date;
@@ -58,14 +62,16 @@ export function selectTransactionDate(
  * @param txCharge - Transaction charge to match
  * @param docCharge - Document charge candidate
  * @param userId - Current user UUID for business extraction
+ * @param injector - Optional GraphQL modules injector for provider access (for client matching)
  * @returns Match score with confidence and component breakdown
  * @throws Error if aggregation fails (mixed currencies, multiple businesses, etc.)
  */
-export function scoreMatch(
+export async function scoreMatch(
   txCharge: TransactionCharge,
   docCharge: DocumentCharge,
   userId: string,
-): MatchScore {
+  injector: Injector,
+): Promise<MatchScore> {
   // Aggregate transaction data
   const aggregatedTransaction = aggregateTransactions(txCharge.transactions);
 
@@ -79,20 +85,22 @@ export function scoreMatch(
   //   aggregatedDocument.type === 'UNPROCESSED'
   // ) {
   //   // Calculate score with event_date
-  //   const scoreWithEventDate = calculateScoreWithDate(
+  //   const scoreWithEventDate = await calculateScoreWithDate(
   //     aggregatedTransaction,
   //     aggregatedDocument,
   //     aggregatedTransaction.date,
   //     docCharge.chargeId,
+  //     injector,
   //   );
 
   //   // Calculate score with debit_date (if available)
   //   if (aggregatedTransaction.debitDate) {
-  //     const scoreWithDebitDate = calculateScoreWithDate(
+  //     const scoreWithDebitDate = await calculateScoreWithDate(
   //       aggregatedTransaction,
   //       aggregatedDocument,
   //       aggregatedTransaction.debitDate,
   //       docCharge.chargeId,
+  //       injector,
   //     );
 
   //     // Return the better score
@@ -105,13 +113,17 @@ export function scoreMatch(
   // }
 
   // For specific document types, use the appropriate date
-  const transactionDate = selectTransactionDate(aggregatedTransaction, aggregatedDocument.type);
+  const transactionDate = selectTransactionDate(
+    aggregatedTransaction,
+    aggregatedDocument.type as DocumentType,
+  );
 
   return calculateScoreWithDate(
     aggregatedTransaction,
     aggregatedDocument,
     transactionDate,
     docCharge.chargeId,
+    injector,
   );
 }
 
@@ -121,19 +133,84 @@ export function scoreMatch(
  * @param document - Aggregated document
  * @param transactionDate - Date to use from transaction
  * @param chargeId - Document charge ID
+ * @param injector - Optional GraphQL modules injector for provider access
  * @returns Match score
  */
-function calculateScoreWithDate(
+async function calculateScoreWithDate(
   transaction: Omit<AggregatedTransaction, 'debitDate'>,
   document: Omit<AggregatedDocument, 'businessIsCreditor'>,
   transactionDate: Date,
   chargeId: string,
-): MatchScore {
+  injector: Injector,
+): Promise<MatchScore> {
+  // Check if transaction and document share the same business entity
+  const businessesMatch =
+    transaction.businessId != null && transaction.businessId === document.businessId;
+
+  // If businesses match, verify if it's a registered CLIENT
+  let isClientMatch = false;
+  if (businessesMatch && transaction.businessId) {
+    try {
+      const client = await injector
+        .get(ClientsProvider)
+        .getClientByIdLoader.load(transaction.businessId);
+      // isClientMatch is true only if business is a registered client
+      isClientMatch = client != null;
+    } catch (error) {
+      console.error(`Error looking up client for business ID ${transaction.businessId}:`, error);
+      isClientMatch = false;
+    }
+  }
+
+  // Determine gentle eligibility for client matches
+  // Conditions:
+  // - Same business and registered client
+  // - Document type is INVOICE or PROFORMA
+  // - Document status is OPEN (via issued documents status by charge id)
+  // - Document date <= transaction date (date-only compare)
+  let isGentleEligible = false;
+  if (isClientMatch) {
+    // Type gating
+    const typeIsEligible =
+      document.type === DocumentType.Invoice || document.type === DocumentType.Proforma;
+
+    // Date-only comparison: doc.date <= transactionDate
+    const docDate = new Date(
+      document.date.getFullYear(),
+      document.date.getMonth(),
+      document.date.getDate(),
+    );
+    const txDate = new Date(
+      transactionDate.getFullYear(),
+      transactionDate.getMonth(),
+      transactionDate.getDate(),
+    );
+    const dateIsEligible = docDate.getTime() <= txDate.getTime();
+
+    // Status gating via DataLoader
+    let statusIsEligible = false;
+    try {
+      const status = (await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsStatusByChargeIdLoader.load(
+          chargeId,
+        )) as IGetIssuedDocumentsStatusByChargeIdsResult | null;
+      // Expect shape with open_docs_flag boolean
+      statusIsEligible = !!(status && status.open_docs_flag === true);
+    } catch {
+      // If status lookup fails, treat as ineligible (do not throw)
+      statusIsEligible = false;
+    }
+
+    isGentleEligible = typeIsEligible && dateIsEligible && statusIsEligible;
+  }
+
   // Calculate individual confidence scores
   const amountScore = calculateAmountConfidence(transaction.amount, document.amount);
   const currencyScore = calculateCurrencyConfidence(transaction.currency, document.currency);
   const businessScore = calculateBusinessConfidence(transaction.businessId, document.businessId);
-  const dateScore = calculateDateConfidence(transactionDate, document.date);
+  // Use gentle eligibility to compute date confidence
+  const dateScore = calculateDateConfidence(transactionDate, document.date, isGentleEligible);
 
   // Create components object
   const components: ConfidenceScores = {
@@ -150,5 +227,8 @@ function calculateScoreWithDate(
     chargeId,
     confidenceScore,
     components,
+    // Expose gentle flag for tie-breaker handling upstream
+    // (optional property tolerated by consumer types)
+    gentleMode: isGentleEligible,
   };
 }

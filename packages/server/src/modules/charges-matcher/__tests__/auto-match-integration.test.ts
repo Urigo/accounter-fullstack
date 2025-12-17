@@ -20,6 +20,10 @@ vi.mock('../../transactions/providers/transactions.provider.js', () => ({
   TransactionsProvider: class {},
 }));
 
+vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
+  ClientsProvider: class {},
+}));
+
 vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
@@ -27,6 +31,43 @@ vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
 vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
+
+const getMockInjector = (mockChargesProvider?: {
+    getChargesByFilters: (filters: any) => Promise<any[]>;
+  },
+  mockTransactionsProvider?: {
+    transactionsByChargeIDLoader: { load: (id: string) => Promise<any[]>;
+  }},
+  mockDocumentsProvider?: {
+    getDocumentsByChargeIdLoader: { load: (id: string) => Promise<any[]>; };
+}
+) => ({
+  get: vi.fn((token: {name: string}) => {
+    if (token.name === 'ChargesProvider') return mockChargesProvider ?? {
+      getChargesByFilters: vi.fn(() => Promise.resolve([])),
+    };
+    if (token.name === 'TransactionsProvider') return mockTransactionsProvider ?? {
+      transactionsByChargeIDLoader: {
+        load: vi.fn(() => Promise.resolve([])),
+      },
+    };
+    if (token.name === 'DocumentsProvider') return mockDocumentsProvider ?? {
+      getDocumentsByChargeIdLoader: {
+        load: vi.fn(() => Promise.resolve([])),
+      },
+    };
+    if (token.name === 'ClientsProvider')
+      return {
+        getClientByIdLoader: {
+          load: (businessId: string) => {
+            const isRegisteredClient = businessId.startsWith('client-');
+            return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+          },
+        },
+      };
+    return null;
+  }),
+}) as Injector;
 
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
@@ -56,30 +97,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
 
   describe('autoMatchCharges', () => {
     it('should return 0 matches when database is empty', async () => {
-      const mockChargesProvider = {
-        getChargesByFilters: vi.fn(() => Promise.resolve([])),
-      };
-
-      const mockTransactionsProvider = {
-        transactionsByChargeIDLoader: {
-          load: vi.fn(() => Promise.resolve([])),
-        },
-      };
-
-      const mockDocumentsProvider = {
-        getDocumentsByChargeIdLoader: {
-          load: vi.fn(() => Promise.resolve([])),
-        },
-      };
-
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector()
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges({
@@ -102,26 +120,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         ),
       };
 
-      const mockTransactionsProvider = {
-        transactionsByChargeIDLoader: {
-          load: vi.fn(() => Promise.resolve([createMockTransaction()])),
-        },
-      };
-
-      const mockDocumentsProvider = {
-        getDocumentsByChargeIdLoader: {
-          load: vi.fn(() => Promise.resolve([createMockDocument()])),
-        },
-      };
-
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider)
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges({
@@ -183,14 +182,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges({
@@ -269,14 +261,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges( {
@@ -347,14 +332,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges({
@@ -434,14 +412,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       });
       (mergeChargesExecutor as any).mockImplementationOnce(() => Promise.resolve());
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges( {
@@ -493,14 +464,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       await provider.autoMatchCharges({
@@ -549,14 +513,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       const provider = new ChargesMatcherProvider();
       const result = await provider.autoMatchCharges({
@@ -638,6 +595,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   total_amount: 100,
                   currency_code: 'USD',
                   date: new Date('2024-01-15'),
+                  debtor_id: ADMIN_BUSINESS_ID,
+                  creditor_id: 'business-a',
                 }),
               ]);
             }
@@ -668,14 +627,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = {
-        get: vi.fn((token: any) => {
-          if (token.name === 'ChargesProvider') return mockChargesProvider;
-          if (token.name === 'TransactionsProvider') return mockTransactionsProvider;
-          if (token.name === 'DocumentsProvider') return mockDocumentsProvider;
-          return null;
-        }),
-      } as unknown as Injector;
+      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
       (mergeChargesExecutor as any).mockImplementation(() => Promise.resolve());
 

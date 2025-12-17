@@ -2,11 +2,6 @@ import type { currency, document_type, IGetAllDocumentsResult } from '../documen
 import type { IGetTransactionsByIdsResult } from '../transactions/types.js';
 
 /**
- * Re-export shared types from other modules
- */
-export type { currency as Currency, document_type as DocumentType } from '../documents/types.js';
-
-/**
  * Transaction interface matching the database schema
  * Uses the complete type from transactions module
  */
@@ -174,6 +169,8 @@ export interface MatchScore {
   confidenceScore: number;
   /** Individual confidence component scores */
   components: ConfidenceScores;
+  /** Whether client gentle scoring was applied (for tie-breakers) */
+  gentleMode?: boolean;
 }
 
 /**

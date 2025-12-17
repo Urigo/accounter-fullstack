@@ -3,7 +3,6 @@ import {
   aggregateDocuments,
   type Document,
 } from '../providers/document-aggregator.js';
-import type { DocumentType } from '../helpers/document-amount.helper.js';
 
 describe('Document Aggregator', () => {
   const USER_ID = 'user-123';
