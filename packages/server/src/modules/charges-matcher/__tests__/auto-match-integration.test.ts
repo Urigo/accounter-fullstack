@@ -42,7 +42,7 @@ const getMockInjector = (mockChargesProvider?: {
     getDocumentsByChargeIdLoader: { load: (id: string) => Promise<any[]>; };
 }
 ) => ({
-  get: vi.fn((token: any) => {
+  get: vi.fn((token: {name: string}) => {
     if (token.name === 'ChargesProvider') return mockChargesProvider ?? {
       getChargesByFilters: vi.fn(() => Promise.resolve([])),
     };
@@ -65,6 +65,7 @@ const getMockInjector = (mockChargesProvider?: {
           },
         },
       };
+    return null;
   }),
 }) as Injector;
 

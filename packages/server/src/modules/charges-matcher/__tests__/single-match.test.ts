@@ -18,7 +18,7 @@ const BUSINESS_B = 'business-b';
 
 // Create a mock injector for testing
 const createMockInjector = () => ({
-  get: vi.fn((token: any) => {
+  get: vi.fn((token: {name: string}) => {
     if (token.name === 'ClientsProvider')
       return {
         getClientByIdLoader: {
@@ -28,6 +28,7 @@ const createMockInjector = () => ({
           },
         },
       };
+    return null;
   }),
 }) as Injector;
 
