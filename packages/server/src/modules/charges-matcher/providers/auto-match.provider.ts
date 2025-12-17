@@ -5,6 +5,7 @@
  * and automatically merging charges with high-confidence matches (≥0.95).
  */
 
+import type { Injector } from 'graphql-modules';
 import type { ChargeWithData, DocumentCharge, TransactionCharge } from '../types.js';
 import { findMatches, type MatchResult } from './single-match.provider.js';
 
@@ -35,11 +36,12 @@ export interface ProcessChargeResult {
  * @throws Error if sourceCharge has no transactions or documents
  * @throws Error if any validation fails (propagated from findMatches)
  */
-export function processChargeForAutoMatch(
+export async function processChargeForAutoMatch(
   sourceCharge: ChargeWithData,
   allCandidates: ChargeWithData[],
   userId: string,
-): ProcessChargeResult {
+  injector: Injector,
+): Promise<ProcessChargeResult> {
   const AUTO_MATCH_THRESHOLD = 0.95;
 
   // Prepare source charge for findMatches
@@ -92,7 +94,7 @@ export function processChargeForAutoMatch(
   }
 
   // Find all matches with no date window restriction
-  const allMatches = findMatches(sourceForMatching, candidatesForMatching, userId, {
+  const allMatches = await findMatches(sourceForMatching, candidatesForMatching, userId, injector, {
     dateWindowMonths: undefined, // No date restriction for auto-match
     maxMatches: undefined, // Get all matches, we'll filter by threshold
   });

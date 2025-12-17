@@ -169,10 +169,11 @@ export class ChargesMatcherProvider {
     }
 
     // Step 8: Call core findMatches function
-    const matches: MatchResult[] = findMatches(
+    const matches: MatchResult[] = await findMatches(
       sourceChargeData,
       candidateChargesWithData,
       adminBusinessId,
+      injector,
       {
         maxMatches: 5,
         dateWindowMonths: 12,
@@ -278,7 +279,12 @@ export class ChargesMatcherProvider {
         );
 
         // Process this charge for auto-match
-        const processResult = processChargeForAutoMatch(sourceCharge, candidates, adminBusinessId);
+        const processResult = await processChargeForAutoMatch(
+          sourceCharge,
+          candidates,
+          adminBusinessId,
+          injector,
+        );
 
         if (processResult.status === 'matched' && processResult.match) {
           // Found a single high-confidence match - execute merge

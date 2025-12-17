@@ -1,4 +1,6 @@
+import type { Injector } from 'graphql-modules';
 import type { document_type } from '../../documents/types.js';
+import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import { calculateAmountConfidence } from '../helpers/amount-confidence.helper.js';
 import { calculateBusinessConfidence } from '../helpers/business-confidence.helper.js';
 import { calculateCurrencyConfidence } from '../helpers/currency-confidence.helper.js';
@@ -58,14 +60,16 @@ export function selectTransactionDate(
  * @param txCharge - Transaction charge to match
  * @param docCharge - Document charge candidate
  * @param userId - Current user UUID for business extraction
+ * @param injector - Optional GraphQL modules injector for provider access (for client matching)
  * @returns Match score with confidence and component breakdown
  * @throws Error if aggregation fails (mixed currencies, multiple businesses, etc.)
  */
-export function scoreMatch(
+export async function scoreMatch(
   txCharge: TransactionCharge,
   docCharge: DocumentCharge,
   userId: string,
-): MatchScore {
+  injector: Injector,
+): Promise<MatchScore> {
   // Aggregate transaction data
   const aggregatedTransaction = aggregateTransactions(txCharge.transactions);
 
@@ -79,20 +83,22 @@ export function scoreMatch(
   //   aggregatedDocument.type === 'UNPROCESSED'
   // ) {
   //   // Calculate score with event_date
-  //   const scoreWithEventDate = calculateScoreWithDate(
+  //   const scoreWithEventDate = await calculateScoreWithDate(
   //     aggregatedTransaction,
   //     aggregatedDocument,
   //     aggregatedTransaction.date,
   //     docCharge.chargeId,
+  //     injector,
   //   );
 
   //   // Calculate score with debit_date (if available)
   //   if (aggregatedTransaction.debitDate) {
-  //     const scoreWithDebitDate = calculateScoreWithDate(
+  //     const scoreWithDebitDate = await calculateScoreWithDate(
   //       aggregatedTransaction,
   //       aggregatedDocument,
   //       aggregatedTransaction.debitDate,
   //       docCharge.chargeId,
+  //       injector,
   //     );
 
   //     // Return the better score
@@ -112,6 +118,7 @@ export function scoreMatch(
     aggregatedDocument,
     transactionDate,
     docCharge.chargeId,
+    injector,
   );
 }
 
@@ -121,19 +128,43 @@ export function scoreMatch(
  * @param document - Aggregated document
  * @param transactionDate - Date to use from transaction
  * @param chargeId - Document charge ID
+ * @param injector - Optional GraphQL modules injector for provider access
  * @returns Match score
  */
-function calculateScoreWithDate(
+async function calculateScoreWithDate(
   transaction: Omit<AggregatedTransaction, 'debitDate'>,
   document: Omit<AggregatedDocument, 'businessIsCreditor'>,
   transactionDate: Date,
   chargeId: string,
-): MatchScore {
+  injector: Injector,
+): Promise<MatchScore> {
+  // Check if transaction and document share the same business entity
+  const businessesMatch =
+    transaction.businessId != null && transaction.businessId === document.businessId;
+
+  // If businesses match, verify if it's a registered CLIENT
+  // This gives recurring client charges a flat date confidence regardless of date offset
+  let isClientMatch = false;
+  if (businessesMatch && transaction.businessId) {
+    try {
+      const client = await injector
+        .get(ClientsProvider)
+        .getClientByIdLoader.load(transaction.businessId);
+      // isClientMatch is true only if business is a registered client
+      isClientMatch = client != null;
+    } catch (error) {
+      throw new Error(
+        `Failed to lookup client for business ID ${transaction.businessId}: ${(error as Error).message}`,
+      );
+    }
+  }
+
   // Calculate individual confidence scores
   const amountScore = calculateAmountConfidence(transaction.amount, document.amount);
   const currencyScore = calculateCurrencyConfidence(transaction.currency, document.currency);
   const businessScore = calculateBusinessConfidence(transaction.businessId, document.businessId);
-  const dateScore = calculateDateConfidence(transactionDate, document.date);
+  // Pass isClientMatch flag: only true if businesses match AND business is a registered client
+  const dateScore = calculateDateConfidence(transactionDate, document.date, isClientMatch);
 
   // Create components object
   const components: ConfidenceScores = {

@@ -5,6 +5,7 @@
  * This is a pure function implementation without database dependencies.
  */
 
+import type { Injector } from 'graphql-modules';
 import { isWithinDateWindow } from '../helpers/candidate-filter.helper.js';
 import type { DocumentCharge, MatchScore, TransactionCharge } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
@@ -119,16 +120,17 @@ function calculateDateProximity(txCharge: TransactionCharge, docCharge: Document
  * @param sourceCharge - The unmatched charge (transactions OR documents)
  * @param candidateCharges - All potential match candidates
  * @param userId - Current user ID
- * @param options - Optional configuration (maxMatches, dateWindowMonths)
+ * @param options - Optional configuration (maxMatches, dateWindowMonths, injector)
  * @returns Top matches sorted by confidence
  * @throws Error if source charge is matched or has validation issues
  */
-export function findMatches(
+export async function findMatches(
   sourceCharge: TransactionCharge | DocumentCharge,
   candidateCharges: Array<TransactionCharge | DocumentCharge>,
   userId: string,
+  injector: Injector,
   options?: FindMatchesOptions,
-): MatchResult[] {
+): Promise<MatchResult[]> {
   const maxMatches = options?.maxMatches ?? 5;
   const dateWindowMonths = options?.dateWindowMonths ?? 12;
 
@@ -208,11 +210,11 @@ export function findMatches(
       if (isSourceTransaction) {
         txCharge = sourceCharge;
         docCharge = candidate as DocumentCharge;
-        matchScore = scoreMatch(txCharge, docCharge, userId);
+        matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
       } else {
         txCharge = candidate as TransactionCharge;
         docCharge = sourceCharge;
-        matchScore = scoreMatch(txCharge, docCharge, userId);
+        matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
       }
 
       // Calculate date proximity for tie-breaking

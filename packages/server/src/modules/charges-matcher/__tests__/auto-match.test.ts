@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Injector } from 'graphql-modules';
 import type { ChargeWithData } from '../types.js';
 import {
   determineMergeDirection,
@@ -6,9 +7,29 @@ import {
 } from '../providers/auto-match.provider.js';
 import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
+// Mock DI system and ClientsProvider
+vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
+  ClientsProvider: class {},
+}));
+
 // Test constants
 const USER_ID = 'user-123';
 const BUSINESS_A = 'business-a';
+
+// Create a mock injector for testing
+const createMockInjector = () => ({
+  get: vi.fn((token: any) => {
+    if (token.name === 'ClientsProvider')
+      return {
+        getClientByIdLoader: {
+          load: (businessId: string) => {
+            const isRegisteredClient = businessId.startsWith('client-');
+            return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+          },
+        },
+      };
+  }),
+}) as Injector;
 
 // Helper to create a charge with data
 function createCharge(overrides: Partial<ChargeWithData> = {}): ChargeWithData {
@@ -24,7 +45,7 @@ function createCharge(overrides: Partial<ChargeWithData> = {}): ChargeWithData {
 
 describe('processChargeForAutoMatch', () => {
   describe('Single high-confidence match', () => {
-    it('should return matched status when exactly one match >= 0.95', () => {
+    it('should return matched status when exactly one match >= 0.95', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -54,7 +75,7 @@ describe('processChargeForAutoMatch', () => {
         ],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [perfectMatch], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [perfectMatch], USER_ID, createMockInjector());
 
       expect(result.status).toBe('matched');
       expect(result.match).not.toBeNull();
@@ -62,7 +83,7 @@ describe('processChargeForAutoMatch', () => {
       expect(result.match?.confidenceScore).toBeGreaterThanOrEqual(0.95);
     });
 
-    it('should return matched status for score exactly at 0.95 threshold', () => {
+    it('should return matched status for score exactly at 0.95 threshold', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -91,14 +112,14 @@ describe('processChargeForAutoMatch', () => {
         ],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [nearThresholdMatch], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [nearThresholdMatch], USER_ID, createMockInjector());
 
       expect(result.status).toBe('matched');
       expect(result.match).not.toBeNull();
       expect(result.match?.confidenceScore).toBeGreaterThanOrEqual(0.95);
     });
 
-    it('should work with document source charge', () => {
+    it('should work with document source charge', async () => {
       const sourceCharge = createCharge({
         chargeId: 'doc-charge-1',
         transactions: [],
@@ -125,7 +146,7 @@ describe('processChargeForAutoMatch', () => {
         documents: [],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [perfectMatch], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [perfectMatch], USER_ID, createMockInjector());
 
       expect(result.status).toBe('matched');
       expect(result.match).not.toBeNull();
@@ -134,7 +155,7 @@ describe('processChargeForAutoMatch', () => {
   });
 
   describe('Multiple high-confidence matches', () => {
-    it('should return skipped status when multiple matches >= 0.95', () => {
+    it('should return skipped status when multiple matches >= 0.95', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -174,14 +195,14 @@ describe('processChargeForAutoMatch', () => {
         ],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [match1, match2], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [match1, match2], USER_ID, createMockInjector());
 
       expect(result.status).toBe('skipped');
       expect(result.match).toBeNull();
       expect(result.reason).toContain('ambiguous');
     });
 
-    it('should skip even with many high-confidence matches', () => {
+    it('should skip even with many high-confidence matches', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -201,7 +222,7 @@ describe('processChargeForAutoMatch', () => {
         }),
       );
 
-      const result = processChargeForAutoMatch(sourceCharge, candidates, USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, candidates, USER_ID, createMockInjector());
 
       expect(result.status).toBe('skipped');
       expect(result.match).toBeNull();
@@ -209,7 +230,7 @@ describe('processChargeForAutoMatch', () => {
   });
 
   describe('No high-confidence matches', () => {
-    it('should return no-match when best match is below 0.95 threshold', () => {
+    it('should return no-match when best match is below 0.95 threshold', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -237,28 +258,28 @@ describe('processChargeForAutoMatch', () => {
         ],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [poorMatch], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [poorMatch], USER_ID, createMockInjector());
 
       expect(result.status).toBe('no-match');
       expect(result.match).toBeNull();
       expect(result.reason).toContain('below threshold');
     });
 
-    it('should return no-match when no candidates exist', () => {
+    it('should return no-match when no candidates exist', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [createMockTransaction()],
         documents: [],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [], USER_ID, createMockInjector());
 
       expect(result.status).toBe('no-match');
       expect(result.match).toBeNull();
       expect(result.reason).toContain('No candidates found');
     });
 
-    it('should handle match just below threshold (0.949)', () => {
+    it('should handle match just below threshold (0.949)', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -286,7 +307,7 @@ describe('processChargeForAutoMatch', () => {
         ],
       });
 
-      const result = processChargeForAutoMatch(sourceCharge, [nearMissMatch], USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, [nearMissMatch], USER_ID, createMockInjector());
 
       // Should be no-match since it's below threshold
       expect(result.status).toBe('no-match');
@@ -295,31 +316,31 @@ describe('processChargeForAutoMatch', () => {
   });
 
   describe('Edge cases and validation', () => {
-    it('should throw error if source charge is already matched', () => {
+    it('should throw error if source charge is already matched', async () => {
       const matchedCharge = createCharge({
         chargeId: 'matched-charge',
         transactions: [createMockTransaction()],
         documents: [createMockDocument()],
       });
 
-      expect(() => {
-        processChargeForAutoMatch(matchedCharge, [], USER_ID);
-      }).toThrow(/already matched/);
+      await expect(processChargeForAutoMatch(matchedCharge, [], USER_ID, createMockInjector())).rejects.toThrow(
+        /already matched/,
+      );
     });
 
-    it('should throw error if source charge has no transactions or documents', () => {
+    it('should throw error if source charge has no transactions or documents', async () => {
       const emptyCharge = createCharge({
         chargeId: 'empty-charge',
         transactions: [],
         documents: [],
       });
 
-      expect(() => {
-        processChargeForAutoMatch(emptyCharge, [], USER_ID);
-      }).toThrow(/no transactions or documents/);
+      await expect(processChargeForAutoMatch(emptyCharge, [], USER_ID, createMockInjector())).rejects.toThrow(
+        /no transactions or documents/,
+      );
     });
 
-    it('should filter candidates to complementary type only', () => {
+    it('should filter candidates to complementary type only', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [createMockTransaction({ amount: "100" })],
@@ -345,14 +366,14 @@ describe('processChargeForAutoMatch', () => {
         }),
       ];
 
-      const result = processChargeForAutoMatch(sourceCharge, candidates, USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, candidates, USER_ID, createMockInjector());
 
       // Should only consider document charges (doc-charge-1 and doc-charge-2)
       // Both are perfect matches, so should be skipped as ambiguous
       expect(result.status).toBe('skipped');
     });
 
-    it('should handle various confidence levels correctly', () => {
+    it('should handle various confidence levels correctly', async () => {
       const sourceCharge = createCharge({
         chargeId: 'tx-charge-1',
         transactions: [
@@ -404,7 +425,7 @@ describe('processChargeForAutoMatch', () => {
         }),
       ];
 
-      const result = processChargeForAutoMatch(sourceCharge, candidates, USER_ID);
+      const result = await processChargeForAutoMatch(sourceCharge, candidates, USER_ID, createMockInjector());
 
       // Only one match >= 0.95 (the perfect one)
       expect(result.status).toBe('matched');
