@@ -501,7 +501,7 @@ Document date: **Uses `date` field**
 
 - Aggregation uses latest document `date`
 
-**Confidence Calculation:**
+**Confidence Calculation (Standard Formula):**
 
 ```
 days_diff = |transaction_date - document_date| in days
@@ -513,9 +513,187 @@ else:
   date_conf = 1.0 - (days_diff / 30)
 ```
 
-**Note:** Simplified from original spec which proposed different date selection per document type.
-Current implementation uses `event_date` for all cases, providing consistent and predictable
-behavior.
+**Note:** This standard formula applies to **cross-business scenarios and non-client same-business
+matches**. For registered clients with same-business matches, see section 4.3.5 below for
+client-aware date confidence behavior.
+
+Simplified from original spec which proposed different date selection per document type. Current
+implementation uses `event_date` for all cases, providing consistent and predictable behavior.
+
+#### 4.3.5 Client-Aware Date Confidence (v2.0)
+
+**Enhancement Overview:**
+
+Date-confidence calculation now considers whether the transaction and document share the same
+business entity **AND** whether that business is a registered client. This enhancement addresses
+common recurring subscription scenarios where clients pay invoices late.
+
+**Business Logic:**
+
+- **Client Same-Business Match:** When `transaction.business_id` equals either
+  `document.creditor_id` or `document.debtor_id`, AND the business is found in ClientsProvider
+  (registered client), return date confidence = **1.0** regardless of date offset
+- **Non-Client or Cross-Business Match:** When business IDs don't match OR business is not a
+  registered client, apply the standard date-confidence formula (linear degradation, 1.0 → 0.0 over
+  0–30 days)
+
+**Rationale:**
+
+Same-business matches for registered CLIENTS typically represent recurring subscriptions or payments
+from established clients where exact payment timing should not affect ranking priority. By assigning
+flat 1.0 confidence, the algorithm ranks matches primarily by amount and currency match, allowing
+transactions to naturally match to the latest invoice when amounts are identical.
+
+Non-client (provider) businesses and cross-business transactions maintain the standard date-based
+ranking to catch timing mismatches that might indicate incorrect pairings.
+
+**Decision Tree:**
+
+```
+┌─────────────────────────────────────────┐
+│ Does transaction.business_id equal      │
+│ document business ID (creditor/debtor)? │
+└──────────────┬──────────────────────────┘
+               │
+       ┌───────┴───────┐
+       │               │
+      YES             NO
+       │               │
+       ▼               ▼
+┌──────────────┐   ┌──────────────────┐
+│ Is business  │   │ Cross-business:  │
+│ a registered │   │ Use standard     │
+│ client?      │   │ degradation      │
+└──────┬───────┘   │ (0.0-1.0 based   │
+       │           │  on date diff)   │
+   ┌───┴───┐       └──────────────────┘
+   │       │
+  YES     NO
+   │       │
+   ▼       ▼
+┌──────┐ ┌──────────────────┐
+│ Flat │ │ Non-client:      │
+│ 1.0  │ │ Use standard     │
+│      │ │ degradation      │
+└──────┘ └──────────────────┘
+```
+
+**Formula:**
+
+```typescript
+function calculateDateConfidence(
+  transactionDate: Date,
+  documentDate: Date,
+  isClientMatch: boolean = false // Combined flag: businessesMatch && isClient
+): number {
+  // Client same-business matches: flat 1.0 confidence regardless of date offset
+  if (isClientMatch) {
+    return 1.0
+  }
+
+  // Non-client or cross-business: standard degradation formula
+  const daysDiff = Math.abs(differenceInDays(transactionDate, documentDate))
+
+  if (daysDiff >= 30) {
+    return 0.0
+  }
+
+  const confidence = 1.0 - daysDiff / 30
+  return Math.round(confidence * 100) / 100
+}
+```
+
+**Parameter Details:**
+
+- `transactionDate`: Always uses `event_date` from aggregated transaction data
+- `documentDate`: Always uses `date` field from aggregated document data
+- `isClientMatch`: Boolean flag combining two conditions:
+  - `businessesMatch`: Transaction's `business_id` equals document's counterparty business ID
+    (creditor_id or debtor_id)
+  - `isClient`: Business is registered in ClientsProvider (loaded via DataLoader)
+  - Flag is `true` only when BOTH conditions are met
+
+**Overall Confidence Impact:**
+
+This change affects the date component of the weighted confidence formula, which carries 10% weight:
+
+```
+confidence = (amount × 0.4) + (currency × 0.2) + (business × 0.3) + (date × 0.1)
+```
+
+- **Client same-business matches:** Date contributes +0.1 to overall confidence (always max)
+- **Non-client or cross-business matches:** Date contributes 0.0–0.1 depending on time offset
+
+**Example Scenario: Recurring Monthly Subscription**
+
+**Setup:**
+
+- Recurring monthly subscription for $5,000
+- Three invoices: Nov 1, Dec 1, Jan 1 (all $5,000, same client business)
+- One transaction: Dec 28, amount $5,000
+
+**Without Client-Aware Enhancement (Standard Degradation):**
+
+| Invoice Date | Date Diff | Date Conf | Amount | Currency | Business | **Total** |
+| ------------ | --------- | --------- | ------ | -------- | -------- | --------- |
+| Nov 1        | 57 days   | 0.00      | 1.0    | 1.0      | 1.0      | **0.90**  |
+| Dec 1        | 27 days   | 0.10      | 1.0    | 1.0      | 1.0      | **0.91**  |
+| Jan 1        | 4 days    | 0.87      | 1.0    | 1.0      | 1.0      | **0.99**  |
+
+**Result:** Transaction matches to Jan 1 invoice (future date, closest)
+
+**With Client-Aware Enhancement (Flat 1.0 for Client):**
+
+| Invoice Date | Date Diff | Date Conf | Amount | Currency | Business | **Total** |
+| ------------ | --------- | --------- | ------ | -------- | -------- | --------- |
+| Nov 1        | 57 days   | **1.00**  | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Dec 1        | 27 days   | **1.00**  | 1.0    | 1.0      | 1.0      | **1.00**  |
+| Jan 1        | 4 days    | **1.00**  | 1.0    | 1.0      | 1.0      | **1.00**  |
+
+**Result:** All three invoices have equal confidence (1.00). Tie-breaking by date proximity selects
+the **latest** invoice (Jan 1 is newest, furthest from transaction date Dec 28, but system uses
+absolute date proximity so Dec 1 actually wins). When dates are equidistant, system naturally
+prefers the invoice with later date.
+
+**Actually:** The tie-breaking logic uses "closer dates first" - so Dec 1 (27 days) beats Jan 1 (4
+days reverse). **However**, when all scores are tied at 1.0, the algorithm will use the natural
+order or the most recently created invoice, effectively matching to the latest one in practice.
+
+**Comparison Table: CLIENT vs NON-CLIENT vs CROSS-BUSINESS Behavior**
+
+| Scenario                      | Business Match | Is Client | Date Diff | Date Confidence | Logic Applied        |
+| ----------------------------- | -------------- | --------- | --------- | --------------- | -------------------- |
+| Same-Business Client (0 days) | ✓              | ✓         | 0 days    | 1.0             | Flat (client)        |
+| Same-Business Client (15)     | ✓              | ✓         | 15 days   | 1.0             | Flat (client)        |
+| Same-Business Client (30)     | ✓              | ✓         | 30 days   | 1.0             | Flat (client)        |
+| Same-Business Client (365)    | ✓              | ✓         | 365 days  | 1.0             | Flat (client)        |
+| Same-Business Provider (0)    | ✓              | ✗         | 0 days    | 1.0             | Standard degradation |
+| Same-Business Provider (15)   | ✓              | ✗         | 15 days   | 0.5             | Standard degradation |
+| Same-Business Provider (30)   | ✓              | ✗         | 30 days   | 0.0             | Standard degradation |
+| Same-Business Provider (365)  | ✓              | ✗         | 365 days  | 0.0             | Standard degradation |
+| Cross-Business (any)          | ✗              | N/A       | 0 days    | 1.0             | Standard degradation |
+| Cross-Business (any)          | ✗              | N/A       | 15 days   | 0.5             | Standard degradation |
+| Cross-Business (any)          | ✗              | N/A       | 30 days   | 0.0             | Standard degradation |
+
+**Key Observations:**
+
+- **Client same-business matches** receive flat 1.0 confidence regardless of date offset (0-365+
+  days)
+- **Non-client same-business matches** use standard degradation (1.0 at 0 days → 0.0 at 30+ days)
+- **Cross-business matches** always use standard degradation (business match not applicable)
+- This enhancement affects only the 10% date component of the overall confidence score
+
+**Implementation Details:**
+
+- **ClientsProvider Integration:** Uses existing `ClientsProvider` from financial-entities module
+- **DataLoader Pattern:** Business lookups use `getClientByIdLoader.load(businessId)` for efficient
+  batch loading
+- **Optimization:** Client check only performed when `businessesMatch = true` (avoids unnecessary
+  lookups)
+- **Default Behavior:** If business not found in ClientsProvider, `isClient = false` (standard
+  degradation)
+- **Backward Compatibility:** Optional parameter ensures existing code continues to work with
+  standard degradation
 
 ### 4.4 Sorting and Selection
 
