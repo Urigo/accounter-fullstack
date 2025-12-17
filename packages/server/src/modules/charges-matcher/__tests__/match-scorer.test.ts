@@ -34,6 +34,19 @@ const createMockInjector = () => ({
   }),
 }) as Injector;
 
+// Spy-able injector to assert DataLoader usage
+const createSpyInjector = (loaderImpl?: (businessId: string) => Promise<any>) => {
+  const load = vi.fn(loaderImpl ?? (() => Promise.resolve(null)));
+  const get = vi.fn((token: any) => {
+    if (token.name === 'ClientsProvider') {
+      return {
+        getClientByIdLoader: { load },
+      };
+    }
+  });
+  return { get, load } as unknown as Injector & { load: typeof load };
+};
+
 describe('Match Scorer', () => {
   describe('selectTransactionDate', () => {
     const transaction: AggregatedTransaction = {
@@ -242,6 +255,361 @@ describe('Match Scorer', () => {
         const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
 
         expect(result.components.date).toBe(0.5); // 15/30 = 0.5
+      });
+    });
+
+    describe('Client-aware date confidence', () => {
+      it('returns flat 1.0 for client same-business on same day', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-same-day',
+          transactions: [
+            createMockTransaction({
+              amount: "100.00",
+              currency: 'USD',
+              event_date: new Date('2024-01-15'),
+              business_id: 'client-abc',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-client-same-day',
+          documents: [
+            createMockDocument({
+              total_amount: 100,
+              currency_code: 'USD',
+              date: new Date('2024-01-15'),
+              creditor_id: 'client-abc',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => ({ id: 'client-abc' }));
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBe(1.0);
+        expect(spyInjector.load).toHaveBeenCalledTimes(1);
+      });
+
+      it('returns flat 1.0 for client same-business 30 days apart', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-30',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'client-xyz',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-client-30',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-31'),
+              creditor_id: 'client-xyz',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => ({ id: 'client-xyz' }));
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBe(1.0);
+        expect(spyInjector.load).toHaveBeenCalledTimes(1);
+      });
+
+      it('returns flat 1.0 for client same-business 365 days apart', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-365',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2023-01-01'),
+              business_id: 'client-long',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-client-365',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-01'),
+              creditor_id: 'client-long',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => ({ id: 'client-long' }));
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBe(1.0);
+        expect(spyInjector.load).toHaveBeenCalledTimes(1);
+      });
+
+      it('uses standard degradation for non-client same-business (15 days)', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-nonclient-15',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'vendor-plain',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-nonclient-15',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-16'),
+              creditor_id: 'vendor-plain',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
+
+        expect(result.components.date).toBe(0.5);
+      });
+
+      it('uses standard degradation for non-client same-business (45 days)', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-nonclient-45',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'vendor-far',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-nonclient-45',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-02-15'),
+              creditor_id: 'vendor-far',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
+
+        expect(result.components.date).toBe(0.0);
+      });
+
+      it('uses standard degradation for cross-business matches', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-cross',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'customer-xyz',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-cross',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-06'),
+              creditor_id: 'vendor-xyz',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
+
+        expect(result.components.date).toBeCloseTo(0.83, 1);
+      });
+
+      it('skips client lookup when businessId is null', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-null-business',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: null,
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-null-business',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-16'),
+              creditor_id: USER_ID,
+              debtor_id: null,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector();
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBe(0.5);
+        expect(spyInjector.load).not.toHaveBeenCalled();
+      });
+
+      it('uses ClientsProvider result when lookup succeeds', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-lookup',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'client-lookup',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-client-lookup',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-02-01'),
+              creditor_id: 'client-lookup',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => ({ id: 'client-lookup' }));
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBe(1.0);
+        expect(spyInjector.load).toHaveBeenCalledTimes(1);
+      });
+
+      it('uses standard degradation when ClientsProvider returns null', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-null',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-01'),
+              business_id: 'client-missing',
+            }),
+          ],
+        };
+
+        const docCharge: DocumentCharge = {
+          chargeId: 'charge-doc-client-null',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-11'),
+              creditor_id: 'client-missing',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => null);
+        const result = await scoreMatch(txCharge, docCharge, USER_ID, spyInjector as any);
+
+        expect(result.components.date).toBeCloseTo(0.67, 1);
+        expect(spyInjector.load).toHaveBeenCalledTimes(1);
+      });
+
+      it('gives equal date scores for multiple client invoices regardless of recency', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-client-multi',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-15'),
+              business_id: 'client-multi',
+            }),
+          ],
+        };
+
+        const janDoc: DocumentCharge = {
+          chargeId: 'charge-doc-client-jan',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-30'),
+              creditor_id: 'client-multi',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const febDoc: DocumentCharge = {
+          chargeId: 'charge-doc-client-feb',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-02-28'),
+              creditor_id: 'client-multi',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const spyInjector = createSpyInjector(async () => ({ id: 'client-multi' }));
+        const janScore = await scoreMatch(txCharge, janDoc, USER_ID, spyInjector as any);
+        const febScore = await scoreMatch(txCharge, febDoc, USER_ID, spyInjector as any);
+
+        expect(janScore.components.date).toBe(1.0);
+        expect(febScore.components.date).toBe(1.0);
+        expect(spyInjector.load).toHaveBeenCalledTimes(2);
+      });
+
+      it('prefers closer date for non-client when amounts tie', async () => {
+        const txCharge: TransactionCharge = {
+          chargeId: 'charge-tx-nonclient-multi',
+          transactions: [
+            createMockTransaction({
+              event_date: new Date('2024-01-15'),
+              business_id: 'vendor-multi',
+            }),
+          ],
+        };
+
+        const nearDoc: DocumentCharge = {
+          chargeId: 'charge-doc-nonclient-near',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-01-17'),
+              creditor_id: 'vendor-multi',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const farDoc: DocumentCharge = {
+          chargeId: 'charge-doc-nonclient-far',
+          documents: [
+            createMockDocument({
+              date: new Date('2024-02-20'),
+              creditor_id: 'vendor-multi',
+              debtor_id: USER_ID,
+              type: 'INVOICE',
+            }),
+          ],
+        };
+
+        const nearScore = await scoreMatch(txCharge, nearDoc, USER_ID, createMockInjector());
+        const farScore = await scoreMatch(txCharge, farDoc, USER_ID, createMockInjector());
+
+        expect(nearScore.components.date).toBeGreaterThan(farScore.components.date);
       });
     });
 
