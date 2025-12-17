@@ -6,8 +6,9 @@
  * amount normalization, currency validation, date selection, and description concatenation.
  */
 
-import { currency } from '../../documents/types.js';
-import { normalizeDocumentAmount, type DocumentType } from '../helpers/document-amount.helper.js';
+import { DocumentType } from '../../../shared/enums.js';
+import { currency, document_type } from '../../documents/types.js';
+import { normalizeDocumentAmount } from '../helpers/document-amount.helper.js';
 import { extractDocumentBusiness } from '../helpers/document-business.helper.js';
 import { AggregatedDocument } from '../types.js';
 
@@ -24,7 +25,7 @@ export interface Document {
   currency_code: currency | null; // Currency type
   date: Date | null;
   total_amount: number | null; // double precision in DB
-  type: DocumentType;
+  type: document_type;
   serial_number: string | null;
   image_url: string | null;
   file_url: string | null;
@@ -33,8 +34,8 @@ export interface Document {
 /**
  * Accounting document types (used for type priority filtering)
  */
-const INVOICE_TYPES: DocumentType[] = ['INVOICE', 'CREDIT_INVOICE'];
-const RECEIPT_TYPES: DocumentType[] = ['RECEIPT', 'INVOICE_RECEIPT'];
+const INVOICE_TYPES: DocumentType[] = [DocumentType.Invoice, DocumentType.CreditInvoice];
+const RECEIPT_TYPES: DocumentType[] = [DocumentType.Receipt, DocumentType.InvoiceReceipt];
 
 /**
  * Check if document type is an invoice or credit invoice
@@ -77,8 +78,8 @@ function isReceiptType(type: DocumentType): boolean {
  *
  * @example
  * const aggregated = aggregateDocuments([
- *   { total_amount: 100, currency_code: 'USD', creditor_id: 'b1', debtor_id: 'u1', type: 'INVOICE', ... },
- *   { total_amount: 50, currency_code: 'USD', creditor_id: 'b1', debtor_id: 'u1', type: 'INVOICE', ... }
+ *   { total_amount: 100, currency_code: 'USD', creditor_id: 'b1', debtor_id: 'u1', type: DocumentType.Invoice, ... },
+ *   { total_amount: 50, currency_code: 'USD', creditor_id: 'b1', debtor_id: 'u1', type: DocumentType.Invoice, ... }
  * ], 'u1');
  * // Returns aggregated with normalized amounts summed
  */
@@ -92,13 +93,13 @@ export function aggregateDocuments(
   }
 
   // Apply type priority filtering
-  const hasInvoices = documents.some(d => isInvoiceType(d.type));
-  const hasReceipts = documents.some(d => isReceiptType(d.type));
+  const hasInvoices = documents.some(d => isInvoiceType(d.type as DocumentType));
+  const hasReceipts = documents.some(d => isReceiptType(d.type as DocumentType));
 
   let filteredDocuments = documents;
   if (hasInvoices && hasReceipts) {
     // If both invoices and receipts exist, use only invoices
-    filteredDocuments = documents.filter(d => isInvoiceType(d.type));
+    filteredDocuments = documents.filter(d => isInvoiceType(d.type as DocumentType));
   }
 
   // Validate we still have documents after filtering
@@ -112,7 +113,7 @@ export function aggregateDocuments(
     const normalizedAmount = normalizeDocumentAmount(
       doc.total_amount ?? 0,
       businessInfo.isBusinessCreditor,
-      doc.type,
+      doc.type as DocumentType,
     );
 
     return {

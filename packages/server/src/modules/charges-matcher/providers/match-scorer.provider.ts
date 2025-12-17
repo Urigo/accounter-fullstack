@@ -1,5 +1,5 @@
 import type { Injector } from 'graphql-modules';
-import type { document_type } from '../../documents/types.js';
+import { DocumentType } from '../../../shared/enums.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import { calculateAmountConfidence } from '../helpers/amount-confidence.helper.js';
 import { calculateBusinessConfidence } from '../helpers/business-confidence.helper.js';
@@ -30,19 +30,19 @@ import { aggregateTransactions } from './transaction-aggregator.js';
  */
 export function selectTransactionDate(
   transaction: AggregatedTransaction,
-  documentType: document_type,
+  documentType: DocumentType,
 ): Date {
   switch (documentType) {
-    case 'INVOICE':
-    case 'CREDIT_INVOICE':
-    case 'RECEIPT':
-    case 'INVOICE_RECEIPT':
+    case DocumentType.Invoice:
+    case DocumentType.CreditInvoice:
+    case DocumentType.Receipt:
+    case DocumentType.InvoiceReceipt:
       // For invoices, use event_date
       return transaction.date;
 
-    case 'OTHER':
-    case 'PROFORMA':
-    case 'UNPROCESSED':
+    case DocumentType.Other:
+    case DocumentType.Proforma:
+    case DocumentType.Unprocessed:
       // For flexible types, use event_date as default
       // (caller should calculate both and use better score)
       return transaction.date;
@@ -111,7 +111,10 @@ export async function scoreMatch(
   // }
 
   // For specific document types, use the appropriate date
-  const transactionDate = selectTransactionDate(aggregatedTransaction, aggregatedDocument.type);
+  const transactionDate = selectTransactionDate(
+    aggregatedTransaction,
+    aggregatedDocument.type as DocumentType,
+  );
 
   return calculateScoreWithDate(
     aggregatedTransaction,

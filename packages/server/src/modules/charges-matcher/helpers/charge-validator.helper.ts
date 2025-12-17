@@ -1,4 +1,5 @@
-import type { Document, DocumentType, Transaction } from '../types.js';
+import { DocumentType } from '../../../shared/enums.js';
+import type { Document, Transaction } from '../types.js';
 
 /**
  * Represents a charge with its associated transactions and documents
@@ -14,10 +15,11 @@ interface Charge {
  * Accounting document types that count toward matched/unmatched status
  */
 const ACCOUNTING_DOC_TYPES: DocumentType[] = [
-  'INVOICE',
-  'CREDIT_INVOICE',
-  'RECEIPT',
-  'INVOICE_RECEIPT',
+  DocumentType.Invoice,
+  DocumentType.CreditInvoice,
+  DocumentType.Receipt,
+  DocumentType.InvoiceReceipt,
+  DocumentType.Proforma,
 ];
 
 /**

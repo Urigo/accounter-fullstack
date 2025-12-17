@@ -8,17 +8,7 @@
  * 3. If document type is CREDIT_INVOICE: negate
  */
 
-/**
- * Document types from database schema
- */
-export type DocumentType =
-  | 'CREDIT_INVOICE'
-  | 'INVOICE'
-  | 'INVOICE_RECEIPT'
-  | 'OTHER'
-  | 'PROFORMA'
-  | 'RECEIPT'
-  | 'UNPROCESSED';
+import { DocumentType } from '../../../shared/enums.js';
 
 /**
  * Normalize document amount for comparison with transaction amount
@@ -69,7 +59,7 @@ export function normalizeDocumentAmount(
   }
 
   // Step 3: If document type is CREDIT_INVOICE, negate
-  if (documentType === 'CREDIT_INVOICE') {
+  if (documentType === DocumentType.CreditInvoice) {
     normalizedAmount = -normalizedAmount;
   }
 

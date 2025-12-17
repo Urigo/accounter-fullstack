@@ -13,5 +13,4 @@ export const chargesMatcherModule = createModule({
   providers: [ChargesMatcherProvider],
 });
 
-export { ChargesMatcherProvider } from './providers/charges-matcher.provider.js';
 export * as ChargesMatcherTypes from './types.js';

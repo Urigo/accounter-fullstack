@@ -6,6 +6,7 @@ import {
 } from '../providers/match-scorer.provider.js';
 import { createMockTransaction, createMockDocument } from './test-helpers.js';
 import { Injector } from 'graphql-modules';
+import { DocumentType } from '../../../shared/enums.js';
 
 // Mock DI system and ClientsProvider
 vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
@@ -60,43 +61,43 @@ describe('Match Scorer', () => {
     };
 
     it('should use event_date for INVOICE', () => {
-      const result = selectTransactionDate(transaction, 'INVOICE');
+      const result = selectTransactionDate(transaction, DocumentType.Invoice);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for CREDIT_INVOICE', () => {
-      const result = selectTransactionDate(transaction, 'CREDIT_INVOICE');
+      const result = selectTransactionDate(transaction, DocumentType.CreditInvoice);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for RECEIPT', () => {
-      const result = selectTransactionDate(transaction, 'RECEIPT');
+      const result = selectTransactionDate(transaction, DocumentType.Receipt);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for INVOICE_RECEIPT', () => {
-      const result = selectTransactionDate(transaction, 'INVOICE_RECEIPT');
+      const result = selectTransactionDate(transaction, DocumentType.InvoiceReceipt);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for RECEIPT when debitDate is null', () => {
       const txWithoutDebitDate = { ...transaction, debitDate: null };
-      const result = selectTransactionDate(txWithoutDebitDate, 'RECEIPT');
+      const result = selectTransactionDate(txWithoutDebitDate, DocumentType.Receipt);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for OTHER', () => {
-      const result = selectTransactionDate(transaction, 'OTHER');
+      const result = selectTransactionDate(transaction, DocumentType.Other);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for PROFORMA', () => {
-      const result = selectTransactionDate(transaction, 'PROFORMA');
+      const result = selectTransactionDate(transaction, DocumentType.Proforma);
       expect(result).toEqual(new Date('2024-01-15'));
     });
 
     it('should use event_date for UNPROCESSED', () => {
-      const result = selectTransactionDate(transaction, 'UNPROCESSED');
+      const result = selectTransactionDate(transaction, DocumentType.Unprocessed);
       expect(result).toEqual(new Date('2024-01-15'));
     });
   });
