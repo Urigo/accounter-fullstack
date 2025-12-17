@@ -298,7 +298,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:5.0.114"
+    ai: "npm:5.0.115"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -365,16 +365,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.21":
-  version: 2.0.21
-  resolution: "@ai-sdk/gateway@npm:2.0.21"
+"@ai-sdk/gateway@npm:2.0.22":
+  version: 2.0.22
+  resolution: "@ai-sdk/gateway@npm:2.0.22"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.19"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/776492f1e0b6d29d8503c940cd4c08fed96cbf65f22eaee683f15e59cb4d03e40b7b64f2790144f2bb22cb174f44d305bac957270ba65a5c3fd79a9826e4cfc8
+  checksum: 10c0/3ef90c2807ede90cf548eba89abdb6b67863b9bfeda5df799c14aa2792d129be71972d266948c5412c2ce28d56dd409dd5d1e350df7612856a1e5cf301ccf1ff
   languageName: node
   linkType: hard
 
@@ -9191,7 +9191,7 @@ __metadata:
     ts-node: "npm:10.9.2"
     tsx: "npm:4.21.0"
     typescript: "npm:5.9.3"
-    vite-tsconfig-paths: "npm:6.0.1"
+    vite-tsconfig-paths: "npm:6.0.2"
     vitest: "npm:4.0.16"
   languageName: unknown
   linkType: soft
@@ -9239,17 +9239,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.114":
-  version: 5.0.114
-  resolution: "ai@npm:5.0.114"
+"ai@npm:5.0.115":
+  version: 5.0.115
+  resolution: "ai@npm:5.0.115"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.21"
+    "@ai-sdk/gateway": "npm:2.0.22"
     "@ai-sdk/provider": "npm:2.0.0"
     "@ai-sdk/provider-utils": "npm:3.0.19"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ef742c46de6562b9017ae7fe49405cc81533346816f348159981b7dcd3155ff9c24d62157619d6ede3973b1fc94e307b7a528d8017d2a15a99c5281a96c152f5
+  checksum: 10c0/44a844eb2980151a14a22e3c5f0d7525f03601957b9280f7de0fbd7d18c00353ffef39ac84d7ad01af3fc14eeb292f019015a0b7d8784a5b8c5e2a149d863a15
   languageName: node
   linkType: hard
 
@@ -22990,9 +22990,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite-tsconfig-paths@npm:6.0.1":
-  version: 6.0.1
-  resolution: "vite-tsconfig-paths@npm:6.0.1"
+"vite-tsconfig-paths@npm:6.0.2":
+  version: 6.0.2
+  resolution: "vite-tsconfig-paths@npm:6.0.2"
   dependencies:
     debug: "npm:^4.1.1"
     globrex: "npm:^0.1.2"
@@ -23002,7 +23002,7 @@ __metadata:
   peerDependenciesMeta:
     vite:
       optional: true
-  checksum: 10c0/c0702f1d2b9d2e3e6ebb44d8e9c27b17b1102e86946ab54b6bbd290419b134e84df4e451b55db973bc97d9de5689df6f67e479633df20244aa0c62ffd0b16e43
+  checksum: 10c0/878189e38a253b699998f94706b15718a03d59467b091e064f33090240f9ccfa4bf273c3b30b5f9711822c56a58b786c3e6c6cebb8859e56ec5ab49e360ff8c0
   languageName: node
   linkType: hard
 
