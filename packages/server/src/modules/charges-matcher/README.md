@@ -152,8 +152,7 @@ A charge is considered unmatched if it has:
 - ≥1 transactions AND 0 accounting documents, OR
 - 0 transactions AND ≥1 accounting documents
 
-**Note**: PROFORMA, OTHER, and UNPROCESSED document types don't count toward matched/unmatched
-status. However, PROFORMA documents ARE eligible for gentle client date scoring when matching.
+**Note**: OTHER, and UNPROCESSED document types don't count toward matched/unmatched status.
 
 ### Matched Charge
 

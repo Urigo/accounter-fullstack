@@ -157,9 +157,8 @@ async function calculateScoreWithDate(
       // isClientMatch is true only if business is a registered client
       isClientMatch = client != null;
     } catch (error) {
-      throw new Error(
-        `Failed to lookup client for business ID ${transaction.businessId}: ${(error as Error).message}`,
-      );
+      console.error(`Error looking up client for business ID ${transaction.businessId}:`, error);
+      isClientMatch = false;
     }
   }
 
