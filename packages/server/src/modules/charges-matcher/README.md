@@ -153,7 +153,7 @@ A charge is considered unmatched if it has:
 - 0 transactions AND ≥1 accounting documents
 
 **Note**: PROFORMA, OTHER, and UNPROCESSED document types don't count toward matched/unmatched
-status.
+status. However, PROFORMA documents ARE eligible for gentle client date scoring when matching.
 
 ### Matched Charge
 
@@ -163,7 +163,7 @@ A charge is considered matched if it has:
 
 ### Accounting Documents
 
-Documents with types: INVOICE, CREDIT_INVOICE, RECEIPT, INVOICE_RECEIPT
+Documents with types: INVOICE, CREDIT_INVOICE, RECEIPT, INVOICE_RECEIPT, PROFORMA
 
 ### Confidence Score
 
@@ -174,6 +174,18 @@ confidence = (amount × 0.4) + (currency × 0.2) + (business × 0.3) + (date × 
 ```
 
 Where each component score is between 0.0 and 1.0.
+
+**Date Component Enhancement (v3.0 - Gentle Scoring):**
+
+The date confidence uses "gentle scoring" for eligible client invoices:
+
+- **Gentle Eligible:** Client same-business matches with OPEN INVOICE/PROFORMA documents dated on or
+  before the transaction date (within 365 days) receive near-maximum confidence (~1.00) with a
+  microscopic preference for earlier invoices
+- **Standard:** All other scenarios use linear degradation from 1.0 (same day) to 0.0 (30+ days)
+- **Tie-Breaker:** When scores are equal under gentle mode, earlier invoices are preferred
+
+This ensures recurring client payments match to the earliest eligible open invoice.
 
 ### Auto-Match Threshold
 

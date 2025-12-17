@@ -25,6 +25,7 @@ export interface MatchResult {
     date: number;
   };
   dateProximity?: number; // Days between earliest tx date and latest doc date (for tie-breaking)
+  gentleMode?: boolean; // Whether gentle client scoring applied
 }
 
 /**
@@ -225,6 +226,7 @@ export async function findMatches(
         confidenceScore: matchScore.confidenceScore,
         components: matchScore.components,
         dateProximity,
+        gentleMode: matchScore.gentleMode === true,
         _txCharge: txCharge,
         _docCharge: docCharge,
       });
@@ -235,15 +237,24 @@ export async function findMatches(
     }
   }
 
-  // Step 9: Sort by confidence descending, then by date proximity ascending (tie-breaker)
+  // Step 9: Sort by confidence descending, then by date proximity tie-breaker
   scoredCandidates.sort((a, b) => {
     // Primary: confidence score (descending)
     if (a.confidenceScore !== b.confidenceScore) {
       return b.confidenceScore - a.confidenceScore;
     }
 
-    // Tie-breaker: date proximity (ascending - closer dates win)
-    return (a.dateProximity ?? Infinity) - (b.dateProximity ?? Infinity);
+    // Tie-breaker:
+    // - If both in gentle mode: prefer earlier document (larger proximity)
+    // - Otherwise: prefer closer dates (smaller proximity)
+    const aProx = a.dateProximity ?? Infinity;
+    const bProx = b.dateProximity ?? Infinity;
+
+    if (a.gentleMode && b.gentleMode) {
+      return bProx - aProx;
+    }
+
+    return aProx - bProx;
   });
 
   // Step 10: Return top N matches

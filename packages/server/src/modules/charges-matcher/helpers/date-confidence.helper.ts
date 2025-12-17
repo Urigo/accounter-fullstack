@@ -35,11 +35,25 @@ function calculateDaysDifference(date1: Date, date2: Date): number {
 export function calculateDateConfidence(
   date1: Date,
   date2: Date,
-  isClientMatch: boolean = false,
+  isGentleEligible: boolean = false,
 ): number {
-  // Client same-business matches: no date penalty, return flat confidence
-  if (isClientMatch) {
-    return 1.0;
+  // Gentle client-eligible scoring: slight preference for earlier within 365 days
+  // f(d) = a + k*d with f(365)=1.0 and f(60)=0.997
+  if (isGentleEligible) {
+    const daysDiff = calculateDaysDifference(date1, date2);
+
+    // Ineligible beyond 365 days
+    if (daysDiff > 365) {
+      return 0.0;
+    }
+
+    // Compute linear function parameters
+    const k = (1.0 - 0.997) / (365 - 60); // ~9.836e-6
+    const a = 0.997 - k * 60; // ~0.99640984
+    const confidence = a + k * daysDiff;
+
+    // Round to 2 decimal places (will be 1.0 for most practical diffs)
+    return Math.round(confidence * 100) / 100;
   }
 
   const daysDiff = calculateDaysDifference(date1, date2);

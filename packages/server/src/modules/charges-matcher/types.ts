@@ -169,6 +169,8 @@ export interface MatchScore {
   confidenceScore: number;
   /** Individual confidence component scores */
   components: ConfidenceScores;
+  /** Whether client gentle scoring was applied (for tie-breakers) */
+  gentleMode?: boolean;
 }
 
 /**

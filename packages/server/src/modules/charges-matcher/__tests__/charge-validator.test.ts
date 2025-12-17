@@ -167,17 +167,6 @@ describe('Charge Validator', () => {
       expect(isChargeMatched(charge)).toBe(false);
     });
 
-    it('should return false for charge with transactions and PROFORMA (non-accounting doc)', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'PROFORMA' })],
-      };
-
-      expect(isChargeMatched(charge)).toBe(false);
-    });
-
     it('should return false for charge with transactions and OTHER (non-accounting doc)', () => {
       const charge = {
         id: 'charge-1',
@@ -218,7 +207,7 @@ describe('Charge Validator', () => {
         id: 'charge-1',
         owner_id: 'user-1',
         transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'PROFORMA' })],
+        documents: [createMockDocument({ charge_id: 'charge-1', type: 'OTHER' })],
       };
 
       expect(hasOnlyTransactions(charge)).toBe(true);
@@ -286,7 +275,7 @@ describe('Charge Validator', () => {
         id: 'charge-1',
         owner_id: 'user-1',
         transactions: [],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'PROFORMA' })],
+        documents: [createMockDocument({ charge_id: 'charge-1', type: 'OTHER' })],
       };
 
       expect(hasOnlyDocuments(charge)).toBe(false);

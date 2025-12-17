@@ -8,9 +8,12 @@ import { createMockTransaction, createMockDocument } from './test-helpers.js';
 import { Injector } from 'graphql-modules';
 import { DocumentType } from '../../../shared/enums.js';
 
-// Mock DI system and ClientsProvider
+// Mock DI system and ClientsProvider / IssuedDocumentsProvider
 vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
   ClientsProvider: class {},
+}));
+vi.mock('../../documents/providers/issued-documents.provider.js', () => ({
+  IssuedDocumentsProvider: class {},
 }));
 
 // Test user ID
@@ -32,6 +35,12 @@ const createMockInjector = () => ({
           },
         },
       };
+    if (token.name === 'IssuedDocumentsProvider')
+      return {
+        getIssuedDocumentsStatusByChargeIdLoader: {
+          load: async (_chargeId: string) => ({ charge_id: _chargeId, open_docs_flag: true }),
+        },
+      };
     return null;
   }),
 }) as Injector;
@@ -39,12 +48,20 @@ const createMockInjector = () => ({
 // Spy-able injector to assert DataLoader usage
 const createSpyInjector = (loaderImpl?: (businessId: string) => Promise<any>) => {
   const load = vi.fn(loaderImpl ?? (() => Promise.resolve(null)));
-  const get = vi.fn((token: any) => {
+  const get = vi.fn((token: {name: string}) => {
     if (token.name === 'ClientsProvider') {
       return {
         getClientByIdLoader: { load },
       };
     }
+    if (token.name === 'IssuedDocumentsProvider') {
+      return {
+        getIssuedDocumentsStatusByChargeIdLoader: {
+          load: vi.fn(async (chargeId: string) => ({ charge_id: chargeId, open_docs_flag: true })),
+        },
+      };
+    }
+    return null;
   });
   return { get, load } as unknown as Injector & { load: typeof load };
 };
@@ -300,7 +317,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-30',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: new Date('2024-01-31'),
               business_id: 'client-xyz',
             }),
           ],
@@ -310,7 +327,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-30',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-31'),
+              date: new Date('2024-01-01'),
               creditor_id: 'client-xyz',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -330,7 +347,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-365',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2023-01-01'),
+              event_date: new Date('2024-01-01'),
               business_id: 'client-long',
             }),
           ],
@@ -340,7 +357,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-365',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-01'),
+              date: new Date('2023-01-01'),
               creditor_id: 'client-long',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -484,7 +501,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-lookup',
           documents: [
             createMockDocument({
-              date: new Date('2024-02-01'),
+              date: new Date('2023-12-01'),
               creditor_id: 'client-lookup',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -544,7 +561,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-jan',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-30'),
+              date: new Date('2023-12-30'),
               creditor_id: 'client-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -556,7 +573,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-feb',
           documents: [
             createMockDocument({
-              date: new Date('2024-02-28'),
+              date: new Date('2023-11-30'),
               creditor_id: 'client-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -950,7 +967,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 500,
               currency_code: 'USD',
-              date: new Date('2024-03-01'), // 28 days later - would normally be 0.07
+              date: new Date('2024-01-04'), // 28 days earlier - gentle eligible
               creditor_id: 'client-acme', // Same business, registered client
               debtor_id: USER_ID,
               type: 'INVOICE',

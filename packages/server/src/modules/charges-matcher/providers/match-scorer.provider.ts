@@ -1,5 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { DocumentType } from '../../../shared/enums.js';
+import type { IGetIssuedDocumentsStatusByChargeIdsResult } from '../../documents/__generated__/issued-documents.types.js';
+import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import { calculateAmountConfidence } from '../helpers/amount-confidence.helper.js';
 import { calculateBusinessConfidence } from '../helpers/business-confidence.helper.js';
@@ -146,7 +148,6 @@ async function calculateScoreWithDate(
     transaction.businessId != null && transaction.businessId === document.businessId;
 
   // If businesses match, verify if it's a registered CLIENT
-  // This gives recurring client charges a flat date confidence regardless of date offset
   let isClientMatch = false;
   if (businessesMatch && transaction.businessId) {
     try {
@@ -162,12 +163,55 @@ async function calculateScoreWithDate(
     }
   }
 
+  // Determine gentle eligibility for client matches
+  // Conditions:
+  // - Same business and registered client
+  // - Document type is INVOICE or PROFORMA
+  // - Document status is OPEN (via issued documents status by charge id)
+  // - Document date <= transaction date (date-only compare)
+  let isGentleEligible = false;
+  if (isClientMatch) {
+    // Type gating
+    const typeIsEligible =
+      document.type === DocumentType.Invoice || document.type === DocumentType.Proforma;
+
+    // Date-only comparison: doc.date <= transactionDate
+    const docDate = new Date(
+      document.date.getFullYear(),
+      document.date.getMonth(),
+      document.date.getDate(),
+    );
+    const txDate = new Date(
+      transactionDate.getFullYear(),
+      transactionDate.getMonth(),
+      transactionDate.getDate(),
+    );
+    const dateIsEligible = docDate.getTime() <= txDate.getTime();
+
+    // Status gating via DataLoader
+    let statusIsEligible = false;
+    try {
+      const status = (await injector
+        .get(IssuedDocumentsProvider)
+        .getIssuedDocumentsStatusByChargeIdLoader.load(
+          chargeId,
+        )) as IGetIssuedDocumentsStatusByChargeIdsResult | null;
+      // Expect shape with open_docs_flag boolean
+      statusIsEligible = !!(status && status.open_docs_flag === true);
+    } catch {
+      // If status lookup fails, treat as ineligible (do not throw)
+      statusIsEligible = false;
+    }
+
+    isGentleEligible = typeIsEligible && dateIsEligible && statusIsEligible;
+  }
+
   // Calculate individual confidence scores
   const amountScore = calculateAmountConfidence(transaction.amount, document.amount);
   const currencyScore = calculateCurrencyConfidence(transaction.currency, document.currency);
   const businessScore = calculateBusinessConfidence(transaction.businessId, document.businessId);
-  // Pass isClientMatch flag: only true if businesses match AND business is a registered client
-  const dateScore = calculateDateConfidence(transactionDate, document.date, isClientMatch);
+  // Use gentle eligibility to compute date confidence
+  const dateScore = calculateDateConfidence(transactionDate, document.date, isGentleEligible);
 
   // Create components object
   const components: ConfidenceScores = {
@@ -184,5 +228,8 @@ async function calculateScoreWithDate(
     chargeId,
     confidenceScore,
     components,
+    // Expose gentle flag for tie-breaker handling upstream
+    // (optional property tolerated by consumer types)
+    gentleMode: isGentleEligible,
   };
 }
