@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Calendar, ExternalLink, LinkIcon, Pencil } from 'lucide-react';
-import { useQuery } from 'urql';
+import { useMemo } from 'react';
+import { Calendar, ExternalLink, LinkIcon } from 'lucide-react';
+import { useQuery, type UseQueryExecute } from 'urql';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
@@ -67,8 +67,6 @@ interface Props {
 }
 
 export function ContractsSection({ clientId }: Props) {
-  const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
-
   const [{ data, fetching }, refetch] = useQuery({
     query: ClientContractsSectionDocument,
     variables: {
@@ -94,15 +92,16 @@ export function ContractsSection({ clientId }: Props) {
             <CardTitle>Contracts</CardTitle>
             <CardDescription>Current and past contracts sorted by start date</CardDescription>
           </div>
-          <ModifyContractDialog clientId={clientId} contract={editingContract} onDone={refetch} />
+          <ModifyContractDialog clientId={clientId} onDone={refetch} />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {contracts.map(contract => (
           <ContractCard
             key={contract.id}
+            clientId={clientId}
             contract={contract}
-            setEditingContract={setEditingContract}
+            refetch={refetch}
           />
         ))}
       </CardContent>
@@ -111,11 +110,13 @@ export function ContractsSection({ clientId }: Props) {
 }
 
 function ContractCard({
+  clientId,
   contract,
-  setEditingContract,
+  refetch,
 }: {
+  clientId: string;
   contract: ClientContractsSectionQuery['contractsByClient'][number];
-  setEditingContract: (value: ContractFormValues | null) => void;
+  refetch: UseQueryExecute;
 }) {
   const isActive = !!contract.isActive;
 
@@ -132,13 +133,11 @@ function ContractCard({
           <p className="text-sm text-muted-foreground font-mono">{contract.id}</p>
         </div>
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditingContract(convertContractDataToFormValues(contract))}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          <ModifyContractDialog
+            clientId={clientId}
+            contract={convertContractDataToFormValues(contract)}
+            onDone={refetch}
+          />
           <IssueDocumentFromContractModal contractId={contract.id} />
         </div>
       </div>

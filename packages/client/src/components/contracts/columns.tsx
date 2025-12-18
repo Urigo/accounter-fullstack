@@ -117,11 +117,7 @@ export const columns: ColumnDef<ContractRow>[] = [
     accessorKey: 'edit',
     header: '',
     cell: ({ row }) => (
-      <ModifyContractDialog
-        clientId={row.original.client.id}
-        contractId={row.original.id}
-        // onDone={refetch}
-      />
+      <ModifyContractDialog clientId={row.original.client.id} contractId={row.original.id} />
     ),
     enableSorting: false,
   },
