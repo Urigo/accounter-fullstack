@@ -1144,7 +1144,7 @@ export async function insertNewDocumentFromGreenInvoice(
     // insert document
     const rawDocument: IInsertDocumentsParams['document']['0'] = {
       image: imageUrl,
-      file: greenInvoiceDoc.url.origin,
+      file: fileUrl,
       documentType,
       serialNumber: greenInvoiceDoc.number,
       date: greenInvoiceDoc.documentDate,
