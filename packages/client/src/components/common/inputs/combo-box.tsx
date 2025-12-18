@@ -1,5 +1,5 @@
 import React, { useMemo, type ComponentProps } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronDownIcon } from 'lucide-react';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
@@ -15,17 +15,17 @@ import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.js';
 import { FormControl } from '../../ui/form.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
-type Datum = {
+type Option = {
   value: string;
   label: string;
 };
 
 type ComboBoxProps = {
-  data: Array<Datum>;
+  data: Array<Option>;
   placeholder?: string;
   triggerProps?: Omit<React.ComponentProps<typeof Button>, 'disabled'>;
   disabled?: boolean;
-  onChange?: ((datum: string | null) => void) | undefined;
+  onChange?: ((option: string | null) => void) | undefined;
   value?: string | null;
   formPart?: boolean;
 };
@@ -42,9 +42,9 @@ export function ComboBox({
   const [open, setOpen] = React.useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
-  const selectedDatum = useMemo(() => {
+  const selectedOption = useMemo(() => {
     if (!value) return null;
-    return data.find(datum => datum.value === value) || null;
+    return data.find(option => option.value === value) || null;
   }, [value, data]);
 
   if (isDesktop) {
@@ -53,14 +53,14 @@ export function ComboBox({
         <PopoverTrigger asChild className="w-fit min-w-40">
           <Trigger
             placeholder={placeholder}
-            selectedDatum={selectedDatum}
+            selectedOption={selectedOption}
             disabled={disabled}
             formPart={formPart}
             {...triggerProps}
           />
         </PopoverTrigger>
         <PopoverContent className="w-[200px] p-0" align="start">
-          <DatumList
+          <OptionsList
             setOpen={setOpen}
             onChange={onChange}
             data={data}
@@ -77,7 +77,7 @@ export function ComboBox({
       <DrawerTrigger asChild>
         <Trigger
           placeholder={placeholder}
-          selectedDatum={selectedDatum}
+          selectedOption={selectedOption}
           disabled={disabled}
           formPart={formPart}
           {...triggerProps}
@@ -85,7 +85,7 @@ export function ComboBox({
       </DrawerTrigger>
       <DrawerContent>
         <div className="mt-4 border-t">
-          <DatumList
+          <OptionsList
             setOpen={setOpen}
             onChange={onChange}
             data={data}
@@ -101,27 +101,37 @@ export function ComboBox({
 type TriggerProps = ComponentProps<typeof Button> & {
   formPart?: boolean;
   placeholder?: string;
-  selectedDatum: Datum | null;
+  selectedOption: Option | null;
 };
 
-function Trigger({ formPart, placeholder, selectedDatum, ...triggerProps }: TriggerProps) {
+function Trigger({ formPart, placeholder, selectedOption, ...triggerProps }: TriggerProps) {
   if (formPart) {
     return (
       <FormControl>
         <Button variant="outline" className="w-full justify-start" {...triggerProps}>
-          {selectedDatum ? selectedDatum.label : placeholder}
+          {selectedOption ? selectedOption.label : placeholder}
+          <ChevronDownIcon
+            strokeWidth={2}
+            className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
+            aria-hidden="true"
+          />
         </Button>
       </FormControl>
     );
   }
   return (
     <Button variant="outline" className="w-[150px] justify-start" {...triggerProps}>
-      {selectedDatum ? selectedDatum.label : placeholder}
+      {selectedOption ? selectedOption.label : placeholder}
+      <ChevronDownIcon
+        strokeWidth={2}
+        className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
+        aria-hidden="true"
+      />
     </Button>
   );
 }
 
-function DatumList({
+function OptionsList({
   setOpen,
   onChange,
   placeholder,
@@ -129,9 +139,9 @@ function DatumList({
   value,
 }: {
   setOpen: (open: boolean) => void;
-  onChange?: (datum: string | null) => void;
+  onChange?: (option: string | null) => void;
   placeholder?: string;
-  data: Array<Datum>;
+  data: Array<Option>;
   value?: string | null;
 }) {
   return (
@@ -140,19 +150,19 @@ function DatumList({
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
-          {data.map(datum => (
+          {data.map(option => (
             <CommandItem
-              key={datum.value}
-              keywords={[datum.label]}
-              value={datum.value}
+              key={option.value}
+              keywords={[option.label]}
+              value={option.value}
               onSelect={value => {
                 onChange?.(data.find(priority => priority.value === value)?.value ?? null);
                 setOpen(false);
               }}
             >
-              {datum.label}
+              {option.label}
               <Check
-                className={cn('ml-auto', datum.value === value ? 'opacity-100' : 'opacity-0')}
+                className={cn('ml-auto', option.value === value ? 'opacity-100' : 'opacity-0')}
               />
             </CommandItem>
           ))}

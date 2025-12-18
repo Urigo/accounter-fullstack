@@ -83,7 +83,7 @@ export const getDocumentTypeOptions = () =>
 // ];
 
 export const getCountryOptions = () =>
-  Object.entries(CountryCode).map(([code, name]) => ({
+  Object.entries(CountryCode).map(([name, code]) => ({
     value: code,
     label: name,
   }));

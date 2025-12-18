@@ -73,7 +73,9 @@ const vatTypes = getVatTypeOptions();
 
 export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDocumentProps) {
   // Add state for selected client
-  const [selectedClientId, setSelectedClientId] = useState<string>(formData.client?.id || '');
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(
+    formData.client?.id || undefined,
+  );
   const { selectableClients } = useGetAllClients();
 
   const [clientInfo, setClientInfo] = useState<DocumentClient | null>(formData.client ?? null);
@@ -82,9 +84,15 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
     pause: true,
     query: ClientInfoForDocumentIssuingDocument,
     variables: {
-      businessId: selectedClientId,
+      businessId: selectedClientId ?? '',
     },
   });
+
+  useEffect(() => {
+    if (formData.client?.id) {
+      setSelectedClientId(formData.client.id);
+    }
+  }, [formData.client?.id]);
 
   // on client change, trigger fetch
   useEffect(() => {

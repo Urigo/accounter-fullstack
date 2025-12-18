@@ -244,8 +244,8 @@ export function PreviewDocumentModal({
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [initialFormData, setInitialFormData] = useState<Partial<PreviewDocumentInput>>(
-    'initialFormData' in props && props.initialFormData ? props.initialFormData : {},
+  const [initialFormData, setInitialFormData] = useState<Partial<PreviewDocumentInput> | undefined>(
+    'initialFormData' in props && props.initialFormData ? props.initialFormData : undefined,
   );
 
   // handle internal/external open state
@@ -303,6 +303,7 @@ export function PreviewDocumentModal({
     fetchingByDocument,
     errorByDocument,
     fetchByDocument,
+    open,
   ]);
 
   useEffect(() => {

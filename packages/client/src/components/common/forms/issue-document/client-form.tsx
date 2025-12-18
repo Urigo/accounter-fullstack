@@ -5,13 +5,7 @@ import type { CountryCode } from '@/helpers/countries.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
 import { Label } from '../../../ui/label.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../ui/select.js';
+import { ComboBox } from '../../index.js';
 import type { DocumentClient } from './types/document.js';
 import { getCountryOptions } from './utils/enum-helpers.js';
 
@@ -101,21 +95,14 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <Select
+
+                <ComboBox
+                  onChange={value => updateClient('country', value as CountryCode)}
+                  data={countries}
                   value={client.country}
-                  onValueChange={(value: CountryCode) => updateClient('country', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries.map(country => (
-                      <SelectItem key={country.value} value={country.value}>
-                        {country.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select country"
+                  triggerProps={{ className: 'w-full flex justify-between' }}
+                />
               </div>
             </div>
             {/* <div className="flex items-center space-x-2">

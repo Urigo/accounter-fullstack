@@ -41,7 +41,7 @@ const formDefaults: PreviewDocumentInput = {
   signed: true,
   income: [],
   payment: [],
-};
+} as const;
 
 export function GenerateDocument({ initialFormData, onDone, chargeId }: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
@@ -72,10 +72,16 @@ export function GenerateDocument({ initialFormData, onDone, chargeId }: Generate
     setIsPreviewCurrent(false);
   }, [formData]);
 
+  const initialFormDataString = useMemo(
+    () => JSON.stringify(initialFormData || {}),
+    [initialFormData],
+  );
+
   // reset form data when initialFormData changes
   useEffect(() => {
     setFormData({ ...formDefaults, ...initialFormData });
-  }, [JSON.stringify(initialFormData)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFormDataString]); // using this to avoid deep comparison issues
 
   const handlePreview = useCallback(async () => {
     try {
