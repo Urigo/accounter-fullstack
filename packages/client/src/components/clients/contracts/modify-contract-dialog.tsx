@@ -219,7 +219,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractInfoString]); // depend on stringified version only
+  }, [contractInfoString, form.reset]); // contractInfoString to avoid object reference issues
 
   const onSubmit = useCallback(
     async (values: ContractFormValues) => {
