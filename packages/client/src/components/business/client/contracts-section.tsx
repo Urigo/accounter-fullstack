@@ -77,7 +77,7 @@ export function ContractsSection({ clientId }: Props) {
   });
 
   const contracts = useMemo(() => {
-    return (data?.contractsByClient ?? []).sort(
+    return [...(data?.contractsByClient ?? [])].sort(
       (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
     );
   }, [data?.contractsByClient]);

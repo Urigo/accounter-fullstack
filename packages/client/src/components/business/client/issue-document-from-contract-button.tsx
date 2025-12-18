@@ -62,6 +62,8 @@ export const IssueDocumentFromContractModal = ({ contractId }: Props): ReactElem
         getFragmentData(NewDocumentDraftFragmentDoc, data.periodicalDocumentDraftsByContracts[0]),
       );
       setDocumentDraft(draft);
+    } else if (data) {
+      setDocumentDraft(undefined);
     }
   }, [data, setDocumentDraft]);
 
@@ -91,7 +93,11 @@ export const IssueDocumentFromContractModal = ({ contractId }: Props): ReactElem
           <AccounterLoader />
         ) : documentDraft ? (
           <EditIssueDocumentContent draft={documentDraft} onApprove={onSubmit} />
-        ) : null}
+        ) : (
+          <div className="text-center p-4 text-muted-foreground">
+            No document draft available to issue for this contract and period.
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
