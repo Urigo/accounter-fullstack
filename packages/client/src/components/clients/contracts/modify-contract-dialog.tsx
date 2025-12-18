@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -118,8 +118,9 @@ interface Props {
 }
 
 export function ModifyContractDialog({ clientId, contract, contractId, onDone }: Props) {
+  const isEditing = useMemo(() => !!contract || !!contractId, [contract, contractId]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState<ContractFormValues | null>(null);
+  const [contractInfo, setContractInfo] = useState<ContractFormValues>(newContractDefaultValues);
   const [newPO, setNewPO] = useState('');
 
   const { updateContract, updating } = useUpdateContract();
@@ -136,7 +137,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
-    defaultValues: contract || newContractDefaultValues,
+    defaultValues: contractInfo,
   });
 
   const addPO = () => {
@@ -159,28 +160,14 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
     );
   };
 
+  // on contract info input, update state
   useEffect(() => {
     if (contract) {
-      setEditingContract(contract);
-      form.reset({
-        startDate: contract.startDate,
-        endDate: contract.endDate,
-        pos: contract.pos,
-        paymentAmount: contract.paymentAmount,
-        paymentCurrency: contract.paymentCurrency,
-        productType: contract.productType,
-        msCloudLink: contract.msCloudLink,
-        billingCycle: contract.billingCycle,
-        subscriptionPlan: contract.subscriptionPlan,
-        isActive: contract.isActive,
-        defaultRemark: contract.defaultRemark,
-        defaultDocumentType: contract.defaultDocumentType,
-        operationsLimit: BigInt(contract.operationsLimit),
-      });
-      setIsDialogOpen(true);
+      setContractInfo(contract);
     }
-  }, [contract, form]);
+  }, [contract]);
 
+  // on fetched contract data, update state
   useEffect(() => {
     if (fetchedContractData?.contractsById) {
       const fetchedContract = fetchedContractData.contractsById;
@@ -199,26 +186,50 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         defaultDocumentType: fetchedContract.documentType,
         operationsLimit: BigInt(fetchedContract.operationsLimit),
       };
-      setEditingContract({
+      setContractInfo({
         id: fetchedContract.id,
         ...formData,
       });
-      form.reset(formData);
     }
-  }, [fetchedContractData, form]);
+  }, [fetchedContractData]);
 
-  const handleNew = () => {
-    setEditingContract(null);
-    form.reset(newContractDefaultValues);
-    setIsDialogOpen(true);
-  };
+  // on contractInfo change, reset form
+  const contractInfoString = useMemo(() => {
+    if (contractInfo) {
+      return JSON.stringify(contractInfo);
+    }
+    return null;
+  }, [contractInfo]);
+  useEffect(() => {
+    if (contractInfo) {
+      form.reset({
+        startDate: contractInfo.startDate,
+        endDate: contractInfo.endDate,
+        pos: contractInfo.pos,
+        paymentAmount: contractInfo.paymentAmount,
+        paymentCurrency: contractInfo.paymentCurrency,
+        productType: contractInfo.productType,
+        msCloudLink: contractInfo.msCloudLink,
+        billingCycle: contractInfo.billingCycle,
+        subscriptionPlan: contractInfo.subscriptionPlan,
+        isActive: contractInfo.isActive,
+        defaultRemark: contractInfo.defaultRemark,
+        defaultDocumentType: contractInfo.defaultDocumentType,
+        operationsLimit: BigInt(contractInfo.operationsLimit),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractInfoString, form.reset]); // contractInfoString to avoid object reference issues
 
   const onSubmit = useCallback(
     async (values: ContractFormValues) => {
-      if (editingContract) {
+      if (isEditing) {
+        if (!contractInfo?.id) {
+          return;
+        }
         // Handle contract update
         await updateContract({
-          contractId: editingContract.id!,
+          contractId: contractInfo.id,
           input: {
             amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
             billingCycle: values.billingCycle,
@@ -259,33 +270,30 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         });
       }
       setIsDialogOpen(false);
-      setEditingContract(null);
       onDone?.();
     },
-    [editingContract, onDone, createContract, updateContract, clientId, form],
+    [contractInfo, onDone, createContract, updateContract, clientId, form, isEditing],
   );
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" onClick={handleNew}>
-          {contractId ? (
-            <Edit className="size-4" />
-          ) : (
-            <>
-              <Plus className="size-4 mr-2" />
-              New Contract
-            </>
-          )}
-        </Button>
+        {isEditing ? (
+          <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+            <Edit className="size-5" />
+          </Button>
+        ) : (
+          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+            <Plus className="size-4 mr-2" />
+            New Contract
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingContract ? 'Edit Contract' : 'Create New Contract'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Contract' : 'Create New Contract'}</DialogTitle>
           <DialogDescription>
-            {editingContract
-              ? 'Update contract details'
-              : 'Add a new contract with all required details'}
+            {isEditing ? 'Update contract details' : 'Add a new contract with all required details'}
           </DialogDescription>
         </DialogHeader>
         {fetching ? (
@@ -592,7 +600,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                   Cancel
                 </Button>
                 <Button type="submit" disabled={creating || updating}>
-                  {editingContract ? 'Update Contract' : 'Create Contract'}
+                  {isEditing ? 'Update Contract' : 'Create Contract'}
                 </Button>
               </DialogFooter>
             </form>
