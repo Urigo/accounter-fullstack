@@ -2328,14 +2328,12 @@
         "amount": {
           "type": "number",
           "description": "Amount",
-          "examples": [354],
-          "minimum": 0
+          "examples": [354]
         },
         "amountTotal": {
           "type": "number",
           "description": "Total amount",
-          "examples": [354],
-          "minimum": 0
+          "examples": [354]
         },
         "catalogNum": {
           "type": "string",
@@ -2362,8 +2360,7 @@
         "price": {
           "type": "number",
           "description": "Item price",
-          "examples": [300],
-          "minimum": 0
+          "examples": [300]
         },
         "quantity": {
           "type": "number",
