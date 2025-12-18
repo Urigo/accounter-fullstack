@@ -92,10 +92,11 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
   });
 
   const onSubmit = useCallback(
-    (data: { drafts: PreviewDocumentInput[] }) => {
-      issueDocuments({
+    async (data: { drafts: PreviewDocumentInput[] }) => {
+      await issueDocuments({
         generateDocumentsInfo: data.drafts,
       });
+      setIsDialogOpen(false);
     },
     [issueDocuments],
   );
