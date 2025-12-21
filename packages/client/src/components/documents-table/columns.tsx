@@ -10,6 +10,7 @@ import {
   Debtor,
   Description,
   Files,
+  Remarks,
   Serial,
   TypeCell,
   Vat,
@@ -22,6 +23,8 @@ import {
     documentType
     image
     file
+    description
+    remarks
     charge {
       id
     }
@@ -212,10 +215,18 @@ export const columns: ColumnDef<DocumentsTableRowType>[] = [
   },
   {
     id: 'description',
-    accessorKey: 'issuedDocumentInfo.originalDocument.income',
+    accessorKey: 'description',
     header: 'Description',
     cell: ({ row }) => {
       return <Description document={row.original} />;
+    },
+  },
+  {
+    id: 'remarks',
+    accessorKey: 'remarks',
+    header: 'Remarks',
+    cell: ({ row }) => {
+      return <Remarks document={row.original} />;
     },
   },
   {

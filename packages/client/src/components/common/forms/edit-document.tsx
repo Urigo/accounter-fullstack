@@ -20,6 +20,8 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
       image
       file
       documentType
+      description
+      remarks
       __typename
       ... on FinancialDocument {
         vat {

@@ -80,7 +80,17 @@ export function RecentBusinessDocs({
         .filter((row): row is RowType => !!row) ?? [],
     [data?.recentDocumentsByBusiness],
   );
-  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file', 'edit'];
+  const limitedColumns = [
+    'date',
+    'amount',
+    'vat',
+    'type',
+    'serial',
+    'description',
+    'remarks',
+    'file',
+    'edit',
+  ];
   const table = useReactTable<RowType>({
     data: rows,
     columns: columns.filter(
