@@ -68,7 +68,7 @@ export function RecentBusinessDocs({
       ) ?? [],
     [data?.recentDocumentsByBusiness],
   );
-  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file'];
+  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file', 'edit'];
   const table = useReactTable<RowType>({
     data: rows,
     columns: columns.filter(
