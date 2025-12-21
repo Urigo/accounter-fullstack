@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactElement } from 'react';
-import { Drawer } from '@mantine/core';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button.js';
+import { Drawer, DrawerContent, DrawerHeader } from '@/components/ui/drawer.js';
 
 export interface PopUpDrawerProps {
   ButtonDisplay?: ReactElement;
@@ -22,28 +24,26 @@ export const PopUpDrawer = ({
   title,
   withOverlay = false,
   withCloseButton = true,
-  lockScroll = false,
   opened = false,
   onClose = (): void => {
     return;
   },
-  padding,
-  modalSize,
 }: PopUpDrawerProps): ReactElement => {
   return (
-    <Drawer
-      className="overflow-y-auto outline outline-2 outline-indigo-300"
-      lockScroll={lockScroll}
-      withCloseButton={withCloseButton}
-      withOverlay={withOverlay}
-      position={position}
-      opened={opened}
-      onClose={onClose}
-      title={title}
-      padding={padding}
-      size={modalSize}
-    >
-      {children}
+    <Drawer direction={position} open={opened} onClose={onClose} modal={false}>
+      <DrawerContent asChild withOverlay={withOverlay}>
+        <div>
+          <DrawerHeader className="flex flex-row justify-between">
+            {title}
+            {withCloseButton && (
+              <Button size="icon" className="size-6" variant="ghost" onClick={onClose}>
+                <X className="size-4 text-gray-500" />
+              </Button>
+            )}
+          </DrawerHeader>
+          <div className="mx-auto w-full px-4 pb-4">{children}</div>
+        </div>
+      </DrawerContent>
     </Drawer>
   );
 };
