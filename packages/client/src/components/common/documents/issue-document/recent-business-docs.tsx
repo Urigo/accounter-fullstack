@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import {
@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../ui/table.jsx';
+import { EditDocumentModal } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -53,6 +54,7 @@ export function RecentBusinessDocs({
   linkedDocumentIds,
   limit,
 }: RecentBusinessDocsProps) {
+  const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [{ data, fetching }] = useQuery({
     query: RecentBusinessIssuedDocumentsDocument,
     variables: {
@@ -63,12 +65,22 @@ export function RecentBusinessDocs({
 
   const rows = useMemo(
     (): RowType[] =>
-      data?.recentDocumentsByBusiness?.map(
-        rawDocument => getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument) as RowType,
-      ) ?? [],
+      data?.recentDocumentsByBusiness
+        ?.map(rawDocument => {
+          const doc = getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument);
+          if (!doc) {
+            return null;
+          }
+          return {
+            ...(doc as RowType),
+            onUpdate: () => {},
+            editDocument: () => setEditDocumentId(doc.id),
+          };
+        })
+        .filter((row): row is RowType => !!row) ?? [],
     [data?.recentDocumentsByBusiness],
   );
-  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file'];
+  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'description', 'file', 'edit'];
   const table = useReactTable<RowType>({
     data: rows,
     columns: columns.filter(
@@ -132,6 +144,11 @@ export function RecentBusinessDocs({
           </Table>
         )}
       </CardContent>
+      <EditDocumentModal
+        documentId={editDocumentId}
+        onDone={(): void => setEditDocumentId(undefined)}
+        onChange={() => {}}
+      />
     </Card>
   );
 }

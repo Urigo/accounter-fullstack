@@ -1,6 +1,6 @@
 import { useCallback, useState, type ComponentProps, type ReactElement } from 'react';
 import { CircleX } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import { DocumentType } from '../../../gql/graphql.js';
 import { useCloseDocument } from '../../../hooks/use-close-document.js';
 import { Button } from '../../ui/button.js';
@@ -31,24 +31,36 @@ export function CloseDocumentButton({
         onConfirm={onFinallyClose}
         title="Are you sure you want to close this document?"
       >
-        <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
-          <CircleX className="size-5" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
+              <CircleX className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Close Document</p>
+          </TooltipContent>
+        </Tooltip>
       </ConfirmationModal>
     );
   }
 
   return (
     <>
-      <Tooltip label="Close Document">
-        <Button
-          className="size-7.5 text-red-600"
-          variant="ghost"
-          {...props}
-          onClick={() => setOpen(true)}
-        >
-          <CircleX className="size-5" />
-        </Button>
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            className="size-7.5 text-red-600"
+            variant="ghost"
+            {...props}
+            onClick={() => setOpen(true)}
+          >
+            <CircleX className="size-5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Close Document</p>
+        </TooltipContent>
       </Tooltip>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">
