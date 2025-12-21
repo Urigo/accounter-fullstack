@@ -272,6 +272,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           isReviewed: true,
           allocationNumber: fields.allocationNumber ?? null,
           exchangeRateOverride: fields.exchangeRateOverride ?? null,
+          description: fields.description ?? null,
+          remarks: fields.remarks ?? null,
         };
         const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
         if (!res || res.length === 0) {
@@ -360,6 +362,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           allocationNumber: record.allocationNumber ?? null,
           exchangeRateOverride: record.exchangeRateOverride ?? null,
           fileHash: null,
+          description: record.description ?? null,
+          remarks: record.remarks ?? null,
         };
         const res = await injector
           .get(DocumentsProvider)

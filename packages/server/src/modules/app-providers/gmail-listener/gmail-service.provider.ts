@@ -266,6 +266,7 @@ export class GmailServiceProvider {
         currency: draft.currency,
         vat: validateNumber(draft.vatAmount),
         allocationNumber: draft.allocationNumber ?? null,
+        description: draft.description ?? null,
       };
     } catch (e) {
       const message = 'Error extracting OCR data from document';
@@ -392,6 +393,7 @@ export class GmailServiceProvider {
   private async handleDocument(
     doc: Required<EmailDocument>,
     chargeId: string,
+    remarks: string,
     messageId?: string,
     businessId?: string,
   ) {
@@ -429,7 +431,7 @@ export class GmailServiceProvider {
 
       // insert to DB
       const [document] = await this.documentsProvider.insertDocuments({
-        document: [documentToUpload],
+        document: [{ ...documentToUpload, remarks }],
       });
 
       if (!document) {
@@ -693,10 +695,11 @@ export class GmailServiceProvider {
           return;
         }
 
+        const userDescription = `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`;
         const charge = await this.chargesProvider
           .generateCharge({
             ownerId: this.env.authorization.adminBusinessId,
-            userDescription: `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`,
+            userDescription,
           })
           .catch(e => {
             throw new Error(`Error generating charge for email id=${message.id}: ${e}`);
@@ -708,7 +711,13 @@ export class GmailServiceProvider {
 
         await Promise.all(
           extractedDocuments.map(async doc =>
-            this.handleDocument(doc, charge.id, message.id ?? undefined, business?.id),
+            this.handleDocument(
+              doc,
+              charge.id,
+              userDescription,
+              message.id ?? undefined,
+              business?.id,
+            ),
           ),
         );
 

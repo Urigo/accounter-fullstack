@@ -169,6 +169,8 @@ export async function uploadDeelInvoice(
       allocationNumber: null,
       exchangeRateOverride: null,
       fileHash,
+      description: match.id,
+      remarks: match.breakdown_others,
     };
 
     // upload the document

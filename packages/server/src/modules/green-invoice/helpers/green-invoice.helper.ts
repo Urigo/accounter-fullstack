@@ -1159,6 +1159,8 @@ export async function insertNewDocumentFromGreenInvoice(
       allocationNumber: null, // TODO: add allocation number from GreenInvoice API
       exchangeRateOverride: null,
       fileHash,
+      remarks: greenInvoiceDoc.remarks || null,
+      description: greenInvoiceDoc.description || null,
     };
 
     const newDocumentResponse = await injector

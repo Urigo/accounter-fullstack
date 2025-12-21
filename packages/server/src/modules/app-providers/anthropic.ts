@@ -6,7 +6,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '../../shared/enums.js';
 
 const documentDataSchema = z.object({
-  type: z.nativeEnum(DocumentType).nullable().describe('The type of financial document'),
+  type: z.enum(DocumentType).nullable().describe('The type of financial document'),
   issuer: z.string().nullable().describe('Legal name of the organization that issued the document'),
   recipient: z
     .string()
@@ -16,7 +16,7 @@ const documentDataSchema = z.object({
     .number()
     .nullable()
     .describe('Total monetary amount including taxes and all charges'),
-  currency: z.nativeEnum(Currency).nullable().describe('ISO 4217 currency code'),
+  currency: z.enum(Currency).nullable().describe('ISO 4217 currency code'),
   vatAmount: z
     .number()
     .nullable()
@@ -38,6 +38,10 @@ const documentDataSchema = z.object({
     .describe(
       'Should be empty if no VAT amount. Unique document 9-digits allocation number (מספר הקצאה). Usually last 9 digits of a longer number.',
     ),
+  description: z
+    .string()
+    .nullable()
+    .describe('Additional description or remarks found on the document'),
 });
 
 type DocumentData = z.infer<typeof documentDataSchema>;
@@ -99,6 +103,7 @@ export class AnthropicProvider {
                         - Monetary amounts (total and VAT)
                         - Date and reference numbers
                         - Allocation number (if VAT exists and applicable)
+                        - Description or remarks
 
                         Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
             },

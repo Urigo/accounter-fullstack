@@ -34,6 +34,7 @@ export type OcrData = {
   currency: Currency | null;
   vat: number | null;
   allocationNumber: string | null;
+  description: string | null;
 };
 
 export async function getOcrData(
@@ -62,6 +63,7 @@ export async function getOcrData(
       currency: null,
       vat: null,
       allocationNumber: null,
+      description: null,
     };
   }
 
@@ -89,6 +91,7 @@ export async function getOcrData(
     currency: draft.currency,
     vat: validateNumber(draft.vatAmount),
     allocationNumber: draft.allocationNumber ?? null,
+    description: draft.description ?? null,
   };
 }
 
@@ -161,6 +164,8 @@ export function getDocumentFromUrlsAndOcrData(
     allocationNumber: ocrData.allocationNumber,
     exchangeRateOverride: null,
     fileHash: fileHash?.toString() ?? null,
+    description: ocrData.description,
+    remarks: null,
     ...sides,
   };
 

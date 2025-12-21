@@ -64,6 +64,8 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     exchange_rate_override: null,
     file_hash: null,
     vat_report_date_override: null,
+    description: 'INV-001',
+    remarks: null,
   };
 
   return { ...defaultDocument, ...overrides };
