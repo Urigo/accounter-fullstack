@@ -56,7 +56,6 @@ function DrawerContent({
           className,
         )}
         {...props}
-        asChild
       >
         {children}
       </DrawerPrimitive.Content>
