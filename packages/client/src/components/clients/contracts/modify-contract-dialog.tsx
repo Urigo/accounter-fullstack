@@ -125,13 +125,11 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone, d
     const isDuplicating = duplicate === true && hasSourceContract;
     const isEditing = hasSourceContract && !isDuplicating;
     return { isEditing, isDuplicating };
-  }, [contract, contractId]);
+  }, [contract, contractId, duplicate]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deactivateOriginal, setDeactivateOriginal] = useState(false);
   const [contractInfo, setContractInfo] = useState<ContractFormValues>(newContractDefaultValues);
   const [newPO, setNewPO] = useState('');
-
-  console.log('ModifyContractDialog render', { isEditing, isDuplicating, contractId });
 
   const { updateContract, updating } = useUpdateContract();
   const { createContract, creating } = useCreateContract();
@@ -258,14 +256,7 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone, d
               remarks: values.defaultRemark,
               startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
               operationsLimit: values.operationsLimit,
-            },
-          });
-          console.log('Duplicated contract from', { id: contractInfo.id, deactivateOriginal });
-          // Handle contract update
-          await updateContract({
-            contractId: contractInfo.id,
-            input: {
-              isActive: !deactivateOriginal,
+              deactivateContracts: deactivateOriginal ? [contractInfo.id] : undefined,
             },
           });
         } else {

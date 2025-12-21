@@ -73,6 +73,13 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           startDate: input.startDate,
           operationsLimit: input.operationsLimit?.toString(),
         };
+        if (input.deactivateContracts && input.deactivateContracts.length > 0) {
+          await Promise.all(
+            input.deactivateContracts.map(contractId =>
+              injector.get(ContractsProvider).updateContract({ contractId, isActive: false }),
+            ),
+          );
+        }
         return injector.get(ContractsProvider).createContract(params);
       } catch (e) {
         console.error('Error creating contract', e);
@@ -84,18 +91,18 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         const params: IUpdateContractParams = {
           contractId,
           amount: input.amount?.raw,
-          billing_cycle: input.billingCycle,
-          client_id: input.clientId,
+          billingCycle: input.billingCycle,
+          clientId: input.clientId,
           currency: input.amount?.currency,
-          document_type: input.documentType,
-          end_date: input.endDate,
-          is_active: input.isActive,
-          ms_cloud: input.msCloud?.toString(),
+          documentType: input.documentType,
+          endDate: input.endDate,
+          isActive: input.isActive,
+          msCloud: input.msCloud?.toString(),
           plan: input.plan,
           product: input.product,
-          purchase_orders: input.purchaseOrders?.length ? [...input.purchaseOrders] : undefined,
+          purchaseOrders: input.purchaseOrders ? [...input.purchaseOrders] : undefined,
           remarks: input.remarks,
-          start_date: input.startDate,
+          startDate: input.startDate,
           operationsLimit: input.operationsLimit?.toString(),
         };
         return injector.get(ContractsProvider).updateContract(params);

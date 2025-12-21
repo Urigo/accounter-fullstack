@@ -46,19 +46,19 @@ const updateContract = sql<IUpdateContractQuery>`
       UPDATE accounter_schema.clients_contracts
       SET
       client_id = COALESCE(
-        $client_id,
+        $clientId,
         client_id
       ),
       purchase_orders = COALESCE(
-        $purchase_orders,
+        $purchaseOrders,
         purchase_orders
       ),
       start_date = COALESCE(
-        $start_date,
+        $startDate,
         start_date
       ),
       end_date = COALESCE(
-        $end_date,
+        $endDate,
         end_date
       ),
       remarks = COALESCE(
@@ -66,7 +66,7 @@ const updateContract = sql<IUpdateContractQuery>`
         remarks
       ),
       document_type = COALESCE(
-        $document_type,
+        $documentType,
         document_type
       ),
       amount = COALESCE(
@@ -78,7 +78,7 @@ const updateContract = sql<IUpdateContractQuery>`
         currency
       ),
       billing_cycle = COALESCE(
-        $billing_cycle,
+        $billingCycle,
         billing_cycle
       ),
       product = COALESCE(
@@ -90,11 +90,11 @@ const updateContract = sql<IUpdateContractQuery>`
         plan
       ),
       is_active = COALESCE(
-        $is_active,
+        $isActive,
         is_active
       ),
       ms_cloud = COALESCE(
-        $ms_cloud,
+        $msCloud,
         ms_cloud
       ),
       operations_count = COALESCE(

@@ -66,6 +66,7 @@ export default gql`
     msCloud: URL
     isActive: Boolean!
     operationsLimit: BigInt
+    deactivateContracts: [UUID!]
   }
 
   " input for updating a contract "
