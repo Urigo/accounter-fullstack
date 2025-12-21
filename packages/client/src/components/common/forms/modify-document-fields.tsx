@@ -361,7 +361,7 @@ export const ModifyDocumentFields = ({
           <FormItem>
             <FormLabel>Remarks</FormLabel>
             <FormControl>
-              <Input {...field} value={field.value?.toString()} />
+              <Input {...field} value={field.value ?? ''} />
             </FormControl>
             <FormMessage />
           </FormItem>
