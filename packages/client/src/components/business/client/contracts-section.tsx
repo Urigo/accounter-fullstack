@@ -138,6 +138,12 @@ function ContractCard({
             contract={convertContractDataToFormValues(contract)}
             onDone={refetch}
           />
+          <ModifyContractDialog
+            clientId={clientId}
+            contract={convertContractDataToFormValues(contract)}
+            onDone={refetch}
+            duplicate
+          />
           <IssueDocumentFromContractModal contractId={contract.id} />
         </div>
       </div>

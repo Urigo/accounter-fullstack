@@ -93,7 +93,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
           ms_cloud: input.msCloud?.toString(),
           plan: input.plan,
           product: input.product,
-          purchase_orders: [...input.purchaseOrders],
+          purchase_orders: input.purchaseOrders?.length ? [...input.purchaseOrders] : undefined,
           remarks: input.remarks,
           start_date: input.startDate,
           operationsLimit: input.operationsLimit?.toString(),

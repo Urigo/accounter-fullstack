@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Edit, Plus, X } from 'lucide-react';
+import { BookCopy, Edit, Plus, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { z } from 'zod';
@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form.js';
 import { Input } from '@/components/ui/input.js';
+import { Label } from '@/components/ui/label.js';
 import {
   Select,
   SelectContent,
@@ -115,13 +116,22 @@ interface Props {
   contract?: ContractFormValues | null;
   contractId?: string;
   onDone?: () => void;
+  duplicate?: boolean;
 }
 
-export function ModifyContractDialog({ clientId, contract, contractId, onDone }: Props) {
-  const isEditing = useMemo(() => !!contract || !!contractId, [contract, contractId]);
+export function ModifyContractDialog({ clientId, contract, contractId, onDone, duplicate }: Props) {
+  const { isEditing, isDuplicating } = useMemo(() => {
+    const hasSourceContract = !!contract || !!contractId;
+    const isDuplicating = duplicate === true && hasSourceContract;
+    const isEditing = hasSourceContract && !isDuplicating;
+    return { isEditing, isDuplicating };
+  }, [contract, contractId]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deactivateOriginal, setDeactivateOriginal] = useState(false);
   const [contractInfo, setContractInfo] = useState<ContractFormValues>(newContractDefaultValues);
   const [newPO, setNewPO] = useState('');
+
+  console.log('ModifyContractDialog render', { isEditing, isDuplicating, contractId });
 
   const { updateContract, updating } = useUpdateContract();
   const { createContract, creating } = useCreateContract();
@@ -223,28 +233,61 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
 
   const onSubmit = useCallback(
     async (values: ContractFormValues) => {
-      if (isEditing) {
+      if (isDuplicating || isEditing) {
         if (!contractInfo?.id) {
           return;
         }
-        // Handle contract update
-        await updateContract({
-          contractId: contractInfo.id,
-          input: {
-            amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
-            billingCycle: values.billingCycle,
-            documentType: values.defaultDocumentType,
-            endDate: format(new Date(values.endDate), 'yyyy-MM-dd') as TimelessDateString,
-            isActive: values.isActive,
-            msCloud: values.msCloudLink,
-            plan: values.subscriptionPlan,
-            product: values.productType,
-            purchaseOrders: values.pos,
-            remarks: values.defaultRemark,
-            startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
-            operationsLimit: values.operationsLimit,
-          },
-        });
+        if (isDuplicating) {
+          // Handle new contract creation
+          if (!values.billingCycle) {
+            form.setError('billingCycle', { message: 'Billing cycle is required' });
+            return;
+          }
+          await createContract({
+            input: {
+              clientId,
+              amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
+              billingCycle: values.billingCycle,
+              documentType: values.defaultDocumentType,
+              endDate: format(new Date(values.endDate), 'yyyy-MM-dd') as TimelessDateString,
+              isActive: values.isActive,
+              msCloud: values.msCloudLink,
+              plan: values.subscriptionPlan,
+              product: values.productType,
+              purchaseOrders: values.pos,
+              remarks: values.defaultRemark,
+              startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+              operationsLimit: values.operationsLimit,
+            },
+          });
+          console.log('Duplicated contract from', { id: contractInfo.id, deactivateOriginal });
+          // Handle contract update
+          await updateContract({
+            contractId: contractInfo.id,
+            input: {
+              isActive: !deactivateOriginal,
+            },
+          });
+        } else {
+          // Handle contract update
+          await updateContract({
+            contractId: contractInfo.id,
+            input: {
+              amount: { raw: values.paymentAmount, currency: values.paymentCurrency },
+              billingCycle: values.billingCycle,
+              documentType: values.defaultDocumentType,
+              endDate: format(new Date(values.endDate), 'yyyy-MM-dd') as TimelessDateString,
+              isActive: values.isActive,
+              msCloud: values.msCloudLink,
+              plan: values.subscriptionPlan,
+              product: values.productType,
+              purchaseOrders: values.pos,
+              remarks: values.defaultRemark,
+              startDate: format(new Date(values.startDate), 'yyyy-MM-dd') as TimelessDateString,
+              operationsLimit: values.operationsLimit,
+            },
+          });
+        }
       } else {
         // Handle new contract creation
         if (!values.billingCycle) {
@@ -272,7 +315,17 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
       setIsDialogOpen(false);
       onDone?.();
     },
-    [contractInfo, onDone, createContract, updateContract, clientId, form, isEditing],
+    [
+      contractInfo,
+      onDone,
+      createContract,
+      updateContract,
+      clientId,
+      form,
+      isEditing,
+      isDuplicating,
+      deactivateOriginal,
+    ],
   );
 
   return (
@@ -281,6 +334,10 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         {isEditing ? (
           <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
             <Edit className="size-5" />
+          </Button>
+        ) : isDuplicating ? (
+          <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+            <BookCopy className="size-5" />
           </Button>
         ) : (
           <Button size="sm" onClick={() => setIsDialogOpen(true)}>
@@ -293,7 +350,11 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Contract' : 'Create New Contract'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Update contract details' : 'Add a new contract with all required details'}
+            {isEditing
+              ? 'Update contract details'
+              : isDuplicating
+                ? 'Create a new contract based on an existing one'
+                : 'Add a new contract with all required details'}
           </DialogDescription>
         </DialogHeader>
         {fetching ? (
@@ -594,6 +655,15 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone }:
                     </FormItem>
                   )}
                 />
+
+                {isDuplicating && (
+                  <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Deactivate Original Contract</Label>
+                    </div>
+                    <Switch checked={deactivateOriginal} onCheckedChange={setDeactivateOriginal} />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
