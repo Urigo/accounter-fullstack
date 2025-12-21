@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { Button } from '../ui/button.js';
+import { Tooltip } from './tooltip.js';
 
 interface Props {
   src: string;
@@ -91,7 +91,7 @@ export function ImageMagnifier({
         }}
       />
       <div className="absolute top-10 right-10 flex flex-row gap-1">
-        <Tooltip label="Increase zoom">
+        <Tooltip content="Increase zoom">
           <Button
             variant="ghost"
             size="icon"
@@ -101,7 +101,7 @@ export function ImageMagnifier({
             <ZoomIn className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip label="Decrease zoom">
+        <Tooltip content="Decrease zoom">
           <Button
             variant="ghost"
             size="icon"
@@ -111,7 +111,7 @@ export function ImageMagnifier({
             <ZoomOut className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip label="Expand zoom area">
+        <Tooltip content="Expand zoom area">
           <Button
             variant="ghost"
             size="icon"
@@ -123,7 +123,7 @@ export function ImageMagnifier({
             <ZoomIn className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip label="Reduce zoom area">
+        <Tooltip content="Reduce zoom area">
           <Button
             variant="ghost"
             size="icon"

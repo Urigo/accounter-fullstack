@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, NumberInput, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, NumberInput, Overlay, Select } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripExpenseCategories,
@@ -9,6 +9,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categorize-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';
+import { Tooltip } from '../../index.js';
 
 export function CategorizeExpense(props: {
   businessTripId: string;
@@ -21,7 +22,7 @@ export function CategorizeExpense(props: {
 
   return (
     <>
-      <Tooltip label="Categorize">
+      <Tooltip content="Categorize">
         <Button
           variant="outline"
           size="icon"

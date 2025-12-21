@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { MapPlus } from 'lucide-react';
-import { Modal, Tooltip } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Button } from '../../ui/button.js';
-import { InsertBusinessTrip } from '../index.js';
+import { InsertBusinessTrip, Tooltip } from '../index.js';
 
 interface Props {
   onDone?: () => void;
@@ -18,7 +18,7 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
   }
   return (
     <>
-      <Tooltip label="Add New Business Trip">
+      <Tooltip content="Add New Business Trip">
         <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
           <MapPlus className="size-5" />
         </Button>

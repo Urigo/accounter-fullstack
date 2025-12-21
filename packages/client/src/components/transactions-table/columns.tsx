@@ -230,7 +230,10 @@ export const actionsColumn: ColumnDef<TransactionsTableRowType> = {
     if (row.original.enableEdit) {
       return (
         <>
-          <EditMiniButton onClick={() => row.original.editTransaction(row.original.id)} />
+          <EditMiniButton
+            onClick={() => row.original.editTransaction(row.original.id)}
+            tooltip="Edit Transaction"
+          />
           <InsertMiscExpenseModal
             chargeId={row.original.chargeId}
             transactionId={row.original.id}

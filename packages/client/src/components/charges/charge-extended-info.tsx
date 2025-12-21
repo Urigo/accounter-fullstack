@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Accordion, Box, Collapse, Loader, Tooltip } from '@mantine/core';
+import { Accordion, Box, Collapse, Loader } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   ChargeLedgerRecordsTableFieldsFragmentDoc,
@@ -22,6 +22,7 @@ import {
   BusinessTripSummarizedReport,
   PreviewDocumentModal,
   RegenerateLedgerRecordsButton,
+  Tooltip,
 } from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
@@ -367,7 +368,7 @@ export function ChargeExtendedInfo({
                   <div className="flex flex-row items-center gap-2 justify-between w-full">
                     <div className="flex flex-row items-center gap-2 justify-start">
                       {hasDocs && (
-                        <Tooltip label="Documents Gallery">
+                        <Tooltip content="Documents Gallery">
                           <Button
                             onClick={event => {
                               event.stopPropagation();

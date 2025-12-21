@@ -1,10 +1,10 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
@@ -49,7 +49,7 @@ export const TrialBalanceReport = (): ReactElement => {
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
-        <Tooltip label="Expand all accounts">
+        <Tooltip content="Expand all accounts">
           <Button
             variant="outline"
             size="icon"

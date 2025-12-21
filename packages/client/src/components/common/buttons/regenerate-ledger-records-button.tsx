@@ -1,10 +1,9 @@
 import type { ComponentProps, ReactElement } from 'react';
 import { RefreshCcwDot } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { useRegenerateLedgerRecords } from '../../../hooks/use-regenerate-ledger-records.js';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
-import { ConfirmationModal } from '../index.js';
+import { ConfirmationModal, Tooltip } from '../index.js';
 
 type Props = {
   chargeId: string;
@@ -29,7 +28,7 @@ export function RegenerateLedgerRecordsButton({
       onConfirm={onRegenerate}
       title="Are you sure you want to regenerate ledger records?"
     >
-      <Tooltip label="Regenerate Ledger">
+      <Tooltip content="Regenerate Ledger">
         <Button
           variant="outline"
           size="icon"

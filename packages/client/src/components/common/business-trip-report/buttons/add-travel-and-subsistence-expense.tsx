@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, Overlay, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { AddBusinessTripTravelAndSubsistenceExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripTravelAndSubsistenceExpense } from '../../../../hooks/use-add-business-trip-travel-and-subsistence-expense.js';
@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
+import { Tooltip } from '../../index.js';
 import { AddExpenseFields } from './add-expense-fields.jsx';
 
 export function AddTravelAndSubsistenceExpense(props: {
@@ -26,7 +27,7 @@ export function AddTravelAndSubsistenceExpense(props: {
 
   return (
     <>
-      <Tooltip label="Add T&S Expense">
+      <Tooltip content="Add T&S Expense">
         <Button
           variant="outline"
           size="icon"

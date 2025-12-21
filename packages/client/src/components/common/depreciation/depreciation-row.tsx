@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Select, Tooltip } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   AllDepreciationCategoriesDocument,
@@ -18,7 +18,7 @@ import {
 } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { Button } from '../../ui/button.js';
-import { CurrencyInput } from '../index.js';
+import { CurrencyInput, Tooltip } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationTypes } from './index.js';
 
@@ -233,7 +233,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
         )}
       </td>
       <td>
-        <Tooltip label="Edit">
+        <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess || fetchingCategories}
             variant={isEditMode ? 'default' : 'outline'}
@@ -248,7 +248,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
           </Button>
         </Tooltip>
         {isEditMode && (
-          <Tooltip label="Confirm Changes">
+          <Tooltip content="Confirm Changes">
             <Button
               type="submit"
               form={`form ${depreciationRecord.id}`}

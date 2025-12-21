@@ -2,10 +2,11 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Indicator, Table, Tooltip } from '@mantine/core';
+import { Indicator, Table } from '@mantine/core';
 import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
 import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
 import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
@@ -225,10 +226,8 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                 <tr>
                   <th>
                     <Tooltip
-                      multiline
-                      width={220}
-                      transitionProps={{ duration: 200 }}
-                      label={yearlyReports[0]?.rndRelativeToIncome.rule}
+                      content={yearlyReports[0]?.rndRelativeToIncome.rule}
+                      className="max-w-[220px] whitespace-normal"
                     >
                       <p>R&D Expenses out of Income</p>
                     </Tooltip>
@@ -276,10 +275,8 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                 <tr>
                   <th>
                     <Tooltip
-                      multiline
-                      width={220}
-                      transitionProps={{ duration: 200 }}
-                      label={yearlyReports[0]?.localDevelopmentRelativeToRnd.rule}
+                      content={yearlyReports[0]?.localDevelopmentRelativeToRnd.rule}
+                      className="max-w-[220px] whitespace-normal"
                     >
                       <p>Local Development out of R&D</p>
                     </Tooltip>
@@ -327,10 +324,8 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                 <tr>
                   <th>
                     <Tooltip
-                      multiline
-                      width={220}
-                      transitionProps={{ duration: 200 }}
-                      label={yearlyReports[0]?.foreignDevelopmentRelativeToRnd.rule}
+                      content={yearlyReports[0]?.foreignDevelopmentRelativeToRnd.rule}
+                      className="max-w-[220px] whitespace-normal"
                     >
                       <p>Foreign Development out of R&D</p>
                     </Tooltip>

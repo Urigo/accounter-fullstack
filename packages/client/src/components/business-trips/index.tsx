@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Accordion, Container, Tooltip } from '@mantine/core';
+import { Accordion, Container } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsScreenDocument,
@@ -9,7 +9,7 @@ import {
 } from '../../gql/graphql.js';
 import type { FragmentType } from '../../gql/index.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { InsertBusinessTripModal, PrintToPdfButton } from '../common/index.js';
+import { InsertBusinessTripModal, PrintToPdfButton, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Switch } from '../ui/switch.js';
 import { BusinessTripsRow } from './business-trips-row.js';
@@ -62,7 +62,7 @@ export const BusinessTrips = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <InsertBusinessTripModal />
-        <Tooltip label="Toggle business trips validation">
+        <Tooltip content="Toggle business trips validation">
           <div className="flex flex-row items-center gap-x-2">
             <Switch
               checked={shouldValidate ?? false}

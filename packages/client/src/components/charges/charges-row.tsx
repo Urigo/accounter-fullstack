@@ -204,6 +204,7 @@ export const ChargesTableRow = ({
                   event.stopPropagation();
                   setEditCharge(onChange);
                 }}
+                tooltip="Edit Charge"
               />
             )}
             {toggleMergeCharge && (

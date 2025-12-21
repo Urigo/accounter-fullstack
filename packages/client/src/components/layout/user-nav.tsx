@@ -1,12 +1,11 @@
 import { useContext, useState, type JSX } from 'react';
 import { CircleCheckBig, FileDown, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { UserContext } from '@/providers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
-import { ConfirmationModal, LogoutButton, SyncDocumentsModal } from '../common/index.js';
+import { ConfirmationModal, LogoutButton, SyncDocumentsModal, Tooltip } from '../common/index.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { Avatar } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
@@ -65,7 +64,7 @@ export function UserNav(): JSX.Element {
             </Button>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Tooltip label="Pull Green Invoice Documents">
+            <Tooltip content="Pull Green Invoice Documents">
               <Button variant="ghost" size="icon" className="size-7.5" onClick={openPullDocuments}>
                 <FileDown className="size-5" />
               </Button>
@@ -76,7 +75,7 @@ export function UserNav(): JSX.Element {
               onConfirm={executeJobs}
               title="Are you sure you want to manually execute corn jobs?"
             >
-              <Tooltip label="Execute corn jobs">
+              <Tooltip content="Execute corn jobs">
                 <Button variant="ghost" size="icon" className="size-7.5">
                   <CircleCheckBig className="size-5" />
                 </Button>

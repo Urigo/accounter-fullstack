@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Text, Tooltip } from '@mantine/core';
+import { Text } from '@mantine/core';
 import {
   BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc,
   type UpdateBusinessTripTravelAndSubsistenceExpenseInput,
@@ -11,6 +11,7 @@ import { useUpdateBusinessTripTravelAndSubsistenceExpense } from '../../../../ho
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
+import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -99,7 +100,7 @@ export const TravelAndSubsistenceRow = ({
         </Form>
       </td>
       <td>
-        <Tooltip label="Edit">
+        <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess}
             variant={isEditMode ? 'default' : 'outline'}
@@ -114,7 +115,7 @@ export const TravelAndSubsistenceRow = ({
           </Button>
         </Tooltip>
         {isEditMode && (
-          <Tooltip label="Confirm Changes">
+          <Tooltip content="Confirm Changes">
             <Button
               type="submit"
               form={`form ${travelAndSubsistenceExpense.id}`}

@@ -2,14 +2,13 @@ import { useCallback, useContext, useEffect, useState, type ReactElement } from 
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { ROUTES } from '../../router/routes.js';
 import { BusinessHeader } from '../business/business-header.js';
-import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
+import { InsertBusiness, MergeBusinessesButton, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -86,7 +85,7 @@ export const Businesses = (): ReactElement => {
           setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
-        <Tooltip label="Expand all businesses">
+        <Tooltip content="Expand all businesses">
           <Button
             variant="outline"
             size="icon"
