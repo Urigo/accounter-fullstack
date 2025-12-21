@@ -9,5 +9,11 @@ export default {
       "description" TEXT NULL,
     ADD COLUMN
       "remarks" TEXT NULL;
+
+    create trigger update_documents_updated_at
+        after update
+        on accounter_schema.documents
+        for each row
+    execute procedure accounter_schema.update_general_updated_at();
   `,
 } satisfies MigrationExecutor;
