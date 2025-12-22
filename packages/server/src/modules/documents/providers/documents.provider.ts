@@ -108,7 +108,7 @@ const updateDocument = sql<IUpdateDocumentQuery>`
     image_url,
     NULL
   ),
-  modified_at = NOW(),
+  updated_at = NOW(),
   serial_number = COALESCE(
     $serialNumber,
     serial_number,

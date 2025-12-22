@@ -188,7 +188,7 @@ CREATE TABLE accounter_schema.documents (
   file_url TEXT,
   type accounter_schema.document_type DEFAULT 'UNPROCESSED',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  modified_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   serial_number TEXT,
   date DATE,
   total_amount DOUBLE PRECISION,
