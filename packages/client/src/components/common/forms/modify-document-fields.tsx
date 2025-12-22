@@ -339,6 +339,36 @@ export const ModifyDocumentFields = ({
       />
 
       <FormField
+        name="description"
+        control={control}
+        defaultValue={document?.description}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value ?? ''} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        name="remarks"
+        control={control}
+        defaultValue={document?.remarks}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Remarks</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value ?? ''} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
         name="exchangeRateOverride"
         control={control}
         defaultValue={isDocumentProcessed ? document?.exchangeRateOverride : undefined}

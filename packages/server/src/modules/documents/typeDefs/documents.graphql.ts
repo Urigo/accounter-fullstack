@@ -54,6 +54,8 @@ export default gql`
   " represent a link to an external file "
   interface Linkable {
     file: URL
+    description: String
+    remarks: String
   }
 
   " represent a generic document with identifier and a URL "
@@ -67,6 +69,8 @@ export default gql`
     # eslint-disable-next-line @graphql-eslint/no-typename-prefix
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
   }
 
   " document that haven't yet been processed"
@@ -76,6 +80,8 @@ export default gql`
     file: URL
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
   }
 
   " processed non-financial document "
@@ -85,6 +91,8 @@ export default gql`
     file: URL
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
   }
 
   " represent a financial document "
@@ -95,6 +103,8 @@ export default gql`
     vat: FinancialAmount
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
 
     serialNumber: String
     date: TimelessDate
@@ -113,6 +123,8 @@ export default gql`
     vat: FinancialAmount
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
 
     serialNumber: String
     date: TimelessDate
@@ -131,6 +143,8 @@ export default gql`
     vat: FinancialAmount
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
 
     serialNumber: String
     date: TimelessDate
@@ -156,6 +170,8 @@ export default gql`
     isReviewed: Boolean
     allocationNumber: String
     exchangeRateOverride: Float
+    description: String
+    remarks: String
   }
 
   " Invoice receipt document - חשבונית מס קבלה "
@@ -166,6 +182,8 @@ export default gql`
     vat: FinancialAmount
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
 
     serialNumber: String
     date: TimelessDate
@@ -184,6 +202,8 @@ export default gql`
     vat: FinancialAmount
     documentType: DocumentType
     isReviewed: Boolean
+    description: String
+    remarks: String
 
     serialNumber: String
     date: TimelessDate
@@ -210,6 +230,8 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    description: String
+    remarks: String
   }
 
   " result type for updateCharge "
@@ -236,6 +258,8 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    description: String
+    remarks: String
   }
 
   " result type for insertDocument "

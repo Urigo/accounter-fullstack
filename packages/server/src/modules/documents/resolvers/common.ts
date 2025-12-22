@@ -45,6 +45,8 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
   },
   isReviewed: documentRoot => documentRoot.is_reviewed,
   documentType: documentRoot => normalizeDocumentType(documentRoot.type),
+  description: documentRoot => documentRoot.description,
+  remarks: documentRoot => documentRoot.remarks,
 };
 
 export const commonFinancialDocumentsFields:

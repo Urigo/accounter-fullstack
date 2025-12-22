@@ -7,7 +7,12 @@ type Props = {
 
 export const Description = ({ document }: Props): ReactElement => {
   let description = '';
-  if ('issuedDocumentInfo' in document && document.issuedDocumentInfo?.originalDocument?.income) {
+  if (document.description) {
+    description = document.description;
+  } else if (
+    'issuedDocumentInfo' in document &&
+    document.issuedDocumentInfo?.originalDocument?.income
+  ) {
     const { income } = document.issuedDocumentInfo.originalDocument;
     description = income.map(item => item.description).join(', ');
   }

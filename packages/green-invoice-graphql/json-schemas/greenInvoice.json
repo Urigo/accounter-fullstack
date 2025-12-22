@@ -2837,8 +2837,7 @@
     "DocumentAmount": {
       "description": "Total amount, in requested currency (including the VAT, Discount & Rounding)",
       "type": "number",
-      "examples": [354],
-      "minimum": 0
+      "examples": [354]
     },
     "DocumentAmountDueVat": {
       "description": "Amount due VAT - Amount before VAT, and before rounding & discount (if requested)",
@@ -2867,8 +2866,7 @@
     "DocumentAmountLocal": {
       "description": "Amount in local currency",
       "type": "number",
-      "examples": [300],
-      "minimum": 0
+      "examples": [300]
     },
     "DocumentAmountOpened": {
       "description": "Amount that is still left to be paid, exists only in payment request documents",

@@ -4,6 +4,7 @@ export * from './date.js';
 export * from './debtor.js';
 export * from './description.js';
 export * from './files.js';
+export * from './remarks.js';
 export * from './serial.js';
 export * from './type.js';
 export * from './vat.js';
