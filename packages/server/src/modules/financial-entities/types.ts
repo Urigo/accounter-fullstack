@@ -1,5 +1,5 @@
 export type * from './__generated__/types.js';
-export type { Json, pcn874_record_type, DateOrString } from './__generated__/businesses.types.js';
+export type { Json, pcn874_record_type } from './__generated__/businesses.types.js';
 export type * from './__generated__/businesses.types.js';
 export type * from './__generated__/businesses-operation.types.js';
 export type * from './__generated__/admin-businesses.types.js';

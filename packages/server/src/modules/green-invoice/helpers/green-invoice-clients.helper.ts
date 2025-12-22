@@ -134,9 +134,9 @@ function pickGreenInvoiceClientFields(
     /** Street address */
     address: businessFields.address ?? undefined,
     /** City name */
-    //   city: businessFields.city,
+    city: businessFields.city,
     /** Zip/postal code */
-    //   zip: businessFields.zip_code,
+    zip: businessFields.zipCode,
     country: businessFields.country
       ? countryCodeToGreenInvoiceCountry(businessFields.country as CountryCode)
       : undefined,

@@ -43,6 +43,8 @@ export function createBusiness(
     name: overrides?.id ?? defaultId,
     hebrewName: null,
     address: null,
+    city: null,
+    zipCode: null,
     email: null,
     website: null,
     phoneNumber: null,

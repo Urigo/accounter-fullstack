@@ -32,6 +32,8 @@ export default gql`
     governmentId: String
     name: String!
     address: String
+    city: String
+    zipCode: String
 
     hebrewName: String
     email: String
@@ -111,6 +113,8 @@ export default gql`
     country: CountryCode
     hebrewName: String
     address: String
+    city: String
+    zipCode: String
     email: String
     website: String
     phoneNumber: String
@@ -135,6 +139,8 @@ export default gql`
     country: CountryCode
     hebrewName: String
     address: String
+    city: String
+    zipCode: String
     email: String
     website: String
     phoneNumber: String
