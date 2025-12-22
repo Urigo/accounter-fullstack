@@ -1,5 +1,68 @@
 # @accounter-toolkit/hashavshevet-mesh
 
+## 0.2.9
+
+### Patch Changes
+
+- [#2765](https://github.com/Urigo/accounter-fullstack/pull/2765)
+  [`cbf2717`](https://github.com/Urigo/accounter-fullstack/commit/cbf27175d72499a6f7509eecee351f4831227f12)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.20` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.20)
+    (from `0.108.19`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.18)
+    (from `0.106.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.19` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.19)
+    (from `0.109.18`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.18)
+    (from `0.106.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.18)
+    (from `0.104.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.104.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.104.17)
+    (from `0.104.16`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.17)
+    (from `0.104.16`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.17` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.17)
+    (from `0.104.16`, in `dependencies`)
+
+- [#2778](https://github.com/Urigo/accounter-fullstack/pull/2778)
+  [`eb4e853`](https://github.com/Urigo/accounter-fullstack/commit/eb4e853581ac5cded01c5c804ee4894f9fb7dff6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-mesh/config@0.108.21` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.108.21)
+    (from `0.108.20`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/cross-helpers@0.4.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.11)
+    (from `0.4.10`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/http@0.106.19` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.106.19)
+    (from `0.106.18`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/json-schema@0.109.20` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.109.20)
+    (from `0.109.19`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/runtime@0.106.19` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.106.19)
+    (from `0.106.18`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/store@0.104.19` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.104.19)
+    (from `0.104.18`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/transform-resolvers-composition@0.104.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transform-resolvers-composition/v/0.104.18)
+    (from `0.104.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/types@0.104.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.104.18)
+    (from `0.104.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-mesh/utils@0.104.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.104.18)
+    (from `0.104.17`, in `dependencies`)
+
 ## 0.2.8
 
 ### Patch Changes
@@ -35,8 +98,8 @@
 - [#2654](https://github.com/Urigo/accounter-fullstack/pull/2654)
   [`7fef068`](https://github.com/Urigo/accounter-fullstack/commit/7fef0682c7316153ae5ffde42f97ce7284dd4c9a)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`graphql@16.12.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.12.0)
-    (from `16.11.0`, in `dependencies`)
+  - Updated dependency [`graphql@16.12.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.12.0) (from
+    `16.11.0`, in `dependencies`)
 
 - [#2685](https://github.com/Urigo/accounter-fullstack/pull/2685)
   [`80402e0`](https://github.com/Urigo/accounter-fullstack/commit/80402e07198a7c6bb78aa9402df7ea4ead779411)
@@ -248,8 +311,8 @@
 - [#2086](https://github.com/Urigo/accounter-fullstack/pull/2086)
   [`5308911`](https://github.com/Urigo/accounter-fullstack/commit/530891185ab33f53299fa7fc8c623104e1b1dc94)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
-  - Updated dependency [`graphql@16.11.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.11.0)
-    (from `16.10.0`, in `dependencies`)
+  - Updated dependency [`graphql@16.11.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.11.0) (from
+    `16.10.0`, in `dependencies`)
 
 - [#2186](https://github.com/Urigo/accounter-fullstack/pull/2186)
   [`4797e93`](https://github.com/Urigo/accounter-fullstack/commit/4797e9366fae9393252dfdcf68b862f0991a8761)
@@ -1213,8 +1276,8 @@
 - [#1496](https://github.com/Urigo/accounter-fullstack/pull/1496)
   [`36f1255`](https://github.com/Urigo/accounter-fullstack/commit/36f12555e4f68484f247e1677dd794b2dc2fcb59)
   Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
-  - Updated dependency [`graphql@16.10.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.10.0)
-    (from `16.9.0`, in `dependencies`)
+  - Updated dependency [`graphql@16.10.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.10.0) (from
+    `16.9.0`, in `dependencies`)
 
 ## 0.2.2
 
@@ -1531,8 +1594,8 @@
     [`@graphql-mesh/config@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.3)
     (from `0.99.0`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.3)
-    (from `0.98.0`, in `dependencies`)
+    [`@graphql-mesh/http@0.98.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.3) (from
+    `0.98.0`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.99.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.4)
     (from `0.99.2`, in `dependencies`)
@@ -1559,8 +1622,8 @@
     [`@graphql-mesh/config@0.99.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.4)
     (from `0.99.3`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.4)
-    (from `0.98.3`, in `dependencies`)
+    [`@graphql-mesh/http@0.98.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.4) (from
+    `0.98.3`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.5)
     (from `0.99.4`, in `dependencies`)
@@ -1594,8 +1657,8 @@
     [`@graphql-mesh/config@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.7)
     (from `0.99.6`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.6)
-    (from `0.98.4`, in `dependencies`)
+    [`@graphql-mesh/http@0.98.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.6) (from
+    `0.98.4`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.99.6)
     (from `0.99.5`, in `dependencies`)
@@ -1622,8 +1685,8 @@
     [`@graphql-mesh/config@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.8)
     (from `0.99.7`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.7)
-    (from `0.98.6`, in `dependencies`)
+    [`@graphql-mesh/http@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.7) (from
+    `0.98.6`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/runtime@0.98.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.7)
     (from `0.98.6`, in `dependencies`)
@@ -1635,8 +1698,8 @@
     [`@graphql-mesh/config@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.99.9)
     (from `0.99.8`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.8)
-    (from `0.98.7`, in `dependencies`)
+    [`@graphql-mesh/http@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.98.8) (from
+    `0.98.7`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/runtime@0.98.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.98.8)
     (from `0.98.7`, in `dependencies`)
@@ -1648,8 +1711,8 @@
     [`@graphql-mesh/config@0.100.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.3)
     (from `0.99.9`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.3)
-    (from `0.98.8`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.3) (from
+    `0.98.8`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.4)
     (from `0.99.6`, in `dependencies`)
@@ -1683,8 +1746,8 @@
     [`@graphql-mesh/config@0.100.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.5)
     (from `0.100.3`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.5)
-    (from `0.99.3`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.5` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.5) (from
+    `0.99.3`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.6)
     (from `0.100.4`, in `dependencies`)
@@ -1725,8 +1788,8 @@
     [`@graphql-mesh/config@0.100.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.6)
     (from `0.100.5`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.6)
-    (from `0.99.5`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.6` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.6) (from
+    `0.99.5`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.8)
     (from `0.100.7`, in `dependencies`)
@@ -1756,8 +1819,8 @@
     [`@graphql-mesh/cross-helpers@0.4.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.3)
     (from `0.4.2`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.7)
-    (from `0.99.6`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.7` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.7) (from
+    `0.99.6`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.9)
     (from `0.100.8`, in `dependencies`)
@@ -1784,8 +1847,8 @@
     [`@graphql-mesh/config@0.100.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.8)
     (from `0.100.7`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.8)
-    (from `0.99.7`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.8` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.8) (from
+    `0.99.7`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.11` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.11)
     (from `0.100.9`, in `dependencies`)
@@ -1814,8 +1877,8 @@
     [`@graphql-mesh/config@0.100.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.100.9)
     (from `0.100.8`, in `dependencies`)
   - Updated dependency
-    [`@graphql-mesh/http@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.9)
-    (from `0.99.8`, in `dependencies`)
+    [`@graphql-mesh/http@0.99.9` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.99.9) (from
+    `0.99.8`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.100.12` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.100.12)
     (from `0.100.10-alpha-20240602174415-2f77f99bd10ec04faef9e942cf0bfd3340b80fca`, in
@@ -2125,14 +2188,14 @@
     [`@graphql-mesh/runtime@0.96.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.96.2)
     (to `dependencies`)
   - Added dependency
-    [`@graphql-mesh/store@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.95.2)
-    (to `dependencies`)
+    [`@graphql-mesh/store@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.95.2) (to
+    `dependencies`)
   - Added dependency
-    [`@graphql-mesh/types@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.95.2)
-    (to `dependencies`)
+    [`@graphql-mesh/types@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.95.2) (to
+    `dependencies`)
   - Added dependency
-    [`@graphql-mesh/utils@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.95.2)
-    (to `dependencies`)
+    [`@graphql-mesh/utils@0.95.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.95.2) (to
+    `dependencies`)
 
 - [#187](https://github.com/gilgardosh/accounter-toolkit/pull/187)
   [`46e0b42`](https://github.com/gilgardosh/accounter-toolkit/commit/46e0b42b2bda020601601338d1ddc79d840eb115)
@@ -2256,8 +2319,8 @@
   [`3faf888`](https://github.com/gilgardosh/accounter-toolkit/commit/3faf8888ef6921878c086490d6dd517e0d5230d3)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
   - Updated dependency
-    [`@graphql-mesh/cli@0.82.25` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cli/v/0.82.25)
-    (from `0.80.1`, in `dependencies`)
+    [`@graphql-mesh/cli@0.82.25` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cli/v/0.82.25) (from
+    `0.80.1`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.37.18` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.37.18)
     (from `0.35.37`, in `dependencies`)
@@ -2298,8 +2361,8 @@
   [`d8590e4`](https://github.com/gilgardosh/accounter-toolkit/commit/d8590e473881e7bd33817d2ee2fdb67141599373)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
   - Updated dependency
-    [`@graphql-mesh/cli@0.78.33` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cli/v/0.78.33)
-    (from `0.78.25`, in `dependencies`)
+    [`@graphql-mesh/cli@0.78.33` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cli/v/0.78.33) (from
+    `0.78.25`, in `dependencies`)
   - Updated dependency
     [`@graphql-mesh/json-schema@0.35.25` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.35.25)
     (from `0.35.19`, in `dependencies`)
