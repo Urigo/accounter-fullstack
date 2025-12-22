@@ -57,7 +57,7 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     serial_number: 'INV-001',
     is_reviewed: false,
     created_at: new Date('2024-01-14T08:00:00Z'),
-    modified_at: new Date('2024-01-14T08:00:00Z'),
+    updated_at: new Date('2024-01-14T08:00:00Z'),
     image_url: null,
     file_url: null,
     allocation_number: null,
