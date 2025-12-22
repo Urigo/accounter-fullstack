@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Modal, MultiSelect, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, MultiSelect, Overlay, Select } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   AttendeesByBusinessTripDocument,
@@ -12,6 +12,7 @@ import {
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
+import { Tooltip } from '../../index.js';
 import { FlightPathInput } from '../parts/flight-path-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -24,7 +25,7 @@ export function AddFlightExpense(props: {
 
   return (
     <>
-      <Tooltip label="Add Flight Expense">
+      <Tooltip content="Add Flight Expense">
         <Button
           variant="outline"
           size="icon"

@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { List, MultiSelect, Select, Text, Tooltip } from '@mantine/core';
+import { List, MultiSelect, Select, Text } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
@@ -11,6 +11,7 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-update-business-trip-flights-expense.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
+import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -181,7 +182,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
       <td>
         {onChange && (
           <>
-            <Tooltip label="Edit">
+            <Tooltip content="Edit">
               <Button
                 disabled={updatingInProcess}
                 variant={isEditMode ? 'default' : 'outline'}
@@ -196,7 +197,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
               </Button>
             </Tooltip>
             {isEditMode && (
-              <Tooltip label="Confirm Changes">
+              <Tooltip content="Confirm Changes">
                 <Button
                   type="submit"
                   form={`form ${flightExpense.id}`}

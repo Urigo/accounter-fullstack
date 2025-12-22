@@ -9,11 +9,16 @@ import {
 export function Tooltip({
   children,
   content,
+  disabled,
   ...props
 }: React.ComponentProps<typeof TooltipContent> & {
   children: ReactNode;
   content: ReactNode;
+  disabled?: boolean;
 }): ReactElement {
+  if (disabled) {
+    return children as ReactElement;
+  }
   return (
     <TooltipProvider>
       <TooltipUi>

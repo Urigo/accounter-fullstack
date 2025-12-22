@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Car, Check, Edit, Fuel } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { NumberInput, Text, Tooltip } from '@mantine/core';
+import { NumberInput, Text } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   type UpdateBusinessTripCarRentalExpenseInput,
@@ -11,6 +11,7 @@ import { useUpdateBusinessTripCarRentalExpense } from '../../../../hooks/use-upd
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
+import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -125,7 +126,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
         )}
       </td>
       <td>
-        <Tooltip label="Edit">
+        <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess}
             variant={isEditMode ? 'default' : 'outline'}
@@ -140,7 +141,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
           </Button>
         </Tooltip>
         {isEditMode && (
-          <Tooltip label="Confirm Changes">
+          <Tooltip content="Confirm Changes">
             <Button
               type="submit"
               form={`form ${carRentalExpense.id}`}

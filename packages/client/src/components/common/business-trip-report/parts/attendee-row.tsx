@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Card, Tooltip } from '@mantine/core';
+import { Card } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
   BusinessTripReportAttendeeRowFieldsFragmentDoc,
@@ -12,7 +12,7 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';
-import { ToggleExpansionButton } from '../../index.js';
+import { ToggleExpansionButton, Tooltip } from '../../index.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
 import { AccommodationsTable } from './accommodations-table.js';
 import { FlightsTable } from './flights-table.js';
@@ -141,7 +141,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
           )}
         </td>
         <td className="flex items-center gap-2">
-          <Tooltip label="Edit">
+          <Tooltip content="Edit">
             <Button
               disabled={updatingInProcess}
               variant={isEditMode ? 'default' : 'outline'}
@@ -156,7 +156,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
             </Button>
           </Tooltip>
           {isEditMode && (
-            <Tooltip label="Confirm Changes">
+            <Tooltip content="Confirm Changes">
               <Button
                 type="submit"
                 form={`form ${attendee.id}`}

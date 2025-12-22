@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -12,6 +11,7 @@ import {
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
+  Tooltip,
 } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
 import { Button } from '../../ui/button.js';
@@ -105,7 +105,7 @@ export const AllCharges = (): ReactElement => {
           totalPages={data?.allCharges?.pageInfo.totalPages}
           initiallyOpened={!filter}
         />
-        <Tooltip label="Expand all accounts">
+        <Tooltip content="Expand all accounts">
           <Button
             variant="outline"
             size="icon"

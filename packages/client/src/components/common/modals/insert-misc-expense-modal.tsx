@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { ListPlus } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { MiscExpenseTransactionFieldsDocument } from '../../../gql/graphql.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -11,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.js';
-import { InsertMiscExpense } from '../index.js';
+import { InsertMiscExpense, Tooltip } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -63,7 +62,7 @@ export const InsertMiscExpenseModal = ({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Tooltip label="Insert Related Misc Expense">
+        <Tooltip content="Insert Related Misc Expense">
           <Button variant="ghost" size="icon" className="size-7.5" disabled={fetchingTransaction}>
             <ListPlus className="size-5" />
           </Button>

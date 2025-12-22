@@ -1,7 +1,7 @@
 import type { ComponentProps, MouseEvent, ReactElement } from 'react';
 import { Edit } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { Button } from '../../ui/button.js';
+import { Tooltip } from '../index.js';
 
 export function EditMiniButton(
   props: ComponentProps<typeof Button> & {
@@ -10,7 +10,7 @@ export function EditMiniButton(
   },
 ): ReactElement {
   return (
-    <Tooltip disabled={!props.tooltip} label={props.tooltip}>
+    <Tooltip disabled={!props.tooltip} content={props.tooltip}>
       <Button className="size-7.5" variant="ghost" {...props}>
         <Edit className="size-5" />
       </Button>

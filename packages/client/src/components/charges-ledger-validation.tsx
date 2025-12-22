@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Loader, Progress, ThemeIcon, Tooltip } from '@mantine/core';
+import { Loader, Progress, ThemeIcon } from '@mantine/core';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
@@ -12,6 +12,7 @@ import {
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
+  Tooltip,
 } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
 import { Button } from './ui/button.js';
@@ -121,7 +122,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
           setPage={() => {}}
           initiallyOpened
         />
-        <Tooltip label="Expand all accounts">
+        <Tooltip content="Expand all accounts">
           <Button
             variant="outline"
             size="icon"

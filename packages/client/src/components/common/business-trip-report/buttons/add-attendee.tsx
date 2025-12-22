@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import type { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
@@ -10,6 +10,7 @@ import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
 import { useInsertBusinessTripAttendee } from '../../../../hooks/use-insert-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';
+import { Tooltip } from '../../index.js';
 
 export function AddAttendee(props: { businessTripId: string; onAdd?: () => void }): ReactElement {
   const { businessTripId, onAdd } = props;
@@ -17,7 +18,7 @@ export function AddAttendee(props: { businessTripId: string; onAdd?: () => void 
 
   return (
     <>
-      <Tooltip label="Add Attendee">
+      <Tooltip content="Add Attendee">
         <Button
           variant="outline"
           size="icon"

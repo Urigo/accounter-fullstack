@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, NumberInput, Overlay, Tooltip } from '@mantine/core';
+import { Loader, Modal, NumberInput, Overlay } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
+import { Tooltip } from '../../index.js';
 import { AddExpenseFields } from './add-expense-fields.jsx';
 
 export function AddCarRentalExpense(props: {
@@ -26,7 +27,7 @@ export function AddCarRentalExpense(props: {
 
   return (
     <>
-      <Tooltip label="Add Car Rental Expense">
+      <Tooltip content="Add Car Rental Expense">
         <Button
           variant="outline"
           size="icon"

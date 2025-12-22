@@ -7,7 +7,7 @@ import {
   PanelTopOpen,
 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Mark, Table, Text, Tooltip } from '@mantine/core';
+import { Mark, Table, Text } from '@mantine/core';
 import {
   BusinessLedgerRecordsSummeryDocument,
   Currency,
@@ -17,7 +17,7 @@ import {
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { AccounterTableRow } from '../common/index.js';
+import { AccounterTableRow, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
@@ -101,7 +101,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessLedgerRecordsFilters filter={filter} setFilter={setFilter} />
-        <Tooltip label="Expand all accounts">
+        <Tooltip content="Expand all accounts">
           <Button
             variant="outline"
             size="icon"
@@ -115,7 +115,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <Tooltip label="Expand all currencies">
+        <Tooltip content="Expand all currencies">
           <Button
             variant="outline"
             size="icon"

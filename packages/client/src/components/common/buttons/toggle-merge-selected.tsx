@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { Combine } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
+import { Tooltip } from '../index.js';
 
 export function ToggleMergeSelected(props: {
   toggleMergeSelected: () => void;
@@ -16,7 +16,7 @@ export function ToggleMergeSelected(props: {
   }, [mergeSelected]);
 
   return (
-    <Tooltip label="Select for merge">
+    <Tooltip content="Select for merge">
       <Button
         onClick={event => {
           event.stopPropagation();

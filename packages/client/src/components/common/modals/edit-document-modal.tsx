@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
-import { Tooltip } from '@mantine/core';
 import {
   CopyToClipboardButton,
   DeleteDocumentButton,
   EditDocument,
   PopUpDrawer,
+  Tooltip,
   UnlinkDocumentButton,
 } from '../index.js';
 
@@ -27,7 +27,7 @@ export const EditDocumentModal = ({ onDone, onChange, documentId }: Props): Reac
           <h1 className="sm:text-2xl font-small text-gray-900">Edit Document</h1>
           <div className="flex flex-row gap-2">
             ID: {documentId}
-            <Tooltip label="Copy ID">
+            <Tooltip content="Copy ID">
               <CopyToClipboardButton content={documentId} />
             </Tooltip>
             <UnlinkDocumentButton documentId={documentId} />

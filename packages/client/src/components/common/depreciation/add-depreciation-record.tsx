@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Modal, Overlay, Select, Tooltip } from '@mantine/core';
+import { Loader, Modal, Overlay, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -13,7 +13,7 @@ import {
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
 import { Button } from '../../ui/button.js';
-import { CurrencyInput } from '../index.js';
+import { CurrencyInput, Tooltip } from '../index.js';
 import { depreciationTypes } from './index.js';
 
 export function AddDepreciationRecord(props: {
@@ -25,7 +25,7 @@ export function AddDepreciationRecord(props: {
 
   return (
     <>
-      <Tooltip label="Add Depreciation Record">
+      <Tooltip content="Add Depreciation Record">
         <Button
           variant="outline"
           size="icon"

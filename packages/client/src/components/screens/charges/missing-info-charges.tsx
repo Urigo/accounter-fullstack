@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { MissingInfoChargesDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -11,6 +10,7 @@ import {
   InsertDocumentModal,
   MatchDocumentModal,
   MergeChargesButton,
+  Tooltip,
 } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
@@ -74,7 +74,7 @@ export const MissingInfoCharges = (): ReactElement => {
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <Tooltip label="Expand all accounts">
+        <Tooltip content="Expand all accounts">
           <Button
             variant="outline"
             size="icon"

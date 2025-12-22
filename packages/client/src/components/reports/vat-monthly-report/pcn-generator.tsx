@@ -2,9 +2,9 @@ import { useEffect, type ReactElement } from 'react';
 import { FileDigit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Tooltip } from '@mantine/core';
 import { GeneratePcnDocument, type VatReportFilter } from '../../../gql/graphql.js';
 import { dedupeFragments, downloadFile } from '../../../helpers/index.js';
+import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -55,7 +55,7 @@ export const PCNGenerator = ({
   }, [data]);
 
   return (
-    <Tooltip label="Generate and Download PCN874 File">
+    <Tooltip content="Generate and Download PCN874 File">
       <Button
         disabled={fetching || isLoading}
         variant="outline"

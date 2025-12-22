@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
-import { Tooltip } from '@mantine/core';
 import { Button } from '../../ui/button.js';
+import { Tooltip } from '../index.js';
 
 export function ToggleExpansionButton(props: {
   toggleExpansion: (value: React.SetStateAction<boolean>) => void;
@@ -11,7 +11,7 @@ export function ToggleExpansionButton(props: {
   const { toggleExpansion, isExpanded, onClickAction } = props;
 
   return (
-    <Tooltip label="Expand info">
+    <Tooltip content="Expand info">
       <Button
         variant={isExpanded ? 'default' : 'outline'}
         onClick={event => {

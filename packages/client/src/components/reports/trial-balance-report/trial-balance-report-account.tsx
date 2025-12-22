@@ -1,8 +1,9 @@
 import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
-import { Text, Tooltip } from '@mantine/core';
+import { Text } from '@mantine/core';
 import type { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
+import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
@@ -42,7 +43,7 @@ export const TrialBalanceReportBusiness = ({
           )}
         </td>
         <td>
-          <Tooltip label="Detailed records">
+          <Tooltip content="Detailed records">
             <Button
               variant="outline"
               size="icon"

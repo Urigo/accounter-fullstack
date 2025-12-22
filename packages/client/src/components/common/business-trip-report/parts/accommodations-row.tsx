@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type Control, type SubmitHandler } from 'react-hook-form';
-import { List, Text, Tooltip } from '@mantine/core';
+import { List, Text } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   type UpdateBusinessTripAccommodationsExpenseInput,
@@ -12,7 +12,7 @@ import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/us
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
-import { NumberInput } from '../../index.js';
+import { NumberInput, Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { AttendeesStayInput } from './attendee-stay-input.js';
@@ -174,7 +174,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
       <td>
         {onChange && (
           <>
-            <Tooltip label="Edit">
+            <Tooltip content="Edit">
               <Button
                 disabled={updatingInProcess}
                 variant={isEditMode ? 'default' : 'outline'}
@@ -189,7 +189,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               </Button>
             </Tooltip>
             {isEditMode && (
-              <Tooltip label="Confirm Changes">
+              <Tooltip content="Confirm Changes">
                 <Button
                   type="submit"
                   form={`form ${accommodationExpense.id}`}
