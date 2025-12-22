@@ -94,6 +94,15 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={client.city || ''}
+                  onChange={e => updateClient('city', e.target.value)}
+                  placeholder="City"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
 
                 <ComboBox
@@ -102,6 +111,15 @@ export function ClientForm({ client, onChange, fetching }: ClientFormProps) {
                   value={client.country}
                   placeholder="Select country"
                   triggerProps={{ className: 'w-full flex justify-between' }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">Zip Code</Label>
+                <Input
+                  id="zipCode"
+                  value={client.zipCode || ''}
+                  onChange={e => updateClient('zipCode', e.target.value)}
+                  placeholder="Zip Code"
                 />
               </div>
             </div>
