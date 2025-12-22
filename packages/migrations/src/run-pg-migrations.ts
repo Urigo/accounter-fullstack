@@ -135,6 +135,7 @@ import migration_2025_11_27T18_45_21_deel_cleanup from './actions/2025-11-27T18-
 import migration_2025_12_09T18_28_13_bank_account_iban from './actions/2025-12-09T18-28-13.bank-account-iban.js';
 import migration_2025_12_21T17_04_14_enrich_document_with_description_remarks from './actions/2025-12-21T17-04-14.enrich-document-with-description-remarks.js';
 import migration_2025_12_22T13_41_41_rename_documents_modified_column from './actions/2025-12-22T13-41-41.rename-documents-modified-column.js';
+import migration_2025_12_22T13_49_25_enrich_business_with_city_zip from './actions/2025-12-22T13-49-25.enrich-business-with-city-zip.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -274,6 +275,7 @@ export const MIGRATIONS = [
   migration_2025_12_09T18_28_13_bank_account_iban,
   migration_2025_12_21T17_04_14_enrich_document_with_description_remarks,
   migration_2025_12_22T13_41_41_rename_documents_modified_column,
+  migration_2025_12_22T13_49_25_enrich_business_with_city_zip,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
