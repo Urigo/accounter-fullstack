@@ -8,7 +8,7 @@ export default {
     ADD COLUMN
       "city" VARCHAR(50) NULL,
     ADD COLUMN
-      "zip_code" VARCHAR(15) NULL;
+      "zip_code" VARCHAR(15) NULL,
     DROP COLUMN
       "password",
     DROP COLUMN
