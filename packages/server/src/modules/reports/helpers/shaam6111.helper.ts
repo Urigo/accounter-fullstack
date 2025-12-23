@@ -635,7 +635,7 @@ export async function getShaam6111Data(
     taxYear: year.toString(),
     idNumber: business.vat_number,
     vatFileNumber: business.vat_number,
-    withholdingTaxFileNumber: business.nikuim ?? undefined,
+    withholdingTaxFileNumber: undefined, // TODO: fetch from admin business
     industryCode: '6201', // TODO: migrate to DB
     businessDescription: 'פיתוח פלטפורמת תוכנה', // TODO: migrate to DB
     businessType: 'MULTIPLE', // TODO: migrate to DB
