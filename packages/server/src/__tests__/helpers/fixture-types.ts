@@ -34,6 +34,8 @@ export interface FixtureBusinesses {
     name: string,
     hebrewName?: string | null,
     address?: string | null,
+    city?: string | null,
+    zipCode?: string | null,
     email?: string | null,
     website?: string | null,
     phoneNumber?: string | null,

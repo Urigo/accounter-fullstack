@@ -164,16 +164,18 @@ export async function insertFixture(
         // Insert business details - note: vat_number column maps to governmentId field
         await client.query(
           `INSERT INTO ${qualifyTable('businesses')} (
-            id, hebrew_name, address, email, website, phone_number, vat_number,
+            id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number,
             exempt_dealer, suggestion_data, optional_vat, country,
             pcn874_record_type_override, can_settle_with_receipt, no_invoices_required
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           ON CONFLICT (id) DO NOTHING`,
           [
             business.id,
             business.hebrewName,
             business.address,
+            business.city,
+            business.zipCode,
             business.email,
             business.website,
             business.phoneNumber,

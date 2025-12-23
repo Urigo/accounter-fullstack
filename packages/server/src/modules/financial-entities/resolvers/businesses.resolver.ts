@@ -98,6 +98,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       }
       const adjustedFields: IUpdateBusinessParams = {
         address: fields.address,
+        city: fields.city,
+        zipCode: fields.zipCode,
         email: fields.email,
         exemptDealer: fields.exemptDealer,
         vatNumber: fields.governmentId,
@@ -234,6 +236,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
           id: financialEntity.id,
           address: fields.address,
+          city: fields.city,
+          zipCode: fields.zipCode,
           email: fields.email,
           exemptDealer: fields.exemptDealer ?? false,
           governmentId: fields.governmentId,
@@ -481,6 +485,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
               phrases: [description],
             },
             address: undefined,
+            city: undefined,
+            zipCode: undefined,
             email: undefined,
             website: undefined,
             phoneNumber: undefined,
@@ -526,6 +532,8 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     country: DbBusiness => DbBusiness.country as CountryCode,
     governmentId: DbBusiness => DbBusiness.vat_number,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
+    city: DbBusiness => DbBusiness.city,
+    zipCode: DbBusiness => DbBusiness.zip_code,
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,

@@ -3,7 +3,6 @@ export * from './edit-document.js';
 export * from './edit-misc-expense.js';
 export * from './edit-tag.js';
 export * from './edit-transaction.js';
-export * from './insert-business-fields.js';
 export * from './insert-business-trip.js';
 export * from './insert-document.js';
 export * from './insert-misc-expense.js';

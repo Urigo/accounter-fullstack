@@ -18,6 +18,8 @@ type Discount = {
 type DocumentClient = {
   add?: boolean;
   address?: string;
+  city?: string;
+  zipCode?: string;
   country?: CountryCode;
   emails?: Array<string>;
   id: string;

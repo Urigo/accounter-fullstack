@@ -46,57 +46,25 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
     $vatNumber,
     vat_number
   ),
-  tax_siduri_number_2021 = COALESCE(
-    $taxSiduriNumber2021,
-    tax_siduri_number_2021
-  ),
-  password = COALESCE(
-    $password,
-    password
-  ),
-  username_vat_website = COALESCE(
-    $usernameVatWebsite,
-    username_vat_website
-  ),
-  website_login_screenshot = COALESCE(
-    $websiteLoginScreenshot,
-    website_login_screenshot
-  ),
-  nikuim = COALESCE(
-    $nikuim,
-    nikuim
-  ),
-  pinkas_social_security_2021 = COALESCE(
-    $pinkasSocialSecurity2021,
-    pinkas_social_security_2021
-  ),
   hebrew_name = COALESCE(
     $hebrewName,
     hebrew_name
-  ),
-  tax_pinkas_number_2020 = COALESCE(
-    $taxPinkasNumber2020,
-    tax_pinkas_number_2020
   ),
   address = COALESCE(
     $address,
     address
   ),
+  city = COALESCE(
+    $city,
+    city
+  ),
+  zip_code = COALESCE(
+    $zipCode,
+    zip_code
+  ),
   address_hebrew = COALESCE(
     $addressHebrew,
     address_hebrew
-  ),
-  wizcloud_token = COALESCE(
-    $wizcloudToken,
-    wizcloud_token
-  ),
-  wizcloud_company_id = COALESCE(
-    $wizcloudCompany_id,
-    wizcloud_company_id
-  ),
-  advance_tax_rate = COALESCE(
-    $advanceTaxRate,
-    advance_tax_rate
   ),
   email = COALESCE(
     $email,
@@ -110,53 +78,9 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
     $phoneNumber,
     phone_number
   ),
-  bank_account_bank_number = COALESCE(
-    $bankAccountBankNumber,
-    bank_account_bank_number
-  ),
-  bank_account_branch_number = COALESCE(
-    $bankAccountBranchNumber,
-    bank_account_branch_number
-  ),
-  bank_account_account_number = COALESCE(
-    $bankAccountAccountNumber,
-    bank_account_account_number
-  ),
-  "bank_account_IBAN"  = COALESCE(
-    $bankAccountIBAN,
-    "bank_account_IBAN"
-  ),
-  tax_nikuim_pinkas_number = COALESCE(
-    $taxNikuimPinkasNumber,
-    tax_nikuim_pinkas_number
-  ),
-  bank_account_swift = COALESCE(
-    $bankAccountSwift,
-    bank_account_swift
-  ),
-  vat_report_cadence = COALESCE(
-    $vatReportCadence,
-    vat_report_cadence
-  ),
-  contract = COALESCE(
-    $contract,
-    contract
-  ),
   country = COALESCE(
     $country,
     country
-  ),
-  pinkas_social_security_2022 = COALESCE(
-    $pinkasSocialSecurity2022,
-    pinkas_social_security_2022
-  ),
-  tax_siduri_number_2022 = COALESCE(
-    $taxSiduriNumber2022,
-    tax_siduri_number_2022
-  ),
-  registration_date = COALESCE(
-    $registrationDate,
-    registration_date
   ),
   no_invoices_required = COALESCE(
     $isDocumentsOptional,
@@ -188,8 +112,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusinesses = sql<IInsertBusinessesQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required)
-  VALUES $$businesses(id, hebrewName, address, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required)
+  VALUES $$businesses(id, hebrewName, address, city, zipCode, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional)
   RETURNING *;`;
 
 const replaceBusinesses = sql<IReplaceBusinessesQuery>`

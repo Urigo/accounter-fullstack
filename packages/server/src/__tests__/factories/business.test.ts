@@ -21,6 +21,8 @@ describe('Factory: Business', () => {
       // Null/void defaults
       expect(business.hebrewName).toBeNull();
       expect(business.address).toBeNull();
+      expect(business.city).toBeNull();
+      expect(business.zipCode).toBeNull();
       expect(business.email).toBeNull();
       expect(business.website).toBeNull();
       expect(business.phoneNumber).toBeNull();
@@ -75,6 +77,8 @@ describe('Factory: Business', () => {
       expect(business).toHaveProperty('id');
       expect(business).toHaveProperty('hebrewName');
       expect(business).toHaveProperty('address');
+      expect(business).toHaveProperty('city');
+      expect(business).toHaveProperty('zipCode');
       expect(business).toHaveProperty('email');
       expect(business).toHaveProperty('website');
       expect(business).toHaveProperty('phoneNumber');
@@ -93,13 +97,17 @@ describe('Factory: Business', () => {
         email: 'supplier@example.com',
         phoneNumber: '+972-50-1234567',
         website: 'https://example.com',
-        address: '123 Main St, Tel Aviv',
+        address: '123 Main St',
+        city: 'Tel Aviv',
+        zipCode: '61000',
       });
 
       expect(business.email).toBe('supplier@example.com');
       expect(business.phoneNumber).toBe('+972-50-1234567');
       expect(business.website).toBe('https://example.com');
-      expect(business.address).toBe('123 Main St, Tel Aviv');
+      expect(business.address).toBe('123 Main St');
+      expect(business.city).toBe('Tel Aviv');
+      expect(business.zipCode).toBe('61000');
     });
 
     it('should handle government ID and exempt dealer scenario', () => {

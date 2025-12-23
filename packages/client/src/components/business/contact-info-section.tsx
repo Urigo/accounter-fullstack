@@ -50,6 +50,8 @@ import { ComboBox } from '../common';
       }
       governmentId
       address
+      city
+      zipCode
       email
       # localAddress
       phoneNumber
@@ -68,6 +70,8 @@ const contactInfoSchema = z.object({
   localName: z.string().optional(),
   govId: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
+  zipCode: z.string().optional(),
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
@@ -90,6 +94,8 @@ function ContactsSectionFragmentToFormValues(
     localName: business.hebrewName ?? undefined,
     govId: business.governmentId ?? undefined,
     address: business.address ?? undefined,
+    city: business.city ?? undefined,
+    zipCode: business.zipCode ?? undefined,
     // TODO: activate this field later. requires additional backend support
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
@@ -108,6 +114,8 @@ function convertFormDataToUpdateBusinessInput(
     hebrewName: formData.localName,
     governmentId: formData.govId,
     address: formData.address,
+    city: formData.city,
+    zipCode: formData.zipCode,
     // localAddress: formData.localAddress,
     phoneNumber: formData.phone,
     website: formData.website,
@@ -143,6 +151,8 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const locality = form.watch('locality');
   const address = form.watch('address');
+  const city = form.watch('city');
+  const zipCode = form.watch('zipCode');
   const localAddress = form.watch('localAddress');
 
   useEffect(() => {
@@ -150,6 +160,18 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
       form.setValue('address', address, { shouldDirty: true });
     }
   }, [address, defaultFormValues.address, form]);
+
+  useEffect(() => {
+    if (city !== defaultFormValues.city) {
+      form.setValue('city', city, { shouldDirty: true });
+    }
+  }, [city, defaultFormValues.city, form]);
+
+  useEffect(() => {
+    if (zipCode !== defaultFormValues.zipCode) {
+      form.setValue('zipCode', zipCode, { shouldDirty: true });
+    }
+  }, [zipCode, defaultFormValues.zipCode, form]);
 
   useEffect(() => {
     if (localAddress !== defaultFormValues.localAddress) {
@@ -342,6 +364,42 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                         {...field}
                         rows={3}
                         placeholder="Enter business address"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter City"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zipCode"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Zip Code</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter Zip Code"
                         className={dirtyFieldMarker(fieldState)}
                       />
                     </FormControl>

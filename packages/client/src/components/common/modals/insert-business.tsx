@@ -55,6 +55,8 @@ const businessFormSchema = z
     localName: z.string().optional(),
     govId: z.string().optional(),
     address: z.string().optional(),
+    city: z.string().optional(),
+    zipCode: z.string().optional(),
     generalContacts: z.array(z.email()),
     website: z.url().optional().or(z.literal('')),
     phone: z.string().optional(),
@@ -106,6 +108,8 @@ function convertFormDataToInsertNewBusinessInput(
     hebrewName: formData.localName,
     governmentId: formData.govId,
     address: formData.address,
+    city: formData.city,
+    zipCode: formData.zipCode,
     phoneNumber: formData.phone,
     website: formData.website,
     email: formData.generalContacts.filter(contact => !!contact.trim())?.join(', '),
@@ -327,6 +331,34 @@ function ContactInformationSection({ form }: SectionProps) {
               </FormLabel>
               <FormControl>
                 <Textarea {...field} rows={2} placeholder="Enter business address" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="city"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>City</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter business city" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={control}
+          name="zipCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Zip Code</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter business zip code" />
               </FormControl>
               <FormMessage />
             </FormItem>

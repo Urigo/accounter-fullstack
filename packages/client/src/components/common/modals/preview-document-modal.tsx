@@ -41,6 +41,8 @@ import type {
     originalBusiness {
       id
       address
+      city
+      zipCode
       country {
         id
         code
@@ -61,7 +63,7 @@ export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragmen
   const client: DocumentClient = {
     // add: ___;
     address: clientInfo.originalBusiness.address ?? undefined,
-    // city: ___,
+    city: clientInfo.originalBusiness.city ?? undefined,
     country: clientInfo.originalBusiness.country.code,
     emails: clientInfo.emails,
     // fax: ___,
@@ -71,7 +73,7 @@ export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragmen
     phone: clientInfo.originalBusiness.phoneNumber ?? undefined,
     // self: ___,
     taxId: clientInfo.originalBusiness.governmentId ?? undefined,
-    // zip: ___,
+    zipCode: clientInfo.originalBusiness.zipCode ?? undefined,
   };
   return client;
 }
