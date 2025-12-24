@@ -284,7 +284,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:2.0.56"
+    "@ai-sdk/anthropic": "npm:3.0.1"
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -353,15 +353,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:2.0.56":
-  version: 2.0.56
-  resolution: "@ai-sdk/anthropic@npm:2.0.56"
+"@ai-sdk/anthropic@npm:3.0.1":
+  version: 3.0.1
+  resolution: "@ai-sdk/anthropic@npm:3.0.1"
   dependencies:
-    "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.19"
+    "@ai-sdk/provider": "npm:3.0.0"
+    "@ai-sdk/provider-utils": "npm:4.0.1"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/f2b6029c92443f831a2d124420e805d057668003067b1f677a4292d02f27aa3ad533374ea996d77ede7746a42c46fb94a8f2d8c0e7758a4555ea18c8b532052c
+  checksum: 10c0/4b92945d1d8104c1a3aaadfef7aca62ef434ed8ddad196a58a900e050fc8b67e5b8fe79dbcee9bf6931a28da4980d0b960ad6201969a5d46eb5afa40e65cf01a
   languageName: node
   linkType: hard
 
@@ -391,12 +391,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/provider-utils@npm:4.0.1":
+  version: 4.0.1
+  resolution: "@ai-sdk/provider-utils@npm:4.0.1"
+  dependencies:
+    "@ai-sdk/provider": "npm:3.0.0"
+    "@standard-schema/spec": "npm:^1.1.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/f874702d8e8dcf07e1aa69087a0713528edaed6a45468758eb788dbceaef374868e5e880728e49bb15a78f6efc0893bb22b0ca0e9f73f38b9b89bcfb6084c29a
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/provider@npm:2.0.0":
   version: 2.0.0
   resolution: "@ai-sdk/provider@npm:2.0.0"
   dependencies:
     json-schema: "npm:^0.4.0"
   checksum: 10c0/e50e520016c9fc0a8b5009cadd47dae2f1c81ec05c1792b9e312d7d15479f024ca8039525813a33425c884e3449019fed21043b1bfabd6a2626152ca9a388199
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@ai-sdk/provider@npm:3.0.0"
+  dependencies:
+    json-schema: "npm:^0.4.0"
+  checksum: 10c0/520664b2bceb019fa398e8406d03070122d13a32efb491aa83cd156800a3eedf224985da984bccf97c9ad64e252870f92400d615858a4e2a57a442194c054031
   languageName: node
   linkType: hard
 
@@ -7608,7 +7630,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@standard-schema/spec@npm:^1.0.0":
+"@standard-schema/spec@npm:^1.0.0, @standard-schema/spec@npm:^1.1.0":
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
   checksum: 10c0/d90f55acde4b2deb983529c87e8025fa693de1a5e8b49ecc6eb84d1fd96328add0e03d7d551442156c7432fd78165b2c26ff561b970a9a881f046abb78d6a526
