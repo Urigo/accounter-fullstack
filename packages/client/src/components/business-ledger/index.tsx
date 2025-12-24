@@ -101,7 +101,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessLedgerRecordsFilters filter={filter} setFilter={setFilter} />
-        <Tooltip content="Expand all accounts">
+        <Tooltip content="Expand all accounts" asChild>
           <Button
             variant="outline"
             size="icon"
@@ -115,7 +115,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <Tooltip content="Expand all currencies">
+        <Tooltip content="Expand all currencies" asChild>
           <Button
             variant="outline"
             size="icon"

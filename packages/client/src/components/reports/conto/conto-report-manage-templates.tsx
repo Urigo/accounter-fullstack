@@ -260,13 +260,13 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
 
   return (
     <Dialog open={opened} onOpenChange={setOpened}>
-      <DialogTrigger asChild>
-        <Tooltip content="Manage templates">
+      <Tooltip content="Manage templates">
+        <DialogTrigger asChild>
           <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
             <CloudCog size={20} />
           </Button>
-        </Tooltip>
-      </DialogTrigger>
+        </DialogTrigger>
+      </Tooltip>
       <DialogContent className="max-w-screen-md">
         <DialogHeader>
           <DialogTitle>Conto report templates</DialogTitle>

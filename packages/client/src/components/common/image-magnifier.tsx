@@ -91,46 +91,54 @@ export function ImageMagnifier({
         }}
       />
       <div className="absolute top-10 right-10 flex flex-row gap-1">
-        <Tooltip content="Increase zoom">
+        <Tooltip content="Increase zoom" asChild>
           <Button
             variant="ghost"
             size="icon"
             className="size-7.5"
-            onClick={(): void => setZoomLevel(i => i * 1.2)}
+            onClick={(e): void => {
+              e.stopPropagation();
+              setZoomLevel(i => i * 1.2);
+            }}
           >
             <ZoomIn className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip content="Decrease zoom">
+        <Tooltip content="Decrease zoom" asChild>
           <Button
             variant="ghost"
             size="icon"
             className="size-7.5"
-            onClick={(): void => setZoomLevel(i => i / 1.2)}
+            onClick={(e): void => {
+              e.stopPropagation();
+              setZoomLevel(i => i / 1.2);
+            }}
           >
             <ZoomOut className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip content="Expand zoom area">
+        <Tooltip content="Expand zoom area" asChild>
           <Button
             variant="ghost"
             size="icon"
             className="size-7.5"
-            onClick={(): void =>
-              setMagnifierSize(size => ({ width: size.width * 1.2, height: size.height * 1.2 }))
-            }
+            onClick={(e): void => {
+              e.stopPropagation();
+              setMagnifierSize(size => ({ width: size.width * 1.2, height: size.height * 1.2 }));
+            }}
           >
             <ZoomIn className="size-5" />
           </Button>
         </Tooltip>
-        <Tooltip content="Reduce zoom area">
+        <Tooltip content="Reduce zoom area" asChild>
           <Button
             variant="ghost"
             size="icon"
             className="size-7.5"
-            onClick={(): void =>
-              setMagnifierSize(size => ({ width: size.width / 1.2, height: size.height / 1.2 }))
-            }
+            onClick={(e): void => {
+              e.stopPropagation();
+              setMagnifierSize(size => ({ width: size.width / 1.2, height: size.height / 1.2 }));
+            }}
           >
             <ZoomOut className="size-5" />
           </Button>

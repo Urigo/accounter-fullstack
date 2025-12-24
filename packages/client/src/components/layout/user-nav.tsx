@@ -71,16 +71,16 @@ export function UserNav(): JSX.Element {
             </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <ConfirmationModal
-              onConfirm={executeJobs}
-              title="Are you sure you want to manually execute corn jobs?"
-            >
-              <Tooltip content="Execute corn jobs">
+            <Tooltip content="Execute corn jobs">
+              <ConfirmationModal
+                onConfirm={executeJobs}
+                title="Are you sure you want to manually execute corn jobs?"
+              >
                 <Button variant="ghost" size="icon" className="size-7.5">
                   <CircleCheckBig className="size-5" />
                 </Button>
-              </Tooltip>
-            </ConfirmationModal>
+              </ConfirmationModal>
+            </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <LogoutButton />

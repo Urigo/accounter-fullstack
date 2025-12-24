@@ -20,15 +20,15 @@ export function DeleteDepreciationRecord(props: {
   }, [props, deleteDepreciationRecord]);
 
   return (
-    <ConfirmationModal
-      onConfirm={onExecute}
-      title="Are you sure you want to delete the depreciation record?"
-    >
-      <Tooltip content="Remove Depreciation">
+    <Tooltip content="Remove Depreciation">
+      <ConfirmationModal
+        onConfirm={onExecute}
+        title="Are you sure you want to delete the depreciation record?"
+      >
         <Button variant="outline" size="icon" className="size-7.5 text-red-500" disabled={fetching}>
           <Trash className="size-5" />
         </Button>
-      </Tooltip>
-    </ConfirmationModal>
+      </ConfirmationModal>
+    </Tooltip>
   );
 }
