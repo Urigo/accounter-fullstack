@@ -22,7 +22,7 @@ export function Tooltip({
   return (
     <TooltipProvider>
       <TooltipUi>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipTrigger>{children}</TooltipTrigger>
         <TooltipContent {...props}>{content}</TooltipContent>
       </TooltipUi>
     </TooltipProvider>

@@ -24,11 +24,11 @@ export function RegenerateLedgerRecordsButton({
   }
 
   return (
-    <ConfirmationModal
-      onConfirm={onRegenerate}
-      title="Are you sure you want to regenerate ledger records?"
-    >
-      <Tooltip content="Regenerate Ledger">
+    <Tooltip content="Regenerate Ledger">
+      <ConfirmationModal
+        onConfirm={onRegenerate}
+        title="Are you sure you want to regenerate ledger records?"
+      >
         <Button
           variant="outline"
           size="icon"
@@ -37,7 +37,7 @@ export function RegenerateLedgerRecordsButton({
         >
           <RefreshCcwDot className="size-5" />
         </Button>
-      </Tooltip>
-    </ConfirmationModal>
+      </ConfirmationModal>
+    </Tooltip>
   );
 }

@@ -20,13 +20,13 @@ export const EditMiscExpenseModal = ({ onDone, data }: Props): ReactElement => {
   }
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Tooltip content="Edit Misc Expense">
+      <Tooltip content="Edit Misc Expense">
+        <DialogTrigger asChild>
           <Button variant="ghost" size="icon" className="size-7.5">
             <Edit className="size-5" />
           </Button>
-        </Tooltip>
-      </DialogTrigger>
+        </DialogTrigger>
+      </Tooltip>
       <DialogContent className="sm:max-w-[425px]">
         <EditMiscExpense onDone={onEditDone} data={data} />
       </DialogContent>
