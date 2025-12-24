@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
 import { z } from 'zod';
@@ -88,9 +88,9 @@ export class AnthropicProvider {
 
     const fileData = await this.fileToBase64(fileOrBlob);
 
-    const { object } = await generateObject({
-      model: anthropic('claude-4-sonnet-20250514'),
-      schema: documentDataSchema,
+    const { output } = await generateText({
+      model: anthropic('claude-sonnet-4-5'),
+      output: Output.object({ schema: documentDataSchema }),
       messages: [
         {
           role: 'user',
@@ -123,6 +123,6 @@ export class AnthropicProvider {
       ],
     });
 
-    return object;
+    return output;
   }
 }
