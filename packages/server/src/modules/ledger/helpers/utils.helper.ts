@@ -365,10 +365,12 @@ export async function multipleForeignCurrenciesBalanceEntries(
   const {
     adminContext: { defaultLocalCurrency },
   } = context;
-  if (!transactionEntries.length || !documentEntries.length) {
-    throw new LedgerError(
-      `Failed to locate transaction or document entries for charge "${charge.id}"`,
-    );
+  const useDocuments = !charge.documents_optional_flag;
+  if (!transactionEntries.length) {
+    throw new LedgerError(`Failed to locate transaction entries for charge "${charge.id}"`);
+  }
+  if (!documentEntries.length && useDocuments) {
+    throw new LedgerError(`Failed to locate document entries for charge "${charge.id}"`);
   }
 
   const ledgerEntries: LedgerProto[] = [];
@@ -382,12 +384,23 @@ export async function multipleForeignCurrenciesBalanceEntries(
       return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
     });
 
-    const documentEntry = documentEntries.reduce((prev, curr) => {
-      if (!prev) {
-        return curr;
-      }
-      return prev.invoiceDate.getTime() < curr.invoiceDate.getTime() ? prev : curr;
-    });
+    const invoiceDate = useDocuments
+      ? documentEntries
+          .map(entry => entry.invoiceDate)
+          .reduce((prev, curr) => {
+            if (!prev) {
+              return curr;
+            }
+            return prev.getTime() < curr.getTime() ? prev : curr;
+          })
+      : transactionEntries
+          .map(entry => entry.valueDate)
+          .reduce((prev, curr) => {
+            if (!prev) {
+              return curr;
+            }
+            return prev.getTime() < curr.getTime() ? prev : curr;
+          });
 
     // get the main foreign currency + diff in local currency
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
@@ -415,7 +428,7 @@ export async function multipleForeignCurrenciesBalanceEntries(
             }),
         description: 'Foreign currency balance',
         isCreditorCounterparty,
-        invoiceDate: documentEntry.invoiceDate,
+        invoiceDate,
         valueDate: transactionEntry.valueDate,
         currency: currency as Currency,
         ownerId: transactionEntry.ownerId,
@@ -479,7 +492,7 @@ export async function multipleForeignCurrenciesBalanceEntries(
             }),
         description: 'Foreign currency balance',
         isCreditorCounterparty,
-        invoiceDate: documentEntry.invoiceDate,
+        invoiceDate,
         valueDate: transactionEntry.valueDate,
         currency: currency as Currency,
         ownerId: transactionEntry.ownerId,
