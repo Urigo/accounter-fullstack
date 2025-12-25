@@ -384,23 +384,13 @@ export async function multipleForeignCurrenciesBalanceEntries(
       return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
     });
 
-    const invoiceDate = useDocuments
-      ? documentEntries
-          .map(entry => entry.invoiceDate)
-          .reduce((prev, curr) => {
-            if (!prev) {
-              return curr;
-            }
-            return prev.getTime() < curr.getTime() ? prev : curr;
-          })
-      : transactionEntries
-          .map(entry => entry.valueDate)
-          .reduce((prev, curr) => {
-            if (!prev) {
-              return curr;
-            }
-            return prev.getTime() < curr.getTime() ? prev : curr;
-          });
+    const invoiceDate = new Date(
+      Math.min(
+        ...(useDocuments
+          ? documentEntries.map(entry => entry.invoiceDate.getTime())
+          : transactionEntries.map(entry => entry.valueDate.getTime())),
+      ),
+    );
 
     // get the main foreign currency + diff in local currency
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;
