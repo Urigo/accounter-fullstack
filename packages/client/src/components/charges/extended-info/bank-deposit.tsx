@@ -18,13 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.js';
-import {
-  AllDepositsDocument,
-  BankDepositInfoDocument,
-  ChargeTransactionIdsDocument,
-  Currency,
-} from '../../../gql/graphql.js';
-import { useAssignTransactionToDeposit } from '../../../hooks/use-assign-transaction-to-deposit.js';
+import { AllDepositsDocument, BankDepositInfoDocument, Currency } from '../../../gql/graphql.js';
+import { useAssignChargeToDeposit } from '../../../hooks/use-assign-charge-to-deposit.js';
 import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -74,15 +69,8 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     query: AllDepositsDocument,
   });
 
-  // Charge transactions to obtain transactionId when no deposit yet
-  const [{ data: chargeTxData, fetching: fetchingChargeTx }] = useQuery({
-    query: ChargeTransactionIdsDocument,
-    variables: { chargeId },
-  });
-
   const { creating: creatingDeposit, createDeposit } = useCreateDeposit();
-  const { assigning: assigningDeposit, assignTransactionToDeposit } =
-    useAssignTransactionToDeposit();
+  const { assigning: assigningDeposit, assignChargeToDeposit } = useAssignChargeToDeposit();
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | undefined>(undefined);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -93,46 +81,28 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     [allDepositsData?.allDeposits],
   );
 
-  const transactionIdForAssignment = useMemo(
-    () => chargeTxData?.charge?.transactions?.[0]?.id,
-    [chargeTxData?.charge?.transactions],
-  );
-
   const onCreateDeposit = useCallback(async () => {
     const depositId = await createDeposit({ currency: newDepositCurrency });
     if (depositId) {
-      if (transactionIdForAssignment) {
-        await assignTransactionToDeposit({
-          transactionId: transactionIdForAssignment,
-          depositId,
-        });
-      }
+      await assignChargeToDeposit({
+        chargeId,
+        depositId,
+      });
       setCreateDialogOpen(false);
       onChange?.();
     }
-  }, [
-    createDeposit,
-    assignTransactionToDeposit,
-    newDepositCurrency,
-    transactionIdForAssignment,
-    onChange,
-  ]);
+  }, [createDeposit, assignChargeToDeposit, newDepositCurrency, chargeId, onChange]);
 
   const onAssign = useCallback(async () => {
-    if (!selectedDepositId || !transactionIdForAssignment) return;
-    await assignTransactionToDeposit({
-      transactionId: transactionIdForAssignment,
+    if (!selectedDepositId) return;
+    await assignChargeToDeposit({
+      chargeId,
       depositId: selectedDepositId,
     });
     onChange?.();
-  }, [assignTransactionToDeposit, selectedDepositId, transactionIdForAssignment, onChange]);
+  }, [assignChargeToDeposit, selectedDepositId, chargeId, onChange]);
 
-  const isLoading =
-    fetchingDeposit ||
-    fetchingAllDeposits ||
-    fetchingChargeTx ||
-    creatingDeposit ||
-    assigningDeposit;
+  const isLoading = fetchingDeposit || fetchingAllDeposits || creatingDeposit || assigningDeposit;
 
   return isLoading ? (
     <Loader2 className="h-10 w-10 animate-spin" />

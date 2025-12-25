@@ -1,5 +1,5 @@
 import { createModule } from 'graphql-modules';
-import { BankDepositTransactionsProvider } from './providers/bank-deposit-transactions.provider.js';
+import { BankDepositChargesProvider } from './providers/bank-deposit-charges.provider.js';
 import { bankDepositTransactionsResolvers } from './resolvers/bank-deposit-transactions.resolver.js';
 import bankDeposits from './typeDefs/bank-deposits.graphql.js';
 
@@ -10,7 +10,7 @@ export const bankDepositsModule = createModule({
   dirname: __dirname,
   typeDefs: [bankDeposits],
   resolvers: [bankDepositTransactionsResolvers],
-  providers: () => [BankDepositTransactionsProvider],
+  providers: () => [BankDepositChargesProvider],
 });
 
 export * as BankDepositsTypes from './types.js';

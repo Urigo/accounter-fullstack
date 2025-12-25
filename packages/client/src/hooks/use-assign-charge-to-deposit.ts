@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { AssignTransactionToDepositDocument } from '../gql/graphql.js';
+import { AssignChargeToDepositDocument } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation AssignTransactionToDeposit($transactionId: UUID!, $depositId: String!) {
-    assignTransactionToDeposit(transactionId: $transactionId, depositId: $depositId) {
+  mutation AssignChargeToDeposit($chargeId: UUID!, $depositId: String!) {
+    assignChargeToDeposit(chargeId: $chargeId, depositId: $depositId) {
       id
       isOpen
       currentBalance {
@@ -20,22 +20,22 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   }
 `;
 
-type AssignVars = { transactionId: string; depositId: string };
+type AssignVars = { chargeId: string; depositId: string };
 
-type UseAssignTransactionToDeposit = {
+type UseAssignChargeToDeposit = {
   assigning: boolean;
-  assignTransactionToDeposit: (variables: AssignVars) => Promise<void>;
+  assignChargeToDeposit: (variables: AssignVars) => Promise<void>;
 };
 
-const NOTIFICATION_ID = 'assignTransactionToDeposit';
+const NOTIFICATION_ID = 'assignChargeToDeposit';
 
-export const useAssignTransactionToDeposit = (): UseAssignTransactionToDeposit => {
-  const [{ fetching }, mutate] = useMutation(AssignTransactionToDepositDocument);
+export const useAssignChargeToDeposit = (): UseAssignChargeToDeposit => {
+  const [{ fetching }, mutate] = useMutation(AssignChargeToDepositDocument);
 
-  const assignTransactionToDeposit = useCallback(
+  const assignChargeToDeposit = useCallback(
     async (variables: AssignVars) => {
-      const message = `Error assigning transaction ${variables.transactionId} to deposit ${variables.depositId}`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.transactionId}`;
+      const message = `Error assigning charge ${variables.chargeId} to deposit ${variables.depositId}`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
       toast.loading('Assigning to deposit', { id: notificationId });
       try {
         const res = await mutate(variables);
@@ -43,7 +43,7 @@ export const useAssignTransactionToDeposit = (): UseAssignTransactionToDeposit =
         if (data) {
           toast.success('Success', {
             id: notificationId,
-            description: `Transaction assigned to deposit ${data.assignTransactionToDeposit.id}`,
+            description: `Charge assigned to deposit ${data.assignChargeToDeposit.id}`,
           });
         }
       } catch (e) {
@@ -62,6 +62,6 @@ export const useAssignTransactionToDeposit = (): UseAssignTransactionToDeposit =
 
   return {
     assigning: fetching,
-    assignTransactionToDeposit,
+    assignChargeToDeposit,
   };
 };

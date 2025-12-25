@@ -9,40 +9,46 @@ import type {
   IGetAllDepositsWithTransactionsQuery,
   IGetDepositTransactionsByChargeIdQuery,
   IGetTransactionsByBankDepositsQuery,
-  IInsertOrUpdateBankDepositTransactionParams,
-  IInsertOrUpdateBankDepositTransactionQuery,
+  IInsertOrUpdateBankDepositChargeParams,
+  IInsertOrUpdateBankDepositChargeQuery,
 } from '../types.js';
 
 const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
-    SELECT *
-    FROM accounter_schema.transactions_bank_deposits
-    LEFT JOIN accounter_schema.transactions
-      USING (id)
+    SELECT 
+      cbd.deposit_id,
+      cbd.account_id as deposit_account_id,
+      t.*
+    FROM accounter_schema.charges_bank_deposits cbd
+    LEFT JOIN accounter_schema.transactions t
+      ON cbd.id = t.charge_id
     WHERE deposit_id IN $$depositIds;`;
 
 const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQuery>`
-    SELECT *
-    FROM accounter_schema.transactions_bank_deposits
-    LEFT JOIN accounter_schema.transactions
-      USING (id)
+    SELECT
+      cbd.deposit_id,
+      cbd.account_id as deposit_account_id,
+      t.*
+    FROM accounter_schema.charges_bank_deposits cbd
+    LEFT JOIN accounter_schema.transactions t
+      ON cbd.id = t.charge_id
     WHERE deposit_id IN (
       SELECT deposit_id
-      FROM accounter_schema.transactions_bank_deposits
+      FROM accounter_schema.charges_bank_deposits
       LEFT JOIN accounter_schema.transactions
-        USING (id)
+        ON cbd.id = t.charge_id
       WHERE charge_id = $chargeId
     )
     AND ($includeCharge OR charge_id <> $chargeId);`;
 
-const insertOrUpdateBankDepositTransaction = sql<IInsertOrUpdateBankDepositTransactionQuery>`
-  INSERT INTO accounter_schema.transactions_bank_deposits (id, deposit_id)
-  VALUES ($transactionId, $depositId)
-  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id;
+const insertOrUpdateBankDepositCharge = sql<IInsertOrUpdateBankDepositChargeQuery>`
+  INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id)
+  VALUES ($chargeId, $depositId, $accountId)
+  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id, account_id = EXCLUDED.account_id;
 `;
 
 const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>`
     SELECT 
-      tbd.deposit_id,
+      cbd.deposit_id,
       t.id,
       t.currency,
       t.debit_date,
@@ -50,17 +56,17 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
       t.amount,
       t.current_balance,
       t.charge_id
-    FROM accounter_schema.transactions_bank_deposits tbd
+    FROM accounter_schema.charges_bank_deposits cbd
     LEFT JOIN accounter_schema.transactions t
-      USING (id)
-    WHERE tbd.deposit_id IS NOT NULL
-    ORDER BY tbd.deposit_id, COALESCE(t.debit_date, t.event_date);`;
+        ON cbd.id = t.charge_id
+    WHERE cbd.deposit_id IS NOT NULL
+    ORDER BY cbd.deposit_id, COALESCE(t.debit_date, t.event_date);`;
 
 @Injectable({
   scope: Scope.Singleton,
   global: true,
 })
-export class BankDepositTransactionsProvider {
+export class BankDepositChargesProvider {
   constructor(
     private dbProvider: DBProvider,
     private transactionsProvider: TransactionsProvider,
@@ -85,8 +91,8 @@ export class BankDepositTransactionsProvider {
     return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.dbProvider);
   }
 
-  public insertOrUpdateBankDepositTransaction(params: IInsertOrUpdateBankDepositTransactionParams) {
-    return insertOrUpdateBankDepositTransaction.run(params, this.dbProvider);
+  public insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
+    return insertOrUpdateBankDepositCharge.run(params, this.dbProvider);
   }
 
   public async getAllDepositsWithMetadata() {
@@ -204,27 +210,33 @@ export class BankDepositTransactionsProvider {
     };
   }
 
-  public async assignTransactionToDeposit(transactionId: string, depositId: string) {
-    const [depositTransactions, transaction] = await Promise.all([
+  public async assignChargeToDeposit(chargeId: string, depositId: string) {
+    const [depositTransactions, transactions] = await Promise.all([
       // Get target deposit transactions to validate currency
       this.getTransactionsByBankDepositLoader.load(depositId),
-      this.transactionsProvider.transactionByIdLoader.load(transactionId),
+      this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId),
     ]);
-
-    // Get transaction details to check currency
-    const transactionCurrency = transaction.currency;
 
     // Check currency conflict
     if (depositTransactions.length > 0) {
       const depositCurrency = depositTransactions[0].currency;
-      if (depositCurrency && transactionCurrency !== depositCurrency) {
-        throw new Error(
-          `Currency conflict: Transaction currency (${transactionCurrency}) does not match deposit currency (${depositCurrency})`,
-        );
+      const depositAccountId = depositTransactions[0].deposit_account_id;
+      for (const transaction of transactions) {
+        const transactionCurrency = transaction.currency;
+        if (depositCurrency && transactionCurrency !== depositCurrency) {
+          throw new Error(
+            `Currency conflict: Transaction currency (${transactionCurrency}) does not match deposit currency (${depositCurrency})`,
+          );
+        }
+        if (depositAccountId !== transaction.account_id) {
+          throw new Error(
+            `Account conflict: Transaction account (${transaction.account_id}) does not match deposit account (${depositAccountId})`,
+          );
+        }
       }
     }
 
-    await this.insertOrUpdateBankDepositTransaction({ transactionId, depositId });
+    await this.insertOrUpdateBankDepositCharge({ chargeId, depositId });
 
     // Return updated deposit metadata
     const allDeposits = await this.getAllDepositsWithMetadata();

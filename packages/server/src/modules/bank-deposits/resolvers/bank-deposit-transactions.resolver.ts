@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
-import { BankDepositTransactionsProvider } from '../providers/bank-deposit-transactions.provider.js';
+import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import type { BankDepositsModule } from '../types.js';
 
 export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
@@ -10,7 +10,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
     deposit: async (_, { depositId }, { injector, adminContext: { defaultLocalCurrency } }) => {
       try {
         const transactions = await injector
-          .get(BankDepositTransactionsProvider)
+          .get(BankDepositChargesProvider)
           .getTransactionsByBankDepositLoader.load(depositId);
 
         // Identify interest transactions via shared helper
@@ -97,7 +97,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
     ) => {
       try {
         const transactions = await injector
-          .get(BankDepositTransactionsProvider)
+          .get(BankDepositChargesProvider)
           .getDepositTransactionsByChargeId(chargeId, true);
 
         // Identify interest transactions via shared helper
@@ -190,7 +190,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
     allDeposits: async (_, __, { injector, adminContext: { defaultLocalCurrency } }) => {
       try {
         const deposits = await injector
-          .get(BankDepositTransactionsProvider)
+          .get(BankDepositChargesProvider)
           .getAllDepositsWithMetadata();
 
         return deposits.map(deposit => ({
@@ -215,7 +215,7 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
   Mutation: {
     createDeposit: async (_, { currency }, { injector }) => {
       try {
-        const deposit = await injector.get(BankDepositTransactionsProvider).createDeposit(currency);
+        const deposit = await injector.get(BankDepositChargesProvider).createDeposit(currency);
 
         return {
           id: deposit.id,
@@ -235,15 +235,15 @@ export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
         throw new GraphQLError('Error creating deposit');
       }
     },
-    assignTransactionToDeposit: async (
+    assignChargeToDeposit: async (
       _,
-      { transactionId, depositId },
+      { chargeId, depositId },
       { injector, adminContext: { defaultLocalCurrency } },
     ) => {
       try {
         const updatedDeposit = await injector
-          .get(BankDepositTransactionsProvider)
-          .assignTransactionToDeposit(transactionId, depositId);
+          .get(BankDepositChargesProvider)
+          .assignChargeToDeposit(chargeId, depositId);
 
         return {
           id: updatedDeposit.id,

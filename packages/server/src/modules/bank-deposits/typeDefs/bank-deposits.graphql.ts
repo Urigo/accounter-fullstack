@@ -9,8 +9,7 @@ export default gql`
 
   extend type Mutation {
     createDeposit(currency: Currency!): BankDeposit! @auth(role: ACCOUNTANT)
-    assignTransactionToDeposit(transactionId: UUID!, depositId: String!): BankDeposit!
-      @auth(role: ACCOUNTANT)
+    assignChargeToDeposit(chargeId: UUID!, depositId: String!): BankDeposit! @auth(role: ACCOUNTANT)
   }
 
   " Bank Deposit "

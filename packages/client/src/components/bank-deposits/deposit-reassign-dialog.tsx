@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { AllDepositsDocument } from '../../gql/graphql.js';
-import { useAssignTransactionToDeposit } from '../../hooks/use-assign-transaction-to-deposit.js';
+import { useAssignChargeToDeposit } from '../../hooks/use-assign-charge-to-deposit.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -16,13 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 type Props = {
   depositId: string;
-  transactionId: string;
+  chargeId: string;
   refetch?: () => void;
 };
 
-export function DepositReassignDialog({ depositId, transactionId, refetch }: Props): ReactElement {
+export function DepositReassignDialog({ depositId, chargeId, refetch }: Props): ReactElement {
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [targetDepositId, setTargetDepositId] = useState<string | undefined>(undefined);
 
   const [{ data: allDepositsData }] = useQuery({
@@ -30,34 +29,35 @@ export function DepositReassignDialog({ depositId, transactionId, refetch }: Pro
     pause: !reassignDialogOpen,
   });
 
-  const { assigning, assignTransactionToDeposit } = useAssignTransactionToDeposit();
+  const { assigning, assignChargeToDeposit } = useAssignChargeToDeposit();
 
   const openDeposits = useMemo(
     () => (allDepositsData?.allDeposits ?? []).filter(d => d.isOpen && d.id !== depositId),
     [allDepositsData?.allDeposits, depositId],
   );
 
-  const handleReassignClick = useCallback((transactionId: string) => {
-    setSelectedTransactionId(transactionId);
-    setTargetDepositId(undefined);
-  }, []);
-
   const handleReassign = useCallback(async () => {
-    if (!selectedTransactionId || !targetDepositId) return;
-    await assignTransactionToDeposit({
-      transactionId: selectedTransactionId,
+    if (!targetDepositId) return;
+    await assignChargeToDeposit({
+      chargeId,
       depositId: targetDepositId,
     });
     setReassignDialogOpen(false);
-    setSelectedTransactionId(null);
     setTargetDepositId(undefined);
     refetch?.();
-  }, [assignTransactionToDeposit, selectedTransactionId, targetDepositId, refetch]);
+  }, [assignChargeToDeposit, targetDepositId, refetch, chargeId]);
+
+  // on open, reset target deposit
+  useEffect(() => {
+    if (reassignDialogOpen) {
+      setTargetDepositId(undefined);
+    }
+  }, [reassignDialogOpen]);
 
   return (
     <Dialog open={reassignDialogOpen} onOpenChange={setReassignDialogOpen}>
       <DialogTrigger>
-        <Button variant="ghost" size="sm" onClick={() => handleReassignClick(transactionId)}>
+        <Button variant="ghost" size="sm">
           Reassign
         </Button>
       </DialogTrigger>
