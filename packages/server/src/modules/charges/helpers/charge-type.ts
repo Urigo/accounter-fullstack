@@ -1,5 +1,6 @@
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
 
@@ -16,9 +17,10 @@ export async function getChargeType(
       return ChargeTypeEnum.Financial;
   }
 
-  const [{ allBusinessIds, mainBusinessId }, businessTrip] = await Promise.all([
+  const [{ allBusinessIds, mainBusinessId }, businessTrip, transactions] = await Promise.all([
     getChargeBusinesses(charge.id, context.injector),
     context.injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
+    context.injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
   ]);
 
   if (businessTrip) {
@@ -30,7 +32,7 @@ export async function getChargeType(
     bankDeposits: { bankDepositBusinessId },
     dividends: { dividendBusinessIds },
     authorities: { vatBusinessId },
-    financialAccounts: { internalWalletsIds, creditCardIds },
+    financialAccounts: { creditCardIds },
   } = context.adminContext;
 
   if (
@@ -48,9 +50,7 @@ export async function getChargeType(
     return ChargeTypeEnum.ForeignSecurities;
   }
 
-  if (
-    (allBusinessIds.filter(businessId => internalWalletsIds.includes(businessId))?.length ?? 0) > 1
-  ) {
+  if (new Set(transactions.map(t => t.account_id)).size > 1) {
     return ChargeTypeEnum.InternalTransfer;
   }
 
