@@ -143,7 +143,7 @@ export function DepositsTransactionsTable({
             cell: ({ row }) => (
               <DepositReassignDialog
                 depositId={depositId}
-                transactionId={row.original.id}
+                chargeId={row.original.chargeId}
                 refetch={refetch}
               />
             ),

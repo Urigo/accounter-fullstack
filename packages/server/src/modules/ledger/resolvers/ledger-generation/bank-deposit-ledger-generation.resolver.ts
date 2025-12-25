@@ -6,7 +6,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
-import { BankDepositTransactionsProvider } from '../../../bank-deposits/providers/bank-deposit-transactions.provider.js';
+import { BankDepositChargesProvider } from '../../../bank-deposits/providers/bank-deposit-charges.provider.js';
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
@@ -65,7 +65,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       .transactionsByChargeIDLoader.load(chargeId);
 
     const bankDepositTransactionsPromise = injector
-      .get(BankDepositTransactionsProvider)
+      .get(BankDepositChargesProvider)
       .getDepositTransactionsByChargeId(chargeId);
 
     const [transactions, bankDepositTransactions, { mainBusinessId }] = await Promise.all([
