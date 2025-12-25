@@ -268,13 +268,7 @@ export class ChargesProvider {
       },
       this.dbProvider,
     );
-    return ids.map(id => {
-      const charge = charges.find(charge => charge.id === id);
-      if (!charge) {
-        return new Error(`Charge ID="${id}" not found`);
-      }
-      return charge;
-    });
+    return ids.map(id => charges.find(charge => charge.id === id));
   }
 
   public getChargeByIdLoader = new DataLoader(

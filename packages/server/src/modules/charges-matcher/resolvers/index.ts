@@ -12,6 +12,14 @@ export const chargesMatcherResolvers: ChargesMatcherModule.Resolvers = {
   },
   ChargeMatch: {
     charge: async ({ chargeId }, _args, { injector }) =>
-      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
+      injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(chargeId)
+        .then(res => {
+          if (!res) {
+            throw new Error(`Charge ID="${chargeId}" not found`);
+          }
+          return res;
+        }),
   },
 };

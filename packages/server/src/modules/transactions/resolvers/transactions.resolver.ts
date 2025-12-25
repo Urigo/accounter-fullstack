@@ -297,6 +297,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const charge = await injector
           .get(ChargesProvider)
           .getChargeByIdLoader.load(transaction.charge_id);
+        if (!charge) {
+          throw new GraphQLError(`Charge with ID "${transaction.charge_id}" not found`);
+        }
         return charge.type === 'CONVERSION' ? 'ConversionTransaction' : 'CommonTransaction';
       }
       if (typeof raw === 'object' && '__typename' in raw && raw.__typename === 'CommonError') {
@@ -332,6 +335,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       const charge = await injector
         .get(ChargesProvider)
         .getChargeByIdLoader.load(transaction.charge_id);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${transaction.charge_id}" not found`);
+      }
       return charge.type === 'CONVERSION';
     },
     ...commonTransactionFields,

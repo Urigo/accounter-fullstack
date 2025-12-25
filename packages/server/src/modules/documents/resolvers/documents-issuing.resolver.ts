@@ -526,7 +526,12 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         attachment ?? undefined,
         chargeId ?? undefined,
         sendEmail ?? false,
-      );
+      ).then(charge => {
+        if (!charge) {
+          throw new GraphQLError('Failed to issue document');
+        }
+        return charge;
+      });
     },
     previewDocument: async (_, { input: initialInput }, { injector }) => {
       const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
