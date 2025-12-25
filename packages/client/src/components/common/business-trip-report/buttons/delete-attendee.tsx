@@ -24,12 +24,12 @@ export function DeleteAttendee(props: {
   }, [props, deleteBusinessTripAttendee]);
 
   return (
-    <ConfirmationModal onConfirm={onExecute} title="Are you sure you want to remove attendee?">
-      <Tooltip content="Remove Attendee">
+    <Tooltip content="Remove Attendee">
+      <ConfirmationModal onConfirm={onExecute} title="Are you sure you want to remove attendee?">
         <Button variant="outline" size="icon" className="size-7.5 text-red-500" disabled={fetching}>
           <Trash className="size-5" />
         </Button>
-      </Tooltip>
-    </ConfirmationModal>
+      </ConfirmationModal>
+    </Tooltip>
   );
 }

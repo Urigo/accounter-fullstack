@@ -20,12 +20,12 @@ export function DeleteBusinessTripExpense(props: {
   }, [props, deleteBusinessTripExpense]);
 
   return (
-    <ConfirmationModal onConfirm={onExecute} title="Are you sure you want to remove expense?">
-      <Tooltip content="Remove Expense">
+    <Tooltip content="Remove Expense">
+      <ConfirmationModal onConfirm={onExecute} title="Are you sure you want to remove expense?">
         <Button variant="outline" size="icon" className="size-7.5 text-red-500" disabled={fetching}>
           <Trash className="size-5" />
         </Button>
-      </Tooltip>
-    </ConfirmationModal>
+      </ConfirmationModal>
+    </Tooltip>
   );
 }

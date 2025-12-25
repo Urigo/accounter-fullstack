@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
@@ -8,9 +8,8 @@ import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { ROUTES } from '../../router/routes.js';
 import { BusinessHeader } from '../business/business-header.js';
-import { InsertBusiness, MergeBusinessesButton, Tooltip } from '../common/index.js';
+import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { BusinessesFilters } from './businesses-filters.js';
 
@@ -36,7 +35,6 @@ import { BusinessesFilters } from './businesses-filters.js';
 
 export const Businesses = (): ReactElement => {
   const { get } = useUrlQuery();
-  const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const [businessName, setBusinessName] = useState(
     get('name') ? (get('name') as string) : undefined,
@@ -85,20 +83,6 @@ export const Businesses = (): ReactElement => {
           setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
-        <Tooltip content="Expand all businesses">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7.5"
-            onClick={(): void => setIsAllOpened(i => !i)}
-          >
-            {isAllOpened ? (
-              <PanelTopClose className="size-5" />
-            ) : (
-              <PanelTopOpen className="size-5" />
-            )}
-          </Button>
-        </Tooltip>
         <MergeBusinessesButton selected={mergeSelectedBusinesses} resetMerge={onResetMerge} />
       </div>,
     );
@@ -106,11 +90,9 @@ export const Businesses = (): ReactElement => {
     data,
     activePage,
     businessName,
-    isAllOpened,
     setFiltersContext,
     setActivePage,
     setBusinessName,
-    setIsAllOpened,
     mergeSelectedBusinesses,
   ]);
 
