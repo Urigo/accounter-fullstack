@@ -50,7 +50,7 @@ export async function getChargeType(
     return ChargeTypeEnum.ForeignSecurities;
   }
 
-  if (new Set(transactions.map(t => t.account_id)).size > 1) {
+  if (new Set(transactions.map(t => t.account_id).filter(Boolean)).size > 1) {
     return ChargeTypeEnum.InternalTransfer;
   }
 
