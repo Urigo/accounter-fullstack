@@ -5,7 +5,7 @@ import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposi
 import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import type { BankDepositsModule } from '../types.js';
 
-export const bankDepositTransactionsResolvers: BankDepositsModule.Resolvers = {
+export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
   Query: {
     deposit: async (_, { depositId }, { injector, adminContext: { defaultLocalCurrency } }) => {
       try {
